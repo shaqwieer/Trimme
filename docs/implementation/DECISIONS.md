@@ -230,3 +230,29 @@ Each adjustment was found by tests and keeps the design's look.
   - Dialogs expose modality by hiding the rest of the page (`aria-hidden` on siblings) rather than with `aria-modal`.
   - Focus returns to the element passed as `trigger`, so every Sheet or Dialog opener is passed as its trigger.
   - Menus are named by their trigger.
+
+## D-048 addendum — Server-Component safety verified (Phase 03, after review)
+The first version of D-048 claimed RSC safety too broadly. Five components attached their own
+event handlers without `'use client'`: `Chip`, `RemovableChip`, `AddChip`, `SegmentedControl` and
+`RatingInput`. They would have failed when rendered from a Server Component, and the gallery never
+exercised that because the gallery itself is a client component.
+
+Fix:
+- **Split the interactive components out:** the five now live in the `'use client'` modules
+  `components/ui/selection.client.tsx` and `components/ui/RatingInput.tsx`.
+- **Kept server-safe:** `RadioCard`, `TagChip` and `RatingStars` stay in their server-safe modules,
+  so `ShopCard` ships no JS for ratings.
+- **Proof route:** `/[locale]/dev/components/server` has **no** `'use client'` and renders every
+  component documented as RSC-safe:
+  - buttons: Button, ButtonLink, IconButton;
+  - badges: badges, StatusBadge, RatingStars;
+  - cards: ShopCard, AppointmentCard, KpiTile, ServiceOption, RadioCard, ProfessionalOption;
+  - charts: RatingDistribution, BarChart, QrCard;
+  - navigation and data: Breadcrumb, LinkTabs, ResponsiveTable, Pagination, Timeline;
+  - states: Avatar, EmptyState, InlineAlert, Skeleton, SkeletonList, PermissionDenied,
+    ExpiredSession, ErrorState.
+- **Regression guard:** E2E asserts HTTP 200, the expected content and zero serious axe
+  violations in ar and en.
+- **Negative proof:** a temporary server component with an inline `onClick`, placed on that
+  route, returned **500** with "Event handlers cannot be passed to Client Component props".
+  The probe was then removed.

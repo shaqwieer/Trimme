@@ -6,8 +6,10 @@ import { renderWithIntl } from '@/test/render';
 import { Badge, BOOKING_STATUSES, StatusBadge, SUBSCRIPTION_STATUSES } from './Badge';
 import { Button, ButtonLink, buttonClasses, IconButton } from './Button';
 import { DIRECTIONAL_ICONS, designIcons, Icon } from './icons';
-import { RatingInput, RatingStars } from './Rating';
-import { Chip, RadioCard, SegmentedControl } from './selection';
+import { RatingStars } from './Rating';
+import { RatingInput } from './RatingInput';
+import { RadioCard } from './selection';
+import { Chip, SegmentedControl } from './selection.client';
 
 describe('icons (design ICONS → Lucide)', () => {
   it('maps all 46 design icons', () => {

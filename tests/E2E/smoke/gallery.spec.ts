@@ -19,6 +19,23 @@ test.describe('component gallery', () => {
     });
   }
 
+  for (const locale of ['ar', 'en'] as const) {
+    test(`server-safe components render from a Server Component in ${locale} (D-048)`, async ({ page }) => {
+      // This route has no 'use client'; a component attaching its own handler would fail to render.
+      const response = await page.goto(`/${locale}/dev/components/server`);
+      expect(response?.status()).toBe(200);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        locale === 'ar' ? 'مكونات الخادم' : 'Server components',
+      );
+      await expect(page.getByRole('table', { name: locale === 'ar' ? 'المحلات' : 'Shops' })).toBeAttached();
+      const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+      const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+      expect(
+        blocking.map((v) => `${v.id}: ${v.help} → ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`),
+      ).toEqual([]);
+    });
+  }
+
   test('tabs follow the reading direction with the keyboard (RTL)', async ({ page }) => {
     await page.goto('/ar/dev/components');
     const tablist = page.getByRole('tablist', { name: 'أقسام المحل' });
@@ -63,6 +80,7 @@ test.describe('component gallery', () => {
   test('no horizontal page overflow at any reference width (spec §5)', async ({ page }) => {
     test.slow(); // 24 page loads (6 paths × 4 widths)
     const paths = [
+      '/ar/dev/components/server',
       '/ar',
       '/en',
       '/ar/dev/components',

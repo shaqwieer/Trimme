@@ -103,7 +103,7 @@ Revert the phase commit. The component library has no data or API dependencies.
 | 3.8 | `ResponsiveTable` (captioned table with row headers, card list below 768px), `Pagination` (URL links, page window), `Breadcrumb`, `Timeline`. |
 | 3.9 | `StateCard`, `EmptyState`, `ErrorState`, `PermissionDenied`, `ExpiredSession`, `InlineAlert`, `Skeleton`, `SkeletonList`. |
 | 3.10 | Form kit: Zod schemas return message keys (`requiredText`, `saudiMobile`, `otpCode`, `email`); `useZodForm`; `FormTextField`/`FormTextareaField`/`FormPhoneField`; `useValidationMessage`; `applyProblemToForm`; `codeToMessageKey`. |
-| 3.11 | Gallery at `/[locale]/dev/components` (dev-only, D-045), covering every card on the ds-components board. |
+| 3.11 | Gallery at `/[locale]/dev/components` (dev-only, D-045), covering every ds-components card except the **header and sidebar** cards, which are covered by `/[locale]/dev/shells/*`. The customer header's search field and initials avatar arrive with auth in Phase 04. There is also an RSC proof route at `/[locale]/dev/components/server` (D-048 addendum). |
 | 3.12 | Playwright axe: 0 serious or critical issues in ar and en, with contrast checked in a real browser. |
 
 **Final gate run** (after the last change):
@@ -116,7 +116,7 @@ Revert the phase commit. The component library has no data or API dependencies.
 | `pnpm test` | PASS, **147/147** across 14 files |
 | `pnpm openapi:check`, `pnpm build` | PASS |
 | `TRIMME_WEB_PORT=3300 bash infra/scripts/compose-smoke.sh` (clean volume) | PASS: API ready, web `/ar` 200, proxy OK |
-| `E2E_BASE_URL=http://localhost:3300 pnpm e2e` (run twice) | PASS, **28/28** both times |
+| `E2E_BASE_URL=http://localhost:3300 pnpm e2e` (run twice, after the RSC fix) | PASS, **30/30** both times (28 + 2 server-route tests) |
 | gitleaks `dir` scan | PASS, no leaks |
 
 The 147 unit tests include:
@@ -145,6 +145,8 @@ The E2E run adds `smoke/gallery.spec.ts`, which checks:
 - Radix names menus after their trigger, so the redundant `label` prop was removed.
 - **Flaky gallery tests:** under parallel load they hit 30s timeouts; layout was never the problem. They now use `test.slow()` and wait for `load` + `document.fonts.ready`. After the fix they passed 4/4 runs, then 2/2 on the Docker stack.
 - **E2E formatting:** running Prettier over `tests/E2E` with defaults had reformatted it. The package now has its own Prettier config matching the web app, checked in CI.
+
+- **Found in review:** the RSC-safety claim was too broad. Five handler-attaching components moved to `'use client'` modules. The server proof route plus E2E now guard the claim, and a negative probe confirmed the route fails (500) when a handler slips in (D-048 addendum).
 
 **Visual comparison** against `design/reference/1440/ds-components.jpg` (at 1440 in Arabic, plus 390 and 768): these match the design:
 - buttons, inputs, badges and tabs;

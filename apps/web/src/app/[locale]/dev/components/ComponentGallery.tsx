@@ -21,8 +21,10 @@ import {
 import { LinkTabs } from '@/components/ui/LinkTabs';
 import { ConfirmDialog, Dialog, DropdownMenu, Sheet, Tooltip } from '@/components/ui/overlays';
 import { RangeSlider } from '@/components/ui/RangeSlider';
-import { RatingInput, RatingStars } from '@/components/ui/Rating';
-import { AddChip, Chip, RemovableChip, SegmentedControl, TagChip } from '@/components/ui/selection';
+import { RatingStars } from '@/components/ui/Rating';
+import { RatingInput } from '@/components/ui/RatingInput';
+import { TagChip } from '@/components/ui/selection';
+import { AddChip, Chip, RemovableChip, SegmentedControl } from '@/components/ui/selection.client';
 import {
   EmptyState,
   ErrorState,
