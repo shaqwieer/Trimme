@@ -145,7 +145,7 @@ The 20 E2E tests cover:
 - **CI:** the new `web` and `stack` jobs pass `actionlint` and their commands were run locally, but no GitHub run has happened (not pushed).
 - Placeholder colour changed during the phase: the token test caught `#687888` at 4.30:1 on the page background, so it is now `#5F6F80` (D-039).
 
-**Commit:** recorded in `SESSION_HANDOFF.md` and `MASTER_PLAN.md`.
+**Commit:** `9c1fcd2`.
 
 ## Remaining risks → next phase
 - The digit convention (D-040) follows the design's own rule; ask the client to confirm it.

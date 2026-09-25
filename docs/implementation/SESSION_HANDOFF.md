@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-25 (end of Session 2, after Phase 02)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: the Phase 02 commit ("feat: phase 02 web foundation …"), followed by a docs commit that records its hash. Run `git log --oneline -8`.
+- HEAD commit: the docs commit recording the hash, on top of Phase 02 commit `9c1fcd2`. Run `git log --oneline -8`.
 - Working tree status: clean after those commits. **Phases 01 and 02 are not pushed**; pushing happens only when the user asks. The local `docker compose` stack may still be running.
 - Current phase: 02 is complete. Phase 03 has not started.
 - Phase score: 100 / 100 (Phase 02)
