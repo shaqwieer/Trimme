@@ -1,81 +1,89 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-25 (end of Session 1)
-- Branch: `main` (remote `origin` = https://github.com/shaqwieer/Trimme.git; `main` pushed and tracking `origin/main` on 2026-09-25)
-- HEAD commit: the commit titled "docs: record user decisions D-004..D-007 (D-037)", which sits on top of `7623f86`. Run `git log --oneline -5`.
-- Working tree status: clean after that commit.
-- Current phase: 00 is complete. Phase 01 has not started and is waiting for the user's go-ahead.
-- Phase score: 100 / 100 (Phase 00)
-- Last fully completed phase: 00 — Discovery, design import, traceability and master plan. Its artifacts are in commit `5cd09a9`; the follow-ups are `8ea4290` (handoff), `7623f86` (email channel, inventories, jobs path) and the D-037 decisions commit.
+- Updated at: 2026-09-25 (end of Session 2)
+- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
+- HEAD commit: the Phase 01 commit ("feat: phase 01 backend and infrastructure foundation"), plus a follow-up docs commit that records its hash. Run `git log --oneline -5`.
+- Working tree status: clean after those commits. **Phase 01 has not been pushed.** Pushing happens only when the user asks.
+- Current phase: 01 is complete. Phase 02 has not started.
+- Phase score: 100 / 100 (Phase 01)
+- Last fully completed phase: 01 — Backend & infrastructure foundation
 
 ## Completed this session
-- Inspected the repository. Before this session it held only the spec and `logo.png`, and it was not a git repository.
-- Inspected the tooling (see `phases/phase-00-discovery.md` §Evidence).
-- Ran `git init -b main` and added `.gitignore` and `.gitattributes`.
-- Imported the Claude Design project into `design/source/`, with provenance recorded in `design/README.md`.
-- Produced three design analyses in `design/analysis/`.
-- Wrote:
-  - `MASTER_PLAN.md`: 19 phases, the screen-to-route map, roles, risks and the definition of done.
-  - `DECISIONS.md`: D-001…D-037.
-  - `TRACEABILITY.md`: requirement IDs with named verifications, plus the data model, integrations and API inventories.
-  - `STATUS.md`
-  - `docs/design-deviations.md`
-  - The phase files `phase-00` … `phase-18`, each totalling 100 points.
-  - `CLAUDE.md` with its resume section.
-- Resolved the open decisions with the user (D-037):
-  - in-house dispatcher;
-  - passwordless OTP for customers, with email and password for staff;
-  - per-shop manual confirmation, off by default;
-  - OpenStreetMap, with the production usage-policy constraint recorded.
+- **Root configuration:**
+  - `global.json` pins SDK 10.0.112 (latestFeature, no previews) and uses the Microsoft Testing Platform test runner.
+  - `Directory.Build.props`: nullable, warnings as errors, Recommended analyzers, code style enforced in build.
+  - `Directory.Packages.props` (central package management), `.editorconfig`, and a `dotnet-ef` 10.0.12 local tool.
+- **Solution `Trimme.slnx`** with 21 projects:
+  - 4 BuildingBlocks (Domain, Application, Infrastructure, Web);
+  - 12 empty modules, each with a schema;
+  - `Trimme.Migrations` and `Trimme.Api`;
+  - 3 test projects.
+- **BuildingBlocks:**
+  - strongly typed UUIDv7 IDs, `Entity`/`AggregateRoot` with domain events, `Result`/`Error` with stable codes;
+  - the in-house dispatcher with pipeline behaviours and FluentValidation (D-037);
+  - `TrimmeDbContext` with module model contributors, schema-per-module, snake_case, the strong-ID converter and the xmin concurrency convention;
+  - `SensitiveDataRedactor` and the Serilog `RedactionEnricher`;
+  - problem details with `errorCode` and `correlationId`, the exception handler, correlation-ID middleware, security headers, the request size limit, strict CORS and named rate-limit policies.
+- **API host:**
+  - the `/api/v1` group with `GET /api/v1/meta`;
+  - `/health/live` and `/health/ready` (database check);
+  - OpenAPI at `/openapi/v1.json` (Development/Testing) and Scalar at `/scalar` (Development);
+  - CLI verbs `migrate`, `seed --dev` (guarded) and `healthcheck`.
+- **Migration** `Initial`, which enables the `postgis` and `btree_gist` extensions.
+- **Tests:**
+  - 73 unit tests;
+  - 56 architecture tests, proven non-vacuous with deliberate violations;
+  - 24 integration tests on Testcontainers PostGIS, including migrations, the model-drift check, and the OpenAPI contract drift check against the committed `apps/api/openapi/v1.json`.
+- **Infrastructure:** `apps/api/Dockerfile` (multi-stage, non-root, HEALTHCHECK), `.dockerignore`, `infra/docker-compose.yml` (postgis → one-shot migrate → api), `infra/scripts/compose-smoke.sh`, `infra/.env.example` and `.env.example`.
+- **CI:** `.github/workflows/ci.yml` with three jobs (backend, gitleaks secret scan, compose smoke), plus `.gitleaks.toml`.
+- **Docs:** root `README.md`, and `docs/architecture.md` with the topology and backend-structure Mermaid diagrams.
+- **Decisions:** D-038 (layout, persistence, host commands) and the D-003 addendum (test and tooling packages).
 
 ## Verification evidence
-- Command: `node --version; npm --version; pnpm --version; dotnet --list-sdks; docker --version; docker compose version; git --version; psql --version`
+- Command: `dotnet build Trimme.slnx -c Release`
+  Result: PASS, 0 warnings and 0 errors.
+- Command: `dotnet test --project tests/Trimme.UnitTests --no-build -c Release`
+  Result: PASS, 73/73.
+- Command: `dotnet test --project tests/Trimme.ArchitectureTests --no-build -c Release`
+  Result: PASS, 56/56.
+- Command: `dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release`
+  Result: PASS, 24/24. Testcontainers ran `postgis/postgis:17-3.5`.
+- Command: `dotnet ef migrations has-pending-model-changes --project src/Trimme.Migrations --startup-project apps/api/Trimme.Api --no-build --configuration Release`
+  Result: PASS, no model changes since the last migration.
+- Command: gitleaks v8.30.1, both the `dir` and the `git` scan
+  Result: PASS, no leaks found.
+- Command: `bash infra/scripts/compose-smoke.sh --down`, run on a clean volume
   Result: PASS.
-  - Node v22.18.0, npm 10.9.3, pnpm 9.9.0.
-  - .NET SDKs 6, 7, 8 and 9, plus 10.0.112 stable and 10.0.300-preview. The preview is the machine default.
-  - Docker 27.2.0, Compose v2.29.2, git 2.45.2, psql 16.3.
-- Command: `docker info --format '{{.ServerVersion}} {{.OSType}}'`
-  Result: PASS. Returned `27.2.0 linux`; the daemon is running.
-- Command: `npm view …` plus the NuGet flat-container lookups
-  Result: PASS. Both registries are reachable; the versions are in D-003.
-- Command: `claude_design list_files` / `get_project` / `list_comments`
-  Result: PASS. The project has 5 files and no comments.
-- Command: `wc -l -c design/source/TRIMME.dc.html`
-  Result: PASS. 4656 lines and 441,593 bytes, which matches the project listing.
-- Command: awk point sum over every phase file's checklist
-  Result: PASS. All 19 files total 100. Phase 04 was rechecked after rebalancing.
-- Command: `grep -rl claudeusercontent` plus a token-pattern grep
-  Result: PASS. The only hits are policy text; no preview token is persisted.
-- No application code exists yet, so no build, test or lint commands apply.
+  - The postgres container was healthy, the migrate container exited with code 0, and the api container reported healthy.
+  - `/health/ready` returned Healthy with the database check passing.
+  - `/api/v1/meta` returned 200.
+- Command: architecture tests with deliberate violations added (details in the phase-01 evidence)
+  Result: the expected tests failed, then passed again after the violations were reverted.
 
 ## Database and migrations
-- None created or applied.
+- Created: `src/Trimme.Migrations/Migrations/20260925091248_Initial`. It enables the extensions only.
+- Applied locally:
+  - to the compose database (volume `trimme_pgdata`, removed by `--down`/`down -v`);
+  - to throwaway Testcontainers databases.
+- No shared or production database exists.
 
 ## Decisions added
-- D-001…D-036, as documented in `DECISIONS.md`.
-- D-037 records the user's answers to D-004, D-005, D-006 and D-007.
+- D-038: one project per module with layer namespaces, a single shared DbContext with a schema per module, a `Trimme.Migrations` assembly, CLI verbs (`migrate`, `seed --dev`, `healthcheck`), the `Testing` environment for integration tests, `TimeProvider`, and the OpenAPI drift test.
+- D-003 addendum: xunit.v3 4.0.1 on Microsoft Testing Platform, Shouldly, NetArchTest.eNhancedEdition, Testcontainers 4.15, Serilog, Scalar, and EFCore.NamingConventions.
 
 ## Known issues or blockers
-- **The design has no shop location pin picker**, although the spec says it does. This is DV-A02, to be designed in Phase 06.
-- Design-vs-spec conflicts are listed in `docs/design-deviations.md`, and the spec wins (D-008). They cover:
-  - barber transfer
-  - a global service catalogue
-  - a 3-hour reminder instead of the 30-minute one
-  - disabled slots shown with reasons
-  - a single cancelled status
-  - hardcoded plan prices
-- No reference screenshots exist yet; that is Phase 02, item 2.2.
-- The default `dotnet` is a preview SDK. Phase 01 must add `global.json` (D-002).
-- The production host for OSM tiles and geocoding is still to be chosen. It is a configuration item and blocks no phase (D-037).
+- **The GitHub Actions workflow has not run remotely yet**; nothing has been pushed. Every step's command passed locally. Check the first run after the next push.
+- On a brand-new database, EF logs one expected `Failed executing DbCommand … __ef_migrations_history` error during `migrate`. It is documented in the README.
+- Host ports 5432 and 5433 are taken on this machine, so compose publishes PostgreSQL on **5434**, and `appsettings.Development.json` uses 5434.
+- `dotnet test` uses the Microsoft Testing Platform syntax: `dotnet test --project <path>`.
 
 ## Exact next action
-1. Once the user says go, start Phase 01 (`phases/phase-01-backend-foundation.md`).
-2. Item 1.1: re-validate. Run `git status`, `docker info`, and `dotnet --list-sdks`, and confirm the output includes 10.0.112.
-3. Items 1.2 onward:
-   - `global.json` pinned to 10.0.112;
-   - `Directory.Build.props` and `Directory.Packages.props`;
-   - the solution skeleton;
-   - the in-house dispatcher (D-037).
+1. Start Phase 02 (`phases/phase-02-web-foundation.md`), item 2.1: re-validate.
+   - Run `git status`.
+   - Run `dotnet test --project tests/Trimme.ArchitectureTests` and `bash infra/scripts/compose-smoke.sh --down` (the smallest decisive Phase 01 checks).
+   - Confirm the current Next.js 16, next-intl 4 and Tailwind v4 APIs.
+2. Item 2.2: capture the design reference screenshots at 390/768/1440. Use `claude_design` `render_preview` with browser tooling, and never persist the preview URL.
+3. Items 2.3 onward: the pnpm workspace plus `apps/web`.
 
 ## Files intentionally left modified
 - None.

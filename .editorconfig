@@ -1,0 +1,51 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+
+[*.{cs,csx}]
+indent_size = 4
+file_header_template = unset
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = when_multiline:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+dotnet_style_readonly_field = true:warning
+dotnet_style_prefer_auto_properties = true:suggestion
+dotnet_diagnostic.IDE0005.severity = warning   # unnecessary usings
+dotnet_diagnostic.IDE0161.severity = warning   # file-scoped namespaces
+
+# Analyzer tuning (documented in phase-01):
+dotnet_diagnostic.CA1812.severity = none       # internal classes instantiated via DI
+dotnet_diagnostic.CA2007.severity = none       # ConfigureAwait not needed in ASP.NET Core
+dotnet_diagnostic.CA1848.severity = suggestion # LoggerMessage delegates preferred but not mandatory
+dotnet_diagnostic.CA1062.severity = none       # nullable reference types cover argument null checks
+dotnet_diagnostic.CA1716.severity = none       # identifiers like 'Error'/'Shared' are fine in C#
+dotnet_diagnostic.CA1711.severity = none       # 'Handler'/'Collection' suffixes are intentional
+dotnet_diagnostic.CA1515.severity = none       # public types in apps are intentional (WebApplicationFactory)
+dotnet_diagnostic.CA1000.severity = none       # static members on generic Result<T> are idiomatic
+
+# EF Core generated migrations
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none       # underscores in test names
+dotnet_diagnostic.CA2234.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA1063.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA2000.severity = none
+
+[*.{json,yml,yaml,md}]
+indent_size = 2

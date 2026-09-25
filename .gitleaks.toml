@@ -1,0 +1,11 @@
+# gitleaks configuration: default rules plus an allowlist for documented LOCAL DEVELOPMENT placeholders.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local development placeholders (never used outside a developer machine or CI container)"
+regexes = [
+  '''trimme_local_dev''',
+  '''trimme_tests''',
+  '''change_me_locally''',
+]

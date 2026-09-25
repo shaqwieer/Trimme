@@ -23,21 +23,21 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-FND-01 | Monorepo layout + module boundaries/dependency direction | §4 | 1 | A `Modules_DoNotReferenceOtherModulesInternals`, `Domain_HasNoInfrastructureDependencies` | [ ] |
-| R-FND-02 | Nullable, warnings-as-errors, analyzers; strict TS, ESLint, formatting | §21 | 1, 2 | C `dotnet build -warnaserror`; `pnpm lint`, `pnpm typecheck`, `pnpm format:check` | [ ] |
-| R-FND-03 | `/api/v1` versioning, RFC 7807 problem details with stable error codes | §18 | 1 | I `UnknownRoute_Returns_ProblemDetails`; I `ValidationError_HasStableCode` | [ ] |
-| R-FND-04 | Health endpoints liveness/readiness | §3 | 1 | I `Health_Live_Returns200`, `Health_Ready_ChecksDatabase` | [ ] |
-| R-FND-05 | OpenAPI document + generated TS client, drift check | §18 | 1, 2 | C `openapi:check` fails on drift | [ ] |
-| R-FND-06 | Structured logging, correlation IDs, PII redaction | §3, §21 | 1, 5 | I `Response_HasCorrelationId`; U `Redactor_MasksPhonesAndTokens` | [ ] |
-| R-FND-07 | EF migrations from empty DB (PostGIS, btree_gist) | §19 | 1 → every data phase | I `Migrations_ApplyToEmptyDatabase` | [ ] |
-| R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | M/C compose smoke script `infra/scripts/compose-smoke` | [ ] |
-| R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` green run (local `act` or documented) | [ ] |
-| R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C secret scan (gitleaks) | [ ] |
-| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | I `Seed_IsDeterministic_AndDevelopmentOnly` | [ ] |
-| R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken` | [ ] |
+| R-FND-01 | Monorepo layout + module boundaries/dependency direction | §4 | 1 | A `ArchitectureRules` (building-block direction, module Domain/Application namespace rules, cross-module refs via compiled metadata **and** `.csproj`, internal handlers) — proven non-vacuous (phase-01 evidence) | [x] |
+| R-FND-02 | Nullable, warnings-as-errors, analyzers; strict TS, ESLint, formatting | §21 | 1, 2 | C `dotnet build -c Release` (TreatWarningsAsErrors, AnalysisMode Recommended, EnforceCodeStyleInBuild) ✔ Phase 01; web `pnpm lint/typecheck/format:check` in Phase 02 | [~] |
+| R-FND-03 | `/api/v1` versioning, RFC 7807 problem details with stable error codes | §18 | 1 | I `UnknownRoute_Returns_ProblemDetails`, `MethodNotAllowed_Returns_ProblemDetails`, `ValidationError_HasStableCode_AndFieldErrors`, `UnexpectedError_DoesNotLeakExceptionDetails`; U `Status_codes_map_to_stable_error_codes`, `Domain_errors_become_problem_responses_with_their_code` | [x] |
+| R-FND-04 | Health endpoints liveness/readiness | §3 | 1 | I `Health_Live_Returns200`, `Health_Ready_ChecksDatabase`, `Health_Ready_Returns503_WhenDatabaseIsUnreachable`; container `HEALTHCHECK` healthy | [x] |
+| R-FND-05 | OpenAPI document + generated TS client, drift check | §18 | 1, 2 | I `OpenApi_document_matches_committed_contract` (committed `apps/api/openapi/v1.json`), `OpenApi_document_is_not_served_in_production` ✔ Phase 01; TS client generation + drift in Phase 02 | [~] |
+| R-FND-06 | Structured logging, correlation IDs, PII redaction | §3, §21 | 1, 5 | I `Response_HasCorrelationId_GeneratedWhenMissing`, `Response_EchoesOnlyWellFormedCorrelationIds`; U `SensitiveDataRedactorTests` (phones incl. Arabic-Indic, JWT/Bearer, e-mail, sensitive names, enricher) | [x] |
+| R-FND-07 | EF migrations from empty DB (PostGIS, btree_gist) | §19 | 1 → every data phase | I `Migrations_ApplyToEmptyDatabase`, `Migrations_AreIdempotent`, `Model_HasNoPendingChanges`; C `dotnet ef migrations has-pending-model-changes` — re-run by every data phase | [~] |
+| R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh` (postgis → migrate → api healthy) ✔ Phase 01; `web` service added Phase 02 | [~] |
+| R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` (backend, secret-scan, compose-smoke) — steps verified locally; first GitHub run pending; web job Phase 02 | [~] |
+| R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C gitleaks v8.30.1 (`.gitleaks.toml`) working tree + history: no leaks; `.env.example`, `infra/.env.example` | [x] |
+| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔ Phase 01; determinism test when the first seeder lands (Phase 05) | [~] |
+| R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken`, `Feature_endpoints_are_versioned_under_api_v1` (re-run every phase) | [x] |
 | R-FND-13 | Pagination with safe max page size, filtering, sorting | §18, §21 | 5+ | U `PageRequest_ClampsPageSize`; A list endpoints return paged envelopes | [ ] |
-| R-FND-14 | Security headers, request size limits, upload validation | §9 | 1, 17 | I `SecurityHeaders_Present`; I `Upload_RejectsNonImage` | [ ] |
-| R-FND-15 | Strict CORS | §9 | 1 | I `Cors_RejectsUnknownOrigin` | [ ] |
+| R-FND-14 | Security headers, request size limits, upload validation | §9 | 1, 17 | I `SecurityHeaders_Present`, `RequestBody_TooLarge_Returns413Problem` ✔ Phase 01; upload validation Phase 06/17 | [~] |
+| R-FND-15 | Strict CORS | §9 | 1 | I `Cors_AllowsConfiguredOrigin_WithCredentials`, `Cors_RejectsUnknownOrigin`; wildcard origins rejected at startup | [x] |
 
 ## 3. Web, design system, i18n, SEO, a11y
 
@@ -197,9 +197,9 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 18 | M | [ ] |
+| R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 18 | M — initial README (Phase 01) | [~] |
 | R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M | [~] (design-deviations created Phase 0) |
-| R-DOC-03 | Mermaid: deployed topology + booking/reminder lifecycle | §22 | 1, 15 | M | [ ] |
+| R-DOC-03 | Mermaid: deployed topology + booking/reminder lifecycle | §22 | 1, 15 | M — topology + backend structure in `docs/architecture.md` (Phase 01); lifecycle Phase 10/15 | [~] |
 | R-DOC-04 | Nginx example, HTTPS-ready config, backup/restore instructions | §3 | 18 | M | [ ] |
 | R-DOC-05 | Demo credentials in local-only file excluded from builds | §20 | 4 | C file ignored by git & excluded from Docker context | [ ] |
 | R-DOC-06 | Final implementation report | §23 | 18 | M | [ ] |

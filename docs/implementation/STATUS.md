@@ -1,13 +1,13 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-25 (Session 1)
-- **Current phase:** 00 is complete. Phase 01 has not started and is waiting for the user to approve the plan.
-- **Platform progress:** 100 / 1900 points (Phase 00 only)
+- **Updated:** 2026-09-25 (Session 2)
+- **Current phase:** 01 complete and verified (Session 2). Next: Phase 02 — Web foundation (not started).
+- **Platform progress:** 200 / 1900 points (Phases 00–01)
 
 | Phase | Status | Points |
 |---|---|---|
 | 00 Discovery & plan | [x] | 100/100 |
-| 01 Backend & infra foundation | [ ] | 0/100 |
+| 01 Backend & infra foundation | [x] | 100/100 |
 | 02 Web foundation | [ ] | 0/100 |
 | 03 Design-system components | [ ] | 0/100 |
 | 04 Identity & sessions | [ ] | 0/100 |
@@ -39,4 +39,4 @@
 None are blocking. The product assumptions D-012…D-035 remain overridable defaults.
 
 ## Blockers
-None. Phase 01 is ready to start once the user approves the plan.
+None. Follow-up: the first GitHub Actions run happens on the next push (not yet pushed).

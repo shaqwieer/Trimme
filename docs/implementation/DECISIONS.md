@@ -119,3 +119,28 @@ Design's "activation only / prices managed by platform" for shops (2556–2575, 
 - **D-005:** customers use **passwordless mobile + OTP**. The code is 6 digits (DV-C01), expires in 5 minutes or less, allows at most 3 attempts per code, and is rate-limited per phone and per IP with lockout. It is sent over WhatsApp through `IOtpSender`, using a fake in development. Shop and admin staff use email + password, with forgot/reset, lockout and invitations over email (Mailpit in development). This follows spec §9: customers get "the flow shown in the imported design", and password reset applies to staff.
 - **D-006:** each shop has a `RequireManualConfirmation` setting. It defaults to **off**, so online bookings are created `Confirmed`. When a shop turns it on, its online bookings are created `Pending` and the shop confirms them. Confirmation copy and WhatsApp templates follow the resulting status.
 - **D-007:** production uses **OpenStreetMap**. The web map is MapLibre GL rendering OSM-based vector or raster tiles, and geocoding is OSM-based (Nominatim-compatible API), both behind `IMapProvider`/`IGeocoder`. **Constraint:** the public `tile.openstreetmap.org` and `nominatim.openstreetmap.org` services have usage policies that forbid heavy or production application traffic. Production must therefore point the adapters at a **self-hosted** tile server and Nominatim, or at an OSM-based hosted tile and geocoding service. The endpoint URLs, keys and attribution text are configuration only, and "© OpenStreetMap contributors" attribution is always displayed. Development may use the public endpoints at very low volume with a proper User-Agent and caching. The concrete production host is chosen in Phase 17 or 18 as a configuration item and does not block any phase.
+
+## D-038 — Backend project layout, persistence and host commands (D-001 addendum) — Accepted (Phase 01)
+- **One project per module** (`src/Modules/<X>/Trimme.Modules.<X>`). Layers are namespaces: `.Domain`, `.Application`, `.Infrastructure`, `.Api`. Handlers and infrastructure types are `internal`, so the compiler stops other modules reaching them. When cross-module contracts are needed, a module gets a public `Trimme.Modules.<X>.Contracts` project, which is the only module project other modules may reference. Namespace-level rules are architecture tests, proven non-vacuous by a deliberate violation (recorded in the phase-01 evidence).
+- **BuildingBlocks:** `Trimme.BuildingBlocks.Domain`, `.Application` (in-house dispatcher, D-037), `.Infrastructure` (EF base, `TrimmeDbContext`, conventions, redaction) and `.Web` (module and endpoint abstractions, problem details, middleware).
+- **One shared `TrimmeDbContext` with one PostgreSQL schema per module.** Modules contribute `IEntityTypeConfiguration`s through `IModelContributor`. This keeps composite FKs across modules, the booking exclusion constraint, and booking + outbox writes inside one transaction straightforward. Naming is snake_case (EFCore.NamingConventions). Instants are `timestamptz` in UTC. Optimistic concurrency uses PostgreSQL `xmin`.
+- **Migrations** live in a dedicated `src/Trimme.Migrations` assembly, and the history table is `public.__ef_migrations_history`. Command: `dotnet ef migrations add <Name> --project src/Trimme.Migrations --startup-project apps/api`.
+- **Host commands:** `Program.cs` has no side effects before `Build()`. After `Build()`, the host dispatches CLI verbs:
+  - `migrate` applies migrations (an explicit release step, and a one-shot compose service);
+  - `seed --dev` runs only in `Development` with `TRIMME_ALLOW_DEV_SEED=true`.
+  
+  A lightweight `healthcheck` verb probes `/health/live` before the builder is created, for container health checks. The API never auto-migrates on startup.
+- **Integration tests** run in environment `Testing`, which enables the OpenAPI document but not the dev seed. The Testcontainers image is `postgis/postgis:17-3.5`.
+- **Clock:** .NET `TimeProvider` (with `FakeTimeProvider` in tests) instead of a custom `IClock`.
+- **OpenAPI drift check:** an integration test compares `/openapi/v1.json` with the committed `apps/api/openapi/v1.json`; `TRIMME_UPDATE_OPENAPI=1` regenerates it. There is no build-time generation.
+
+## D-003 addendum — Test and tooling packages (Phase 01)
+- Tests: xunit.v3 4.0.1, xunit.runner.visualstudio 4.0.0, Microsoft.NET.Test.Sdk 18.10.1, Microsoft.AspNetCore.Mvc.Testing 10.0.12, Testcontainers.PostgreSql 4.15.0, Shouldly 4.3.0.
+- Architecture: NetArchTest.eNhancedEdition 1.4.5.
+- Logging: Serilog.AspNetCore 10.0.0 and Serilog.Formatting.Compact 3.0.0.
+- OpenAPI: Microsoft.AspNetCore.OpenApi 10.0.12, with Scalar.AspNetCore 2.17.9 for the dev UI.
+- Health: Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore 10.0.12.
+- EF naming: EFCore.NamingConventions 10.0.1.
+- Tool: dotnet-ef 10.0.12 (local tool manifest).
+- Validation: FluentValidation(.DependencyInjectionExtensions) 12.1.1.
+- FluentAssertions is avoided because v8 is commercially licensed.

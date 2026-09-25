@@ -1,0 +1,60 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "TRIMME API",
+    "description": "Public, customer, shop and admin API for the TRIMME salon and barber booking marketplace.",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/meta": {
+      "get": {
+        "tags": [
+          "Meta"
+        ],
+        "summary": "API name, version and current server time (UTC).",
+        "operationId": "GetApiMeta",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiMetaResponse": {
+        "required": [
+          "name",
+          "version",
+          "serverTimeUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "serverTimeUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Meta"
+    }
+  ]
+}

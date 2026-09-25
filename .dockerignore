@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/.next/
+**/TestResults/
+.git/
+.vs/
+.vscode/
+.idea/
+.data/
+design/
+docs/
+tests/
+**/*.user
+**/.env
+**/.env.*
+docs/local/

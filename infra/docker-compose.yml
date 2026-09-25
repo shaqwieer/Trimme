@@ -1,0 +1,55 @@
+# Local development stack. Start from the repository root:
+#   docker compose -f infra/docker-compose.yml up --build
+# Values below are LOCAL DEVELOPMENT defaults only; override them in infra/.env (see infra/.env.example).
+name: trimme
+
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: ${TRIMME_API_ENVIRONMENT:-Development}
+  ConnectionStrings__Trimme: Host=postgres;Port=5432;Database=${TRIMME_DB_NAME:-trimme};Username=${TRIMME_DB_USER:-trimme};Password=${TRIMME_DB_PASSWORD:-trimme_local_dev};Gss Encryption Mode=Disable
+  Cors__AllowedOrigins__0: ${TRIMME_WEB_ORIGIN:-http://localhost:3000}
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: ${TRIMME_DB_NAME:-trimme}
+      POSTGRES_USER: ${TRIMME_DB_USER:-trimme}
+      POSTGRES_PASSWORD: ${TRIMME_DB_PASSWORD:-trimme_local_dev}
+    ports:
+      - "${TRIMME_DB_PORT:-5434}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: applies EF Core migrations, then exits. The API never migrates on startup (D-038).
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: trimme-api:dev
+    command: ["migrate"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: trimme-api:dev
+    environment: *api-environment
+    ports:
+      - "${TRIMME_API_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

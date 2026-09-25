@@ -1,0 +1,57 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/api/">
+    <Project Path="apps/api/Trimme.Api/Trimme.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Trimme.Migrations/Trimme.Migrations.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Trimme.BuildingBlocks.Application/Trimme.BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/Trimme.BuildingBlocks.Domain/Trimme.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/Trimme.BuildingBlocks.Infrastructure/Trimme.BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/Trimme.BuildingBlocks.Web/Trimme.BuildingBlocks.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Administration/">
+    <Project Path="src/Modules/Administration/Trimme.Modules.Administration/Trimme.Modules.Administration.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Availability/">
+    <Project Path="src/Modules/Availability/Trimme.Modules.Availability/Trimme.Modules.Availability.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Bookings/">
+    <Project Path="src/Modules/Bookings/Trimme.Modules.Bookings/Trimme.Modules.Bookings.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Customers/">
+    <Project Path="src/Modules/Customers/Trimme.Modules.Customers/Trimme.Modules.Customers.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Trimme.Modules.Identity/Trimme.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notifications/">
+    <Project Path="src/Modules/Notifications/Trimme.Modules.Notifications/Trimme.Modules.Notifications.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Professionals/">
+    <Project Path="src/Modules/Professionals/Trimme.Modules.Professionals/Trimme.Modules.Professionals.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/QrAnalytics/">
+    <Project Path="src/Modules/QrAnalytics/Trimme.Modules.QrAnalytics/Trimme.Modules.QrAnalytics.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Reviews/">
+    <Project Path="src/Modules/Reviews/Trimme.Modules.Reviews/Trimme.Modules.Reviews.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Services/">
+    <Project Path="src/Modules/Services/Trimme.Modules.Services/Trimme.Modules.Services.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Shops/">
+    <Project Path="src/Modules/Shops/Trimme.Modules.Shops/Trimme.Modules.Shops.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Subscriptions/">
+    <Project Path="src/Modules/Subscriptions/Trimme.Modules.Subscriptions/Trimme.Modules.Subscriptions.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Trimme.ArchitectureTests/Trimme.ArchitectureTests.csproj" />
+    <Project Path="tests/Trimme.IntegrationTests/Trimme.IntegrationTests.csproj" />
+    <Project Path="tests/Trimme.UnitTests/Trimme.UnitTests.csproj" />
+  </Folder>
+</Solution>

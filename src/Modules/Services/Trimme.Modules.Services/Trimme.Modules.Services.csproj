@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Trimme.BuildingBlocks.Web\Trimme.BuildingBlocks.Web.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Trimme.UnitTests" />
+    <InternalsVisibleTo Include="Trimme.IntegrationTests" />
+    <InternalsVisibleTo Include="Trimme.ArchitectureTests" />
+  </ItemGroup>
+</Project>

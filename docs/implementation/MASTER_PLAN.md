@@ -130,8 +130,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | # | Phase | Status | Points | Prerequisites | Verification evidence | Commit | Next action |
 |---|---|---|---|---|---|---|---|
 | 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | `5cd09a9` | User approves plan + open decisions |
-| 01 | Backend & infrastructure foundation | [ ] | 0/100 | 00 approved; D-002, D-037 | — | — | Start after approval |
-| 02 | Web foundation, i18n/RTL, tokens, shells | [ ] | 0/100 | 01 | — | — | — |
+| 01 | Backend & infrastructure foundation | [x] | 100/100 | 00 approved; D-002, D-037 | `phases/phase-01-backend-foundation.md` §Evidence (build 0 warnings; 73 unit / 56 architecture / 24 integration tests; compose healthy; gitleaks clean) | see `SESSION_HANDOFF.md` | — |
+| 02 | Web foundation, i18n/RTL, tokens, shells | [ ] | 0/100 | 01 | — | — | Start next session: item 2.1 re-validation |
 | 03 | Design-system component library | [ ] | 0/100 | 02 | — | — | — |
 | 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03 | — | — | — |
 | 05 | Tenancy, privacy & audit core | [ ] | 0/100 | 04 | — | — | — |
@@ -149,7 +149,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
 | 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 100 / 1900 points.**
+**Platform total: 200 / 1900 points.**
 
 ## 9. Risks and external dependencies
 
