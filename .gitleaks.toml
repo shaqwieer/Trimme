@@ -4,6 +4,15 @@ useDefault = true
 
 [allowlist]
 description = "Local development placeholders (never used outside a developer machine or CI container)"
+# Git-ignored build/dependency output (only relevant to local `gitleaks dir` scans; CI scans git history).
+# .next contains per-build preview/server-action encryption keys that Next.js generates and never commits.
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)(bin|obj)/''',
+  '''(^|/)test-results/''',
+  '''(^|/)playwright-report/''',
+]
 regexes = [
   '''trimme_local_dev''',
   '''trimme_tests''',

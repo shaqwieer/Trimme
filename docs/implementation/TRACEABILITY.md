@@ -14,7 +14,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` (reflection over all shop DTO types + JSON snapshot of every shop endpoint); I `ShopHub_Messages_DoNotContainPhone`; I `Logs_RedactPhoneNumbers`; E `shop_pages_payload_has_no_customer_phone` (network capture) | [ ] |
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` (DB constraint) | [ ] |
 | R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateProfessional`, `Shop_CannotAssignProfessionalService` (403) | [ ] |
-| R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | W `authClient_doesNotUseWebStorage`; E `no_tokens_in_web_storage` | [ ] |
+| R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; full auth check Phase 04 | [~] |
 | R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate; I plans served from DB only | [ ] |
 | R-NEG-09 | No hardcoded final WhatsApp message text in jobs/handlers | §16 | 15 | A `Notifications_Handlers_DoNotContainMessageLiterals`; I dispatch renders from active template version | [ ] |
 | R-NEG-10 | Private dashboards not indexed | §6 | 11, 17 | I/E `private_routes_emit_noindex`; robots.txt test | [ ] |
@@ -24,14 +24,14 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-FND-01 | Monorepo layout + module boundaries/dependency direction | §4 | 1 | A `ArchitectureRules` (building-block direction, module Domain/Application namespace rules, cross-module refs via compiled metadata **and** `.csproj`, internal handlers) — proven non-vacuous (phase-01 evidence) | [x] |
-| R-FND-02 | Nullable, warnings-as-errors, analyzers; strict TS, ESLint, formatting | §21 | 1, 2 | C `dotnet build -c Release` (TreatWarningsAsErrors, AnalysisMode Recommended, EnforceCodeStyleInBuild) ✔ Phase 01; web `pnpm lint/typecheck/format:check` in Phase 02 | [~] |
+| R-FND-02 | Nullable, warnings-as-errors, analyzers; strict TS, ESLint, formatting | §21 | 1, 2 | C `dotnet build -c Release` (TreatWarningsAsErrors, analyzers, code style) ✔ Phase 01; `pnpm lint` (0 warnings) / `pnpm typecheck` (strict) / `pnpm format:check` ✔ Phase 02 | [x] |
 | R-FND-03 | `/api/v1` versioning, RFC 7807 problem details with stable error codes | §18 | 1 | I `UnknownRoute_Returns_ProblemDetails`, `MethodNotAllowed_Returns_ProblemDetails`, `ValidationError_HasStableCode_AndFieldErrors`, `UnexpectedError_DoesNotLeakExceptionDetails`; U `Status_codes_map_to_stable_error_codes`, `Domain_errors_become_problem_responses_with_their_code` | [x] |
 | R-FND-04 | Health endpoints liveness/readiness | §3 | 1 | I `Health_Live_Returns200`, `Health_Ready_ChecksDatabase`, `Health_Ready_Returns503_WhenDatabaseIsUnreachable`; container `HEALTHCHECK` healthy | [x] |
-| R-FND-05 | OpenAPI document + generated TS client, drift check | §18 | 1, 2 | I `OpenApi_document_matches_committed_contract` (committed `apps/api/openapi/v1.json`), `OpenApi_document_is_not_served_in_production` ✔ Phase 01; TS client generation + drift in Phase 02 | [~] |
+| R-FND-05 | OpenAPI document + generated TS client, drift check | §18 | 1, 2 | I `OpenApi_document_matches_committed_contract` ✔ Phase 01; C `pnpm openapi:check` (generated `schema.d.ts` vs `v1.json`) ✔ Phase 02 | [x] |
 | R-FND-06 | Structured logging, correlation IDs, PII redaction | §3, §21 | 1, 5 | I `Response_HasCorrelationId_GeneratedWhenMissing`, `Response_EchoesOnlyWellFormedCorrelationIds`; U `SensitiveDataRedactorTests` (phones incl. Arabic-Indic, JWT/Bearer, e-mail, sensitive names, enricher) | [x] |
 | R-FND-07 | EF migrations from empty DB (PostGIS, btree_gist) | §19 | 1 → every data phase | I `Migrations_ApplyToEmptyDatabase`, `Migrations_AreIdempotent`, `Model_HasNoPendingChanges`; C `dotnet ef migrations has-pending-model-changes` — re-run by every data phase | [~] |
-| R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh` (postgis → migrate → api healthy) ✔ Phase 01; `web` service added Phase 02 | [~] |
-| R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` (backend, secret-scan, compose-smoke) — steps verified locally; first GitHub run pending; web job Phase 02 | [~] |
+| R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh`: postgis → migrate → api → web, web `/ar` 200 + web-origin `/api` proxy; containers healthy | [x] |
+| R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` jobs backend, web, secret-scan, stack (compose + Playwright) — actionlint clean, every step run locally; first GitHub run pending push | [~] |
 | R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C gitleaks v8.30.1 (`.gitleaks.toml`) working tree + history: no leaks; `.env.example`, `infra/.env.example` | [x] |
 | R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔ Phase 01; determinism test when the first seeder lands (Phase 05) | [~] |
 | R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken`, `Feature_endpoints_are_versioned_under_api_v1` (re-run every phase) | [x] |
@@ -43,19 +43,19 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-WEB-01 | Design tokens extracted to CSS variables; Tailwind uses them (no default palette leakage) | §5 | 2 | W `tokens_match_design_snapshot`; C lint rule forbidding raw hex in components | [ ] |
-| R-WEB-02 | Reusable component library matching ds-components | §5 | 3 | W component tests; M gallery screenshots vs design at 390/768/1440 | [ ] |
-| R-WEB-03 | Logo used unmodified via `next/image` (nav, auth, public, metadata) | Op. rule 6 | 2 | W `Logo_renders_with_intrinsic_ratio`; M | [ ] |
-| R-WEB-04 | `/ar` RTL default + `/en` LTR, `dir`/`lang` correct | §6 | 2 | E `locale_ar_is_rtl`, `locale_en_is_ltr` | [ ] |
-| R-WEB-05 | No hardcoded UI strings; ar/en key parity | §6 | 2 → all | W `messages_have_key_parity`; C lint `no-literal-string` in components | [ ] |
-| R-WEB-06 | Locale-aware date/time/number/currency (SAR, Asia/Riyadh), bidi-safe phones/times/prices | §5, §6 | 2 | W `formatters_ar_en` | [ ] |
-| R-WEB-07 | Responsive at ~390/768/1440; dashboards sidebar + mobile drawer; tables → cards on small screens | §5 | 3, 13, 14 | E viewport screenshots; M | [ ] |
-| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W state component tests; E `expired_session_redirects_to_sign_in` | [ ] |
-| R-WEB-09 | WCAG AA contrast, keyboard nav, visible focus, labels, accessible dialogs, 44px targets | §5 | 3, 17 | E axe scan per route (0 serious/critical); W dialog focus-trap tests | [ ] |
+| R-WEB-01 | Design tokens extracted to CSS variables; Tailwind uses them (no default palette leakage) | §5 | 2 | W `tokens.test.ts` (identity hexes, Tailwind defaults reset, breakpoints); C ESLint `no-restricted-syntax` raw-hex guard (probe-verified) | [x] |
+| R-WEB-02 | Reusable component library matching ds-components | §5 | 3 | W component tests; M gallery screenshots vs design at 390/768/1440 — Phase 03 | [ ] |
+| R-WEB-03 | Logo used unmodified via `next/image` (nav, auth, public, metadata) | Op. rule 6 | 2 | W `Logo_renders_with_intrinsic_ratio`; lossless transparent-margin crop verified (D-042); used in public, customer and dashboard shells | [x] |
+| R-WEB-04 | `/ar` RTL default + `/en` LTR, `dir`/`lang` correct | §6 | 2 | E `locale_ar_is_rtl`, `locale_en_is_ltr`, root redirects (fr/ar browser → /ar, en → /en), language switch | [x] |
+| R-WEB-05 | No hardcoded UI strings; ar/en key parity | §6 | 2 → all | W `messages_have_key_parity` (keys, empties, ICU placeholders; failure proven); C `react/jsx-no-literals` (probe-verified) — continues every phase | [~] |
+| R-WEB-06 | Locale-aware date/time/number/currency (SAR, Asia/Riyadh), bidi-safe phones/times/prices | §5, §6 | 2 | W `formatters_ar_en` (Gregorian Arabic, Asia/Riyadh, D-040 numerals, SAR, distance, rating, phone); E `bdi` LTR isolation | [x] |
+| R-WEB-07 | Responsive at ~390/768/1440; dashboards sidebar + mobile drawer; tables → cards on small screens | §5 | 3, 13, 14 | E shells: RTL/LTR sidebar side, drawer <1200, bottom bar <1200, `captureViewports` 390/768/1440 ✔ Phase 02; tables→cards Phase 03/13/14 | [~] |
+| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W state components Phase 03; E `expired_session_redirects_to_sign_in` Phase 04 | [ ] |
+| R-WEB-09 | WCAG AA contrast, keyboard nav, visible focus, labels, accessible dialogs, 44px targets | §5 | 3, 17 | W `tokens.test.ts` AA contrast; W drawer focus trap/Escape/return focus; E axe 0 serious/critical on /ar, /en and 3 shells ✔ Phase 02 — continues every phase | [~] |
 | R-WEB-10 | Localized metadata, canonical, hreflang, OG, robots.txt, sitemap | §6 | 11, 17 | I/E `public_pages_have_hreflang_and_canonical`; `sitemap_lists_shops` | [ ] |
 | R-WEB-11 | JSON-LD (Organization, LocalBusiness, Breadcrumb, AggregateRating only when real data) | §6 | 11 | W/E `jsonld_aggregateRating_absent_without_reviews` | [ ] |
 | R-WEB-12 | RSC for public/read-heavy routes; client only where needed | §3 | 11 | M review + bundle report | [ ] |
-| R-WEB-13 | Permission-aware navigation | §19 | 4, 13, 14 | W `nav_hides_items_without_permission` | [ ] |
+| R-WEB-13 | Permission-aware navigation | §19 | 4, 13, 14 | W `nav_hides_items_without_permission`, DashboardShell permission test ✔ (config-level); wired to real permissions in Phase 04 | [~] |
 | R-WEB-14 | Forms: RHF + Zod; API error mapping to fields | §3, §19 | 3+ | W `problemDetails_maps_to_field_errors` | [ ] |
 
 ## 4. Identity, sessions, authorization

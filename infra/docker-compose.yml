@@ -51,5 +51,23 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        TRIMME_API_INTERNAL_URL: http://api:8080
+    image: trimme-web:dev
+    environment:
+      TRIMME_API_INTERNAL_URL: http://api:8080
+      # Development-only preview routes (/[locale]/dev/*) used by the E2E smoke tests. Never enable in production.
+      TRIMME_ENABLE_DEV_ROUTES: ${TRIMME_ENABLE_DEV_ROUTES:-true}
+    ports:
+      - "${TRIMME_WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:

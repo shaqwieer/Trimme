@@ -62,12 +62,77 @@ jobs:
         # Run as the runner user so git inside the container accepts the bind-mounted checkout (no "dubious ownership").
         run: docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --config /repo/.gitleaks.toml --redact --verbose
 
-  compose-smoke:
-    name: Docker Compose smoke test
+  web:
+    name: Web (lint, typecheck, format, unit tests, OpenAPI client, build)
     runs-on: ubuntu-latest
-    needs: backend
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - name: docker compose up --build and wait for /health/ready
-        run: bash infra/scripts/compose-smoke.sh --down
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint, no warnings)
+        run: pnpm lint
+
+      - name: Typecheck (strict TypeScript)
+        run: pnpm typecheck
+
+      - name: Format check (Prettier)
+        run: pnpm format:check
+
+      - name: Unit tests (Vitest, incl. message key parity and token contrast)
+        run: pnpm test
+
+      - name: OpenAPI client drift check
+        run: pnpm openapi:check
+
+      - name: Production build
+        run: pnpm build
+
+  stack:
+    name: Docker Compose stack + Playwright smoke
+    runs-on: ubuntu-latest
+    needs: [backend, web]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: docker compose up --build (postgis -> migrate -> api -> web) and wait until ready
+        run: bash infra/scripts/compose-smoke.sh
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install E2E dependencies
+        run: |
+          pnpm install --frozen-lockfile --filter @trimme/e2e
+          pnpm --filter @trimme/e2e exec playwright install --with-deps chromium
+
+      - name: Playwright smoke tests
+        run: pnpm e2e
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: tests/E2E/playwright-report
+          retention-days: 7
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v

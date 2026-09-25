@@ -1,0 +1,20 @@
+{
+  "name": "trimme",
+  "private": true,
+  "packageManager": "pnpm@9.9.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @trimme/web dev",
+    "build": "pnpm --filter @trimme/web build",
+    "lint": "pnpm --filter @trimme/web lint",
+    "typecheck": "pnpm --filter @trimme/web typecheck",
+    "test": "pnpm --filter @trimme/web test",
+    "format": "pnpm --filter @trimme/web format",
+    "format:check": "pnpm --filter @trimme/web format:check",
+    "openapi:generate": "pnpm --filter @trimme/web openapi:generate",
+    "openapi:check": "pnpm --filter @trimme/web openapi:check",
+    "e2e": "pnpm --filter @trimme/e2e test"
+  }
+}

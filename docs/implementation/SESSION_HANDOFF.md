@@ -1,91 +1,91 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-25 (end of Session 2)
+- Updated at: 2026-09-25 (end of Session 2, after Phase 02)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: the "docs: update session 2 handoff" commit. Phase 01 commits: `37500ce` (feature), `f252e01` (hash record) and `4779098` (review fixes: per-endpoint body limits, CI gitleaks user). Run `git log --oneline -5`.
-- Working tree status: clean. `main` is **4 commits ahead of `origin/main` and not pushed**; pushing happens only when the user asks.
-- Current phase: 01 is complete. Phase 02 has not started.
-- Phase score: 100 / 100 (Phase 01)
-- Last fully completed phase: 01 — Backend & infrastructure foundation
+- HEAD commit: the Phase 02 commit ("feat: phase 02 web foundation …"), followed by a docs commit that records its hash. Run `git log --oneline -8`.
+- Working tree status: clean after those commits. **Phases 01 and 02 are not pushed**; pushing happens only when the user asks. The local `docker compose` stack may still be running.
+- Current phase: 02 is complete. Phase 03 has not started.
+- Phase score: 100 / 100 (Phase 02)
+- Last fully completed phase: 02, Web foundation, i18n/RTL, tokens, fonts, logo and app shells
 
 ## Completed this session
-- **Root configuration:**
-  - `global.json` pins SDK 10.0.112 (latestFeature, no previews) and uses the Microsoft Testing Platform test runner.
-  - `Directory.Build.props`: nullable, warnings as errors, Recommended analyzers, code style enforced in build.
-  - `Directory.Packages.props` (central package management), `.editorconfig`, and a `dotnet-ef` 10.0.12 local tool.
-- **Solution `Trimme.slnx`** with 21 projects:
-  - 4 BuildingBlocks (Domain, Application, Infrastructure, Web);
-  - 12 empty modules, each with a schema;
-  - `Trimme.Migrations` and `Trimme.Api`;
-  - 3 test projects.
-- **BuildingBlocks:**
-  - strongly typed UUIDv7 IDs, `Entity`/`AggregateRoot` with domain events, `Result`/`Error` with stable codes;
-  - the in-house dispatcher with pipeline behaviours and FluentValidation (D-037);
-  - `TrimmeDbContext` with module model contributors, schema-per-module, snake_case, the strong-ID converter and the xmin concurrency convention;
-  - `SensitiveDataRedactor` and the Serilog `RedactionEnricher`;
-  - problem details with `errorCode` and `correlationId`, the exception handler, correlation-ID middleware, security headers, the request size limit, strict CORS and named rate-limit policies.
-- **API host:**
-  - the `/api/v1` group with `GET /api/v1/meta`;
-  - `/health/live` and `/health/ready` (database check);
-  - OpenAPI at `/openapi/v1.json` (Development/Testing) and Scalar at `/scalar` (Development);
-  - CLI verbs `migrate`, `seed --dev` (guarded) and `healthcheck`.
-- **Migration** `Initial`, which enables the `postgis` and `btree_gist` extensions.
-- **Tests:**
-  - 73 unit tests;
-  - 56 architecture tests, proven non-vacuous with deliberate violations;
-  - 27 integration tests on Testcontainers PostGIS, including migrations, the model-drift check, the OpenAPI contract drift check against the committed `apps/api/openapi/v1.json`, and per-endpoint body limits.
-- **Infrastructure:** `apps/api/Dockerfile` (multi-stage, non-root, HEALTHCHECK), `.dockerignore`, `infra/docker-compose.yml` (postgis → one-shot migrate → api), `infra/scripts/compose-smoke.sh`, `infra/.env.example` and `.env.example`.
-- **CI:** `.github/workflows/ci.yml` with three jobs (backend, gitleaks secret scan, compose smoke), plus `.gitleaks.toml`.
-- **Docs:** root `README.md`, and `docs/architecture.md` with the topology and backend-structure Mermaid diagrams.
-- **Decisions:** D-038 (layout, persistence, host commands) and the D-003 addendum (test and tooling packages).
+- **Phase 01, backend foundation.** See its phase file. Commits `37500ce`, `f252e01`, `4779098` and `14b46f2`.
+- **Phase 02, web foundation:**
+  - **Workspace and tooling:** a pnpm workspace (`apps/web`, `tests/E2E`) with Next.js 16.3.6, React 19.3, strict TypeScript 6.0.3, ESLint 10 (guards against raw hex, JSX literals and Web Storage), Prettier and Tailwind v4.
+  - **Design tokens:** `src/styles/tokens.css` is a Tailwind `@theme` with the defaults reset. The text tokens are AA-corrected (D-039). Breakpoints are 390/768/1200/1440 (D-041).
+  - **Internationalisation:**
+    - next-intl serves `/ar` (RTL, the default) and `/en` (LTR) through `proxy.ts` and `next/root-params`.
+    - The message catalogs have a key-parity test, and 404 pages are localized.
+    - The numeral rule, Gregorian calendar and Asia/Riyadh time zone are set (D-040).
+    - There is an `<Ltr>` bidi helper, and the font stack is Inter → Tajawal (D-047).
+  - **Logo:** only the transparent margin was cropped. It is rendered with `next/image`, with an on-navy treatment (D-042). The app icon is the design's "T" mark (`app/icon.svg`).
+  - **Shells:** PublicShell, CustomerShell (bottom bar) and DashboardShell. The dashboard has a 264px navy sidebar at 1200px and above, and a focus-trapped drawer below that. The navigation config carries permission metadata and has no transfer entry.
+  - **API layer:**
+    - `schema.d.ts` is generated from `apps/api/openapi/v1.json`, with a drift check.
+    - `browserApi` sends credentials and the CSRF header.
+    - `getServerApi()` forwards cookies and uses `no-store`.
+    - `ApiError` handles problem details.
+    - Also added: `QueryProvider`, and `/api` + `/hubs` rewrites (D-044).
+  - **Dev-only routes:** `/[locale]/dev/shells/{customer,shop,admin}` return 404 in production unless `TRIMME_ENABLE_DEV_ROUTES=true` (D-045).
+  - **Tests:** 49 Vitest tests and 20 Playwright tests (including axe), plus the `captureViewports` helper for 390/768/1440.
+  - **Docker:** `apps/web/Dockerfile` builds a standalone image that runs as non-root with a HEALTHCHECK. Compose has a new `web` service, and `compose-smoke.sh` now checks the web app and its API proxy.
+  - **CI:** new `web` and `stack` jobs (compose + Playwright). `.gitleaks.toml` now ignores build paths.
+  - **Design references:** 33 screenshots in `design/reference/1440/`, with a README (D-046).
+  - **Docs:**
+    - README and `docs/architecture.md` §3;
+    - decisions D-039 to D-047;
+    - design deviations: DV-T01/T02/T03 applied, DV-T04/T05 partially applied;
+    - TRACEABILITY updated.
 
 ## Verification evidence
-- Command: `dotnet build Trimme.slnx -c Release`
-  Result: PASS, 0 warnings and 0 errors.
-- Command: `dotnet test --project tests/Trimme.UnitTests --no-build -c Release`
-  Result: PASS, 73/73.
-- Command: `dotnet test --project tests/Trimme.ArchitectureTests --no-build -c Release`
-  Result: PASS, 56/56.
-- Command: `dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release`
-  Result: PASS, 27/27. Testcontainers ran `postgis/postgis:17-3.5`. This includes 3 per-endpoint body-limit tests added after the review.
-- Command: `dotnet ef migrations has-pending-model-changes --project src/Trimme.Migrations --startup-project apps/api/Trimme.Api --no-build --configuration Release`
-  Result: PASS, no model changes since the last migration.
-- Command: `actionlint .github/workflows/ci.yml` (Docker `rhysd/actionlint`)
-  Result: PASS, exit 0.
-- Command: gitleaks v8.30.1, both the `dir` and the `git` scan
-  Result: PASS, no leaks found.
-- Command: `bash infra/scripts/compose-smoke.sh --down`, run on a clean volume
-  Result: PASS.
-  - The postgres container was healthy, the migrate container exited with code 0, and the api container reported healthy.
-  - `/health/ready` returned Healthy with the database check passing.
-  - `/api/v1/meta` returned 200.
-- Command: architecture tests with deliberate violations added (details in the phase-01 evidence)
-  Result: the expected tests failed, then passed again after the violations were reverted.
+- Command: `pnpm lint`, `pnpm typecheck`, `pnpm format:check`
+  Result: PASS (0 warnings)
+- Command: `pnpm test`
+  Result: PASS, 49/49 across 8 files
+- Command: `pnpm openapi:check`
+  Result: PASS, types are up to date
+- Command: `pnpm build`
+  Result: PASS; `/ar` and `/en` are statically generated
+- Command: `dotnet build -c Release` + architecture tests
+  Result: PASS, 0 warnings, 56/56
+- Command: `TRIMME_WEB_PORT=3300 bash infra/scripts/compose-smoke.sh` (clean volume)
+  Result: PASS. The API was ready, web `/ar` returned 200, and the web-origin `/api/v1/meta` returned the API metadata. The web container was healthy.
+- Command: `E2E_BASE_URL=http://localhost:3300 pnpm e2e`
+  Result: PASS, 20/20
+- Command: gitleaks `dir` scan
+  Result: PASS, no leaks (build output excluded)
+- Command: `actionlint`
+  Result: PASS
+- Key-parity negative test (a key removed, then restored): failed as expected.
+- Lint-guard probe: all 3 rules fired.
 
 ## Database and migrations
-- Created: `src/Trimme.Migrations/Migrations/20260925091248_Initial`. It enables the extensions only.
-- Applied locally:
-  - to the compose database (volume `trimme_pgdata`, removed by `--down`/`down -v`);
-  - to throwaway Testcontainers databases.
-- No shared or production database exists.
+- No new migrations. `Initial` from Phase 01 was applied to the local compose database, which was recreated with a clean volume during the smoke runs.
 
 ## Decisions added
-- D-038: one project per module with layer namespaces, a single shared DbContext with a schema per module, a `Trimme.Migrations` assembly, CLI verbs (`migrate`, `seed --dev`, `healthcheck`), the `Testing` environment for integration tests, `TimeProvider`, and the OpenAPI drift test.
-- D-003 addendum: xunit.v3 4.0.1 on Microsoft Testing Platform, Shouldly, NetArchTest.eNhancedEdition, Testcontainers 4.15, Serilog, Scalar, and EFCore.NamingConventions.
+- D-039: AA text-colour values
+- D-040: numerals and the Gregorian calendar
+- D-041: breakpoints, with desktop at 1200
+- D-042: logo transparent-margin crop and on-navy filter
+- D-043: web toolchain versions (TypeScript 6.0.3, jsdom 29, ESLint 10 with an explicit React version)
+- D-044: same-origin API
+- D-045: dev-route gating
+- D-046: reference screenshots at the 1440 canvas
+- D-047: Inter → Tajawal font stack
 
 ## Known issues or blockers
-- **The GitHub Actions workflow has not run remotely yet**; nothing has been pushed. Every step's command passed locally. Check the first run after the next push.
-- On a brand-new database, EF logs one expected `Failed executing DbCommand … __ef_migrations_history` error during `migrate`. It is documented in the README.
-- Host ports 5432 and 5433 are taken on this machine, so compose publishes PostgreSQL on **5434**, and `appsettings.Development.json` uses 5434.
-- `dotnet test` uses the Microsoft Testing Platform syntax: `dotnet test --project <path>`.
+- **GitHub Actions have never run**: nothing has been pushed since `eb24f19`. Push when the user asks, then check the `backend`, `web`, `secret-scan` and `stack` jobs.
+- **Port conflicts on this machine:** web ports 3000–3002 are used by other local projects, so verification used `TRIMME_WEB_PORT=3300`. Database ports 5432/5433 are also taken, so compose defaults to 5434.
+- **Node version:** the dev machine runs Node 22.18.0, so the web toolchain avoids packages that need 22.22 or later (D-043). The Docker image uses 22.23.
+- **Awaiting client confirmation:** the digit convention (D-040), and the logo minimum-width rule versus the design's header sizes (D-042).
 
 ## Exact next action
-1. Start Phase 02 (`phases/phase-02-web-foundation.md`), item 2.1: re-validate.
-   - Run `git status`.
-   - Run `dotnet test --project tests/Trimme.ArchitectureTests` and `bash infra/scripts/compose-smoke.sh --down` (the smallest decisive Phase 01 checks).
-   - Confirm the current Next.js 16, next-intl 4 and Tailwind v4 APIs.
-2. Item 2.2: capture the design reference screenshots at 390/768/1440. Use `claude_design` `render_preview` with browser tooling, and never persist the preview URL.
-3. Items 2.3 onward: the pnpm workspace plus `apps/web`.
+1. Start Phase 03 (`phases/phase-03-design-system.md`). Re-validate first:
+   - `git status`
+   - `pnpm test`
+   - `bash infra/scripts/compose-smoke.sh` (add `TRIMME_WEB_PORT=3300` if port 3000 is busy)
+   - `E2E_BASE_URL=http://localhost:<port> pnpm e2e`
+2. Build the component library from `design/analysis/01-design-system-and-docs.md` §2, using `design/reference/1440/ds-components.jpg` and `ds-foundations.jpg`. Add the dev-only gallery at `/[locale]/dev/components`.
 
 ## Files intentionally left modified
 - None.

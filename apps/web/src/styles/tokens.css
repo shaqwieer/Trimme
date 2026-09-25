@@ -1,0 +1,203 @@
+/*
+ * TRIMME design tokens — extracted from design/source/TRIMME.dc.html
+ * (analysis: design/analysis/01-design-system-and-docs.md §1).
+ *
+ * Tailwind's default palette, radii, shadows and breakpoints are reset (`initial`) so only
+ * TRIMME tokens exist. Every token is also a CSS variable on :root (e.g. var(--color-navy-900)).
+ * Text colours marked "AA" were darkened from the design to meet WCAG AA (D-021 / DV-T01);
+ * the original values are kept as decorative (non-text) tokens.
+ */
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --breakpoint-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+
+  /* Brand: steel blue → deep navy */
+  --color-brand-50: #f8fbfe;
+  --color-brand-100: #edf3fa;
+  --color-brand-150: #e0eaf6;
+  --color-brand-200: #dce7f2;
+  --color-brand-300: #b9cbdd;
+  --color-brand-500: #6d9bcb; /* primary blue — surfaces, borders, focus; never text on white */
+  --color-brand-600: #4a7fb5; /* icons and dots only (4.20:1, below AA for text) */
+  --color-brand-700: #2c5c8c; /* blue text and links (6.96:1) */
+  --color-navy-800: #1b3a55;
+  --color-navy-900: #10283d; /* primary buttons, headings, sidebar */
+  --color-navy-950: #0a1b2a;
+  --color-on-navy: #ffffff;
+  --color-on-navy-muted: #8fb0d0; /* 6.67:1 on navy */
+  --color-on-navy-accent: #7fa8d4;
+  --color-on-navy-subtle: rgb(255 255 255 / 0.1);
+  --color-selection: #d6e5f5;
+
+  /* Text */
+  --color-text-primary: #17212b;
+  --color-text-strong: #3d5266;
+  --color-text-secondary: #647484; /* 4.80:1 on white, 4.55:1 on page */
+  --color-text-tertiary: #5f6f80; /* AA: design #8C9BAA (2.84:1) → 5.16:1 */
+  --color-text-placeholder: #5f6f80; /* AA: design #A9B6C4 (2.06:1) → 5.16:1 on white, 4.89:1 on page */
+  --color-text-disabled: #aebac6;
+  --color-text-link: #2c5c8c;
+  --color-text-inverse: #ffffff;
+
+  /* Decorative greys (icons, dots, dividers — not for text) */
+  --color-decorative-400: #98a7b5;
+  --color-decorative-300: #8c9baa;
+  --color-decorative-200: #c2ccd6;
+
+  /* Borders */
+  --color-border: #e6ecf3;
+  --color-border-input: #e1e8f0;
+  --color-border-strong: #d4dfea;
+  --color-border-dashed: #cbd8e5;
+  --color-border-subtle: #eef2f7;
+  --color-border-row: #f1f5f9;
+
+  /* Surfaces */
+  --color-surface: #ffffff;
+  --color-bg-page: #f7f9fc;
+  --color-bg-app: #eef2f7;
+  --color-bg-subtle: #f1f5f9;
+  --color-bg-muted: #f1f4f7;
+  --color-bg-tile: #fbfcfe;
+  --color-skeleton-highlight: #f7fafd;
+  --color-header-glass: rgb(247 249 252 / 0.92);
+  --color-overlay: rgb(16 40 61 / 0.45);
+
+  /* Semantic */
+  --color-success-50: #e6f4ec;
+  --color-success-500: #2e9e6b; /* non-text only (white on it is 3.38:1) */
+  --color-success-700: #1f6b48;
+  --color-warning-50: #fdf3e2;
+  --color-warning-500: #d89a2e;
+  --color-warning-700: #8a5a12;
+  --color-warning-border: #f2e1c4;
+  --color-danger-50: #fbeaea;
+  --color-danger-100: #f6dada;
+  --color-danger-500: #c44545;
+  --color-danger-700: #9b2c2c;
+  --color-danger-surface: #fef8f8;
+  --color-danger-border: #e3b4b4;
+  --color-info-50: #e8f1fb;
+  --color-rating: #d89a2e;
+
+  /* Booking status (STATUS map): bg / fg / dot */
+  --color-status-pending-bg: #fdf3e2;
+  --color-status-pending-fg: #8a5a12;
+  --color-status-pending-dot: #d89a2e;
+  --color-status-confirmed-bg: #e8f1fb;
+  --color-status-confirmed-fg: #2c5c8c;
+  --color-status-confirmed-dot: #4a7fb5;
+  --color-status-arrived-bg: #edf3fa;
+  --color-status-arrived-fg: #3d5266;
+  --color-status-arrived-dot: #6d9bcb;
+  --color-status-completed-bg: #e6f4ec;
+  --color-status-completed-fg: #1f6b48;
+  --color-status-completed-dot: #2e9e6b;
+  --color-status-cancelled-bg: #fbeaea;
+  --color-status-cancelled-fg: #9b2c2c;
+  --color-status-cancelled-dot: #c44545;
+  --color-status-noshow-bg: #f1f4f7;
+  --color-status-noshow-fg: #5e6e7e;
+  --color-status-noshow-dot: #98a7b5;
+
+  /* Typography — families are wired to next/font variables in globals.css */
+  --font-arabic: var(--font-tajawal), 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-latin: var(--font-inter), system-ui, sans-serif;
+  /* Latin glyphs (incl. Latin digits) resolve to Inter, Arabic glyphs fall through to Tajawal. */
+  --font-sans: var(--font-inter), var(--font-tajawal), system-ui, sans-serif;
+
+  --text-display: 2rem; /* 32 */
+  --text-display--line-height: 1.35;
+  --text-h1: 1.5rem; /* 24 */
+  --text-h1--line-height: 1.4;
+  --text-page-title: 1.3125rem; /* 21 */
+  --text-page-title--line-height: 1.3;
+  --text-h2: 1.1875rem; /* 19 */
+  --text-h2--line-height: 1.45;
+  --text-h3: 1rem; /* 16 */
+  --text-h3--line-height: 1.5;
+  --text-body: 0.9375rem; /* 15 */
+  --text-body--line-height: 1.85;
+  --text-input: 0.90625rem; /* 14.5 */
+  --text-input--line-height: 1.6;
+  --text-button: 0.90625rem; /* 14.5 */
+  --text-button--line-height: 1.2;
+  --text-caption: 0.84375rem; /* 13.5 */
+  --text-caption--line-height: 1.8;
+  --text-label: 0.8125rem; /* 13 */
+  --text-label--line-height: 1.5;
+  --text-helper: 0.78125rem; /* 12.5 */
+  --text-helper--line-height: 1.6;
+  --text-badge: 0.75rem; /* 12 */
+  --text-badge--line-height: 1.2;
+  --text-numeric: 0.75rem; /* 12, Inter 600, tracking .04em */
+  --text-numeric--line-height: 1.2;
+  --text-nav: 0.65625rem; /* 10.5 */
+  --text-nav--line-height: 1.2;
+  --text-eyebrow: 0.6875rem; /* 11, Inter 700, uppercase */
+  --text-eyebrow--line-height: 1;
+  --text-kpi: 1.5625rem; /* 25, Inter 700 */
+  --text-kpi--line-height: 1.2;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-badge: 7px;
+  --radius-sm: 9px;
+  --radius-field: 10px;
+  --radius-button: 12px;
+  --radius-card: 14px;
+  --radius-section: 16px;
+  --radius-pill: 20px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-e1: 0 1px 2px rgb(16 40 61 / 0.04);
+  --shadow-e2: 0 6px 16px -6px rgb(16 40 61 / 0.16);
+  --shadow-e3: 0 18px 40px -12px rgb(16 40 61 / 0.26);
+  --shadow-button-hover: 0 6px 16px -6px rgb(16 40 61 / 0.35);
+  --shadow-toast: 0 18px 40px -14px rgb(16 40 61 / 0.6);
+  --shadow-segment: 0 1px 2px rgb(16 40 61 / 0.08);
+  --shadow-sheet: 0 -18px 40px -20px rgb(16 40 61 / 0.5);
+
+  /* Breakpoints (D-041): 390 phone reference · 768 tablet (drawer) · 1200 desktop (fixed sidebar) · 1440 wide */
+  --breakpoint-sm: 24.375rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 75rem;
+  --breakpoint-xl: 90rem;
+
+  /* Motion */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  --animate-spin: spin 0.7s linear infinite;
+
+  @keyframes shimmer {
+    0% {
+      background-position: -400px 0;
+    }
+    100% {
+      background-position: 400px 0;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/* Layout constants used by shells (not Tailwind utilities). */
+:root {
+  --layout-sidebar-width: 264px;
+  --layout-header-height: 64px;
+  --layout-bottom-nav-height: 64px;
+  --layout-content-max: 1280px;
+  --focus-ring: 0 0 0 3px var(--color-surface), 0 0 0 6px var(--color-brand-500);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 320ms;
+}

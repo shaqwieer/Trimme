@@ -144,3 +144,56 @@ Design's "activation only / prices managed by platform" for shops (2556–2575, 
 - Tool: dotnet-ef 10.0.12 (local tool manifest).
 - Validation: FluentValidation(.DependencyInjectionExtensions) 12.1.1.
 - FluentAssertions is avoided because v8 is commercially licensed.
+
+## D-039 — Accessible text colour values (applies D-021) — Accepted (Phase 02)
+These colours were measured in the WCAG check. The design's identity colours are unchanged, and only the colours used for text were adjusted:
+- `text-tertiary`: design `#8C9BAA` (2.84:1) → **`#5F6F80`** (5.16:1 on white, 4.89:1 on the page background).
+- `text-placeholder`: design `#A9B6C4` (2.06:1) → **`#5F6F80`**. Search fields sit on light grey, so `#687888` was rejected (4.30:1 on the page background).
+- Link text uses `brand-700` `#2C5C8C` (6.96:1). `brand-600` `#4A7FB5` (4.20:1) is kept for icons and dots only.
+- The inactive bottom-nav label uses `text-secondary` `#647484` (4.80:1) instead of `#98A7B5` (2.46:1).
+- White text is never placed on `success-500` or `brand-500` (3.38:1 and 2.92:1).
+
+`src/styles/tokens.test.ts` enforces 4.5:1 for every text token on white and on the page background, and for every booking-status badge.
+
+## D-040 — Numerals, calendar and number formatting — Accepted (Phase 02)
+This follows the design's numeral rule (design/analysis/01 §1.5):
+- **Arabic-Indic digits** for clock times and date text, on a 12-hour clock, for example `٥:٣٠ م` and `الجمعة، ١٨ سبتمبر`.
+- **Latin digits** for measurable quantities: price (`85 ر.س`), distance (`2.4 كم`), rating, counts, calendar day numbers and phone numbers.
+- English uses Latin digits everywhere.
+- Service durations follow the clock rule (`٣٠ دقيقة`).
+- The **Gregorian calendar is always forced** (`-u-ca-gregory`), because plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar.
+- The operating time zone is `Asia/Riyadh`.
+
+Implemented in `apps/web/src/lib/i18n/format.ts` and tested in `format.test.ts`.
+
+## D-041 — Breakpoints — Accepted (Phase 02)
+The design says 992px in one place and 1200px in another. The responsive rule text ("≥1200 fixed sidebar · 768–1199 drawer · <768 bottom bar/cards") is chosen. Tailwind breakpoints are `sm` 390, `md` 768, `lg` 1200 and `xl` 1440, and Tailwind's defaults are removed.
+
+## D-042 — Logo asset handling — Accepted (Phase 02)
+- The official PNG (677×369) is mostly transparent padding. For the web, only its **fully transparent margin was removed** (371×177), keeping a 4% transparent safety border. The crop was verified pixel-identical to the source region, with zero non-transparent pixels dropped.
+- The mark is never redrawn, recoloured or stretched. `next/image` renders it at its intrinsic aspect ratio.
+- On navy surfaces, the design's own documented treatment (`brightness(1.35) saturate(.85)`, design lines 216 and 797) is applied. It is the only visual adjustment and comes from the design, not from us.
+- The source file stays untouched in `design/source/` and at the repo root.
+- Open follow-up: the design's minimum logo width is 96px, but its header and sidebar sizes are below that. We follow the design sizes: header 34–38px tall (71–80px wide) and sidebar 36px tall (75px wide).
+
+## D-043 — Web toolchain versions — Accepted (Phase 02)
+- Next 16.3.6, React 19.3.0, next-intl 4.14.7, Tailwind 4.3.3, TanStack Query 5.103.2, openapi-fetch 0.17 plus openapi-typescript 7.13, lucide-react 1.48, Vitest 5.0.2, Testing Library, Playwright 1.63 plus @axe-core/playwright 4.13, and ESLint 10.11 with eslint-config-next 16.3.6.
+- **TypeScript 6.0.3** rather than 7.0, because typescript-eslint 8.70 supports only TypeScript below 6.1.
+- **jsdom 29.1.1** rather than 30, because jsdom 30 requires Node 22.22.2 or later and the dev machine has 22.18.0. The Docker image `node:22-alpine` has 22.23.
+- ESLint 10 needs an explicit `settings.react.version`, because eslint-plugin-react 7.37 uses a removed API for auto-detection.
+- `vite-tsconfig-paths` was dropped (a TypeScript 5 peer requirement) in favour of an explicit `@` alias.
+- pnpm workspace: `apps/web` and `tests/E2E`.
+
+## D-044 — Same-origin API access from the web app — Accepted (Phase 02)
+- The browser always calls `/api/...` on the web origin. In production Nginx routes `/api` and `/hubs` to the API. In development, and for a bare `next start`, `next.config.ts` rewrites them to `TRIMME_API_INTERNAL_URL`, which is fixed at build time. The Docker build argument is `http://api:8080`.
+- Server Components use `getServerApi()`. It forwards the caller's cookies, `Accept-Language` and correlation ID, and uses `cache: 'no-store'`, so per-user data is never shared.
+- The browser client sends the CSRF header from the readable double-submit cookie. The CSRF cookie itself arrives in Phase 04.
+
+## D-045 — Development-only routes — Accepted (Phase 02)
+`/[locale]/dev/*` (shell previews now, the component gallery in Phase 03) calls `assertDevRoutesEnabled()` on every request. The routes return 404 when `NODE_ENV=production`, unless `TRIMME_ENABLE_DEV_ROUTES=true`. Local compose sets that flag so the E2E smoke tests can run; production must never set it. The dev routes are also `noindex`.
+
+## D-046 — Design reference screenshots — Accepted (Phase 02)
+All 33 prototype screens are captured at the prototype's own 1440px canvas (`design/reference/1440/*.jpg`, 3.5 MB). The prototype is a fixed desktop canvas: phone (390px) designs are drawn inside it as device frames, and tablet behaviour is only described on `r-responsive`. Separate 390px and 768px captures of the prototype would be meaningless. Our own implementation is captured at 390, 768 and 1440 by the Playwright helper `captureViewports`.
+
+## D-047 — Font stack — Accepted (Phase 02)
+`font-family: Inter, Tajawal, …`. Latin letters and Latin digits render in Inter, and Arabic glyphs fall through to Tajawal. This implements the design's mixed-text rule without wrapping every number. next/font's metric-adjusted Inter fallback (Arial) is disabled, because Arial contains Arabic glyphs and would otherwise capture Arabic text. English pages use Inter. Line height is 1.8 for Arabic and 1.6 for English. Weights: Tajawal 400/500/700/800 and Inter 400–800, including the 800 the design uses but did not load (DV-T02).

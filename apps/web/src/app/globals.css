@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+@import '../styles/tokens.css';
+
+/* Logical-property friendly base (RTL is the default document direction). */
+@layer base {
+  html {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Arabic needs taller lines for diacritics and dots (design rule: 1.7–1.9). */
+  html[lang='ar'] body {
+    line-height: 1.8;
+  }
+
+  html[lang='en'] body {
+    font-family: var(--font-latin);
+    line-height: 1.6;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-size: var(--text-body);
+  }
+
+  ::selection {
+    background-color: var(--color-selection);
+  }
+
+  /* Canonical focus treatment (design: 3px white gap + 3px brand ring). */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-xs);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Numbers, prices, phone numbers and times stay left-to-right inside RTL text. */
+  .ltr-isolate {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    inset-inline-start: 1rem;
+    top: -100px;
+    z-index: 60;
+    border-radius: var(--radius-button);
+    background-color: var(--color-navy-900);
+    padding: 0.75rem 1rem;
+    color: var(--color-on-navy);
+    font-weight: 700;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+}

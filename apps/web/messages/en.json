@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "appName": "TRIMME",
+    "title": "TRIMME — Book your next haircut",
+    "description": "Discover nearby barbers and salons and book a real available appointment in seconds."
+  },
+  "common": {
+    "skipToContent": "Skip to content",
+    "loading": "Loading…",
+    "languageSwitch": {
+      "label": "Language",
+      "ar": "العربية",
+      "en": "English",
+      "switchTo": "العربية"
+    },
+    "brand": {
+      "logoAlt": "TRIMME"
+    }
+  },
+  "home": {
+    "title": "Book your next haircut",
+    "subtitle": "Discover shops near you, then choose the service, the barber and a time that is genuinely available.",
+    "comingSoon": "The platform is under construction — see you soon."
+  },
+  "shell": {
+    "mainNavigation": "Main navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "notifications": "Notifications",
+    "search": "Search",
+    "account": "Account",
+    "shopEyebrow": "BUSINESS",
+    "adminEyebrow": "PLATFORM ADMIN"
+  },
+  "nav": {
+    "customer": {
+      "home": "Home",
+      "explore": "Explore",
+      "appointments": "Bookings",
+      "favorites": "Favorites",
+      "account": "Account"
+    },
+    "shop": {
+      "overview": "Overview",
+      "calendar": "Calendar",
+      "appointments": "Appointments",
+      "walkIn": "Walk-in",
+      "schedule": "Hours & time off",
+      "services": "Services",
+      "subscription": "Subscription",
+      "notifications": "Notifications",
+      "settings": "Shop settings"
+    },
+    "admin": {
+      "overview": "Overview",
+      "shops": "Shops",
+      "professionals": "Professionals & services",
+      "services": "Services & categories",
+      "bookings": "Bookings",
+      "customers": "Customers",
+      "subscriptions": "Subscriptions",
+      "plans": "Subscription plans",
+      "reviews": "Reviews",
+      "qr": "QR codes",
+      "whatsapp": "WhatsApp",
+      "roles": "Roles & permissions",
+      "audit": "Activity log",
+      "settings": "Platform settings"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "body": "The page may have moved, or the link is incorrect.",
+      "backHome": "Back to home"
+    }
+  }
+}

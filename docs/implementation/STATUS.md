@@ -1,14 +1,14 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-25 (Session 2)
-- **Current phase:** 01 complete and verified (Session 2). Next: Phase 02 — Web foundation (not started).
-- **Platform progress:** 200 / 1900 points (Phases 00–01)
+- **Current phase:** 02 complete and verified (Session 2). Next: Phase 03 — Design-system component library (not started).
+- **Platform progress:** 300 / 1900 points (Phases 00–02)
 
 | Phase | Status | Points |
 |---|---|---|
 | 00 Discovery & plan | [x] | 100/100 |
 | 01 Backend & infra foundation | [x] | 100/100 |
-| 02 Web foundation | [ ] | 0/100 |
+| 02 Web foundation | [x] | 100/100 |
 | 03 Design-system components | [ ] | 0/100 |
 | 04 Identity & sessions | [ ] | 0/100 |
 | 05 Tenancy, privacy & audit | [ ] | 0/100 |

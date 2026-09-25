@@ -1,0 +1,6 @@
+.next
+node_modules
+next-env.d.ts
+src/lib/api/schema.d.ts
+coverage
+public

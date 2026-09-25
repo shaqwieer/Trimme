@@ -70,11 +70,11 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 
 | ID | Issue | Fix | Phase |
 |---|---|---|---|
-| DV-T01 | Link `#4A7FB5` = 4.20:1; tertiary greys used for text 2.1–2.8:1 (fail AA) | Darkened text tokens (D-021) | 2 |
-| DV-T02 | Tajawal 600 and Inter 800 used but not loaded | Load all used weights (D-022) | 2 |
-| DV-T03 | Mixed Arabic-Indic / Latin digits for the same fields | One rule per locale (D-029) | 2 |
-| DV-T04 | Nav active indicator uses a physical property; toast centring only works in RTL | Logical properties throughout | 3 |
-| DV-T05 | Internal inconsistencies: drawer breakpoint 768/992/1200; slot height 42 vs 44; 6 vs 5 booking steps | Single breakpoint set (390/768/1024/1440 validated in Phase 2); 44px touch targets; 5 steps + confirmation | 2/3 |
+| DV-T01 | Link `#4A7FB5` = 4.20:1; tertiary greys used for text 2.1–2.8:1 (fail AA) | Darkened text tokens (D-021, values in D-039); enforced by `tokens.test.ts` | 2 — **applied** |
+| DV-T02 | Tajawal 600 and Inter 800 used but not loaded | Inter 400–800 loaded. Tajawal has no 600, so 600 maps to 700 (D-022, D-047) | 2 — **applied** |
+| DV-T03 | Mixed Arabic-Indic / Latin digits for the same fields | One rule: clock and date text in Arabic-Indic, quantities in Latin (D-040) | 2 — **applied** |
+| DV-T04 | Nav active indicator uses a physical property; toast centring only works in RTL | Logical properties throughout. The shells use `start-*`/`ps-*`/`ms-*`, verified by E2E sidebar-side checks in RTL and LTR; the toast comes in Phase 03 | 2/3 — **partially applied** |
+| DV-T05 | Internal inconsistencies: drawer breakpoint 768/992/1200; slot height 42 vs 44; 6 vs 5 booking steps | Breakpoints 390/768/**1200**/1440 (D-041, applied Phase 02). 44px touch targets (shell controls are `min-h-11`). Slot height and the 5 steps + confirmation are handled in Phases 03 and 12 | 2/3 — **partially applied** |
 | DV-T06 | No WhatsApp brand colour anywhere | Use design neutrals; WhatsApp previews use a neutral bubble style from the design | 15 |
 
 ## DV-C — Copy/data inconsistencies not replicated

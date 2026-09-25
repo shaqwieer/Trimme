@@ -85,6 +85,33 @@ These rules were proven non-vacuous with deliberate violations (recorded in `imp
 - **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`), partitioned by client IP (by user from Phase 04). The limits are configurable, and rejections return a 429 problem response.
 - **Forwarded headers:** trusted only from configured proxies.
 
-## 3. Web application
+## 3. Web application (Phase 02)
 
-Added in Phase 02. Locale routing uses `/ar` (RTL, default) and `/en`. The design tokens come from `design/analysis/01-design-system-and-docs.md`. The API client is generated from `apps/api/openapi/v1.json`.
+```mermaid
+flowchart TB
+    browser["Browser"] --> proxy["src/proxy.ts<br/>next-intl locale negotiation<br/>(/ → /ar or /en)"]
+    proxy --> layout["app/[locale]/layout.tsx<br/>html lang + dir, Tajawal + Inter, NextIntlClientProvider"]
+    layout --> public["PublicShell<br/>(landing, shop pages, auth)"]
+    layout --> customer["CustomerShell<br/>(bottom bar <1200px)"]
+    layout --> dashboard["DashboardShell<br/>(shop / admin: fixed sidebar ≥1200px, drawer below)"]
+    browser -->|"/api/* same origin"| rewrite["Nginx (prod) / Next rewrite (dev)"] --> api["TRIMME API"]
+    rsc["Server Components<br/>getServerApi() (cookies forwarded, no-store)"] --> api
+```
+
+- **Routing:** `/ar` is the default and RTL; `/en` is LTR. `src/i18n/*` holds `defineRouting`, `createNavigation` and `getRequestConfig`, which uses `next/root-params`. The proxy runs as Next 16 `proxy.ts`. Unknown paths render the localized 404.
+- **Tokens:** `src/styles/tokens.css` is a Tailwind v4 `@theme`. Tailwind's default colours, radii, shadows, fonts, text sizes and breakpoints are reset to `initial`, so only TRIMME tokens exist. Text tokens meet WCAG AA (D-039). Breakpoints are 390/768/1200/1440 (D-041).
+- **Fonts:** Inter first, then Tajawal (D-047).
+- **Numerals and dates:** D-040 in `src/lib/i18n/format.ts`. `<Ltr>` isolates phone numbers, times and Latin text inside RTL.
+- **Messages:** `messages/{ar,en}.json`. A Vitest key-parity test runs on every build. ESLint `react/jsx-no-literals` forbids hardcoded UI strings in JSX.
+- **Guards (ESLint):**
+  - no literal UI strings;
+  - no raw hex colours outside `src/styles`;
+  - no `localStorage`/`sessionStorage`, because sessions use HttpOnly cookies only.
+- **API access** (D-044):
+  - `src/lib/api/schema.d.ts` is generated from `apps/api/openapi/v1.json`, and the build fails on drift.
+  - `browserApi` uses openapi-fetch with credentials and the CSRF header.
+  - `getServerApi()` is server-only and forwards cookies.
+  - `ApiError` parses problem details: `errorCode`, field `errors` and `correlationId`.
+- **Client state:** `QueryProvider` (TanStack Query) wraps interactive islands only. Public pages stay Server Components.
+- **Development-only routes:** `/[locale]/dev/*` returns 404 in production unless `TRIMME_ENABLE_DEV_ROUTES=true` (D-045).
+- **Container:** the Next standalone output runs on `node:22-alpine` as a non-root user, with a HEALTHCHECK on `/ar`.

@@ -10,7 +10,8 @@
 .data/
 design/
 docs/
-tests/
+tests/**
+!tests/E2E/package.json
 **/*.user
 **/.env
 **/.env.*

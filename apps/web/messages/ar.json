@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "appName": "تريمي",
+    "title": "تريمي — احجز حلاقتك القادمة",
+    "description": "اكتشف أقرب صالونات الحلاقة واحجز موعدك الحقيقي المتاح في ثوانٍ."
+  },
+  "common": {
+    "skipToContent": "تخطَّ إلى المحتوى",
+    "loading": "جارٍ التحميل…",
+    "languageSwitch": {
+      "label": "اللغة",
+      "ar": "العربية",
+      "en": "English",
+      "switchTo": "English"
+    },
+    "brand": {
+      "logoAlt": "تريمي"
+    }
+  },
+  "home": {
+    "title": "احجز حلاقتك القادمة",
+    "subtitle": "اكتشف المحلات القريبة منك، واختر الخدمة والحلاق والوقت المتاح فعلاً.",
+    "comingSoon": "المنصة قيد الإنشاء — تابعنا قريباً."
+  },
+  "shell": {
+    "mainNavigation": "التنقل الرئيسي",
+    "openMenu": "فتح القائمة",
+    "closeMenu": "إغلاق القائمة",
+    "notifications": "الإشعارات",
+    "search": "بحث",
+    "account": "الحساب",
+    "shopEyebrow": "BUSINESS",
+    "adminEyebrow": "PLATFORM ADMIN"
+  },
+  "nav": {
+    "customer": {
+      "home": "الرئيسية",
+      "explore": "استكشاف",
+      "appointments": "مواعيدي",
+      "favorites": "المفضلة",
+      "account": "حسابي"
+    },
+    "shop": {
+      "overview": "النظرة التشغيلية",
+      "calendar": "التقويم",
+      "appointments": "المواعيد",
+      "walkIn": "حجز حضوري",
+      "schedule": "الدوام والإجازات",
+      "services": "الخدمات",
+      "subscription": "الاشتراك",
+      "notifications": "الإشعارات",
+      "settings": "إعدادات المحل"
+    },
+    "admin": {
+      "overview": "نظرة عامة",
+      "shops": "المحلات",
+      "professionals": "الحلاقون وخدماتهم",
+      "services": "الخدمات والتصنيفات",
+      "bookings": "المواعيد",
+      "customers": "العملاء",
+      "subscriptions": "الاشتراكات",
+      "plans": "خطط الاشتراك",
+      "reviews": "التقييمات",
+      "qr": "رموز QR",
+      "whatsapp": "واتساب",
+      "roles": "الأدوار والصلاحيات",
+      "audit": "سجل النشاط",
+      "settings": "إعدادات النظام"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "الصفحة غير موجودة",
+      "body": "ربما نُقلت الصفحة أو أن الرابط غير صحيح.",
+      "backHome": "العودة إلى الرئيسية"
+    }
+  }
+}
