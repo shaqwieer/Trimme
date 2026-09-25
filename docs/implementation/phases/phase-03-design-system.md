@@ -164,6 +164,8 @@ Intentional differences (D-049, DV-T07–T10):
 - there are no disabled or reason-labelled slots;
 - there is no "change barber" menu item.
 
+**GitHub Actions:** [run 36201825328](https://github.com/shaqwieer/Trimme/actions/runs/36201825328) on `5ad3a1e` completed with **success**. All four jobs passed: backend; web (including the new E2E format and typecheck steps); secret scan; and the Docker stack with Playwright (including the gallery, overflow and server-route tests).
+
 **Commit:** `610ebec`.
 
 ## Remaining risks → next phase

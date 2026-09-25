@@ -132,7 +132,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | `5cd09a9` | User approves plan + open decisions |
 | 01 | Backend & infrastructure foundation | [x] | 100/100 | 00 approved; D-002, D-037 | `phases/phase-01-backend-foundation.md` §Evidence (build 0 warnings; 73 unit / 56 architecture / 27 integration tests; compose healthy; gitleaks clean) | `37500ce` | CI green: run 36134142951 |
 | 02 | Web foundation, i18n/RTL, tokens, shells | [x] | 100/100 | 01 | `phases/phase-02-web-foundation.md` §Evidence (lint/typecheck/format clean; 53 unit tests; build; 20 Playwright on Docker stack; axe 0 serious; clean Linux clone green) | `9c1fcd2` | CI green: run 36134142951 |
-| 03 | Design-system component library | [x] | 100/100 | 02 | `phases/phase-03-design-system.md` §Evidence (147 unit tests incl. axe; gallery axe 0 serious incl. contrast ar/en; zero overflow 390–1440; RSC proof route; Playwright 30/30 ×2 on Docker stack) | `610ebec` | — |
+| 03 | Design-system component library | [x] | 100/100 | 02 | `phases/phase-03-design-system.md` §Evidence (147 unit tests incl. axe; gallery axe 0 serious incl. contrast ar/en; zero overflow 390–1440; RSC proof route; Playwright 30/30 ×2 on Docker stack; CI green: run 36201825328) | `610ebec` | — |
 | 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03 | — | — | Start next: item 4.1 re-validation |
 | 05 | Tenancy, privacy & audit core | [ ] | 0/100 | 04 | — | — | — |
 | 06 | Shops, locations & professionals | [ ] | 0/100 | 05 | — | — | — |
