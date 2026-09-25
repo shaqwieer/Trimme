@@ -162,7 +162,7 @@ Intentional differences (D-049, DV-T07–T10):
 - there are no disabled or reason-labelled slots;
 - there is no "change barber" menu item.
 
-**Commit:** recorded in `SESSION_HANDOFF.md` and the `MASTER_PLAN.md` progress table.
+**Commit:** `610ebec`.
 
 ## Remaining risks → next phase
 - Screen-level responsive layouts and optimistic rollback are proven only once real screens use these components (Phases 11–14).
