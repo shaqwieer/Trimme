@@ -130,7 +130,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | # | Phase | Status | Points | Prerequisites | Verification evidence | Commit | Next action |
 |---|---|---|---|---|---|---|---|
 | 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | `5cd09a9` | User approves plan + open decisions |
-| 01 | Backend & infrastructure foundation | [x] | 100/100 | 00 approved; D-002, D-037 | `phases/phase-01-backend-foundation.md` §Evidence (build 0 warnings; 73 unit / 56 architecture / 24 integration tests; compose healthy; gitleaks clean) | see `SESSION_HANDOFF.md` | — |
+| 01 | Backend & infrastructure foundation | [x] | 100/100 | 00 approved; D-002, D-037 | `phases/phase-01-backend-foundation.md` §Evidence (build 0 warnings; 73 unit / 56 architecture / 24 integration tests; compose healthy; gitleaks clean) | `37500ce` | — |
 | 02 | Web foundation, i18n/RTL, tokens, shells | [ ] | 0/100 | 01 | — | — | Start next session: item 2.1 re-validation |
 | 03 | Design-system component library | [ ] | 0/100 | 02 | — | — | — |
 | 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03 | — | — | — |

@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-25 (end of Session 2)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: the Phase 01 commit ("feat: phase 01 backend and infrastructure foundation"), plus a follow-up docs commit that records its hash. Run `git log --oneline -5`.
+- HEAD commit: docs commit recording the hash, on top of Phase 01 commit `37500ce` ("feat: phase 01 backend and infrastructure foundation"). Run `git log --oneline -5`.
 - Working tree status: clean after those commits. **Phase 01 has not been pushed.** Pushing happens only when the user asks.
 - Current phase: 01 is complete. Phase 02 has not started.
 - Phase score: 100 / 100 (Phase 01)

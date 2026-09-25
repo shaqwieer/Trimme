@@ -153,7 +153,7 @@ After reverting, an **unused** cross-module `ProjectReference` still passed, bec
 
 **Not yet verified remotely:** the GitHub Actions workflow has not run on GitHub, because nothing had been pushed when this was recorded. Every step's command was executed locally with the results above. The first remote run is a follow-up in `SESSION_HANDOFF.md`.
 
-**Commit:** recorded in `SESSION_HANDOFF.md` and the `MASTER_PLAN.md` progress table.
+**Commit:** `37500ce`.
 
 ## Remaining risks → next phase
 EF context split decision (D-001 addendum). Next: Phase 02 — Web foundation.
