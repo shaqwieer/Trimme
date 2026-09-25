@@ -1,0 +1,36 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+docs/local/DEMO_CREDENTIALS.local.md
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.turbo/
+
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+artifacts/
+
+# Local data
+.data/
+*.log
