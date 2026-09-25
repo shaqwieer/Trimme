@@ -3,10 +3,10 @@
 - Updated at: 2026-09-25 (end of Session 2, after Phase 02)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
 - HEAD commit: the docs commit recording the hash, on top of Phase 02 commit `9c1fcd2`. Run `git log --oneline -8`.
-- Working tree status: clean after those commits. **Phases 01 and 02 are not pushed**; pushing happens only when the user asks. The local `docker compose` stack may still be running.
-- Current phase: 02 is complete. Phase 03 has not started.
-- Phase score: 100 / 100 (Phase 02)
-- Last fully completed phase: 02, Web foundation, i18n/RTL, tokens, fonts, logo and app shells
+- Working tree status: clean after those commits. **Phases 01 and 02 are not pushed**; pushing happens only when the user asks. The local `docker compose` stack has been **stopped** (`down`).
+- Current phase: 02 is implemented. Items 1.12 and 2.12 are `[~]` until the first green GitHub Actions run. Phase 03 has not started.
+- Phase score: 95 / 100 (Phase 02) and 94 / 100 (Phase 01)
+- Last fully completed phase: 00. Phases 01 and 02 pass every local gate and are waiting only on remote CI.
 
 ## Completed this session
 - **Phase 01, backend foundation.** See its phase file. Commits `37500ce`, `f252e01`, `4779098` and `14b46f2`.
@@ -41,7 +41,7 @@
 - Command: `pnpm lint`, `pnpm typecheck`, `pnpm format:check`
   Result: PASS (0 warnings)
 - Command: `pnpm test`
-  Result: PASS, 49/49 across 8 files
+  Result: PASS, 53/53 across 9 files (including dev-route gating in production)
 - Command: `pnpm openapi:check`
   Result: PASS, types are up to date
 - Command: `pnpm build`
@@ -56,6 +56,8 @@
   Result: PASS, no leaks (build output excluded)
 - Command: `actionlint`
   Result: PASS
+- Command: clean `git clone` of `a8413e4`, run in Linux containers (`node:22`, `dotnet/sdk:10.0`)
+  Result: PASS for all of: `pnpm install --frozen-lockfile`, lint, typecheck, format, 49/49 web tests, openapi check, E2E `tsc`; `dotnet build -c Release` with 0 warnings; 73/73 unit, 56/56 architecture and 27/27 integration tests.
 - Key-parity negative test (a key removed, then restored): failed as expected.
 - Lint-guard probe: all 3 rules fired.
 
@@ -80,12 +82,13 @@
 - **Awaiting client confirmation:** the digit convention (D-040), and the logo minimum-width rule versus the design's header sizes (D-042).
 
 ## Exact next action
-1. Start Phase 03 (`phases/phase-03-design-system.md`). Re-validate first:
+1. If the user approves, push `main` and check the four GitHub Actions jobs. When they are green, set items 1.12 and 2.12 to `[x]` and record the run URL.
+2. Start Phase 03 (`phases/phase-03-design-system.md`). Re-validate first:
    - `git status`
    - `pnpm test`
    - `bash infra/scripts/compose-smoke.sh` (add `TRIMME_WEB_PORT=3300` if port 3000 is busy)
    - `E2E_BASE_URL=http://localhost:<port> pnpm e2e`
-2. Build the component library from `design/analysis/01-design-system-and-docs.md` §2, using `design/reference/1440/ds-components.jpg` and `ds-foundations.jpg`. Add the dev-only gallery at `/[locale]/dev/components`.
+3. Build the component library from `design/analysis/01-design-system-and-docs.md` §2, using `design/reference/1440/ds-components.jpg` and `ds-foundations.jpg`. Add the dev-only gallery at `/[locale]/dev/components`.
 
 ## Files intentionally left modified
 - None.

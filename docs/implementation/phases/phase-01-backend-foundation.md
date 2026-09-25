@@ -1,6 +1,6 @@
 # Phase 01 — Backend & infrastructure foundation
 
-**Status:** [x] · **Score:** 100/100 · **Session:** 2 (2026-09-25)
+**Status:** [~] · **Score:** 94/100 · **Session:** 2 (2026-09-25). Only item 1.12 is open, awaiting the first green GitHub Actions run.
 
 ## Goal and user-visible outcome
 A runnable, tested ASP.NET Core 10 API skeleton backed by PostgreSQL/PostGIS and started by Docker Compose.
@@ -66,7 +66,7 @@ Identity/auth, any domain entities, the web app, Hangfire, SignalR hubs, and Wha
 - [x] 1.9 (8) Architecture tests (R-FND-01, R-FND-12).
 - [x] 1.10 (5) Dev seed command framework with environment guards + test.
 - [x] 1.11 (8) Dockerfile + compose (postgis + api); `docker compose up --build` reaches healthy `/health/ready`.
-- [x] 1.12 (6) CI workflow (backend job) + gitleaks secret scan step.
+- [~] 1.12 (6) CI workflow (backend job) + gitleaks secret scan step.
 - [x] 1.13 (6) README (prerequisites, run, test), `docs/architecture.md` initial with topology Mermaid, `.env.example`; update control files, commit.
 
 ## Files/modules expected to change
@@ -153,6 +153,10 @@ After reverting, an **unused** cross-module `ProjectReference` still passed, bec
 - **Per-endpoint body limit:** `RequestSizeLimitMiddleware` now honours `IRequestSizeLimitMetadata`, so uploads can opt into a larger limit. A declared "unlimited" is not honoured. `RequestSizeLimitTests` (3 tests) show that a default endpoint rejects 2 MB, an endpoint set to 3 MB accepts 2 MB, and the same endpoint still rejects 5 MB.
 - **CI workflow checks:** `actionlint` passed with exit 0. The gitleaks CI step runs as the runner user (`--user $(id -u):$(id -g)`) to avoid git's "dubious ownership" error on Linux runners.
 - **Planned follow-up:** Phase 18 now includes configuring `ReverseProxy:KnownProxies` and verifying per-client rate-limit partitions behind Nginx.
+
+**Clean-clone Linux verification (Session 2, after Phase 02):**
+- `git clone` of `a8413e4`, then in `mcr.microsoft.com/dotnet/sdk:10.0`: SDK 10.0.401 via roll-forward, `dotnet build -c Release` with 0 warnings, and 73/73 unit, 56/56 architecture and 27/27 integration tests. The integration tests ran Testcontainers through the host Docker socket.
+- **Item 1.12 remains `[~]` until GitHub Actions runs green.**
 
 **Not yet verified remotely:** the GitHub Actions workflow has not run on GitHub, because nothing had been pushed when this was recorded. Every step's command was executed locally with the results above. The first remote run is a follow-up in `SESSION_HANDOFF.md`.
 
