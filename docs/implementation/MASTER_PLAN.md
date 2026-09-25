@@ -130,16 +130,16 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | # | Phase | Status | Points | Prerequisites | Verification evidence | Commit | Next action |
 |---|---|---|---|---|---|---|---|
 | 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | `5cd09a9` | User approves plan + open decisions |
-| 01 | Backend & infrastructure foundation | [ ] | 0/100 | 00 approved; D-002, D-004 | — | — | Start after approval |
+| 01 | Backend & infrastructure foundation | [ ] | 0/100 | 00 approved; D-002, D-037 | — | — | Start after approval |
 | 02 | Web foundation, i18n/RTL, tokens, shells | [ ] | 0/100 | 01 | — | — | — |
 | 03 | Design-system component library | [ ] | 0/100 | 02 | — | — | — |
-| 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03; **D-005** | — | — | — |
+| 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03 | — | — | — |
 | 05 | Tenancy, privacy & audit core | [ ] | 0/100 | 04 | — | — | — |
-| 06 | Shops, locations & professionals | [ ] | 0/100 | 05; **D-007** | — | — | — |
+| 06 | Shops, locations & professionals | [ ] | 0/100 | 05 | — | — | — |
 | 07 | Services, categories & packages | [ ] | 0/100 | 06 | — | — | — |
 | 08 | Subscriptions foundation & platform settings | [ ] | 0/100 | 07 | — | — | — |
 | 09 | Schedules & availability engine | [ ] | 0/100 | 08 | — | — | — |
-| 10 | Booking core & integrity | [ ] | 0/100 | 09; **D-006** | — | — | — |
+| 10 | Booking core & integrity | [ ] | 0/100 | 09 | — | — | — |
 | 11 | Public discovery & shop pages | [ ] | 0/100 | 10 | — | — | — |
 | 12 | Customer booking & account | [ ] | 0/100 | 11 | — | — | — |
 | 13 | Shop operational dashboard | [ ] | 0/100 | 12 | — | — | — |
@@ -155,10 +155,10 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 
 | Risk / dependency | Impact | Mitigation |
 |---|---|---|
-| Customer auth model conflict (design: passwordless WhatsApp OTP; spec: Identity passwords + reset) | Blocks Phase 4 | Open decision D-005 (recommended default recorded) |
-| Online booking confirmation mode (design contradicts itself) | Blocks Phase 10 state defaults + templates | Open decision D-006 |
-| MediatR v13+ commercial licence (free Community tier < $5M revenue, key required; missing key only logs warnings) | Phase 1 skeleton | Open decision D-004 |
-| Production map tiles / geocoding provider; design has **no** location pin picker | Blocks Phase 6 production config (dev can use open adapter) | Open decision D-007; picker designed in TRIMME visual language (DV-A02) |
+| Customer auth model conflict (design: passwordless WhatsApp OTP; spec: Identity passwords + reset) | Resolved | D-005/D-037: passwordless OTP for customers |
+| Online booking confirmation mode (design contradicts itself) | Resolved | D-006/D-037: per-shop setting, default auto-confirm |
+| MediatR v13+ commercial licence (free Community tier < $5M revenue, key required; missing key only logs warnings) | Resolved | D-004/D-037: in-house dispatcher |
+| Production map tiles / geocoding provider; design has **no** location pin picker | Production needs a self-hosted or OSM-based host (public OSM services forbid heavy use) | D-007/D-037: OpenStreetMap behind adapters; the picker is designed in the TRIMME visual language (DV-A02) |
 | OTP delivery channel (WhatsApp auth template / SMS fallback provider) | Phase 4 uses a fake sender; prod needs Meta auth template approval | Adapter + fake; recorded in `docs/whatsapp-integration.md` |
 | Email/SMTP provider for staff invitations and password resets | Phase 4 uses a Mailpit dev fake; production needs a provider | `IEmailSender` adapter; configured only through environment variables |
 | Meta WhatsApp Business account, phone number ID, approved templates | Phase 15 production readiness only | Fake provider locally; config documented |
@@ -168,14 +168,14 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | Next.js 16 / next-intl / Tailwind v4 API changes | Web foundation | Verify against current docs during Phase 2 |
 | Docker Desktop required for Testcontainers + compose | Integration tests | Verified running in Phase 0 |
 
-## 10. Decisions still requiring the user
+## 10. Decisions resolved with the user (Session 1)
 
-| ID | Question | Recommended default | Blocks |
+| ID | Question | Decision | Affects |
 |---|---|---|---|
-| D-004 | MediatR (commercial licence ≥ v13) vs alternative | Thin in-house command/query dispatcher (no licence, same pattern); or MediatR with Community key if eligible | Phase 1 |
-| D-005 | Customer authentication | Passwordless mobile + OTP (WhatsApp, SMS fallback) for customers via Identity token provider; email + password (+ forgot/reset, lockout) for shop/admin | Phase 4 |
-| D-006 | Online bookings start as `Pending` or auto-`Confirmed` | Per-shop setting `RequireManualConfirmation`, default **off** (auto-confirm); `Pending` used when on | Phase 10 |
-| D-007 | Production maps/geocoding provider | Adapter; dev = MapLibre GL + OSM-compatible tiles/geocoder (usage-policy compliant); prod provider chosen before Phase 17 (e.g. Google Maps Platform or Mapbox) | Phase 6 (prod config only) |
+| D-004 | Dispatcher | **In-house dispatcher** (no MediatR) — D-037 | Phase 1 |
+| D-005 | Customer authentication | **Passwordless mobile + OTP** for customers; email + password for staff — D-037 | Phase 4 |
+| D-006 | Initial booking status | **Per-shop `RequireManualConfirmation`, default auto-confirm** — D-037 | Phase 10 |
+| D-007 | Maps/geocoding | **OpenStreetMap** (MapLibre + OSM tiles, Nominatim-compatible geocoder; self-hosted or OSM-based host in production, per the usage policies) — D-037 | Phase 6 (host choice is config, Phase 17/18) |
 
 Other product assumptions (D-012 … D-035) are recorded in `DECISIONS.md` with overridable defaults.
 

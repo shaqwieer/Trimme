@@ -26,16 +26,17 @@
 | 17 Hardening | [ ] | 0/100 |
 | 18 Regression & handover | [ ] | 0/100 |
 
-## Open decisions (user)
+## Decisions resolved with the user (D-037)
 
-| ID | Question | Blocks |
-|---|---|---|
-| D-004 | MediatR or an in-house dispatcher | Phase 01 |
-| D-005 | Customer authentication model | Phase 04 |
-| D-006 | Whether online bookings are auto-confirmed or start as Pending | Phase 10 |
-| D-007 | Production maps/geocoding provider | Production config for Phase 06; the dev adapter is not blocked |
+| ID | Decision |
+|---|---|
+| D-004 | In-house command/query dispatcher; MediatR is not used |
+| D-005 | Customers sign in passwordless with mobile + 6-digit OTP over WhatsApp (fake in dev). Staff sign in with email + password, with reset over email (Mailpit in dev) |
+| D-006 | Per-shop `RequireManualConfirmation`, default off, so online bookings are auto-confirmed |
+| D-007 | OpenStreetMap: MapLibre with OSM tiles and a Nominatim-compatible geocoder. Production needs a self-hosted or OSM-based host, because the public OSM services' usage policies forbid heavy traffic |
 
-Each has a recommended default in `DECISIONS.md`.
+## Open decisions
+None are blocking. The product assumptions D-012…D-035 remain overridable defaults.
 
 ## Blockers
-None. Phase 01 can proceed under the D-004 default once the user approves the plan.
+None. Phase 01 is ready to start once the user approves the plan.

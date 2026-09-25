@@ -81,7 +81,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 
 Weekday/date pairs are from 2025 (e.g. "الخميس ١٨ سبتمبر"; 18 Sep 2026 is a Friday); `addMin` AM/PM bug around noon (server computes end times); professionals shown under two shops in sample data (seed data must respect one shop per professional); headcount mismatches ("٦ حلاقين" vs 3); admin subtitle "١٢٨ محلاً نشطاً" vs KPI 114/128; shop footer "تبدأ من 30" vs cheapest 35; always-on verified shield; favorites header counts; period headers counts; notifications bottom-nav highlight; rating tags auto-selected; stars editable after submit. All demo data is generated from the seed, never copied from the prototype.
 
-DV-C01 — OTP length: design shows 4 digits; default under D-005 is 6 digits for security (pending the user's decision).
+DV-C01 — OTP length: design shows 4 digits; D-005/D-037 uses 6 digits for security.
 
 ## DV-D — Design features deferred
 

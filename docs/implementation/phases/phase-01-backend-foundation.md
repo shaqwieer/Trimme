@@ -58,7 +58,7 @@ Identity/auth, any domain entities, the web app, Hangfire, SignalR hubs, and Wha
 - [ ] 1.1 (5) Re-validate this phase against repo state and D-004; refine this checklist.
 - [ ] 1.2 (8) `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `.editorconfig`; solution with all projects; `dotnet build -warnaserror` passes.
 - [ ] 1.3 (12) BuildingBlocks primitives + unit tests (strong IDs, Result/Error, clock, entity events).
-- [ ] 1.4 (8) Dispatcher/pipeline per D-004 + validation behaviour + tests.
+- [ ] 1.4 (8) In-house dispatcher/pipeline (D-037) + validation behaviour + tests.
 - [ ] 1.5 (10) EF/Npgsql/NTS setup, schema convention, initial migration enabling `postgis` and `btree_gist`; `Migrations_ApplyToEmptyDatabase` passes on Testcontainers.
 - [ ] 1.6 (12) API host: `/api/v1` group, problem details + stable error codes, exception handling, health live/ready, correlation IDs, CORS, security headers, size limits, rate-limit policy stubs; integration tests R-FND-03/04/06/14/15.
 - [ ] 1.7 (6) OpenAPI generation + committed `openapi/v1.json` + drift check script.
