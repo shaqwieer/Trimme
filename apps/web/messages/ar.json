@@ -74,5 +74,146 @@
       "body": "ربما نُقلت الصفحة أو أن الرابط غير صحيح.",
       "backHome": "العودة إلى الرئيسية"
     }
+  },
+  "ui": {
+    "optional": "(اختياري)",
+    "loading": "جارٍ التحميل…",
+    "close": "إغلاق",
+    "cancel": "تراجع",
+    "confirm": "تأكيد",
+    "retry": "إعادة المحاولة",
+    "moreActions": "المزيد من الخيارات",
+    "actions": "إجراءات",
+    "pagination": {
+      "label": "التنقل بين الصفحات",
+      "previous": "الصفحة السابقة",
+      "next": "الصفحة التالية",
+      "page": "الصفحة {page}",
+      "summary": "عرض {from}–{to} من {total}"
+    },
+    "breadcrumb": "مسار التنقل",
+    "phone": {
+      "countryCode": "رمز الدولة",
+      "placeholder": "5X XXX XXXX"
+    },
+    "otp": {
+      "hint": "أدخل الرمز المكوّن من {length} أرقام"
+    },
+    "search": {
+      "placeholder": "ابحث عن محل أو خدمة",
+      "clear": "مسح البحث"
+    },
+    "rating": {
+      "value": "التقييم {value} من 5",
+      "count": "({count} تقييم)",
+      "input": "اختر تقييمك",
+      "stars": "{value} من 5"
+    },
+    "upload": {
+      "prompt": "اسحب صورة الغلاف هنا أو اختر ملفاً",
+      "constraints": "JPG/PNG · {width}×{height} · حتى {maxMb}MB",
+      "choose": "اختر ملفاً",
+      "typeError": "نوع الملف غير مدعوم — اختر صورة JPG أو PNG",
+      "sizeError": "اختر صورة لا يتجاوز حجمها {maxMb}MB",
+      "selected": "تم اختيار {name}"
+    },
+    "slots": {
+      "morning": "صباحاً",
+      "afternoon": "ظهراً",
+      "evening": "مساءً",
+      "emptyPeriod": "لا أوقات متاحة في هذه الفترة",
+      "emptyDay": "لا أوقات متاحة في هذا اليوم — جرّب يوماً آخر",
+      "label": "الأوقات المتاحة"
+    },
+    "calendar": {
+      "previousMonth": "الشهر السابق",
+      "nextMonth": "الشهر التالي",
+      "selected": "مختار",
+      "available": "متاح",
+      "closed": "مغلق"
+    },
+    "dateStrip": {
+      "label": "اختر اليوم",
+      "today": "اليوم",
+      "closed": "مغلق"
+    },
+    "stepper": {
+      "label": "خطوات الحجز",
+      "progress": "الخطوة {current} من {total}"
+    },
+    "toast": {
+      "region": "التنبيهات",
+      "dismiss": "إغلاق التنبيه"
+    },
+    "shopCard": {
+      "verified": "محل موثّق",
+      "addFavorite": "إضافة إلى المفضلة",
+      "removeFavorite": "إزالة من المفضلة",
+      "from": "من {price}"
+    },
+    "professional": {
+      "unavailable": "في إجازة"
+    },
+    "states": {
+      "error": {
+        "title": "حدث خطأ غير متوقع",
+        "body": "لم يُحفظ أي تغيير. تحقق من الاتصال ثم أعد المحاولة."
+      },
+      "permissionDenied": {
+        "title": "هذه الصفحة غير متاحة لحسابك",
+        "body": "لا تملك صلاحية الوصول إلى هذا المحتوى. إذا كنت تعتقد أن هذا خطأ، تواصل مع الإدارة.",
+        "action": "العودة إلى الرئيسية"
+      },
+      "expiredSession": {
+        "title": "انتهت جلستك",
+        "body": "لحماية حسابك سجّلنا خروجك. سجّل الدخول للمتابعة من حيث توقفت.",
+        "action": "تسجيل الدخول"
+      },
+      "offline": {
+        "title": "لا يوجد اتصال بالإنترنت",
+        "body": "تحقق من الاتصال — سنحاول مجدداً تلقائياً."
+      }
+    },
+    "chart": {
+      "table": "بيانات الرسم",
+      "peak": "الذروة"
+    },
+    "qr": {
+      "download": "تنزيل",
+      "share": "مشاركة",
+      "code": "رمز QR لـ {name}"
+    },
+    "ratingDistribution": {
+      "label": "توزيع التقييمات",
+      "row": "{stars} نجوم: {count} تقييم"
+    }
+  },
+  "status": {
+    "booking": {
+      "Pending": "بانتظار التأكيد",
+      "Confirmed": "مؤكد",
+      "Arrived": "حضر العميل",
+      "Completed": "مكتمل",
+      "CancelledByCustomer": "ألغاه العميل",
+      "CancelledByShop": "ألغاه المحل",
+      "NoShow": "لم يحضر"
+    },
+    "subscription": {
+      "Active": "نشط",
+      "ExpiringSoon": "قرب الانتهاء",
+      "Expired": "منتهي",
+      "Suspended": "موقوف"
+    }
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalid": "تحقق من هذه القيمة",
+    "generic": "تحقق من هذه القيمة",
+    "phoneIncomplete": "أدخل ٩ أرقام بعد المفتاح +966",
+    "phoneInvalid": "أدخل رقم جوال سعودياً يبدأ بـ 5",
+    "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
+    "tooLong": "اختصر النص إلى {max} حرفاً أو أقل",
+    "emailInvalid": "أدخل بريداً إلكترونياً صحيحاً",
+    "form": "تعذّر الحفظ — راجع الحقول المظللة ثم أعد المحاولة"
   }
 }

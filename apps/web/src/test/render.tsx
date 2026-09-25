@@ -2,6 +2,7 @@ import { render, type RenderOptions } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
 import { vi } from 'vitest';
+import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import ar from '../../messages/ar.json';
 import en from '../../messages/en.json';
 
@@ -39,7 +40,7 @@ export function renderWithIntl(
   document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
   return render(
     <NextIntlClientProvider locale={locale} messages={locale === 'ar' ? ar : en} timeZone="Asia/Riyadh">
-      {ui}
+      <DirectionProvider dir={locale === 'ar' ? 'rtl' : 'ltr'}>{ui}</DirectionProvider>
     </NextIntlClientProvider>,
     options,
   );

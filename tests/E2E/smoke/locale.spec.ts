@@ -49,7 +49,10 @@ test.describe('locales (R-WEB-04)', () => {
 
   test('no_tokens_in_web_storage (R-NEG-07 baseline)', async ({ page }) => {
     await page.goto('/ar');
-    const storage = await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }));
+    const storage = await page.evaluate(() => ({
+      local: localStorage.length,
+      session: sessionStorage.length,
+    }));
     expect(storage).toEqual({ local: 0, session: 0 });
   });
 });

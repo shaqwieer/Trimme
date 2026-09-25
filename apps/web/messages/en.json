@@ -74,5 +74,146 @@
       "body": "The page may have moved, or the link is incorrect.",
       "backHome": "Back to home"
     }
+  },
+  "ui": {
+    "optional": "(optional)",
+    "loading": "Loading…",
+    "close": "Close",
+    "cancel": "Go back",
+    "confirm": "Confirm",
+    "retry": "Try again",
+    "moreActions": "More options",
+    "actions": "Actions",
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {page}",
+      "summary": "Showing {from}–{to} of {total}"
+    },
+    "breadcrumb": "Breadcrumb",
+    "phone": {
+      "countryCode": "Country code",
+      "placeholder": "5X XXX XXXX"
+    },
+    "otp": {
+      "hint": "Enter the {length}-digit code"
+    },
+    "search": {
+      "placeholder": "Search for a shop or service",
+      "clear": "Clear search"
+    },
+    "rating": {
+      "value": "Rated {value} out of 5",
+      "count": "({count} reviews)",
+      "input": "Choose your rating",
+      "stars": "{value} out of 5"
+    },
+    "upload": {
+      "prompt": "Drag the cover image here or choose a file",
+      "constraints": "JPG/PNG · {width}×{height} · up to {maxMb}MB",
+      "choose": "Choose file",
+      "typeError": "Unsupported file type — choose a JPG or PNG image",
+      "sizeError": "Choose an image up to {maxMb}MB",
+      "selected": "{name} selected"
+    },
+    "slots": {
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "evening": "Evening",
+      "emptyPeriod": "No available times in this period",
+      "emptyDay": "No available times on this day — try another day",
+      "label": "Available times"
+    },
+    "calendar": {
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "selected": "Selected",
+      "available": "Available",
+      "closed": "Closed"
+    },
+    "dateStrip": {
+      "label": "Choose a day",
+      "today": "Today",
+      "closed": "Closed"
+    },
+    "stepper": {
+      "label": "Booking steps",
+      "progress": "Step {current} of {total}"
+    },
+    "toast": {
+      "region": "Notifications",
+      "dismiss": "Dismiss notification"
+    },
+    "shopCard": {
+      "verified": "Verified shop",
+      "addFavorite": "Add to favorites",
+      "removeFavorite": "Remove from favorites",
+      "from": "From {price}"
+    },
+    "professional": {
+      "unavailable": "On leave"
+    },
+    "states": {
+      "error": {
+        "title": "Something went wrong",
+        "body": "Nothing was saved. Check your connection and try again."
+      },
+      "permissionDenied": {
+        "title": "This page is not available to your account",
+        "body": "You do not have access to this content. If you think this is a mistake, contact the administrator.",
+        "action": "Back to home"
+      },
+      "expiredSession": {
+        "title": "Your session has ended",
+        "body": "To protect your account we signed you out. Sign in to continue where you left off.",
+        "action": "Sign in"
+      },
+      "offline": {
+        "title": "No internet connection",
+        "body": "Check your connection — we will retry automatically."
+      }
+    },
+    "chart": {
+      "table": "Chart data",
+      "peak": "Peak"
+    },
+    "qr": {
+      "download": "Download",
+      "share": "Share",
+      "code": "QR code for {name}"
+    },
+    "ratingDistribution": {
+      "label": "Rating distribution",
+      "row": "{stars} stars: {count} reviews"
+    }
+  },
+  "status": {
+    "booking": {
+      "Pending": "Awaiting confirmation",
+      "Confirmed": "Confirmed",
+      "Arrived": "Arrived",
+      "Completed": "Completed",
+      "CancelledByCustomer": "Cancelled by customer",
+      "CancelledByShop": "Cancelled by shop",
+      "NoShow": "No-show"
+    },
+    "subscription": {
+      "Active": "Active",
+      "ExpiringSoon": "Expiring soon",
+      "Expired": "Expired",
+      "Suspended": "Suspended"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid": "Check this value",
+    "generic": "Check this value",
+    "phoneIncomplete": "Enter the 9 digits after +966",
+    "phoneInvalid": "Enter a Saudi mobile number starting with 5",
+    "otpIncomplete": "Enter the 6-digit code",
+    "tooLong": "Shorten the text to {max} characters or fewer",
+    "emailInvalid": "Enter a valid email address",
+    "form": "Could not save — review the highlighted fields and try again"
   }
 }

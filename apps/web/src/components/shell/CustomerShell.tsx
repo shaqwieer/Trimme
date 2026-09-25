@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/brand/Logo';
+import { IconButton } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
 import { CustomerNav } from './CustomerNav';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -26,13 +26,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           <CustomerNav placement="header" />
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <button
-              type="button"
-              aria-label={t('shell.notifications')}
-              className="inline-flex size-11 items-center justify-center rounded-button text-text-strong hover:bg-brand-100"
-            >
-              <Bell aria-hidden="true" className="size-5" strokeWidth={1.75} />
-            </button>
+            <IconButton icon="bell" label={t('shell.notifications')} />
           </div>
         </div>
       </header>

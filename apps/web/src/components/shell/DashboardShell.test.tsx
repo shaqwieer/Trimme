@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderWithIntl, setPathname } from '@/test/render';
@@ -34,14 +34,16 @@ describe('DashboardShell', () => {
 
     await user.click(menuButton);
     const drawer = screen.getByRole('dialog', { name: 'Main navigation' });
-    expect(drawer).toHaveAttribute('aria-modal', 'true');
+    // Radix hides everything outside the dialog from assistive technology while it is open.
+    expect(document.querySelector('main')?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     expect(drawer).toContainElement(document.activeElement as HTMLElement);
     expect(within(drawer).getByRole('link', { name: 'Shops' })).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(menuButton).toHaveFocus();
+    // Radix restores focus to the element that opened the dialog after unmounting it.
+    await waitFor(() => expect(menuButton).toHaveFocus());
   });
 
   it('hides items the user has no permission for', () => {

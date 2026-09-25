@@ -87,8 +87,10 @@ jobs:
           pnpm typecheck
           pnpm --filter @trimme/e2e typecheck
 
-      - name: Format check (Prettier)
-        run: pnpm format:check
+      - name: Format check (Prettier, web + E2E)
+        run: |
+          pnpm format:check
+          pnpm --filter @trimme/e2e format:check
 
       - name: Unit tests (Vitest, incl. message key parity and token contrast)
         run: pnpm test

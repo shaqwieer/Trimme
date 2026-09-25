@@ -73,6 +73,15 @@ describe('tokens_match_design_snapshot (R-WEB-01)', () => {
     },
   );
 
+  it('segmented-control labels meet AA on the grey track (text-tertiary on bg-subtle)', () => {
+    expect(contrast(token('color-text-tertiary'), token('color-bg-subtle'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('switch off-track meets 3:1 on white and on the page background', () => {
+    expect(contrast(token('color-switch-off'), '#ffffff')).toBeGreaterThanOrEqual(3);
+    expect(contrast(token('color-switch-off'), token('color-bg-page'))).toBeGreaterThanOrEqual(3);
+  });
+
   it('keeps sidebar text readable on navy', () => {
     expect(contrast(token('color-on-navy-muted'), token('color-navy-900'))).toBeGreaterThanOrEqual(4.5);
   });

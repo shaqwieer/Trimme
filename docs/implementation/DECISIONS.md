@@ -197,3 +197,36 @@ All 33 prototype screens are captured at the prototype's own 1440px canvas (`des
 
 ## D-047 — Font stack — Accepted (Phase 02)
 `font-family: Inter, Tajawal, …`. Latin letters and Latin digits render in Inter, and Arabic glyphs fall through to Tajawal. This implements the design's mixed-text rule without wrapping every number. next/font's metric-adjusted Inter fallback (Arial) is disabled, because Arial contains Arabic glyphs and would otherwise capture Arabic text. English pages use Inter. Line height is 1.8 for Arabic and 1.6 for English. Weights: Tajawal 400/500/700/800 and Inter 400–800, including the 800 the design uses but did not load (DV-T02).
+
+## D-048 — UI primitives, forms and component testing — Accepted (Phase 03)
+- **Headless primitives:** `radix-ui` 1.6.7 (the unified package), used **only** where accessibility behaviour is non-trivial: Dialog, which also backs Sheet/Drawer and ConfirmDialog; DropdownMenu; Tooltip; Tabs; and Slider (dual-thumb price range). Everything else is a small component styled with tokens.
+- **Direction:** a `Direction.Provider` in the locale layout feeds `dir` to Radix, so arrow keys and the slider are mirrored in RTL.
+- **Single dialog implementation:** the Phase 02 dashboard drawer moves onto the Radix-based `Sheet`, and the hand-written `useFocusTrap` is removed.
+- **Forms:** react-hook-form 7.88, zod 4.6 and `@hookform/resolvers` 5.9. Schemas return **message keys** (`validation.*`), which fields translate. `applyProblemToForm()` maps API `validation.failed` field errors onto form fields, and unknown fields become a form-level error.
+- **Server Component safety:** presentational components (badges, cards, empty/error states, skeletons, rating display, KPI tiles, breadcrumb, timeline) contain no hooks other than `useTranslations`, so public pages stay RSC. Selectable rows and cards use native radio or checkbox inputs.
+- **Class composition:** no `tailwind-merge`, because its default config misreads TRIMME's custom `text-*` size tokens as colours. Components expose `variant`/`size` props, and `className` only appends layout classes.
+- **Accessibility tests:** an `axe-core` helper runs in Vitest (jsdom). It asserts on violations only; jsdom cannot evaluate colour contrast. Contrast is covered by `tokens.test.ts` and by Playwright axe runs on the component gallery.
+- **Components follow earlier decisions:**
+  - SlotGrid shows only bookable and selected slots (D-009), with no disabled slots and no reasons;
+  - StatusBadge uses the D-016 enum (`CancelledByCustomer` and `CancelledByShop` share a colour);
+  - OTP has 6 digits (D-037);
+  - PhoneField has a fixed +966 prefix and emits E.164;
+  - slots are 44px tall (DV-T05);
+  - dates are passed as local `YYYY-MM-DD` strings in the shop's time zone.
+
+## D-049 — Component-level accessibility adjustments to the design — Accepted (Phase 03)
+Each adjustment was found by tests and keeps the design's look.
+- **Switch off-track:** the design's `#DDE4EC` (1.3:1) became the new token `--color-switch-off` `#7F8FA0` (3.31:1 on white), meeting WCAG 1.4.11 non-text contrast. Enforced by `tokens.test.ts`.
+- **Segmented control, inactive labels:** the design's `#647484` on the `#F1F5F9` track was under 4.5:1, which Playwright axe caught in the gallery. The labels now use `text-tertiary` `#5F6F80` (≥4.5:1 on that track), enforced by `tokens.test.ts`.
+- **Bar chart:**
+  - Regular bars use brand-500 `#6D9BCB` (2.84:1) instead of the design's `#B9CBDD` (1.62:1). Peaks stay navy, as in the design.
+  - Per the dataviz rules, the contrast WARN is relieved by a direct label on the peak value, per-bar values on hover, and a screen-reader data table.
+  - Bars are capped at 85% of the plot height so the peak label fits.
+- **Visually hidden inputs:** every `<label>` that wraps a `sr-only` input is `position: relative`. Without it, the absolutely positioned input escaped horizontal scrollers (the date strip) and caused 87–138px of page overflow at 390px. A Playwright test now asserts zero horizontal overflow at 390/768/1024/1440 on the home page, the gallery and the shells.
+- **Fieldsets** that hold horizontally scrolling content get `min-w-0`, because the browser default `min-inline-size: min-content` defeats `overflow-x`.
+- **Arabic initials** skip the definite article (`محمد العنزي` → `م ع`, matching the design).
+- **Toast timing:** auto-dismiss is 5 s (the design used 2.6 s), paused on hover and focus. Toasts with an action never auto-dismiss (WCAG 2.2.1).
+- **Radix behaviour:**
+  - Dialogs expose modality by hiding the rest of the page (`aria-hidden` on siblings) rather than with `aria-modal`.
+  - Focus returns to the element passed as `trigger`, so every Sheet or Dialog opener is passed as its trigger.
+  - Menus are named by their trigger.

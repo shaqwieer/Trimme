@@ -67,7 +67,7 @@ const eslintConfig = defineConfig([
           noStrings: true,
           ignoreProps: true,
           noAttributeStrings: false,
-          allowedStrings: ['·', '—', '–', '/', '+', '•', '|', ':', '(', ')', '%', '*'],
+          allowedStrings: ['·', '—', '–', '/', '+', '•', '|', ':', '(', ')', '%', '*', '…'],
         },
       ],
     },

@@ -13,9 +13,12 @@ export const VIEWPORTS = [
  */
 export async function captureViewports(page: Page, testInfo: TestInfo, name: string, path: string) {
   for (const viewport of VIEWPORTS) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await page.goto(path);
-    await page.waitForLoadState('networkidle');
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    });
+    await page.goto(path, { waitUntil: 'load' });
+    await page.evaluate(() => document.fonts.ready);
     await testInfo.attach(`${name}-${viewport.width}`, {
       body: await page.screenshot({ fullPage: true }),
       contentType: 'image/png',

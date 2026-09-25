@@ -44,19 +44,19 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-WEB-01 | Design tokens extracted to CSS variables; Tailwind uses them (no default palette leakage) | §5 | 2 | W `tokens.test.ts` (identity hexes, Tailwind defaults reset, breakpoints); C ESLint `no-restricted-syntax` raw-hex guard (probe-verified) | [x] |
-| R-WEB-02 | Reusable component library matching ds-components | §5 | 3 | W component tests; M gallery screenshots vs design at 390/768/1440 — Phase 03 | [ ] |
+| R-WEB-02 | Reusable component library matching ds-components | §5 | 3 | W 147 component tests incl. axe (`primitives`, `inputs`, `display`, `interactive`, `forms`); E gallery `/[locale]/dev/components` — every ds-components card has an equivalent, axe 0 serious/critical incl. contrast in ar/en, RTL keyboard, focus return; M 390/768/1440 captures vs `design/reference/1440/ds-components.jpg` | [x] |
 | R-WEB-03 | Logo used unmodified via `next/image` (nav, auth, public, metadata) | Op. rule 6 | 2 | W `Logo_renders_with_intrinsic_ratio`; lossless transparent-margin crop verified (D-042); used in public, customer and dashboard shells | [x] |
 | R-WEB-04 | `/ar` RTL default + `/en` LTR, `dir`/`lang` correct | §6 | 2 | E `locale_ar_is_rtl`, `locale_en_is_ltr`, root redirects (fr/ar browser → /ar, en → /en), language switch | [x] |
 | R-WEB-05 | No hardcoded UI strings; ar/en key parity | §6 | 2 → all | W `messages_have_key_parity` (keys, empties, ICU placeholders; failure proven); C `react/jsx-no-literals` (probe-verified) — continues every phase | [~] |
 | R-WEB-06 | Locale-aware date/time/number/currency (SAR, Asia/Riyadh), bidi-safe phones/times/prices | §5, §6 | 2 | W `formatters_ar_en` (Gregorian Arabic, Asia/Riyadh, D-040 numerals, SAR, distance, rating, phone); E `bdi` LTR isolation | [x] |
-| R-WEB-07 | Responsive at ~390/768/1440; dashboards sidebar + mobile drawer; tables → cards on small screens | §5 | 3, 13, 14 | E shells: RTL/LTR sidebar side, drawer <1200, bottom bar <1200, `captureViewports` 390/768/1440 ✔ Phase 02; tables→cards Phase 03/13/14 | [~] |
-| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W state components Phase 03; E `expired_session_redirects_to_sign_in` Phase 04 | [ ] |
-| R-WEB-09 | WCAG AA contrast, keyboard nav, visible focus, labels, accessible dialogs, 44px targets | §5 | 3, 17 | W `tokens.test.ts` AA contrast; W drawer focus trap/Escape/return focus; E axe 0 serious/critical on /ar, /en and 3 shells ✔ Phase 02 — continues every phase | [~] |
+| R-WEB-07 | Responsive at ~390/768/1440; dashboards sidebar + mobile drawer; tables → cards on small screens | §5 | 3, 13, 14 | E shells + gallery: RTL/LTR sidebar side, drawer <1200, bottom bar, table→cards <768, **no horizontal overflow at 390/768/1024/1440**; `captureViewports` ✔ Phases 02–03; screen-level layouts Phases 11–14 | [~] |
+| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W `ErrorState`/`PermissionDenied`/`ExpiredSession`/`SkeletonList`/`InlineAlert`, toast rollback-ready ✔ Phase 03; E `expired_session_redirects_to_sign_in` Phase 04; optimistic rollback in Phase 13 | [~] |
+| R-WEB-09 | WCAG AA contrast, keyboard nav, visible focus, labels, accessible dialogs, 44px targets | §5 | 3, 17 | W token contrast (text 4.5:1, switch 3:1, segmented), dialog focus trap/return, labelled controls, axe (jsdom); E axe 0 serious/critical incl. contrast on /ar, /en, 3 shells, gallery ar/en ✔ Phases 02–03 — continues every phase | [~] |
 | R-WEB-10 | Localized metadata, canonical, hreflang, OG, robots.txt, sitemap | §6 | 11, 17 | I/E `public_pages_have_hreflang_and_canonical`; `sitemap_lists_shops` | [ ] |
 | R-WEB-11 | JSON-LD (Organization, LocalBusiness, Breadcrumb, AggregateRating only when real data) | §6 | 11 | W/E `jsonld_aggregateRating_absent_without_reviews` | [ ] |
 | R-WEB-12 | RSC for public/read-heavy routes; client only where needed | §3 | 11 | M review + bundle report | [ ] |
 | R-WEB-13 | Permission-aware navigation | §19 | 4, 13, 14 | W `nav_hides_items_without_permission`, DashboardShell permission test ✔ (config-level); wired to real permissions in Phase 04 | [~] |
-| R-WEB-14 | Forms: RHF + Zod; API error mapping to fields | §3, §19 | 3+ | W `problemDetails_maps_to_field_errors` | [ ] |
+| R-WEB-14 | Forms: RHF + Zod; API error mapping to fields | §3, §19 | 3+ | W `problemDetails_maps_to_field_errors` (exact API `validation.failed` shape → RHF field errors + form-level fallback), Zod schemas return message keys, translated errors | [x] |
 
 ## 4. Identity, sessions, authorization
 

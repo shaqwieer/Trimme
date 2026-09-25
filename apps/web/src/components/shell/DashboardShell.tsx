@@ -1,14 +1,14 @@
 'use client';
 
-import { type ReactNode, useCallback, useId, useRef, useState } from 'react';
-import { Bell, Menu, X } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/brand/Logo';
+import { IconButton } from '@/components/ui/Button';
+import { Sheet } from '@/components/ui/overlays';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { activeHref, adminNav, shopNav, visibleItems } from './navigation';
-import { useFocusTrap } from './useFocusTrap';
 
 type DashboardShellProps = {
   variant: 'shop' | 'admin';
@@ -23,7 +23,8 @@ type DashboardShellProps = {
 /**
  * Shop and admin dashboard layout (design s-overview / a-overview):
  * ≥1200px a fixed 264px navy sidebar on the inline-start side (right in Arabic);
- * below 1200px the same navigation opens in a focus-trapped drawer.
+ * below 1200px the same navigation opens in a <Sheet> drawer (Radix Dialog: focus trap, Escape,
+ * focus return — D-048).
  */
 export function DashboardShell({
   variant,
@@ -34,17 +35,13 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const t = useTranslations();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const drawerId = useId();
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
-  useFocusTrap(drawerRef, drawerOpen, closeDrawer);
 
-  const sidebar = (
+  const sidebar = (onNavigate?: () => void) => (
     <SidebarContent
       variant={variant}
       permissions={permissions}
       footer={sidebarFooter}
-      onNavigate={closeDrawer}
+      onNavigate={onNavigate}
     />
   );
 
@@ -55,55 +52,28 @@ export function DashboardShell({
       </a>
 
       <aside className="fixed inset-y-0 start-0 z-40 hidden w-[var(--layout-sidebar-width)] bg-navy-900 lg:flex">
-        {sidebar}
+        {sidebar()}
       </aside>
-
-      {drawerOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div aria-hidden="true" className="absolute inset-0 bg-overlay" onClick={closeDrawer} />
-          <div
-            ref={drawerRef}
-            id={drawerId}
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('shell.mainNavigation')}
-            className="absolute inset-y-0 start-0 flex w-[min(var(--layout-sidebar-width),85vw)] bg-navy-900 shadow-e3"
-          >
-            <button
-              type="button"
-              onClick={closeDrawer}
-              aria-label={t('shell.closeMenu')}
-              className="absolute end-2 top-3 inline-flex size-11 items-center justify-center rounded-button text-on-navy-muted hover:bg-on-navy-subtle hover:text-on-navy"
-            >
-              <X aria-hidden="true" className="size-5" strokeWidth={1.75} />
-            </button>
-            {sidebar}
-          </div>
-        </div>
-      )}
 
       <header className="sticky top-0 z-20 border-b border-border-subtle bg-surface">
         <div className="flex h-16 items-center gap-3 px-4 md:px-6 lg:px-8">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label={t('shell.openMenu')}
-            aria-expanded={drawerOpen}
-            aria-controls={drawerId}
-            className="inline-flex size-11 items-center justify-center rounded-button text-text-strong hover:bg-brand-100 lg:hidden"
+          <Sheet
+            open={drawerOpen}
+            onOpenChange={setDrawerOpen}
+            side="start"
+            tone="navy"
+            title={t('shell.mainNavigation')}
+            hideTitle
+            closeLabel={t('shell.closeMenu')}
+            className="lg:hidden"
+            trigger={<IconButton icon="list" label={t('shell.openMenu')} className="lg:hidden" />}
           >
-            <Menu aria-hidden="true" className="size-5" strokeWidth={1.75} />
-          </button>
+            {sidebar(() => setDrawerOpen(false))}
+          </Sheet>
           <h1 className="truncate text-page-title font-bold text-navy-900">{title}</h1>
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <button
-              type="button"
-              aria-label={t('shell.notifications')}
-              className="inline-flex size-11 items-center justify-center rounded-button text-text-strong hover:bg-brand-100"
-            >
-              <Bell aria-hidden="true" className="size-5" strokeWidth={1.75} />
-            </button>
+            <IconButton icon="bell" label={t('shell.notifications')} />
           </div>
         </div>
       </header>
@@ -124,7 +94,7 @@ function SidebarContent({
   variant: 'shop' | 'admin';
   permissions?: readonly string[];
   footer?: ReactNode;
-  onNavigate: () => void;
+  onNavigate?: () => void;
 }) {
   const t = useTranslations();
   const pathname = usePathname();

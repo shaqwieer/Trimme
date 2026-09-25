@@ -1,93 +1,88 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-25 (end of Session 2, after Phase 02)
+- Updated at: 2026-09-25 (end of Session 2, after Phase 03)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: the docs commit recording the hash, on top of Phase 02 commit `9c1fcd2`. Run `git log --oneline -8`.
-- Working tree status: clean after those commits. `main` was pushed to `origin` with the user's approval, and GitHub Actions [run 36134142951](https://github.com/shaqwieer/Trimme/actions/runs/36134142951) is green (all 4 jobs). The local `docker compose` stack is stopped.
-- Current phase: 02 is complete. Phase 03 has not started.
-- Phase score: 100 / 100 (Phase 02) and 100 / 100 (Phase 01)
-- Last fully completed phase: 02, Web foundation. CI is verified green.
+- HEAD commit: the Phase 03 commit ("feat: phase 03 design-system component library …") plus a follow-up docs commit that records its hash. Run `git log --oneline -6`.
+- Working tree status: clean after those commits. **Phase 03 is not pushed**: pushing happens only when the user asks. The last pushed commit is `9bf12de`, and its CI run was green. The local Docker stack is **stopped**.
+- Current phase: 03 is complete. Phase 04 has not started.
+- Phase score: 100 / 100 (Phase 03)
+- Last fully completed phase: 03, design-system component library
 
 ## Completed this session
-- **Phase 01, backend foundation.** See its phase file. Commits `37500ce`, `f252e01`, `4779098` and `14b46f2`.
-- **Phase 02, web foundation:**
-  - **Workspace and tooling:** a pnpm workspace (`apps/web`, `tests/E2E`) with Next.js 16.3.6, React 19.3, strict TypeScript 6.0.3, ESLint 10 (guards against raw hex, JSX literals and Web Storage), Prettier and Tailwind v4.
-  - **Design tokens:** `src/styles/tokens.css` is a Tailwind `@theme` with the defaults reset. The text tokens are AA-corrected (D-039). Breakpoints are 390/768/1200/1440 (D-041).
-  - **Internationalisation:**
-    - next-intl serves `/ar` (RTL, the default) and `/en` (LTR) through `proxy.ts` and `next/root-params`.
-    - The message catalogs have a key-parity test, and 404 pages are localized.
-    - The numeral rule, Gregorian calendar and Asia/Riyadh time zone are set (D-040).
-    - There is an `<Ltr>` bidi helper, and the font stack is Inter → Tajawal (D-047).
-  - **Logo:** only the transparent margin was cropped. It is rendered with `next/image`, with an on-navy treatment (D-042). The app icon is the design's "T" mark (`app/icon.svg`).
-  - **Shells:** PublicShell, CustomerShell (bottom bar) and DashboardShell. The dashboard has a 264px navy sidebar at 1200px and above, and a focus-trapped drawer below that. The navigation config carries permission metadata and has no transfer entry.
-  - **API layer:**
-    - `schema.d.ts` is generated from `apps/api/openapi/v1.json`, with a drift check.
-    - `browserApi` sends credentials and the CSRF header.
-    - `getServerApi()` forwards cookies and uses `no-store`.
-    - `ApiError` handles problem details.
-    - Also added: `QueryProvider`, and `/api` + `/hubs` rewrites (D-044).
-  - **Dev-only routes:** `/[locale]/dev/shells/{customer,shop,admin}` return 404 in production unless `TRIMME_ENABLE_DEV_ROUTES=true` (D-045).
-  - **Tests:** 49 Vitest tests and 20 Playwright tests (including axe), plus the `captureViewports` helper for 390/768/1440.
-  - **Docker:** `apps/web/Dockerfile` builds a standalone image that runs as non-root with a HEALTHCHECK. Compose has a new `web` service, and `compose-smoke.sh` now checks the web app and its API proxy.
-  - **CI:** new `web` and `stack` jobs (compose + Playwright). `.gitleaks.toml` now ignores build paths.
-  - **Design references:** 33 screenshots in `design/reference/1440/`, with a README (D-046).
-  - **Docs:**
-    - README and `docs/architecture.md` §3;
-    - decisions D-039 to D-047;
-    - design deviations: DV-T01/T02/T03 applied, DV-T04/T05 partially applied;
-    - TRACEABILITY updated.
+- **Phases 01 and 02** are complete, with CI verified green on GitHub (runs `36134142951` and `36134661434`).
+- **Phase 03, design-system component library:**
+  - **Components** (`apps/web/src/components/ui/`):
+    - icons;
+    - Button, IconButton, the Field kit, Phone/OTP/Search/Select/Textarea, Checkbox, Switch, RangeSlider;
+    - RadioCard, chips, SegmentedControl, Tabs, LinkTabs;
+    - badges, StatusBadge, rating;
+    - cards: shop, service, professional, appointment, KPI, avatar;
+    - charts: rating distribution, bar chart, QR card;
+    - booking controls: DateStrip, SlotGrid, Stepper, CalendarMonth;
+    - overlays: Dialog, ConfirmDialog, Sheet, Tooltip, DropdownMenu, Toast;
+    - data display: ResponsiveTable, Pagination, Breadcrumb, Timeline, UploadDropZone;
+    - page states.
+  - **Form kit** (`src/lib/forms/`): Zod schemas that return message keys, `useZodForm`, form fields and `applyProblemToForm`.
+  - **Local-date helpers** in `src/lib/i18n/localDate.ts`.
+  - **Shells:**
+    - The DashboardShell drawer now runs on the Radix `Sheet`, and `useFocusTrap` was removed.
+    - `CustomerShell` uses `IconButton`.
+    - A Radix `DirectionProvider` wraps the locale layout and test renders.
+  - **Gallery:** dev-only, at `/[locale]/dev/components`.
+  - **Tests:**
+    - 147 Vitest tests, including axe checks.
+    - A Playwright gallery spec covering axe with contrast, RTL keyboard navigation, focus return, zero horizontal overflow at 390/768/1024/1440, and captures at three widths.
+    - A Prettier config for E2E, with CI format and typecheck checks now covering E2E.
+  - **Decisions and deviations:**
+    - D-048 and D-049 added.
+    - Design deviations DV-T04 and DV-T05 applied; DV-T07 to DV-T10 added.
 
 ## Verification evidence
-- Command: `pnpm lint`, `pnpm typecheck`, `pnpm format:check`
-  Result: PASS (0 warnings)
-- Command: `pnpm test`
-  Result: PASS, 53/53 across 9 files (including dev-route gating in production)
-- Command: `pnpm openapi:check`
-  Result: PASS, types are up to date
-- Command: `pnpm build`
-  Result: PASS; `/ar` and `/en` are statically generated
-- Command: `dotnet build -c Release` + architecture tests
-  Result: PASS, 0 warnings, 56/56
-- Command: `TRIMME_WEB_PORT=3300 bash infra/scripts/compose-smoke.sh` (clean volume)
-  Result: PASS. The API was ready, web `/ar` returned 200, and the web-origin `/api/v1/meta` returned the API metadata. The web container was healthy.
-- Command: `E2E_BASE_URL=http://localhost:3300 pnpm e2e`
-  Result: PASS, 20/20
-- Command: gitleaks `dir` scan
-  Result: PASS, no leaks (build output excluded)
-- Command: `actionlint`
+- Command: `pnpm lint` / `pnpm typecheck` (web + E2E) / `pnpm format:check` (web + E2E)
   Result: PASS
-- Command: clean `git clone` of `a8413e4`, run in Linux containers (`node:22`, `dotnet/sdk:10.0`)
-  Result: PASS for all of: `pnpm install --frozen-lockfile`, lint, typecheck, format, 49/49 web tests, openapi check, E2E `tsc`; `dotnet build -c Release` with 0 warnings; 73/73 unit, 56/56 architecture and 27/27 integration tests.
-- Key-parity negative test (a key removed, then restored): failed as expected.
-- Lint-guard probe: all 3 rules fired.
+- Command: `pnpm test`
+  Result: PASS, 147/147 in 14 files
+- Command: `pnpm openapi:check`; `pnpm build`
+  Result: PASS
+- Command: `TRIMME_WEB_PORT=3300 bash infra/scripts/compose-smoke.sh` (clean volume)
+  Result: PASS. The API was ready, web `/ar` returned 200, and the proxy worked.
+- Command: `E2E_BASE_URL=http://localhost:3300 pnpm e2e`, run twice
+  Result: PASS, 28/28 both times
+- Command: gitleaks `dir` scan
+  Result: PASS, no leaks
+- Visual comparison against `design/reference/1440/ds-components.jpg` at 1440, 768 and 390, in Arabic and English: matches, apart from the documented deviations.
 
 ## Database and migrations
-- No new migrations. `Initial` from Phase 01 was applied to the local compose database, which was recreated with a clean volume during the smoke runs.
+- No new migrations. `Initial` is unchanged.
 
 ## Decisions added
-- D-039: AA text-colour values
-- D-040: numerals and the Gregorian calendar
-- D-041: breakpoints, with desktop at 1200
-- D-042: logo transparent-margin crop and on-navy filter
-- D-043: web toolchain versions (TypeScript 6.0.3, jsdom 29, ESLint 10 with an explicit React version)
-- D-044: same-origin API
-- D-045: dev-route gating
-- D-046: reference screenshots at the 1440 canvas
-- D-047: Inter → Tajawal font stack
+- **D-048:** Radix (via `radix-ui`) is used only for Dialog/Sheet, DropdownMenu, Tooltip, Tabs and Slider. Forms use React Hook Form with Zod message keys; `tailwind-merge` is not used. Axe runs in jsdom (without contrast) plus Playwright. Components are RSC-safe where possible and follow D-009, D-016 and D-037.
+- **D-049:** accessibility adjustments:
+  - contrast fixes for the switch off-track and the segmented control;
+  - bar-chart colour, plus alternative ways to read the data (values on hover, a data table) where bar contrast is low;
+  - `sr-only` inputs contained inside their labels, and `min-w-0` on fieldsets;
+  - Arabic initials that skip the definite article;
+  - toast timing;
+  - Radix focus return handled via the `trigger` prop.
 
 ## Known issues or blockers
-- The first GitHub Actions run passed all four jobs (backend, web, secret-scan, stack).
-- **Port conflicts on this machine:** web ports 3000–3002 are used by other local projects, so verification used `TRIMME_WEB_PORT=3300`. Database ports 5432/5433 are also taken, so compose defaults to 5434.
-- **Node version:** the dev machine runs Node 22.18.0, so the web toolchain avoids packages that need 22.22 or later (D-043). The Docker image uses 22.23.
-- **Awaiting client confirmation:** the digit convention (D-040), and the logo minimum-width rule versus the design's header sizes (D-042).
+- Phase 03 has not run on GitHub Actions yet because it has not been pushed. Every gate passed locally on the Docker stack.
+- Port constraints on this machine are unchanged: web on 3300, DB on 5434, API on 8080.
 
 ## Exact next action
-1. Start Phase 03 (`phases/phase-03-design-system.md`). Re-validate first:
+1. Start Phase 04 (`phases/phase-04-identity.md`). Re-validate first:
    - `git status`
    - `pnpm test`
-   - `bash infra/scripts/compose-smoke.sh` (add `TRIMME_WEB_PORT=3300` if port 3000 is busy)
-   - `E2E_BASE_URL=http://localhost:<port> pnpm e2e`
-2. Build the component library from `design/analysis/01-design-system-and-docs.md` §2, using `design/reference/1440/ds-components.jpg` and `ds-foundations.jpg`. Add the dev-only gallery at `/[locale]/dev/components`.
+   - `bash infra/scripts/compose-smoke.sh` with `TRIMME_WEB_PORT=3300`
+   - `E2E_BASE_URL=http://localhost:3300 pnpm e2e`
+2. Implement identity per D-037:
+   - customers sign in passwordless with mobile + a 6-digit OTP (fake `IOtpSender`);
+   - staff use email + password, with forgot/reset over email (`IEmailSender`, Mailpit in compose);
+   - cookie sessions with refresh rotation;
+   - CSRF protection;
+   - roles and the permission catalogue (no transfer permission);
+   - auth pages built from the Phase 03 form kit (`PhoneField`, `OtpField`, `useZodForm`, `applyProblemToForm`);
+   - `ExpiredSession` and `PermissionDenied` wired to 401/403.
 
 ## Files intentionally left modified
 - None.

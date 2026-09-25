@@ -4,6 +4,7 @@ import { locale as localeParam } from 'next/root-params';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
+import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import { localeDirection, routing } from '@/i18n/routing';
 import { BRAND_NAVY_900 } from '@/styles/brand';
 import '../globals.css';
@@ -59,7 +60,9 @@ export default async function LocaleLayout({ children }: LayoutProps<'/[locale]'
   return (
     <html lang={locale} dir={localeDirection[locale]} className={`${tajawal.variable} ${inter.variable}`}>
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <DirectionProvider dir={localeDirection[locale]}>{children}</DirectionProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

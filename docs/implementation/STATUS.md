@@ -1,15 +1,15 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-25 (Session 2)
-- **Current phase:** 02 is complete and verified, with CI green on GitHub Actions (run 36134142951). Next: Phase 03, the design-system component library (not started).
-- **Platform progress:** 300 / 1900 points (Phases 00–02)
+- **Current phase:** 03 is complete and verified (Session 2). Next: Phase 04, identity, sessions, roles and permissions (not started).
+- **Platform progress:** 400 / 1900 points (Phases 00–03)
 
 | Phase | Status | Points |
 |---|---|---|
 | 00 Discovery & plan | [x] | 100/100 |
 | 01 Backend & infra foundation | [x] | 100/100 |
 | 02 Web foundation | [x] | 100/100 |
-| 03 Design-system components | [ ] | 0/100 |
+| 03 Design-system components | [x] | 100/100 |
 | 04 Identity & sessions | [ ] | 0/100 |
 | 05 Tenancy, privacy & audit | [ ] | 0/100 |
 | 06 Shops, locations & professionals | [ ] | 0/100 |

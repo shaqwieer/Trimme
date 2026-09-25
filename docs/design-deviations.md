@@ -56,12 +56,12 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A17 | Platform settings page | §14, §15 | 8/14 |
 | DV-A18 | Service categories & packages admin | §7, §10, §14 | 7 |
 | DV-A19 | Real week calendar grid | §13 | 13 |
-| DV-A20 | Confirm dialogs and save bars on editable screens | general | 3+ |
+| DV-A20 | Confirm dialogs and save bars on editable screens | general | 3+ — `ConfirmDialog` built (Phase 03); save bars arrive with the editable screens |
 | DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 |
 | DV-A22 | Security/session settings (session list, revoke all), staff forgot/reset password | §9, §12 | 4 |
 | DV-A23 | Shop gallery, shop mini-map, shop description, packages section on shop page | §12 | 11 |
 | DV-A24 | Booking-conflict state at confirm (typed 409) | §11 | 12 |
-| DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 |
+| DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 — `ExpiredSession`, `PermissionDenied`, `ErrorState` built (Phase 03); wired to 401/403 in Phase 04 |
 | DV-A26 | English (LTR) versions of all screens; desktop/tablet layouts for customer screens other than landing | §5, §6 | 2+ |
 | DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 |
 | DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 |
@@ -73,9 +73,14 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-T01 | Link `#4A7FB5` = 4.20:1; tertiary greys used for text 2.1–2.8:1 (fail AA) | Darkened text tokens (D-021, values in D-039); enforced by `tokens.test.ts` | 2 — **applied** |
 | DV-T02 | Tajawal 600 and Inter 800 used but not loaded | Inter 400–800 loaded. Tajawal has no 600, so 600 maps to 700 (D-022, D-047) | 2 — **applied** |
 | DV-T03 | Mixed Arabic-Indic / Latin digits for the same fields | One rule: clock and date text in Arabic-Indic, quantities in Latin (D-040) | 2 — **applied** |
-| DV-T04 | Nav active indicator uses a physical property; toast centring only works in RTL | Logical properties throughout. The shells use `start-*`/`ps-*`/`ms-*`, verified by E2E sidebar-side checks in RTL and LTR; the toast comes in Phase 03 | 2/3 — **partially applied** |
-| DV-T05 | Internal inconsistencies: drawer breakpoint 768/992/1200; slot height 42 vs 44; 6 vs 5 booking steps | Breakpoints 390/768/**1200**/1440 (D-041, applied Phase 02). 44px touch targets (shell controls are `min-h-11`). Slot height and the 5 steps + confirmation are handled in Phases 03 and 12 | 2/3 — **partially applied** |
+| DV-T04 | Nav active indicator uses a physical property; toast centring only works in RTL | Logical properties throughout: shells, dialogs (`start-1/2` + direction-aware translate) and a toast centred with `inset-x` + `mx-auto`. E2E checks the sidebar side in RTL and LTR | 2/3 — **applied** |
+| DV-T05 | Internal inconsistencies: drawer breakpoint 768/992/1200; slot height 42 vs 44; 6 vs 5 booking steps | Breakpoints 390/768/**1200**/1440 (D-041). Every control ≥44px, slots included (`SlotGrid` `min-h-11`). The stepper takes any step list; the wizard uses 5 steps + confirmation in Phase 12 | 2/3 — **applied** |
 | DV-T06 | No WhatsApp brand colour anywhere | Use design neutrals; WhatsApp previews use a neutral bubble style from the design | 15 |
+
+| DV-T07 | Switch off-track `#DDE4EC`, segmented inactive text, bar-chart `#B9CBDD` bars below contrast minimums | Adjusted tokens and relief (D-049) | 3 — **applied** |
+| DV-T08 | Toast auto-dismiss after 2.6 s | 5 s, paused on hover/focus; never with an action (D-049) | 3 — **applied** |
+| DV-T09 | Design shows unavailable slots with reasons (slot legend) | Only bookable slots rendered (D-009); no disabled/reason slot state in `SlotGrid` | 3 — **applied** |
+| DV-T10 | Design dropdown includes "تغيير الحلاق" (change barber) | Not offered; sample menus use Confirm / Reschedule / Cancel only | 3 — **applied** |
 
 ## DV-C — Copy/data inconsistencies not replicated
 
