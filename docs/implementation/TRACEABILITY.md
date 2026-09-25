@@ -217,3 +217,51 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | E7 | Completed booking allows one review; incomplete/foreign does not | 12 | 12 |
 
 All seven are re-run as the Phase 18 regression gate.
+
+## 14. Data model inventory (spec §8)
+
+`IShopOwned` entities get a tenant query filter, server-side stamping and composite `(ShopId, …)` FKs (R-TEN-02/04). Migration names are indicative and are confirmed when each phase creates them.
+
+| Concept | Module (schema) | Shop-owned | Phase | Migration | Notes |
+|---|---|---|---|---|---|
+| User, Role, Permission, UserRole, RolePermission | Identity (`identity`) | — | 4 | 0002_Identity | ASP.NET Core Identity plus the permission catalogue |
+| RefreshSession, OtpChallenge, Invitation | Identity | — | 4 | 0002_Identity | Refresh-token family rotation |
+| CustomerProfile | Customers (`customers`) | — | 4 | 0002_Identity | Mobile is encrypted, with an HMAC lookup |
+| Shop, ShopUser | Shops (`shops`) | Shop is the tenant root | 5 | 0003_ShopsTenancyAudit | ShopOwner / ShopStaff |
+| AuditEntry | Administration (`audit`) | Has an optional ShopId | 5 | 0003 | Holds no PII |
+| Shop profile, gallery, EditablePolicy | Shops | ✓ | 6 | 0004 | |
+| ShopLocation | Shops | ✓ | 6 | 0004 | `geography(Point,4326)` with a GiST index |
+| ShopOpeningHour, ShopClosure, pause flag | Availability (`availability`) / Shops | ✓ | 9 | 0007_Schedules | |
+| Professional | Professionals (`professionals`) | ✓ | 6 | 0004 | ShopId is immutable |
+| ProfessionalContact / WhatsAppSettings | Professionals | ✓ | 6 | 0004 | E.164, encrypted and masked |
+| ProfessionalWorkingHour, ProfessionalBreak, ProfessionalTimeOff | Availability | ✓ | 9 | 0007 | |
+| ServiceCategory | Services (`services`) | — (platform) | 7 | 0005_ServicesPackages | |
+| ShopService | Services | ✓ | 7 | 0005 | Archive only once referenced |
+| ServicePackage, ServicePackageItem | Services | ✓ | 7 | 0005 | Items reference services in the same shop |
+| ProfessionalService | Professionals | ✓ | 7 | 0005 | Assigned by admins only |
+| SubscriptionPlan, SubscriptionPlanPrice | Subscriptions (`subscriptions`) | — | 8 | 0006 | Prices are versioned |
+| ShopSubscription, SubscriptionRenewal, SubscriptionOverride | Subscriptions | ✓ | 8 | 0006 | Price snapshot |
+| PlatformSettings | Administration | — | 8 | 0006 | Typed sections, audited |
+| Booking, BookingStatusHistory, BookingNote | Bookings (`bookings`) | ✓ | 10 | 0008_Bookings | `tstzrange` + exclusion constraint |
+| OutboxMessage, IdempotencyRecord | BuildingBlocks (`infra`) | — | 10 | 0008 | |
+| Review, rating aggregates | Reviews (`reviews`) | Tied to a shop through the booking | 11–12 | 0009 / 0010 | One review per booking |
+| Favorite | Customers | — | 12 | 0010 | |
+| WhatsAppTemplate, WhatsAppTemplateVersion, WhatsAppDispatch | Notifications (`notifications`) | — | 15 | 0012 | Dispatch records the template version |
+| Notification (in-app), ProcessedMessage | Notifications | Optional ShopId | 15 | 0012 | |
+| Hangfire tables | `hangfire` | — | 15 | Hangfire-managed | |
+| QrCodeLink, QrVisit | QrAnalytics (`qr`) | ✓ | 16 | 0013_Qr | IP addresses are stored only as hashes |
+
+## 15. External integrations inventory
+
+| Integration | Abstraction | Dev/test implementation | Production configuration (env vars only) | Phase |
+|---|---|---|---|---|
+| WhatsApp messaging (Meta Cloud API) | `IWhatsAppProvider` | `FakeWhatsAppProvider` records dispatches to a table and a dev inbox | Access token, phone number ID, WABA ID, app secret for webhook signatures, approved templates | 15 |
+| OTP delivery | `IOtpSender` | Fake: dev inbox or log, development only | WhatsApp authentication template; optional SMS provider | 4 (fake), 15 (WhatsApp) |
+| Email (staff invitations and password resets) | `IEmailSender` | Mailpit container | SMTP host, port, credentials, sender | 4 |
+| Maps and geocoding | `IMapProvider` (web), `IGeocoder` (API) | MapLibre GL plus an OSM-compatible tile source and geocoder, within their usage policy | Provider keys (D-007) | 6, 11, 17 |
+| File storage (shop cover and gallery, QR posters) | `IFileStorage` | Local disk in `.data/uploads` | Object storage or a mounted volume, decided in Phase 18 deployment | 6, 16 |
+| Future payment gateway | `IPaymentGateway` (documented seam only) | — | Not in v1 | 10 (docs) |
+
+## 16. API endpoint inventory
+
+The API endpoints for each feature are listed in the "API contracts and UI routes" and "In scope" sections of each phase file. The generated OpenAPI document (`apps/api/openapi/v1.json`, from Phase 01) is the authoritative, drift-checked inventory once code exists.

@@ -27,7 +27,7 @@ Phase 17 complete.
   - README, architecture, domain-model (with ERD Mermaid), permissions-matrix, availability-and-booking, whatsapp-integration and design-deviations are all final.
   - OpenAPI output committed.
 - **Production readiness review:**
-  - Configuration checklist: domain/DNS, TLS, SMTP (if used), maps provider, Meta WhatsApp credentials and templates, and encryption keys.
+  - Configuration checklist: domain/DNS, TLS, SMTP provider for staff invitations and password resets, maps provider, Meta WhatsApp credentials and templates, and encryption keys.
   - Backups.
   - Monitoring.
   - Admin bootstrap procedure for production (one-time, safe).

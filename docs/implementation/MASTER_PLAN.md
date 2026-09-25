@@ -160,6 +160,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | MediatR v13+ commercial licence (free Community tier < $5M revenue, key required; missing key only logs warnings) | Phase 1 skeleton | Open decision D-004 |
 | Production map tiles / geocoding provider; design has **no** location pin picker | Blocks Phase 6 production config (dev can use open adapter) | Open decision D-007; picker designed in TRIMME visual language (DV-A02) |
 | OTP delivery channel (WhatsApp auth template / SMS fallback provider) | Phase 4 uses a fake sender; prod needs Meta auth template approval | Adapter + fake; recorded in `docs/whatsapp-integration.md` |
+| Email/SMTP provider for staff invitations and password resets | Phase 4 uses a Mailpit dev fake; production needs a provider | `IEmailSender` adapter; configured only through environment variables |
 | Meta WhatsApp Business account, phone number ID, approved templates | Phase 15 production readiness only | Fake provider locally; config documented |
 | Design gaps: many desktop layouts, English screens, admin editors absent (see deviations A-items) | Extra design work each phase | Compose from the design-system components; record each in `design-deviations.md` |
 | AA contrast failures in design tokens (`#4A7FB5` links 4.20:1, tertiary greys 2.1–2.8:1) | a11y gate | Token fix D-021 |

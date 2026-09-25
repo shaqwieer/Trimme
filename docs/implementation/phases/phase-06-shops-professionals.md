@@ -79,7 +79,7 @@ As listed. Routes: `/admin/shops/[id]`, `/admin/professionals(/new|/[id])`, `/sh
 dotnet test
 pnpm -C apps/web test
 pnpm exec playwright test admin-shops admin-professionals
-rg -i "transfer|نقل حلاق" apps src   # must return no product hits
+rg -i "transfer(Professional|Barber|Shop)|(professional|barber)\s*transfer|نقل حلاق|تنفيذ النقل" apps src   # must return no hits (the pattern is kept narrow so it does not match HTTP or other legitimate uses of "transfer")
 ```
 
 ## Acceptance criteria

@@ -19,7 +19,7 @@ Phase 14 complete.
 
 ## In scope
 - **Hangfire** with PostgreSQL storage (its own schema):
-  - A dashboard at `/admin/jobs`, restricted to the admin permission and served behind the API auth.
+  - A dashboard at `/api/ops/jobs`, served by the API behind admin cookie auth and the `Admin.Jobs.View` permission. It lives under `/api/*` so the D-027 Nginx routing reaches it; the Next.js `/admin/*` space stays with the web app, which can link to it.
   - Recurring jobs:
     - an outbox processor (or a hosted service with a lock);
     - subscription status transitions and ExpiringSoon warnings (R-SUB-04/05);

@@ -36,6 +36,7 @@
   - Policy-based permission requirement handler.
   - Permission catalogue seeded (see `docs/permissions-matrix.md`, created in this phase) with roles per D-018/D-019. There is no transfer permission.
   - Endpoint-permission matrix test (R-AUTH-09).
+- **Email channel:** an `IEmailSender` adapter for staff invitations and password resets. It uses a dev fake backed by a **Mailpit** container in compose (SMTP to `mailpit:1025`, web UI at `:8025`); the production SMTP provider is configured only through environment variables. Templates are localized (ar/en), and tokens are never logged.
 - **Admin bootstrap:** development-only, from environment variables (`TRIMME_BOOTSTRAP_ADMIN_EMAIL`/`_PASSWORD`), one-time. Demo credentials are written to `docs/local/DEMO_CREDENTIALS.local.md`, which is git-ignored.
 - **Web:**
   - Pages: `/auth/sign-up`, `/auth/sign-in`, `/auth/verify`, `/auth/complete-profile`, `/auth/staff/sign-in`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/accept-invite`, and `/account/security` (sessions list, revoke all).
@@ -50,14 +51,15 @@ Shops' data (Phase 5/6), and the real WhatsApp OTP template (Phase 15 wires the 
 ## Checklist (100 points)
 - [ ] 4.1 (5) Re-validate; confirm D-005 outcome; refine checklist.
 - [ ] 4.2 (12) Identity schema, user types, roles/permissions entities, migrations.
-- [ ] 4.3 (14) Customer OTP flow (request/verify/complete), limits, lockout, fake sender + tests (R-AUTH-01/07).
+- [ ] 4.3 (12) Customer OTP flow (request/verify/complete), limits, lockout, fake sender + tests (R-AUTH-01/07).
 - [ ] 4.4 (10) Staff sign-in, forgot/reset, invitations + tests (R-AUTH-02/06).
 - [ ] 4.5 (14) Cookie sessions, refresh rotation + reuse detection, sign-out, list/revoke/revoke-all + tests (R-AUTH-04/05).
 - [ ] 4.6 (8) CSRF + CORS credential config + tests (R-AUTH-08).
 - [ ] 4.7 (10) Permission catalogue, seed roles, policy handler, endpoint matrix test, `docs/permissions-matrix.md` (R-AUTH-09).
 - [ ] 4.8 (5) Dev admin bootstrap + local demo credentials file (R-AUTH-03, R-DOC-05).
-- [ ] 4.9 (14) Web auth pages, `/me` context, guards, expired-session handling, security page, permission-aware nav, no web storage (R-NEG-07).
+- [ ] 4.9 (11) Web auth pages, `/me` context, guards, expired-session handling, security page, permission-aware nav, no web storage (R-NEG-07).
 - [ ] 4.10 (8) E2E auth flow + control files + commit.
+- [ ] 4.11 (5) `IEmailSender` + Mailpit dev fake in compose; invite and reset emails delivered to Mailpit in integration tests.
 
 ## Files/modules expected to change
 `src/Modules/Identity/**`, `apps/api/**` (auth wiring), `apps/web/src/app/[locale]/(auth)/**`, `apps/web/src/app/[locale]/account/security/**`, `apps/web/src/lib/auth/**`, `docs/permissions-matrix.md`, tests.
