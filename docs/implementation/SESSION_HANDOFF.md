@@ -1,7 +1,7 @@
 # TRIMME Session Handoff
 
 - Updated at: 2026-09-25 (end of Session 1)
-- Branch: `main` (remote `origin` = https://github.com/shaqwieer/Trimme.git; the remote was empty when added and nothing has been pushed yet)
+- Branch: `main` (remote `origin` = https://github.com/shaqwieer/Trimme.git; `main` pushed and tracking `origin/main` on 2026-09-25)
 - HEAD commit: the commit titled "docs: record user decisions D-004..D-007 (D-037)", which sits on top of `7623f86`. Run `git log --oneline -5`.
 - Working tree status: clean after that commit.
 - Current phase: 00 is complete. Phase 01 has not started and is waiting for the user's go-ahead.
