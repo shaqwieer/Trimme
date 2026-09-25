@@ -1,14 +1,14 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-25 (Session 2)
-- **Current phase:** 02 is implemented and verified locally, including on a clean Linux clone. Items 1.12 and 2.12 wait for the first green GitHub Actions run, which needs a push. Next: Phase 03, the design-system component library.
-- **Platform progress:** 289 / 1900 points. 11 points are withheld until CI runs green.
+- **Current phase:** 02 is complete and verified, with CI green on GitHub Actions (run 36134142951). Next: Phase 03, the design-system component library (not started).
+- **Platform progress:** 300 / 1900 points (Phases 00–02)
 
 | Phase | Status | Points |
 |---|---|---|
 | 00 Discovery & plan | [x] | 100/100 |
-| 01 Backend & infra foundation | [~] | 94/100 (CI run pending) |
-| 02 Web foundation | [~] | 95/100 (CI run pending) |
+| 01 Backend & infra foundation | [x] | 100/100 |
+| 02 Web foundation | [x] | 100/100 |
 | 03 Design-system components | [ ] | 0/100 |
 | 04 Identity & sessions | [ ] | 0/100 |
 | 05 Tenancy, privacy & audit | [ ] | 0/100 |
@@ -39,4 +39,4 @@
 None are blocking. The product assumptions D-012…D-035 remain overridable defaults.
 
 ## Blockers
-Nothing is blocked. **Pending user approval: push to GitHub** so the first CI run can verify items 1.12 and 2.12.
+None.

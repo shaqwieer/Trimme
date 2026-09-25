@@ -1,6 +1,6 @@
 # Phase 02 — Web foundation, i18n/RTL, tokens, fonts, logo, app shells
 
-**Status:** [~] · **Score:** 95/100 · **Session:** 2 (2026-09-25). Only item 2.12 is open: the acceptance criterion "CI web job is green" awaits the first GitHub Actions run.
+**Status:** [x] · **Score:** 100/100 · **Session:** 2 (2026-09-25). CI verified green on GitHub Actions.
 
 ## Goal and user-visible outcome
 The Next.js 16 app runs at `/ar` (RTL) and `/en` (LTR) with TRIMME's real design tokens, fonts and logo. It has three layout shells: a public/customer mobile-first shell with bottom nav, a shop dashboard shell and an admin dashboard shell (desktop sidebar with a mobile drawer). A typed API client is generated from OpenAPI, and the test harnesses (Vitest and Playwright) are running in CI and Docker Compose.
@@ -49,7 +49,7 @@ The component library beyond the shells (Phase 03), auth, and real pages.
 - [x] 2.9 (8) OpenAPI → TS types + fetch wrappers + problem-details parser + drift check (R-FND-05).
 - [x] 2.10 (6) Vitest + Playwright harness; RTL/LTR smoke; 3-viewport screenshot helper.
 - [x] 2.11 (6) Web Dockerfile + compose `web` service; `docker compose up --build` serves `/ar`.
-- [~] 2.12 (5) CI web job; README updates; control files; commit.
+- [x] 2.12 (5) CI web job; README updates; control files; commit.
 
 ## Files/modules expected to change
 `pnpm-workspace.yaml`, `package.json`, `apps/web/**`, `infra/docker-compose.yml`, `.github/workflows/ci.yml`, `design/reference/**`, `README.md`.
@@ -149,6 +149,8 @@ The 20 E2E tests cover:
 - Port 3000 on this machine is taken by an unrelated Node process (other projects also use 3001 and 3002). The compose default is still 3000; verification ran with `TRIMME_WEB_PORT=3300`.
 - **CI:** the `web` and `stack` jobs pass `actionlint`, and every step was run locally (including on a clean Linux clone). **No GitHub run has happened yet, because nothing has been pushed.** Item 2.12 stays `[~]` until it runs green.
 - Placeholder colour changed during the phase: the token test caught `#687888` at 4.30:1 on the page background, so it is now `#5F6F80` (D-039).
+
+**GitHub Actions (first remote run):** [run 36134142951](https://github.com/shaqwieer/Trimme/actions/runs/36134142951) on `3627fac` completed **success**. All four jobs passed: Backend (build, unit, architecture, integration, migrations, OpenAPI), Web (lint, typecheck, format, unit tests, OpenAPI client, build), Secret scan (gitleaks), and Docker Compose stack + Playwright smoke.
 
 **Commit:** `9c1fcd2`.
 

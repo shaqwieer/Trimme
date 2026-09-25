@@ -1,6 +1,6 @@
 # Phase 01 — Backend & infrastructure foundation
 
-**Status:** [~] · **Score:** 94/100 · **Session:** 2 (2026-09-25). Only item 1.12 is open, awaiting the first green GitHub Actions run.
+**Status:** [x] · **Score:** 100/100 · **Session:** 2 (2026-09-25). CI verified green on GitHub Actions.
 
 ## Goal and user-visible outcome
 A runnable, tested ASP.NET Core 10 API skeleton backed by PostgreSQL/PostGIS and started by Docker Compose.
@@ -66,7 +66,7 @@ Identity/auth, any domain entities, the web app, Hangfire, SignalR hubs, and Wha
 - [x] 1.9 (8) Architecture tests (R-FND-01, R-FND-12).
 - [x] 1.10 (5) Dev seed command framework with environment guards + test.
 - [x] 1.11 (8) Dockerfile + compose (postgis + api); `docker compose up --build` reaches healthy `/health/ready`.
-- [~] 1.12 (6) CI workflow (backend job) + gitleaks secret scan step.
+- [x] 1.12 (6) CI workflow (backend job) + gitleaks secret scan step.
 - [x] 1.13 (6) README (prerequisites, run, test), `docs/architecture.md` initial with topology Mermaid, `.env.example`; update control files, commit.
 
 ## Files/modules expected to change
@@ -159,6 +159,8 @@ After reverting, an **unused** cross-module `ProjectReference` still passed, bec
 - **Item 1.12 remains `[~]` until GitHub Actions runs green.**
 
 **Not yet verified remotely:** the GitHub Actions workflow has not run on GitHub, because nothing had been pushed when this was recorded. Every step's command was executed locally with the results above. The first remote run is a follow-up in `SESSION_HANDOFF.md`.
+
+**GitHub Actions (first remote run):** [run 36134142951](https://github.com/shaqwieer/Trimme/actions/runs/36134142951) on `3627fac` completed **success**. All four jobs passed: Backend (build, unit, architecture, integration, migrations, OpenAPI), Web (lint, typecheck, format, unit tests, OpenAPI client, build), Secret scan (gitleaks), and Docker Compose stack + Playwright smoke.
 
 **Commit:** `37500ce`.
 
