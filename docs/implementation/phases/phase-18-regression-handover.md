@@ -21,6 +21,7 @@ Phase 17 complete.
 - **Deployment:**
   - `docs/deployment.md` covers the single-domain topology, Nginx reverse proxy example (`infra/nginx/trimme.conf`, HTTPS-ready, `/api` and `/hubs` WebSocket upgrade), environment variables, migrations run as an explicit release step, Hangfire, the file storage adapter, and scaling notes.
   - The production Docker Compose example.
+  - Configure `ReverseProxy:KnownProxies` (or known networks) for the Nginx container. Then verify, behind the proxy, that rate limits partition per client IP (from `X-Forwarded-For`), not per proxy. Without this, every client shares one bucket on the `auth` and `otp` policies.
   - Nothing is deployed externally.
 - **`docs/backup-restore.md`:** `pg_dump`/`pg_restore` procedures, PITR notes, uploads backup, a restore drill performed locally with evidence, and key backup for encryption keys.
 - **Docs completion:**

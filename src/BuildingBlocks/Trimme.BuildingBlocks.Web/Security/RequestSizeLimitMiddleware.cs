@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.Extensions.Options;
 using Trimme.BuildingBlocks.Web.Errors;
 
@@ -16,6 +17,8 @@ public sealed class RequestLimitsOptions
 /// <summary>
 /// Rejects oversized bodies early with a 413 problem response, and lowers the server's streaming limit
 /// for chunked requests. Kestrel's global limit is configured to the same value as a backstop.
+/// An endpoint that needs a larger body (e.g. image uploads) opts in with
+/// <c>.WithMetadata(new RequestSizeLimitAttribute(bytes))</c>; the override applies to that endpoint only.
 /// </summary>
 public sealed class RequestSizeLimitMiddleware(RequestDelegate next, IOptions<RequestLimitsOptions> options)
 {
@@ -23,7 +26,7 @@ public sealed class RequestSizeLimitMiddleware(RequestDelegate next, IOptions<Re
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var limit = options.Value.MaxBodyBytes;
+        var limit = ResolveLimit(context, options.Value.MaxBodyBytes);
         if (context.Request.ContentLength > limit)
         {
             await context.WriteProblemAsync(
@@ -34,11 +37,21 @@ public sealed class RequestSizeLimitMiddleware(RequestDelegate next, IOptions<Re
         }
 
         var sizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
-        if (sizeFeature is { IsReadOnly: false } && (sizeFeature.MaxRequestBodySize is null || sizeFeature.MaxRequestBodySize > limit))
+        if (sizeFeature is { IsReadOnly: false })
         {
             sizeFeature.MaxRequestBodySize = limit;
         }
 
         await next(context);
+    }
+
+    /// <summary>
+    /// The endpoint's explicit limit when it declares one (routing runs before this middleware), otherwise the default.
+    /// A declared "unlimited" (null) is not honoured: every endpoint keeps a finite ceiling.
+    /// </summary>
+    private static long ResolveLimit(HttpContext context, long defaultLimit)
+    {
+        var metadata = context.GetEndpoint()?.Metadata.GetMetadata<IRequestSizeLimitMetadata>();
+        return metadata?.MaxRequestBodySize is { } endpointLimit and > 0 ? endpointLimit : defaultLimit;
     }
 }

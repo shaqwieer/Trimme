@@ -118,7 +118,7 @@ Revert the phase commit. Remove local Docker volumes with `docker compose down -
 | `dotnet build Trimme.slnx -c Release` (TreatWarningsAsErrors, analyzers `Recommended`, code style enforced) | PASS: 0 warnings, 0 errors |
 | `dotnet test --project tests/Trimme.UnitTests --no-build -c Release` | PASS: 73/73 |
 | `dotnet test --project tests/Trimme.ArchitectureTests --no-build -c Release` | PASS: 56/56 |
-| `dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release` (Testcontainers PostGIS 17-3.5) | PASS: 24/24 |
+| `dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release` (Testcontainers PostGIS 17-3.5) | PASS: 27/27 |
 | `dotnet ef migrations has-pending-model-changes --project src/Trimme.Migrations --startup-project apps/api/Trimme.Api --no-build --configuration Release` | PASS: "No changes have been made to the model since the last migration." |
 | gitleaks v8.30.1, `dir` scan of the working tree and `git` scan of history (`.gitleaks.toml`) | PASS: no leaks found |
 | `infra/scripts/compose-smoke.sh --down` from a clean volume (`docker compose down -v` first) | PASS. Postgres healthy → `migrate` exited 0 → API `/health/ready` returned `{"status":"Healthy","checks":[{"name":"database","status":"Healthy"}]}`, and `/api/v1/meta` responded. |
@@ -150,6 +150,9 @@ After reverting, an **unused** cross-module `ProjectReference` still passed, bec
 - **Expected first-run error:** on a brand-new database, EF logs one expected `Failed executing DbCommand … __ef_migrations_history` error during the history-table probe. It is documented in README troubleshooting.
 - **Schema-per-module convention:** added to `ModuleBase.ConfigureModel`. `ModelConventionTests` verifies schema, snake_case, strong-ID→uuid, xmin concurrency and the declared extensions against a real Npgsql model.
 - **`dotnet ef` flag:** `-c` means `--context` for `dotnet ef`, so CI uses `--configuration Release`.
+- **Per-endpoint body limit:** `RequestSizeLimitMiddleware` now honours `IRequestSizeLimitMetadata`, so uploads can opt into a larger limit. A declared "unlimited" is not honoured. `RequestSizeLimitTests` (3 tests) show that a default endpoint rejects 2 MB, an endpoint set to 3 MB accepts 2 MB, and the same endpoint still rejects 5 MB.
+- **CI workflow checks:** `actionlint` passed with exit 0. The gitleaks CI step runs as the runner user (`--user $(id -u):$(id -g)`) to avoid git's "dubious ownership" error on Linux runners.
+- **Planned follow-up:** Phase 18 now includes configuring `ReverseProxy:KnownProxies` and verifying per-client rate-limit partitions behind Nginx.
 
 **Not yet verified remotely:** the GitHub Actions workflow has not run on GitHub, because nothing had been pushed when this was recorded. Every step's command was executed locally with the results above. The first remote run is a follow-up in `SESSION_HANDOFF.md`.
 

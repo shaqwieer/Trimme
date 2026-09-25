@@ -33,7 +33,7 @@
 - **Tests:**
   - 73 unit tests;
   - 56 architecture tests, proven non-vacuous with deliberate violations;
-  - 24 integration tests on Testcontainers PostGIS, including migrations, the model-drift check, and the OpenAPI contract drift check against the committed `apps/api/openapi/v1.json`.
+  - 27 integration tests on Testcontainers PostGIS, including migrations, the model-drift check, the OpenAPI contract drift check against the committed `apps/api/openapi/v1.json`, and per-endpoint body limits.
 - **Infrastructure:** `apps/api/Dockerfile` (multi-stage, non-root, HEALTHCHECK), `.dockerignore`, `infra/docker-compose.yml` (postgis → one-shot migrate → api), `infra/scripts/compose-smoke.sh`, `infra/.env.example` and `.env.example`.
 - **CI:** `.github/workflows/ci.yml` with three jobs (backend, gitleaks secret scan, compose smoke), plus `.gitleaks.toml`.
 - **Docs:** root `README.md`, and `docs/architecture.md` with the topology and backend-structure Mermaid diagrams.
@@ -47,9 +47,11 @@
 - Command: `dotnet test --project tests/Trimme.ArchitectureTests --no-build -c Release`
   Result: PASS, 56/56.
 - Command: `dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release`
-  Result: PASS, 24/24. Testcontainers ran `postgis/postgis:17-3.5`.
+  Result: PASS, 27/27. Testcontainers ran `postgis/postgis:17-3.5`. This includes 3 per-endpoint body-limit tests added after the review.
 - Command: `dotnet ef migrations has-pending-model-changes --project src/Trimme.Migrations --startup-project apps/api/Trimme.Api --no-build --configuration Release`
   Result: PASS, no model changes since the last migration.
+- Command: `actionlint .github/workflows/ci.yml` (Docker `rhysd/actionlint`)
+  Result: PASS, exit 0.
 - Command: gitleaks v8.30.1, both the `dir` and the `git` scan
   Result: PASS, no leaks found.
 - Command: `bash infra/scripts/compose-smoke.sh --down`, run on a clean volume
