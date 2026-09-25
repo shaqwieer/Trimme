@@ -2,8 +2,8 @@
 
 - Updated at: 2026-09-25 (end of Session 2)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: docs commit recording the hash, on top of Phase 01 commit `37500ce` ("feat: phase 01 backend and infrastructure foundation"). Run `git log --oneline -5`.
-- Working tree status: clean after those commits. **Phase 01 has not been pushed.** Pushing happens only when the user asks.
+- HEAD commit: the "docs: update session 2 handoff" commit. Phase 01 commits: `37500ce` (feature), `f252e01` (hash record) and `4779098` (review fixes: per-endpoint body limits, CI gitleaks user). Run `git log --oneline -5`.
+- Working tree status: clean. `main` is **4 commits ahead of `origin/main` and not pushed**; pushing happens only when the user asks.
 - Current phase: 01 is complete. Phase 02 has not started.
 - Phase score: 100 / 100 (Phase 01)
 - Last fully completed phase: 01 — Backend & infrastructure foundation
