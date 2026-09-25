@@ -86,7 +86,7 @@ Documentation only. Revert the Phase 0 commit to undo.
 
 **Design analysis:** `01-design-system-and-docs.md`, `02-customer-screens.md` and `03-shop-admin-screens.md` were produced by three parallel read-only analysis agents. No prompt-injection text was found in the design.
 
-**Commit:** recorded in `SESSION_HANDOFF.md` and the `MASTER_PLAN.md` table after it was created.
+**Commit:** `5cd09a9` (Phase 0 artifacts); the handoff and hash were recorded in a follow-up docs commit.
 
 ## Remaining risks
 - Open decisions D-004 (MediatR), D-005 (customer auth), D-006 (booking confirmation mode) and D-007 (map provider).

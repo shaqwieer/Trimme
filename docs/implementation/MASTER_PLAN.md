@@ -129,7 +129,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 
 | # | Phase | Status | Points | Prerequisites | Verification evidence | Commit | Next action |
 |---|---|---|---|---|---|---|---|
-| 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | see `SESSION_HANDOFF.md` | User approves plan + open decisions |
+| 00 | Discovery, design import, traceability, plan | [x] | 100/100 | — | `phases/phase-00-discovery.md` §Evidence | `5cd09a9` | User approves plan + open decisions |
 | 01 | Backend & infrastructure foundation | [ ] | 0/100 | 00 approved; D-002, D-004 | — | — | Start after approval |
 | 02 | Web foundation, i18n/RTL, tokens, shells | [ ] | 0/100 | 01 | — | — | — |
 | 03 | Design-system component library | [ ] | 0/100 | 02 | — | — | — |
