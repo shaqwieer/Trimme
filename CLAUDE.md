@@ -60,6 +60,11 @@ Status marks:
 - Never run production migrations, deploy, create paid resources, or use real credentials.
 - Tokens are kept in HttpOnly cookies only, never in web storage.
 
+## Repository
+
+- GitHub: https://github.com/shaqwieer/Trimme.git (`origin`). Main branch: `main`.
+- Commit at the end of each verified phase. Push only when the user asks.
+
 ## Environment notes
 
 - Windows host. The Bash tool is Git Bash; PowerShell is also available.
