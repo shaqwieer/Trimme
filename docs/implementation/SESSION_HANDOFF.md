@@ -1,8 +1,8 @@
 # TRIMME Session Handoff
 
 - Updated at: 2026-09-26 (end of Session 3, after Phases 04 and 05)
-- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 04 and 05 are committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: a docs follow-up on top of `6a65a9d` (Phase 05), `2aa5968` and `54cf79a` (Phase 04). Run `git log --oneline -5`.
+- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 04 and 05 are pushed; GitHub Actions [run 36270344233](https://github.com/shaqwieer/Trimme/actions/runs/36270344233) on `d8f6adf` is green (all 4 jobs).
+- HEAD commit: the CI-record docs commit on top of `d8f6adf` (OpenAPI line-ending fix), `806cc01`, `6a65a9d` (Phase 05), `2aa5968` and `54cf79a` (Phase 04). Run `git log --oneline -7`.
 - Working tree status: clean after the commit. The local Docker stack is **running** (web 3300, API 8080, DB 5434, Mailpit UI 8325).
 - Current phase: 05 is complete. Phase 06 has not started.
 - Phase score: 100 / 100 (Phase 05); Phase 04 also 100 / 100 this session.
@@ -42,7 +42,7 @@
 - D-059 Tenancy model (membership on `users.shop_id`, deny-all for non-shop callers). D-060 Phone value object. D-061 Shop lifecycle and tenant access. D-062 Explicit bypass scopes. D-063 Audit trail, paging, demo data.
 
 ## Known issues or blockers
-- CI has not run on the Phase 04/05 commits (not pushed).
+- CI is green for Phases 04–05 (run 36270344233). Lesson: generated artefacts must not depend on working-copy line endings; the OpenAPI generator now normalizes descriptions to LF.
 - No production `IShopOwned` entity exists yet; Phase 06 professionals are the first. Public/customer reads of shop-owned data will need an explicit per-shop read scope (Phase 11), because the filter is deny-all for non-shop callers.
 - Port 8025 is taken on this machine: `TRIMME_MAILPIT_PORT=8325`, `E2E_MAILPIT_URL=http://localhost:8325`.
 

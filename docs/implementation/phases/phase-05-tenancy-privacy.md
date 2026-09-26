@@ -111,6 +111,8 @@ Session 3, 2026-09-26 (same session as Phase 04, at the user's request).
 
 **Commit:** `6a65a9d` (plus a docs follow-up).
 
+**CI:** GitHub Actions [run 36270344233](https://github.com/shaqwieer/Trimme/actions/runs/36270344233) on `d8f6adf` is green (backend, web, secret scan, Docker stack + Playwright). The first push (`806cc01`, run 36269419300) failed only the OpenAPI drift check: XML-doc descriptions carried CRLF from the Windows working copy. Fixed in `d8f6adf` by normalizing description line endings, and verified by reproducing the CI run in a Linux SDK container.
+
 **Database and migrations:** `ShopsTenancyAudit` (schemas `shops`, `administration`; `users.shop_id`, `invitations.shop_id` with FKs). Applied locally only.
 
 **Smallest decisive re-verification for the next session:** `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Tenancy"` and `dotnet test --project tests/Trimme.ArchitectureTests -c Release`, then `pnpm e2e` against the stack.

@@ -134,6 +134,8 @@ Session 3, 2026-09-26. All commands run on the Windows dev host (Docker Desktop 
 - The compose `seed` service had no `build:` block and could try to pull `trimme-api:dev` on a fresh runner → it now builds like `migrate`. Verified by deleting both local images and volumes, then `compose-smoke.sh` (PASS, bootstrap admin created) and E2E 36/36.
 - Commit: `54cf79a` (phase) plus the follow-up fix commit.
 
+**CI:** GitHub Actions [run 36270344233](https://github.com/shaqwieer/Trimme/actions/runs/36270344233) on `d8f6adf` is green (backend, web, secret scan, Docker stack + Playwright). The first push (`806cc01`, run 36269419300) failed only the OpenAPI drift check: XML-doc descriptions carried CRLF from the Windows working copy. Fixed in `d8f6adf` by normalizing description line endings, and verified by reproducing the CI run in a Linux SDK container.
+
 **Database and migrations:** `20260926080806_Identity` created and applied locally (Testcontainers and compose). Not applied anywhere else.
 
 **Smallest decisive re-verification for the next session:** `dotnet test --project tests/Trimme.IntegrationTests -c Release` (identity + matrix), then `pnpm e2e` against the stack.
