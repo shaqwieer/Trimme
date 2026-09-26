@@ -57,14 +57,14 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A18 | Service categories & packages admin | §7, §10, §14 | 7 |
 | DV-A19 | Real week calendar grid | §13 | 13 |
 | DV-A20 | Confirm dialogs and save bars on editable screens | general | 3+ — `ConfirmDialog` built (Phase 03); save bars arrive with the editable screens |
-| DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 |
-| DV-A22 | Security/session settings (session list, revoke all), staff forgot/reset password | §9, §12 | 4 |
+| DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 — sign-in (same frame as sign-up, no terms), profile completion (name, language, terms) **applied** Phase 04; location sheet Phase 11 |
+| DV-A22 | Security/session settings (session list, revoke all), staff forgot/reset password | §9, §12 | 4 — **applied**: `/account/security`, `/auth/staff/sign-in`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/accept-invite`, all composed from the c-auth card and design-system parts |
 | DV-A23 | Shop gallery, shop mini-map, shop description, packages section on shop page | §12 | 11 |
 | DV-A24 | Booking-conflict state at confirm (typed 409) | §11 | 12 |
-| DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 — `ExpiredSession`, `PermissionDenied`, `ErrorState` built (Phase 03); wired to 401/403 in Phase 04 |
+| DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 — `ExpiredSession`, `PermissionDenied`, `ErrorState` built (Phase 03); wired to 401/403 in Phase 04 — **applied** (session restore page, PermissionDenied on the wrong surface) |
 | DV-A26 | English (LTR) versions of all screens; desktop/tablet layouts for customer screens other than landing | §5, §6 | 2+ |
 | DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 |
-| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 |
+| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — until the pages exist, the terms checkbox shows the two names in bold instead of dead links (Phase 04) |
 
 ## DV-T — Tokens, visual and accessibility fixes
 
@@ -86,7 +86,9 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 
 Weekday/date pairs are from 2025 (e.g. "الخميس ١٨ سبتمبر"; 18 Sep 2026 is a Friday); `addMin` AM/PM bug around noon (server computes end times); professionals shown under two shops in sample data (seed data must respect one shop per professional); headcount mismatches ("٦ حلاقين" vs 3); admin subtitle "١٢٨ محلاً نشطاً" vs KPI 114/128; shop footer "تبدأ من 30" vs cheapest 35; always-on verified shield; favorites header counts; period headers counts; notifications bottom-nav highlight; rating tags auto-selected; stars editable after submit. All demo data is generated from the seed, never copied from the prototype.
 
-DV-C01 — OTP length: design shows 4 digits; D-005/D-037 uses 6 digits for security.
+DV-C01 — OTP length: design shows 4 digits; D-005/D-037 uses 6 digits for security. The copy says "٦ أرقام" and the field has 6 positions (single LTR input, D-048). **Applied** Phase 04.
+
+DV-C02 — The OTP help text offers "أو اطلب الرمز عبر رسالة نصية" (request by SMS). v1 has no SMS channel (WhatsApp only, D-005), so the copy asks the user to check WhatsApp and request a new code after the countdown. Phase 04.
 
 ## DV-D — Design features deferred
 

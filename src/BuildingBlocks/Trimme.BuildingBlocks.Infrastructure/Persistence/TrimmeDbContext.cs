@@ -14,12 +14,22 @@ public sealed class TrimmeDbContext(DbContextOptions<TrimmeDbContext> options, I
     public const string MigrationsHistoryTable = "__ef_migrations_history";
     public const string MigrationsHistorySchema = "public";
 
+    /// <summary>Schema for platform infrastructure tables that belong to no feature module.</summary>
+    public const string InfrastructureSchema = "infra";
+
     private readonly IModelContributor[] _contributors = contributors.ToArray();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.HasPostgresExtension("btree_gist");
+
+        modelBuilder.Entity<DataProtectionKeyRecord>(key =>
+        {
+            key.ToTable("data_protection_keys", InfrastructureSchema);
+            key.Property(k => k.Id).UseIdentityAlwaysColumn();
+            key.Property(k => k.FriendlyName).HasMaxLength(200);
+        });
 
         foreach (var contributor in _contributors)
         {

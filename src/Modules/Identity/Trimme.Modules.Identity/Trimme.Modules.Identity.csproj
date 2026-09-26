@@ -6,6 +6,10 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\Trimme.BuildingBlocks.Web\Trimme.BuildingBlocks.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="MailKit" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Trimme.UnitTests" />
     <InternalsVisibleTo Include="Trimme.IntegrationTests" />
     <InternalsVisibleTo Include="Trimme.ArchitectureTests" />

@@ -13,3 +13,8 @@ export const localeDirection: Record<Locale, 'rtl' | 'ltr'> = {
   ar: 'rtl',
   en: 'ltr',
 };
+
+/** Narrows a route parameter to a supported locale (unknown values fall back to Arabic). */
+export function asLocale(value: string): Locale {
+  return value === 'en' ? 'en' : 'ar';
+}

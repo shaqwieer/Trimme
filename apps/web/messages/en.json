@@ -214,6 +214,146 @@
     "otpIncomplete": "Enter the 6-digit code",
     "tooLong": "Shorten the text to {max} characters or fewer",
     "emailInvalid": "Enter a valid email address",
-    "form": "Could not save — review the highlighted fields and try again"
+    "form": "Could not save — review the highlighted fields and try again",
+    "termsRequired": "Accept the terms and privacy policy to continue",
+    "passwordTooShort": "Use at least 10 characters",
+    "passwordTooWeak": "Choose a stronger password with more varied characters",
+    "passwordMismatch": "The passwords do not match",
+    "otpIncorrect": "The code is incorrect"
+  },
+  "auth": {
+    "meta": {
+      "title": "Sign in"
+    },
+    "back": "Back",
+    "phoneLabel": "Mobile number",
+    "signUp": {
+      "title": "Welcome to TRIMME",
+      "subtitle": "Enter your mobile number and we'll send you a verification code on WhatsApp",
+      "terms": "I agree to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong>",
+      "submit": "Send code",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "signIn": {
+      "title": "Sign in",
+      "subtitle": "Enter your mobile number and we'll send your sign-in code on WhatsApp",
+      "submit": "Send code",
+      "noAccount": "New to TRIMME?",
+      "signUp": "Create an account",
+      "staff": "Shop and admin team sign-in"
+    },
+    "verify": {
+      "title": "Enter the verification code",
+      "sentTo": "We sent a {length}-digit code on WhatsApp to",
+      "codeLabel": "Verification code",
+      "resendIn": "Resend in {time}",
+      "resend": "Resend",
+      "resent": "We sent you a new code",
+      "help": "Didn't get it? Make sure WhatsApp is active on this number, then request a new code when the timer ends.",
+      "submit": "Verify",
+      "attemptsLeft": "Incorrect code — {count, plural, one {# attempt left} other {# attempts left}}",
+      "restart": "Request a new code"
+    },
+    "completeProfile": {
+      "title": "Complete your profile",
+      "subtitle": "What should we call you? Shops see your name on your bookings.",
+      "nameLabel": "Full name",
+      "languageLabel": "App and message language",
+      "arabic": "العربية",
+      "english": "English",
+      "terms": "I agree to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong>",
+      "submit": "Save and continue"
+    },
+    "staffSignIn": {
+      "title": "Team sign-in",
+      "subtitle": "For shop accounts and platform administrators",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgot": "Forgot your password?",
+      "customer": "A customer? Sign in with your mobile"
+    },
+    "forgot": {
+      "title": "Forgot your password",
+      "subtitle": "Enter your email and we'll send you a link to set a new password.",
+      "submit": "Send link",
+      "sentTitle": "Check your email",
+      "sentBody": "If this email is registered, a message will arrive within minutes. The link is valid for one hour.",
+      "backToSignIn": "Back to sign-in"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "passwordHint": "At least 10 characters. A short sentence you remember works well.",
+      "submit": "Save password",
+      "doneTitle": "Password changed",
+      "doneBody": "We signed you out on every device to protect your account. Sign in with your new password.",
+      "invalidTitle": "This link is not valid",
+      "invalidBody": "The link has expired or was already used. Request a new one.",
+      "requestNew": "Request a new link"
+    },
+    "acceptInvite": {
+      "title": "Accept your invitation",
+      "subtitle": "Create your TRIMME account to finish joining.",
+      "nameLabel": "Full name",
+      "submit": "Create account",
+      "invalidTitle": "This invitation is not valid",
+      "invalidBody": "The invitation has expired or was already used. Ask a platform administrator for a new one."
+    },
+    "session": {
+      "restoring": "Restoring your session…"
+    },
+    "signOut": "Sign out"
+  },
+  "account": {
+    "title": "My account",
+    "phone": "Mobile number",
+    "name": "Name",
+    "security": "Security and sessions",
+    "securityDescription": "Devices signed in to your account",
+    "sessions": {
+      "title": "Signed-in devices",
+      "current": "This device",
+      "lastActive": "Last active {date}",
+      "revoke": "Sign out",
+      "revokeLabel": "Sign out of {device}",
+      "revokeOthers": "Sign out of other devices",
+      "revokeOthersTitle": "Sign out of other devices?",
+      "revokeOthersBody": "Every other device will need to sign in again. This device stays signed in.",
+      "revokedOthers": "{count, plural, one {# device signed out} other {# devices signed out}}",
+      "revoked": "Signed out of the device",
+      "onlyThisDevice": "No other devices are signed in."
+    }
+  },
+  "adminHome": {
+    "title": "Platform overview",
+    "welcome": "Welcome, {name}",
+    "body": "Operational platform indicators will appear here when the admin dashboard launches.",
+    "roles": "Your roles"
+  },
+  "shopHome": {
+    "title": "Overview",
+    "body": "Today's appointments and your shop's indicators will appear here when the shop dashboard launches."
+  },
+  "apiErrors": {
+    "generic": "We couldn't complete the request. Please try again.",
+    "form": "Review the highlighted fields and try again.",
+    "otp_resend_cooldown": "Wait {seconds} seconds before requesting a new code.",
+    "otp_too_many_requests": "Too many codes were requested for this number. Try again in {minutes} minutes.",
+    "otp_delivery_unavailable": "We couldn't send the code right now. Try again shortly.",
+    "otp_challenge_invalid": "This code is no longer valid. Request a new one.",
+    "otp_expired": "The code has expired. Request a new one.",
+    "otp_attempts_exhausted": "Too many incorrect attempts. Request a new code.",
+    "auth_invalid_credentials": "The email or password is incorrect.",
+    "auth_locked_out": "Sign-in is paused after too many attempts. Try again in {minutes} minutes or reset your password.",
+    "auth_account_disabled": "This account is disabled. Contact the platform administrators.",
+    "auth_csrf_invalid": "This page has expired. Refresh it and try again.",
+    "auth_reset_invalid": "This reset link is invalid or has expired.",
+    "invitation_invalid": "This invitation is invalid or has expired.",
+    "invitation_email_registered": "An account with this email already exists.",
+    "rate_limit_exceeded": "Too many requests in a short time. Wait a moment and try again.",
+    "server_unexpected": "Something went wrong. Please try again."
   }
 }

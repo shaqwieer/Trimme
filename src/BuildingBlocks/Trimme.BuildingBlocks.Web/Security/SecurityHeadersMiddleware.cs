@@ -26,6 +26,12 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             headers["Cross-Origin-Opener-Policy"] = "same-origin";
             headers["Cross-Origin-Resource-Policy"] = "same-site";
 
+            // API responses are per-user by default: never cached by browsers or proxies unless an endpoint says so.
+            if (!headers.ContainsKey("Cache-Control"))
+            {
+                headers.CacheControl = "no-store";
+            }
+
             if (!RelaxedCspPaths.Any(p => context.Request.Path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase)))
             {
                 headers.ContentSecurityPolicy = StrictContentSecurityPolicy;

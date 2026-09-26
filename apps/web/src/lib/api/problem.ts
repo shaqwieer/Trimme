@@ -11,6 +11,8 @@ export type ProblemDetails = {
   errorCode?: string;
   correlationId?: string;
   errors?: Record<string, string[]>;
+  /** Extra machine-readable values, e.g. `attemptsRemaining` or `retryAfterSeconds`. */
+  [extension: string]: unknown;
 };
 
 export class ApiError extends Error {
@@ -18,6 +20,8 @@ export class ApiError extends Error {
   readonly errorCode: string;
   readonly correlationId: string | undefined;
   readonly fieldErrors: Record<string, string[]>;
+  /** The problem's numeric extensions (never personal data), e.g. `{ attemptsRemaining: 2 }`. */
+  readonly details: Record<string, number>;
 
   constructor(status: number, problem: ProblemDetails | undefined) {
     super(problem?.title ?? `Request failed with status ${status}`);
@@ -26,6 +30,11 @@ export class ApiError extends Error {
     this.errorCode = problem?.errorCode ?? fallbackCode(status);
     this.correlationId = problem?.correlationId;
     this.fieldErrors = problem?.errors ?? {};
+    this.details = Object.fromEntries(
+      Object.entries(problem ?? {}).filter(
+        (entry): entry is [string, number] => typeof entry[1] === 'number',
+      ),
+    );
   }
 
   get isUnauthenticated() {

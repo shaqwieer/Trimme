@@ -82,8 +82,37 @@ These rules were proven non-vacuous with deliberate violations (recorded in `imp
 - **CORS:** a strict allowlist with credentials; wildcards are rejected at startup.
 - **Security headers:** `nosniff`, `DENY` framing, a strict CSP for API responses, a restrictive referrer policy and permissions policy, and no `Server` header.
 - **Request bodies:** limited to 1 MB by default (a 413 problem response). Upload endpoints will opt into larger limits.
-- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`), partitioned by client IP (by user from Phase 04). The limits are configurable, and rejections return a 429 problem response.
+- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`), partitioned by user when signed in and by client IP otherwise. The limits are configurable, and rejections return a 429 problem response.
 - **Forwarded headers:** trusted only from configured proxies.
+- **Caching:** API responses default to `Cache-Control: no-store` (per-user data is never cached by browsers or proxies).
+
+### Authentication, sessions and authorization (Phase 04)
+
+Details and rationale: D-050 to D-058; the permission table is `docs/permissions-matrix.md`.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant W as Next.js (same origin)
+    participant A as API /api/v1
+    B->>A: GET auth/csrf (sets readable trimme-csrf)
+    B->>A: POST auth/otp/request {phone} + X-CSRF-Token
+    A-->>B: 202 {challengeId} (code sent via IOtpSender)
+    B->>A: POST auth/otp/verify {challengeId, code}
+    A-->>B: 200 {isNewUser, user} + Set-Cookie trimme-access (15 min, Path=/) + trimme-refresh (Path=/api/v1/auth) + new trimme-csrf
+    B->>W: GET /ar/account (cookies)
+    W->>A: GET /me (forwards cookies)
+    A-->>W: 200 me (session checked on every request)
+    Note over B,A: access cookie expired → 401
+    W-->>B: redirect /ar/auth/session?returnTo=/account
+    B->>A: POST auth/refresh (refresh cookie) → rotate token, new access cookie
+    B->>W: back to /ar/account
+```
+
+- **Accounts:** ASP.NET Core Identity on the shared context (`identity` schema). Customers are passwordless (mobile + 6-digit OTP); their mobile is stored only encrypted plus a keyed lookup hash. Staff use email + password with lockout, and exist only through invitations (plus the development bootstrap SuperAdmin).
+- **Sessions:** a short HttpOnly access cookie and a rotating HttpOnly refresh cookie scoped to `/api/v1/auth`. Each session is one refresh-token family; reuse after a 10-second grace revokes the family. Every authenticated request re-checks the session, so revocation is immediate. Data Protection keys live in `infra.data_protection_keys`.
+- **CSRF:** double-submit token required on every unsafe `/api/v1` request, anonymous ones included; checked after routing.
+- **Authorization:** default deny on `/api/v1`; endpoints declare `AllowAnonymous()`, `RequireUserType(...)` or `RequirePermission(...)`. Permissions come from roles in the database, resolved per request. An integration test checks every endpoint against this classification.
 
 ## 3. Web application (Phase 02)
 

@@ -23,5 +23,11 @@ export default defineConfig({
       testMatch: 'smoke/**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
+    {
+      name: 'flows',
+      testMatch: 'flows/**/*.spec.ts',
+      timeout: 90_000,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
+    },
   ],
 });

@@ -34,7 +34,7 @@ More detail: [`docs/architecture.md`](docs/architecture.md).
 
 ## Run locally
 
-Full stack in Docker (PostGIS, a one-shot migration, the API, then the web app):
+Full stack in Docker (PostGIS, a one-shot migration, a one-shot development seed, Mailpit, the API, then the web app):
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build
@@ -47,6 +47,9 @@ bash infra/scripts/compose-smoke.sh
 - Web: http://localhost:3000/ar (Arabic) and `/en` (English). The web app proxies `/api/*` to the API on the same origin.
 - PostgreSQL is published on host port **5434**, because 5432/5433 are often taken by a local install.
 - Override the ports (`TRIMME_WEB_PORT`, `TRIMME_API_PORT`, `TRIMME_DB_PORT`) in `infra/.env`; copy `infra/.env.example` to start. For example, set `TRIMME_WEB_PORT=3300` when port 3000 is busy.
+- Local email (password resets, staff invitations) goes to **Mailpit**: http://localhost:8025 (`TRIMME_MAILPIT_PORT`).
+- The `seed` service creates the bootstrap SuperAdmin once (`TRIMME_BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD`; local defaults `admin@trimme.local` / `trimme local admin`). Staff sign in at `/ar/auth/staff/sign-in`.
+- Customers sign in with a mobile number and a 6-digit code. Locally the code is not sent anywhere: read it from `GET /api/v1/dev/otp-inbox/latest?phone=%2B9665XXXXXXXX` (Development/Testing only).
 - Development-only preview routes (`/ar/dev/shells/shop|admin|customer`) are enabled in the local stack through `TRIMME_ENABLE_DEV_ROUTES=true`. Never set this in production.
 
 API on the host, with the database from compose:
@@ -85,7 +88,9 @@ Deterministic demo data is written only by an explicit command. It runs only in 
 TRIMME_ALLOW_DEV_SEED=true dotnet run --project apps/api/Trimme.Api -- seed --dev
 ```
 
-Seeders are added phase by phase. Demo credentials, once they exist, are written to `docs/local/DEMO_CREDENTIALS.local.md`, which is git-ignored and never committed.
+With `TRIMME_BOOTSTRAP_ADMIN_EMAIL` and `TRIMME_BOOTSTRAP_ADMIN_PASSWORD` set, the seed creates the first SuperAdmin (only while none exists). Production admins are invited, never seeded. Seeders are added phase by phase. Local demo credentials are listed in `docs/local/DEMO_CREDENTIALS.local.md`, which is git-ignored and never committed.
+
+Outside Development and Testing the API refuses to start without `PersonalData__LookupKey` (base64, 32+ bytes) and `Email__Smtp__Host` (see `.env.example`).
 
 ## Tests
 

@@ -32,7 +32,12 @@ internal static class ApiServices
         });
 
         services.ConfigureHttpJsonOptions(json =>
-            json.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+        {
+            json.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+            // Numbers are numbers: no quoted-number input, so the OpenAPI contract types them as plain integers.
+            json.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+        });
 
         services.AddTrimmeProblemDetails();
         services.AddTrimmeCors(configuration);
@@ -41,6 +46,7 @@ internal static class ApiServices
 
         services.AddTrimmeApplication();
         services.AddTrimmePersistence();
+        services.AddTrimmeSecurity(configuration, builder.Environment);
         foreach (var module in modules)
         {
             services.AddSingleton<IModelContributor>(module);

@@ -71,5 +71,5 @@ Status marks:
 - The default `dotnet` is a **preview** SDK. The repo pins stable 10.0.112 via `global.json` (from Phase 01).
 - Docker Desktop is required for Testcontainers and compose.
 - The web app is a pnpm workspace (`apps/web`, `tests/E2E`). Root scripts: `pnpm lint|typecheck|format:check|test|openapi:check|build|e2e`. The machine has Node 22.18, so avoid packages that need a newer Node (D-043).
-- Busy host ports on this machine: 3000–3002 and 5432/5433. Use `TRIMME_WEB_PORT=3300`; compose publishes the DB on 5434 by default.
+- Busy host ports on this machine: 3000–3002, 5432/5433 and 8025. Use `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325`; compose publishes the DB on 5434 by default. E2E: `E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 pnpm e2e`.
 - `dotnet test` uses Microsoft Testing Platform syntax: `dotnet test --project <path>`.

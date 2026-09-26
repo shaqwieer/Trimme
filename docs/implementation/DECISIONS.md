@@ -256,3 +256,60 @@ Fix:
 - **Negative proof:** a temporary server component with an inline `onClick`, placed on that
   route, returned **500** with "Event handlers cannot be passed to Client Component props".
   The probe was then removed.
+
+## D-050 — Identity on the shared context; customer data on the Identity user — Accepted (Phase 04)
+- ASP.NET Core Identity runs on the shared `TrimmeDbContext` (no `IdentityDbContext`). All seven Identity tables are mapped explicitly into the `identity` schema, because the generic Identity types live outside the module assembly and the schema convention would not reach them.
+- `IdentityUser` subclasses and `UserManager` live in the module's `Infrastructure` namespace (the architecture rules forbid `Microsoft.AspNetCore.*` in Domain and Application). Use cases in `Application` reach them through the `IAccountStore` port.
+- One user table serves all three user types (`user_type` column). Customers have no email and no password; staff have both. `RequireUniqueEmail` is off; staff email uniqueness is a filtered unique index on `normalized_email`.
+- The customer mobile is stored **only** encrypted (`protected_phone`, Data Protection purpose `trimme.mobile-number`) plus a keyed HMAC lookup hash with a filtered unique index. Identity's plaintext `PhoneNumber` column is not mapped. Normalisation accepts Saudi mobiles only (`+9665XXXXXXXX`, D-048); Phase 05 replaces the helper with the platform phone value object without changing stored values.
+- **CustomerProfile deviation:** the customer's display name, preferred locale and terms-acceptance time live on the Identity user, since every user type needs a name and a locale. The Customers module's `CustomerProfile` (favorites, booking projections) is created in Phase 12, when it has customer-domain data. TRACEABILITY §14 is updated.
+
+## D-051 — Permission catalogue, seed roles and authorization — Accepted (Phase 04)
+- The catalogue is code (`Identity/Domain/Permissions.cs`, 56 codes). The `migrate` command synchronises it into `identity.permissions` through `IReferenceDataSynchronizer`; the API never does this on startup. Test hosts run the same synchroniser. `HasData` was rejected because it would fight admin edits of roles in Phase 14.
+- **Managed** roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are reset to their code-defined grants on every `migrate`. **Editable** seed roles (OperationsManager, Support) get their defaults once, when created. Grants of obsolete permissions, and any grant across user types, are removed.
+- Defaults (refining D-018/D-019):
+  - SuperAdmin: every admin and `SuperAdmin.*` permission.
+  - OperationsManager: all `Admin.*` except `Admin.Roles.Manage`, `Admin.Staff.Manage` and `Admin.Settings.Edit`.
+  - Support: view permissions plus `Admin.Bookings.Intervene`, `Admin.Customers.ViewContact` (reveal-with-reason from Phase 14) and `Admin.Reviews.Flag`.
+  - ShopOwner: all `Shop.*`. ShopStaff: bookings, walk-ins, status changes and schedule read.
+  - Full table: `docs/permissions-matrix.md`.
+- **Default deny:** the `/api/v1` route group requires an authenticated user. Endpoints narrow that with `RequirePermission(code)` or `RequireUserType(type)`, or opt out with `AllowAnonymous()`. A global `FallbackPolicy` was rejected because it also applies to unmatched routes and would turn 404/405 into 401.
+- Permissions are resolved from the database per request (one join, cached for the request), so role changes apply on the next request rather than when the access cookie expires. The access cookie carries only `sub`, `sid` and `user_type`.
+
+## D-052 — Cookie sessions, refresh rotation and reuse detection (finalises D-027) — Accepted (Phase 04)
+- **Access cookie** `trimme-access`: an ASP.NET Core cookie-authentication ticket, 15 minutes, no sliding, `HttpOnly; Secure; SameSite=Lax; Path=/`. The scheme answers 401/403 problem details and never redirects.
+- **Refresh cookie** `trimme-refresh`: an opaque 256-bit token (only its SHA-256 is stored), `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, so it reaches only the refresh and sign-out endpoints. Session lifetime is absolute and a refresh never extends it: customers 30 days, staff 7 days.
+- Each session is one token family. A refresh consumes its token atomically (conditional update) and issues the successor. A consumed token presented again within **10 s** answers 409 `auth.refresh_race` (another tab refreshed, and cookies are shared) and revokes nothing. After that it is treated as theft and **revokes the family**.
+- Every authenticated request checks that its session is active and the account enabled (one indexed query in `OnValidatePrincipal`). Sign-out, revoke-one, revoke-others, password reset and reuse detection therefore take effect **immediately**.
+- Data Protection keys (cookie tickets, reset tokens, encrypted phones) live in `infra.data_protection_keys`, shared by every API container and surviving restarts. They are stored unencrypted at rest; wrapping them with a certificate is a Phase 17 item.
+- Web: Server Components cannot refresh, because the refresh cookie is never sent to page paths. `requireUser` therefore redirects to `/[locale]/auth/session?returnTo=…`, a client page that refreshes once, confirms with `/me` and returns, or else sends the user to the matching sign-in page. Client API calls refresh once on a 401 and retry. `returnTo` accepts only same-origin relative paths.
+
+## D-053 — CSRF on every unsafe API request — Accepted (Phase 04)
+- Double-submit token: `GET /api/v1/auth/csrf` sets the readable `trimme-csrf` cookie (`Secure; SameSite=Lax; Path=/`).
+- Every unsafe `/api/v1` request, **anonymous ones included** (against sign-in CSRF), must echo it in `X-CSRF-Token`, compared in constant time.
+- The check runs after routing and only for endpoints that carry the group's CSRF metadata, so unknown routes keep 404 and wrong methods keep 405. `SkipCsrf()` exists for future signature-verified webhooks.
+- Sign-in rotates the token; refresh does not, so a retried request stays valid. The web client fetches the token lazily on its first unsafe call.
+
+## D-054 — Customer OTP rules — Accepted (Phase 04, refines D-037)
+- 6 digits, 5-minute expiry, 3 attempts per code (atomic counter), 30-second resend cooldown, and at most 5 codes per number per hour. A newer code supersedes older ones. Codes are stored as a keyed hash bound to the challenge and are never logged. The per-IP `otp` rate-limit policy applies on top.
+- Enumeration-safe: requesting a code looks the same for new and existing numbers, and `isNewUser` is revealed only after verification.
+- Terms acceptance is captured on sign-up, or at profile completion for customers who started from the sign-in screen.
+- Delivery: the `DevInbox` sender (in memory, read through the dev-only `GET /api/v1/dev/otp-inbox/latest`, which is excluded from OpenAPI) in Development and Testing. Startup fails if it is configured anywhere else. Without a channel the API answers 503 `otp.delivery_unavailable` until the WhatsApp adapter lands in Phase 15.
+
+## D-055 — Staff passwords, lockout, reset and invitations — Accepted (Phase 04)
+- Policy (NIST style): at least 10 characters and 4 distinct characters, no composition rules. Lockout after 5 failures, for 15 minutes.
+- Unknown emails verify a dummy hash, so both paths cost one hash and return the same `auth.invalid_credentials`. A locked account reports `auth.locked_out`; that reveals existence only after five failures on the address, which is accepted.
+- Reset: the request always answers 202. The link carries the user id and a 1-hour Identity token, never logged. A successful reset signs out every session and clears the lockout.
+- Staff accounts exist only through admin invitations: a 7-day single-use token (hash stored), the newest invitation per address wins, and the role must belong to the invited user type. The first SuperAdmin comes from the development bootstrap (R-AUTH-03).
+
+## D-056 — Email channel and production-only secrets — Accepted (Phase 04)
+- MailKit SMTP behind `IEmailSender`; emails are localized in Arabic (RTL) and English. Local compose and the integration tests use Mailpit (`axllent/mailpit:v1.31.2`). Links use `Web:PublicBaseUrl`.
+- Outside Development and Testing the API refuses to start without `Email:Smtp:Host` and `PersonalData:LookupKey` (base64, at least 32 bytes). The development lookup key is public and only used locally.
+
+## D-057 — Strict JSON number handling — Accepted (Phase 04)
+The API uses `JsonNumberHandling.Strict`. The ASP.NET web defaults (numbers readable from strings) made the OpenAPI contract type every number as `integer | string`; strict handling gives the generated TypeScript plain `number`s.
+
+## D-058 — Local stack additions — Accepted (Phase 04)
+- Compose gains `mailpit` (web UI on `TRIMME_MAILPIT_PORT`, default 8025) and a one-shot `seed` service (`seed --dev` with `TRIMME_ALLOW_DEV_SEED=true`). The seed creates the bootstrap admin from `TRIMME_BOOTSTRAP_ADMIN_EMAIL`/`_PASSWORD`, whose local defaults are `admin@trimme.local` / `trimme local admin`. The API waits for both.
+- In local compose the web container proxies `/api`, so every browser shares one client IP at the API. Compose therefore raises the `otp` and `auth` rate limits for development and E2E only. Production keeps the code defaults and sits behind Nginx with forwarded client IPs.
+- Sign-in style forms validate on submit, not on blur: an on-blur error under the autofocused empty field shifted the links below it and made the first click miss (found by E2E).

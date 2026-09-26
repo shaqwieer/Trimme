@@ -45,7 +45,7 @@ public static class RateLimitingSetup
 
     /// <summary>
     /// Registers every named policy as a fixed window partitioned by client IP address
-    /// (authenticated-user partitioning is added with Identity in Phase 04). Limits are configurable
+    /// for anonymous callers and by user once authenticated. Limits are configurable
     /// per policy under <c>RateLimiting:{policy}</c>; rejected requests get a 429 problem response.
     /// </summary>
     public static IServiceCollection AddTrimmeRateLimiting(this IServiceCollection services, IConfiguration configuration)
@@ -74,7 +74,7 @@ public static class RateLimitingSetup
                 var windowSeconds = configured?.WindowSeconds > 0 ? configured.WindowSeconds : defaults.WindowSeconds;
 
                 options.AddPolicy(name, httpContext => RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: $"{name}:{httpContext.Connection.RemoteIpAddress}",
+                    partitionKey: PartitionKey(name, httpContext),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = permitLimit,
@@ -85,5 +85,16 @@ public static class RateLimitingSetup
         });
 
         return services;
+    }
+
+    /// <summary>Authenticated callers are limited per user (so NAT-shared IPs do not throttle each other); anonymous callers per IP.</summary>
+    internal static string PartitionKey(string policy, HttpContext httpContext)
+    {
+        var subject = httpContext.User.Identity?.IsAuthenticated == true
+            ? httpContext.User.FindFirst(TrimmeClaims.Subject)?.Value
+            : null;
+        return subject is not null
+            ? $"{policy}:user:{subject}"
+            : $"{policy}:ip:{httpContext.Connection.RemoteIpAddress}";
     }
 }

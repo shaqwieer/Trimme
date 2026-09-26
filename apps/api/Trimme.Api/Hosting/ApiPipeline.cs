@@ -30,11 +30,18 @@ internal static class ApiPipeline
         }
 
         app.UseCors(CorsSetup.PolicyName);
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseMiddleware<CsrfProtectionMiddleware>();
         app.UseRateLimiter();
 
         MapPlatformEndpoints(app);
 
-        var api = app.MapGroup(ApiPrefix);
+        // Default deny (R-AUTH-09): every feature endpoint requires a signed-in user unless it explicitly allows
+        // anonymous access, and every unsafe method requires the CSRF header.
+        var api = app.MapGroup(ApiPrefix)
+            .RequireAuthorization()
+            .RequireCsrf();
         MetaEndpoints.Map(api);
         foreach (var module in modules)
         {

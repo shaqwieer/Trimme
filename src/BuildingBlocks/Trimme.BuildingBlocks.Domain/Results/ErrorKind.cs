@@ -9,5 +9,6 @@ public enum ErrorKind
     Unauthorized,
     BusinessRule,
     RateLimited,
+    Unavailable,
     Unexpected,
 }

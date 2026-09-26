@@ -6,6 +6,7 @@ internal static class MetaEndpoints
     public static void Map(RouteGroupBuilder api)
     {
         api.MapGet("/meta", GetMeta)
+            .AllowAnonymous()
             .WithName("GetApiMeta")
             .WithTags("Meta")
             .WithSummary("API name, version and current server time (UTC).");

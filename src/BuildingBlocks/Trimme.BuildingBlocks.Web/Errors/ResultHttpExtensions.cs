@@ -19,10 +19,17 @@ public static class ResultHttpExtensions
             ErrorKind.Unauthorized => StatusCodes.Status401Unauthorized,
             ErrorKind.BusinessRule => StatusCodes.Status422UnprocessableEntity,
             ErrorKind.RateLimited => StatusCodes.Status429TooManyRequests,
+            ErrorKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
             _ => StatusCodes.Status500InternalServerError,
         };
 
-        var extensions = new Dictionary<string, object?> { [ApiErrorCodes.ErrorCodeExtension] = error.Code };
+        var extensions = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var (key, value) in error.Details ?? new Dictionary<string, object>())
+        {
+            extensions[key] = value;
+        }
+
+        extensions[ApiErrorCodes.ErrorCodeExtension] = error.Code;
         if (error.FieldErrors is not null)
         {
             extensions[ApiErrorCodes.FieldErrorsExtension] = error.FieldErrors;

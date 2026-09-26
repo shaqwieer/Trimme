@@ -1,89 +1,61 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-25 (end of Session 2, after Phase 03)
-- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git)
-- HEAD commit: the RSC-safety fix commit on top of Phase 03 commits `610ebec` and `c9b81ed`. Run `git log --oneline -6`.
-- Working tree status: clean after those commits. `main` was pushed at the user's request, and GitHub Actions [run 36201825328](https://github.com/shaqwieer/Trimme/actions/runs/36201825328) on `5ad3a1e` is green (all 4 jobs). The local Docker stack is **stopped**.
-- Current phase: 03 is complete. Phase 04 has not started.
-- Phase score: 100 / 100 (Phase 03)
-- Last fully completed phase: 03, design-system component library
+- Updated at: 2026-09-26 (Session 3, after Phase 04)
+- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 04 is committed locally and **not pushed** (push only when the user asks).
+- HEAD commit: the Phase 04 commit (`feat: phase 04 identity, sessions, roles and permissions`). Run `git log --oneline -3`.
+- Working tree status: clean after the commit. The local Docker stack is **running** (web 3300, API 8080, DB 5434, Mailpit UI 8325).
+- Current phase: 04 is complete. The user asked to continue with Phase 05 in the same session.
+- Phase score: 100 / 100 (Phase 04)
+- Last fully completed phase: 04, identity, sessions, roles and permissions
 
 ## Completed this session
-- **Phases 01 and 02** are complete, with CI verified green on GitHub (runs `36134142951` and `36134661434`).
-- **Phase 03, design-system component library:**
-  - **Components** (`apps/web/src/components/ui/`):
-    - icons;
-    - Button, IconButton, the Field kit, Phone/OTP/Search/Select/Textarea, Checkbox, Switch, RangeSlider;
-    - RadioCard, chips, SegmentedControl, Tabs, LinkTabs;
-    - badges, StatusBadge, rating;
-    - cards: shop, service, professional, appointment, KPI, avatar;
-    - charts: rating distribution, bar chart, QR card;
-    - booking controls: DateStrip, SlotGrid, Stepper, CalendarMonth;
-    - overlays: Dialog, ConfirmDialog, Sheet, Tooltip, DropdownMenu, Toast;
-    - data display: ResponsiveTable, Pagination, Breadcrumb, Timeline, UploadDropZone;
-    - page states.
-  - **Form kit** (`src/lib/forms/`): Zod schemas that return message keys, `useZodForm`, form fields and `applyProblemToForm`.
-  - **Local-date helpers** in `src/lib/i18n/localDate.ts`.
-  - **Shells:**
-    - The DashboardShell drawer now runs on the Radix `Sheet`, and `useFocusTrap` was removed.
-    - `CustomerShell` uses `IconButton`.
-    - A Radix `DirectionProvider` wraps the locale layout and test renders.
-  - **Gallery:** dev-only, at `/[locale]/dev/components`. An RSC proof route (`/[locale]/dev/components/server`, no `'use client'`) shows the server-safe components render from a Server Component; the handler-attaching controls live in `selection.client.tsx` and `RatingInput.tsx`.
-  - **Tests:**
-    - 147 Vitest tests, including axe checks.
-    - A Playwright gallery spec covering axe with contrast, RTL keyboard navigation, focus return, zero horizontal overflow at 390/768/1024/1440, and captures at three widths.
-    - A Prettier config for E2E, with CI format and typecheck checks now covering E2E.
-  - **Decisions and deviations:**
-    - D-048 and D-049 added.
-    - Design deviations DV-T04 and DV-T05 applied; DV-T07 to DV-T10 added.
+- Re-validated Phase 03 (backend 73/56/27, web 147, compose smoke, E2E 30/30).
+- **Phase 04** (details and evidence in `phases/phase-04-identity.md`):
+  - ASP.NET Core Identity on the shared context (schema `identity`), one migration `20260926080806_Identity` (also `infra.data_protection_keys`).
+  - Customer passwordless sign-in (6-digit OTP, dev inbox), profile completion; staff email + password sign-in with lockout, forgot/reset by email, admin invitations.
+  - Cookie sessions: 15-min access cookie, rotating refresh cookie scoped to `/api/v1/auth`, reuse detection, per-request session validation, session list / revoke / revoke-others / sign-out.
+  - CSRF double-submit on every unsafe `/api/v1` request; default-deny `/api/v1`; permission catalogue (56 codes) + seed roles synchronised by `migrate`; endpoint matrix test.
+  - Mailpit + one-shot `seed` (bootstrap SuperAdmin) in compose.
+  - Web auth pages, `/account`, `/account/security`, `/admin`, `/shop`, server guards, silent refresh, permission-aware admin navigation.
+  - Docs: `docs/permissions-matrix.md`, architecture auth section, README, design deviations, D-050…D-058, TRACEABILITY.
 
 ## Verification evidence
-- Command: `pnpm lint` / `pnpm typecheck` (web + E2E) / `pnpm format:check` (web + E2E)
+- Command: `dotnet build Trimme.slnx -c Release --no-incremental`
+  Result: PASS, 0 warnings
+- Command: unit / architecture / integration tests
+  Result: PASS, 99 / 56 / 65 (integration uses Testcontainers PostGIS + Mailpit)
+- Command: negative probe on the endpoint matrix test
+  Result: fails as expected when a permission is removed; reverted
+- Command: `dotnet ef migrations has-pending-model-changes`
+  Result: PASS, no changes
+- Command: `pnpm lint`, `pnpm typecheck` (+ E2E), `pnpm format:check` (+ E2E), `pnpm test`, `pnpm openapi:check`, `pnpm build`
+  Result: PASS (165 web tests)
+- Command: clean-volume `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 bash infra/scripts/compose-smoke.sh`
   Result: PASS
-- Command: `pnpm test`
-  Result: PASS, 147/147 in 14 files
-- Command: `pnpm openapi:check`; `pnpm build`
-  Result: PASS
-- Command: `TRIMME_WEB_PORT=3300 bash infra/scripts/compose-smoke.sh` (clean volume)
-  Result: PASS. The API was ready, web `/ar` returned 200, and the proxy worked.
-- Command: `E2E_BASE_URL=http://localhost:3300 pnpm e2e`, run twice (after the RSC fix)
-  Result: PASS, 30/30 both times
-- Command: gitleaks `dir` scan
+- Command: `E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 pnpm e2e`, run twice
+  Result: PASS, 36/36 both times
+- Command: gitleaks `dir` + `git`
   Result: PASS, no leaks
-- Visual comparison against `design/reference/1440/ds-components.jpg` at 1440, 768 and 390, in Arabic and English: matches, apart from the documented deviations.
 
 ## Database and migrations
-- No new migrations. `Initial` is unchanged.
+- Created: `20260926080806_Identity`. Applied locally only (Testcontainers databases and the local compose volume).
 
 ## Decisions added
-- **D-048:** Radix (via `radix-ui`) is used only for Dialog/Sheet, DropdownMenu, Tooltip, Tabs and Slider. Forms use React Hook Form with Zod message keys; `tailwind-merge` is not used. Axe runs in jsdom (without contrast) plus Playwright. Components are RSC-safe where possible and follow D-009, D-016 and D-037.
-- **D-048 addendum:** RSC safety verified by the proof route plus E2E and a negative probe (500 when a handler slips in).
-- **D-049:** accessibility adjustments:
-  - contrast fixes for the switch off-track and the segmented control;
-  - bar-chart colour, plus alternative ways to read the data (values on hover, a data table) where bar contrast is low;
-  - `sr-only` inputs contained inside their labels, and `min-w-0` on fieldsets;
-  - Arabic initials that skip the definite article;
-  - toast timing;
-  - Radix focus return handled via the `trigger` prop.
+- D-050 Identity on the shared context; customer name/locale/terms and encrypted mobile on the Identity user (CustomerProfile moves to Phase 12).
+- D-051 Permission catalogue, managed vs editable seed roles, default deny, per-request permission resolution.
+- D-052 Cookie sessions, refresh rotation, reuse detection, immediate revocation, DP keys in the database, web session restore.
+- D-053 CSRF on every unsafe request.
+- D-054 OTP rules. D-055 Staff passwords, lockout, reset, invitations.
+- D-056 Email channel and production-only secrets. D-057 Strict JSON numbers. D-058 Local stack additions (seed, Mailpit, dev rate limits, submit-time validation on sign-in forms).
 
 ## Known issues or blockers
-- Phase 03 CI is green on GitHub (run 36201825328).
-- Port constraints on this machine are unchanged: web on 3300, DB on 5434, API on 8080.
+- CI has not run on the Phase 04 commit (not pushed). The CI stack job uses Mailpit on its default port 8025, which matches the E2E default.
+- This machine has port 8025 taken: use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325` (recorded in CLAUDE.md).
+- The `revoking other devices` E2E waits 31 s for the per-number resend cooldown.
 
 ## Exact next action
-1. Start Phase 04 (`phases/phase-04-identity.md`). Re-validate first:
-   - `git status`
-   - `pnpm test`
-   - `bash infra/scripts/compose-smoke.sh` with `TRIMME_WEB_PORT=3300`
-   - `E2E_BASE_URL=http://localhost:3300 pnpm e2e`
-2. Implement identity per D-037:
-   - customers sign in passwordless with mobile + a 6-digit OTP (fake `IOtpSender`);
-   - staff use email + password, with forgot/reset over email (`IEmailSender`, Mailpit in compose);
-   - cookie sessions with refresh rotation;
-   - CSRF protection;
-   - roles and the permission catalogue (no transfer permission);
-   - auth pages built from the Phase 03 form kit (`PhoneField`, `OtpField`, `useZodForm`, `applyProblemToForm`);
-   - `ExpiredSession` and `PermissionDenied` wired to 401/403.
+1. Start Phase 05 (`phases/phase-05-tenancy-privacy.md`). Re-validate with `dotnet test --project tests/Trimme.IntegrationTests -c Release` and `pnpm e2e` against the stack.
+2. Build on Phase 04: shop users get `ShopId` claims (`ICurrentUser` gains `ShopId`), `InvitationIssuer` issues shop-user invitations (`Admin_InvitesShopUser`), and the phone helper `MobileNumber` is replaced by the platform phone value object (keep stored values stable).
 
 ## Files intentionally left modified
 - None.

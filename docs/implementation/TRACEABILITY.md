@@ -8,13 +8,13 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter`; A `NoProfessionalUpdateContract_ContainsShopId`; I `OpenApi_HasNoTransferOperation`; I `PermissionCatalogue_HasNoTransferPermission`; E `admin_professional_page_has_no_transfer_action`; C `grep` gate for transfer terms in `apps/` and `src/` | [ ] |
+| R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter`; A `NoProfessionalUpdateContract_ContainsShopId`; I `OpenApi_HasNoTransferOperation`; I `PermissionCatalogue_HasNoTransferPermission` ✔ Phase 04; E `admin_professional_page_has_no_transfer_action`; C `grep` gate for transfer terms in `apps/` and `src/` | [~] |
 | R-NEG-02 | No payment/checkout UI or charge flow | §2, §12, §23 | 12, 18 | E `booking_flow_has_no_payment_step`; C OpenAPI has no payment/charge operations; M review | [ ] |
 | R-NEG-03 | No customer export for shops | §7, §13 | 13 | I `ShopApi_HasNoExportEndpoints`; E `shop_dashboard_has_no_export_action` | [ ] |
 | R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` (reflection over all shop DTO types + JSON snapshot of every shop endpoint); I `ShopHub_Messages_DoNotContainPhone`; I `Logs_RedactPhoneNumbers`; E `shop_pages_payload_has_no_customer_phone` (network capture) | [ ] |
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` (DB constraint) | [ ] |
 | R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateProfessional`, `Shop_CannotAssignProfessionalService` (403) | [ ] |
-| R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; full auth check Phase 04 | [~] |
+| R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; E auth flows assert empty Web Storage and that `document.cookie` exposes neither `trimme-access` nor `trimme-refresh` after customer and staff sign-in ✔; I `Cookies_AreSecureHttpOnly` (tokens never in a response body) ✔ Phase 04 | [x] |
 | R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate; I plans served from DB only | [ ] |
 | R-NEG-09 | No hardcoded final WhatsApp message text in jobs/handlers | §16 | 15 | A `Notifications_Handlers_DoNotContainMessageLiterals`; I dispatch renders from active template version | [ ] |
 | R-NEG-10 | Private dashboards not indexed | §6 | 11, 17 | I/E `private_routes_emit_noindex`; robots.txt test | [ ] |
@@ -29,11 +29,11 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-FND-04 | Health endpoints liveness/readiness | §3 | 1 | I `Health_Live_Returns200`, `Health_Ready_ChecksDatabase`, `Health_Ready_Returns503_WhenDatabaseIsUnreachable`; container `HEALTHCHECK` healthy | [x] |
 | R-FND-05 | OpenAPI document + generated TS client, drift check | §18 | 1, 2 | I `OpenApi_document_matches_committed_contract` ✔ Phase 01; C `pnpm openapi:check` (generated `schema.d.ts` vs `v1.json`) ✔ Phase 02 | [x] |
 | R-FND-06 | Structured logging, correlation IDs, PII redaction | §3, §21 | 1, 5 | I `Response_HasCorrelationId_GeneratedWhenMissing`, `Response_EchoesOnlyWellFormedCorrelationIds`; U `SensitiveDataRedactorTests` (phones incl. Arabic-Indic, JWT/Bearer, e-mail, sensitive names, enricher) | [x] |
-| R-FND-07 | EF migrations from empty DB (PostGIS, btree_gist) | §19 | 1 → every data phase | I `Migrations_ApplyToEmptyDatabase`, `Migrations_AreIdempotent`, `Model_HasNoPendingChanges`; C `dotnet ef migrations has-pending-model-changes` — re-run by every data phase | [~] |
+| R-FND-07 | EF migrations from empty DB (PostGIS, btree_gist) | §19 | 1 → every data phase | I `Migrations_ApplyToEmptyDatabase`, `Migrations_AreIdempotent`, `Model_HasNoPendingChanges`; C `dotnet ef migrations has-pending-model-changes` — re-run by every data phase (✔ Phase 04 with `Identity`) | [~] |
 | R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh`: postgis → migrate → api → web, web `/ar` 200 + web-origin `/api` proxy; containers healthy | [x] |
 | R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` jobs backend, web, secret-scan, stack (compose + Playwright) — **green on GitHub Actions run 36134142951** | [x] |
 | R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C gitleaks v8.30.1 (`.gitleaks.toml`) working tree + history: no leaks; `.env.example`, `infra/.env.example` | [x] |
-| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔ Phase 01; determinism test when the first seeder lands (Phase 05) | [~] |
+| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔ Phase 01; I `AdminBootstrap_RequiresDevelopmentAndEnv` (idempotent bootstrap seeder) ✔ Phase 04; compose `seed` service ✔ Phase 04; determinism test when demo data lands (Phase 05) | [~] |
 | R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken`, `Feature_endpoints_are_versioned_under_api_v1` (re-run every phase) | [x] |
 | R-FND-13 | Pagination with safe max page size, filtering, sorting | §18, §21 | 5+ | U `PageRequest_ClampsPageSize`; A list endpoints return paged envelopes | [ ] |
 | R-FND-14 | Security headers, request size limits, upload validation | §9 | 1, 17 | I `SecurityHeaders_Present`, `RequestBody_TooLarge_Returns413Problem` ✔ Phase 01; upload validation Phase 06/17 | [~] |
@@ -50,27 +50,27 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-WEB-05 | No hardcoded UI strings; ar/en key parity | §6 | 2 → all | W `messages_have_key_parity` (keys, empties, ICU placeholders; failure proven); C `react/jsx-no-literals` (probe-verified) — continues every phase | [~] |
 | R-WEB-06 | Locale-aware date/time/number/currency (SAR, Asia/Riyadh), bidi-safe phones/times/prices | §5, §6 | 2 | W `formatters_ar_en` (Gregorian Arabic, Asia/Riyadh, D-040 numerals, SAR, distance, rating, phone); E `bdi` LTR isolation | [x] |
 | R-WEB-07 | Responsive at ~390/768/1440; dashboards sidebar + mobile drawer; tables → cards on small screens | §5 | 3, 13, 14 | E shells + gallery: RTL/LTR sidebar side, drawer <1200, bottom bar, table→cards <768, **no horizontal overflow at 390/768/1024/1440**; `captureViewports` ✔ Phases 02–03; screen-level layouts Phases 11–14 | [~] |
-| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W `ErrorState`/`PermissionDenied`/`ExpiredSession`/`SkeletonList`/`InlineAlert`, toast rollback-ready ✔ Phase 03; E `expired_session_redirects_to_sign_in` Phase 04; optimistic rollback in Phase 13 | [~] |
+| R-WEB-08 | Loading, empty, error, permission-denied, expired-session states; optimistic rollback | §5 | 3 → all | W `ErrorState`/`PermissionDenied`/`ExpiredSession`/`SkeletonList`/`InlineAlert`, toast rollback-ready ✔ Phase 03; E `expired_session_redirects_to_sign_in` (silent refresh, then sign-in with `returnTo`) and PermissionDenied for a customer on `/admin` ✔ Phase 04; W session fetch refresh/retry/expiry ✔ Phase 04; optimistic rollback in Phase 13 | [~] |
 | R-WEB-09 | WCAG AA contrast, keyboard nav, visible focus, labels, accessible dialogs, 44px targets | §5 | 3, 17 | W token contrast (text 4.5:1, switch 3:1, segmented), dialog focus trap/return, labelled controls, axe (jsdom); E axe 0 serious/critical incl. contrast on /ar, /en, 3 shells, gallery ar/en ✔ Phases 02–03 — continues every phase | [~] |
 | R-WEB-10 | Localized metadata, canonical, hreflang, OG, robots.txt, sitemap | §6 | 11, 17 | I/E `public_pages_have_hreflang_and_canonical`; `sitemap_lists_shops` | [ ] |
 | R-WEB-11 | JSON-LD (Organization, LocalBusiness, Breadcrumb, AggregateRating only when real data) | §6 | 11 | W/E `jsonld_aggregateRating_absent_without_reviews` | [ ] |
 | R-WEB-12 | RSC for public/read-heavy routes; client only where needed | §3 | 11 | M review + bundle report | [ ] |
-| R-WEB-13 | Permission-aware navigation | §19 | 4, 13, 14 | W `nav_hides_items_without_permission`, DashboardShell permission test ✔ (config-level); wired to real permissions in Phase 04 | [~] |
+| R-WEB-13 | Permission-aware navigation | §19 | 4, 13, 14 | W `nav_hides_items_without_permission`, DashboardShell permission test ✔; E SuperAdmin sees "Subscription plans", an invited OperationsManager does not (real `/me` permissions) ✔ Phase 04; per-screen checks in 13/14 | [~] |
 | R-WEB-14 | Forms: RHF + Zod; API error mapping to fields | §3, §19 | 3+ | W `problemDetails_maps_to_field_errors` (exact API `validation.failed` shape → RHF field errors + form-level fallback), Zod schemas return message keys, translated errors | [x] |
 
 ## 4. Identity, sessions, authorization
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-AUTH-01 | Customer self-registration + sign-in per design flow with verified mobile (D-005) | §9, §12 | 4 | I `Customer_SignUp_VerifiesMobile`; E flow 1 (auth part) | [ ] |
-| R-AUTH-02 | Shop accounts created/invited by admin only | §9 | 4, 5 | I `ShopAccount_CannotSelfRegister`; I `Admin_InvitesShopUser` | [ ] |
-| R-AUTH-03 | Admin seeded only in dev via env vars / one-time bootstrap | §9 | 4 | I `AdminBootstrap_RequiresDevelopmentAndEnv` | [ ] |
-| R-AUTH-04 | Short access + rotating refresh in Secure/HttpOnly/SameSite cookies; reuse detection | §9 | 4 | I `Refresh_Rotates`, `RefreshReuse_RevokesFamily`; I `Cookies_AreSecureHttpOnly` | [ ] |
-| R-AUTH-05 | Sign-out, revoke-all-sessions, session list | §9 | 4 | I `RevokeAll_InvalidatesOtherSessions`; E account security page | [ ] |
-| R-AUTH-06 | Password reset (staff) / verification per D-005 | §9 | 4 | I `Staff_PasswordReset_Flow` | [ ] |
-| R-AUTH-07 | Rate limiting + lockout (auth, OTP) | §9, §18 | 4 | I `Otp_RateLimited`, `Lockout_AfterFailedAttempts` | [ ] |
-| R-AUTH-08 | CSRF protection for cookie-authenticated unsafe requests | §9 | 4 | I `UnsafeRequest_WithoutCsrf_Rejected` | [ ] |
-| R-AUTH-09 | Roles + data-driven permission catalogue; authorization enforced by API | §7 | 4 | I `Endpoint_WithoutPermission_Returns403` matrix test over all endpoints | [ ] |
+| R-AUTH-01 | Customer self-registration + sign-in per design flow with verified mobile (D-005) | §9, §12 | 4 | I `Customer_SignUp_VerifiesMobile` (+ attempts, expiry, single use, terms) ✔; E "signs up with a WhatsApp code, completes the profile and manages sessions" ✔ | [x] |
+| R-AUTH-02 | Shop accounts created/invited by admin only | §9 | 4, 5 | I `ShopAccount_CannotSelfRegister` ✔; I `Admin_InvitesStaffUser_WhoAcceptsAndSignsIn` (admin-staff invitation via Mailpit) ✔, `Invitation_CannotGrantARoleOfAnotherUserType` ✔; E invited OperationsManager ✔ Phase 04; I `Admin_InvitesShopUser` needs `Shop` (Phase 05) | [~] |
+| R-AUTH-03 | Admin seeded only in dev via env vars / one-time bootstrap | §9 | 4 | I `AdminBootstrap_RequiresDevelopmentAndEnv` ✔; compose `seed` service creates it once ✔ | [x] |
+| R-AUTH-04 | Short access + rotating refresh in Secure/HttpOnly/SameSite cookies; reuse detection | §9 | 4 | I `Refresh_Rotates` (incl. 15-min access expiry), `RefreshReuse_RevokesFamily` (incl. 10 s race grace), `Cookies_AreSecureHttpOnly` ✔ | [x] |
+| R-AUTH-05 | Sign-out, revoke-all-sessions, session list | §9 | 4 | I `RevokeAll_InvalidatesOtherSessions` (other access cookie rejected immediately), `SignOut_EndsTheSession_AndClearsCookies`, `RevokeSession_OfAnotherUser_Returns404` ✔; E "revoking other devices signs them out immediately" ✔ | [x] |
+| R-AUTH-06 | Password reset (staff) / verification per D-005 | §9 | 4 | I `Staff_PasswordReset_Flow` (Mailpit link, sessions revoked, single use), `ForgotPassword_UnknownEmailOrCustomer_Returns202_AndSendsNothing`, `ResetPassword_RejectsWeakPassword_WithFieldError` ✔; E forgot → Mailpit → reset → sign in ✔ | [x] |
+| R-AUTH-07 | Rate limiting + lockout (auth, OTP) | §9, §18 | 4 | I `Otp_RateLimited_PerNumber_WithResendCooldown`, `Otp_RateLimited_PerClient`, `Lockout_AfterFailedAttempts`, `Staff_SignIn_UnknownEmailAndWrongPassword_AreIndistinguishable` ✔ | [x] |
+| R-AUTH-08 | CSRF protection for cookie-authenticated unsafe requests | §9 | 4 | I `UnsafeRequest_WithoutCsrf_Rejected`, `CsrfCheck_DoesNotMaskRoutingErrors_OrSafeMethods`, `CsrfToken_RotatesOnSignIn`, `Cors_Preflight_AllowsCsrfHeader_WithCredentials_ForKnownOriginOnly` ✔ | [x] |
+| R-AUTH-09 | Roles + data-driven permission catalogue; authorization enforced by API | §7 | 4 | I `Endpoint_WithoutPermission_Returns403` matrix over every `/api/v1` endpoint (proven non-vacuous by removing a permission: test failed) ✔; I `CatalogueSync_RestoresManagedRoles_AndKeepsAdminEditsToEditableRoles`, `SeedRoles_GrantOnlyPermissionsOfTheirUserType` ✔; `docs/permissions-matrix.md` ✔ | [x] |
 | R-AUTH-10 | SuperAdmin-only plan/pricing & overrides | §7, §15 | 8 | I `NonSuperAdmin_CannotManagePlans`, `Shop_CannotManagePlans` | [ ] |
 
 ## 5. Tenancy and privacy
@@ -139,7 +139,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-CUS-09 | Post-completion review once; foreign/incomplete rejected | §12, §17 | c-rate | 12 | I `Review_OnlyOnce_OnlyCompleted_OnlyOwner`; E flow 7 | [ ] |
 | R-CUS-10 | Favorites (shops, professionals) — present in design | §12 | c-profile | 12 | I/E favorites toggle | [ ] |
 | R-CUS-11 | Notifications center | §12 | c-profile | 15 | E mark-read | [ ] |
-| R-CUS-12 | Profile, language, security/session settings | §12 | c-profile | 4, 12 | E | [ ] |
+| R-CUS-12 | Profile, language, security/session settings | §12 | c-profile | 4, 12 | E account page + security/session list ✔ Phase 04; language/profile editing Phase 12 | [~] |
 | R-CUS-13 | QR destination with attribution (shop and professional) | §12, §17 | c-qr | 16 | I `QrVisit_Recorded`, `Booking_AttributedToQr`; E | [ ] |
 
 ## 9. Shop dashboard
@@ -198,10 +198,10 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 18 | M — initial README (Phase 01) | [~] |
-| R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M | [~] (design-deviations created Phase 0) |
+| R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M | [~] (design-deviations Phase 0; permissions-matrix Phase 04) |
 | R-DOC-03 | Mermaid: deployed topology + booking/reminder lifecycle | §22 | 1, 15 | M — topology + backend structure in `docs/architecture.md` (Phase 01); lifecycle Phase 10/15 | [~] |
 | R-DOC-04 | Nginx example, HTTPS-ready config, backup/restore instructions | §3 | 18 | M | [ ] |
-| R-DOC-05 | Demo credentials in local-only file excluded from builds | §20 | 4 | C file ignored by git & excluded from Docker context | [ ] |
+| R-DOC-05 | Demo credentials in local-only file excluded from builds | §20 | 4 | C `docs/local/DEMO_CREDENTIALS.local.md` is git-ignored (`git check-ignore` ✔) and `docs/` is excluded from every Docker build context (`.dockerignore`) ✔ | [x] |
 | R-DOC-06 | Final implementation report | §23 | 18 | M | [ ] |
 
 ## 13. Playwright flows (spec §19)
@@ -224,9 +224,10 @@ All seven are re-run as the Phase 18 regression gate.
 
 | Concept | Module (schema) | Shop-owned | Phase | Migration | Notes |
 |---|---|---|---|---|---|
-| User, Role, Permission, UserRole, RolePermission | Identity (`identity`) | — | 4 | 0002_Identity | ASP.NET Core Identity plus the permission catalogue |
-| RefreshSession, OtpChallenge, Invitation | Identity | — | 4 | 0002_Identity | Refresh-token family rotation |
-| CustomerProfile | Customers (`customers`) | — | 4 | 0002_Identity | Mobile is encrypted, with an HMAC lookup |
+| User, Role, Permission, UserRole, RolePermission | Identity (`identity`) | — | 4 | `20260926080806_Identity` ✔ | ASP.NET Core Identity plus the permission catalogue (D-050, D-051) |
+| UserSession + RefreshToken, OtpChallenge, Invitation | Identity | — | 4 | `Identity` ✔ | Refresh-token family rotation (D-052) |
+| Data Protection key ring | BuildingBlocks (`infra`) | — | 4 | `Identity` ✔ | `infra.data_protection_keys` (D-052) |
+| CustomerProfile | Customers (`customers`) | — | 12 | 0010 | Name, locale, terms and the encrypted mobile + HMAC lookup live on the Identity user from Phase 04 (D-050) |
 | Shop, ShopUser | Shops (`shops`) | Shop is the tenant root | 5 | 0003_ShopsTenancyAudit | ShopOwner / ShopStaff |
 | AuditEntry | Administration (`audit`) | Has an optional ShopId | 5 | 0003 | Holds no PII |
 | Shop profile, gallery, EditablePolicy | Shops | ✓ | 6 | 0004 | |

@@ -1,8 +1,8 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-25 (Session 2)
-- **Current phase:** 03 is complete and verified (Session 2). Next: Phase 04, identity, sessions, roles and permissions (not started).
-- **Platform progress:** 400 / 1900 points (Phases 00–03)
+- **Updated:** 2026-09-26 (Session 3)
+- **Current phase:** 04 is complete and verified (Session 3). Next: Phase 05, tenancy, privacy and audit core.
+- **Platform progress:** 500 / 1900 points (Phases 00–04)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -10,7 +10,7 @@
 | 01 Backend & infra foundation | [x] | 100/100 |
 | 02 Web foundation | [x] | 100/100 |
 | 03 Design-system components | [x] | 100/100 |
-| 04 Identity & sessions | [ ] | 0/100 |
+| 04 Identity & sessions | [x] | 100/100 |
 | 05 Tenancy, privacy & audit | [ ] | 0/100 |
 | 06 Shops, locations & professionals | [ ] | 0/100 |
 | 07 Services & packages | [ ] | 0/100 |

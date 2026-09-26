@@ -8,7 +8,7 @@ namespace Trimme.Api.Hosting;
 /// Command-line verbs handled by the API executable (D-038):
 /// <list type="bullet">
 /// <item><c>healthcheck</c>: probes <c>/health/live</c> on the local port (container health checks); runs before the host is built.</item>
-/// <item><c>migrate</c>: applies EF Core migrations, then exits. The API never migrates on startup.</item>
+/// <item><c>migrate</c>: applies EF Core migrations and synchronizes reference data (permission catalogue, system roles), then exits. The API never migrates on startup.</item>
 /// <item><c>seed --dev</c>: runs development seeders, only when <see cref="DevSeedGuard"/> allows it.</item>
 /// </list>
 /// </summary>
@@ -61,6 +61,9 @@ internal static partial class HostCommands
             await db.Database.MigrateAsync(cancellation.Token);
             var applied = (await db.Database.GetAppliedMigrationsAsync(cancellation.Token)).Count();
             LogMigrated(logger, applied);
+
+            var synchronized = await ReferenceData.SynchronizeAsync(scope.ServiceProvider, cancellation.Token);
+            LogReferenceDataSynchronized(logger, synchronized);
             return 0;
         }
 
@@ -95,6 +98,9 @@ internal static partial class HostCommands
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Database is up to date ({AppliedCount} migrations applied in total)")]
     private static partial void LogMigrated(ILogger logger, int appliedCount);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reference data synchronized ({SynchronizerCount} synchronizers)")]
+    private static partial void LogReferenceDataSynchronized(ILogger logger, int synchronizerCount);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Development seed refused: {Reason}")]
     private static partial void LogSeedRefused(ILogger logger, string reason);

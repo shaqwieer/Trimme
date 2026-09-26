@@ -7,6 +7,16 @@ x-api-environment: &api-environment
   ASPNETCORE_ENVIRONMENT: ${TRIMME_API_ENVIRONMENT:-Development}
   ConnectionStrings__Trimme: Host=postgres;Port=5432;Database=${TRIMME_DB_NAME:-trimme};Username=${TRIMME_DB_USER:-trimme};Password=${TRIMME_DB_PASSWORD:-trimme_local_dev};Gss Encryption Mode=Disable
   Cors__AllowedOrigins__0: ${TRIMME_WEB_ORIGIN:-http://localhost:3000}
+  # Links in emails (password reset, invitations) point at the web app.
+  Web__PublicBaseUrl: ${TRIMME_WEB_ORIGIN:-http://localhost:3000}
+  # Local email goes to Mailpit (web UI: http://localhost:8025). Production SMTP is configured only via env vars.
+  Email__Smtp__Host: mailpit
+  Email__Smtp__Port: "1025"
+  Email__Smtp__Security: None
+  # In local compose the web container proxies /api, so every browser shares one client IP at the API.
+  # These higher limits are for local development and E2E only; production keeps the code defaults.
+  RateLimiting__otp__PermitLimit: ${TRIMME_OTP_RATE_LIMIT:-500}
+  RateLimiting__auth__PermitLimit: ${TRIMME_AUTH_RATE_LIMIT:-1000}
 
 services:
   postgres:
@@ -38,6 +48,26 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # One-shot, development only: creates the bootstrap SuperAdmin (R-AUTH-03) and future demo data, then exits.
+  seed:
+    image: trimme-api:dev
+    command: ["seed", "--dev"]
+    environment:
+      <<: *api-environment
+      TRIMME_ALLOW_DEV_SEED: "true"
+      TRIMME_BOOTSTRAP_ADMIN_EMAIL: ${TRIMME_BOOTSTRAP_ADMIN_EMAIL:-admin@trimme.local}
+      TRIMME_BOOTSTRAP_ADMIN_PASSWORD: ${TRIMME_BOOTSTRAP_ADMIN_PASSWORD:-trimme local admin}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  mailpit:
+    image: axllent/mailpit:v1.31.2
+    ports:
+      - "${TRIMME_MAILPIT_PORT:-8025}:8025"
+    restart: unless-stopped
+
   api:
     build:
       context: ..
@@ -47,8 +77,10 @@ services:
     ports:
       - "${TRIMME_API_PORT:-8080}:8080"
     depends_on:
-      migrate:
+      seed:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
     restart: unless-stopped
 
   web:

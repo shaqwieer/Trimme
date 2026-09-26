@@ -68,6 +68,10 @@ public sealed class OpenApiContractTests(PostgresFixture postgres)
         {
             base.ConfigureWebHost(builder);
             builder.UseEnvironment("Production");
+
+            // Production refuses to start without these (see ProductionStartupTests).
+            builder.UseSetting("PersonalData:LookupKey", Convert.ToBase64String(new byte[32]));
+            builder.UseSetting("Email:Smtp:Host", "smtp.invalid");
         }
     }
 }

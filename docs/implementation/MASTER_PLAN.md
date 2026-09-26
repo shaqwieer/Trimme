@@ -133,8 +133,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 01 | Backend & infrastructure foundation | [x] | 100/100 | 00 approved; D-002, D-037 | `phases/phase-01-backend-foundation.md` §Evidence (build 0 warnings; 73 unit / 56 architecture / 27 integration tests; compose healthy; gitleaks clean) | `37500ce` | CI green: run 36134142951 |
 | 02 | Web foundation, i18n/RTL, tokens, shells | [x] | 100/100 | 01 | `phases/phase-02-web-foundation.md` §Evidence (lint/typecheck/format clean; 53 unit tests; build; 20 Playwright on Docker stack; axe 0 serious; clean Linux clone green) | `9c1fcd2` | CI green: run 36134142951 |
 | 03 | Design-system component library | [x] | 100/100 | 02 | `phases/phase-03-design-system.md` §Evidence (147 unit tests incl. axe; gallery axe 0 serious incl. contrast ar/en; zero overflow 390–1440; RSC proof route; Playwright 30/30 ×2 on Docker stack; CI green: run 36201825328) | `610ebec` | — |
-| 04 | Identity, sessions, roles & permissions | [ ] | 0/100 | 03 | — | — | Start next: item 4.1 re-validation |
-| 05 | Tenancy, privacy & audit core | [ ] | 0/100 | 04 | — | — | — |
+| 04 | Identity, sessions, roles & permissions | [x] | 100/100 | 03 | `phases/phase-04-identity.md` §Evidence (build 0 warnings; 99 unit / 56 architecture / 65 integration tests incl. endpoint matrix; web 165 tests; E2E 36/36 ×2 on a clean stack; gitleaks clean) | see `git log` (phase 04 commit) | CI run after push |
+| 05 | Tenancy, privacy & audit core | [ ] | 0/100 | 04 | — | — | Start next: item 5.1 re-validation |
 | 06 | Shops, locations & professionals | [ ] | 0/100 | 05 | — | — | — |
 | 07 | Services, categories & packages | [ ] | 0/100 | 06 | — | — | — |
 | 08 | Subscriptions foundation & platform settings | [ ] | 0/100 | 07 | — | — | — |
@@ -149,7 +149,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
 | 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 400 / 1900 points.**
+**Platform total: 500 / 1900 points.**
 
 ## 9. Risks and external dependencies
 
@@ -160,7 +160,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | MediatR v13+ commercial licence (free Community tier < $5M revenue, key required; missing key only logs warnings) | Resolved | D-004/D-037: in-house dispatcher |
 | Production map tiles / geocoding provider; design has **no** location pin picker | Production needs a self-hosted or OSM-based host (public OSM services forbid heavy use) | D-007/D-037: OpenStreetMap behind adapters; the picker is designed in the TRIMME visual language (DV-A02) |
 | OTP delivery channel (WhatsApp auth template / SMS fallback provider) | Phase 4 uses a fake sender; prod needs Meta auth template approval | Adapter + fake; recorded in `docs/whatsapp-integration.md` |
-| Email/SMTP provider for staff invitations and password resets | Phase 4 uses a Mailpit dev fake; production needs a provider | `IEmailSender` adapter; configured only through environment variables |
+| Email/SMTP provider for staff invitations and password resets | Mailpit locally (Phase 04); production needs a provider | `IEmailSender` (MailKit SMTP); `Email__Smtp__*` env vars only; API refuses to start in production without it (D-056) |
 | Meta WhatsApp Business account, phone number ID, approved templates | Phase 15 production readiness only | Fake provider locally; config documented |
 | Design gaps: many desktop layouts, English screens, admin editors absent (see deviations A-items) | Extra design work each phase | Compose from the design-system components; record each in `design-deviations.md` |
 | AA contrast failures in design tokens (`#4A7FB5` links 4.20:1, tertiary greys 2.1–2.8:1) | a11y gate | Token fix D-021 |
