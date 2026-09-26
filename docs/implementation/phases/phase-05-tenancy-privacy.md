@@ -109,6 +109,8 @@ Session 3, 2026-09-26 (same session as Phase 04, at the user's request).
 | `pnpm e2e` ×2 | PASS — 38/38 both runs (incl. the tenancy flow and `shop_user_cannot_open_another_shop`, axe 0 serious on admin shops list/detail and `/shop`) |
 | Visual: `/ar/admin/shops` at 1440, `/en/admin/shops` at 390 | RTL table with the sidebar on the inline start; cards below 768px |
 
+**Commit:** `6a65a9d` (plus a docs follow-up).
+
 **Database and migrations:** `ShopsTenancyAudit` (schemas `shops`, `administration`; `users.shop_id`, `invitations.shop_id` with FKs). Applied locally only.
 
 **Smallest decisive re-verification for the next session:** `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Tenancy"` and `dotnet test --project tests/Trimme.ArchitectureTests -c Release`, then `pnpm e2e` against the stack.

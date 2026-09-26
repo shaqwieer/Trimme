@@ -1,6 +1,6 @@
 # TRIMME — Permissions matrix
 
-> Source of truth: `src/Modules/Identity/Trimme.Modules.Identity/Domain/Permissions.cs` (catalogue) and `SystemRoles.cs` (seed roles). The `migrate` command synchronises both into `identity.permissions` / `identity.role_permissions` (D-051). This file is generated from the catalogue; regenerate it when the catalogue changes.
+> Source of truth: `src/Modules/Identity/Trimme.Modules.Identity/Domain/Permissions.cs` (catalogue) and `SystemRoles.cs` (seed roles). The `migrate` command synchronises both into `identity.permissions` / `identity.role_permissions` (D-051). Update this file with every catalogue change: `PermissionsMatrixDocTests` fails when a permission or role is missing here.
 
 ## Rules
 

@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-26 (end of Session 3, after Phases 04 and 05)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 04 and 05 are committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: the Phase 05 commit (`feat: phase 05 tenancy, privacy and audit core`), on top of `2aa5968` and `54cf79a` (Phase 04). Run `git log --oneline -4`.
+- HEAD commit: a docs follow-up on top of `6a65a9d` (Phase 05), `2aa5968` and `54cf79a` (Phase 04). Run `git log --oneline -5`.
 - Working tree status: clean after the commit. The local Docker stack is **running** (web 3300, API 8080, DB 5434, Mailpit UI 8325).
 - Current phase: 05 is complete. Phase 06 has not started.
 - Phase score: 100 / 100 (Phase 05); Phase 04 also 100 / 100 this session.
@@ -48,7 +48,8 @@
 
 ## Exact next action
 1. Start Phase 06 (`phases/phase-06-shops-professionals.md`). Re-validate with `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Tenancy"`, `dotnet test --project tests/Trimme.ArchitectureTests -c Release`, and `pnpm e2e` against the stack.
-2. Build professionals as the first `IShopOwned` aggregate: use `HasShopScopedKey`, admin use cases in `*.Application.Admin` with `IAdminDataScope`, `PhoneNumber.TryParseMobile` for WhatsApp numbers (encrypted + lookup hash, masked), audit every admin change, and add `CrossShop_*` tests with `ShopTestData.CreateTwoShopsAsync`.
+2. **Shop-scoped authorization and data access must use `ICurrentTenant`, never `ICurrentUser.ShopId`:** the claim is still present while the shop is suspended, so reading it would silently bypass suspension (it is only for `/shop/me`-style status display). Add a guard test in Phase 06.
+3. Build professionals as the first `IShopOwned` aggregate: use `HasShopScopedKey`, admin use cases in `*.Application.Admin` with `IAdminDataScope`, `PhoneNumber.TryParseMobile` for WhatsApp numbers (encrypted + lookup hash, masked), audit every admin change, and add `CrossShop_*` tests with `ShopTestData.CreateTwoShopsAsync`.
 
 ## Files intentionally left modified
 - None.
