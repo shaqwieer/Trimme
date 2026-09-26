@@ -31,7 +31,7 @@ internal sealed class MeReader(IAccountStore accounts, IPermissionResolver permi
             account.PreferredLocale,
             account.Roles,
             [.. granted.Order(StringComparer.Ordinal)],
-            ShopId: null,
+            ShopId: account.ShopId,
             ProfileComplete: IsProfileComplete(account));
     }
 

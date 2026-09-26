@@ -58,6 +58,37 @@
         }
       }
     },
+    "/api/v1/shop/me": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The signed-in shop user\u0027s shop, from the session (never from the request).",
+        "operationId": "GetMyShop",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -638,6 +669,348 @@
           }
         }
       }
+    },
+    "/api/v1/admin/shops/{shopId}/users/invitations": {
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Emails a ShopOwner or ShopStaff invitation for one shop (audited).",
+        "operationId": "InviteShopUser",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteShopUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Creates a shop in Draft status.",
+        "operationId": "AdminCreateShop",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShopRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Shops, newest first, with search and status filter (paged).",
+        "operationId": "AdminListShops",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ShopStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminShopResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "One shop.",
+        "operationId": "AdminGetShop",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/activate": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Activates a draft or suspended shop (audited).",
+        "operationId": "AdminActivateShop",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangeShopStatusRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/suspend": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Suspends a shop; its users lose access to shop data immediately (audited).",
+        "operationId": "AdminSuspendShop",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangeShopStatusRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -661,6 +1034,56 @@
           }
         }
       },
+      "AdminShopResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "status",
+          "timeZone",
+          "requireManualConfirmation",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "requireManualConfirmation": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A shop as the platform admin sees it."
+      },
       "ApiMetaResponse": {
         "required": [
           "name",
@@ -681,6 +1104,20 @@
           }
         }
       },
+      "ChangeShopStatusRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "CompleteProfileRequest": {
         "required": [
           "displayName",
@@ -697,6 +1134,32 @@
           },
           "termsAccepted": {
             "type": "boolean"
+          }
+        }
+      },
+      "CreateShopRequest": {
+        "required": [
+          "slug",
+          "nameAr",
+          "nameEn",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -751,6 +1214,28 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "InviteShopUserRequest": {
+        "required": [
+          "email",
+          "role",
+          "locale"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "locale": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -871,6 +1356,36 @@
           }
         },
         "description": "Response to an OTP request. The code is never returned."
+      },
+      "PagedResponseOfAdminShopResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminShopResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
       },
       "PermissionResponse": {
         "required": [
@@ -1042,6 +1557,47 @@
           }
         }
       },
+      "ShopProfileResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "status",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          }
+        },
+        "description": "The signed-in shop user\u0027s own shop (\u0060GET /api/v1/shop/me\u0060). Shop-facing contract: it must never carry customer\r\ncontact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it."
+      },
+      "ShopStatus": {
+        "enum": [
+          "Draft",
+          "Active",
+          "Suspended",
+          null
+        ]
+      },
       "SignInResponse": {
         "required": [
           "isNewUser",
@@ -1099,7 +1655,13 @@
       "name": "Auth"
     },
     {
+      "name": "Shop"
+    },
+    {
       "name": "Admin: identity"
+    },
+    {
+      "name": "Admin: shops"
     }
   ]
 }

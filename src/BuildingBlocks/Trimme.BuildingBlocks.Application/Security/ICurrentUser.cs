@@ -15,4 +15,10 @@ public interface ICurrentUser
 
     /// <summary>The server-side session (refresh-token family) behind the current access cookie.</summary>
     Guid? SessionId { get; }
+
+    /// <summary>
+    /// The shop a shop user belongs to, whatever its status. Use <c>ICurrentTenant</c> for data access: it is empty while
+    /// the shop is suspended.
+    /// </summary>
+    Guid? ShopId { get; }
 }

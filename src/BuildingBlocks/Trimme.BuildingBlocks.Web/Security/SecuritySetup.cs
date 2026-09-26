@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Security;
+using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Web.Privacy;
 
 namespace Trimme.BuildingBlocks.Web.Security;
@@ -28,6 +29,9 @@ public static class SecuritySetup
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
+        services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
+        services.AddScoped<IAdminDataScope, AdminDataScope>();
+        services.AddScoped<ISystemDataScope, SystemDataScope>();
 
         services.AddAuthorization();
         services.AddSingleton<IAuthorizationPolicyProvider, TrimmeAuthorizationPolicyProvider>();

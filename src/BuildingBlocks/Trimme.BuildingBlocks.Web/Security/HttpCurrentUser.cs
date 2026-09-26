@@ -18,6 +18,8 @@ internal sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentU
 
     public Guid? SessionId => ReadGuid(TrimmeClaims.SessionId);
 
+    public Guid? ShopId => ReadGuid(TrimmeClaims.ShopId);
+
     private Guid? ReadGuid(string claimType) =>
         Guid.TryParse(Principal?.FindFirst(claimType)?.Value, out var value) ? value : null;
 }

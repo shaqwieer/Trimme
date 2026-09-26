@@ -35,7 +35,8 @@ public sealed record RoleResponse(Guid Id, string Name, string UserType, bool Ma
 public sealed record InvitationResponse(Guid Id, string Email, string Role, DateTimeOffset ExpiresAt);
 
 /// <summary>A new session: the plaintext refresh token goes into the refresh cookie and is never stored.</summary>
-public sealed record IssuedSession(Guid SessionId, Guid UserId, string UserType, string RefreshToken, DateTimeOffset ExpiresAt);
+/// <remarks><c>ShopId</c> comes from the account row (never the request) and becomes the <c>shop_id</c> claim.</remarks>
+public sealed record IssuedSession(Guid SessionId, Guid UserId, string UserType, string RefreshToken, DateTimeOffset ExpiresAt, Guid? ShopId = null);
 
 /// <summary>What a sign-in use case hands to the API layer, which writes the cookies.</summary>
 public sealed record SignInOutcome(IssuedSession Session, SignInResponse Response);

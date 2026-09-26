@@ -2,9 +2,12 @@ using System.Security.Cryptography;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Trimme.BuildingBlocks.Application.Auditing;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Results;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Identity.Application.Sessions;
 using Trimme.Modules.Identity.Domain;
@@ -18,6 +21,10 @@ namespace Trimme.Modules.Identity.Application.Staff;
 internal sealed record InviteStaffCommand(string Email, string Role, string Locale, Guid InvitedByUserId)
     : ICommand<Result<InvitationResponse>>;
 
+/// <summary>An admin invites a shop owner or shop staff member to one shop (R-AUTH-02).</summary>
+internal sealed record InviteShopUserCommand(Guid ShopId, string Email, string Role, string Locale, Guid InvitedByUserId)
+    : ICommand<Result<InvitationResponse>>;
+
 /// <summary>The invitee sets a name and password; the account is created and signed in.</summary>
 internal sealed record AcceptInvitationCommand(string Token, string DisplayName, string Password, ClientContext Client)
     : ICommand<Result<SignInOutcome>>;
@@ -26,6 +33,19 @@ internal sealed class InviteStaffValidator : AbstractValidator<InviteStaffComman
 {
     public InviteStaffValidator()
     {
+        RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .EmailAddress().WithErrorCode(ValidationCodes.EmailInvalid)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.Role).NotEmpty().WithErrorCode(ValidationCodes.Required);
+        RuleFor(c => c.Locale).Must(Locales.IsSupported).WithErrorCode(ValidationCodes.Invalid);
+    }
+}
+
+internal sealed class InviteShopUserValidator : AbstractValidator<InviteShopUserCommand>
+{
+    public InviteShopUserValidator()
+    {
+        RuleFor(c => c.ShopId).NotEmpty().WithErrorCode(ValidationCodes.Required);
         RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
             .EmailAddress().WithErrorCode(ValidationCodes.EmailInvalid)
             .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
@@ -53,7 +73,9 @@ internal sealed class InvitationIssuer(
     TimeProvider clock,
     IAccountStore accounts,
     IIdentityMailer mailer,
-    IOptions<InvitationOptions> options)
+    IOptions<InvitationOptions> options,
+    IShopDirectory shops,
+    IAuditLog audit)
 {
     public async Task<Result<InvitationResponse>> IssueAsync(
         string email,
@@ -67,6 +89,19 @@ internal sealed class InvitationIssuer(
         var role = SystemRoles.Find(roleName);
         if ((role is not null && role.UserType != userType)
             || !await accounts.RoleExistsAsync(roleName, userType, cancellationToken))
+        {
+            return IdentityErrors.RoleNotAssignable();
+        }
+
+        // A shop user belongs to exactly one existing shop; platform staff belong to none.
+        if (userType == UserType.ShopUser)
+        {
+            if (shopId is not { } target || await shops.FindAsync(new ShopId(target), cancellationToken) is null)
+            {
+                return IdentityErrors.ShopNotFound();
+            }
+        }
+        else if (shopId is not null)
         {
             return IdentityErrors.RoleNotAssignable();
         }
@@ -96,7 +131,7 @@ internal sealed class InvitationIssuer(
             normalizedEmail,
             userType,
             roleName,
-            shopId,
+            shopId is { } invitedShop ? new ShopId(invitedShop) : null,
             SessionManager.HashToken(token),
             locale,
             invitedByUserId,
@@ -104,6 +139,14 @@ internal sealed class InvitationIssuer(
             options.Value.Lifetime);
 
         db.Add(invitation);
+
+        // Audited without the email address (PII): the invitation id links to it for authorized readers.
+        audit.Record(new AuditRecord(
+            userType == UserType.ShopUser ? "shop_user.invited" : "staff.invited",
+            nameof(Invitation),
+            invitation.Id.Value.ToString(),
+            shopId is { } auditedShop ? new ShopId(auditedShop) : null,
+            $"Invited as {roleName}"));
         await db.SaveChangesAsync(cancellationToken);
         await mailer.SendInvitationAsync(trimmed, locale, roleName, token, invitation.ExpiresAt, cancellationToken);
 
@@ -115,6 +158,12 @@ internal sealed class InviteStaffHandler(InvitationIssuer issuer) : ICommandHand
 {
     public Task<Result<InvitationResponse>> Handle(InviteStaffCommand command, CancellationToken cancellationToken) =>
         issuer.IssueAsync(command.Email, UserType.PlatformAdmin, command.Role, shopId: null, command.Locale, command.InvitedByUserId, cancellationToken);
+}
+
+internal sealed class InviteShopUserHandler(InvitationIssuer issuer) : ICommandHandler<InviteShopUserCommand, Result<InvitationResponse>>
+{
+    public Task<Result<InvitationResponse>> Handle(InviteShopUserCommand command, CancellationToken cancellationToken) =>
+        issuer.IssueAsync(command.Email, UserType.ShopUser, command.Role, command.ShopId, command.Locale, command.InvitedByUserId, cancellationToken);
 }
 
 internal sealed class AcceptInvitationHandler(
@@ -135,7 +184,7 @@ internal sealed class AcceptInvitationHandler(
         }
 
         var created = await accounts.CreateStaffAsync(
-            new NewStaffAccount(invitation.Email, command.DisplayName.Trim(), command.Password, invitation.UserType, invitation.RoleName, invitation.Locale),
+            new NewStaffAccount(invitation.Email, command.DisplayName.Trim(), command.Password, invitation.UserType, invitation.RoleName, invitation.Locale, invitation.ShopId?.Value),
             cancellationToken);
         if (created.IsFailure)
         {
@@ -145,7 +194,7 @@ internal sealed class AcceptInvitationHandler(
         invitation.Accept(created.Value.UserId, now);
         await db.SaveChangesAsync(cancellationToken);
 
-        var session = await sessions.StartAsync(created.Value.UserId, created.Value.UserType, command.Client, cancellationToken);
+        var session = await sessions.StartAsync(created.Value, command.Client, cancellationToken);
         return new SignInOutcome(session, new SignInResponse(true, await me.BuildAsync(created.Value, cancellationToken)));
     }
 }

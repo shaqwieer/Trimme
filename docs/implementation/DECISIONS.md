@@ -314,3 +314,54 @@ The API uses `JsonNumberHandling.Strict`. The ASP.NET web defaults (numbers read
 - Compose gains `mailpit` (web UI on `TRIMME_MAILPIT_PORT`, default 8025) and a one-shot `seed` service (`seed --dev` with `TRIMME_ALLOW_DEV_SEED=true`). The seed creates the bootstrap admin from `TRIMME_BOOTSTRAP_ADMIN_EMAIL`/`_PASSWORD`, whose local defaults are `admin@trimme.local` / `trimme local admin`. The API waits for both.
 - In local compose the web container proxies `/api`, so every browser shares one client IP at the API. Compose therefore raises the `otp` and `auth` rate limits for development and E2E only. Production keeps the code defaults and sits behind Nginx with forwarded client IPs.
 - Sign-in style forms validate on submit, not on blur: an on-blur error under the autofocused empty field shifted the links below it and made the first click miss (found by E2E).
+
+## D-059 — Tenancy model — Accepted (Phase 05)
+- **Marker types** (BuildingBlocks.Domain): `ShopId`, `IShopOwned` (a row of exactly one shop), `ITenantRoot` (the shop), `ITenantMember` (an account or invitation that may belong to one shop).
+- **Query filter.** `TrimmeDbContext` applies the named filter `tenant` to every `IShopOwned` entity by convention:
+  - a shop user sees only rows of their shop;
+  - **everyone else sees none** (anonymous, customers, admins, a suspended shop, background work), unless code opens an explicit admin or system scope (D-062);
+  - the shops table itself is a public directory, but a shop user sees only their own row.
+- **Lazy evaluation.** The filter reads the tenant at query time, not when the context is built, because the context can be created during authentication, before the user is known.
+- **Writes, checked in `SaveChanges`:**
+  - `ShopId` is stamped from the tenant on insert;
+  - a mismatched `ShopId` is rejected (`TenantViolationException`);
+  - an insert without a tenant or scope is rejected;
+  - changing `ShopId` is rejected, even inside a scope;
+  - an update or delete of another shop's row is rejected;
+  - `ITenantMember.ShopId` is immutable too.
+- **Database guarantees:**
+  - a foreign key to the shop is added by convention to every shop-owned entity and tenant member;
+  - children reference parents through `(shop_id, parent_id) → (shop_id, id)` using `HasShopScopedKey`/`HasShopScopedReference`, so the database itself rejects cross-shop references.
+- **Model cache.** The EF model cache key includes the set of model contributors, so test-only models never share a cached model with production.
+- **Deviation from the phase plan: no `ShopUser` table.** Membership is `identity.users.shop_id` (typed, immutable, FK to `shops.shops`) plus the ShopOwner/ShopStaff role. One column enforces "one shop per shop user" structurally, and the invitation already carried the shop. The composite-key pattern is demonstrated and tested on test-only shop-owned entities, created through the real conventions in a separate database. Production has no `IShopOwned` entity until Phase 06; the architecture tests use probe entities so the rules are not vacuous.
+
+## D-060 — Phone value object — Accepted (Phase 05, refines D-026)
+- `PhoneNumber` (BuildingBlocks.Domain) wraps libphonenumber-csharp 9.0.40: E.164 output, Latin, Arabic-Indic and Extended Arabic-Indic digits, validity checks, a mobile-only variant, and masking (`+966 5•• ••• •30`). `ToString()` returns the mask, so a number cannot leak into a log by interpolation.
+- It is used for professional WhatsApp numbers from Phase 06.
+- Customer sign-in keeps the Phase 04 Saudi-mobile rule (`MobileNumber`), so acceptance does not change and stored lookup hashes stay valid. A test proves both produce byte-identical E.164 values and masks for every number both accept.
+- Encryption and lookup hashing stay in `IPersonalDataProtector` (Phase 04).
+
+## D-061 — Shop lifecycle and tenant access — Accepted (Phase 05)
+- A shop is created as **Draft** by an admin, then **Active**; an admin can **Suspend** it and activate it again. The same-state transition answers 409 `shop.invalid_transition`. Every change is audited, and a suspension may carry a reason.
+- A Draft shop's invited owner can sign in and has the shop as tenant, to set it up; customers do not see Draft shops (Phase 11).
+- The users of a suspended shop can still sign in and see the status (`GET /shop/me`), but **have no tenant**: shop-owned data is unreachable from their very next request, because the session validation re-reads the shop's status on every request. Suspension deletes and alters nothing.
+- Permissions: create is `Admin.Shops.Create`; activate and suspend are `Admin.Shops.Suspend`; invite owner or staff is `Admin.Shops.ManageAccount`; view is `Admin.Shops.View`.
+
+## D-062 — Explicit tenant bypass — Accepted (Phase 05, R-TEN-05)
+- `IAdminDataScope.Begin()` throws unless the caller is a PlatformAdmin. Architecture rule: only types in `*.Application.Admin` namespaces may depend on it.
+- `ISystemDataScope.Begin()` throws inside an HTTP request. It is for host commands (`migrate`, `seed`) and future jobs, and only `*.Seeding`, `*.Jobs` and `Trimme.Api.Hosting` may depend on it.
+- `IgnoreQueryFilters` is banned everywhere; an IL scan with Mono.Cecil enforces it. Each rule is checked against a deliberately violating probe type, so it cannot pass vacuously.
+- Nothing in production opens a scope yet. The first admin use cases on shop-owned data arrive in Phase 06.
+
+## D-063 — Audit trail, paging and demo data — Accepted (Phase 05)
+- **Audit.**
+  - `IAuditLog.Record` adds an `AuditEntry` (`administration.audit_entries`) to the current unit of work, so an entry commits atomically with the change it describes.
+  - An entry records the actor (user id and type, or `System`), action code, entity, optional shop, a PII-free summary, the reason and the correlation id.
+  - It never contains emails, phones or names; invitations are audited by invitation id.
+  - The trail is append-only: no update or delete path exists. The read UI arrives in Phase 14.
+- **Paging.** `PageRequest` clamps page ≥ 1 and size 1–100 (default 20). List endpoints return `PagedResponse<T>` (`items`, `page`, `pageSize`, `total`).
+- **Demo data.**
+  - `DemoData` fixes the ids and slugs of two Riyadh demo shops (Al Asala, Barber House), each with an owner and a staff account.
+  - Account ids are derived from the email, so seeding is deterministic across machines.
+  - The password comes from `TRIMME_DEMO_PASSWORD` (local default documented in `docs/local`).
+  - Development only, through `seed --dev`.

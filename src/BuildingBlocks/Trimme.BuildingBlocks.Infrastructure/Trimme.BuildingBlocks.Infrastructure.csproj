@@ -9,4 +9,10 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" />
     <PackageReference Include="EFCore.NamingConventions" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Trimme.BuildingBlocks.Web" />
+    <InternalsVisibleTo Include="Trimme.UnitTests" />
+    <InternalsVisibleTo Include="Trimme.IntegrationTests" />
+    <InternalsVisibleTo Include="Trimme.ArchitectureTests" />
+  </ItemGroup>
 </Project>

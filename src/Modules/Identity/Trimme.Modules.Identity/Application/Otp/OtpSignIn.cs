@@ -173,7 +173,7 @@ internal sealed class VerifyOtpHandler(
             return IdentityErrors.AccountDisabled();
         }
 
-        var session = await sessions.StartAsync(account.UserId, UserType.Customer, command.Client, cancellationToken);
+        var session = await sessions.StartAsync(account, command.Client, cancellationToken);
         return new SignInOutcome(session, new SignInResponse(created, await me.BuildAsync(account, cancellationToken)));
     }
 }

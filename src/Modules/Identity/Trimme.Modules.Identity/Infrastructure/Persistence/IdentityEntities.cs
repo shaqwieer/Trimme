@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.Modules.Identity.Domain;
 
 namespace Trimme.Modules.Identity.Infrastructure.Persistence;
@@ -8,8 +9,14 @@ namespace Trimme.Modules.Identity.Infrastructure.Persistence;
 /// a verified mobile, stored only encrypted (<see cref="ProtectedPhone"/>) plus a keyed lookup hash
 /// (<see cref="PhoneLookupHash"/>). Identity's plaintext <c>PhoneNumber</c> column is deliberately not mapped.
 /// </summary>
-internal sealed class ApplicationUser : IdentityUser<Guid>
+internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
 {
+    /// <summary>
+    /// The one shop a shop user belongs to (D-059). Set when the account is created from a shop invitation and never
+    /// changed afterwards (the context rejects changes); a foreign key to the shop is added by convention.
+    /// </summary>
+    public ShopId? ShopId { get; set; }
+
     public UserType UserType { get; set; }
 
     public string? DisplayName { get; set; }

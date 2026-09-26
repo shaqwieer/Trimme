@@ -219,7 +219,9 @@
     "passwordTooShort": "Use at least 10 characters",
     "passwordTooWeak": "Choose a stronger password with more varied characters",
     "passwordMismatch": "The passwords do not match",
-    "otpIncorrect": "The code is incorrect"
+    "otpIncorrect": "The code is incorrect",
+    "slugInvalid": "Use lowercase Latin letters, digits and dashes (3 to 60 characters)",
+    "slugTaken": "Another shop already uses this link"
   },
   "auth": {
     "meta": {
@@ -335,7 +337,12 @@
   },
   "shopHome": {
     "title": "Overview",
-    "body": "Today's appointments and your shop's indicators will appear here when the shop dashboard launches."
+    "body": "Today's appointments and your shop's indicators will appear here when the shop dashboard launches.",
+    "statusLabel": "Shop status",
+    "draftTitle": "Your shop is being set up",
+    "draftBody": "Customers will not see your shop until the platform team activates it.",
+    "suspendedTitle": "Your shop is suspended",
+    "suspendedBody": "Shop data is unavailable for now. Contact the platform team to reactivate it."
   },
   "apiErrors": {
     "generic": "We couldn't complete the request. Please try again.",
@@ -354,6 +361,65 @@
     "invitation_invalid": "This invitation is invalid or has expired.",
     "invitation_email_registered": "An account with this email already exists.",
     "rate_limit_exceeded": "Too many requests in a short time. Wait a moment and try again.",
-    "server_unexpected": "Something went wrong. Please try again."
+    "server_unexpected": "Something went wrong. Please try again.",
+    "shop_not_found": "The shop was not found.",
+    "shop_invalid_transition": "The shop cannot change to this status."
+  },
+  "shopStatus": {
+    "Draft": "Draft",
+    "Active": "Active",
+    "Suspended": "Suspended"
+  },
+  "adminShops": {
+    "title": "Shops",
+    "add": "Add shop",
+    "search": "Search by name or link",
+    "searchSubmit": "Search",
+    "caption": "Shops",
+    "columns": {
+      "name": "Shop",
+      "slug": "Link",
+      "status": "Status",
+      "created": "Created"
+    },
+    "empty": {
+      "title": "No shops yet",
+      "body": "Add the first shop, then invite its owner to finish the setup."
+    },
+    "create": {
+      "title": "Add a new shop",
+      "nameAr": "Shop name in Arabic",
+      "nameEn": "Shop name in English",
+      "slug": "Shop page link",
+      "slugHelper": "Lowercase Latin letters, digits and dashes, e.g. al-asala",
+      "draftNote": "The shop starts as a draft and stays hidden from customers until it is activated.",
+      "submit": "Create shop"
+    },
+    "detail": {
+      "back": "All shops",
+      "timeZone": "Time zone",
+      "created": "Created",
+      "activate": "Activate shop",
+      "suspend": "Suspend shop",
+      "suspendTitle": "Suspend this shop?",
+      "suspendBody": "The shop's accounts lose access to its data immediately. No bookings are deleted.",
+      "reason": "Reason (optional)",
+      "activated": "Shop activated",
+      "suspended": "Shop suspended",
+      "notFoundTitle": "Shop not found",
+      "notFoundBody": "The link may be wrong or the shop no longer exists.",
+      "invite": {
+        "title": "Invite a shop account",
+        "body": "The invitee receives an email link to set a password. The link is valid for 7 days.",
+        "email": "Email",
+        "role": "Role",
+        "owner": "Shop owner",
+        "ownerHint": "Services, hours and settings",
+        "staff": "Reception staff",
+        "staffHint": "Appointments and walk-ins only",
+        "submit": "Send invitation",
+        "sent": "Invitation sent."
+      }
+    }
   }
 }

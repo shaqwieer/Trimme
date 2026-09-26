@@ -66,7 +66,7 @@ internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager 
         }
 
         var account = check.Account!;
-        var session = await sessions.StartAsync(account.UserId, account.UserType, command.Client, cancellationToken);
+        var session = await sessions.StartAsync(account, command.Client, cancellationToken);
         return new SignInOutcome(session, new SignInResponse(false, await me.BuildAsync(account, cancellationToken)));
     }
 }

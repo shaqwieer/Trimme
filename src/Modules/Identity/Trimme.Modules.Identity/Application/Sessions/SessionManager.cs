@@ -24,8 +24,11 @@ internal sealed class SessionManager(
 {
     private readonly SessionOptions _options = options.Value;
 
-    public async Task<IssuedSession> StartAsync(Guid userId, UserType userType, ClientContext client, CancellationToken cancellationToken)
+    public async Task<IssuedSession> StartAsync(AccountSummary account, ClientContext client, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(account);
+        var userId = account.UserId;
+        var userType = account.UserType;
         var now = clock.GetUtcNow();
         var lifetime = userType == UserType.Customer ? _options.CustomerSessionLifetime : _options.StaffSessionLifetime;
         var session = new UserSession(
@@ -36,7 +39,7 @@ internal sealed class SessionManager(
         db.Add(new RefreshToken(EntityId.New<RefreshTokenId>(), session.Id, tokenHash, now));
         await db.SaveChangesAsync(cancellationToken);
 
-        return new IssuedSession(session.Id.Value, userId, userType.ToString(), token, session.ExpiresAt);
+        return new IssuedSession(session.Id.Value, userId, userType.ToString(), token, session.ExpiresAt, account.ShopId);
     }
 
     public async Task<Result<IssuedSession>> RotateAsync(string refreshToken, ClientContext client, CancellationToken cancellationToken)
@@ -92,7 +95,7 @@ internal sealed class SessionManager(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new IssuedSession(session.Id.Value, session.UserId, session.UserType.ToString(), successor, session.ExpiresAt);
+        return new IssuedSession(session.Id.Value, session.UserId, session.UserType.ToString(), successor, session.ExpiresAt, account.ShopId);
     }
 
     /// <summary>Finds the session a refresh token belongs to, used by sign-out when the access cookie has expired.</summary>

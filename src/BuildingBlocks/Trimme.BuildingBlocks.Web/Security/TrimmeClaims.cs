@@ -7,6 +7,9 @@ public static class TrimmeClaims
     public const string SessionId = "sid";
     public const string UserType = "user_type";
 
+    /// <summary>The shop of a shop user, written from the database at sign-in (never client-supplied).</summary>
+    public const string ShopId = "shop_id";
+
     /// <summary>Authentication scheme of the short-lived access cookie (D-027).</summary>
     public const string AuthenticationScheme = "trimme-session";
 }

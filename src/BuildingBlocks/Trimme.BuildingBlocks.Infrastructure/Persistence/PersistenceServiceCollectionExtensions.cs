@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,6 +39,7 @@ public static class PersistenceServiceCollectionExtensions
                 .UseNetTopologySuite()
                 .MigrationsAssembly(MigrationsAssemblyName)
                 .MigrationsHistoryTable(TrimmeDbContext.MigrationsHistoryTable, TrimmeDbContext.MigrationsHistorySchema))
-            .UseSnakeCaseNamingConvention();
+            .UseSnakeCaseNamingConvention()
+            .ReplaceService<IModelCacheKeyFactory, TrimmeModelCacheKeyFactory>();
     }
 }

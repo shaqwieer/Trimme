@@ -10,6 +10,9 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
   </ItemGroup>
+  <ItemGroup Label="Domain">
+    <PackageVersion Include="libphonenumber-csharp" Version="9.0.40" />
+  </ItemGroup>
   <ItemGroup Label="Application">
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
@@ -33,5 +36,6 @@
     <PackageVersion Include="Testcontainers" Version="4.15.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="NetArchTest.eNhancedEdition" Version="1.4.5" />
+    <PackageVersion Include="Mono.Cecil" Version="0.11.6" />
   </ItemGroup>
 </Project>

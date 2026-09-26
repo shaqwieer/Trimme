@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in shop user's shop, from the session (never from the request). */
+        get: operations["GetMyShop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -310,6 +327,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/users/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Emails a ShopOwner or ShopStaff invitation for one shop (audited). */
+        post: operations["InviteShopUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shops, newest first, with search and status filter (paged). */
+        get: operations["AdminListShops"];
+        put?: never;
+        /** Creates a shop in Draft status. */
+        post: operations["AdminCreateShop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One shop. */
+        get: operations["AdminGetShop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activates a draft or suspended shop (audited). */
+        post: operations["AdminActivateShop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspends a shop; its users lose access to shop data immediately (audited). */
+        post: operations["AdminSuspendShop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -319,16 +422,40 @@ export interface components {
             displayName: string;
             password: string;
         };
+        /** @description A shop as the platform admin sees it. */
+        AdminShopResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            status: string;
+            timeZone: string;
+            requireManualConfirmation: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: null | string;
+        };
         ApiMetaResponse: {
             name: string;
             version: string;
             /** Format: date-time */
             serverTimeUtc: string;
         };
+        ChangeShopStatusRequest: {
+            reason: null | string;
+        };
         CompleteProfileRequest: {
             displayName: string;
             preferredLocale: string;
             termsAccepted: boolean;
+        };
+        CreateShopRequest: {
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            timeZone: null | string;
         };
         CsrfTokenResponse: {
             token: string;
@@ -344,6 +471,11 @@ export interface components {
             role: string;
             /** Format: date-time */
             expiresAt: string;
+        };
+        InviteShopUserRequest: {
+            email: string;
+            role: string;
+            locale: null | string;
         };
         InviteStaffRequest: {
             email: string;
@@ -379,6 +511,16 @@ export interface components {
             expiresAt: string;
             /** Format: date-time */
             resendAvailableAt: string;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfAdminShopResponse: {
+            items: components["schemas"]["AdminShopResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
         };
         PermissionResponse: {
             code: string;
@@ -426,6 +568,21 @@ export interface components {
             lastSeenAt: string;
             isCurrent: boolean;
         };
+        /**
+         * @description The signed-in shop user's own shop (`GET /api/v1/shop/me`). Shop-facing contract: it must never carry customer
+         *     contact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it.
+         */
+        ShopProfileResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            status: string;
+            timeZone: string;
+        };
+        /** @enum {unknown} */
+        ShopStatus: "Draft" | "Active" | "Suspended" | null;
         /**
          * @description Result of a successful sign-in; the session cookies are set on the response. `IsNewUser` is true when the OTP
          *     verification (or an invitation) created the account.
@@ -492,6 +649,35 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMyShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopProfileResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -989,6 +1175,236 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    InviteShopUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteShopUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListShops: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                search?: string;
+                status?: components["schemas"]["ShopStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminShopResponse"];
+                };
+            };
+        };
+    };
+    AdminCreateShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShopRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminActivateShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ChangeShopStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSuspendShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ChangeShopStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

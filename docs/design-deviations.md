@@ -42,7 +42,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A03 | Professional working-hours editor + professional-scoped breaks | §11, §13 | 9 |
 | DV-A04 | Break / time-off create & edit dialogs with conflict preview | §13 | 9 |
 | DV-A05 | Shop and admin notification inboxes | §13, §17 | 15 |
-| DV-A06 | Admin shop detail/edit (profile, location, users/invite, subscription, professionals, services, QR, activate/suspend) | §14 | 5/6 |
+| DV-A06 | Admin shop detail/edit (profile, location, users/invite, subscription, professionals, services, QR, activate/suspend) | §14 | 5/6 — Phase 05 slice **applied**: `/admin/shops` list (search, paging, table → cards), `/admin/shops/new`, `/admin/shops/[id]` with activate/suspend (confirm + reason) and owner/staff invitation; composed from the a-shops table and design-system cards. Profile, location and the rest in Phases 06–16 |
 | DV-A07 | Admin professional create/edit with E.164 WhatsApp number, masking, audited reveal, notification toggle, disable | §7, §8, §14 | 6 |
 | DV-A08 | Admin customers list + profile | §14 | 14 |
 | DV-A09 | Admin booking detail + intervention | §14 | 14 |

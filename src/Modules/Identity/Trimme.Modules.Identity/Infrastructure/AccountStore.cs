@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Identity.Application;
@@ -139,6 +140,7 @@ internal sealed class AccountStore(
             EmailConfirmed = true,
             DisplayName = account.DisplayName,
             UserType = account.UserType,
+            ShopId = account.ShopId is { } shopId ? new ShopId(shopId) : null,
             PreferredLocale = account.PreferredLocale,
             CreatedAt = clock.GetUtcNow(),
             LockoutEnabled = true,
@@ -217,7 +219,8 @@ internal sealed class AccountStore(
             user.PreferredLocale,
             user.TermsAcceptedAt,
             roles,
-            user.DisabledAt is not null);
+            user.DisabledAt is not null,
+            user.ShopId?.Value);
     }
 
     /// <summary>Password-policy failures become field errors on <c>password</c>; anything else is a bug.</summary>

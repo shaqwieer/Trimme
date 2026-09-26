@@ -112,6 +112,13 @@ sequenceDiagram
 - **Accounts:** ASP.NET Core Identity on the shared context (`identity` schema). Customers are passwordless (mobile + 6-digit OTP); their mobile is stored only encrypted plus a keyed lookup hash. Staff use email + password with lockout, and exist only through invitations (plus the development bootstrap SuperAdmin).
 - **Sessions:** a short HttpOnly access cookie and a rotating HttpOnly refresh cookie scoped to `/api/v1/auth`. Each session is one refresh-token family; reuse after a 10-second grace revokes the family. Every authenticated request re-checks the session, so revocation is immediate. Data Protection keys live in `infra.data_protection_keys`.
 - **CSRF:** double-submit token required on every unsafe `/api/v1` request, anonymous ones included; checked after routing.
+- **Tenancy (Phase 05, D-059 to D-062):**
+  - The tenant is the shop in a shop user's session claim, and only while that shop is not suspended. The shop's status is re-read on every request.
+  - Every `IShopOwned` entity gets the `tenant` query filter by convention: a shop user sees their own shop's rows and everyone else sees none, unless an admin use case opens `IAdminDataScope` or a host job opens `ISystemDataScope`.
+  - `SaveChanges` stamps `ShopId` on insert, and rejects cross-shop writes and any change of `ShopId`.
+  - Foreign keys to the shop, and composite `(shop_id, parent_id)` keys, make the database reject cross-shop references too.
+  - `IgnoreQueryFilters` is banned by an IL-scanning architecture test.
+- **Audit:** admin actions add a PII-free `AuditEntry` to the same unit of work as the change (D-063).
 - **Authorization:** default deny on `/api/v1`; endpoints declare `AllowAnonymous()`, `RequireUserType(...)` or `RequirePermission(...)`. Permissions come from roles in the database, resolved per request. An integration test checks every endpoint against this classification.
 
 ## 3. Web application (Phase 02)

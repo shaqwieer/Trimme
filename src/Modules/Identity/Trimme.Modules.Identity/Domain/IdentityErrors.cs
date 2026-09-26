@@ -64,6 +64,9 @@ public static class IdentityErrors
     public static Error RoleNotAssignable() =>
         Error.Validation("validation.failed", "The role cannot be assigned to this account type.", Field("role", "invitation.role_invalid"));
 
+    public static Error ShopNotFound() =>
+        Error.NotFound("shop.not_found", "The shop was not found.");
+
     public static Error SessionNotFound() =>
         Error.NotFound("auth.session_not_found", "The session was not found.");
 

@@ -183,6 +183,78 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("data_protection_keys", "infra");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Administration.Domain.AuditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_entries");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("ix_audit_entries_occurred_at");
+
+                    b.HasIndex("ShopId")
+                        .HasDatabaseName("ix_audit_entries_shop_id");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("ix_audit_entries_entity_type_entity_id");
+
+                    b.ToTable("audit_entries", "administration");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -261,6 +333,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("ix_invitations_normalized_email");
+
+                    b.HasIndex("ShopId")
+                        .HasDatabaseName("ix_invitations_shop_id");
 
                     b.HasIndex("TokenHash")
                         .IsUnique()
@@ -596,6 +671,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("text")
                         .HasColumnName("security_stamp");
 
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
                     b.Property<DateTimeOffset?>("TermsAcceptedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("terms_accepted_at");
@@ -632,7 +711,77 @@ namespace Trimme.Migrations.Migrations
                         .HasDatabaseName("ix_users_phone_lookup_hash")
                         .HasFilter("phone_lookup_hash IS NOT NULL");
 
+                    b.HasIndex("ShopId")
+                        .HasDatabaseName("ix_users_shop_id");
+
                     b.ToTable("users", "identity");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_en");
+
+                    b.Property<bool>("RequireManualConfirmation")
+                        .HasColumnType("boolean")
+                        .HasColumnName("require_manual_confirmation");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("time_zone");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shops");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shops_slug");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_shops_status");
+
+                    b.ToTable("shops", "shops");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -700,6 +849,12 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_invitations_application_user_invited_by_user_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_invitations_shops_shop_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.RefreshToken", b =>
@@ -737,6 +892,15 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_sessions_application_user_user_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Identity.Infrastructure.Persistence.ApplicationUser", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_users_shops_shop_id");
                 });
 #pragma warning restore 612, 618
         }

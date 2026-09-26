@@ -49,6 +49,7 @@ bash infra/scripts/compose-smoke.sh
 - Override the ports (`TRIMME_WEB_PORT`, `TRIMME_API_PORT`, `TRIMME_DB_PORT`) in `infra/.env`; copy `infra/.env.example` to start. For example, set `TRIMME_WEB_PORT=3300` when port 3000 is busy.
 - Local email (password resets, staff invitations) goes to **Mailpit**: http://localhost:8025 (`TRIMME_MAILPIT_PORT`).
 - The `seed` service creates the bootstrap SuperAdmin once (`TRIMME_BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD`; local defaults `admin@trimme.local` / `trimme local admin`). Staff sign in at `/ar/auth/staff/sign-in`.
+- The seed also creates two demo shops (Al Asala, Barber House), each with an owner and a staff account (`owner@al-asala.trimme.local`, `staff@al-asala.trimme.local`, …). Their password is `TRIMME_DEMO_PASSWORD` (local default `trimme local demo`).
 - Customers sign in with a mobile number and a 6-digit code. Locally the code is not sent anywhere: read it from `GET /api/v1/dev/otp-inbox/latest?phone=%2B9665XXXXXXXX` (Development/Testing only).
 - Development-only preview routes (`/ar/dev/shells/shop|admin|customer`) are enabled in the local stack through `TRIMME_ENABLE_DEV_ROUTES=true`. Never set this in production.
 

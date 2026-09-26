@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Trimme.BuildingBlocks.Application.Security;
+using Trimme.BuildingBlocks.Application.Tenancy;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Hosting;
@@ -61,6 +63,7 @@ public sealed class IdentityModule : ModuleBase
 
         services.AddSingleton<IReferenceDataSynchronizer, PermissionCatalogueSynchronizer>();
         services.AddSingleton<IDevSeeder, BootstrapAdminSeeder>();
+        services.AddSingleton<IDevSeeder, DemoShopUsersSeeder>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder api)
@@ -143,6 +146,16 @@ public sealed class IdentityModule : ModuleBase
         {
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(TrimmeClaims.AuthenticationScheme);
+            return;
+        }
+
+        // Tenant access is re-evaluated on every request: a suspended shop's users lose access to its data at once
+        // (they can still sign in and see the status through /shop/me).
+        if (Guid.TryParse(principal?.FindFirst(TrimmeClaims.ShopId)?.Value, out var shopId))
+        {
+            var shop = await context.HttpContext.RequestServices.GetRequiredService<IShopDirectory>()
+                .FindAsync(new ShopId(shopId), context.HttpContext.RequestAborted);
+            context.HttpContext.Items[TenantRequestItems.ShopOperable] = shop is { Status: not ShopStatus.Suspended };
         }
     }
 

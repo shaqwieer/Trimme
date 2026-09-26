@@ -29,12 +29,19 @@ internal static class SessionCookies
         var options = http.RequestServices.GetRequiredService<IOptions<SessionOptions>>().Value;
         var clock = http.RequestServices.GetRequiredService<TimeProvider>();
 
+        List<Claim> claims =
+        [
+            new(TrimmeClaims.Subject, session.UserId.ToString()),
+            new(TrimmeClaims.SessionId, session.SessionId.ToString()),
+            new(TrimmeClaims.UserType, session.UserType),
+        ];
+        if (session.ShopId is { } shopId)
+        {
+            claims.Add(new Claim(TrimmeClaims.ShopId, shopId.ToString()));
+        }
+
         var identity = new ClaimsIdentity(
-            [
-                new Claim(TrimmeClaims.Subject, session.UserId.ToString()),
-                new Claim(TrimmeClaims.SessionId, session.SessionId.ToString()),
-                new Claim(TrimmeClaims.UserType, session.UserType),
-            ],
+            claims,
             TrimmeClaims.AuthenticationScheme,
             TrimmeClaims.Subject,
             roleType: null);

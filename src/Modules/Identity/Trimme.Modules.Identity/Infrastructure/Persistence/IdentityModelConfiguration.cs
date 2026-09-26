@@ -35,6 +35,7 @@ internal static class IdentityModel
             user.HasIndex(u => u.NormalizedUserName).IsUnique();
             user.HasIndex(u => u.NormalizedEmail).IsUnique().HasFilter("normalized_email IS NOT NULL");
             user.HasIndex(u => u.PhoneLookupHash).IsUnique().HasFilter("phone_lookup_hash IS NOT NULL");
+            user.HasIndex(u => u.ShopId);
 
             user.HasMany<IdentityUserClaim<Guid>>().WithOne().HasForeignKey(c => c.UserId).IsRequired();
             user.HasMany<IdentityUserLogin<Guid>>().WithOne().HasForeignKey(l => l.UserId).IsRequired();

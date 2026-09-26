@@ -1,4 +1,5 @@
 using Trimme.BuildingBlocks.Domain.Primitives;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.Modules.Identity.Domain;
 
@@ -12,7 +13,7 @@ public readonly record struct InvitationId(Guid Value) : IEntityId<InvitationId>
 /// platform admin; nobody self-registers as staff). Only the token's hash is stored. Shop invitations (with a
 /// <see cref="ShopId"/>) are issued from Phase 05, when shops exist.
 /// </summary>
-public sealed class Invitation : AggregateRoot<InvitationId>
+public sealed class Invitation : AggregateRoot<InvitationId>, ITenantMember
 {
     public Invitation(
         InvitationId id,
@@ -20,7 +21,7 @@ public sealed class Invitation : AggregateRoot<InvitationId>
         string normalizedEmail,
         UserType userType,
         string roleName,
-        Guid? shopId,
+        ShopId? shopId,
         string tokenHash,
         string locale,
         Guid invitedByUserId,
@@ -53,7 +54,7 @@ public sealed class Invitation : AggregateRoot<InvitationId>
 
     public string RoleName { get; private set; }
 
-    public Guid? ShopId { get; private set; }
+    public ShopId? ShopId { get; private set; }
 
     public string TokenHash { get; private set; }
 

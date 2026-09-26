@@ -9,7 +9,7 @@
 - A role belongs to one user type (Customer, ShopUser, PlatformAdmin) and can hold only permissions of that type. `SuperAdmin.*` permissions are held only by the SuperAdmin role.
 - Managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are reset to these grants on every `migrate`. OperationsManager and Support receive these defaults once and are editable by `Admin.Roles.Manage` (UI in Phase 14).
 - **Never** in the catalogue: moving/transferring a professional between shops (D-011), customer data export, shop access to customer contact details. `PermissionCatalogue_HasNoTransferPermission` guards this.
-- Shop permissions are always tenant-scoped to the user's own shop (enforced from Phase 05).
+- Shop permissions are always tenant-scoped to the user's own shop: the tenant comes from the session and the shop's current status, every shop-owned row is filtered by it, and a suspended shop has no tenant (D-059, D-061).
 
 ## Platform admin roles
 
@@ -81,7 +81,7 @@
 
 The `Customer` role holds no catalogue permission. Customers use self-service endpoints that act only on their own account (`/me`, sessions, profile completion); booking and review ownership rules arrive with those features (Phases 10–12).
 
-## Endpoints (Phase 04)
+## Endpoints (Phases 04–05)
 
 | Endpoint | Access |
 |---|---|
@@ -103,6 +103,13 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/permissions` | `Admin.Roles.View` |
 | `GET /api/v1/admin/roles` | `Admin.Roles.View` |
 | `POST /api/v1/admin/staff/invitations` | `Admin.Staff.Manage` |
+| `POST /api/v1/admin/shops` | `Admin.Shops.Create` · audited |
+| `GET /api/v1/admin/shops` | `Admin.Shops.View` · paged (max 100) |
+| `GET /api/v1/admin/shops/{id}` | `Admin.Shops.View` · unknown id → 404 |
+| `POST /api/v1/admin/shops/{id}/activate` | `Admin.Shops.Suspend` · audited |
+| `POST /api/v1/admin/shops/{id}/suspend` | `Admin.Shops.Suspend` · audited · shop users lose tenant access on their next request |
+| `POST /api/v1/admin/shops/{id}/users/invitations` | `Admin.Shops.ManageAccount` · ShopOwner/ShopStaff only · audited without the email |
+| `GET /api/v1/shop/me` | User type ShopUser · the shop comes from the session, never the request |
 | `GET /api/v1/dev/otp-inbox/latest` | Development/Testing only; not mapped otherwise; excluded from OpenAPI |
 
 All unsafe methods additionally require the CSRF header (`X-CSRF-Token` = `trimme-csrf` cookie), anonymous ones included.

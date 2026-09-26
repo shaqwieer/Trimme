@@ -13,11 +13,12 @@ public sealed record AccountSummary(
     string PreferredLocale,
     DateTimeOffset? TermsAcceptedAt,
     IReadOnlyList<string> Roles,
-    bool IsDisabled);
+    bool IsDisabled,
+    Guid? ShopId = null);
 
 public sealed record NewCustomer(string PhoneHash, string ProtectedPhone, string PreferredLocale, DateTimeOffset? TermsAcceptedAt);
 
-public sealed record NewStaffAccount(string Email, string DisplayName, string Password, UserType UserType, string RoleName, string PreferredLocale);
+public sealed record NewStaffAccount(string Email, string DisplayName, string Password, UserType UserType, string RoleName, string PreferredLocale, Guid? ShopId = null);
 
 public sealed record PasswordResetTicket(Guid UserId, string Email, string? DisplayName, string PreferredLocale, string Token);
 

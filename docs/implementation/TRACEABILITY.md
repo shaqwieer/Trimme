@@ -11,7 +11,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter`; A `NoProfessionalUpdateContract_ContainsShopId`; I `OpenApi_HasNoTransferOperation`; I `PermissionCatalogue_HasNoTransferPermission` ✔ Phase 04; E `admin_professional_page_has_no_transfer_action`; C `grep` gate for transfer terms in `apps/` and `src/` | [~] |
 | R-NEG-02 | No payment/checkout UI or charge flow | §2, §12, §23 | 12, 18 | E `booking_flow_has_no_payment_step`; C OpenAPI has no payment/charge operations; M review | [ ] |
 | R-NEG-03 | No customer export for shops | §7, §13 | 13 | I `ShopApi_HasNoExportEndpoints`; E `shop_dashboard_has_no_export_action` | [ ] |
-| R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` (reflection over all shop DTO types + JSON snapshot of every shop endpoint); I `ShopHub_Messages_DoNotContainPhone`; I `Logs_RedactPhoneNumbers`; E `shop_pages_payload_has_no_customer_phone` (network capture) | [ ] |
+| R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` ✔ Phase 05 (every shop-facing endpoint found from metadata; fails closed without typed responses — probe-verified; recursive member scan + live JSON scan; non-vacuity test `PhoneScanner_FindsPhoneMembers_InNestedTypes`); U `SensitiveDataRedactorTests` (logs) ✔; I `ShopHub_Messages_DoNotContainPhone` (13); E `shop_pages_payload_has_no_customer_phone` (13) | [~] |
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` (DB constraint) | [ ] |
 | R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateProfessional`, `Shop_CannotAssignProfessionalService` (403) | [ ] |
 | R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; E auth flows assert empty Web Storage and that `document.cookie` exposes neither `trimme-access` nor `trimme-refresh` after customer and staff sign-in ✔; I `Cookies_AreSecureHttpOnly` (tokens never in a response body) ✔ Phase 04 | [x] |
@@ -33,9 +33,9 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh`: postgis → migrate → api → web, web `/ar` 200 + web-origin `/api` proxy; containers healthy | [x] |
 | R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` jobs backend, web, secret-scan, stack (compose + Playwright) — **green on GitHub Actions run 36134142951** | [x] |
 | R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C gitleaks v8.30.1 (`.gitleaks.toml`) working tree + history: no leaks; `.env.example`, `infra/.env.example` | [x] |
-| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔ Phase 01; I `AdminBootstrap_RequiresDevelopmentAndEnv` (idempotent bootstrap seeder) ✔ Phase 04; compose `seed` service ✔ Phase 04; determinism test when demo data lands (Phase 05) | [~] |
+| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔; I `AdminBootstrap_RequiresDevelopmentAndEnv` ✔; I `DevSeed_IsDeterministic_AndIdempotent` (two fresh databases, two runs each, identical rows) ✔ Phase 05 — extended by every data phase | [~] |
 | R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken`, `Feature_endpoints_are_versioned_under_api_v1` (re-run every phase) | [x] |
-| R-FND-13 | Pagination with safe max page size, filtering, sorting | §18, §21 | 5+ | U `PageRequest_ClampsPageSize`; A list endpoints return paged envelopes | [ ] |
+| R-FND-13 | Pagination with safe max page size, filtering, sorting | §18, §21 | 5+ | U `PageRequest_ClampsPageSize` ✔; `PagedResponse<T>` envelope on `GET /admin/shops` (search, status filter, newest first) ✔ Phase 05; every later list endpoint uses it | [x] |
 | R-FND-14 | Security headers, request size limits, upload validation | §9 | 1, 17 | I `SecurityHeaders_Present`, `RequestBody_TooLarge_Returns413Problem` ✔ Phase 01; upload validation Phase 06/17 | [~] |
 | R-FND-15 | Strict CORS | §9 | 1 | I `Cors_AllowsConfiguredOrigin_WithCredentials`, `Cors_RejectsUnknownOrigin`; wildcard origins rejected at startup | [x] |
 
@@ -63,7 +63,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-AUTH-01 | Customer self-registration + sign-in per design flow with verified mobile (D-005) | §9, §12 | 4 | I `Customer_SignUp_VerifiesMobile` (+ attempts, expiry, single use, terms) ✔; E "signs up with a WhatsApp code, completes the profile and manages sessions" ✔ | [x] |
-| R-AUTH-02 | Shop accounts created/invited by admin only | §9 | 4, 5 | I `ShopAccount_CannotSelfRegister` ✔; I `Admin_InvitesStaffUser_WhoAcceptsAndSignsIn` (admin-staff invitation via Mailpit) ✔, `Invitation_CannotGrantARoleOfAnotherUserType` ✔; E invited OperationsManager ✔ Phase 04; I `Admin_InvitesShopUser` needs `Shop` (Phase 05) | [~] |
+| R-AUTH-02 | Shop accounts created/invited by admin only | §9 | 4, 5 | I `ShopAccount_CannotSelfRegister`, `Admin_InvitesStaffUser_WhoAcceptsAndSignsIn`, `Invitation_CannotGrantARoleOfAnotherUserType` ✔ Phase 04; I `Admin_CreatesShop_WithOwnerInvite`, `Admin_InvitesShopUser_OnlyForAnExistingShop_AndShopRoles` ✔ Phase 05; E admin invites a shop owner who signs in to `/shop` ✔ | [x] |
 | R-AUTH-03 | Admin seeded only in dev via env vars / one-time bootstrap | §9 | 4 | I `AdminBootstrap_RequiresDevelopmentAndEnv` ✔; compose `seed` service creates it once ✔ | [x] |
 | R-AUTH-04 | Short access + rotating refresh in Secure/HttpOnly/SameSite cookies; reuse detection | §9 | 4 | I `Refresh_Rotates` (incl. 15-min access expiry), `RefreshReuse_RevokesFamily` (incl. 10 s race grace), `Cookies_AreSecureHttpOnly` ✔ | [x] |
 | R-AUTH-05 | Sign-out, revoke-all-sessions, session list | §9 | 4 | I `RevokeAll_InvalidatesOtherSessions` (other access cookie rejected immediately), `SignOut_EndsTheSession_AndClearsCookies`, `RevokeSession_OfAnotherUser_Returns404` ✔; E "revoking other devices signs them out immediately" ✔ | [x] |
@@ -77,20 +77,20 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-TEN-01 | Tenant resolved from claims, never client-supplied shop ID | §7 | 5 | I `ShopEndpoints_IgnoreClientSuppliedShopId` | [ ] |
-| R-TEN-02 | Global query filters on every shop-owned entity | §7 | 5 → all | A `AllShopOwnedEntities_HaveTenantFilter` | [ ] |
-| R-TEN-03 | Server-side tenant stamping on writes | §7 | 5 | I `Create_StampsTenantFromClaims` | [ ] |
-| R-TEN-04 | Composite FKs prevent cross-shop references | §7 | 5 → all | I `CrossShopReference_RejectedByDatabase` | [ ] |
-| R-TEN-05 | Explicit isolated admin bypass | §7 | 5 | A `IgnoreQueryFilters_OnlyInAdminScope` | [ ] |
-| R-TEN-06 | Cross-shop read/update/delete/booking/SignalR/enumeration (IDOR) tests | §7, §19 | 5 → 13 | I `CrossShop_*` suite (returns 404, never 403-with-leak); I `ShopHub_DoesNotReceiveOtherShopEvents` | [ ] |
-| R-TEN-07 | Phone numbers normalized E.164, encrypted, masked, redacted | §7, §8 | 5, 6 | U `PhoneNumber_NormalizesToE164`, `PhoneNumber_Masks`; I `Phone_StoredEncrypted` | [ ] |
-| R-TEN-08 | Audit log for admin/sensitive actions | §7, §14 | 5 → all | I `AdminServiceOverride_IsAudited`, `PhoneReveal_IsAudited` | [ ] |
+| R-TEN-01 | Tenant resolved from claims, never client-supplied shop ID | §7 | 5 | I `ShopEndpoints_IgnoreClientSuppliedShopId` (query + header ignored; probe shows the resolved tenant) ✔; E `shop_user_cannot_open_another_shop` ✔ | [x] |
+| R-TEN-02 | Global query filters on every shop-owned entity | §7 | 5 → all | A `AllShopOwnedEntities_HaveTenantFilter` (+ tenant-root FK), `EntitiesWithAShopId_AreTenantScoped` (both probe-verified) ✔; I `ShopUser_SeesOnlyItsOwnRows_AndOthersSeeNone` on PostgreSQL ✔ | [x] |
+| R-TEN-03 | Server-side tenant stamping on writes | §7 | 5 | I `Create_StampsTenantFromClaims`, `ShopId_CannotChange_EvenInsideTheAdminScope` ✔ | [x] |
+| R-TEN-04 | Composite FKs prevent cross-shop references | §7 | 5 → all | I `CrossShopReference_RejectedByDatabase` (composite FK and tenant-root FK, application checks bypassed) ✔; I `ShopMembership_IsEnforcedByTheDatabase_AndCannotChange` ✔ | [x] |
+| R-TEN-05 | Explicit isolated admin bypass | §7 | 5 | A `IgnoreQueryFilters_IsNeverCalled` (IL scan), `AdminDataScope_IsUsedOnlyByAdminUseCases`, `SystemDataScope_IsUsedOnlyByHostingSeedingAndJobs` (each probe-verified) ✔; runtime guards in `AdminDataScope`/`SystemDataScope` | [x] |
+| R-TEN-06 | Cross-shop read/update/delete/booking/SignalR/enumeration (IDOR) tests | §7, §19 | 5 → 13 | I `CrossShop_ReadById_UpdateAndDelete_AreImpossible` (data layer), `ShopEndpoints_IgnoreClientSuppliedShopId`, `Suspending_A_Shop_RevokesTenantAccess_Immediately` ✔ Phase 05; isolation harness `ShopTestData.CreateTwoShopsAsync` ready; per-endpoint `CrossShop_*` suites as shop endpoints arrive (6–13); `ShopHub_DoesNotReceiveOtherShopEvents` (13) | [~] |
+| R-TEN-07 | Phone numbers normalized E.164, encrypted, masked, redacted | §7, §8 | 5, 6 | U `PhoneNumber_NormalizesToE164`, `PhoneNumber_Masks_AndNeverPrintsTheNumber`, `Customer_normaliser_and_value_object_agree` ✔; I customer mobile stored only encrypted + keyed hash (`Customer_SignUp_VerifiesMobile`) ✔; U redaction ✔; professional numbers Phase 06 | [~] |
+| R-TEN-08 | Audit log for admin/sensitive actions | §7, §14 | 5 → all | I `AdminShopActions_AreAudited_WithoutPersonalData` (create, activate, suspend with reason, invite; actor, correlation id, no email) ✔ Phase 05; `AdminServiceOverride_IsAudited` (7), `PhoneReveal_IsAudited` (6/14) | [~] |
 
 ## 6. Domain: shops, professionals, services, subscriptions
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-SHP-01 | Admin shop CRUD, activate/suspend, account setup | §14 | 5, 6 | I `Admin_CreatesShop_WithOwnerInvite`; E flow 3 | [ ] |
+| R-SHP-01 | Admin shop CRUD, activate/suspend, account setup | §14 | 5, 6 | I `Admin_CreatesShop_WithOwnerInvite`, `Suspending_A_Shop_RevokesTenantAccess_Immediately` ✔; E admin creates, activates, invites, suspends ✔ Phase 05; profile editing Phase 06 | [~] |
 | R-SHP-02 | Location via designed pin picker; stored as PostGIS geography with spatial index | §8 | 6 | I `ShopLocation_StoredAsGeography`; E flow 3 (pin drag) | [ ] |
 | R-SHP-03 | Shop public-profile edit limited to admin-permitted fields | §13 | 6 | I `Shop_CannotEditLockedField` | [ ] |
 | R-PRO-01 | Admin professional CRUD/disable, one shop, WhatsApp number masked, notifications toggle | §7, §14 | 6 | I `Admin_CreatesProfessional_WithMaskedWhatsApp`; E flow 3 | [ ] |
@@ -162,7 +162,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Design | Phase | Verification | Status |
 |---|---|---|---|---|---|---|
 | R-AD-01 | Overview KPIs (today's appointments, completion rate, cancellations, no-shows, active shops, expiring subs, active pros, new customers, popular services, top shops) | §14, §17 | a-overview | 14 | I KPI query tests | [ ] |
-| R-AD-02 | Shops management | §14 | a-shops | 5, 6 | E flow 3 | [ ] |
+| R-AD-02 | Shops management | §14 | a-shops | 5, 6 | E `/admin/shops` list/create/detail/invite/activate/suspend ✔ Phase 05; profile + location Phase 06 | [~] |
 | R-AD-03 | Professionals management (no transfer) | §14 | a-pros | 6 | E flow 3 | [ ] |
 | R-AD-04 | Services & packages platform-wide, categories, moderation, override, assignment | §14 | a-services | 7 | E | [ ] |
 | R-AD-05 | Bookings global search/filters/details/history/intervention | §14 | a-appointments | 14 | I/E | [ ] |
@@ -228,8 +228,9 @@ All seven are re-run as the Phase 18 regression gate.
 | UserSession + RefreshToken, OtpChallenge, Invitation | Identity | — | 4 | `Identity` ✔ | Refresh-token family rotation (D-052) |
 | Data Protection key ring | BuildingBlocks (`infra`) | — | 4 | `Identity` ✔ | `infra.data_protection_keys` (D-052) |
 | CustomerProfile | Customers (`customers`) | — | 12 | 0010 | Name, locale, terms and the encrypted mobile + HMAC lookup live on the Identity user from Phase 04 (D-050) |
-| Shop, ShopUser | Shops (`shops`) | Shop is the tenant root | 5 | 0003_ShopsTenancyAudit | ShopOwner / ShopStaff |
-| AuditEntry | Administration (`audit`) | Has an optional ShopId | 5 | 0003 | Holds no PII |
+| Shop | Shops (`shops`) | Tenant root (`ITenantRoot`) | 5 | `ShopsTenancyAudit` ✔ | Draft/Active/Suspended, slug, ar/en names, time zone, manual-confirmation flag (D-061) |
+| Shop membership | Identity (`identity.users.shop_id`) | `ITenantMember`, FK to shops | 5 | `ShopsTenancyAudit` ✔ | Replaces a ShopUser table; ShopOwner / ShopStaff roles (D-059) |
+| AuditEntry | Administration (`administration.audit_entries`) | Optional ShopId (allow-listed) | 5 | `ShopsTenancyAudit` ✔ | Holds no PII; append-only (D-063) |
 | Shop profile, gallery, EditablePolicy | Shops | ✓ | 6 | 0004 | |
 | ShopLocation | Shops | ✓ | 6 | 0004 | `geography(Point,4326)` with a GiST index |
 | ShopOpeningHour, ShopClosure, pause flag | Availability (`availability`) / Shops | ✓ | 9 | 0007_Schedules | |

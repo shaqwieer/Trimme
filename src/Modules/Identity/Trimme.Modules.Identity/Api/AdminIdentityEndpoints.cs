@@ -19,6 +19,8 @@ namespace Trimme.Modules.Identity.Api;
 
 public sealed record InviteStaffRequest(string Email, string Role, string? Locale);
 
+public sealed record InviteShopUserRequest(string Email, string Role, string? Locale);
+
 public sealed record DevOtpInboxEntry(string Code, DateTimeOffset ExpiresAt);
 
 /// <summary>Admin endpoints for the permission catalogue, roles and staff invitations (R-AUTH-02, R-AUTH-09).</summary>
@@ -36,6 +38,10 @@ internal static class AdminIdentityEndpoints
             .WithName("InviteStaff").WithSummary("Emails a platform-admin invitation for the given admin role.")
             .Produces<InvitationResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
+        admin.MapPost("/shops/{shopId:guid}/users/invitations", InviteShopUser).RequirePermission(Permissions.Admin.ShopsManageAccount)
+            .WithName("InviteShopUser").WithSummary("Emails a ShopOwner or ShopStaff invitation for one shop (audited).")
+            .Produces<InvitationResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static async Task<Ok<IReadOnlyList<PermissionResponse>>> ListPermissions(IDispatcher dispatcher, CancellationToken cancellationToken) =>
@@ -43,6 +49,15 @@ internal static class AdminIdentityEndpoints
 
     private static async Task<Ok<IReadOnlyList<RoleResponse>>> ListRoles(IDispatcher dispatcher, CancellationToken cancellationToken) =>
         TypedResults.Ok(await dispatcher.Send(new ListRolesQuery(), cancellationToken));
+
+    private static async Task<IResult> InviteShopUser(
+        Guid shopId, InviteShopUserRequest request, ICurrentUser user, IDispatcher dispatcher, CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.Send(
+            new InviteShopUserCommand(shopId, request.Email ?? string.Empty, request.Role ?? string.Empty, request.Locale ?? "ar", user.UserId!.Value),
+            cancellationToken);
+        return result.ToHttpResult(invitation => TypedResults.Created((string?)null, invitation));
+    }
 
     private static async Task<IResult> InviteStaff(InviteStaffRequest request, ICurrentUser user, IDispatcher dispatcher, CancellationToken cancellationToken)
     {
