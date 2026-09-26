@@ -145,6 +145,29 @@ public sealed partial class StaffAuthTests(PostgresFixture postgres, MailpitFixt
     }
 
     [Fact]
+    public async Task ForgotPassword_KnownEmail_Returns202_EvenWhenEmailDeliveryFails()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var unreachableSmtp = new Dictionary<string, string?>
+        {
+            ["Email:Smtp:Host"] = "127.0.0.1",
+            ["Email:Smtp:Port"] = "1",
+            ["Email:Smtp:Security"] = "None",
+        };
+        await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "forgot_smtp_down", ct, settings: unreachableSmtp);
+        var known = IdentityTestData.NewEmail("known");
+        await IdentityTestData.CreateStaffAsync(factory, known, SystemRoles.Support, ct);
+        using var browser = ApiSession.Create(factory);
+
+        using var knownResponse = await browser.PostAsync("/api/v1/auth/password/forgot", new { email = known, locale = "ar" }, ct);
+        using var unknownResponse = await browser.PostAsync(
+            "/api/v1/auth/password/forgot", new { email = IdentityTestData.NewEmail("unknown"), locale = "ar" }, ct);
+
+        knownResponse.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+        unknownResponse.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+    }
+
+    [Fact]
     public async Task ResetPassword_RejectsWeakPassword_WithFieldError()
     {
         var ct = TestContext.Current.CancellationToken;

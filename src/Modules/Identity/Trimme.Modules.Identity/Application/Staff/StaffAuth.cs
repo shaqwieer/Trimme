@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.Modules.Identity.Application.Sessions;
@@ -70,7 +71,7 @@ internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager 
     }
 }
 
-internal sealed class ForgotPasswordHandler(IAccountStore accounts, IIdentityMailer mailer)
+internal sealed partial class ForgotPasswordHandler(IAccountStore accounts, IIdentityMailer mailer, ILogger<ForgotPasswordHandler> logger)
     : ICommandHandler<ForgotPasswordCommand, Result>
 {
     public async Task<Result> Handle(ForgotPasswordCommand command, CancellationToken cancellationToken)
@@ -78,14 +79,25 @@ internal sealed class ForgotPasswordHandler(IAccountStore accounts, IIdentityMai
         var ticket = await accounts.CreatePasswordResetAsync(command.Email.Trim(), cancellationToken);
         if (ticket is not null)
         {
-            // The link is in the account's saved language, falling back to the language of the request.
-            await mailer.SendPasswordResetAsync(
-                ticket with { PreferredLocale = Locales.IsSupported(ticket.PreferredLocale) ? ticket.PreferredLocale : command.Locale },
-                cancellationToken);
+            try
+            {
+                // The link is in the account's saved language, falling back to the language of the request.
+                await mailer.SendPasswordResetAsync(
+                    ticket with { PreferredLocale = Locales.IsSupported(ticket.PreferredLocale) ? ticket.PreferredLocale : command.Locale },
+                    cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Never let a delivery failure answer differently from an unknown address (enumeration-safe, D-055).
+                LogResetEmailFailed(logger, ex);
+            }
         }
 
         return Result.Success();
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Password-reset email could not be sent")]
+    private static partial void LogResetEmailFailed(ILogger logger, Exception exception);
 }
 
 internal sealed class ResetPasswordHandler(IAccountStore accounts, SessionManager sessions)

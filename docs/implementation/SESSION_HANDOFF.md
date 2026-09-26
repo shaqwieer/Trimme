@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-26 (Session 3, after Phase 04)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 04 is committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: the Phase 04 commit (`feat: phase 04 identity, sessions, roles and permissions`). Run `git log --oneline -3`.
+- HEAD commit: `54cf79a` (Phase 04) plus a follow-up fix commit (enumeration-safe forgot-password on SMTP failure; `seed` builds its image). Run `git log --oneline -3`.
 - Working tree status: clean after the commit. The local Docker stack is **running** (web 3300, API 8080, DB 5434, Mailpit UI 8325).
 - Current phase: 04 is complete. The user asked to continue with Phase 05 in the same session.
 - Phase score: 100 / 100 (Phase 04)
@@ -23,7 +23,7 @@
 - Command: `dotnet build Trimme.slnx -c Release --no-incremental`
   Result: PASS, 0 warnings
 - Command: unit / architecture / integration tests
-  Result: PASS, 99 / 56 / 65 (integration uses Testcontainers PostGIS + Mailpit)
+  Result: PASS, 99 / 56 / 66 (integration uses Testcontainers PostGIS + Mailpit)
 - Command: negative probe on the endpoint matrix test
   Result: fails as expected when a permission is removed; reverted
 - Command: `dotnet ef migrations has-pending-model-changes`
@@ -34,6 +34,8 @@
   Result: PASS
 - Command: `E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 pnpm e2e`, run twice
   Result: PASS, 36/36 both times
+- Command: fresh-machine check (images and volumes deleted) → compose smoke + E2E
+  Result: PASS, 36/36
 - Command: gitleaks `dir` + `git`
   Result: PASS, no leaks
 

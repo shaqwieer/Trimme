@@ -50,6 +50,9 @@ services:
 
   # One-shot, development only: creates the bootstrap SuperAdmin (R-AUTH-03) and future demo data, then exits.
   seed:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
     image: trimme-api:dev
     command: ["seed", "--dev"]
     environment:

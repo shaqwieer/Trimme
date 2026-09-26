@@ -111,7 +111,7 @@ Session 3, 2026-09-26. All commands run on the Windows dev host (Docker Desktop 
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings, 0 errors |
 | `dotnet test --project tests/Trimme.UnitTests -c Release` | PASS — 99/99 |
 | `dotnet test --project tests/Trimme.ArchitectureTests -c Release` | PASS — 56/56 |
-| `dotnet test --project tests/Trimme.IntegrationTests -c Release` (Testcontainers PostGIS + Mailpit) | PASS — 65/65 (38 new identity tests) |
+| `dotnet test --project tests/Trimme.IntegrationTests -c Release` (Testcontainers PostGIS + Mailpit) | PASS — 66/66 (39 new identity tests) |
 | Negative probe: removed `RequirePermission` from `GET /admin/roles` | `Endpoint_WithoutPermission_Returns403` FAILED as expected ("GET /api/v1/admin/roles needs a permission…"); change reverted |
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes since the last migration |
 | `pnpm lint` / `pnpm typecheck` (web + E2E) / `pnpm format:check` (web + E2E) | PASS |
@@ -128,6 +128,11 @@ Session 3, 2026-09-26. All commands run on the Windows dev host (Docker Desktop 
 - Sign-in forms validated on blur; the error under the autofocused empty email field shifted the "forgot password" link and swallowed the first click (E2E) → sign-in style forms validate on submit (D-058).
 - ASP.NET web JSON defaults typed numbers as `integer | string` in OpenAPI → strict number handling (D-057).
 - A refresh re-issued the CSRF token, which would break the retried request → only sign-in rotates it.
+
+**Follow-up after review (same session)**
+- Forgot-password answered 500 for a known address when SMTP was down (an existence oracle) → the handler logs the delivery failure and always answers 202. `ForgotPassword_KnownEmail_Returns202_EvenWhenEmailDeliveryFails` (SMTP pointed at a closed port) failed before the fix and passes after it. The remaining timing difference is recorded as accepted in D-055.
+- The compose `seed` service had no `build:` block and could try to pull `trimme-api:dev` on a fresh runner → it now builds like `migrate`. Verified by deleting both local images and volumes, then `compose-smoke.sh` (PASS, bootstrap admin created) and E2E 36/36.
+- Commit: `54cf79a` (phase) plus the follow-up fix commit.
 
 **Database and migrations:** `20260926080806_Identity` created and applied locally (Testcontainers and compose). Not applied anywhere else.
 

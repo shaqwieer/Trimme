@@ -299,7 +299,8 @@ Fix:
 ## D-055 — Staff passwords, lockout, reset and invitations — Accepted (Phase 04)
 - Policy (NIST style): at least 10 characters and 4 distinct characters, no composition rules. Lockout after 5 failures, for 15 minutes.
 - Unknown emails verify a dummy hash, so both paths cost one hash and return the same `auth.invalid_credentials`. A locked account reports `auth.locked_out`; that reveals existence only after five failures on the address, which is accepted.
-- Reset: the request always answers 202. The link carries the user id and a 1-hour Identity token, never logged. A successful reset signs out every session and clears the lockout.
+- Reset: the request always answers 202, even when the email cannot be delivered (the failure is logged without the address). The link carries the user id and a 1-hour Identity token, never logged. A successful reset signs out every session and clears the lockout.
+- Accepted residual: for a known address the request waits for the SMTP hand-off, so its timing differs from an unknown address. The `auth` rate limit bounds probing; moving the send to the outbox/Hangfire pipeline (Phase 15) removes the difference.
 - Staff accounts exist only through admin invitations: a 7-day single-use token (hash stored), the newest invitation per address wins, and the role must belong to the invited user type. The first SuperAdmin comes from the development bootstrap (R-AUTH-03).
 
 ## D-056 — Email channel and production-only secrets — Accepted (Phase 04)
