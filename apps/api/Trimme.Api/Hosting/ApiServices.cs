@@ -15,6 +15,8 @@ internal static class ApiServices
 {
     public const string ReadyHealthTag = "ready";
 
+    private const string Lf = "\n";
+
     /// <summary>Registers everything the API needs. Must not open connections or perform I/O (EF tooling builds the host).</summary>
     public static WebApplicationBuilder AddTrimmeApi(this WebApplicationBuilder builder, IReadOnlyList<IModule> modules)
     {
@@ -56,14 +58,31 @@ internal static class ApiServices
         services.AddHealthChecks()
             .AddDbContextCheck<TrimmeDbContext>("database", tags: [ReadyHealthTag]);
 
-        services.AddOpenApi("v1", options => options.AddDocumentTransformer((document, _, _) =>
+        services.AddOpenApi("v1", options =>
         {
-            document.Info.Title = "TRIMME API";
-            document.Info.Version = "v1";
-            document.Info.Description = "Public, customer, shop and admin API for the TRIMME salon and barber booking marketplace.";
-            document.Servers?.Clear();
-            return Task.CompletedTask;
-        }));
+            options.AddDocumentTransformer((document, _, _) =>
+            {
+                document.Info.Title = "TRIMME API";
+                document.Info.Version = "v1";
+                document.Info.Description = "Public, customer, shop and admin API for the TRIMME salon and barber booking marketplace.";
+                document.Servers?.Clear();
+                return Task.CompletedTask;
+            });
+
+            // Descriptions come from XML doc comments, whose line endings follow the checkout (CRLF on Windows, LF on
+            // Linux CI). Normalizing keeps the committed contract identical on every OS.
+            options.AddSchemaTransformer((schema, _, _) =>
+            {
+                schema.Description = schema.Description?.ReplaceLineEndings(Lf);
+                return Task.CompletedTask;
+            });
+            options.AddOperationTransformer((operation, _, _) =>
+            {
+                operation.Description = operation.Description?.ReplaceLineEndings(Lf);
+                operation.Summary = operation.Summary?.ReplaceLineEndings(Lf);
+                return Task.CompletedTask;
+            });
+        });
 
         return builder;
     }
