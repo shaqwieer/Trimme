@@ -27,7 +27,10 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    KEEP_ALIVE_TIMEOUT=65000
+# KEEP_ALIVE_TIMEOUT: keep idle connections longer than any proxy in front (Nginx/load balancers ~60 s), so the server
+# never closes a socket a client is about to reuse ("socket hang up"). Node's default is 5 s.
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public

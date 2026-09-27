@@ -1,6 +1,6 @@
 # Phase 07 — Services, categories & packages
 
-**Status:** [ ] · **Score:** 0/100
+**Status:** [x] · **Score:** 100/100
 
 ## Goal and user-visible outcome
 - Each shop creates, edits, orders, activates/deactivates and archives its **own** services and packages, setting its own prices and durations.
@@ -50,16 +50,21 @@ Phase 06 complete.
 Booking snapshots (Phase 10) and public shop page UI (Phase 11).
 
 ## Checklist (100 points)
-- [ ] 7.1 (5) Re-validate; refine checklist.
-- [ ] 7.2 (8) Categories entity/API/admin UI.
-- [ ] 7.3 (15) ShopService aggregate, rules, concurrency, archive semantics + unit/integration tests.
-- [ ] 7.4 (10) Packages + items (same-shop composite FKs) + tests.
-- [ ] 7.5 (10) ProfessionalService assignment (admin only, same shop enforced by DB) + tests.
-- [ ] 7.6 (10) Admin moderation + audited override + tests (R-SVC-04, R-TEN-08).
-- [ ] 7.7 (14) Shop services & packages UI (list, reorder, form, archive guard).
-- [ ] 7.8 (10) Admin services/categories/packages UIs + professional services tab.
-- [ ] 7.9 (8) Cross-shop isolation tests for all service/package endpoints (R-SVC-03).
-- [ ] 7.10 (10) Seed, E2E E2 (service part), public read endpoints, control files, commit.
+Refined at 7.1:
+- The assignment table lives in `services.professional_services` (D-073), not in the professionals schema.
+- English is optional for services and packages and required for categories (D-070).
+- Packages with an unavailable item stay but are not published (D-072).
+- Packages have no delete; archive is enough until bookings exist.
+- [x] 7.1 (5) Re-validate; refine checklist. — Phase 06 checks were green (16/16 Shops + Professionals integration), and Phase 06 CI run 36316322648 passed 4/4.
+- [x] 7.2 (8) Categories entity/API/admin UI. — Admin CRUD with on/off, public active list, service counts; `/admin/services/categories`.
+- [x] 7.3 (15) ShopService aggregate, rules, concurrency, archive semantics + unit/integration tests. — Price and duration rules (and DB checks), final archive, delete-if-unused seam, full-set reorder, suspended shop → 404.
+- [x] 7.4 (10) Packages + items (same-shop composite FKs) + tests. — Key-safe item replacement, items-only concurrency, availability-aware publishing.
+- [x] 7.5 (10) ProfessionalService assignment (admin only, same shop enforced by DB) + tests. — Composite FKs, including the cross-module one by entity-type name, with a model test; a raw-SQL cross-shop insert is rejected.
+- [x] 7.6 (10) Admin moderation + audited override + tests (R-SVC-04, R-TEN-08). — Hide needs a reason; the override is audited before → after, with a reason and concurrency.
+- [x] 7.7 (14) Shop services & packages UI (list, reorder, form, archive guard). — `/shop/services` (tabs: services, packages), `/new`, `/[id]`, `/shop/packages/new|[id]`; keyboard reorder with an announcement and rollback. Drag-and-drop is deferred (D-071).
+- [x] 7.8 (10) Admin services/categories/packages UIs + professional services tab. — `/admin/services`, `/[id]` (moderation, override), `/admin/services/categories`, `/admin/packages`, and the assigned-services card on `/admin/professionals/[id]`.
+- [x] 7.9 (8) Cross-shop isolation tests for all service/package endpoints (R-SVC-03). — Every verb on another shop's service or package returns 404 and the rows are unchanged; foreign ids in package items and order are refused.
+- [x] 7.10 (10) Seed, E2E E2 (service part), public read endpoints, control files, commit. — See the evidence below.
 
 ## Files/modules expected to change
 `src/Modules/Services/**`, `src/Modules/Professionals/**` (assignment), `src/Modules/Administration/**`, `apps/web/src/app/[locale]/shop/services/**`, `apps/web/src/app/[locale]/admin/{services,packages}/**`.
@@ -91,8 +96,48 @@ pnpm exec playwright test shop-services admin-services
 Revert the commit and reset the DB.
 
 ## Completion evidence
-_(fill)_
+Session 4, 2026-09-27 (same session as Phase 06, at the user's request).
+
+**What was built**
+- **Services module.**
+  - Domain: `ServiceCategory` (platform), `ShopService` (shop-owned; price, duration and currency rules; final archive; moderation), `ServicePackage` + `ServicePackageItem` (composite same-shop keys, key-safe reorder, `ExpandItems`), `ProfessionalServiceAssignment` (composite FKs, including the cross-module one by entity-type name).
+  - Use cases: shop self-service (tenant first, full-set reorder, delete through `IShopServiceUsage`), admin (categories, platform-wide lists, moderation, audited override, assignment through `IProfessionalDirectory`), and public published lists inside `IPublicDataScope`.
+  - Demo seed: 5 categories, 9 services with different prices per shop, 2 packages, assignments.
+- **Building blocks.** `ProfessionalId` moved to the Domain building block; `HasShopScopedReference(entityTypeName, …)`; `IProfessionalDirectory` and `IShopServiceUsage` contracts.
+- **Migration.** `ServicesPackages`: 5 tables, CHECK constraints on price and duration, composite FKs.
+- **Web.**
+  - Shop: `/shop/services` (tabs: services, packages; switch; keyboard move up/down with an announcement and rollback; archive; delete-if-unused), `/shop/services/new|[id]`, `/shop/packages/new|[id]`.
+  - Admin: `/admin/services` and `/[id]` (moderation, support override with a reason), `/admin/services/categories`, `/admin/packages`, and the assigned-services card on `/admin/professionals/[id]`.
+  - Helpers: `localizedName`, and `parsePrice` (Arabic-Indic digits and decimal separator).
+- **Web image.** `KEEP_ALIVE_TIMEOUT=65000`: the Node default of 5 s closed idle sockets that clients were reusing, which caused intermittent E2E "socket hang up".
+
+**Verification (actual results)**
+| Command | Result |
+|---|---|
+| `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings, 0 errors |
+| Unit / architecture / integration tests | PASS — 171 / 63 / 106 (Phase 06 end: 153 / 62 / 98) |
+| New integration suite `Services/CatalogTests` (8) | CRUD with own-record-only change, stale 409 and price/duration rules; in-use delete 409; every verb on another shop's service or package → 404, rows unchanged, foreign ids refused; items-only concurrent edit → 409; packages published only when every item is available; audited override (exact before → after summary) + moderation; same-shop assignment (API 400, DB FK violation, shop 403); suspended shop → 404; categories need both languages and inactive ones cannot be selected |
+| Architecture `CrossModuleShopScopedReferences_ResolveToTheRealEntity` | PASS — one `Professional` entity (real CLR type); FK `(shop_id, professional_id)` → `(shop_id, id)` |
+| `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
+| Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 196 web tests (17 new: price parsing, name fallback, form validation, keyboard reorder + rollback; transfer-copy check covers the new catalogs) |
+| Compose on the Phase 06 volume (upgrade) and `down -v` + `up --build` (clean) | PASS — migrations and 5 seeders ran |
+| `pnpm e2e` on the clean stack | PASS — 42/42 twice, after two test/infra fixes (below); flows project 5/5 consecutive runs green |
+| No-transfer grep gate (D-069) | PASS — no hits |
+| gitleaks `dir` + `git` | PASS — no leaks |
+| Visual: `/ar/shop/services`, packages tab and edit form at 390; `/ar/admin/services` at 390 and 1440; `/ar/admin/services/{id}`, `/en/admin/professionals/{id}` at 1440 | 0 px horizontal overflow at 390; RTL mirrored; Arabic-only names fall back in the English UI |
+
+**Findings during the gates**
+- **Integration timeouts.** The first combined gate run had 4 integration failures (gallery, reveal, password reset, OTP), each timing out at about 31 s. The suite then passed 106/106 three times running alone. They were not reproduced and are recorded as a watch item.
+- **Admin E2E, 409 conflict.** Under parallel load the admin flow submitted the support override before `router.refresh()` delivered the new version after unhiding, and got a correct 409. The test now waits for the refreshed page. A person sees the "reload and edit again" message.
+- **Intermittent "socket hang up".** API requests through the web container hit the Node keep-alive race; fixed by the web image's `KEEP_ALIVE_TIMEOUT`.
+
+**Database and migrations:** `ServicesPackages` (`services.service_categories`, `shop_services`, `service_packages`, `service_package_items`, `professional_services`). Applied locally only: Testcontainers databases and the compose volume (upgraded, then recreated from empty).
+
+**Smallest decisive re-verification for the next session:** `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Services"`, then `pnpm e2e` (`flows/services.spec.ts`).
 
 ## Remaining risks → next phase
-- The English-required policy for localized fields.
+- R-SVC-02 (delete guard) and R-SVC-05 (reporting expansion) complete with bookings in Phase 10: Bookings registers an `IShopServiceUsage` and snapshots name, price, currency and duration.
+- Drag-and-drop reordering is deferred; keyboard move buttons cover the need (D-071).
+- One unreproduced run with 4 integration timeouts (about 31 s): watch CI.
+- The localized-fields policy is settled by D-070.
 - Next: Phase 08 — Subscriptions & platform settings.

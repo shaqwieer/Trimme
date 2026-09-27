@@ -13,7 +13,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-NEG-03 | No customer export for shops | §7, §13 | 13 | I `ShopApi_HasNoExportEndpoints`; E `shop_dashboard_has_no_export_action` | [ ] |
 | R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` ✔ Phase 05 (every shop-facing endpoint found from metadata; fails closed without typed responses — probe-verified; recursive member scan + live JSON scan; non-vacuity test `PhoneScanner_FindsPhoneMembers_InNestedTypes`); U `SensitiveDataRedactorTests` (logs) ✔; I `ShopHub_Messages_DoNotContainPhone` (13); E `shop_pages_payload_has_no_customer_phone` (13) | [~] |
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` ✔ (NOT NULL shop, composite contact FK rejects a cross-shop pair, the same WhatsApp number cannot be a professional in a second shop) | [x] |
-| R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateOrChangeProfessionals_AndSeesOnlyItsOwn` ✔ Phase 06 (create/edit/disable → 403; read-only own list); `Shop_CannotAssignProfessionalService` (Phase 07) | [~] |
+| R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateOrChangeProfessionals_AndSeesOnlyItsOwn` ✔ Phase 06; I `Admin_AssignsProfessionalService_SameShopOnly_AndShopCannotAssign` ✔ Phase 07 (shop 403; no shop assignment route; DB rejects a cross-shop pair); E shop PUT → 403 ✔ | [x] |
 | R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; E auth flows assert empty Web Storage and that `document.cookie` exposes neither `trimme-access` nor `trimme-refresh` after customer and staff sign-in ✔; I `Cookies_AreSecureHttpOnly` (tokens never in a response body) ✔ Phase 04 | [x] |
 | R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate; I plans served from DB only | [ ] |
 | R-NEG-09 | No hardcoded final WhatsApp message text in jobs/handlers | §16 | 15 | A `Notifications_Handlers_DoNotContainMessageLiterals`; I dispatch renders from active template version | [ ] |
@@ -96,11 +96,11 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-SHP-04 | Shop and professional images stored in the database, validated by content, metadata (EXIF/GPS) stripped, served immutable (D-064) | §9, user | 6 | U `ImageSanitizerTests` ✔; I `Images_AreStoredInTheDatabase_ValidatedByContent_AndServedImmutable` ✔; E cover upload renders (`naturalWidth` 1600) ✔ | [x] |
 | R-PRO-01 | Admin professional CRUD/disable, one shop, WhatsApp number masked, notifications toggle | §7, §14 | 6 | I `Admin_CreatesProfessional_WithMaskedWhatsApp` ✔, `Reveal_RequiresPermissionAndReason_AndIsAudited` ✔, `DisabledProfessionals_LeaveThePublicPage_AndAvatarIsStored` ✔; U contact rules ✔; E flow 3 (masked number, audited reveal) ✔ | [x] |
 | R-PRO-02 | Professional number absent from public/customer/other-shop DTOs | §8 | 6 | I `PublicAndShopProfessionalDtos_HaveNoPhone` ✔ (raw JSON of the public and shop lists; contract members) | [x] |
-| R-SVC-01 | Shop creates/edits/activates/deactivates/archives/orders own services (ar/en, price, duration) | §10 | 7 | I `Shop_ServiceCrud_Flow`; E flow 2 | [ ] |
-| R-SVC-02 | Referenced services never physically deleted; archive only | §7 | 7 | I `Service_WithBookings_CannotBeDeleted` | [ ] |
-| R-SVC-03 | Cross-shop service isolation on reads and every mutation | §19 | 7 | I `CrossShop_Service_*` | [ ] |
-| R-SVC-04 | Admin categories, moderation, audited override; professional-service assignment | §14 | 7 | I `Admin_OverrideService_Audited`; I `Admin_AssignsProfessionalService_SameShopOnly` | [ ] |
-| R-SVC-05 | Packages with items, price, duration; expand for reporting | §10 | 7 | U `Package_Duration_And_Items`; I reporting expansion | [ ] |
+| R-SVC-01 | Shop creates/edits/activates/deactivates/archives/orders own services (ar/en, price, duration) | §10 | 7 | I `Shop_ServiceCrud_Flow` ✔ (own record only; stale 409; price/duration rules; staff 403; full-set reorder; archive final); U `CatalogDomainTests` ✔; W `ServiceForm`/`ShopCatalogList` ✔; E shop creates, edits price/duration, reorders by keyboard, archives ✔ | [x] |
+| R-SVC-02 | Referenced services never physically deleted; archive only | §7 | 7, 10 | I `Service_InPackage_CannotBeDeleted_OnlyArchived` ✔ (package reference → 409 `service.in_use`; unused → 204) through the `IShopServiceUsage` seam; `Service_WithBookings_CannotBeDeleted` when bookings exist (Phase 10) | [~] |
+| R-SVC-03 | Cross-shop service isolation on reads and every mutation | §19 | 7 | I `CrossShop_ServiceAndPackage_EveryVerb_Is404_AndNothingChanges` ✔ (GET/PUT/activate/deactivate/archive/DELETE on services and packages → 404; foreign ids in package items and order → 400; rows unchanged); I `SuspendedShop_CatalogCommands_Are404_Not500` ✔; shop-facing contract scan ✔ | [x] |
+| R-SVC-04 | Admin categories, moderation, audited override; professional-service assignment | §14 | 7 | I `Admin_OverrideService_Audited_AndModerationHidesFromCustomers` ✔ (audit "Price 60.00 → 55.00 SAR; Duration 30 → 25 min; Name changed" + reason; Support 403); I `Admin_AssignsProfessionalService_SameShopOnly_AndShopCannotAssign` ✔; I `Categories_AdminManaged_BothLanguages_ActiveOnesPublishedAndSelectable` ✔; A `CrossModuleShopScopedReferences_ResolveToTheRealEntity` ✔; E admin hide/unhide, override, assignment ✔ | [x] |
+| R-SVC-05 | Packages with items, price, duration; expand for reporting | §10 | 7, 10 | U `Package_Duration_And_Items` ✔ (explicit duration, ordered `ExpandItems`, rows kept on reorder, items-only edit touches the row); I `Packages_ConcurrencyOnItemsOnlyEdits_AndPublishedOnlyWhenEveryItemIsAvailable` ✔; reporting expansion with bookings (Phase 10) | [~] |
 | R-SUB-01 | SuperAdmin plan catalogue (localized, price, currency, interval, features, limits, trial/grace, published, order) | §7, §15 | 8 | I `SuperAdmin_PlanCrud`; E flow 5 | [ ] |
 | R-SUB-02 | Price versioning; no retroactive change | §15 | 8 | U `PlanPrice_Versioning`; I `ExistingSubscription_KeepsPriceSnapshot`; E flow 5 | [ ] |
 | R-SUB-03 | Assign, renew, override (audited), history | §15 | 8 | I `Subscription_Assign_Renew_Override_History` | [ ] |
@@ -152,7 +152,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-SD-03 | Appointment list/details, valid status changes | §13 | s-appointments | 13 | E flow 2 | [ ] |
 | R-SD-04 | Walk-in creation | §13 | s-walkin | 13 | E flow 2 | [ ] |
 | R-SD-05 | Hours, professional schedule visibility, breaks, vacations, time off, pause/resume | §13 | s-hours | 9 | E | [ ] |
-| R-SD-06 | Own services CRUD + archive | §13 | s-services (corrected) | 7 | E flow 2 | [ ] |
+| R-SD-06 | Own services CRUD + archive | §13 | s-services (corrected) | 7 | E `services.spec.ts` shop flow ✔ | [x] |
 | R-SD-07 | Subscription status + expiry visibility | §13 | s-services | 8 | E | [ ] |
 | R-SD-08 | Notifications | §13 | (absent) | 15 | E | [ ] |
 | R-SD-09 | Profile editing within admin policy; location edit via pin | §13 | s-settings | 6 | W `ShopProfileEditor` locks ✔; E `shop owner edits only the fields the admin policy opens` ✔ (locked fields disabled with shield; location read-only; API 403) | [x] |
@@ -165,7 +165,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-AD-01 | Overview KPIs (today's appointments, completion rate, cancellations, no-shows, active shops, expiring subs, active pros, new customers, popular services, top shops) | §14, §17 | a-overview | 14 | I KPI query tests | [ ] |
 | R-AD-02 | Shops management | §14 | a-shops | 5, 6 | E `/admin/shops` list/create/detail/invite/activate/suspend ✔ Phase 05; profile + location Phase 06 | [~] |
 | R-AD-03 | Professionals management (no transfer) | §14 | a-pros | 6 | E flow 3 | [ ] |
-| R-AD-04 | Services & packages platform-wide, categories, moderation, override, assignment | §14 | a-services | 7 | E | [ ] |
+| R-AD-04 | Services & packages platform-wide, categories, moderation, override, assignment | §14 | a-services | 7 | E `services.spec.ts` admin flow ✔; I suites above ✔ | [x] |
 | R-AD-05 | Bookings global search/filters/details/history/intervention | §14 | a-appointments | 14 | I/E | [ ] |
 | R-AD-06 | Customers list/profile with protected contact | §14 | a-appointments | 14 | I `PhoneReveal_RequiresPermission_AndAudits` | [ ] |
 | R-AD-07 | Reviews moderation | §14 | a-reviews | 14 | I/E | [ ] |

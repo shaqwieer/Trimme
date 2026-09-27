@@ -918,6 +918,339 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("professional_contacts", "professionals");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ProfessionalServiceAssignment", b =>
+                {
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("service_id");
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("ProfessionalId", "ServiceId")
+                        .HasName("pk_professional_services");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_professional_services_shop_id_professional_id");
+
+                    b.HasIndex("ShopId", "ServiceId")
+                        .HasDatabaseName("ix_professional_services_shop_id_service_id");
+
+                    b.ToTable("professional_services", "services");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServiceCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name_en");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_service_categories");
+
+                    b.HasIndex("DisplayOrder")
+                        .HasDatabaseName("ix_service_categories_display_order");
+
+                    b.ToTable("service_categories", "services");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<string>("DescriptionAr")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_ar");
+
+                    b.Property<string>("DescriptionEn")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_en");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Moderation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("moderation");
+
+                    b.Property<string>("ModerationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("moderation_reason");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_en");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("price");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_service_packages");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_service_packages_shop_id_id");
+
+                    b.HasIndex("ShopId", "DisplayOrder")
+                        .HasDatabaseName("ix_service_packages_shop_id_display_order");
+
+                    b.ToTable("service_packages", "services", t =>
+                        {
+                            t.HasCheckConstraint("ck_service_packages_duration", "duration_minutes BETWEEN 5 AND 480 AND duration_minutes % 5 = 0");
+
+                            t.HasCheckConstraint("ck_service_packages_price", "price >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackageItem", b =>
+                {
+                    b.Property<Guid>("PackageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("package_id");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("service_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("PackageId", "ServiceId")
+                        .HasName("pk_service_package_items");
+
+                    b.HasIndex("ShopId", "PackageId")
+                        .HasDatabaseName("ix_service_package_items_shop_id_package_id");
+
+                    b.HasIndex("ShopId", "ServiceId")
+                        .HasDatabaseName("ix_service_package_items_shop_id_service_id");
+
+                    b.ToTable("service_package_items", "services");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ShopService", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("archived_at");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<string>("DescriptionAr")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_ar");
+
+                    b.Property<string>("DescriptionEn")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_en");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Moderation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("moderation");
+
+                    b.Property<string>("ModerationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("moderation_reason");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_en");
+
+                    b.Property<bool>("OnlineBookable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("online_bookable");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("price");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_services");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_shop_service_shop_id_id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_shop_services_category_id");
+
+                    b.HasIndex("ShopId", "DisplayOrder")
+                        .HasDatabaseName("ix_shop_services_shop_id_display_order");
+
+                    b.HasIndex("ShopId", "IsArchived", "IsActive")
+                        .HasDatabaseName("ix_shop_services_shop_id_is_archived_is_active");
+
+                    b.ToTable("shop_services", "services", t =>
+                        {
+                            t.HasCheckConstraint("ck_shop_services_duration", "duration_minutes BETWEEN 5 AND 480 AND duration_minutes % 5 = 0");
+
+                            t.HasCheckConstraint("ck_shop_services_price", "price >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1192,6 +1525,84 @@ namespace Trimme.Migrations.Migrations
                         .HasConstraintName("fk_professional_contacts_professionals_shop_id_professional_id");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ProfessionalServiceAssignment", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_services_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_services_professionals_shop_id_professional_id");
+
+                    b.HasOne("Trimme.Modules.Services.Domain.ShopService", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ServiceId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_services_shop_service_shop_id_service_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackage", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_packages_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackageItem", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_package_items_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Services.Domain.ServicePackage", null)
+                        .WithMany("Items")
+                        .HasForeignKey("ShopId", "PackageId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_package_items_service_packages_shop_id_package_id");
+
+                    b.HasOne("Trimme.Modules.Services.Domain.ShopService", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ServiceId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_package_items_shop_service_shop_id_service_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ShopService", b =>
+                {
+                    b.HasOne("Trimme.Modules.Services.Domain.ServiceCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_shop_services_service_categories_category_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_services_shops_shop_id");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
                 {
                     b.HasOne("Trimme.BuildingBlocks.Infrastructure.Media.StoredMedia", null)
@@ -1266,6 +1677,11 @@ namespace Trimme.Migrations.Migrations
                         });
 
                     b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackage", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

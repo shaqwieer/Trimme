@@ -1,7 +1,7 @@
 # TRIMME — Domain model
 
-The model as built so far (Phases 04–06), with the invariants each part enforces. Later phases extend this file:
-services and packages (07), subscriptions and settings (08), schedules (09), bookings (10), reviews, notifications and
+The model as built so far (Phases 04–07), with the invariants each part enforces. Later phases extend this file:
+subscriptions and settings (08), schedules (09), bookings (10), reviews, notifications and
 QR (11–16). The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
 
 One PostgreSQL database with one schema per module. Identifiers are UUIDv7 wrapped in typed ids. Instants are UTC
@@ -18,6 +18,13 @@ erDiagram
     PROFESSIONAL }o--o| MEDIA_FILE : "avatar"
     USER ||--o{ USER_SESSION : "sessions"
     USER_SESSION ||--o{ REFRESH_TOKEN : "rotating family"
+    SHOP ||--o{ SHOP_SERVICE : "own prices and durations"
+    SERVICE_CATEGORY |o--o{ SHOP_SERVICE : "platform category"
+    SHOP ||--o{ SERVICE_PACKAGE : ""
+    SERVICE_PACKAGE ||--|{ SERVICE_PACKAGE_ITEM : "2-10, (shop_id, package_id)"
+    SHOP_SERVICE ||--o{ SERVICE_PACKAGE_ITEM : "(shop_id, service_id)"
+    PROFESSIONAL ||--o{ PROFESSIONAL_SERVICE : "(shop_id, professional_id)"
+    SHOP_SERVICE ||--o{ PROFESSIONAL_SERVICE : "(shop_id, service_id)"
     ROLE ||--o{ ROLE_PERMISSION : grants
     PERMISSION ||--o{ ROLE_PERMISSION : ""
 
@@ -88,6 +95,29 @@ erDiagram
 - Notifications can be on only while a number is set; `CanReceiveNotifications` means both are true.
 - Changing the number resets the verification state.
 - Only admins with `RevealWhatsApp` read the full number (with a reason, audited), plus the notification worker in Phase 15. Shops and customers never receive it.
+
+## Services (`services`)
+
+**ServiceCategory** (D-074) is platform-owned: Arabic and English names, icon, order, active flag. It carries no price
+or duration. It is deactivated, never deleted.
+
+**ShopService** (D-070, D-071) is a service of one shop (`IShopOwned`, `(shop_id, id)` key).
+- The shop's own names (Arabic required, English optional), description, category, price (`numeric(10,2)`, 0–100,000
+  SAR, currency stored) and duration (5-minute steps, 5–480; database CHECK constraints).
+- Online-bookable flag, on/off, display order, optimistic concurrency.
+- Archive is final. Delete is allowed only when no `IShopServiceUsage` reports a use (packages now, bookings from
+  Phase 10).
+- Platform moderation (Visible/Hidden with a reason) and an audited support override never change who owns it.
+- Publicly available = active, not archived, visible.
+
+**ServicePackage** (D-020, D-072) is shop-owned: 2–10 distinct services of the same shop (items keyed
+`(package_id, service_id)`, composite FKs to the package and the service), with its own price and total duration.
+Items keep their rows when reordered, and an items-only edit still bumps the package version. A package is published
+only while it and every item are available.
+
+**ProfessionalServiceAssignment** (D-073) links a professional to a service of the same shop, with both composite FKs
+including `shop_id`. Only admins assign. The FK to the Professionals module names the entity type as a string, so
+there is no project reference between the modules.
 
 ## Media (`media`, building blocks)
 

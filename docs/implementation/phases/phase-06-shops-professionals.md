@@ -155,7 +155,7 @@ Session 4, 2026-09-27.
 - Forms keyed on `version` remounted after `router.refresh()` and lost their success message; the keys were removed.
 - The WhatsApp toggle-only change needed no reveal, so `keepCurrentNumber` was added (D-067).
 
-**Commit:** `805313b` (plus a follow-up with the review probes and the public-scope data-layer test). Not pushed yet; CI has not run on Phase 06.
+**Commit:** `805313b` (plus a follow-up with the review probes and the public-scope data-layer test). Pushed in Session 4; GitHub Actions [run 36316322648](https://github.com/shaqwieer/Trimme/actions/runs/36316322648) on `e9ae5d3` is green (backend, web, secret scan, Docker stack + Playwright).
 
 **Database and migrations:** `ShopProfileLocationProfessionals` (schemas `media`, `professionals`; shop profile, policy and location columns). Applied locally only: the Testcontainers databases and the local compose volume, both upgraded and recreated from empty.
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Privacy;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.Modules.Professionals.Domain;

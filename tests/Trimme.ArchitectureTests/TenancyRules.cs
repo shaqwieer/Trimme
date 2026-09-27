@@ -91,6 +91,23 @@ public sealed partial class TenancyRules
     }
 
     [Fact]
+    public void CrossModuleShopScopedReferences_ResolveToTheRealEntity()
+    {
+        // Services references professionals by entity type name (D-073). EF must bind it to the real Professional
+        // entity, not invent a CLR-less shared-type entity, and the FK must be the composite (shop_id, professional_id).
+        using var context = CreateContext(includeProbes: false);
+        var professionals = context.Model.GetEntityTypes().Where(e => e.Name == "Trimme.Modules.Professionals.Domain.Professional").ToList();
+        professionals.Count.ShouldBe(1);
+        professionals[0].ClrType.Name.ShouldBe("Professional");
+        professionals[0].HasSharedClrType.ShouldBeFalse();
+
+        var assignment = context.Model.GetEntityTypes().Single(e => e.ClrType.Name == "ProfessionalServiceAssignment");
+        var toProfessional = assignment.GetForeignKeys().Single(fk => fk.PrincipalEntityType == professionals[0]);
+        toProfessional.Properties.Select(p => p.GetColumnName()).ShouldBe(["shop_id", "professional_id"]);
+        toProfessional.PrincipalKey.Properties.Select(p => p.GetColumnName()).ShouldBe(["shop_id", "id"]);
+    }
+
+    [Fact]
     public void PublicDataScope_IsUsedOnlyByPublicUseCases()
     {
         ScopeUsersOutside<IPublicDataScope>(ProductionAssemblies, PublicNamespace()).ShouldBeEmpty();

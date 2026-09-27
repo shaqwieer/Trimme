@@ -39,4 +39,32 @@ public static class ShopOwnedModelExtensions
             .HasPrincipalKey(nameof(IShopOwned.ShopId), IdProperty)
             .OnDelete(onDelete);
     }
+
+    /// <summary>
+    /// Like <see cref="HasShopScopedReference{TChild,TParent}"/>, for a parent owned by another module: the parent is
+    /// named by its entity type name, so the child's module needs no reference to the parent's module (modules talk
+    /// only through contracts). The parent's module must be configured first (ModuleCatalog order); the model test
+    /// checks that the name resolves to the real entity type.
+    /// </summary>
+    public static ReferenceCollectionBuilder HasShopScopedReference<TChild>(
+        this EntityTypeBuilder<TChild> builder,
+        string parentEntityTypeName,
+        string parentIdProperty,
+        DeleteBehavior onDelete = DeleteBehavior.Restrict)
+        where TChild : class, IShopOwned
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentException.ThrowIfNullOrWhiteSpace(parentEntityTypeName);
+        if (builder.Metadata.Model.FindEntityType(parentEntityTypeName) is null)
+        {
+            throw new InvalidOperationException(
+                $"{parentEntityTypeName} is not in the model yet; configure its module before {typeof(TChild).Name}'s.");
+        }
+
+        return builder.HasOne(parentEntityTypeName, navigationName: null)
+            .WithMany()
+            .HasForeignKey(nameof(IShopOwned.ShopId), parentIdProperty)
+            .HasPrincipalKey(nameof(IShopOwned.ShopId), IdProperty)
+            .OnDelete(onDelete);
+    }
 }

@@ -81,7 +81,7 @@
 
 The `Customer` role holds no catalogue permission. Customers use self-service endpoints that act only on their own account (`/me`, sessions, profile completion); booking and review ownership rules arrive with those features (Phases 10–12).
 
-## Endpoints (Phases 04–06)
+## Endpoints (Phases 04–07)
 
 | Endpoint | Access |
 |---|---|
@@ -133,6 +133,18 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `PUT /api/v1/admin/professionals/{id}/whatsapp` | `Admin.Professionals.ManageWhatsApp` · number never logged or audited |
 | `POST /api/v1/admin/professionals/{id}/whatsapp/reveal` | `Admin.Professionals.RevealWhatsApp` · reason required · audited · `no-store` |
 
-There is no endpoint that changes a professional's shop.
+| `GET /api/v1/public/service-categories` | Anonymous · active categories |
+| `GET /api/v1/public/shops/{slug}/services`, `.../packages` | Anonymous · active shop; active, visible, non-archived items; packages only when every item is available |
+| `GET /api/v1/shop/services`, `GET /api/v1/shop/services/{id}`, `GET /api/v1/shop/packages`, `GET /api/v1/shop/packages/{id}` | User type ShopUser (owner and staff) · own shop only; 404 while suspended |
+| `POST/PUT /api/v1/shop/services(/{id})`, `POST .../{id}/activate|deactivate|archive`, `DELETE .../{id}`, `PUT .../order` | `Shop.Services.Manage` · same for `/shop/packages` (no delete) · another shop's id → 404 |
+| `GET /api/v1/admin/service-categories` | `Admin.ShopServices.View` |
+| `POST /api/v1/admin/service-categories`, `PUT .../{id}`, `POST .../{id}/activate|deactivate` | `Admin.ServiceCategories.Manage` · audited |
+| `GET /api/v1/admin/services`, `GET /api/v1/admin/services/{id}`, `GET /api/v1/admin/packages` | `Admin.ShopServices.View` · paged |
+| `POST /api/v1/admin/services/{id}/moderation`, `POST /api/v1/admin/packages/{id}/moderation` | `Admin.ShopServices.Moderate` · hide needs a reason · audited |
+| `PUT /api/v1/admin/services/{id}/override` | `Admin.ShopServices.SupportOverride` · reason required · audited before → after |
+| `GET /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.View` |
+| `PUT /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.AssignServices` · the professional's own shop's services only · audited |
+
+There is no endpoint that changes a professional's shop. Shops never assign services to professionals.
 
 All unsafe methods additionally require the CSRF header (`X-CSRF-Token` = `trimme-csrf` cookie), anonymous ones included.

@@ -1,8 +1,8 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-27 (Session 4)
-- **Current phase:** 06 is complete and verified (Session 4). Next: Phase 07, services, categories and packages.
-- **Platform progress:** 700 / 1900 points (Phases 00–06)
+- **Current phase:** 07 is complete and verified (Session 4). Next: Phase 08, subscriptions and platform settings.
+- **Platform progress:** 800 / 1900 points (Phases 00–07)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -13,7 +13,7 @@
 | 04 Identity & sessions | [x] | 100/100 |
 | 05 Tenancy, privacy & audit | [x] | 100/100 |
 | 06 Shops, locations & professionals | [x] | 100/100 |
-| 07 Services & packages | [ ] | 0/100 |
+| 07 Services & packages | [x] | 100/100 |
 | 08 Subscriptions & settings | [ ] | 0/100 |
 | 09 Schedules & availability | [ ] | 0/100 |
 | 10 Booking core | [ ] | 0/100 |

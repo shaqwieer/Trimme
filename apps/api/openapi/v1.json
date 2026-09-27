@@ -236,6 +236,118 @@
         }
       }
     },
+    "/api/v1/public/service-categories": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Active service categories, in display order.",
+        "operationId": "ListPublicServiceCategories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/services": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "An active shop\u0027s published services (active, not archived, not hidden).",
+        "operationId": "ListPublicShopServices",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicServiceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/packages": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "An active shop\u0027s published packages whose every service is available.",
+        "operationId": "ListPublicShopPackages",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicPackageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -2908,6 +3020,1486 @@
           }
         }
       }
+    },
+    "/api/v1/shop/services": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "The shop\u0027s own services in display order (archived ones on request).",
+        "operationId": "ListShopServices",
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopServiceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Creates a service with the shop\u0027s own name, price and duration.",
+        "operationId": "CreateShopService",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShopServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/services/{serviceId}": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "One of the shop\u0027s own services; another shop\u0027s id is 404.",
+        "operationId": "GetShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Edits the shop\u0027s own service (optimistic concurrency).",
+        "operationId": "UpdateShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShopServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Deletes a service nothing uses yet; otherwise 409 service.in_use (archive instead).",
+        "operationId": "DeleteShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/services/{serviceId}/activate": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Turns the service on.",
+        "operationId": "ActivateShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/services/{serviceId}/deactivate": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Turns the service off.",
+        "operationId": "DeactivateShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/services/{serviceId}/archive": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Retires the service for good; history keeps it.",
+        "operationId": "ArchiveShopService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/services/order": {
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Sets the display order from the full list of non-archived services.",
+        "operationId": "ReorderShopServices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopServiceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "The shop\u0027s own packages, with whether each is currently bookable.",
+        "operationId": "ListShopPackages",
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopPackageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Creates a package of the shop\u0027s own services.",
+        "operationId": "CreateShopPackage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShopPackageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages/{packageId}": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "One of the shop\u0027s own packages.",
+        "operationId": "GetShopPackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Edits the package and its items (optimistic concurrency).",
+        "operationId": "UpdateShopPackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShopPackageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages/{packageId}/activate": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Turns the package on.",
+        "operationId": "ActivateShopPackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages/{packageId}/deactivate": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Turns the package off.",
+        "operationId": "DeactivateShopPackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages/{packageId}/archive": {
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Retires the package for good.",
+        "operationId": "ArchiveShopPackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPackageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/packages/order": {
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Sets the display order from the full list of non-archived packages.",
+        "operationId": "ReorderShopPackages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopPackageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/service-categories": {
+      "get": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "All categories with how many active shop services use each.",
+        "operationId": "AdminListServiceCategories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Creates a category (no price or duration: those are the shops\u0027).",
+        "operationId": "AdminCreateServiceCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/service-categories/{categoryId}": {
+      "put": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Edits a category (audited).",
+        "operationId": "AdminUpdateServiceCategory",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/service-categories/{categoryId}/activate": {
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Offers the category again.",
+        "operationId": "AdminActivateServiceCategory",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/service-categories/{categoryId}/deactivate": {
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Stops offering the category for new services; existing ones keep it.",
+        "operationId": "AdminDeactivateServiceCategory",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCategoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/services": {
+      "get": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Shop services across the platform, each with its shop\u0027s own price and duration (paged).",
+        "operationId": "AdminListServices",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CatalogStateFilter"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminServiceListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/services/{serviceId}": {
+      "get": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "One shop service.",
+        "operationId": "AdminGetService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminServiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/services/{serviceId}/moderation": {
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Hides a service from customers (reason required) or shows it again (audited).",
+        "operationId": "AdminModerateService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/services/{serviceId}/override": {
+      "put": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Support correction of one shop service, with a reason; audited before \u2192 after.",
+        "operationId": "AdminOverrideService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/packages": {
+      "get": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Shop packages across the platform (paged).",
+        "operationId": "AdminListPackages",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CatalogStateFilter"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminPackageListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/packages/{packageId}/moderation": {
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Hides a package from customers (reason required) or shows it again (audited).",
+        "operationId": "AdminModeratePackage",
+        "parameters": [
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPackageListItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/services": {
+      "get": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "The professional\u0027s own shop\u0027s services, with that shop\u0027s prices, and which are assigned.",
+        "operationId": "AdminGetProfessionalServices",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalServicesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Replaces the assigned services; only the professional\u0027s own shop\u0027s services (audited).",
+        "operationId": "AdminSetProfessionalServices",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfessionalServicesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalServicesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2928,6 +4520,118 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "AdminCategoryResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "icon",
+          "displayOrder",
+          "isActive",
+          "serviceCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "serviceCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminPackageListItem": {
+        "required": [
+          "id",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "nameAr",
+          "nameEn",
+          "price",
+          "currency",
+          "durationMinutes",
+          "itemCount",
+          "isActive",
+          "isArchived",
+          "moderation",
+          "moderationReason"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "itemCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/ModerationState"
+          },
+          "moderationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -3096,6 +4800,181 @@
           }
         },
         "description": "A professional as the platform admin edits it. Guid AdminProfessionalResponse.ShopId is read-only: it is fixed at creation and no\nrequest can change it (R-NEG-01)."
+      },
+      "AdminServiceListItem": {
+        "required": [
+          "id",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "nameAr",
+          "nameEn",
+          "categoryId",
+          "price",
+          "currency",
+          "durationMinutes",
+          "isActive",
+          "isArchived",
+          "moderation"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/ModerationState"
+          }
+        }
+      },
+      "AdminServiceResponse": {
+        "required": [
+          "id",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "currency",
+          "durationMinutes",
+          "onlineBookable",
+          "isActive",
+          "isArchived",
+          "moderation",
+          "moderationReason",
+          "assignedProfessionalCount",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/ModerationState"
+          },
+          "moderationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assignedProfessionalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
       },
       "AdminShopDetailResponse": {
         "required": [
@@ -3338,6 +5217,39 @@
           }
         }
       },
+      "CatalogStateFilter": {
+        "enum": [
+          "Active",
+          "Inactive",
+          "Archived",
+          "Hidden",
+          null
+        ]
+      },
+      "CategoryRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "icon",
+          "displayOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ChangeProfessionalStatusRequest": {
         "required": [
           "reason"
@@ -3452,6 +5364,57 @@
         },
         "description": "The one shop is chosen here, at creation, and can never be changed afterwards (D-011)."
       },
+      "CreateShopPackageRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "price",
+          "durationMinutes",
+          "serviceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "A package of 2\u201310 of the shop\u0027s own services, with its own price and total duration."
+      },
       "CreateShopRequest": {
         "required": [
           "slug",
@@ -3477,6 +5440,61 @@
             ]
           }
         }
+      },
+      "CreateShopServiceRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "durationMinutes",
+          "onlineBookable"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          }
+        },
+        "description": "A new service of the signed-in shop. Price in SAR (\u2264 2 decimals); duration a multiple of 5 minutes."
       },
       "CsrfTokenResponse": {
         "required": [
@@ -3713,6 +5731,38 @@
         },
         "description": "The signed-in user (\u0060GET /api/v1/me\u0060). \u0060UserType\u0060 is \u0060Customer\u0060, \u0060ShopUser\u0060 or\n\u0060PlatformAdmin\u0060. A customer sees only their own number, masked. \u0060ShopId\u0060 is set for shop users from\nPhase 05. \u0060ProfileComplete\u0060 is false until a customer has given a name and accepted the terms."
       },
+      "ModerationAction": {
+        "enum": [
+          "Hide",
+          "Unhide"
+        ]
+      },
+      "ModerationRequest": {
+        "required": [
+          "action",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationAction"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Hide needs a reason (audited); unhide does not."
+      },
+      "ModerationState": {
+        "enum": [
+          "Visible",
+          "Hidden"
+        ],
+        "description": "Platform moderation of a shop\u0027s service or package (DV-S02). A hidden item is never published."
+      },
       "OtpChallengeResponse": {
         "required": [
           "challengeId",
@@ -3741,6 +5791,127 @@
         },
         "description": "Response to an OTP request. The code is never returned."
       },
+      "OverrideServiceRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "durationMinutes",
+          "onlineBookable",
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Support correction of one shop service. A reason is required and the change is audited."
+      },
+      "PackageItemResponse": {
+        "required": [
+          "serviceId",
+          "nameAr",
+          "nameEn",
+          "isAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isAvailable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PagedResponseOfAdminPackageListItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPackageListItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
       "PagedResponseOfAdminProfessionalListItem": {
         "required": [
           "items",
@@ -3754,6 +5925,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminProfessionalListItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
+      "PagedResponseOfAdminServiceListItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminServiceListItem"
             }
           },
           "page": {
@@ -3856,11 +6057,178 @@
           }
         }
       },
+      "ProfessionalServiceOption": {
+        "required": [
+          "serviceId",
+          "nameAr",
+          "nameEn",
+          "price",
+          "currency",
+          "durationMinutes",
+          "isActive",
+          "assigned"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "assigned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProfessionalServicesRequest": {
+        "required": [
+          "serviceIds"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "ProfessionalServicesResponse": {
+        "required": [
+          "professionalId",
+          "shopId",
+          "services"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalServiceOption"
+            }
+          }
+        },
+        "description": "The professional\u0027s own shop\u0027s services (with that shop\u0027s prices) and which are assigned (DV-S04)."
+      },
       "ProfessionalStatus": {
         "enum": [
           "Active",
           "Disabled"
         ]
+      },
+      "PublicPackageItemResponse": {
+        "required": [
+          "serviceId",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PublicPackageResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "price",
+          "currency",
+          "durationMinutes",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicPackageItemResponse"
+            }
+          }
+        },
+        "description": "A published package: itself and every item service are available."
       },
       "PublicProfessionalResponse": {
         "required": [
@@ -3921,6 +6289,70 @@
           }
         },
         "description": "A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02)."
+      },
+      "PublicServiceResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "currency",
+          "durationMinutes",
+          "onlineBookable"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          }
+        },
+        "description": "A published service: active, not archived, not hidden by the platform. \u0060NameEn\u0060 may be null (D-070)."
       },
       "PublicShopLocationResponse": {
         "required": [
@@ -4061,6 +6493,22 @@
         },
         "description": "A published shop\u0027s basic profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02)."
       },
+      "ReorderRequest": {
+        "required": [
+          "orderedIds"
+        ],
+        "type": "object",
+        "properties": {
+          "orderedIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "Every non-archived item of the shop, in the new order."
+      },
       "RequestOtpRequest": {
         "required": [
           "phone",
@@ -4166,6 +6614,39 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "ServiceCategoryResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "icon",
+          "displayOrder",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         }
       },
@@ -4465,6 +6946,98 @@
         },
         "description": "The signed-in shop\u0027s own profile, for its settings screen (s-settings). IReadOnlyList\u0026lt;ShopProfileField\u0026gt; ShopOwnProfileResponse.EditableFields is the admin\npolicy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;\nstring? ShopOwnProfileResponse.PublicPhone is the shop\u0027s own business number."
       },
+      "ShopPackageResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "price",
+          "currency",
+          "durationMinutes",
+          "isActive",
+          "isArchived",
+          "displayOrder",
+          "moderation",
+          "moderationReason",
+          "items",
+          "isBookable",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/ModerationState"
+          },
+          "moderationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PackageItemResponse"
+            }
+          },
+          "isBookable": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A shop\u0027s own package. \u0060IsBookable\u0060 is false while any item service is off, archived or hidden."
+      },
       "ShopProfessionalResponse": {
         "required": [
           "id",
@@ -4561,6 +7134,104 @@
           }
         },
         "description": "The signed-in shop user\u0027s own shop (\u0060GET /api/v1/shop/me\u0060). Shop-facing contract: it must never carry customer\ncontact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it."
+      },
+      "ShopServiceResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "currency",
+          "durationMinutes",
+          "onlineBookable",
+          "isActive",
+          "isArchived",
+          "displayOrder",
+          "moderation",
+          "moderationReason",
+          "assignedProfessionalCount",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/ModerationState"
+          },
+          "moderationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assignedProfessionalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A shop\u0027s own service as the shop manages it. Shop-facing contract: no customer data. \u0060NameEn\u0060 may be null;\nclients show the Arabic name instead (D-070)."
       },
       "ShopStatus": {
         "enum": [
@@ -4713,6 +7384,61 @@
         },
         "description": "Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop."
       },
+      "UpdateShopPackageRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "price",
+          "durationMinutes",
+          "serviceIds",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
+      },
       "UpdateShopProfileRequest": {
         "required": [
           "nameAr",
@@ -4773,6 +7499,66 @@
         },
         "description": "The admin\u0027s profile edit. \u0060Version\u0060 is the value the client read; a stale value answers 409\n\u0060resource.concurrency_conflict\u0060."
       },
+      "UpdateShopServiceRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "durationMinutes",
+          "onlineBookable",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Edit of the shop\u0027s own service; a stale \u0060Version\u0060 answers 409."
+      },
       "VerifyOtpRequest": {
         "required": [
           "challengeId",
@@ -4823,6 +7609,12 @@
     },
     {
       "name": "Admin: professionals"
+    },
+    {
+      "name": "Shop: services"
+    },
+    {
+      "name": "Admin: services"
     }
   ]
 }

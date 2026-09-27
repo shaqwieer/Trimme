@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Professionals.Domain;
@@ -48,4 +50,14 @@ internal sealed class ProfessionalContactConfiguration : IEntityTypeConfiguratio
         builder.Ignore(c => c.HasNumber);
         builder.Ignore(c => c.CanReceiveNotifications);
     }
+}
+
+/// <summary><see cref="IProfessionalDirectory"/> for other modules; reads through the caller's data scope.</summary>
+internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalDirectory
+{
+    public async Task<ProfessionalSummary?> FindAsync(ProfessionalId professionalId, CancellationToken cancellationToken) =>
+        await db.Set<Professional>().AsNoTracking()
+            .Where(p => p.Id == professionalId)
+            .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
+            .SingleOrDefaultAsync(cancellationToken);
 }

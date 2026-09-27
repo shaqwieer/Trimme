@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { ProfessionalServicesForm } from '@/components/admin/AdminCatalog';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import {
   EditProfessionalForm,
@@ -36,6 +37,7 @@ export default async function AdminProfessionalPage({
   const { locale, professionalId } = await params;
   const lang = asLocale(locale);
   const t = await getTranslations({ locale: lang, namespace: 'adminProfessionals' });
+  const tServices = await getTranslations({ locale: lang, namespace: 'adminServices.professionalServices' });
 
   return (
     <AdminFrame
@@ -59,6 +61,9 @@ export default async function AdminProfessionalPage({
         }
         if (!professional) return <ErrorState />;
 
+        const { data: services } = await api.GET('/api/v1/admin/professionals/{professionalId}/services', {
+          params: { path: { professionalId } },
+        });
         const name = lang === 'ar' ? professional.nameAr : professional.nameEn;
         const shopName = lang === 'ar' ? professional.shopNameAr : professional.shopNameEn;
         const canEdit = me.permissions.includes('Admin.Professionals.Edit');
@@ -91,6 +96,15 @@ export default async function AdminProfessionalPage({
                 <ProfessionalStatusActions id={professional.id} status={professional.status} />
               )}
             </section>
+
+            {services && (
+              <Card title={tServices('title')}>
+                <ProfessionalServicesForm
+                  data={services}
+                  canAssign={me.permissions.includes('Admin.Professionals.AssignServices')}
+                />
+              </Card>
+            )}
 
             <Card title={t('whatsapp.title')}>
               <WhatsAppSettings

@@ -231,7 +231,11 @@
     "whatsappRequired": "Enter a WhatsApp number to turn notifications on",
     "reasonRequired": "Give a clear reason (at least 5 characters)",
     "tooShort": "Type at least 2 characters",
-    "businessPhoneInvalid": "Enter a valid shop phone number"
+    "businessPhoneInvalid": "Enter a valid shop phone number",
+    "priceInvalid": "Enter a price from 0 to 100,000 with at most two decimals",
+    "durationInvalid": "Choose a duration in 5-minute steps, up to 8 hours",
+    "packageItems": "Choose 2 to 10 different services",
+    "orderMismatch": "The list changed — reload the page and reorder again"
   },
   "auth": {
     "meta": {
@@ -382,7 +386,12 @@
     "professional_no_whatsapp": "This professional has no WhatsApp number.",
     "geo_not_found": "No address was found at this point.",
     "request_too_large": "The file is larger than allowed (5 MB).",
-    "auth_forbidden": "You don't have permission to do this."
+    "auth_forbidden": "You don't have permission to do this.",
+    "service_not_found": "The service was not found.",
+    "package_not_found": "The package was not found.",
+    "service_category_not_found": "The category was not found.",
+    "catalog_archived": "An archived item cannot be changed.",
+    "service_in_use": "The service is used in a package or in booking history — archive it instead of deleting."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -671,5 +680,165 @@
     "location": "Shop location",
     "unavailableTitle": "Settings are not available right now",
     "unavailableBody": "The shop is suspended. Contact the platform admin."
+  },
+  "catalog": {
+    "currency": "SAR",
+    "moderation": {
+      "Visible": "Visible",
+      "Hidden": "Hidden by the admin"
+    },
+    "status": {
+      "active": "On",
+      "inactive": "Off",
+      "archived": "Archived",
+      "hidden": "Hidden by the admin"
+    },
+    "hiddenReason": "Hidden by the platform: {reason}",
+    "unbookable": "Not bookable: one of its services is off, archived or hidden",
+    "noCategory": "No category",
+    "durationOption": "{minutes} min"
+  },
+  "shopServices": {
+    "title": "Services",
+    "tabs": {
+      "label": "Service sections",
+      "services": "Services",
+      "packages": "Packages"
+    },
+    "intro": "Set your own services, prices and durations. Turning one on shows it on your shop page at once.",
+    "add": "Add service",
+    "addPackage": "Add package",
+    "showArchived": "Show archived",
+    "hideArchived": "Hide archived",
+    "empty": {
+      "title": "No services yet",
+      "body": "Add your first service with your own price and duration."
+    },
+    "emptyPackages": {
+      "title": "No packages yet",
+      "body": "Bundle two or more services with their own price and duration."
+    },
+    "active": "Bookable",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "moved": "{name} moved to position {position}",
+    "edit": "Edit",
+    "archive": "Archive",
+    "archiveTitle": "Archive {name}?",
+    "archiveBody": "It will no longer be offered to customers and stays in booking history and reports. This cannot be undone.",
+    "delete": "Delete",
+    "deleteTitle": "Delete {name}?",
+    "deleteBody": "Only a service never used in a package or a booking can be deleted.",
+    "archived": "Archived.",
+    "deleted": "Service deleted.",
+    "saved": "Changes saved.",
+    "assigned": "{count, plural, one {# professional assigned} other {# professionals assigned}}",
+    "items": "{count, plural, one {# service} other {# services}}",
+    "form": {
+      "newTitle": "New service",
+      "editTitle": "Edit service",
+      "newPackageTitle": "New package",
+      "editPackageTitle": "Edit package",
+      "back": "All services",
+      "nameAr": "Service name in Arabic",
+      "nameEn": "Service name in English",
+      "nameEnHelper": "Optional — the Arabic name is shown if left empty",
+      "descriptionAr": "Description in Arabic",
+      "descriptionEn": "Description in English",
+      "category": "Category",
+      "price": "Price (SAR)",
+      "priceHelper": "Your shop's own price — up to two decimals",
+      "duration": "Duration",
+      "onlineBookable": "Bookable online",
+      "onlineBookableHint": "When off, it can still be booked as a walk-in",
+      "packageServices": "Services in the package",
+      "packageServicesHint": "Choose 2 to 10 of your services. The package has its own price and duration.",
+      "packageDuration": "Total package duration",
+      "create": "Create service",
+      "createPackage": "Create package",
+      "save": "Save changes"
+    }
+  },
+  "adminServices": {
+    "title": "Services & categories",
+    "tabs": {
+      "label": "Service sections",
+      "services": "Shop services",
+      "categories": "Categories",
+      "packages": "Packages"
+    },
+    "intro": "Each shop sets its own services, prices and durations. Review them here, hide what breaks the rules and correct a service at a shop's request.",
+    "search": "Search by service name",
+    "searchSubmit": "Search",
+    "stateFilter": "Status",
+    "allStates": "All statuses",
+    "states": {
+      "Active": "On",
+      "Inactive": "Off",
+      "Archived": "Archived",
+      "Hidden": "Hidden"
+    },
+    "caption": "Shop services",
+    "columns": {
+      "service": "Service",
+      "shop": "Shop",
+      "price": "Price",
+      "duration": "Duration",
+      "status": "Status",
+      "items": "Services"
+    },
+    "empty": {
+      "title": "No services",
+      "body": "No shop has added services yet, or nothing matches the search."
+    },
+    "detail": {
+      "back": "Shop services",
+      "moderationTitle": "Moderation",
+      "moderationBody": "Hiding a service keeps it from customers without deleting it. The action is recorded with its reason.",
+      "hide": "Hide from customers",
+      "unhide": "Show to customers",
+      "reason": "Reason",
+      "hidden": "Service hidden.",
+      "unhidden": "Service visible again.",
+      "overrideTitle": "Support correction",
+      "overrideBody": "An exceptional edit of this one shop's service, with a clear reason. What changed is recorded before and after.",
+      "overrideReason": "Reason for the correction",
+      "overrideSubmit": "Save correction",
+      "overridden": "Correction saved and recorded in the activity log.",
+      "assignedCount": "Professionals assigned"
+    },
+    "categories": {
+      "caption": "Service categories",
+      "add": "Add category",
+      "nameAr": "Name in Arabic",
+      "nameEn": "Name in English",
+      "icon": "Icon",
+      "order": "Order",
+      "services": "Services",
+      "edit": "Edit",
+      "editTitle": "Edit category",
+      "save": "Save",
+      "create": "Add",
+      "activate": "Turn on",
+      "deactivate": "Turn off",
+      "saved": "Category saved.",
+      "empty": "No categories yet"
+    },
+    "packages": {
+      "caption": "Shop packages",
+      "empty": {
+        "title": "No packages",
+        "body": "No shop has created packages yet."
+      },
+      "hideTitle": "Hide this package?"
+    },
+    "professionalServices": {
+      "title": "Assigned services",
+      "body": "Only this professional's own shop's services, with that shop's prices and durations.",
+      "empty": "This professional's shop has no services yet",
+      "save": "Save assignment",
+      "saved": "Service assignment saved.",
+      "inactive": "Off"
+    }
   }
 }

@@ -63,7 +63,7 @@ Design audit shows a reception user (4310). Seed `ShopOwner` (full shop scope pe
 ## D-019 — Admin roles — Proposed (Phase 4)
 Seed `SuperAdmin` (= design's "مدير عام"), `OperationsManager`, `Support`, with a data-driven permission catalogue (`Admin.*`, `SuperAdmin.*`). Plan/pricing and subscription overrides only in `SuperAdmin`. Design matrix row granting subscriptions to Operations Manager is corrected (DV-S05).
 
-## D-020 — Packages — Proposed (Phase 7)
+## D-020 — Packages — Accepted (Phase 07, implemented by D-072)
 Shop-owned `ServicePackage` with explicit localized name, price, total duration and items (references to the same shop's services, composite FK). A package booking is one contiguous appointment for one professional who must be assigned to every item service; reporting expands items. Admins can moderate/deactivate. Platform-level package *templates* are not in v1 unless requested.
 
 ## D-021 — Accessible colour tokens — Accepted (Phase 0; applied Phase 2)
@@ -430,3 +430,62 @@ The user asked in Session 4 to store media such as photos in the database. This 
 - **No-transfer grep gate.** Tests assert absence, so the gate excludes test files: `rg -i "transfer(Professional|Barber|Shop)|(professional|barber)\s*transfer|نقل حلاق|تنفيذ النقل" apps src -g '!**/*.test.*' -g '!**/node_modules/**'`. The unrefined gate already matched a Phase 05 test. Product code and comments avoid the term altogether (D-011).
 - **E2E.** Map tiles are stubbed with a blank PNG, and the pin is dragged only after it stops moving.
 - **Oversized uploads through the Next.js rewrite (local compose only).** A body over the limit gets a bare 500 from the rewrite rather than the API's 413, because the API rejects it before reading the body. Production routes `/api` through Nginx, which needs `client_max_body_size 6m` (Phase 17), and the upload control refuses files over 5 MB in the browser. Accepted for development.
+
+## D-070 — Localized text of catalogue items — Accepted (Phase 07)
+- **Shop services and packages:** the Arabic name is required and English is optional. The API returns `nameEn: null` rather than copying the Arabic, and every screen uses one web helper, `localizedName`, to fall back to the Arabic name in the English UI. Descriptions are optional in both languages.
+- **Platform categories:** both languages are required, because admins manage a short list.
+- This closes the Phase 07 risk "English-required policy for localized fields".
+
+## D-071 — Shop services: rules and lifecycle — Accepted (Phase 07)
+- **Ownership.** A service belongs to one shop (`IShopOwned`, `(shop_id, id)` key). The shop sets its own names, price and duration, and nothing global overrides them (spec §10, DV-S02/S03).
+- **Price and currency.**
+  - The price is `numeric(10,2)`, from 0 to 100,000. More than two decimals is rejected, never rounded; 0 is allowed (a free consultation).
+  - The currency (`SAR`) is stored on the row so bookings can snapshot it (Phase 10).
+  - The web input accepts Arabic-Indic digits and the Arabic decimal separator, typed left-to-right.
+- **Duration** is a multiple of 5 minutes, from 5 to 480 minutes. A database CHECK constraint backs it up.
+- **Lifecycle.**
+  - Active/inactive is an idempotent toggle.
+  - Archive is final: the item is never offered again but stays in history. An archived item cannot be edited or re-activated (409 `catalog.archived`).
+  - Delete is allowed only when nothing uses the service. Every `IShopServiceUsage` is asked: package items now, bookings from Phase 10. Otherwise the answer is 409 `service.in_use`.
+- **Order.**
+  - `PUT /shop/services/order` must carry the full set of the shop's non-archived ids. A missing, foreign, archived or repeated id is refused and nothing changes.
+  - Concurrent reorders are last-write-wins.
+  - Reordering in the UI uses keyboard move-up/down buttons with an `aria-live` announcement. Drag-and-drop is deferred.
+- **Concurrency and tenancy.**
+  - Edits are optimistic (`xmin`, 409 on a stale version).
+  - Every shop handler checks `ICurrentTenant` first, so a suspended shop gets 404, never a 500 from the stamping rule.
+- **Online booking** is a per-service rule (`OnlineBookable`); walk-ins are always possible.
+
+## D-072 — Packages (implements D-020) — Accepted (Phase 07)
+- A package is shop-owned, with 2–10 distinct, non-archived services of the same shop, an explicit price and an explicit total duration (not the sum of its items).
+- Items reference the package and the service through composite `(shop_id, …)` keys, so the database rejects another shop's service.
+- **Item edits:**
+  - Items keep their rows when reordered, because a key cannot be deleted and re-added in one save.
+  - Any item change touches the package's `UpdatedAt`, so an items-only edit still runs the optimistic-concurrency check (tested: the second concurrent edit gets 409).
+- **Item availability.** A service can be switched off, archived or hidden while a package uses it. The package then reports `isBookable: false` to the shop and is left out of the public list until every item is available again.
+- `ExpandItems()` gives the ordered services for reporting and availability. The reporting part lands with bookings.
+- Package moderation uses `Admin.ShopServices.Moderate`. `Admin.Packages.Manage` stays reserved for platform package templates, which v1 does not have.
+
+## D-073 — Professional–service assignment — Accepted (Phase 07)
+- **Table.** Assignments live in `services.professional_services`, owned by the Services module. This deviates from the phase plan's `professionals.professional_services`, because availability (Phase 09/10) asks the Services side which professionals do a service.
+- **Foreign keys.** Both FKs are composite:
+  - `(shop_id, service_id)` → `shop_services(shop_id, id)`;
+  - `(shop_id, professional_id)` → `professionals(shop_id, id)`.
+  The database therefore guarantees same-shop pairs.
+- **No project reference to Professionals.** The professional FK names the entity type as a string (`HasShopScopedReference(entityTypeName, …)`), so modules keep talking only through contracts. `ProfessionalId` moved to the Domain building block, next to `ShopId`, so both sides share the key type.
+  - An architecture test asserts that the name resolves to the real `Professional` entity (not a shared-type placeholder) and that the FK is the composite one.
+  - The Professionals module is configured before Services (`ModuleCatalog` order), and the helper throws if not.
+- **Who assigns.** Only admins, with `Admin.Professionals.AssignServices`. The API refuses another shop's services (400) and shop users get 403 (R-NEG-06). The admin reads the professional through `IProfessionalDirectory`.
+
+## D-074 — Admin moderation and support override — Accepted (Phase 07)
+- **Moderation** (`Admin.ShopServices.Moderate`): hide needs a reason of at least 5 characters, and unhide does not.
+  - Hidden items are never published.
+  - The shop sees the state and the reason, and can still edit, but cannot unhide.
+  - Both actions are audited.
+- **Support override** (`Admin.ShopServices.SupportOverride`) corrects one service of one shop:
+  - it needs a reason and uses optimistic concurrency;
+  - the audit summary lists what changed, for example "Price 60.00 → 55.00 SAR; Duration 30 → 25 min; Name changed";
+  - there is no bulk or cross-shop edit and no global price.
+- **Categories** (`Admin.ServiceCategories.Manage`, listed with `Admin.ShopServices.View`) are platform-owned, with no price or duration.
+  - They are deactivated, never deleted. Existing services keep an inactive category, but it cannot be chosen again.
+  - Active categories are published anonymously at `GET /public/service-categories`.

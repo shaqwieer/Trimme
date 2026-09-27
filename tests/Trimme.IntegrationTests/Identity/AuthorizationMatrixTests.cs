@@ -41,6 +41,11 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "GET /api/v1/media/{mediaId:guid}",
         "GET /api/v1/public/shops/{slug}",
         "GET /api/v1/public/shops/{slug}/professionals",
+
+        // Phase 07: published catalogue (active, visible, non-archived items of active shops only).
+        "GET /api/v1/public/service-categories",
+        "GET /api/v1/public/shops/{slug}/services",
+        "GET /api/v1/public/shops/{slug}/packages",
     ];
 
     /// <summary>Endpoints any signed-in user may call about themselves (no permission needed).</summary>

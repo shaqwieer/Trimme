@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.Modules.Professionals.Api;
 using Trimme.Modules.Professionals.Application.Admin;
+using Trimme.Modules.Professionals.Infrastructure;
 using Trimme.Modules.Professionals.Infrastructure.Seeding;
 
 namespace Trimme.Modules.Professionals;
@@ -23,6 +25,7 @@ public sealed class ProfessionalsModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<ProfessionalAdminSupport>();
+        services.AddScoped<IProfessionalDirectory, ProfessionalDirectory>();
         services.AddSingleton<IDevSeeder, DemoProfessionalsSeeder>();
     }
 

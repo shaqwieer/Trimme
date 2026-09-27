@@ -123,6 +123,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/service-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active service categories, in display order. */
+        get: operations["ListPublicServiceCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An active shop's published services (active, not archived, not hidden). */
+        get: operations["ListPublicShopServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An active shop's published packages whose every service is available. */
+        get: operations["ListPublicShopPackages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -881,6 +932,404 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own services in display order (archived ones on request). */
+        get: operations["ListShopServices"];
+        put?: never;
+        /** Creates a service with the shop's own name, price and duration. */
+        post: operations["CreateShopService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/services/{serviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's own services; another shop's id is 404. */
+        get: operations["GetShopService"];
+        /** Edits the shop's own service (optimistic concurrency). */
+        put: operations["UpdateShopService"];
+        post?: never;
+        /** Deletes a service nothing uses yet; otherwise 409 service.in_use (archive instead). */
+        delete: operations["DeleteShopService"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/services/{serviceId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turns the service on. */
+        post: operations["ActivateShopService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/services/{serviceId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turns the service off. */
+        post: operations["DeactivateShopService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/services/{serviceId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retires the service for good; history keeps it. */
+        post: operations["ArchiveShopService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/services/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the display order from the full list of non-archived services. */
+        put: operations["ReorderShopServices"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own packages, with whether each is currently bookable. */
+        get: operations["ListShopPackages"];
+        put?: never;
+        /** Creates a package of the shop's own services. */
+        post: operations["CreateShopPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages/{packageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's own packages. */
+        get: operations["GetShopPackage"];
+        /** Edits the package and its items (optimistic concurrency). */
+        put: operations["UpdateShopPackage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages/{packageId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turns the package on. */
+        post: operations["ActivateShopPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages/{packageId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turns the package off. */
+        post: operations["DeactivateShopPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages/{packageId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retires the package for good. */
+        post: operations["ArchiveShopPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/packages/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the display order from the full list of non-archived packages. */
+        put: operations["ReorderShopPackages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/service-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All categories with how many active shop services use each. */
+        get: operations["AdminListServiceCategories"];
+        put?: never;
+        /** Creates a category (no price or duration: those are the shops'). */
+        post: operations["AdminCreateServiceCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/service-categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits a category (audited). */
+        put: operations["AdminUpdateServiceCategory"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/service-categories/{categoryId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offers the category again. */
+        post: operations["AdminActivateServiceCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/service-categories/{categoryId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stops offering the category for new services; existing ones keep it. */
+        post: operations["AdminDeactivateServiceCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shop services across the platform, each with its shop's own price and duration (paged). */
+        get: operations["AdminListServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/services/{serviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One shop service. */
+        get: operations["AdminGetService"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/services/{serviceId}/moderation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides a service from customers (reason required) or shows it again (audited). */
+        post: operations["AdminModerateService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/services/{serviceId}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Support correction of one shop service, with a reason; audited before → after. */
+        put: operations["AdminOverrideService"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shop packages across the platform (paged). */
+        get: operations["AdminListPackages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/packages/{packageId}/moderation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides a package from customers (reason required) or shows it again (audited). */
+        post: operations["AdminModeratePackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The professional's own shop's services, with that shop's prices, and which are assigned. */
+        get: operations["AdminGetProfessionalServices"];
+        /** Replaces the assigned services; only the professional's own shop's services (audited). */
+        put: operations["AdminSetProfessionalServices"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -889,6 +1338,39 @@ export interface components {
             token: string;
             displayName: string;
             password: string;
+        };
+        AdminCategoryResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+            icon: string;
+            /** Format: int32 */
+            displayOrder: number;
+            isActive: boolean;
+            /** Format: int32 */
+            serviceCount: number;
+        };
+        AdminPackageListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            /** Format: int32 */
+            itemCount: number;
+            isActive: boolean;
+            isArchived: boolean;
+            moderation: components["schemas"]["ModerationState"];
+            moderationReason: null | string;
         };
         /** @description A professional in the admin list. */
         AdminProfessionalListItem: {
@@ -932,6 +1414,54 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        AdminServiceListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            isActive: boolean;
+            isArchived: boolean;
+            moderation: components["schemas"]["ModerationState"];
+        };
+        AdminServiceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
+            isActive: boolean;
+            isArchived: boolean;
+            moderation: components["schemas"]["ModerationState"];
+            moderationReason: null | string;
+            /** Format: int32 */
+            assignedProfessionalCount: number;
             /** Format: uint32 */
             version: number;
         };
@@ -993,6 +1523,15 @@ export interface components {
             /** Format: date-time */
             serverTimeUtc: string;
         };
+        /** @enum {unknown} */
+        CatalogStateFilter: "Active" | "Inactive" | "Archived" | "Hidden" | null;
+        CategoryRequest: {
+            nameAr: string;
+            nameEn: string;
+            icon: string;
+            /** Format: int32 */
+            displayOrder: number;
+        };
         ChangeProfessionalStatusRequest: {
             reason: null | string;
         };
@@ -1018,11 +1557,37 @@ export interface components {
             whatsAppNumber: null | string;
             notificationsEnabled: boolean;
         };
+        /** @description A package of 2–10 of the shop's own services, with its own price and total duration. */
+        CreateShopPackageRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            serviceIds: string[];
+        };
         CreateShopRequest: {
             slug: string;
             nameAr: string;
             nameEn: string;
             timeZone: null | string;
+        };
+        /** @description A new service of the signed-in shop. Price in SAR (≤ 2 decimals); duration a multiple of 5 minutes. */
+        CreateShopServiceRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
         };
         CsrfTokenResponse: {
             token: string;
@@ -1089,6 +1654,18 @@ export interface components {
             shopId: null | string;
             profileComplete: boolean;
         };
+        /** @enum {unknown} */
+        ModerationAction: "Hide" | "Unhide";
+        /** @description Hide needs a reason (audited); unhide does not. */
+        ModerationRequest: {
+            action: components["schemas"]["ModerationAction"];
+            reason: null | string;
+        };
+        /**
+         * @description Platform moderation of a shop's service or package (DV-S02). A hidden item is never published.
+         * @enum {unknown}
+         */
+        ModerationState: "Visible" | "Hidden";
         /** @description Response to an OTP request. The code is never returned. */
         OtpChallengeResponse: {
             /** Format: uuid */
@@ -1100,9 +1677,53 @@ export interface components {
             /** Format: date-time */
             resendAvailableAt: string;
         };
+        /** @description Support correction of one shop service. A reason is required and the change is audited. */
+        OverrideServiceRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
+            reason: string;
+            /** Format: uint32 */
+            version: number;
+        };
+        PackageItemResponse: {
+            /** Format: uuid */
+            serviceId: string;
+            nameAr: string;
+            nameEn: null | string;
+            isAvailable: boolean;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfAdminPackageListItem: {
+            items: components["schemas"]["AdminPackageListItem"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
         /** @description The paged envelope every list endpoint returns. */
         PagedResponseOfAdminProfessionalListItem: {
             items: components["schemas"]["AdminProfessionalListItem"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfAdminServiceListItem: {
+            items: components["schemas"]["AdminServiceListItem"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -1133,8 +1754,53 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        ProfessionalServiceOption: {
+            /** Format: uuid */
+            serviceId: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            isActive: boolean;
+            assigned: boolean;
+        };
+        ProfessionalServicesRequest: {
+            serviceIds: string[];
+        };
+        /** @description The professional's own shop's services (with that shop's prices) and which are assigned (DV-S04). */
+        ProfessionalServicesResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: uuid */
+            shopId: string;
+            services: components["schemas"]["ProfessionalServiceOption"][];
+        };
         /** @enum {unknown} */
         ProfessionalStatus: "Active" | "Disabled";
+        PublicPackageItemResponse: {
+            /** Format: uuid */
+            serviceId: string;
+            nameAr: string;
+            nameEn: null | string;
+        };
+        /** @description A published package: itself and every item service are available. */
+        PublicPackageResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            items: components["schemas"]["PublicPackageItemResponse"][];
+        };
         /** @description A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02). */
         PublicProfessionalResponse: {
             /** Format: uuid */
@@ -1147,6 +1813,23 @@ export interface components {
             bioAr: null | string;
             bioEn: null | string;
             avatarUrl: null | string;
+        };
+        /** @description A published service: active, not archived, not hidden by the platform. `NameEn` may be null (D-070). */
+        PublicServiceResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
         };
         /** @description Where a customer finds the shop: the confirmed point and the address, without who confirmed it. */
         PublicShopLocationResponse: {
@@ -1180,6 +1863,10 @@ export interface components {
             galleryUrls: string[];
             location: null | components["schemas"]["PublicShopLocationResponse"];
         };
+        /** @description Every non-archived item of the shop, in the new order. */
+        ReorderRequest: {
+            orderedIds: string[];
+        };
         RequestOtpRequest: {
             phone: string;
             termsAccepted: boolean;
@@ -1209,6 +1896,16 @@ export interface components {
             userType: string;
             managed: boolean;
             permissions: string[];
+        };
+        ServiceCategoryResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+            icon: string;
+            /** Format: int32 */
+            displayOrder: number;
+            isActive: boolean;
         };
         SessionResponse: {
             /** Format: uuid */
@@ -1292,6 +1989,30 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A shop's own package. `IsBookable` is false while any item service is off, archived or hidden. */
+        ShopPackageResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            isActive: boolean;
+            isArchived: boolean;
+            /** Format: int32 */
+            displayOrder: number;
+            moderation: components["schemas"]["ModerationState"];
+            moderationReason: null | string;
+            items: components["schemas"]["PackageItemResponse"][];
+            isBookable: boolean;
+            /** Format: uint32 */
+            version: number;
+        };
         /**
          * @description A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec §7).
          *     Shop-facing contract: no contact data of any kind.
@@ -1324,6 +2045,36 @@ export interface components {
             nameEn: string;
             status: string;
             timeZone: string;
+        };
+        /**
+         * @description A shop's own service as the shop manages it. Shop-facing contract: no customer data. `NameEn` may be null;
+         *     clients show the Arabic name instead (D-070).
+         */
+        ShopServiceResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
+            isActive: boolean;
+            isArchived: boolean;
+            /** Format: int32 */
+            displayOrder: number;
+            moderation: components["schemas"]["ModerationState"];
+            moderationReason: null | string;
+            /** Format: int32 */
+            assignedProfessionalCount: number;
+            /** Format: uint32 */
+            version: number;
         };
         /** @enum {unknown} */
         ShopStatus: "Draft" | "Active" | "Suspended" | null;
@@ -1363,6 +2114,19 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        UpdateShopPackageRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            serviceIds: string[];
+            /** Format: uint32 */
+            version: number;
+        };
         /**
          * @description The admin's profile edit. `Version` is the value the client read; a stale value answers 409
          *     `resource.concurrency_conflict`.
@@ -1376,6 +2140,22 @@ export interface components {
             publicPhone: null | string;
             amenities: null | components["schemas"]["ShopAmenity"][];
             isVerified: boolean;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description Edit of the shop's own service; a stale `Version` answers 409. */
+        UpdateShopServiceRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
             /** Format: uint32 */
             version: number;
         };
@@ -1581,6 +2361,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicProfessionalResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPublicServiceCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"][];
+                };
+            };
+        };
+    };
+    ListPublicShopServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPublicShopPackages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPackageResponse"][];
                 };
             };
             /** @description Not Found */
@@ -3577,6 +4439,1078 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListShopServices: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShopServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShopServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ActivateShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ArchiveShopService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReorderShopServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopServiceResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListShopPackages: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShopPackageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShopPackageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ActivateShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ArchiveShopPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReorderShopPackages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopPackageResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListServiceCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryResponse"][];
+                };
+            };
+        };
+    };
+    AdminCreateServiceCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdateServiceCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminActivateServiceCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminDeactivateServiceCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListServices: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                shopId?: string;
+                categoryId?: string;
+                state?: components["schemas"]["CatalogStateFilter"];
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminServiceListItem"];
+                };
+            };
+        };
+    };
+    AdminGetService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminModerateService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminOverrideService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListPackages: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                shopId?: string;
+                state?: components["schemas"]["CatalogStateFilter"];
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminPackageListItem"];
+                };
+            };
+        };
+    };
+    AdminModeratePackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageListItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetProfessionalServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalServicesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSetProfessionalServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfessionalServicesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalServicesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
