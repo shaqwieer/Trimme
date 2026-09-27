@@ -128,7 +128,7 @@ Session 4, 2026-09-27.
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings, 0 errors |
-| Unit / architecture / integration tests | PASS — 153 / 62 / 97 (Phase 05: 124 / 61 / 81) |
+| Unit / architecture / integration tests | PASS — 153 / 62 / 97 at the phase commit (Phase 05: 124 / 61 / 81); 98 after the follow-up public-scope data-layer test (`PublicScope_ShowsOneShopsRows_IgnoresTheCallersTenant_AndIsReadOnly`) |
 | New integration suites | `Shops/ShopProfileTests` (8) and `Professionals/ProfessionalTests` (8): profile + concurrency + audit; geography type, GiST index, axis order, `ST_Distance` ordering; locked fields (profile, location, staff, policy change); suspended shop guard; images (content sniffing, HTML/SVG rejected, too small, 413, EXIF stripped, ETag/304, immutable cache, replaced image deleted); cross-shop gallery 404; public page scope; fake geocoder; masked number stored encrypted; reveal (Support 403, reason, audit, `no-store`, keep-number toggle); public/shop DTOs without the number; immutable `ShopId`; one shop per professional (NOT NULL, composite FK, unique number); shop cannot create or change professionals; disable/avatar audit; no transfer operation in OpenAPI |
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
 | `pnpm lint` / `typecheck` (web + E2E) / `format:check` / `openapi:check` / `test` / `build` | PASS — 179 web tests (9 new: `LocationPicker` with a fake map — search, drag, rounding, reverse geocoding, no-WebGL fallback, invalid coordinates; `ShopProfileEditor` locks; no transfer copy in either catalog) |
@@ -138,12 +138,24 @@ Session 4, 2026-09-27.
 | gitleaks `dir` + `git` | PASS — no leaks (24 commits scanned) |
 | Visual: `/ar/admin/shops/{id}?tab=location` and `/ar/admin/professionals/{id}` at 1440; `/ar/admin/professionals`, `/en/admin/shops/{id}?tab=location`, `/ar/shop/settings` at 390 | RTL mirrored (sidebar on the inline start, map controls and hint chip mirrored, coordinates LTR); 0 px horizontal overflow at 390 on all three phone captures |
 
+**Post-commit review probes (follow-up commit)**
+- `apps/api/openapi/v1.json`: no CR bytes and no escaped `
+`, so the contract is line-ending independent.
+- Through the web proxy on port 3300:
+  - an incompressible 4.7 MB PNG upload returns 200;
+  - an uploaded avatar renders through `Avatar` and the next/image optimizer (`/_next/image?url=/api/v1/media/…`, naturalWidth 32).
+  - A 6 MB body returns a bare **500** from the Next.js rewrite. The API rejects it with 413 before reading the body, and the dev proxy reports the dropped connection. This is local-compose only: production puts Nginx in front of `/api`, which needs `client_max_body_size` (Phase 17), and the upload control already refuses files over 5 MB in the browser. Recorded in D-069.
+- WebGL in CI: headless Chromium in `mcr.microsoft.com/playwright:v1.63.0-noble` reports `WebGL 2.0 (OpenGL ES 3.0 Chromium)` by default, so the Linux E2E job can render the map without launch flags.
+- Public scope data-layer test added (D-066): bound to shop A for a shop-B caller it returns A's rows, `SaveChanges` throws, scopes do not nest, and the caller's tenant returns after dispose.
+
 **Findings fixed during the phase**
 - The endpoint matrix sent JSON to multipart endpoints and got 415 from routing, so it now sends multipart (D-069).
 - The test PostgreSQL ran out of connections; it now allows `max_connections=400` (D-069).
 - The coordinates line failed axe contrast (`text-secondary` on `bg-subtle`); it now uses primary text.
 - Forms keyed on `version` remounted after `router.refresh()` and lost their success message; the keys were removed.
 - The WhatsApp toggle-only change needed no reveal, so `keepCurrentNumber` was added (D-067).
+
+**Commit:** `805313b` (plus a follow-up with the review probes and the public-scope data-layer test). Not pushed yet; CI has not run on Phase 06.
 
 **Database and migrations:** `ShopProfileLocationProfessionals` (schemas `media`, `professionals`; shop profile, policy and location columns). Applied locally only: the Testcontainers databases and the local compose volume, both upgraded and recreated from empty.
 

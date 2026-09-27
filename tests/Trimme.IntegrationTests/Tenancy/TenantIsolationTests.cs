@@ -69,6 +69,36 @@ public sealed class TenantIsolationTests(PostgresFixture postgres) : IAsyncLifet
     }
 
     [Fact]
+    public async Task PublicScope_ShowsOneShopsRows_IgnoresTheCallersTenant_AndIsReadOnly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = TenancyTestContexts.Create(_connectionString, _tenant);
+        _tenant.ShopId = _shopB;
+
+        // Bound to shop A: A's rows only, although the caller is a shop-B user; every shop row is visible (directory).
+        using (db.EnterPublicScope(_shopA))
+        {
+            (await db.Set<TestItem>().Select(i => i.Name).OrderBy(n => n).ToListAsync(ct)).ShouldBe(["a-1", "a-2"]);
+            (await db.Set<Shop>().CountAsync(ct)).ShouldBe(2);
+
+            db.Add(new TestItem("sneaky", _shopA));
+            await Should.ThrowAsync<TenantViolationException>(() => db.SaveChangesAsync(ct));
+            db.ChangeTracker.Clear();
+        }
+
+        // Bound to no shop: no shop-owned rows at all.
+        using (db.EnterPublicScope(null))
+        {
+            (await db.Set<TestItem>().CountAsync(ct)).ShouldBe(0);
+            Should.Throw<InvalidOperationException>(() => db.EnterPublicScope(_shopA), "scopes do not nest");
+        }
+
+        // Closed: back to the caller's own tenant.
+        (await db.Set<TestItem>().Select(i => i.Name).ToListAsync(ct)).ShouldBe(["b-1"]);
+        (await db.Set<Shop>().CountAsync(ct)).ShouldBe(1);
+    }
+
+    [Fact]
     public async Task CrossShop_ReadById_UpdateAndDelete_AreImpossible()
     {
         var ct = TestContext.Current.CancellationToken;

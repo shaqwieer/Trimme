@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-27 (end of Session 4, Phase 06)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 06 is committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: the Phase 06 commit (`feat: phase 06 shops, locations and professionals; media stored in PostgreSQL`) on top of `d0d040a`. Run `git log --oneline -3`.
+- HEAD commit: a docs/test follow-up on top of `805313b` (Phase 06: `feat: phase 06 shops, locations and professionals; media stored in PostgreSQL`), which sits on `d0d040a`. Run `git log --oneline -3`.
 - Working tree status: clean after the commit. The local Docker stack is **running**, recreated from an empty volume with the Phase 06 images (web 3300, API 8080, DB 5434, Mailpit UI 8325).
 - Current phase: 06 is complete. Phase 07 has not started.
 - Phase score: 100 / 100 (Phase 06)
@@ -29,7 +29,7 @@
 - Command: `dotnet build Trimme.slnx -c Release --no-incremental`
   Result: PASS, 0 warnings
 - Command: unit / architecture / integration tests
-  Result: PASS, 153 / 62 / 97
+  Result: PASS, 153 / 62 / 97 at the phase commit; 98 integration after the follow-up public-scope data-layer test
 - Command: `dotnet ef migrations has-pending-model-changes`
   Result: PASS, no changes
 - Command: web gates (`lint`, `typecheck` + E2E, `format:check`, `openapi:check`, `test`, `build`)
@@ -57,8 +57,9 @@
 - D-069 Test infrastructure and gates (test DB `max_connections=400`, multipart in the endpoint matrix, grep gate excludes tests).
 
 ## Known issues or blockers
-- **Not pushed:** CI has not run on Phase 06 yet. After the user asks to push, check the GitHub Actions run, in particular the OpenAPI drift check (the contract was regenerated on Windows with LF normalization) and the E2E job (WebGL in headless Chromium worked locally).
+- **Not pushed:** CI has not run on Phase 06 yet. After the user asks to push, check the GitHub Actions run, in particular the OpenAPI drift check (the contract was regenerated on Windows with LF normalization) and the E2E job. WebGL 2.0 is available by default in the Linux Playwright 1.63 image (probed), so the map should render there.
 - **Pre-existing, noticed this session:** Serilog request logging runs inside the exception handler, so a handled `RequestValidationException`/`DbUpdateConcurrencyException` is *logged* as "responded 500" while the client correctly gets 400/409. It is logging only; fix the middleware order in Phase 17 (observability).
+- Local compose only: an upload body over the limit sent through the Next.js rewrite gets a bare 500 instead of the API's 413, and the browser pre-check prevents it in the UI. Production Nginx needs `client_max_body_size 6m` (Phase 17, D-069).
 - Production map tile and geocoder hosts are still configuration to choose (D-007/D-068). Images in the database grow backups (D-064); add Nginx/CDN caching of `/api/v1/media/*` in Phase 17.
 - Port 8025 is taken on this machine: `TRIMME_MAILPIT_PORT=8325`, `E2E_MAILPIT_URL=http://localhost:8325`.
 
