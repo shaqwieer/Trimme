@@ -96,7 +96,11 @@ export async function ShopSubscriptionTab({
 
       {canRecord && (
         <Card title={subscription.exists ? t('renewTitle') : t('assignTitle')}>
-          <RecordPeriodForm subscription={subscription} plans={plans} />
+          <RecordPeriodForm
+            subscription={subscription}
+            plans={plans}
+            canOverride={permissions.includes('SuperAdmin.Subscriptions.Override')}
+          />
         </Card>
       )}
       {subscription.exists && permissions.includes('Admin.Subscriptions.Suspend') && (

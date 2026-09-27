@@ -147,8 +147,8 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/subscription-plans`, `GET .../{id}`, `GET .../{id}/prices` | `Admin.Subscriptions.View` |
 | `POST /api/v1/admin/subscription-plans`, `PUT .../{id}`, `POST .../{id}/publish|deactivate|archive`, `PUT .../order`, `POST .../{id}/prices` | `SuperAdmin.SubscriptionPlans.Manage` · prices are append-only versions · audited (D-079) |
 | `GET /api/v1/admin/subscriptions`, `GET /api/v1/admin/shops/{id}/subscription` | `Admin.Subscriptions.View` · counts over every shop |
-| `POST /api/v1/admin/shops/{id}/subscription/assign` | `Admin.Subscriptions.Assign` · published plan open to new shops · audited |
-| `POST /api/v1/admin/shops/{id}/subscription/renew` | `Admin.Subscriptions.Renew` · version-checked · audited |
+| `POST /api/v1/admin/shops/{id}/subscription/assign` | `Admin.Subscriptions.Assign` · published plan open to new shops · audited. A custom duration, a past start or an explicit price also needs `SuperAdmin.Subscriptions.Override`, a total and a reason (D-081) |
+| `POST /api/v1/admin/shops/{id}/subscription/renew` | `Admin.Subscriptions.Renew` · version-checked · audited. Custom periods are SuperAdmin-only, as for assign (D-081) |
 | `POST /api/v1/admin/shops/{id}/subscription/suspend|reinstate` | `Admin.Subscriptions.Suspend` · suspend needs a reason · audited |
 | `POST /api/v1/admin/shops/{id}/subscription/override` | `SuperAdmin.Subscriptions.Override` · reason required · previous values kept · audited |
 | `GET /api/v1/shop/subscription` | `Shop.Subscription.Read` · own shop only (tenant from claims) · no override reasons |

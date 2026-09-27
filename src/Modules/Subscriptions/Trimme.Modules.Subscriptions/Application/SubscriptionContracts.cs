@@ -47,6 +47,8 @@ public sealed record SubscriptionPeriodResponse(
     decimal Amount,
     string Currency,
     bool IsOverridden,
+    decimal? StandardAmount,
+    string? PricingReason,
     string? Notes,
     DateTimeOffset RecordedAt);
 
@@ -174,6 +176,8 @@ internal static class SubscriptionView
         p.Amount,
         p.Currency,
         p.IsOverridden,
+        p.StandardAmount,
+        p.PricingReason,
         p.Notes,
         p.RecordedAt);
 

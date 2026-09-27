@@ -51,12 +51,17 @@ public sealed record AddPlanPriceRequest(decimal Amount, DateOnly EffectiveFrom,
 
 /// <summary>
 /// Starts a shop's subscription. <c>StartDate</c> defaults to today (it cannot be in the future); the end follows the
-/// plan's interval unless <c>DurationDays</c> is given.
+/// plan's interval. A custom <c>DurationDays</c>, a past start or an explicit <c>Price</c> is a SuperAdmin override: it
+/// needs <c>SuperAdmin.Subscriptions.Override</c>, the explicit total <c>Price</c> and a <c>Reason</c> (D-081).
 /// </summary>
-public sealed record AssignSubscriptionRequest(Guid PlanId, DateOnly? StartDate, int? DurationDays, string? Notes);
+public sealed record AssignSubscriptionRequest(Guid PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, decimal? Price = null, string? Reason = null);
 
-/// <summary>Records a renewal; the plan defaults to the current one and the start to the day after the current end.</summary>
-public sealed record RenewSubscriptionRequest(Guid? PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, uint Version);
+/// <summary>
+/// Records a renewal; the plan defaults to the current one and the start to the day after the current end (or today
+/// after a lapse). Custom durations, past starts and explicit prices follow the same SuperAdmin rule as activation.
+/// </summary>
+public sealed record RenewSubscriptionRequest(
+    Guid? PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, uint Version, decimal? Price = null, string? Reason = null);
 
 /// <summary>SuperAdmin override of the period in force: a shop-specific price and/or end date, with a reason.</summary>
 public sealed record OverrideSubscriptionRequest(decimal? Price, DateOnly? EndDate, string Reason, uint Version);
@@ -160,15 +165,17 @@ internal static class SubscriptionEndpoints
             .WithName("GetAdminShopSubscription").WithSummary("A shop's subscription: status, current period, every renewal and override.")
             .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/assign", async (Guid shopId, AssignSubscriptionRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new AssignSubscriptionCommand(shopId, r.PlanId, r.StartDate, r.DurationDays, r.Notes), ct)).ToHttpResult())
+                (await d.Send(new AssignSubscriptionCommand(shopId, r.PlanId, r.StartDate, r.DurationDays, r.Notes, r.Price, r.Reason), ct)).ToHttpResult())
             .RequirePermission(Assign)
             .WithName("AssignShopSubscription").WithSummary("Starts the shop's subscription on a published plan; the price in force on the start date is recorded.")
-            .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status409Conflict);
+            .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapPost("/renew", async (Guid shopId, RenewSubscriptionRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new RenewSubscriptionCommand(shopId, r.PlanId, r.StartDate, r.DurationDays, r.Notes, r.Version), ct)).ToHttpResult())
+                (await d.Send(new RenewSubscriptionCommand(shopId, r.PlanId, r.StartDate, r.DurationDays, r.Notes, r.Price, r.Reason, r.Version), ct)).ToHttpResult())
             .RequirePermission(Renew)
             .WithName("RenewShopSubscription").WithSummary("Records a renewal period (no payment in v1); earlier periods never change.")
-            .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status409Conflict);
+            .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status409Conflict);
         group.MapPost("/override", async (Guid shopId, OverrideSubscriptionRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new OverrideSubscriptionCommand(shopId, r.Price, r.EndDate, r.Reason ?? string.Empty, r.Version), ct)).ToHttpResult())
             .RequirePermission(Override)

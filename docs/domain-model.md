@@ -138,6 +138,7 @@ there is no project reference between the modules.
 **ShopSubscription** (`IShopOwned`, unique `shop_id`, `xmin`) is recorded manually; there is no payment in v1.
 - It stores `StartDate`/`EndDate` (platform calendar, D-077), the latest plan, and the suspension flag and reason.
 - **SubscriptionPeriod** (assignment or renewal) keeps the plan name, the price version id, the amount and the currency as recorded, plus notes and who recorded it. Periods never overlap, and never leave a future gap.
+- A **custom period** (a custom length or a start before today, D-081) exists only with SuperAdmin custom pricing. It stores the explicit total, the plan price it replaces (`standard_amount`) and the reason (`pricing_reason`).
 - **SubscriptionOverride** (SuperAdmin) keeps the previous and new amount/end with the reason.
 - Status (computed): None, Suspended, Expired, ExpiringSoon (≤ threshold days left, the end day counts), Active.
 

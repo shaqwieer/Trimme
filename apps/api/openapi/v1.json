@@ -5146,6 +5146,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -5200,6 +5210,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6496,9 +6516,22 @@
               "null",
               "string"
             ]
+          },
+          "price": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "Starts a shop\u0027s subscription. \u0060StartDate\u0060 defaults to today (it cannot be in the future); the end follows the\nplan\u0027s interval unless \u0060DurationDays\u0060 is given."
+        "description": "Starts a shop\u0027s subscription. \u0060StartDate\u0060 defaults to today (it cannot be in the future); the end follows the\nplan\u0027s interval. A custom \u0060DurationDays\u0060, a past start or an explicit \u0060Price\u0060 is a SuperAdmin override: it\nneeds \u0060SuperAdmin.Subscriptions.Override\u0060, the explicit total \u0060Price\u0060 and a \u0060Reason\u0060 (D-081)."
       },
       "BillingIntervalUnit": {
         "enum": [
@@ -8268,9 +8301,22 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "price": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "Records a renewal; the plan defaults to the current one and the start to the day after the current end."
+        "description": "Records a renewal; the plan defaults to the current one and the start to the day after the current end (or today\nafter a lapse). Custom durations, past starts and explicit prices follow the same SuperAdmin rule as activation."
       },
       "ReorderRequest": {
         "required": [
@@ -9259,6 +9305,8 @@
           "amount",
           "currency",
           "isOverridden",
+          "standardAmount",
+          "pricingReason",
           "notes",
           "recordedAt"
         ],
@@ -9312,6 +9360,19 @@
           },
           "isOverridden": {
             "type": "boolean"
+          },
+          "standardAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "pricingReason": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "notes": {
             "type": [

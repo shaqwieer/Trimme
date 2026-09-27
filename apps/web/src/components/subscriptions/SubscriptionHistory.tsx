@@ -30,7 +30,14 @@ export function SubscriptionHistory({ subscription }: { subscription: Subscripti
       meta: [
         t('periodMeta', { kind: t(`kinds.${p.kind}`), price: formatPrice(p.amount, locale, p.currency) }),
         p.priceVersionNumber != null ? t('priceVersion', { version: p.priceVersionNumber }) : null,
-        p.isOverridden ? t('overriddenTag') : null,
+        p.pricingReason
+          ? t('customEntry', {
+              reason: p.pricingReason,
+              standard: p.standardAmount != null ? formatPrice(p.standardAmount, locale, p.currency) : '—',
+            })
+          : p.isOverridden
+            ? t('overriddenTag')
+            : null,
         p.notes,
       ]
         .filter(Boolean)

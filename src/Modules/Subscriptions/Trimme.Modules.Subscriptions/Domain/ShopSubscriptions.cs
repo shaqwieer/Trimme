@@ -45,6 +45,12 @@ public enum PeriodKind
 public sealed record PriceSnapshot(PlanPriceId? PriceId, decimal Amount, string Currency);
 
 /// <summary>
+/// SuperAdmin pricing of a non-standard period (D-081): the explicit total recorded instead of the plan price, the plan
+/// price it replaces (null when the plan had none on the start date), and the reason. Kept on the period for good.
+/// </summary>
+public sealed record CustomPricing(decimal Total, decimal? StandardAmount, string Reason);
+
+/// <summary>
 /// A shop's platform subscription (spec §15), recorded manually by admins — v1 collects no payment. It keeps every
 /// period (assignment and renewals) with the plan name and price snapshot of that moment, plus every override, so the
 /// commercial history never changes when a plan or its price does (R-SUB-02/03).
@@ -107,9 +113,20 @@ public sealed class ShopSubscription : AggregateRoot<ShopSubscriptionId>, IShopO
     /// <summary>The default start of a renewal: the day after the last period, or today once it has lapsed.</summary>
     public DateOnly NextRenewalStart(DateOnly today) => EndDate >= today.AddDays(-1) ? EndDate.AddDays(1) : today;
 
-    /// <summary>Starts a subscription with its first period, which may start in the past but not in the future.</summary>
+    /// <summary>
+    /// A period is standard when it starts today or later and lasts exactly the plan's interval. Anything else — a
+    /// custom number of days or a back-dated start — needs SuperAdmin custom pricing with an explicit total (D-081).
+    /// </summary>
+    public static bool IsStandardPeriod(SubscriptionPlan plan, DateOnly start, DateOnly end, DateOnly today)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        return start >= today && end == plan.PeriodEnd(start);
+    }
+
+    /// <summary>Starts a subscription with its first period; it cannot start in the future, and a past start needs custom pricing.</summary>
     public static Result<ShopSubscription> Assign(
-        ShopSubscriptionId id, ShopId shopId, SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, string? notes, Guid? by, DateOnly today, DateTimeOffset now)
+        ShopSubscriptionId id, ShopId shopId, SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, CustomPricing? custom,
+        string? notes, Guid? by, DateOnly today, DateTimeOffset now)
     {
         if (start > today)
         {
@@ -121,14 +138,19 @@ public sealed class ShopSubscription : AggregateRoot<ShopSubscriptionId>, IShopO
             return PlanErrors.Field("durationDays", "validation.invalid");
         }
 
+        if (CheckPricing(plan, start, end, today, custom) is { } pricing)
+        {
+            return pricing;
+        }
+
         var subscription = new ShopSubscription(id, shopId, now);
-        subscription.AddPeriod(PeriodKind.Assigned, plan, start, end, price, notes, by, now);
+        subscription.AddPeriod(PeriodKind.Assigned, plan, start, end, price, custom, notes, by, now);
         return subscription;
     }
 
     /// <summary>Records a renewal period; its price snapshot comes from the plan version in force on its start date.</summary>
     public Result<SubscriptionPeriod> Renew(
-        SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, string? notes, Guid? by, DateOnly today, DateTimeOffset now)
+        SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, CustomPricing? custom, string? notes, Guid? by, DateOnly today, DateTimeOffset now)
     {
         if (end < start)
         {
@@ -146,7 +168,12 @@ public sealed class ShopSubscription : AggregateRoot<ShopSubscriptionId>, IShopO
             return PlanErrors.Field("startDate", "validation.period_gap");
         }
 
-        return AddPeriod(PeriodKind.Renewed, plan, start, end, price, notes, by, now);
+        if (CheckPricing(plan, start, end, today, custom) is { } pricing)
+        {
+            return pricing;
+        }
+
+        return AddPeriod(PeriodKind.Renewed, plan, start, end, price, custom, notes, by, now);
     }
 
     /// <summary>
@@ -203,10 +230,31 @@ public sealed class ShopSubscription : AggregateRoot<ShopSubscriptionId>, IShopO
         UpdatedAt = now;
     }
 
-    private SubscriptionPeriod AddPeriod(PeriodKind kind, SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, string? notes, Guid? by, DateTimeOffset now)
+    private static Error? CheckPricing(SubscriptionPlan plan, DateOnly start, DateOnly end, DateOnly today, CustomPricing? custom)
+    {
+        if (custom is null)
+        {
+            return IsStandardPeriod(plan, start, end, today) ? null : SubscriptionErrors.CustomPricingRequired();
+        }
+
+        if (!PlanPricing.IsValidAmount(custom.Total))
+        {
+            return PlanErrors.Field("price", "validation.price_invalid");
+        }
+
+        return string.IsNullOrWhiteSpace(custom.Reason) ? PlanErrors.Field("reason", "validation.reason_required") : null;
+    }
+
+    private SubscriptionPeriod AddPeriod(
+        PeriodKind kind, SubscriptionPlan plan, DateOnly start, DateOnly end, PriceSnapshot price, CustomPricing? custom, string? notes, Guid? by, DateTimeOffset now)
     {
         var period = new SubscriptionPeriod(
             EntityId.New<SubscriptionPeriodId>(), Id, ShopId, kind, plan.Id, plan.NameAr, plan.NameEn, start, end, price, notes, by, now);
+        if (custom is not null)
+        {
+            period.ApplyCustomPricing(custom);
+        }
+
         _periods.Add(period);
         PlanId = plan.Id;
         StartDate = _periods.Min(p => p.PeriodStart);
@@ -272,11 +320,25 @@ public sealed class SubscriptionPeriod : Entity<SubscriptionPeriodId>, IShopOwne
 
     public bool IsOverridden { get; private set; }
 
+    /// <summary>For a SuperAdmin-priced period (D-081): what the plan would have charged, if it had a price then.</summary>
+    public decimal? StandardAmount { get; private set; }
+
+    /// <summary>Why a SuperAdmin priced this period explicitly (D-081); null for a standard period.</summary>
+    public string? PricingReason { get; private set; }
+
     public string? Notes { get; private set; }
 
     public Guid? RecordedBy { get; private set; }
 
     public DateTimeOffset RecordedAt { get; private set; }
+
+    internal void ApplyCustomPricing(CustomPricing custom)
+    {
+        StandardAmount = custom.StandardAmount;
+        Amount = custom.Total;
+        PricingReason = custom.Reason;
+        IsOverridden = true;
+    }
 
     internal void ApplyOverride(decimal? price, DateOnly? end)
     {
@@ -374,6 +436,10 @@ public static class SubscriptionStatusCalculator
 public static class SubscriptionErrors
 {
     public static Error NoSubscription() => Error.NotFound("subscription.not_found", "The shop has no subscription.");
+
+    /// <summary>A custom duration or a back-dated start: only SuperAdmin, with an explicit total and a reason (D-081).</summary>
+    public static Error CustomPricingRequired() =>
+        Error.Forbidden("subscription.custom_pricing_required", "A custom duration or a past start date needs a SuperAdmin override with an explicit total and a reason.");
 
     public static Error AlreadyAssigned() => Error.Conflict("subscription.already_assigned", "The shop already has a subscription; renew it instead.");
 }

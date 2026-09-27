@@ -43,7 +43,10 @@ function riyadhDay(offsetDays = 0): string {
 type Period = { amount: number; priceVersionNumber: number | null; periodStart: string; kind: string };
 
 test.describe('subscriptions (R-SUB-01..05, E5, E3 subscription part)', () => {
-  test('E5: a future plan price never rewrites a recorded period; the renewal takes it', async ({ page, context }) => {
+  test('E5: a future plan price never rewrites a recorded period; the renewal takes it', async ({
+    page,
+    context,
+  }) => {
     const suffix = Date.now().toString(36);
     const planName = `E2E quarterly ${suffix}`;
     await staffSignIn(page, ADMIN_EMAIL, ADMIN_PASSWORD);
@@ -72,7 +75,11 @@ test.describe('subscriptions (R-SUB-01..05, E5, E3 subscription part)', () => {
     // A new shop (no subscription yet) is activated on the plan.
     const created = await page.request.post('/api/v1/admin/shops', {
       headers: { 'X-CSRF-Token': await csrf(context, page.request) },
-      data: { slug: `e2e-sub-${suffix}`, nameAr: `محل اشتراك ${suffix}`, nameEn: `Subscription shop ${suffix}` },
+      data: {
+        slug: `e2e-sub-${suffix}`,
+        nameAr: `محل اشتراك ${suffix}`,
+        nameEn: `Subscription shop ${suffix}`,
+      },
     });
     expect(created.status()).toBe(201);
     const shopId = (await created.json()).id as string;
@@ -136,8 +143,29 @@ test.describe('subscriptions (R-SUB-01..05, E5, E3 subscription part)', () => {
     await override.getByLabel('Reason for the override').fill('Launch discount agreed');
     await override.getByRole('button', { name: 'Save override' }).click();
     await expect(page.getByText('Override saved.')).toBeVisible();
-    await expect(page.getByTestId('subscription-history')).toContainText('Override: price SAR 300 to SAR 250');
+    await expect(page.getByTestId('subscription-history')).toContainText(
+      'Override: price SAR 300 to SAR 250',
+    );
     await expect(page.getByTestId('subscription-history')).toContainText('Launch discount agreed');
+
+    // D-081: a custom length is a SuperAdmin override with an explicit total and a reason, kept in the history.
+    const record2 = page.getByTestId('record-period-form');
+    await record2.getByText('Custom number of days').click();
+    await record2.getByLabel('Number of days', { exact: true }).fill('45');
+    await expect(record2.getByTestId('custom-pricing')).toBeVisible();
+    await record2.getByLabel('Total price for this period (SAR)').fill('200');
+    await record2.getByLabel('Reason for the custom period').fill('Extended trial agreed');
+    await record2.getByRole('button', { name: 'Confirm renewal' }).click();
+    await expect(page.getByText(/Renewed until/)).toBeVisible();
+    await expect(page.getByTestId('subscription-history')).toContainText(
+      'SuperAdmin custom price (Extended trial agreed; plan price SAR 450)',
+    );
+    subscription = await (await page.request.get(`/api/v1/admin/shops/${shopId}/subscription`)).json();
+    expect(subscription.periods[0]).toMatchObject({
+      amount: 200,
+      standardAmount: 450,
+      pricingReason: 'Extended trial agreed',
+    });
 
     // Leave the catalogue tidy: retire the test plan (its history stays).
     const archived = await page.request.post(`/api/v1/admin/subscription-plans/${planId}/archive`, {

@@ -37,16 +37,21 @@ export function MapLibreView({
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onPinChangeRef = useRef(onPinChange);
-  const initial = useRef({ center, pin, label, pinLabel, attribution, onUnavailable, onReady });
+  // The latest pin: one chosen while MapLibre is still loading must be used when the map is created.
+  const pinRef = useRef(pin);
+  const initial = useRef({ center, label, pinLabel, attribution, onUnavailable, onReady });
 
   useEffect(() => {
     onPinChangeRef.current = onPinChange;
   }, [onPinChange]);
 
   useEffect(() => {
+    pinRef.current = pin;
+  }, [pin]);
+
+  useEffect(() => {
     const {
       center: start,
-      pin: startPin,
       pinLabel: markerLabel,
       attribution: credit,
       onUnavailable: fail,
@@ -62,6 +67,7 @@ export function MapLibreView({
     void import('maplibre-gl')
       .then(({ Map, Marker, AttributionControl, NavigationControl }) => {
         if (cancelled || !container.current) return;
+        const startPin = pinRef.current;
         const origin = startPin ?? start;
         const map = new Map({
           container: container.current,

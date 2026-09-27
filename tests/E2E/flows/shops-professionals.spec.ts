@@ -102,9 +102,8 @@ test.describe('shops, locations and professionals (R-SHP-01/02, R-PRO-01, R-NEG-
     await page.getByRole('button', { name: /Al Malqa, Riyadh/ }).click();
     await expect(page.getByTestId('coordinates')).toHaveText('24.812300, 46.601100');
 
-    // The pin exists once the lazily imported MapLibre map has loaded (WebGL); allow for a cold stack.
     const pin = page.getByTestId('map-pin');
-    await expect(pin).toBeVisible({ timeout: 15_000 });
+    await expect(pin).toBeVisible();
     const box = await settledBox(page, pin);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height - 4);
     await page.mouse.down();

@@ -222,7 +222,24 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         (await ops.PutAsync($"/api/v1/admin/subscription-plans/{planId}", Plan("Ops edit", version: plan.GetProperty("version").GetUInt32()), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ops.PostAsync($"/api/v1/admin/subscription-plans/{planId}/prices", new { amount = 1m, effectiveFrom = "2030-01-01", version = 0 }, ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await ops.PostAsync($"/api/v1/admin/subscription-plans/{planId}/archive", null, ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        // D-081: custom durations, past starts and explicit prices are SuperAdmin-only, even for a role that can assign.
+        foreach (var body in new object[]
+                 {
+                     new { planId, durationDays = 1095, price = 1m, reason = "Three years for one month's price" },
+                     new { planId, startDate = DateTime.UtcNow.AddDays(-60).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), price = 1900m, reason = "Back-dated contract" },
+                     new { planId, price = 1m, reason = "Special price" },
+                     new { planId, durationDays = 45 },
+                 })
+        {
+            await ShouldFailAsync(
+                ops.PostAsync($"/api/v1/admin/shops/{shops.A.ShopId}/subscription/assign", body, ct), HttpStatusCode.Forbidden, "subscription.custom_pricing_required", ct);
+        }
+
         var assigned = await OkJsonAsync(ops.PostAsync($"/api/v1/admin/shops/{shops.A.ShopId}/subscription/assign", new { planId }, ct), ct);
+        assigned.GetProperty("periods")[0].GetProperty("pricingReason").ValueKind.ShouldBe(JsonValueKind.Null);
+        await ShouldFailAsync(
+            ops.PostAsync($"/api/v1/admin/shops/{shops.A.ShopId}/subscription/renew", new { durationDays = 45, price = 1m, reason = "Discounted period", version = assigned.GetProperty("version").GetUInt32() }, ct),
+            HttpStatusCode.Forbidden, "subscription.custom_pricing_required", ct);
         (await ops.PostAsync($"/api/v1/admin/shops/{shops.A.ShopId}/subscription/override", new { price = 1m, reason = "Ops discount", version = assigned.GetProperty("version").GetUInt32() }, ct))
             .StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
@@ -307,10 +324,18 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         (await super.GetAsync($"/api/v1/admin/shops/{Guid.NewGuid()}/subscription", ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly, startDate = Day(Today.AddDays(1)) }, ct), HttpStatusCode.BadRequest, "validation.date_in_future", ct);
 
+        // D-081: a custom duration is a SuperAdmin override with an explicit total and a reason.
+        await ShouldFailAsync(
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly, durationDays = 45 }, ct), HttpStatusCode.BadRequest, "price", ct);
+        await ShouldFailAsync(
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly, durationDays = 45, price = 199m }, ct),
+            HttpStatusCode.BadRequest, "validation.reason_required", ct);
+
         // Two concurrent assignments: exactly one wins (unique shop_id), the other gets 409, never 500.
+        var custom = new { planId = monthly, durationDays = 45, price = 199m, reason = "45-day launch period" };
         var racing = await Task.WhenAll(
-            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly, durationDays = 30 }, ct),
-            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly, durationDays = 30 }, ct));
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", custom, ct),
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", custom, ct));
         racing.Select(r => r.StatusCode).Order().ShouldBe([HttpStatusCode.OK, HttpStatusCode.Conflict]);
         var subscription = await racing.Single(r => r.StatusCode == HttpStatusCode.OK).JsonAsync(ct);
         foreach (var r in racing)
@@ -318,22 +343,27 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
             r.Dispose();
         }
 
-        subscription.GetProperty("endDate").GetString().ShouldBe(Day(Today.AddDays(29)), "an explicit 30-day duration");
+        subscription.GetProperty("endDate").GetString().ShouldBe(Day(Today.AddDays(44)), "an explicit 45-day duration (never one calendar month)");
         await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/assign", new { planId = monthly }, ct), HttpStatusCode.Conflict, "subscription.already_assigned", ct);
         var version = subscription.GetProperty("version").GetUInt32();
 
         // Renewals never overlap and never leave a future gap.
         await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { startDate = Day(Today.AddDays(10)), version }, ct), HttpStatusCode.BadRequest, "validation.period_overlap", ct);
-        await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { startDate = Day(Today.AddDays(40)), version }, ct), HttpStatusCode.BadRequest, "validation.period_gap", ct);
-        var renewed = await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { durationDays = 30, notes = "Paid by transfer", version }, ct), ct);
-        renewed.GetProperty("endDate").GetString().ShouldBe(Day(Today.AddDays(59)));
+        await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { startDate = Day(Today.AddDays(60)), version }, ct), HttpStatusCode.BadRequest, "validation.period_gap", ct);
+        var renewed = await OkJsonAsync(
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { durationDays = 45, notes = "Paid by transfer", price = 180m, reason = "Second month agreed", version }, ct), ct);
+        renewed.GetProperty("endDate").GetString().ShouldBe(Day(Today.AddDays(89)));
+        var customRenewal = renewed.GetProperty("periods")[0];
+        customRenewal.GetProperty("amount").GetDecimal().ShouldBe(180m, "the explicit total");
+        customRenewal.GetProperty("standardAmount").GetDecimal().ShouldBe(199m, "the plan price it replaced");
+        customRenewal.GetProperty("pricingReason").GetString().ShouldBe("Second month agreed");
         await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/renew", new { version }, ct), HttpStatusCode.Conflict, null, ct);
         version = renewed.GetProperty("version").GetUInt32();
 
         // Override: reason required; only the latest period's end may move; the previous values are kept.
         await ShouldFailAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/override", new { price = 150m, reason = "", version }, ct), HttpStatusCode.BadRequest, "validation.reason_required", ct);
         await ShouldFailAsync(
-            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/override", new { endDate = Day(Today.AddDays(90)), reason = "Goodwill extension", version }, ct),
+            super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/override", new { endDate = Day(Today.AddDays(120)), reason = "Goodwill extension", version }, ct),
             HttpStatusCode.BadRequest, "validation.period_not_latest", ct);
         var overridden = await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/override", new { price = 150m, reason = "Launch discount agreed", version }, ct), ct);
         overridden.GetProperty("currentAmount").GetDecimal().ShouldBe(150m);
@@ -341,7 +371,7 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         record.GetProperty("previousAmount").GetDecimal().ShouldBe(199m);
         record.GetProperty("newAmount").GetDecimal().ShouldBe(150m);
         record.GetProperty("reason").GetString().ShouldBe("Launch discount agreed");
-        overridden.GetProperty("periods").EnumerateArray().Single(p => p.GetProperty("isOverridden").GetBoolean())
+        overridden.GetProperty("periods").EnumerateArray().Single(p => p.GetProperty("amount").GetDecimal() == 150m)
             .GetProperty("periodStart").GetString().ShouldBe(Day(Today), "the period in force, not the future renewal");
 
         // Suspend and reinstate (version-checked), then the history is complete in the audit trail.
@@ -354,6 +384,10 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
 
         var audit = await AuditAsync(factory, await SubscriptionIdAsync(factory, shopId, ct), ct);
         audit.Select(a => a.Split('|')[0]).ShouldBe(["subscription.assigned", "subscription.renewed", "subscription.overridden", "subscription.suspended", "subscription.reinstated"]);
+        audit[0].ShouldContain("SuperAdmin custom period, total 199.00 SAR instead of 199.00 SAR");
+        audit[0].ShouldEndWith("|45-day launch period");
+        audit[1].ShouldContain("SuperAdmin custom period, total 180.00 SAR instead of 199.00 SAR");
+        audit[1].ShouldEndWith("|Second month agreed");
         audit[2].ShouldContain("amount 199.00 SAR to 150.00 SAR");
         audit[2].ShouldEndWith("|Launch discount agreed");
         audit.ShouldAllBe(a => !a.Contains("+966", StringComparison.Ordinal));
@@ -379,8 +413,9 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         var owner = IdentityTestData.NewEmail("owner");
         await ShopTestData.CreateShopUserAsync(factory, covered, owner, SystemRoles.ShopOwner, ct);
         var plan = (await CreatePublishedPlanAsync(super, "Monthly", ct, count: 1, price: 199m)).GetProperty("id").GetGuid();
-        await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{covered}/subscription/assign", new { planId = plan, durationDays = 30 }, ct), ct);
-        await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{draftShop}/subscription/assign", new { planId = plan, durationDays = 30 }, ct), ct);
+        var thirtyDays = new { planId = plan, durationDays = 30, price = 199m, reason = "Thirty-day agreement" };
+        await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{covered}/subscription/assign", thirtyDays, ct), ct);
+        await OkJsonAsync(super.PostAsync($"/api/v1/admin/shops/{draftShop}/subscription/assign", thirtyDays, ct), ct);
 
         async Task<ShopBookability> GateAsync(Guid shop)
         {

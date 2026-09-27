@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/schema';
 import { renderWithIntl } from '@/test/render';
@@ -97,9 +98,9 @@ describe('period preview (mirrors SubscriptionDates.End)', () => {
 });
 
 describe('RecordPeriodForm (DV-S05: durations and prices come from the plan)', () => {
-  it('previews the end and the recorded price from plan data, then records the activation', async () => {
+  it('previews the end and the recorded price from plan data, then records a standard activation', async () => {
     api.POST.mockResolvedValue({
-      data: { ...none, exists: true, endDate: '2027-02-14' },
+      data: { ...none, exists: true, endDate: '2027-03-04' },
       response: new Response(null, { status: 200 }),
     });
     renderWithIntl(<RecordPeriodForm subscription={none} plans={[plan()]} />, { locale: 'en' });
@@ -108,15 +109,11 @@ describe('RecordPeriodForm (DV-S05: durations and prices come from the plan)', (
     expect(screen.getByText('Ends on 14 February 2027')).toBeInTheDocument();
     expect(screen.getByText('Recorded price: SAR 111 (version 1)')).toBeInTheDocument();
     expect(screen.queryByText(/3 months|6 months|2,400/)).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Custom number of days' })).toBeNull();
 
     await userEvent.clear(screen.getByLabelText('Start date'));
     await userEvent.type(screen.getByLabelText('Start date'), '2026-11-05');
     expect(await screen.findByText('Recorded price: SAR 222 (version 2)')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('radio', { name: 'Custom number of days' }));
-    await userEvent.clear(screen.getByLabelText('Number of days'));
-    await userEvent.type(screen.getByLabelText('Number of days'), '30');
-    expect(screen.getByText('Ends on 4 December 2026')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Record activation' }));
     await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(1));
@@ -124,8 +121,56 @@ describe('RecordPeriodForm (DV-S05: durations and prices come from the plan)', (
     expect(api.POST.mock.calls[0]?.[1].body).toEqual({
       planId: 'plan-1',
       startDate: '2026-11-05',
+      durationDays: null,
+      notes: null,
+      price: null,
+      reason: null,
+    });
+  });
+
+  it('D-081: without the override permission, a past start is refused before calling the API', async () => {
+    renderWithIntl(<RecordPeriodForm subscription={none} plans={[plan()]} />, { locale: 'en' });
+    expect(screen.getByLabelText('Start date')).toHaveAttribute('min', '2026-10-15');
+    await userEvent.clear(screen.getByLabelText('Start date'));
+    await userEvent.type(screen.getByLabelText('Start date'), '2026-09-01');
+    await userEvent.click(screen.getByRole('button', { name: 'Record activation' }));
+    expect(
+      await screen.findByText('Custom lengths and past start dates need a SuperAdmin override.'),
+    ).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+  });
+
+  it('D-081: a SuperAdmin custom length needs an explicit total and a reason, and sends both', async () => {
+    api.POST.mockResolvedValue({
+      data: { ...none, exists: true, endDate: '2026-12-04' },
+      response: new Response(null, { status: 200 }),
+    });
+    renderWithIntl(<RecordPeriodForm subscription={none} plans={[plan()]} canOverride />, { locale: 'en' });
+    await userEvent.clear(screen.getByLabelText('Start date'));
+    await userEvent.type(screen.getByLabelText('Start date'), '2026-11-05');
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom number of days' }));
+    await userEvent.clear(screen.getByLabelText('Number of days'));
+    await userEvent.type(screen.getByLabelText('Number of days'), '30');
+    expect(screen.getByText('Ends on 4 December 2026')).toBeInTheDocument();
+    expect(screen.getByText('Plan price for one standard period: SAR 222')).toBeInTheDocument();
+    expect(screen.getByTestId('custom-pricing')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Record activation' }));
+    expect(await screen.findByText('This field is required')).toBeInTheDocument();
+    expect(screen.getByText('Give a clear reason (at least 5 characters)')).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+
+    await userEvent.type(screen.getByLabelText('Total price for this period (SAR)'), '٥٠');
+    await userEvent.type(screen.getByLabelText('Reason for the custom period'), 'One-month trial agreed');
+    await userEvent.click(screen.getByRole('button', { name: 'Record activation' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(1));
+    expect(api.POST.mock.calls[0]?.[1].body).toEqual({
+      planId: 'plan-1',
+      startDate: '2026-11-05',
       durationDays: 30,
       notes: null,
+      price: 50,
+      reason: 'One-month trial agreed',
     });
   });
 
@@ -284,5 +329,33 @@ describe('SuspensionControl', () => {
       await within(dialog).findByText(/changed by someone else|saved at the same time|Reload/i),
     ).toBeInTheDocument();
     expect(api.POST.mock.calls[0]?.[1].body).toEqual({ reason: 'Contract under review', version: 3 });
+  });
+});
+
+describe('RecordPeriodForm after a refresh', () => {
+  it('follows the new default start once a renewal is recorded', async () => {
+    const existing = {
+      ...none,
+      exists: true,
+      status: 'Active' as const,
+      planId: 'plan-1',
+      nextStart: '2026-11-01',
+      version: 1,
+    };
+    function Harness() {
+      const [next, setNext] = useState('2026-11-01');
+      return (
+        <>
+          <button type="button" onClick={() => setNext('2027-03-01')}>
+            simulate refresh
+          </button>
+          <RecordPeriodForm subscription={{ ...existing, nextStart: next }} plans={[plan()]} />
+        </>
+      );
+    }
+    renderWithIntl(<Harness />, { locale: 'en' });
+    expect(screen.getByLabelText('Start date')).toHaveValue('2026-11-01');
+    await userEvent.click(screen.getByRole('button', { name: 'simulate refresh' }));
+    expect(screen.getByLabelText('Start date')).toHaveValue('2027-03-01');
   });
 });

@@ -1,7 +1,7 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-27 (Session 4)
-- **Current phase:** 08 is complete and verified (Session 4), committed locally and not pushed. Next: Phase 09, schedules and the availability engine.
+- **Current phase:** 08 is complete and verified (Session 4) and pushed to `main`. Next: Phase 09, schedules and the availability engine.
 - **Platform progress:** 900 / 1900 points (Phases 00–08)
 
 | Phase | Status | Points |
@@ -39,9 +39,11 @@
 | ID | Decision |
 |---|---|
 | D-064 | Photos and other media are stored in PostgreSQL (`media.media_files`), not on disk (Session 4) |
+| D-078 | Keep the default: shops without a subscription in force are hidden and take no online bookings; the warning-only setting stays available for a temporary rollout (Session 4) |
+| D-081 | Custom durations and back-dated starts need a SuperAdmin override with an explicit total price and a reason, fully audited (Session 4) |
 
 ## Open decisions
-None are blocking. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078). One default to confirm with the user: a shop **without** a subscription in force is hidden and takes no online bookings (enforcement `HideAndBlockNewOnlineBookings`). Admins can switch it to `None` in Platform settings. **Open question (D-077):** should a custom duration or a back-dated start stay at one interval's recorded price (current), be prorated, or need a SuperAdmin override?
+None are blocking. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
 
 ## Blockers
 None.

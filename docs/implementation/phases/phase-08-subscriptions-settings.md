@@ -161,7 +161,28 @@ rg -n "\b(1900|2400|1100|199)(\.0+)?\b|نصف سنوي|سنوي|شهري|Semi-an
 **Review follow-up (after commit `2f2b42c`)**
 - Added `PlanFeatures_RoundTripThroughTheDatabase_IncludingAnEmptyList`: an empty feature list and edited features re-read from the database, alone and in the list. It passed (Subscriptions namespace 8/8), so no mapping change was needed.
 - The verification commands above now name the real test commands.
-- D-077 records the pricing rule for custom durations and back-dating as an open question for the user.
+- D-077 recorded the pricing rule for custom durations and back-dating as an open question; the user then decided it (see below).
+
+**User decisions (Session 4, after the review) — implemented and verified**
+- **D-078 confirmed.** Shops without a subscription in force stay hidden and take no online bookings. The enforcement setting `None` remains available for a temporary warning-only rollout.
+- **D-081 implemented.** A custom duration, a start before today or an explicit price needs a SuperAdmin override with an explicit total price and a reason.
+  - The domain refuses such a period without custom pricing, and the API answers 403 `subscription.custom_pricing_required` to other admins.
+  - The period keeps the explicit total, the plan price it replaces and the reason (migration `SubscriptionCustomPeriods`: `pricing_reason`, `standard_amount`). The audit entry says "SuperAdmin custom period, total X instead of Y" with the reason.
+  - The web form offers custom days and past dates to SuperAdmin only, with total and reason fields. The history shows the custom price, its reason and the plan price.
+  - The demo seed records history as of each period's own start date.
+- **Found and fixed while verifying:**
+  - **Stale start date after a refresh.** After a renewal, the form kept the old default start date, so a second renewal from the same page was refused as an overlap. It now follows the refreshed value (web test).
+  - **Phase 06 map-pin race.** A pin chosen before the lazily loaded map finished initialising was never shown. This was the real cause of the "map pin not visible" E2E failures that looked like cold-stack slowness. Map creation now uses the latest pin. A regression test fails on the old code and passes now, and the temporary 15 s E2E wait is removed.
+- **Evidence:**
+
+| Command | Result |
+|---|---|
+| `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings |
+| Unit / architecture / integration | PASS — 206 / 63 / 114 |
+| `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
+| Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 217 web tests |
+| Fresh `down -v` + `up --build`, `pnpm e2e` ×3 | PASS — **45/45, 45/45, 45/45** (including the first run on the cold stack) |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS — no hits, no leaks |
 
 **Findings during the gates**
 - **Two "Suspend" buttons.** The shop page showed one for the shop and one for the subscription. The subscription actions are now "Suspend subscription" and "Reinstate subscription".

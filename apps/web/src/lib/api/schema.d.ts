@@ -1884,7 +1884,8 @@ export interface components {
         };
         /**
          * @description Starts a shop's subscription. `StartDate` defaults to today (it cannot be in the future); the end follows the
-         *     plan's interval unless `DurationDays` is given.
+         *     plan's interval. A custom `DurationDays`, a past start or an explicit `Price` is a SuperAdmin override: it
+         *     needs `SuperAdmin.Subscriptions.Override`, the explicit total `Price` and a `Reason` (D-081).
          */
         AssignSubscriptionRequest: {
             /** Format: uuid */
@@ -1894,6 +1895,9 @@ export interface components {
             /** Format: int32 */
             durationDays: null | number;
             notes: null | string;
+            /** Format: double */
+            price?: null | number;
+            reason?: null | string;
         };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
@@ -2368,7 +2372,10 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
-        /** @description Records a renewal; the plan defaults to the current one and the start to the day after the current end. */
+        /**
+         * @description Records a renewal; the plan defaults to the current one and the start to the day after the current end (or today
+         *     after a lapse). Custom durations, past starts and explicit prices follow the same SuperAdmin rule as activation.
+         */
         RenewSubscriptionRequest: {
             /** Format: uuid */
             planId: null | string;
@@ -2379,6 +2386,9 @@ export interface components {
             notes: null | string;
             /** Format: uint32 */
             version: number;
+            /** Format: double */
+            price?: null | number;
+            reason?: null | string;
         };
         /** @description Every non-archived item of the shop, in the new order. */
         ReorderRequest: {
@@ -2692,6 +2702,9 @@ export interface components {
             amount: number;
             currency: string;
             isOverridden: boolean;
+            /** Format: double */
+            standardAmount: null | number;
+            pricingReason: null | string;
             notes: null | string;
             /** Format: date-time */
             recordedAt: string;
@@ -6663,6 +6676,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
             /** @description Conflict */
             409: {
                 headers: {
@@ -6700,6 +6722,15 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

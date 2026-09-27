@@ -74,34 +74,36 @@ internal sealed class DemoSubscriptionsSeeder : IDevSeeder
 
         // Al Asala: last year's period at the old annual price, then the current one (~65 days left) → Active.
         var asalaStart = today.AddDays(-300).AddMonths(-12);
-        await SeedAsync(db, DemoData.AlAsala.Id, plans[Annual.Id], asalaStart, today, renewals: 1, suspendReason: null, cancellationToken);
+        await SeedAsync(db, DemoData.AlAsala.Id, plans[Annual.Id], asalaStart, renewals: 1, suspendReason: null, cancellationToken);
 
         // Barber House: a semi-annual period ending in about a week → ExpiringSoon.
-        await SeedAsync(db, DemoData.BarberHouse.Id, plans[SemiAnnual.Id], today.AddDays(9).AddMonths(-6), today, renewals: 0, suspendReason: null, cancellationToken);
+        await SeedAsync(db, DemoData.BarberHouse.Id, plans[SemiAnnual.Id], today.AddDays(9).AddMonths(-6), renewals: 0, suspendReason: null, cancellationToken);
 
         // Lamsat Al Rajul: a monthly period that ended about two weeks ago → Expired (hidden from discovery by D-014).
-        await SeedAsync(db, DemoData.LamsatAlRajul.Id, plans[Monthly.Id], today.AddDays(-45), today, renewals: 0, suspendReason: null, cancellationToken);
+        await SeedAsync(db, DemoData.LamsatAlRajul.Id, plans[Monthly.Id], today.AddDays(-45), renewals: 0, suspendReason: null, cancellationToken);
 
         // Al Madina: covered, but suspended by the platform → Suspended.
-        await SeedAsync(db, DemoData.AlMadina.Id, plans[Annual.Id], today.AddDays(-100), today, renewals: 0, "بانتظار مراجعة العقد", cancellationToken);
+        await SeedAsync(db, DemoData.AlMadina.Id, plans[Annual.Id], today.AddDays(-100), renewals: 0, "بانتظار مراجعة العقد", cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
     }
 
     private static async Task SeedAsync(
-        TrimmeDbContext db, ShopId shopId, SubscriptionPlan plan, DateOnly start, DateOnly today, int renewals, string? suspendReason, CancellationToken cancellationToken)
+        TrimmeDbContext db, ShopId shopId, SubscriptionPlan plan, DateOnly start, int renewals, string? suspendReason, CancellationToken cancellationToken)
     {
         if (await db.Set<ShopSubscription>().AnyAsync(s => s.ShopId == shopId, cancellationToken))
         {
             return;
         }
 
+        // Seeded history: each period is recorded as of its own start date, i.e. as a standard period at the time
+        // (not a back-dated SuperAdmin entry, D-081).
         var subscription = ShopSubscription.Assign(
-            EntityId.New<ShopSubscriptionId>(), shopId, plan, start, plan.PeriodEnd(start), Snapshot(plan, start), null, null, today, SeededAt).Value;
+            EntityId.New<ShopSubscriptionId>(), shopId, plan, start, plan.PeriodEnd(start), Snapshot(plan, start), null, null, null, start, SeededAt).Value;
         for (var i = 0; i < renewals; i++)
         {
             var next = subscription.EndDate.AddDays(1);
-            subscription.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, today, SeededAt);
+            subscription.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, null, next, SeededAt);
         }
 
         if (suspendReason is not null)

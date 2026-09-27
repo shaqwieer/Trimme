@@ -408,7 +408,8 @@
     "plan_no_price": "Add a price before publishing the plan.",
     "subscription_not_found": "This shop has no subscription yet.",
     "subscription_already_assigned": "This shop already has a subscription. Renew it instead.",
-    "resource_conflict": "Someone else saved at the same time. Reload and try again."
+    "resource_conflict": "Someone else saved at the same time. Reload and try again.",
+    "subscription_custom_pricing_required": "A custom duration or a past start date needs a SuperAdmin override with a total price and a reason."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -1046,7 +1047,14 @@
       "overrideEntry": "Override: {changes}",
       "overrideMeta": "{reason} · {date}",
       "changePrice": "price {from} to {to}",
-      "changeEnd": "end {from} to {to}"
+      "changeEnd": "end {from} to {to}",
+      "customNotAllowed": "Custom lengths and past start dates need a SuperAdmin override.",
+      "customTitle": "Custom period (SuperAdmin override)",
+      "customBody": "A custom length or a start date in the past is recorded only with an explicit total price and a reason. The plan price is kept for comparison and the entry is audited.",
+      "customTotal": "Total price for this period (SAR)",
+      "customReason": "Reason for the custom period",
+      "customPlanPrice": "Plan price for one standard period: {price}",
+      "customEntry": "SuperAdmin custom price ({reason}; plan price {standard})"
     },
     "manageLabel": "Manage the subscription of {name}"
   },

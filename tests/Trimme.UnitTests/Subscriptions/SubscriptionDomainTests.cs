@@ -37,8 +37,19 @@ public sealed class SubscriptionDomainTests
     private static PriceSnapshot Snapshot(SubscriptionPlan plan, DateOnly start) =>
         plan.PriceOn(start) is { } p ? new PriceSnapshot(p.Id, p.Amount, p.Currency) : throw new InvalidOperationException("no price");
 
-    private static ShopSubscription Assign(SubscriptionPlan plan, DateOnly start, DateOnly? end = null) =>
-        ShopSubscription.Assign(new ShopSubscriptionId(Guid.CreateVersion7()), Shop, plan, start, end ?? plan.PeriodEnd(start), Snapshot(plan, start), null, null, Today, Now).Value;
+    private static readonly CustomPricing Custom = new(1000m, 1900m, "Agreed with the shop");
+
+    /// <summary>
+    /// History as it was recorded at the time (as of its start date, like the demo seed); a non-standard length takes
+    /// SuperAdmin custom pricing.
+    /// </summary>
+    private static ShopSubscription Assign(SubscriptionPlan plan, DateOnly start, DateOnly? end = null)
+    {
+        var last = end ?? plan.PeriodEnd(start);
+        var custom = last == plan.PeriodEnd(start) ? null : Custom;
+        return ShopSubscription.Assign(
+            new ShopSubscriptionId(Guid.CreateVersion7()), Shop, plan, start, last, Snapshot(plan, start), custom, null, null, start, Now).Value;
+    }
 
     // ------------------------------------------------------------------ period arithmetic
 
@@ -179,13 +190,36 @@ public sealed class SubscriptionDomainTests
     // ------------------------------------------------------------------ subscriptions
 
     [Fact]
-    public void Assign_CannotStartInTheFuture_ButMayBeBackdated()
+    public void Assign_CannotStartInTheFuture_AndABackdatedStartNeedsCustomPricing()
     {
         var plan = NewPlan(prices: [(1900m, D(2020, 1, 1))]);
-        ShopSubscription.Assign(new ShopSubscriptionId(Guid.CreateVersion7()), Shop, plan, Today.AddDays(1), Today.AddDays(40), Snapshot(plan, Today), null, null, Today, Now)
-            .Error!.FieldErrors!["startDate"].ShouldBe(["validation.date_in_future"]);
-        var backdated = Assign(plan, Today.AddDays(-400));
+        ShopSubscription Try(DateOnly start, CustomPricing? custom, DateOnly? end = null) =>
+            ShopSubscription.Assign(
+                new ShopSubscriptionId(Guid.CreateVersion7()), Shop, plan, start, end ?? plan.PeriodEnd(start), Snapshot(plan, start), custom, null, null, Today, Now).Value;
+        Trimme.BuildingBlocks.Domain.Results.Result<ShopSubscription> Attempt(DateOnly start, CustomPricing? custom, DateOnly? end = null) =>
+            ShopSubscription.Assign(
+                new ShopSubscriptionId(Guid.CreateVersion7()), Shop, plan, start, end ?? plan.PeriodEnd(start), Snapshot(plan, start), custom, null, null, Today, Now);
+
+        Attempt(Today.AddDays(1), null).Error!.FieldErrors!["startDate"].ShouldBe(["validation.date_in_future"]);
+
+        // D-081: a past start or a custom length is never priced silently from the plan.
+        Attempt(Today.AddDays(-400), null).Error!.Code.ShouldBe("subscription.custom_pricing_required");
+        Attempt(Today, null, Today.AddDays(1094)).Error!.Code.ShouldBe("subscription.custom_pricing_required");
+        Attempt(Today.AddDays(-400), Custom with { Reason = " " }).Error!.FieldErrors!["reason"].ShouldBe(["validation.reason_required"]);
+        Attempt(Today.AddDays(-400), Custom with { Total = 10.005m }).Error!.FieldErrors!["price"].ShouldBe(["validation.price_invalid"]);
+
+        var backdated = Try(Today.AddDays(-400), Custom);
         backdated.EndDate.ShouldBe(Today.AddDays(-400).AddMonths(12).AddDays(-1));
+        var period = backdated.LatestPeriod;
+        period.Amount.ShouldBe(1000m, "the explicit total");
+        period.StandardAmount.ShouldBe(1900m);
+        period.PricingReason.ShouldBe("Agreed with the shop");
+        period.IsOverridden.ShouldBeTrue();
+
+        var standard = Try(Today, null).LatestPeriod;
+        standard.Amount.ShouldBe(1900m);
+        standard.PricingReason.ShouldBeNull();
+        standard.IsOverridden.ShouldBeFalse();
     }
 
     [Fact]
@@ -194,17 +228,25 @@ public sealed class SubscriptionDomainTests
         var plan = NewPlan(prices: [(1900m, D(2020, 1, 1))]);
         var active = Assign(plan, Today.AddDays(-10));
         active.NextRenewalStart(Today).ShouldBe(active.EndDate.AddDays(1));
-        active.Renew(plan, active.EndDate, active.EndDate.AddDays(30), Snapshot(plan, Today), null, null, Today, Now).Error!.FieldErrors!["startDate"].ShouldBe(["validation.period_overlap"]);
-        active.Renew(plan, active.EndDate.AddDays(2), active.EndDate.AddDays(30), Snapshot(plan, Today), null, null, Today, Now).Error!.FieldErrors!["startDate"].ShouldBe(["validation.period_gap"]);
+        active.Renew(plan, active.EndDate, active.EndDate.AddDays(30), Snapshot(plan, Today), Custom, null, null, Today, Now).Error!.FieldErrors!["startDate"].ShouldBe(["validation.period_overlap"]);
+        active.Renew(plan, active.EndDate.AddDays(2), active.EndDate.AddDays(30), Snapshot(plan, Today), Custom, null, null, Today, Now).Error!.FieldErrors!["startDate"].ShouldBe(["validation.period_gap"]);
         var next = active.EndDate.AddDays(1);
-        active.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, Today, Now).IsSuccess.ShouldBeTrue();
+        active.Renew(plan, next, next.AddDays(29), Snapshot(plan, next), null, null, null, Today, Now).Error!.Code
+            .ShouldBe("subscription.custom_pricing_required", "a custom length needs SuperAdmin pricing");
+        active.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, null, Today, Now).IsSuccess.ShouldBeTrue();
         active.Periods.Count.ShouldBe(2);
         active.PeriodInForce(Today).PeriodStart.ShouldBe(Today.AddDays(-10), "the renewal is in the future; today is still in the first period");
 
         var lapsed = Assign(plan, Today.AddDays(-100), Today.AddDays(-40));
         lapsed.NextRenewalStart(Today).ShouldBe(Today);
-        lapsed.Renew(plan, Today.AddDays(-20), Today.AddDays(10), Snapshot(plan, Today), null, null, Today, Now).IsSuccess.ShouldBeTrue("a past gap is allowed");
+        lapsed.Renew(plan, Today.AddDays(-20), Today.AddDays(10), Snapshot(plan, Today), null, null, null, Today, Now).Error!.Code
+            .ShouldBe("subscription.custom_pricing_required", "a back-dated restart needs SuperAdmin pricing");
+        lapsed.Renew(plan, Today.AddDays(-20), Today.AddDays(10), Snapshot(plan, Today), Custom, null, null, Today, Now).IsSuccess.ShouldBeTrue("a past gap is allowed");
         lapsed.EndDate.ShouldBe(Today.AddDays(10));
+
+        var restartedToday = Assign(plan, Today.AddDays(-100), Today.AddDays(-40));
+        restartedToday.Renew(plan, Today, plan.PeriodEnd(Today), Snapshot(plan, Today), null, null, null, Today, Now).IsSuccess
+            .ShouldBeTrue("restarting today for one interval is a standard renewal");
     }
 
     [Fact]
@@ -214,7 +256,7 @@ public sealed class SubscriptionDomainTests
         var subscription = Assign(plan, Today.AddDays(-10));
         var firstEnd = subscription.EndDate;
         var next = firstEnd.AddDays(1);
-        subscription.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, Today, Now);
+        subscription.Renew(plan, next, plan.PeriodEnd(next), Snapshot(plan, next), null, null, null, Today, Now);
 
         subscription.Override(new SubscriptionOverrideId(Guid.CreateVersion7()), null, firstEnd.AddDays(10), "Goodwill", null, Today, Now)
             .Error!.FieldErrors!["endDate"].ShouldBe(["validation.period_not_latest"]);

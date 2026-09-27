@@ -53,11 +53,20 @@ function useFieldErrors() {
 }
 
 /**
- * Record an activation (no subscription yet) or a renewal (DV-S05): the plan, a start date and either the plan's own
- * period or an explicit number of days; the end date and the price version in force on the start date are previewed
- * from the plan data (never hardcoded). The API records the actual values.
+ * Record an activation (no subscription yet) or a renewal (DV-S05): the plan, a start date and the plan's own period;
+ * the end date and the price version in force on the start date are previewed from the plan data (never hardcoded).
+ * A custom number of days or a start in the past is a SuperAdmin override (D-081): only offered with
+ * `canOverride`, and recorded with an explicit total price and a reason. The API enforces the same rule.
  */
-export function RecordPeriodForm({ subscription, plans }: { subscription: Subscription; plans: Plan[] }) {
+export function RecordPeriodForm({
+  subscription,
+  plans,
+  canOverride = false,
+}: {
+  subscription: Subscription;
+  plans: Plan[];
+  canOverride?: boolean;
+}) {
   const t = useTranslations('adminSubscriptions.panel');
   const tb = useTranslations('billing');
   const tv = useTranslations('validation');
@@ -73,9 +82,17 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
     (renew && usable.some((p) => p.id === subscription.planId) ? subscription.planId : usable[0]?.id) ?? '',
   );
   const [startDate, setStartDate] = useState<LocalDate>(subscription.nextStart);
+  // After a renewal the page refreshes with a later default start; follow it (keeping the success message).
+  const [defaultStart, setDefaultStart] = useState(subscription.nextStart);
+  if (defaultStart !== subscription.nextStart) {
+    setDefaultStart(subscription.nextStart);
+    setStartDate(subscription.nextStart);
+  }
   const [mode, setMode] = useState<'plan' | 'days'>('plan');
   const [days, setDays] = useState('30');
   const [notes, setNotes] = useState('');
+  const [total, setTotal] = useState('');
+  const [reason, setReason] = useState('');
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<string>();
   const { errors, failure, setErrors, reset, handle } = useFieldErrors();
@@ -94,13 +111,22 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
           : undefined
       : undefined;
   const price = plan && startDate ? priceOn(plan.prices, startDate) : undefined;
+  const backdated = /^\d{4}-\d{2}-\d{2}$/.test(startDate) && startDate < subscription.today;
+  const custom = mode === 'days' || backdated;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     reset();
     setDone(undefined);
-    if (mode === 'days' && !validDays) {
-      setErrors({ durationDays: tv('outOfRange') });
+    const next: FieldErrors = {};
+    if (mode === 'days' && !validDays) next.durationDays = tv('outOfRange');
+    if (custom && !canOverride) next.startDate = t('customNotAllowed');
+    if (custom && canOverride) {
+      if (parsePrice(total) === null) next.price = tv(total.trim() === '' ? 'required' : 'priceInvalid');
+      if (reason.trim().length < 5) next.reason = tv('reasonRequired');
+    }
+    if (Object.keys(next).length > 0) {
+      setErrors(next);
       return;
     }
     setPending(true);
@@ -110,6 +136,8 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
         startDate,
         durationDays: mode === 'days' ? dayCount : null,
         notes: notes.trim() || null,
+        price: custom ? parsePrice(total) : null,
+        reason: custom ? reason.trim() : null,
       };
       const result = renew
         ? ensureOk(
@@ -125,6 +153,8 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
             }),
           );
       setNotes('');
+      setTotal('');
+      setReason('');
       setDone(t(renew ? 'renewed' : 'assigned', { date: longDate(result.endDate ?? startDate, locale) }));
       router.refresh();
     } catch (error) {
@@ -159,6 +189,7 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
           label={t('startDate')}
           type="date"
           value={startDate}
+          min={canOverride ? undefined : subscription.today}
           onChange={(e) => setStartDate(e.target.value)}
           dir="ltr"
           error={errors.startDate}
@@ -178,7 +209,7 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
                 interval: plan ? tb(plan.intervalUnit, { count: plan.intervalCount }) : '—',
               }),
             },
-            { value: 'days', label: t('durationDays') },
+            ...(canOverride ? [{ value: 'days', label: t('durationDays') }] : []),
           ]}
         />
         {mode === 'days' && (
@@ -198,7 +229,13 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
         aria-live="polite"
       >
         {end && <span>{t('endPreview', { date: longDate(end, locale) })}</span>}
-        {price ? (
+        {custom ? (
+          <span className="font-semibold">
+            {price
+              ? t('customPlanPrice', { price: formatPrice(price.amount, locale, price.currency) })
+              : t('noPricePreview')}
+          </span>
+        ) : price ? (
           <span className="font-semibold">
             {t('pricePreview', {
               price: formatPrice(price.amount, locale, price.currency),
@@ -209,6 +246,33 @@ export function RecordPeriodForm({ subscription, plans }: { subscription: Subscr
           <span className="text-warning-700">{t('noPricePreview')}</span>
         )}
       </div>
+      {custom && canOverride && (
+        <fieldset
+          className="flex flex-col gap-3 rounded-button border border-warning-500 p-4"
+          data-testid="custom-pricing"
+        >
+          <legend className="px-1 text-label font-bold text-text-primary">{t('customTitle')}</legend>
+          <p className="text-caption text-text-secondary">{t('customBody')}</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <TextField
+              label={t('customTotal')}
+              value={total}
+              onChange={(e) => setTotal(e.target.value)}
+              dir="ltr"
+              inputMode="decimal"
+              autoComplete="off"
+              error={errors.price}
+            />
+          </div>
+          <TextareaField
+            label={t('customReason')}
+            value={reason}
+            maxLength={500}
+            onChange={(e) => setReason(e.target.value)}
+            error={errors.reason}
+          />
+        </fieldset>
+      )}
       <TextareaField
         label={t('notes')}
         helper={t('notesHelper')}

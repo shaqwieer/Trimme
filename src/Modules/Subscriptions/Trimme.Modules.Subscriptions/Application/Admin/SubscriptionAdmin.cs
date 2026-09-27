@@ -23,10 +23,11 @@ internal sealed record ListSubscriptionsQuery(PageRequest Page, SubscriptionStat
 
 internal sealed record GetShopSubscriptionQuery(Guid ShopId) : IQuery<Result<AdminShopSubscriptionResponse>>;
 
-internal sealed record AssignSubscriptionCommand(Guid ShopId, Guid PlanId, DateOnly? StartDate, int? DurationDays, string? Notes)
+internal sealed record AssignSubscriptionCommand(Guid ShopId, Guid PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, decimal? Price, string? Reason)
     : ICommand<Result<AdminShopSubscriptionResponse>>;
 
-internal sealed record RenewSubscriptionCommand(Guid ShopId, Guid? PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, uint Version)
+internal sealed record RenewSubscriptionCommand(
+    Guid ShopId, Guid? PlanId, DateOnly? StartDate, int? DurationDays, string? Notes, decimal? Price, string? Reason, uint Version)
     : ICommand<Result<AdminShopSubscriptionResponse>>;
 
 internal sealed record OverrideSubscriptionCommand(Guid ShopId, decimal? Price, DateOnly? EndDate, string Reason, uint Version)
@@ -42,6 +43,8 @@ internal sealed class AssignSubscriptionValidator : AbstractValidator<AssignSubs
     {
         RuleFor(c => c.DurationDays).InclusiveBetween(1, 1095).When(c => c.DurationDays is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.Notes).MaximumLength(ShopSubscription.MaxReasonLength).WithErrorCode("validation.too_long");
+        RuleFor(c => c.Price).Must(p => p is null || PlanPricing.IsValidAmount(p.Value)).WithErrorCode("validation.price_invalid");
+        RuleFor(c => c.Reason).MaximumLength(ShopSubscription.MaxReasonLength).WithErrorCode("validation.too_long");
     }
 }
 
@@ -51,6 +54,8 @@ internal sealed class RenewSubscriptionValidator : AbstractValidator<RenewSubscr
     {
         RuleFor(c => c.DurationDays).InclusiveBetween(1, 1095).When(c => c.DurationDays is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.Notes).MaximumLength(ShopSubscription.MaxReasonLength).WithErrorCode("validation.too_long");
+        RuleFor(c => c.Price).Must(p => p is null || PlanPricing.IsValidAmount(p.Value)).WithErrorCode("validation.price_invalid");
+        RuleFor(c => c.Reason).MaximumLength(ShopSubscription.MaxReasonLength).WithErrorCode("validation.too_long");
     }
 }
 
@@ -134,6 +139,48 @@ internal static class SubscriptionAdminReader
 
     public static PriceSnapshot Snapshot(PlanPrice price) => new(price.Id, price.Amount, price.Currency);
 
+    public const string OverridePermission = "SuperAdmin.Subscriptions.Override";
+
+    /// <summary>
+    /// Pricing of a new period (D-081). A standard period (starts today or later, one plan interval) records the plan
+    /// price version in force on its start date. A custom duration, a past start or an explicit price needs
+    /// <c>SuperAdmin.Subscriptions.Override</c>, an explicit total and a reason; the plan price it replaces is kept.
+    /// </summary>
+    public static async Task<Result<(PriceSnapshot Price, CustomPricing? Custom)>> PriceAsync(
+        SubscriptionPlan plan, DateOnly start, DateOnly end, DateOnly today, decimal? explicitTotal, string? reason, string currency,
+        ICurrentUser user, IPermissionResolver permissions, CancellationToken cancellationToken)
+    {
+        var inForce = plan.PriceOn(start);
+        if (ShopSubscription.IsStandardPeriod(plan, start, end, today) && explicitTotal is null)
+        {
+            return inForce is null ? PlanErrors.NoPriceOn(start) : (Snapshot(inForce), null);
+        }
+
+        if (user.UserId is not { } userId || !(await permissions.GetPermissionsAsync(userId, cancellationToken)).Contains(OverridePermission))
+        {
+            return SubscriptionErrors.CustomPricingRequired();
+        }
+
+        if (explicitTotal is not { } total)
+        {
+            return PlanErrors.Field("price", "validation.required");
+        }
+
+        if ((reason?.Trim().Length ?? 0) < 5)
+        {
+            return PlanErrors.Field("reason", "validation.reason_required");
+        }
+
+        var snapshot = inForce is null ? new PriceSnapshot(null, total, currency) : Snapshot(inForce);
+        return (snapshot, new CustomPricing(total, inForce?.Amount, reason!.Trim()));
+    }
+
+    public static string PricingSummary(SubscriptionPeriod period) =>
+        period.PricingReason is null
+            ? string.Empty
+            : $"; SuperAdmin custom period, total {PlanReader.Money(period.Amount, period.Currency)}" +
+              (period.StandardAmount is { } standard ? $" instead of {PlanReader.Money(standard, period.Currency)}" : " (no plan price on the start date)");
+
     public static string PeriodSummary(SubscriptionPeriod p, int? priceVersion) =>
         $"{p.PlanNameEn}: {PlanReader.Day(p.PeriodStart)} to {PlanReader.Day(p.PeriodEnd)}, {PlanReader.Money(p.Amount, p.Currency)}" +
         (priceVersion is { } v ? $" (price version {v})" : string.Empty);
@@ -211,7 +258,8 @@ internal sealed class GetShopSubscriptionHandler(TrimmeDbContext db, IAdminDataS
 }
 
 internal sealed class AssignSubscriptionHandler(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IAuditLog audit, TimeProvider clock)
+    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
+    IAuditLog audit, TimeProvider clock)
     : ICommandHandler<AssignSubscriptionCommand, Result<AdminShopSubscriptionResponse>>
 {
     public async Task<Result<AdminShopSubscriptionResponse>> Handle(AssignSubscriptionCommand command, CancellationToken cancellationToken)
@@ -239,13 +287,16 @@ internal sealed class AssignSubscriptionHandler(
         var today = platform.LocalDate(now);
         var start = command.StartDate ?? today;
         var end = command.DurationDays is { } days ? SubscriptionDates.EndAfterDays(start, days) : plan.PeriodEnd(start);
-        if (plan.PriceOn(start) is not { } price)
+        var pricing = await SubscriptionAdminReader.PriceAsync(
+            plan, start, end, today, command.Price, command.Reason, platform.Currency, user, permissions, cancellationToken);
+        if (pricing.IsFailure)
         {
-            return PlanErrors.NoPriceOn(start);
+            return pricing.Error;
         }
 
+        var (price, custom) = pricing.Value;
         var assigned = ShopSubscription.Assign(
-            EntityId.New<ShopSubscriptionId>(), shopId, plan, start, end, SubscriptionAdminReader.Snapshot(price), Trim(command.Notes), user.UserId, today, now);
+            EntityId.New<ShopSubscriptionId>(), shopId, plan, start, end, price, custom, Trim(command.Notes), user.UserId, today, now);
         if (assigned.IsFailure)
         {
             return assigned.Error;
@@ -254,18 +305,23 @@ internal sealed class AssignSubscriptionHandler(
         var subscription = assigned.Value;
         db.Add(subscription);
         await SubscriptionAdminReader.SyncCoverageAsync(db, subscription, cancellationToken);
+        var period = subscription.LatestPeriod;
         audit.Record(new AuditRecord(
             "subscription.assigned", "ShopSubscription", subscription.Id.ToString(), shopId,
-            SubscriptionAdminReader.PeriodSummary(subscription.LatestPeriod, price.VersionNumber), null));
+            SubscriptionAdminReader.PeriodSummary(period, VersionOf(plan, period)) + SubscriptionAdminReader.PricingSummary(period), custom?.Reason));
         await db.SaveChangesAsync(cancellationToken);
         return await SubscriptionAdminReader.ResponseAsync(db, platform, today, shop, subscription, cancellationToken);
     }
 
     private static string? Trim(string? notes) => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+
+    internal static int? VersionOf(SubscriptionPlan plan, SubscriptionPeriod period) =>
+        plan.Prices.FirstOrDefault(p => p.Id == period.PlanPriceId)?.VersionNumber;
 }
 
 internal sealed class RenewSubscriptionHandler(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IAuditLog audit, TimeProvider clock)
+    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
+    IAuditLog audit, TimeProvider clock)
     : ICommandHandler<RenewSubscriptionCommand, Result<AdminShopSubscriptionResponse>>
 {
     public async Task<Result<AdminShopSubscriptionResponse>> Handle(RenewSubscriptionCommand command, CancellationToken cancellationToken)
@@ -297,13 +353,16 @@ internal sealed class RenewSubscriptionHandler(
         var today = platform.LocalDate(now);
         var start = command.StartDate ?? subscription.NextRenewalStart(today);
         var end = command.DurationDays is { } days ? SubscriptionDates.EndAfterDays(start, days) : plan.PeriodEnd(start);
-        if (plan.PriceOn(start) is not { } price)
+        var pricing = await SubscriptionAdminReader.PriceAsync(
+            plan, start, end, today, command.Price, command.Reason, platform.Currency, user, permissions, cancellationToken);
+        if (pricing.IsFailure)
         {
-            return PlanErrors.NoPriceOn(start);
+            return pricing.Error;
         }
 
+        var (price, custom) = pricing.Value;
         var notes = string.IsNullOrWhiteSpace(command.Notes) ? null : command.Notes.Trim();
-        var renewed = subscription.Renew(plan, start, end, SubscriptionAdminReader.Snapshot(price), notes, user.UserId, today, now);
+        var renewed = subscription.Renew(plan, start, end, price, custom, notes, user.UserId, today, now);
         if (renewed.IsFailure)
         {
             return renewed.Error;
@@ -313,7 +372,8 @@ internal sealed class RenewSubscriptionHandler(
         await SubscriptionAdminReader.SyncCoverageAsync(db, subscription, cancellationToken);
         audit.Record(new AuditRecord(
             "subscription.renewed", "ShopSubscription", subscription.Id.ToString(), shopId,
-            SubscriptionAdminReader.PeriodSummary(renewed.Value, price.VersionNumber), null));
+            SubscriptionAdminReader.PeriodSummary(renewed.Value, AssignSubscriptionHandler.VersionOf(plan, renewed.Value)) +
+            SubscriptionAdminReader.PricingSummary(renewed.Value), custom?.Reason));
         await db.SaveChangesAsync(cancellationToken);
         return await SubscriptionAdminReader.ResponseAsync(db, platform, today, shop, subscription, cancellationToken);
     }

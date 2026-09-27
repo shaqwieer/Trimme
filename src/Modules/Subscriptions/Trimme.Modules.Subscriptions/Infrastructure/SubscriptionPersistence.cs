@@ -92,6 +92,8 @@ internal sealed class SubscriptionPeriodConfiguration : IEntityTypeConfiguration
         builder.Property(p => p.Amount).HasPrecision(12, 2);
         builder.Property(p => p.Currency).HasMaxLength(3).IsFixedLength();
         builder.Property(p => p.Notes).HasMaxLength(ShopSubscription.MaxReasonLength);
+        builder.Property(p => p.StandardAmount).HasPrecision(12, 2);
+        builder.Property(p => p.PricingReason).HasMaxLength(ShopSubscription.MaxReasonLength);
 
         // The snapshot points at the exact plan and price version it was charged; neither can be deleted.
         builder.HasOne<SubscriptionPlan>().WithMany().HasForeignKey(p => p.PlanId).OnDelete(DeleteBehavior.Restrict);
