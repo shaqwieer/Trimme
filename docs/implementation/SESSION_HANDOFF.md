@@ -1,7 +1,7 @@
 # TRIMME Session Handoff
 
 - **Updated:** 2026-09-27 (end of Session 4: Phases 06, 07 and 08)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 06 and 07 are pushed and CI-green (runs 36316322648 and 36323449600). Phase 08 and its follow-ups are **pushed** at the user's request; the CI run is recorded in the Phase 08 file.
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 06 and 07 are pushed and CI-green (runs 36316322648 and 36323449600). Phase 08 and its follow-ups are **pushed** at the user's request; CI is green (run 36333734614).
 - **HEAD commit:** `feat: phase 08 custom-period override (D-081) and map pin race fix`, on top of `7054b4e` (review follow-up) and `2f2b42c` (Phase 08). Run `git log --oneline -4`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 08 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
@@ -62,7 +62,7 @@
 - **Ports:** 8025 is taken on this machine. Use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
-1. Confirm the recorded CI run is green (Phase 08 file).
+1. CI for Phase 08 is green (run 36333734614); nothing to push.
 2. Start Phase 09 (`phases/phase-09-*.md`). Re-validate first:
    - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Subscriptions"`
    - `pnpm e2e`

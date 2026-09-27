@@ -183,6 +183,7 @@ rg -n "\b(1900|2400|1100|199)(\.0+)?\b|نصف سنوي|سنوي|شهري|Semi-an
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 217 web tests |
 | Fresh `down -v` + `up --build`, `pnpm e2e` ×3 | PASS — **45/45, 45/45, 45/45** (including the first run on the cold stack) |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS — no hits, no leaks |
+| GitHub Actions on `8ccef02` (pushed at the user's request) | PASS — run 36333734614: web, gitleaks, backend (incl. integration and migrations), compose + Playwright smoke |
 
 **Findings during the gates**
 - **Two "Suspend" buttons.** The shop page showed one for the shop and one for the subscription. The subscription actions are now "Suspend subscription" and "Reinstate subscription".
