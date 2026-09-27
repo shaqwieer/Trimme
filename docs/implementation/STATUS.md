@@ -41,7 +41,7 @@
 | D-064 | Photos and other media are stored in PostgreSQL (`media.media_files`), not on disk (Session 4) |
 
 ## Open decisions
-None are blocking. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078). One default to confirm with the user: a shop **without** a subscription in force is hidden and takes no online bookings (enforcement `HideAndBlockNewOnlineBookings`). Admins can switch it to `None` in Platform settings.
+None are blocking. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078). One default to confirm with the user: a shop **without** a subscription in force is hidden and takes no online bookings (enforcement `HideAndBlockNewOnlineBookings`). Admins can switch it to `None` in Platform settings. **Open question (D-077):** should a custom duration or a back-dated start stay at one interval's recorded price (current), be prorated, or need a SuperAdmin override?
 
 ## Blockers
 None.

@@ -97,9 +97,11 @@ Automated expiry jobs and warning notifications (Phase 15), and payment collecti
 - Currency is formatted per locale.
 
 ## Tests and verification commands
+Smallest decisive re-validation (for the next session):
 ```
-dotnet test --filter Category=Subscriptions
-pnpm exec playwright test superadmin-plans admin-subscriptions
+dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Subscriptions"
+dotnet test --project tests/Trimme.UnitTests -c Release --filter-namespace "*Subscriptions"
+E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 pnpm -C tests/E2E exec playwright test flows/subscriptions.spec.ts
 ```
 
 ## Acceptance criteria
@@ -135,9 +137,9 @@ Session 4, 2026-09-27 (same session as Phases 06–07; the user asked to push Ph
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings, 0 errors |
-| Unit / architecture / integration tests | PASS — 206 / 63 / 113 (Phase 07 end: 171 / 63 / 106) |
+| Unit / architecture / integration tests | PASS — 206 / 63 / 113 at the commit; 114 integration after the review follow-up (Phase 07 end: 171 / 63 / 106) |
 | New unit suite `Subscriptions/SubscriptionDomainTests` (35) | End dates (incl. 31 Jan, 29 Feb + 1 year, a 14-period monthly chain); status boundaries (15 days left = Active, 14 = ExpiringSoon, the last day is covered, the day after = Expired, Suspended wins, None); Riyadh midnight; the price version in force by date; history rules (past date, same date, amount, currency, archived plan); publish/archive; assign/renew/override rules; settings defaults and changed-field names |
-| New integration suite `Subscriptions/SubscriptionTests` (6) + extended `DemoSeedTests` | **Plans:** CRUD with the JSON feature list round-tripping; stale version → 409; a future version becomes current once the clock moves; archive is final; audit text. **Permissions:** Ops, Support and shop denied. **History:** the snapshot is kept after a new price and a plan rename; the renewal takes version 2; two concurrent assigns give one 200 + one 409; overlap, gap, override, suspend and reinstate, with the audit sequence (no phone numbers). **Clock:** status and bookability on a moving clock, SQL-filtered list and counts, enforcement `None`. **Settings:** defaults, ranges, 409, audit, and `migrate` keeps an admin's edits. **Tenancy:** a shop sees only its own subscription. **Seed:** yields Active, ExpiringSoon, Expired and Suspended |
+| New integration suite `Subscriptions/SubscriptionTests` (7; 8 with the follow-up `PlanFeatures_RoundTripThroughTheDatabase_IncludingAnEmptyList`) + extended `DemoSeedTests` | **Plans:** CRUD with the JSON feature list round-tripping; stale version → 409; a future version becomes current once the clock moves; archive is final; audit text. **Permissions:** Ops, Support and shop denied. **History:** the snapshot is kept after a new price and a plan rename; the renewal takes version 2; two concurrent assigns give one 200 + one 409; overlap, gap, override, suspend and reinstate, with the audit sequence (no phone numbers). **Clock:** status and bookability on a moving clock, SQL-filtered list and counts, enforcement `None`. **Settings:** defaults, ranges, 409, audit, and `migrate` keeps an admin's edits. **Tenancy:** a shop sees only its own subscription. **Seed:** yields Active, ExpiringSoon, Expired and Suspended |
 | Integration suite repeat runs | 113/113 on 5 of 6 full runs. The first full run after adding the suite had 3 failures at about 37 s (gallery, professional immutability, one subscription test), which did not reproduce. This is the same pattern as the Phase 07 watch item |
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 212 web tests. 16 are new: period/price previews, plan form, record-period form (incl. plan filtering and API field errors), settings form, and the suspend dialog conflict |
@@ -155,6 +157,11 @@ rg -n "\b(1900|2400|1100|199)(\.0+)?\b|نصف سنوي|سنوي|شهري|Semi-an
   apps/web/src apps/web/messages src -g '!**/Seeding/**' -g '!**/*.test.*' -g '!**/bin/**' -g '!**/obj/**' \
   -g '!**/schema.d.ts' -g '!**/Geocoding/**'
 ```
+
+**Review follow-up (after commit `2f2b42c`)**
+- Added `PlanFeatures_RoundTripThroughTheDatabase_IncludingAnEmptyList`: an empty feature list and edited features re-read from the database, alone and in the list. It passed (Subscriptions namespace 8/8), so no mapping change was needed.
+- The verification commands above now name the real test commands.
+- D-077 records the pricing rule for custom durations and back-dating as an open question for the user.
 
 **Findings during the gates**
 - **Two "Suspend" buttons.** The shop page showed one for the shop and one for the subscription. The subscription actions are now "Suspend subscription" and "Reinstate subscription".

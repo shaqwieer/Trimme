@@ -517,6 +517,17 @@ The user asked in Session 4 to store media such as photos in the database. This 
   - A renewal may also use an Inactive (no longer offered) plan, so existing shops can stay on it; never a Draft or Archived plan.
 - **Override** (SuperAdmin, reason ≥ 5): it changes the price and/or end of the period **in force** (or the latest one after a lapse). Only the latest period's end can move. The previous values are kept in `subscription_overrides`.
 - **Stored only in v1:** plan limits (max professionals/services), trial days and grace days are plan data, but nothing enforces them yet. Grace does not delay `Expired`. They are shown with that note in the editor.
+- **Recorded amount — open question for the user.**
+  - **Current rule.** A period records the price version in force on its **start date**, for **one plan interval**, whatever `durationDays` is chosen.
+  - **Consequences.** An admin with Assign/Renew (for example the Operations Manager) can:
+    - record a long custom duration at one interval's price (a monthly plan for 1,095 days);
+    - by back-dating the start, or restarting a lapsed renewal at the old end + 1, capture an older price version for a period that mostly lies in the future.
+  - Every period is audited with its dates, amount and price version.
+  - **Options:**
+    - (a) keep it as an audited platform-team judgment (current);
+    - (b) prorate the amount by days (amount × days ÷ interval days);
+    - (c) treat a non-interval duration, or a back-date beyond N days, as an override that needs `SuperAdmin.Subscriptions.Override` and a reason.
+  - Until the user decides, (a) stands. v1 collects no payment, so nothing is charged from these values.
 - **Concurrency.** Renew, override, suspend, reinstate and price-add carry the version. Two concurrent activations are stopped by the unique `shop_subscriptions.shop_id` (409, see D-080).
 
 ## D-078 — Coverage read model and the bookability gate — Accepted (Phase 08)

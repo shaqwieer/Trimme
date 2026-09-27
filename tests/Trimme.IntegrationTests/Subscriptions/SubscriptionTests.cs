@@ -165,6 +165,46 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task PlanFeatures_RoundTripThroughTheDatabase_IncludingAnEmptyList()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await ShopTestData.CreateFactoryAsync(postgres, "sub_features", ct);
+        using var super = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
+
+        var body = new
+        {
+            nameAr = "بلا مزايا", nameEn = "No features", descriptionAr = (string?)null, descriptionEn = (string?)null,
+            features = Array.Empty<object>(), maxProfessionals = (int?)null, maxServices = (int?)null, intervalUnit = "Day", intervalCount = 30,
+            trialDays = (int?)null, graceDays = (int?)null, availableToNewShops = true, initialPrice = (decimal?)null,
+        };
+        using var created = await super.PostAsync("/api/v1/admin/subscription-plans", body, ct);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created, await created.Content.ReadAsStringAsync(ct));
+        var plan = await created.JsonAsync(ct);
+        var id = plan.GetProperty("id").GetGuid();
+
+        // Re-read from the database, alone and in the list: an empty feature list stays a list.
+        (await OkJsonAsync(super.GetAsync($"/api/v1/admin/subscription-plans/{id}", ct), ct)).GetProperty("features").GetArrayLength().ShouldBe(0);
+        (await OkJsonAsync(super.GetAsync("/api/v1/admin/subscription-plans", ct), ct)).EnumerateArray()
+            .Single(p => p.GetProperty("id").GetGuid() == id).GetProperty("features").GetArrayLength().ShouldBe(0);
+
+        var update = new
+        {
+            body.nameAr, body.nameEn, body.descriptionAr, body.descriptionEn,
+            features = new[] { new { ar = "ميزة أولى", en = "First" }, new { ar = "ميزة ثانية", en = "Second" } },
+            body.maxProfessionals, body.maxServices, body.intervalUnit, body.intervalCount, body.trialDays, body.graceDays, body.availableToNewShops,
+            version = plan.GetProperty("version").GetUInt32(),
+        };
+        await OkJsonAsync(super.PutAsync($"/api/v1/admin/subscription-plans/{id}", update, ct), ct);
+        var reread = await OkJsonAsync(super.GetAsync($"/api/v1/admin/subscription-plans/{id}", ct), ct);
+        reread.GetProperty("features").EnumerateArray().Select(f => f.GetProperty("ar").GetString() + "|" + f.GetProperty("en").GetString())
+            .ShouldBe(["ميزة أولى|First", "ميزة ثانية|Second"]);
+
+        // And back to none.
+        await OkJsonAsync(super.PutAsync($"/api/v1/admin/subscription-plans/{id}", update with { features = update.features[..0], version = reread.GetProperty("version").GetUInt32() }, ct), ct);
+        (await OkJsonAsync(super.GetAsync($"/api/v1/admin/subscription-plans/{id}", ct), ct)).GetProperty("features").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
     public async Task NonSuperAdmin_CannotManagePlans_OrOverride()
     {
         var ct = TestContext.Current.CancellationToken;

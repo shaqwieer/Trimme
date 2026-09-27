@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-09-27 (end of Session 4: Phases 06, 07 and 08)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 06 and 07 are pushed and CI-green (runs 36316322648 and 36323449600). Phase 08 is committed locally and **not pushed**; push only when the user asks.
-- **HEAD commit:** Phase 08, `feat: phase 08 subscriptions and platform settings`, on top of `22fadaf`. Run `git log --oneline -4` to see it.
+- **HEAD commit:** a docs/test review follow-up on top of `2f2b42c` (Phase 08, `feat: phase 08 subscriptions and platform settings`), which sits on `22fadaf`. Run `git log --oneline -4`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 08 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
 - **Current phase:** 08 is complete. Phase 09 has not started.
@@ -31,7 +31,7 @@
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
-| Unit / architecture / integration tests | PASS, 206 / 63 / 113. Integration was 113/113 on 5 of 6 full runs; one early run had 3 unreproduced timeouts at about 37 s (watch item) |
+| Unit / architecture / integration tests | PASS, 206 / 63 / 113 at the commit (114 after the review follow-up, which added a features round-trip test; Subscriptions namespace 8/8). Integration was 113/113 on 5 of 6 full runs; one early run had 3 unreproduced timeouts at about 37 s (watch item) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 212 web tests |
 | Compose upgrade from the Phase 07 volume; then `down -v` + `up --build` + `pnpm e2e` ×3 | Final fresh stack: 44/45, 45/45, 45/45. The single failure was a cold-stack 5 s wait in the Phase 04 OTP flow. An earlier stack found two real issues, both fixed (see the phase file) |
@@ -49,6 +49,7 @@
 ## Known issues or blockers
 - **Phase 08 not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 08 file and MASTER_PLAN.
 - **Default to confirm with the user (D-078).** A shop without a subscription in force is hidden from discovery and takes no online bookings. Setup for Phases 10–12 tests must assign a subscription, or set the enforcement to `None`.
+- **Open question (D-077).** Custom durations and back-dated starts record one interval's price. Should that stay an audited judgment, be prorated, or need a SuperAdmin override?
 - **Watch item: timing.**
   - Intermittent integration timeouts at about 31–37 s (Phases 07 and 08), not reproduced.
   - The first E2E run on a freshly built stack occasionally exceeds a 5 s wait in an older flow.
