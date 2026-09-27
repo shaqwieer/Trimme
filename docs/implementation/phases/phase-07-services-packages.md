@@ -138,6 +138,8 @@ Session 4, 2026-09-27 (same session as Phase 06, at the user's request).
 - **Admin E2E, 409 conflict.** Under parallel load the admin flow submitted the support override before `router.refresh()` delivered the new version after unhiding, and got a correct 409. The test now waits for the refreshed page. A person sees the "reload and edit again" message.
 - **Intermittent "socket hang up".** API requests through the web container hit the Node keep-alive race; fixed by the web image's `KEEP_ALIVE_TIMEOUT`.
 
+**Commit and CI:** `9cb2593` + `22fadaf` (review follow-up), pushed; GitHub Actions [run 36323449600](https://github.com/shaqwieer/Trimme/actions/runs/36323449600) on `22fadaf` is green (backend incl. integration, web, secret scan, Docker stack + Playwright).
+
 **Database and migrations:** `ServicesPackages` (`services.service_categories`, `shop_services`, `service_packages`, `service_package_items`, `professional_services`). Applied locally only: Testcontainers databases and the compose volume (upgraded, then recreated from empty).
 
 **Smallest decisive re-verification for the next session:** `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Services"`, then `pnpm e2e` (`flows/services.spec.ts`).

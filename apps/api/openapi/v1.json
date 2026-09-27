@@ -348,6 +348,90 @@
         }
       }
     },
+    "/api/v1/admin/subscriptions": {
+      "get": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Shop subscriptions by status (most urgent end date first), with counts over every shop.",
+        "operationId": "ListSubscriptions",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SubscriptionStatus"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSubscriptionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/subscription": {
+      "get": {
+        "tags": [
+          "Shop: subscription"
+        ],
+        "summary": "The signed-in shop\u0027s own subscription and renewal history (read-only).",
+        "operationId": "GetShopSubscription",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -4500,6 +4584,898 @@
           }
         }
       }
+    },
+    "/api/v1/admin/subscription-plans": {
+      "get": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Every plan in display order, with its current price and full price history.",
+        "operationId": "ListSubscriptionPlans",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Creates a draft plan (SuperAdmin).",
+        "operationId": "CreateSubscriptionPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/{planId}": {
+      "get": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "One plan with its price history.",
+        "operationId": "GetSubscriptionPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Edits a plan\u0027s details (SuperAdmin; optimistic concurrency). Existing subscriptions keep their snapshots.",
+        "operationId": "UpdateSubscriptionPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/{planId}/publish": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Offers the plan (it needs a price).",
+        "operationId": "PublishSubscriptionPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/{planId}/deactivate": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Stops offering the plan; existing subscriptions may still renew on it.",
+        "operationId": "DeactivateSubscriptionPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/{planId}/archive": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Retires the plan for good; history keeps it.",
+        "operationId": "ArchiveSubscriptionPlan",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/order": {
+      "put": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Sets the display order of every non-archived plan (SuperAdmin).",
+        "operationId": "ReorderSubscriptionPlans",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/subscription-plans/{planId}/prices": {
+      "get": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "The plan\u0027s price versions, newest first.",
+        "operationId": "ListSubscriptionPlanPrices",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanPriceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Adds a price version from a date (today or later). It applies only to periods starting on or after that date.",
+        "operationId": "AddSubscriptionPlanPrice",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPlanPriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription": {
+      "get": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "A shop\u0027s subscription: status, current period, every renewal and override.",
+        "operationId": "GetAdminShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription/assign": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Starts the shop\u0027s subscription on a published plan; the price in force on the start date is recorded.",
+        "operationId": "AssignShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription/renew": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Records a renewal period (no payment in v1); earlier periods never change.",
+        "operationId": "RenewShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription/override": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "SuperAdmin shop-specific price and/or end date for the period in force, with a reason (audited).",
+        "operationId": "OverrideShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription/suspend": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Suspends the subscription (reason required). Existing bookings are not touched.",
+        "operationId": "SuspendShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/subscription/reinstate": {
+      "post": {
+        "tags": [
+          "Admin: subscriptions"
+        ],
+        "summary": "Lifts a suspension.",
+        "operationId": "ReinstateShopSubscription",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReinstateSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin: settings"
+        ],
+        "summary": "The platform settings: booking policy, reminders, subscription enforcement, map defaults.",
+        "operationId": "GetPlatformSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: settings"
+        ],
+        "summary": "Edits the platform settings (audited, optimistic concurrency).",
+        "operationId": "UpdatePlatformSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlatformSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4522,6 +5498,29 @@
             "type": "string"
           }
         }
+      },
+      "AddPlanPriceRequest": {
+        "required": [
+          "amount",
+          "effectiveFrom",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A new price version in the platform currency, effective from today or a later date."
       },
       "AdminCategoryResponse": {
         "required": [
@@ -5174,6 +6173,254 @@
         },
         "description": "A shop in the admin list."
       },
+      "AdminShopSubscriptionResponse": {
+        "required": [
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "exists",
+          "status",
+          "planId",
+          "planNameAr",
+          "planNameEn",
+          "startDate",
+          "endDate",
+          "daysRemaining",
+          "currentAmount",
+          "currency",
+          "isSuspended",
+          "suspensionReason",
+          "today",
+          "nextStart",
+          "expiringSoonThresholdDays",
+          "periods",
+          "overrides",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "exists": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "planId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "planNameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "planNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "daysRemaining": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isSuspended": {
+            "type": "boolean"
+          },
+          "suspensionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiringSoonThresholdDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionPeriodResponse"
+            }
+          },
+          "overrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionOverrideResponse"
+            }
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "A shop\u0027s subscription for admins. \u0060Exists\u0060 is false (status \u0060None\u0060) until a plan is assigned;\n\u0060NextStart\u0060 is the default start date of the next assignment or renewal."
+      },
+      "AdminSubscriptionListItem": {
+        "required": [
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "shopSlug",
+          "planId",
+          "planNameAr",
+          "planNameEn",
+          "startDate",
+          "endDate",
+          "daysRemaining",
+          "status",
+          "currentAmount",
+          "currency",
+          "renewalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planNameAr": {
+            "type": "string"
+          },
+          "planNameEn": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "daysRemaining": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "currentAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "renewalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminSubscriptionListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts",
+          "expiringSoonThresholdDays",
+          "today"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminSubscriptionListItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/SubscriptionCounts"
+          },
+          "expiringSoonThresholdDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "AdminWhatsAppResponse": {
         "required": [
           "masked",
@@ -5216,6 +6463,48 @@
             "format": "date-time"
           }
         }
+      },
+      "AssignSubscriptionRequest": {
+        "required": [
+          "planId",
+          "startDate",
+          "durationDays",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "durationDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Starts a shop\u0027s subscription. \u0060StartDate\u0060 defaults to today (it cannot be in the future); the end follows the\nplan\u0027s interval unless \u0060DurationDays\u0060 is given."
+      },
+      "BillingIntervalUnit": {
+        "enum": [
+          "Day",
+          "Month"
+        ]
       },
       "CatalogStateFilter": {
         "enum": [
@@ -5296,6 +6585,99 @@
             "type": "boolean"
           }
         }
+      },
+      "CreatePlanRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "features",
+          "maxProfessionals",
+          "maxServices",
+          "intervalUnit",
+          "intervalCount",
+          "trialDays",
+          "graceDays",
+          "availableToNewShops",
+          "initialPrice"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "features": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PlanFeatureDto"
+            }
+          },
+          "maxProfessionals": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxServices": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "intervalUnit": {
+            "$ref": "#/components/schemas/BillingIntervalUnit"
+          },
+          "intervalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trialDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "graceDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "availableToNewShops": {
+            "type": "boolean"
+          },
+          "initialPrice": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A new plan (Draft). \u0060InitialPrice\u0060, when given, becomes price version 1 from today."
       },
       "CreateProfessionalRequest": {
         "required": [
@@ -5855,6 +7237,39 @@
         },
         "description": "Support correction of one shop service. A reason is required and the change is audited."
       },
+      "OverrideSubscriptionRequest": {
+        "required": [
+          "price",
+          "endDate",
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "SuperAdmin override of the period in force: a shop-specific price and/or end date, with a reason."
+      },
       "PackageItemResponse": {
         "required": [
           "serviceId",
@@ -6002,6 +7417,12 @@
         },
         "description": "The paged envelope every list endpoint returns."
       },
+      "PeriodKind": {
+        "enum": [
+          "Assigned",
+          "Renewed"
+        ]
+      },
       "PermissionResponse": {
         "required": [
           "code",
@@ -6018,6 +7439,308 @@
           },
           "userType": {
             "type": "string"
+          }
+        }
+      },
+      "PlanFeatureDto": {
+        "required": [
+          "ar",
+          "en"
+        ],
+        "type": "object",
+        "properties": {
+          "ar": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        }
+      },
+      "PlanOrderRequest": {
+        "required": [
+          "orderedIds"
+        ],
+        "type": "object",
+        "properties": {
+          "orderedIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "Every non-archived plan, in the new order."
+      },
+      "PlanPriceResponse": {
+        "required": [
+          "id",
+          "versionNumber",
+          "amount",
+          "currency",
+          "effectiveFrom",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PlanResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "features",
+          "maxProfessionals",
+          "maxServices",
+          "intervalUnit",
+          "intervalCount",
+          "trialDays",
+          "graceDays",
+          "availableToNewShops",
+          "status",
+          "displayOrder",
+          "currentPrice",
+          "upcomingPrice",
+          "prices",
+          "subscriptionCount",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanFeatureDto"
+            }
+          },
+          "maxProfessionals": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxServices": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "intervalUnit": {
+            "$ref": "#/components/schemas/BillingIntervalUnit"
+          },
+          "intervalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trialDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "graceDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "availableToNewShops": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlanStatus"
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentPrice": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanPriceResponse"
+              }
+            ]
+          },
+          "upcomingPrice": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanPriceResponse"
+              }
+            ]
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanPriceResponse"
+            }
+          },
+          "subscriptionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A plan as SuperAdmin manages it. \u0060CurrentPrice\u0060 is the version in force today (platform calendar) and\n\u0060UpcomingPrice\u0060 the next scheduled one; \u0060Prices\u0060 is the full history, newest first."
+      },
+      "PlanStatus": {
+        "enum": [
+          "Draft",
+          "Published",
+          "Inactive",
+          "Archived"
+        ],
+        "description": "Draft (being prepared) \u2192 Published (offered) \u2192 Inactive (not offered, may return) \u2192 Archived (final)."
+      },
+      "PlatformSettingsResponse": {
+        "required": [
+          "minLeadTimeMinutes",
+          "bookingHorizonDays",
+          "slotStepMinutes",
+          "cancellationCutoffMinutes",
+          "reviewWindowDays",
+          "reminderOffsetMinutes",
+          "expiringSoonThresholdDays",
+          "expiredSubscriptionEnforcement",
+          "hidePausedShopsFromDiscovery",
+          "defaultLocale",
+          "currency",
+          "timeZone",
+          "countryCode",
+          "mapDefaultLatitude",
+          "mapDefaultLongitude",
+          "mapDefaultZoom",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingHorizonDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancellationCutoffMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reviewWindowDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reminderOffsetMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiringSoonThresholdDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiredSubscriptionEnforcement": {
+            "$ref": "#/components/schemas/SubscriptionEnforcement"
+          },
+          "hidePausedShopsFromDiscovery": {
+            "type": "boolean"
+          },
+          "defaultLocale": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "mapDefaultLatitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "mapDefaultLongitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "mapDefaultZoom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
           }
         }
       },
@@ -6492,6 +8215,62 @@
           }
         },
         "description": "A published shop\u0027s basic profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02)."
+      },
+      "ReinstateSubscriptionRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
+      },
+      "RenewSubscriptionRequest": {
+        "required": [
+          "planId",
+          "startDate",
+          "durationDays",
+          "notes",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "durationDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Records a renewal; the plan defaults to the current one and the start to the day after the current end."
       },
       "ReorderRequest": {
         "required": [
@@ -7135,6 +8914,40 @@
         },
         "description": "The signed-in shop user\u0027s own shop (\u0060GET /api/v1/shop/me\u0060). Shop-facing contract: it must never carry customer\ncontact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it."
       },
+      "ShopRenewalResponse": {
+        "required": [
+          "periodStart",
+          "periodEnd",
+          "planNameAr",
+          "planNameEn",
+          "amount",
+          "currency"
+        ],
+        "type": "object",
+        "properties": {
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "planNameAr": {
+            "type": "string"
+          },
+          "planNameEn": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
       "ShopServiceResponse": {
         "required": [
           "id",
@@ -7241,6 +9054,74 @@
           null
         ]
       },
+      "ShopSubscriptionResponse": {
+        "required": [
+          "status",
+          "planNameAr",
+          "planNameEn",
+          "startDate",
+          "endDate",
+          "daysRemaining",
+          "elapsedPercent",
+          "expiringSoonThresholdDays",
+          "hiddenFromDiscovery",
+          "renewals"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "planNameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "planNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "daysRemaining": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "elapsedPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiringSoonThresholdDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hiddenFromDiscovery": {
+            "type": "boolean"
+          },
+          "renewals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopRenewalResponse"
+            }
+          }
+        },
+        "description": "The signed-in shop\u0027s own subscription, read-only (renewals go through the platform admins)."
+      },
       "SignInResponse": {
         "required": [
           "isNewUser",
@@ -7269,6 +9150,205 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "SubscriptionCounts": {
+        "required": [
+          "active",
+          "expiringSoon",
+          "expired",
+          "suspended",
+          "none"
+        ],
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiringSoon": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suspended": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "none": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Counts over every shop (a shop without a subscription counts as \u0060None\u0060)."
+      },
+      "SubscriptionEnforcement": {
+        "enum": [
+          "None",
+          "HideAndBlockNewOnlineBookings"
+        ],
+        "description": "What happens to a shop whose platform subscription is not in force (D-014)."
+      },
+      "SubscriptionOverrideResponse": {
+        "required": [
+          "id",
+          "periodId",
+          "previousAmount",
+          "newAmount",
+          "previousEnd",
+          "newEnd",
+          "reason",
+          "overriddenAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "previousAmount": {
+            "type": "number",
+            "format": "double"
+          },
+          "newAmount": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "previousEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "newEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "overriddenAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubscriptionPeriodResponse": {
+        "required": [
+          "id",
+          "kind",
+          "planId",
+          "planNameAr",
+          "planNameEn",
+          "periodStart",
+          "periodEnd",
+          "planPriceId",
+          "priceVersionNumber",
+          "amount",
+          "currency",
+          "isOverridden",
+          "notes",
+          "recordedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PeriodKind"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planNameAr": {
+            "type": "string"
+          },
+          "planNameEn": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "planPriceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priceVersionNumber": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "isOverridden": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "One recorded period with the plan name and price as they were charged (never recomputed)."
+      },
+      "SubscriptionStatus": {
+        "enum": [
+          "None",
+          "Active",
+          "ExpiringSoon",
+          "Expired",
+          "Suspended"
+        ],
+        "description": "Spec \u00A715 statuses. \u0060None\u0060 is a shop that has never had a subscription."
+      },
+      "SuspendSubscriptionRequest": {
+        "required": [
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
           }
         }
       },
@@ -7327,6 +9407,167 @@
           }
         },
         "description": "The shop\u0027s own edit. Send the whole form: fields locked by the admin policy must keep their current value."
+      },
+      "UpdatePlanRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "features",
+          "maxProfessionals",
+          "maxServices",
+          "intervalUnit",
+          "intervalCount",
+          "trialDays",
+          "graceDays",
+          "availableToNewShops",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "features": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PlanFeatureDto"
+            }
+          },
+          "maxProfessionals": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxServices": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "intervalUnit": {
+            "$ref": "#/components/schemas/BillingIntervalUnit"
+          },
+          "intervalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trialDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "graceDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "availableToNewShops": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Edits a plan\u0027s details; prices change only through a new price version."
+      },
+      "UpdatePlatformSettingsRequest": {
+        "required": [
+          "minLeadTimeMinutes",
+          "bookingHorizonDays",
+          "slotStepMinutes",
+          "cancellationCutoffMinutes",
+          "reviewWindowDays",
+          "reminderOffsetMinutes",
+          "expiringSoonThresholdDays",
+          "expiredSubscriptionEnforcement",
+          "hidePausedShopsFromDiscovery",
+          "mapDefaultLatitude",
+          "mapDefaultLongitude",
+          "mapDefaultZoom",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingHorizonDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancellationCutoffMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reviewWindowDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reminderOffsetMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiringSoonThresholdDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiredSubscriptionEnforcement": {
+            "$ref": "#/components/schemas/SubscriptionEnforcement"
+          },
+          "hidePausedShopsFromDiscovery": {
+            "type": "boolean"
+          },
+          "mapDefaultLatitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "mapDefaultLongitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "mapDefaultZoom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The editable platform settings; a stale \u0060Version\u0060 answers 409."
       },
       "UpdateProfessionalRequest": {
         "required": [
@@ -7602,6 +9843,12 @@
       "name": "Public"
     },
     {
+      "name": "Admin: subscriptions"
+    },
+    {
+      "name": "Shop: subscription"
+    },
+    {
       "name": "Admin: identity"
     },
     {
@@ -7615,6 +9862,9 @@
     },
     {
       "name": "Admin: services"
+    },
+    {
+      "name": "Admin: settings"
     }
   ]
 }

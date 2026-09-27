@@ -27,6 +27,8 @@ public sealed partial class TenancyRules
     {
         [typeof(AuditEntry)] = "Platform audit trail; shops never read it.",
         [typeof(Trimme.Modules.Shops.Domain.ShopLocation)] = "Owned value stored in the shop row itself; its key is that shop's id.",
+        [typeof(Trimme.Modules.Subscriptions.Domain.SubscriptionCoverage)] =
+            "Platform read model (end date, suspended flag) that discovery and booking gates read for any shop; no commercial data (D-078).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

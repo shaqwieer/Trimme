@@ -312,6 +312,113 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("audit_entries", "administration");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Administration.Domain.PlatformSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BookingHorizonDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("booking_horizon_days");
+
+                    b.Property<int>("CancellationCutoffMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("cancellation_cutoff_minutes");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character(2)")
+                        .HasColumnName("country_code")
+                        .IsFixedLength();
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<string>("DefaultLocale")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("default_locale");
+
+                    b.Property<string>("ExpiredSubscriptionEnforcement")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("expired_subscription_enforcement");
+
+                    b.Property<int>("ExpiringSoonThresholdDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("expiring_soon_threshold_days");
+
+                    b.Property<bool>("HidePausedShopsFromDiscovery")
+                        .HasColumnType("boolean")
+                        .HasColumnName("hide_paused_shops_from_discovery");
+
+                    b.Property<double>("MapDefaultLatitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("map_default_latitude");
+
+                    b.Property<double>("MapDefaultLongitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("map_default_longitude");
+
+                    b.Property<int>("MapDefaultZoom")
+                        .HasColumnType("integer")
+                        .HasColumnName("map_default_zoom");
+
+                    b.Property<int>("MinLeadTimeMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_lead_time_minutes");
+
+                    b.Property<int>("ReminderOffsetMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("reminder_offset_minutes");
+
+                    b.Property<int>("ReviewWindowDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("review_window_days");
+
+                    b.Property<int>("SlotStepMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("slot_step_minutes");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("time_zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_platform_settings");
+
+                    b.ToTable("platform_settings", "administration", t =>
+                        {
+                            t.HasCheckConstraint("ck_platform_settings_ranges", "min_lead_time_minutes BETWEEN 0 AND 1440 AND booking_horizon_days BETWEEN 1 AND 365 AND cancellation_cutoff_minutes BETWEEN 0 AND 10080 AND review_window_days BETWEEN 1 AND 90 AND reminder_offset_minutes BETWEEN 5 AND 1440 AND expiring_soon_threshold_days BETWEEN 1 AND 90 AND map_default_zoom BETWEEN 3 AND 18");
+
+                            t.HasCheckConstraint("ck_platform_settings_singleton", "id = '0199a0de-0000-7000-8000-00000000c0de'");
+                        });
+                });
+
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1372,6 +1479,412 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("shops", "shops");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_plan_prices");
+
+                    b.HasIndex("PlanId", "EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ix_plan_prices_plan_id_effective_from");
+
+                    b.HasIndex("PlanId", "VersionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_plan_prices_plan_id_version_number");
+
+                    b.ToTable("plan_prices", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_plan_prices_amount", "amount >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.ShopSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsSuspended")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_suspended");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("suspension_reason");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_subscriptions");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_shop_subscriptions_shop_id_id");
+
+                    b.HasIndex("EndDate")
+                        .HasDatabaseName("ix_shop_subscriptions_end_date");
+
+                    b.HasIndex("PlanId")
+                        .HasDatabaseName("ix_shop_subscriptions_plan_id");
+
+                    b.HasIndex("ShopId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shop_subscriptions_shop_id");
+
+                    b.ToTable("shop_subscriptions", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_shop_subscriptions_dates", "end_date >= start_date");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionCoverage", b =>
+                {
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsSuspended")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_suspended");
+
+                    b.HasKey("ShopId")
+                        .HasName("pk_subscription_coverage");
+
+                    b.HasIndex("EndDate")
+                        .HasDatabaseName("ix_subscription_coverage_end_date");
+
+                    b.ToTable("subscription_coverage", "subscriptions");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionOverride", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("NewAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("new_amount");
+
+                    b.Property<DateOnly?>("NewEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("new_end");
+
+                    b.Property<DateTimeOffset>("OverriddenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("overridden_at");
+
+                    b.Property<Guid?>("OverriddenBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("overridden_by");
+
+                    b.Property<Guid>("PeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("period_id");
+
+                    b.Property<decimal>("PreviousAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("previous_amount");
+
+                    b.Property<DateOnly>("PreviousEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("previous_end");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscription_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_subscription_overrides");
+
+                    b.HasIndex("ShopId", "PeriodId")
+                        .HasDatabaseName("ix_subscription_overrides_shop_id_period_id");
+
+                    b.HasIndex("ShopId", "SubscriptionId")
+                        .HasDatabaseName("ix_subscription_overrides_shop_id_subscription_id");
+
+                    b.ToTable("subscription_overrides", "subscriptions");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<bool>("IsOverridden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_overridden");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<string>("PlanNameAr")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("plan_name_ar");
+
+                    b.Property<string>("PlanNameEn")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("plan_name_en");
+
+                    b.Property<Guid?>("PlanPriceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_price_id");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid?>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscription_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_subscription_periods");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_subscription_period_shop_id_id");
+
+                    b.HasIndex("PlanId")
+                        .HasDatabaseName("ix_subscription_periods_plan_id");
+
+                    b.HasIndex("PlanPriceId")
+                        .HasDatabaseName("ix_subscription_periods_plan_price_id");
+
+                    b.HasIndex("ShopId", "PeriodStart")
+                        .HasDatabaseName("ix_subscription_periods_shop_id_period_start");
+
+                    b.HasIndex("ShopId", "SubscriptionId")
+                        .HasDatabaseName("ix_subscription_periods_shop_id_subscription_id");
+
+                    b.ToTable("subscription_periods", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_subscription_periods_amount", "amount >= 0");
+
+                            t.HasCheckConstraint("ck_subscription_periods_dates", "period_end >= period_start");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AvailableToNewShops")
+                        .HasColumnType("boolean")
+                        .HasColumnName("available_to_new_shops");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DescriptionAr")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_ar");
+
+                    b.Property<string>("DescriptionEn")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description_en");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<int?>("GraceDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("grace_days");
+
+                    b.Property<int>("IntervalCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("interval_count");
+
+                    b.Property<string>("IntervalUnit")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("interval_unit");
+
+                    b.Property<int?>("MaxProfessionals")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_professionals");
+
+                    b.Property<int?>("MaxServices")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_services");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name_en");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("TrialDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("trial_days");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_subscription_plans");
+
+                    b.HasIndex("DisplayOrder")
+                        .HasDatabaseName("ix_subscription_plans_display_order");
+
+                    b.ToTable("subscription_plans", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_subscription_plans_interval", "interval_count >= 1");
+
+                            t.HasCheckConstraint("ck_subscription_plans_limits", "(max_professionals IS NULL OR max_professionals >= 1) AND (max_services IS NULL OR max_services >= 1) AND (trial_days IS NULL OR trial_days BETWEEN 0 AND 365) AND (grace_days IS NULL OR grace_days BETWEEN 0 AND 365)");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Trimme.Modules.Identity.Infrastructure.Persistence.ApplicationRole", null)
@@ -1679,9 +2192,146 @@ namespace Trimme.Migrations.Migrations
                     b.Navigation("Location");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>
+                {
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", null)
+                        .WithMany("Prices")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_plan_prices_subscription_plans_plan_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.ShopSubscription", b =>
+                {
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_subscriptions_subscription_plan_plan_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_subscriptions_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionCoverage", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_coverage_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionOverride", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_overrides_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.SubscriptionPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "PeriodId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_overrides_subscription_period_shop_id_period_id");
+
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.ShopSubscription", null)
+                        .WithMany("Overrides")
+                        .HasForeignKey("ShopId", "SubscriptionId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_overrides_shop_subscriptions_shop_id_subscript");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionPeriod", b =>
+                {
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_periods_subscription_plan_plan_id");
+
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.PlanPrice", null)
+                        .WithMany()
+                        .HasForeignKey("PlanPriceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_subscription_periods_plan_prices_plan_price_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_periods_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.ShopSubscription", null)
+                        .WithMany("Periods")
+                        .HasForeignKey("ShopId", "SubscriptionId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_subscription_periods_shop_subscriptions_shop_id_subscriptio");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", b =>
+                {
+                    b.OwnsMany("Trimme.Modules.Subscriptions.Domain.PlanFeature", "Features", b1 =>
+                        {
+                            b1.Property<Guid>("SubscriptionPlanId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired();
+
+                            b1.Property<string>("En")
+                                .IsRequired();
+
+                            b1.HasKey("SubscriptionPlanId", "__synthesizedOrdinal");
+
+                            b1.ToTable("subscription_plans", "subscriptions");
+
+                            b1
+                                .ToJson("features")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SubscriptionPlanId")
+                                .HasConstraintName("fk_subscription_plans_subscription_plans_subscription_plan_id");
+                        });
+
+                    b.Navigation("Features");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ServicePackage", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.ShopSubscription", b =>
+                {
+                    b.Navigation("Overrides");
+
+                    b.Navigation("Periods");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", b =>
+                {
+                    b.Navigation("Prices");
                 });
 #pragma warning restore 612, 618
         }

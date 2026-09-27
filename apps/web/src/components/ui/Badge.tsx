@@ -55,7 +55,7 @@ export const BOOKING_STATUSES = [
 ] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-export const SUBSCRIPTION_STATUSES = ['Active', 'ExpiringSoon', 'Expired', 'Suspended'] as const;
+export const SUBSCRIPTION_STATUSES = ['Active', 'ExpiringSoon', 'Expired', 'Suspended', 'None'] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
 const bookingTone: Record<BookingStatus, BadgeTone> = {
@@ -73,6 +73,7 @@ const subscriptionTone: Record<SubscriptionStatus, BadgeTone> = {
   ExpiringSoon: 'warning',
   Expired: 'danger',
   Suspended: 'neutral',
+  None: 'neutral',
 };
 
 type StatusBadgeProps =

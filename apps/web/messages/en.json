@@ -202,7 +202,8 @@
       "Active": "Active",
       "ExpiringSoon": "Expiring soon",
       "Expired": "Expired",
-      "Suspended": "Suspended"
+      "Suspended": "Suspended",
+      "None": "No subscription"
     }
   },
   "validation": {
@@ -235,7 +236,17 @@
     "priceInvalid": "Enter a price from 0 to 100,000 with at most two decimals",
     "durationInvalid": "Choose a duration in 5-minute steps, up to 8 hours",
     "packageItems": "Choose 2 to 10 different services",
-    "orderMismatch": "The list changed — reload the page and reorder again"
+    "orderMismatch": "The list changed — reload the page and reorder again",
+    "dateInPast": "Choose today or a later date",
+    "dateInFuture": "The start date cannot be in the future",
+    "priceDateTaken": "A price version already starts on this date",
+    "planNotOffered": "This plan cannot be used here",
+    "planNoPrice": "The plan has no price on this start date",
+    "periodOverlap": "This overlaps the current period; start after it ends",
+    "periodGap": "Start the day after the current end, or no later than today",
+    "periodNotLatest": "Only the latest period's end date can change",
+    "outOfRange": "This value is out of range",
+    "tooMany": "Too many items"
   },
   "auth": {
     "meta": {
@@ -391,7 +402,13 @@
     "package_not_found": "The package was not found.",
     "service_category_not_found": "The category was not found.",
     "catalog_archived": "An archived item cannot be changed.",
-    "service_in_use": "The service is used in a package or in booking history — archive it instead of deleting."
+    "service_in_use": "The service is used in a package or in booking history — archive it instead of deleting.",
+    "plan_not_found": "The plan was not found.",
+    "plan_archived": "This plan is archived and cannot change.",
+    "plan_no_price": "Add a price before publishing the plan.",
+    "subscription_not_found": "This shop has no subscription yet.",
+    "subscription_already_assigned": "This shop already has a subscription. Renew it instead.",
+    "resource_conflict": "Someone else saved at the same time. Reload and try again."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -457,7 +474,8 @@
       "profile": "Profile & images",
       "location": "Location",
       "users": "Accounts",
-      "professionals": "Professionals"
+      "professionals": "Professionals",
+      "subscription": "Subscription"
     },
     "sections": {
       "profile": "Shop profile",
@@ -854,5 +872,244 @@
       "saved": "Service assignment saved.",
       "inactive": "Off"
     }
+  },
+  "billing": {
+    "Month": "{count, plural, one {# month} other {# months}}",
+    "Day": "{count, plural, one {# day} other {# days}}"
+  },
+  "subscriptionPlans": {
+    "title": "Subscription plans",
+    "intro": "Plans, prices and durations are managed here only. A new price applies to activations and renewals that start on or after its date; recorded subscriptions never change.",
+    "add": "New plan",
+    "caption": "Subscription plans",
+    "columns": {
+      "plan": "Plan",
+      "price": "Current price",
+      "interval": "Billing period",
+      "status": "Status",
+      "newShops": "New shops",
+      "subscriptions": "Shops",
+      "order": "Order"
+    },
+    "upcoming": "{price} from {date}",
+    "noPrice": "No price",
+    "offered": "Offered",
+    "notOffered": "Not offered",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "moved": "Order saved.",
+    "empty": {
+      "title": "No plans yet",
+      "body": "Create the first plan, give it a price and publish it."
+    },
+    "statuses": {
+      "Draft": "Draft",
+      "Published": "Published",
+      "Inactive": "Not offered",
+      "Archived": "Archived"
+    },
+    "form": {
+      "nameAr": "Plan name in Arabic",
+      "nameEn": "Plan name in English",
+      "descriptionAr": "Description in Arabic",
+      "descriptionEn": "Description in English",
+      "features": "Features",
+      "featuresHelper": "Up to 12 lines, in both languages.",
+      "featureAr": "Feature {n} in Arabic",
+      "featureEn": "Feature {n} in English",
+      "addFeature": "Add feature",
+      "removeFeature": "Remove feature {n}",
+      "intervalUnit": "Billing unit",
+      "intervalCount": "Billing length",
+      "units": {
+        "Month": "Months",
+        "Day": "Days"
+      },
+      "maxProfessionals": "Most professionals",
+      "maxServices": "Most services",
+      "limitHelper": "Leave empty for no limit.",
+      "trialDays": "Trial days",
+      "graceDays": "Grace days",
+      "trialGraceHelper": "Kept with the plan; v1 does not apply them automatically.",
+      "availableToNewShops": "Offer to new shops",
+      "initialPrice": "Price (SAR)",
+      "initialPriceHelper": "Becomes price version 1 from today. You can also add it later.",
+      "create": "Create plan",
+      "save": "Save changes",
+      "saved": "Changes saved."
+    },
+    "detail": {
+      "back": "Subscription plans",
+      "detailsTitle": "Plan details",
+      "actionsTitle": "Availability",
+      "actionsBody": "Only published plans can start new subscriptions. A plan that is not offered can still renew its existing shops.",
+      "publish": "Publish",
+      "deactivate": "Stop offering",
+      "archive": "Archive",
+      "archiveTitle": "Archive {name}?",
+      "archiveBody": "An archived plan cannot be edited, priced or assigned again. Existing subscriptions keep their history.",
+      "stateChanged": "Plan updated.",
+      "pricesTitle": "Price history",
+      "pricesBody": "Versions are never edited or deleted. Each one applies to periods that start on or after its date.",
+      "version": "Version {number}: {price}",
+      "effective": "From {date}",
+      "current": "In force",
+      "scheduled": "Scheduled",
+      "past": "Earlier",
+      "noPrices": "No price yet.",
+      "addPrice": "Add price version",
+      "amount": "New price (SAR)",
+      "effectiveFrom": "Effective from",
+      "priceAdded": "Price version added."
+    }
+  },
+  "adminSubscriptions": {
+    "title": "Subscriptions",
+    "intro": "The platform team records activations and renewals here; there is no online payment. The status follows the end date and the expiring-soon threshold ({days} days).",
+    "kpis": {
+      "Active": "Active",
+      "ExpiringSoon": "Expiring soon",
+      "Expired": "Expired",
+      "Suspended": "Suspended",
+      "None": "No subscription"
+    },
+    "search": "Search by shop name",
+    "searchSubmit": "Search",
+    "statusFilter": "Status",
+    "allStatuses": "All statuses",
+    "caption": "Shop subscriptions",
+    "columns": {
+      "shop": "Shop",
+      "plan": "Plan",
+      "ends": "Ends on",
+      "remaining": "Days left",
+      "status": "Status",
+      "amount": "Amount",
+      "action": "Action"
+    },
+    "manage": "Manage",
+    "empty": {
+      "title": "No subscriptions",
+      "body": "No shop matches, or no plan has been assigned yet."
+    },
+    "panel": {
+      "none": "This shop has no subscription. Discovery and online bookings follow the platform enforcement setting.",
+      "plan": "Plan",
+      "period": "Current period",
+      "ends": "Ends on",
+      "remaining": "Days left",
+      "amount": "Amount",
+      "suspendedBecause": "Suspended: {reason}",
+      "assignTitle": "Record activation",
+      "renewTitle": "Record renewal",
+      "assignBody": "Choose the plan and the start date. The price in force on the start date is recorded with the period.",
+      "renewBody": "The renewal starts the day after the current end, or today after a lapse. Earlier periods never change.",
+      "planLabel": "Plan",
+      "startDate": "Start date",
+      "duration": "Duration",
+      "durationPlan": "Plan period ({interval})",
+      "durationDays": "Custom number of days",
+      "days": "Number of days",
+      "endPreview": "Ends on {date}",
+      "pricePreview": "Recorded price: {price} (version {version})",
+      "noPricePreview": "This plan has no price on the start date.",
+      "noPlans": "No plan can be used. Publish a plan first.",
+      "notes": "Notes",
+      "notesHelper": "Optional, for example the contract reference.",
+      "assign": "Record activation",
+      "renew": "Confirm renewal",
+      "assigned": "Subscription active until {date}.",
+      "renewed": "Renewed until {date}.",
+      "suspendTitle": "Suspension",
+      "suspendBody": "A suspended subscription hides the shop and stops new online bookings. Existing bookings are not changed.",
+      "suspend": "Suspend subscription",
+      "reinstate": "Reinstate subscription",
+      "reason": "Reason",
+      "suspended": "Subscription suspended.",
+      "reinstated": "Subscription reinstated.",
+      "overrideTitle": "Override (SuperAdmin)",
+      "overrideBody": "A shop-specific price and/or end date for the period in force, with a reason. The previous values stay in the history.",
+      "overridePrice": "Price for this period (SAR)",
+      "overrideEnd": "New end date",
+      "overrideReason": "Reason for the override",
+      "overrideSubmit": "Save override",
+      "overridden": "Override saved.",
+      "historyTitle": "History",
+      "periodTitle": "{plan}: {start} to {end}",
+      "periodMeta": "{kind} · {price}",
+      "kinds": {
+        "Assigned": "Activation",
+        "Renewed": "Renewal"
+      },
+      "priceVersion": "price version {version}",
+      "overriddenTag": "overridden",
+      "overrideEntry": "Override: {changes}",
+      "overrideMeta": "{reason} · {date}",
+      "changePrice": "price {from} to {to}",
+      "changeEnd": "end {from} to {to}"
+    },
+    "manageLabel": "Manage the subscription of {name}"
+  },
+  "shopSubscription": {
+    "title": "Subscription",
+    "eyebrow": "Subscription",
+    "none": "Your shop has no platform subscription yet. Contact the platform team to activate it.",
+    "ends": "Ends on {date} · {days, plural, one {# day} other {# days}} left",
+    "ended": "Ended on {date}",
+    "progress": "{percent}% of the current period used",
+    "start": "Start",
+    "end": "End",
+    "note": "The platform team records renewals. There is no online payment.",
+    "warning": {
+      "ExpiringSoon": "Your subscription ends in {days, plural, one {# day} other {# days}}",
+      "Expired": "Your subscription has expired",
+      "Suspended": "Your subscription is suspended",
+      "None": "No active subscription",
+      "hiddenBody": "Your shop is hidden from discovery and takes no new online bookings. Existing appointments stay valid.",
+      "soonBody": "When it ends, your shop is hidden from discovery. Existing appointments stay valid.",
+      "contact": "Contact the platform team to renew."
+    },
+    "historyTitle": "Renewal history",
+    "historyEmpty": "No periods yet.",
+    "historyItem": "{start} – {end}",
+    "historyPlan": "{plan} · {price}"
+  },
+  "platformSettings": {
+    "title": "Platform settings",
+    "intro": "These values apply to every shop, and each change is recorded in the activity log. More sections arrive with their features.",
+    "sections": {
+      "booking": "Booking policy",
+      "notifications": "Reminders",
+      "subscriptions": "Subscriptions",
+      "discovery": "Discovery",
+      "map": "Map defaults",
+      "regional": "Region (fixed in v1)"
+    },
+    "fields": {
+      "minLeadTimeMinutes": "Minimum notice (minutes)",
+      "bookingHorizonDays": "Booking horizon (days)",
+      "slotStepMinutes": "Slot step (minutes)",
+      "cancellationCutoffMinutes": "Online cancellation cutoff (minutes)",
+      "reviewWindowDays": "Review window (days)",
+      "reminderOffsetMinutes": "Reminder before the appointment (minutes)",
+      "expiringSoonThresholdDays": "Expiring-soon threshold (days)",
+      "expiredSubscriptionEnforcement": "When a subscription is not in force",
+      "hidePausedShopsFromDiscovery": "Hide shops that paused online booking",
+      "mapDefaultLatitude": "Map centre latitude",
+      "mapDefaultLongitude": "Map centre longitude",
+      "mapDefaultZoom": "Map zoom",
+      "defaultLocale": "Default language",
+      "currency": "Currency",
+      "timeZone": "Time zone",
+      "countryCode": "Country"
+    },
+    "enforcement": {
+      "HideAndBlockNewOnlineBookings": "Hide the shop and block new online bookings",
+      "None": "Show a warning only"
+    },
+    "enforcementHelper": "Existing bookings are never changed, and shops can still record walk-ins.",
+    "save": "Save settings",
+    "saved": "Settings saved.",
+    "readOnly": "You can view these settings but not change them."
   }
 }

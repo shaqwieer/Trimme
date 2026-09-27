@@ -30,6 +30,18 @@ public static class DemoData
     public static IReadOnlyList<DemoShop> Shops { get; } = [AlAsala, BarberHouse];
 
     /// <summary>
+    /// Two more active shops without users or catalogue, seeded only so every subscription status has an example
+    /// (spec §20): Lamsat Al Rajul's subscription has expired and Al Madina's is suspended.
+    /// </summary>
+    public static readonly DemoExtraShop LamsatAlRajul = new(
+        new ShopId(Guid.Parse("0199a0de-5a10-7000-8000-000000000003")), "lamsat-al-rajul", "لمسة الرجل", "Lamsat Al Rajul", 24.8375, 46.6620, "النرجس");
+
+    public static readonly DemoExtraShop AlMadina = new(
+        new ShopId(Guid.Parse("0199a0de-5a10-7000-8000-000000000004")), "al-madina", "حلاقة المدينة", "Al Madina Barbers", 24.6300, 46.6720, "السويدي");
+
+    public static IReadOnlyList<DemoExtraShop> ExtraShops { get; } = [LamsatAlRajul, AlMadina];
+
+    /// <summary>
     /// Separate professionals per shop (spec §20). The WhatsApp numbers are fake, valid Saudi mobiles in the
     /// <c>+966 50 010 01xx</c> range; seeding never sends messages.
     /// </summary>
@@ -54,3 +66,5 @@ public sealed record DemoProfessional(
     string WhatsApp);
 
 public sealed record DemoShop(ShopId Id, string Slug, string NameAr, string NameEn, string OwnerEmail, string StaffEmail);
+
+public sealed record DemoExtraShop(ShopId Id, string Slug, string NameAr, string NameEn, double Latitude, double Longitude, string District);

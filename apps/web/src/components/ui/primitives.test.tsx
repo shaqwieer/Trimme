@@ -99,7 +99,7 @@ describe('StatusBadge (D-016 enums)', () => {
 
   it.each(SUBSCRIPTION_STATUSES)('renders a subscription badge for %s in English', (status) => {
     renderWithIntl(<StatusBadge kind="subscription" status={status} />, { locale: 'en' });
-    expect(screen.getByText(/Active|Expiring soon|Expired|Suspended/)).toBeInTheDocument();
+    expect(screen.getByText(/Active|Expiring soon|Expired|Suspended|No subscription/)).toBeInTheDocument();
   });
 
   it('carries a colour dot plus text (never colour alone)', () => {

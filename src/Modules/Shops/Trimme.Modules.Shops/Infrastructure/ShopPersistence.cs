@@ -75,6 +75,19 @@ internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
         return summaries.ToDictionary(s => s.Id);
     }
 
+    public async Task<IReadOnlyList<ShopId>> SearchIdsAsync(string term, int limit, CancellationToken cancellationToken)
+    {
+        var pattern = $"%{term.Trim()}%";
+        return await Shops()
+            .Where(s => EF.Functions.ILike(s.NameAr, pattern) || EF.Functions.ILike(s.NameEn, pattern) || EF.Functions.ILike(s.Slug, pattern))
+            .OrderBy(s => s.Id)
+            .Select(s => s.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<int> CountAsync(CancellationToken cancellationToken) => Shops().CountAsync(cancellationToken);
+
     private IQueryable<Shop> Shops() => db.Set<Shop>().AsNoTracking();
 
     private static IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops) =>

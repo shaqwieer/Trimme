@@ -1,7 +1,7 @@
 # TRIMME — Domain model
 
-The model as built so far (Phases 04–07), with the invariants each part enforces. Later phases extend this file:
-subscriptions and settings (08), schedules (09), bookings (10), reviews, notifications and
+The model as built so far (Phases 04–08), with the invariants each part enforces. Later phases extend this file:
+schedules (09), bookings (10), reviews, notifications and
 QR (11–16). The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
 
 One PostgreSQL database with one schema per module. Identifiers are UUIDv7 wrapped in typed ids. Instants are UTC
@@ -25,6 +25,12 @@ erDiagram
     SHOP_SERVICE ||--o{ SERVICE_PACKAGE_ITEM : "(shop_id, service_id)"
     PROFESSIONAL ||--o{ PROFESSIONAL_SERVICE : "(shop_id, professional_id)"
     SHOP_SERVICE ||--o{ PROFESSIONAL_SERVICE : "(shop_id, service_id)"
+    SUBSCRIPTION_PLAN ||--o{ PLAN_PRICE : "append-only versions"
+    SHOP ||--o| SHOP_SUBSCRIPTION : "one per shop"
+    SHOP_SUBSCRIPTION ||--|{ SUBSCRIPTION_PERIOD : "(shop_id, subscription_id)"
+    SHOP_SUBSCRIPTION ||--o{ SUBSCRIPTION_OVERRIDE : "(shop_id, subscription_id)"
+    PLAN_PRICE ||--o{ SUBSCRIPTION_PERIOD : "price snapshot"
+    SHOP ||--o| SUBSCRIPTION_COVERAGE : "read model"
     ROLE ||--o{ ROLE_PERMISSION : grants
     PERMISSION ||--o{ ROLE_PERMISSION : ""
 
@@ -119,6 +125,28 @@ only while it and every item are available.
 including `shop_id`. Only admins assign. The FK to the Professionals module names the entity type as a string, so
 there is no project reference between the modules.
 
+## Subscriptions (`subscriptions`)
+
+**SubscriptionPlan** (D-079) is managed by SuperAdmin only.
+- Localized name and description, up to 12 bilingual feature lines (JSON), billing unit Month (1–36) or Day (1–1095), optional limits and trial/grace days (stored only in v1, D-077), available-to-new-shops, display order.
+- Status: Draft → Published ⇄ Inactive → Archived (final). Publishing needs a price.
+
+**PlanPrice** versions are append-only.
+- Amount (`numeric(12,2)`, 0–1,000,000), the platform currency, and an effective date that is today or later.
+- Unique `(plan_id, effective_from)` and `(plan_id, version_number)`. The version in force on a date is the latest that started on or before it.
+
+**ShopSubscription** (`IShopOwned`, unique `shop_id`, `xmin`) is recorded manually; there is no payment in v1.
+- It stores `StartDate`/`EndDate` (platform calendar, D-077), the latest plan, and the suspension flag and reason.
+- **SubscriptionPeriod** (assignment or renewal) keeps the plan name, the price version id, the amount and the currency as recorded, plus notes and who recorded it. Periods never overlap, and never leave a future gap.
+- **SubscriptionOverride** (SuperAdmin) keeps the previous and new amount/end with the reason.
+- Status (computed): None, Suspended, Expired, ExpiringSoon (≤ threshold days left, the end day counts), Active.
+
+**SubscriptionCoverage** (D-078) is a platform read model (shop id, end date, suspended) with no prices. It is written with every subscription change and read by `IShopBookability` without a tenant scope.
+
+## Administration settings
+
+**PlatformSettings** (D-076) is one typed row: booking policy, reminder offset, expiring-soon threshold, enforcement (D-014), hide paused shops (D-013), region (fixed in v1) and map defaults. It is version-checked and audited with the changed fields; `migrate` inserts the defaults only when the row is missing.
+
 ## Media (`media`, building blocks)
 
 **StoredMedia** (D-064) is an image kept in PostgreSQL.
@@ -143,3 +171,4 @@ Users of three types — Customer, ShopUser, PlatformAdmin (D-050) — sit on on
   - `shop.profile_updated`, `shop.location_set`, `shop.editable_policy_set`, `shop.image_changed`;
   - `professional.created`, `.updated`, `.enabled`, `.disabled`, `.avatar_changed`;
   - `professional.whatsapp_changed`, `.whatsapp_revealed`.
+- Phase 07 and 08 actions add `service.*`/`package.*` moderation and override, then `plan.created|updated|published|deactivated|archived|reordered|price_added`, `subscription.assigned|renewed|overridden|suspended|reinstated` and `platform_settings.updated`.

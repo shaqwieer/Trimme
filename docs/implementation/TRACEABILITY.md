@@ -15,7 +15,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` ✔ (NOT NULL shop, composite contact FK rejects a cross-shop pair, the same WhatsApp number cannot be a professional in a second shop) | [x] |
 | R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateOrChangeProfessionals_AndSeesOnlyItsOwn` ✔ Phase 06; I `Admin_AssignsProfessionalService_SameShopOnly_AndShopCannotAssign` ✔ Phase 07 (shop 403; no shop assignment route; DB rejects a cross-shop pair); E shop PUT → 403 ✔ | [x] |
 | R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; E auth flows assert empty Web Storage and that `document.cookie` exposes neither `trimme-access` nor `trimme-refresh` after customer and staff sign-in ✔; I `Cookies_AreSecureHttpOnly` (tokens never in a response body) ✔ Phase 04 | [x] |
-| R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate; I plans served from DB only | [ ] |
+| R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate ✔ (demo plan names/prices/durations appear only in seeders and tests; D-079); I plans served from DB only ✔; W durations/prices from plan data (`RecordPeriodForm` test) ✔ | [x] |
 | R-NEG-09 | No hardcoded final WhatsApp message text in jobs/handlers | §16 | 15 | A `Notifications_Handlers_DoNotContainMessageLiterals`; I dispatch renders from active template version | [ ] |
 | R-NEG-10 | Private dashboards not indexed | §6 | 11, 17 | I/E `private_routes_emit_noindex`; robots.txt test | [ ] |
 
@@ -33,7 +33,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-FND-08 | Docker Compose (web, api, postgis) + Dockerfiles; `docker compose up --build` | §3, §21 | 1, 2 | C `infra/scripts/compose-smoke.sh`: postgis → migrate → api → web, web `/ar` 200 + web-origin `/api` proxy; containers healthy | [x] |
 | R-FND-09 | CI: lint, typecheck, test, build, migration validation | §3 | 1, 2 | C `.github/workflows/ci.yml` jobs backend, web, secret-scan, stack (compose + Playwright) — **green on GitHub Actions run 36134142951** | [x] |
 | R-FND-10 | `.env.example` files, no secrets committed | §3, §23 | 1 | C gitleaks v8.30.1 (`.gitleaks.toml`) working tree + history: no leaks; `.env.example`, `infra/.env.example` | [x] |
-| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔; I `AdminBootstrap_RequiresDevelopmentAndEnv` ✔; I `DevSeed_IsDeterministic_AndIdempotent` (two fresh databases, two runs each, identical rows) ✔ Phase 05 — extended by every data phase | [~] |
+| R-FND-11 | Deterministic dev-only seed command (extended per phase) | §20 | 1 → 16 | U `Seed_IsDevelopmentOnly_and_requires_explicit_opt_in`, `Seed_is_allowed_with_development_flag_and_argument` ✔; I `AdminBootstrap_RequiresDevelopmentAndEnv` ✔; I `DevSeed_IsDeterministic_AndIdempotent` (two fresh databases, two runs each, identical rows) ✔ Phase 05 — extended by every data phase; Phase 08: plans with versioned prices, one subscription per status (two extra demo shops without users), asserted by the same test | [~] |
 | R-FND-12 | Cancellation tokens end-to-end | §18 | 1+ | A `Endpoints_AcceptCancellationToken`, `Feature_endpoints_are_versioned_under_api_v1` (re-run every phase) | [x] |
 | R-FND-13 | Pagination with safe max page size, filtering, sorting | §18, §21 | 5+ | U `PageRequest_ClampsPageSize` ✔; `PagedResponse<T>` envelope on `GET /admin/shops` (search, status filter, newest first) ✔ Phase 05; every later list endpoint uses it | [x] |
 | R-FND-14 | Security headers, request size limits, upload validation | §9 | 1, 17 | I `SecurityHeaders_Present`, `RequestBody_TooLarge_Returns413Problem` ✔ Phase 01; upload validation Phase 06/17 | [~] |
@@ -71,7 +71,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-AUTH-07 | Rate limiting + lockout (auth, OTP) | §9, §18 | 4 | I `Otp_RateLimited_PerNumber_WithResendCooldown`, `Otp_RateLimited_PerClient`, `Lockout_AfterFailedAttempts`, `Staff_SignIn_UnknownEmailAndWrongPassword_AreIndistinguishable` ✔ | [x] |
 | R-AUTH-08 | CSRF protection for cookie-authenticated unsafe requests | §9 | 4 | I `UnsafeRequest_WithoutCsrf_Rejected`, `CsrfCheck_DoesNotMaskRoutingErrors_OrSafeMethods`, `CsrfToken_RotatesOnSignIn`, `Cors_Preflight_AllowsCsrfHeader_WithCredentials_ForKnownOriginOnly` ✔ | [x] |
 | R-AUTH-09 | Roles + data-driven permission catalogue; authorization enforced by API | §7 | 4 | I `Endpoint_WithoutPermission_Returns403` matrix over every `/api/v1` endpoint (proven non-vacuous by removing a permission: test failed) ✔; I `CatalogueSync_RestoresManagedRoles_AndKeepsAdminEditsToEditableRoles`, `SeedRoles_GrantOnlyPermissionsOfTheirUserType` ✔; `docs/permissions-matrix.md` ✔ | [x] |
-| R-AUTH-10 | SuperAdmin-only plan/pricing & overrides | §7, §15 | 8 | I `NonSuperAdmin_CannotManagePlans`, `Shop_CannotManagePlans` | [ ] |
+| R-AUTH-10 | SuperAdmin-only plan/pricing & overrides | §7, §15 | 8 | I `NonSuperAdmin_CannotManagePlans_OrOverride` ✔ (Operations Manager, Support and shop owner: 403 on plan writes, prices, override; endpoint matrix) | [x] |
 
 ## 5. Tenancy and privacy
 
@@ -101,11 +101,11 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-SVC-03 | Cross-shop service isolation on reads and every mutation | §19 | 7 | I `CrossShop_ServiceAndPackage_EveryVerb_Is404_AndNothingChanges` ✔ (GET/PUT/activate/deactivate/archive/DELETE on services and packages → 404; foreign ids in package items and order → 400; rows unchanged); I `SuspendedShop_CatalogCommands_Are404_Not500` ✔; shop-facing contract scan ✔ | [x] |
 | R-SVC-04 | Admin categories, moderation, audited override; professional-service assignment | §14 | 7 | I `Admin_OverrideService_Audited_AndModerationHidesFromCustomers` ✔ (audit "Price 60.00 → 55.00 SAR; Duration 30 → 25 min; Name changed" + reason; Support 403); I `Admin_AssignsProfessionalService_SameShopOnly_AndShopCannotAssign` ✔; I `Categories_AdminManaged_BothLanguages_ActiveOnesPublishedAndSelectable` ✔; A `CrossModuleShopScopedReferences_ResolveToTheRealEntity` ✔; E admin hide/unhide, override, assignment ✔ | [x] |
 | R-SVC-05 | Packages with items, price, duration; expand for reporting | §10 | 7, 10 | U `Package_Duration_And_Items` ✔ (explicit duration, ordered `ExpandItems`, rows kept on reorder, items-only edit touches the row); I `Packages_ConcurrencyOnItemsOnlyEdits_AndPublishedOnlyWhenEveryItemIsAvailable` ✔; reporting expansion with bookings (Phase 10) | [~] |
-| R-SUB-01 | SuperAdmin plan catalogue (localized, price, currency, interval, features, limits, trial/grace, published, order) | §7, §15 | 8 | I `SuperAdmin_PlanCrud`; E flow 5 | [ ] |
-| R-SUB-02 | Price versioning; no retroactive change | §15 | 8 | U `PlanPrice_Versioning`; I `ExistingSubscription_KeepsPriceSnapshot`; E flow 5 | [ ] |
-| R-SUB-03 | Assign, renew, override (audited), history | §15 | 8 | I `Subscription_Assign_Renew_Override_History` | [ ] |
-| R-SUB-04 | Statuses Active/ExpiringSoon/Expired/Suspended with configurable threshold | §15 | 8, 15 | U `SubscriptionStatus_Calculation` | [ ] |
-| R-SUB-05 | Warnings to admin and shop; explicit enforcement; future bookings untouched | §15 | 8, 13, 15 | I `Expiry_DoesNotAlterFutureBookings`; I enforcement setting tests | [ ] |
+| R-SUB-01 | SuperAdmin plan catalogue (localized, price, currency, interval, features, limits, trial/grace, published, order) | §7, §15 | 8 | I `SuperAdmin_ManagesPlans_WithAppendOnlyPriceVersions` ✔; U `Publish_NeedsAPrice_AndArchiveIsFinal`, `Interval_IsBounded` ✔; W `PlanForm` ✔; E flow 5 ✔ | [x] |
+| R-SUB-02 | Price versioning; no retroactive change | §15 | 8 | U `Prices_AreVersioned_…`, `AddPrice_NeverRewritesHistory` ✔; I `ExistingSubscription_KeepsPriceSnapshot_WhenThePlanPriceChanges` ✔; E flow 5 ✔ (recorded period unchanged; renewal takes version 2) | [x] |
+| R-SUB-03 | Assign, renew, override (audited), history | §15 | 8 | I `Assign_Renew_Override_Suspend_KeepHistory_AndRejectInvalidChanges` ✔ (concurrent assign → one 409; overlap/gap; override on the period in force; audit trail); U renew/override rules ✔; E flow 5 (suspend, reinstate, override) ✔ | [x] |
+| R-SUB-04 | Statuses Active/ExpiringSoon/Expired/Suspended with configurable threshold | §15 | 8, 15 | U `Status_FollowsDaysRemaining_AndTheThreshold`, `MonthPeriods_…`, `MonthlyRenewalChain_…` ✔; I `Status_FollowsThePlatformCalendar_AndGatesBookability` ✔ (threshold boundary on a moving clock). Automated expiry notifications: Phase 15 | [x] |
+| R-SUB-05 | Warnings to admin and shop; explicit enforcement; future bookings untouched | §15 | 8, 13, 15 | Phase 08 part ✔: shop warning + admin KPIs/list (E flow 3), enforcement setting and `IShopBookability` (I status test, settings test, D-078). `Expiry_DoesNotAlterFutureBookings`: Phase 10 | [~] |
 
 ## 7. Availability and booking
 
@@ -174,7 +174,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-AD-10 | WhatsApp templates, dispatch log, retries, failures | §14 | a-reviews | 15 | E flow 4 | [ ] |
 | R-AD-11 | Roles & permissions management | §14 | a-roles | 14 | I/E | [ ] |
 | R-AD-12 | Audit activity | §14 | a-roles | 14 | E | [ ] |
-| R-AD-13 | Platform settings (booking policy, locale, currency, tz, reminder offset, map defaults, thresholds, enforcement) | §14 | (absent) | 8, 14 | I settings tests | [ ] |
+| R-AD-13 | Platform settings (booking policy, locale, currency, tz, reminder offset, map defaults, thresholds, enforcement) | §14 | (absent) | 8, 14 | Phase 08 ✔: I `PlatformSettings_HaveDefaults_AreAudited_VersionChecked_AndPermissionGated` (defaults, ranges, 409, audit, migrate keeps edits, Ops read-only); U defaults/changed fields; W `PlatformSettingsForm`; E settings flow. Full sectioned screen: Phase 14 | [~] |
 
 ## 11. Notifications, WhatsApp, jobs, QR, analytics
 
@@ -211,9 +211,9 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 |---|---|---|---|
 | E1 | Customer registers/signs in, discovers, books, views, cancels/reschedules | 4, 11, 12 | 12 |
 | E2 | Shop creates/edits own service, sees only own data, walk-in, status changes, no foreign access/phone | 7, 9, 13 | 13 |
-| E3 | Admin creates shop + pin location, professional (masked WhatsApp), assigns shop+service, manages subscription, no transfer action | 6, 7, 8 | 8 — Phase 06 part ✔ (`shops-professionals.spec.ts`: profile, cover, pin, professional, masked number, reveal, no transfer) |
+| E3 | Admin creates shop + pin location, professional (masked WhatsApp), assigns shop+service, manages subscription, no transfer action | 6, 7, 8 | 8 ✔ — Phase 06 part (`shops-professionals.spec.ts`: profile, cover, pin, professional, masked number, reveal, no transfer); Phase 07 service assignment (`services.spec.ts`); Phase 08 subscription part (`subscriptions.spec.ts`: statuses, suspend/reinstate, override, shop warning) |
 | E4 | Admin edits customer/professional templates; booking → fake dispatches + 30-min reminders for both audiences; no phone leakage | 15 | 15 |
-| E5 | SuperAdmin plan + price, assign, change future price, history unchanged | 8 | 8 |
+| E5 | SuperAdmin plan + price, assign, change future price, history unchanged | 8 | 8 ✔ (`subscriptions.spec.ts`) |
 | E6 | Two concurrent customers, same slot, exactly one succeeds | 10 (API), 12 (UI) | 12 |
 | E7 | Completed booking allows one review; incomplete/foreign does not | 12 | 12 |
 

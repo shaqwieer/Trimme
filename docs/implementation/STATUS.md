@@ -1,8 +1,8 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-27 (Session 4)
-- **Current phase:** 07 is complete and verified (Session 4). Next: Phase 08, subscriptions and platform settings.
-- **Platform progress:** 800 / 1900 points (Phases 00–07)
+- **Current phase:** 08 is complete and verified (Session 4), committed locally and not pushed. Next: Phase 09, schedules and the availability engine.
+- **Platform progress:** 900 / 1900 points (Phases 00–08)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -14,7 +14,7 @@
 | 05 Tenancy, privacy & audit | [x] | 100/100 |
 | 06 Shops, locations & professionals | [x] | 100/100 |
 | 07 Services & packages | [x] | 100/100 |
-| 08 Subscriptions & settings | [ ] | 0/100 |
+| 08 Subscriptions & settings | [x] | 100/100 |
 | 09 Schedules & availability | [ ] | 0/100 |
 | 10 Booking core | [ ] | 0/100 |
 | 11 Public discovery | [ ] | 0/100 |
@@ -41,7 +41,7 @@
 | D-064 | Photos and other media are stored in PostgreSQL (`media.media_files`), not on disk (Session 4) |
 
 ## Open decisions
-None are blocking. The product assumptions D-012…D-035 remain overridable defaults.
+None are blocking. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078). One default to confirm with the user: a shop **without** a subscription in force is hidden and takes no online bookings (enforcement `HideAndBlockNewOnlineBookings`). Admins can switch it to `None` in Platform settings.
 
 ## Blockers
 None.

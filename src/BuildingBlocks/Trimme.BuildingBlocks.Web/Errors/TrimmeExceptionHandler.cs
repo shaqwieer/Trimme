@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Trimme.BuildingBlocks.Application.Validation;
 
 namespace Trimme.BuildingBlocks.Web.Errors;
@@ -19,6 +20,9 @@ internal sealed partial class TrimmeExceptionHandler(
                 (StatusCodes.Status400BadRequest, ApiErrorCodes.ValidationFailed, "One or more validation errors occurred.", validation.Errors),
             DbUpdateConcurrencyException =>
                 (StatusCodes.Status409Conflict, ApiErrorCodes.ConcurrencyConflict, "The resource was changed by someone else. Reload and try again.", null),
+            // A unique index lost a race the handler's own check could not see (two concurrent creates): 409, not 500.
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>
+                (StatusCodes.Status409Conflict, ApiErrorCodes.Conflict, "The resource already exists or was changed at the same time.", null),
             BadHttpRequestException badRequest =>
                 (badRequest.StatusCode, ApiErrorCodes.ForStatus(badRequest.StatusCode), "The request is invalid.", null),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested =>

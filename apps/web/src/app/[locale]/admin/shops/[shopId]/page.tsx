@@ -9,6 +9,7 @@ import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
 import { ShopLocationEditor } from '@/components/shops/ShopLocationEditor';
 import { ShopProfileEditor } from '@/components/shops/ShopProfileEditor';
+import { ShopSubscriptionTab } from '@/components/subscriptions/ShopSubscriptionTab';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
@@ -23,7 +24,7 @@ import { formatDate } from '@/lib/i18n/format';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const TABS = ['profile', 'location', 'users', 'professionals'] as const;
+const TABS = ['profile', 'location', 'users', 'professionals', 'subscription'] as const;
 type Tab = (typeof TABS)[number];
 
 function Card({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
@@ -40,7 +41,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 
 /**
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
- * exact location (pin picker), accounts and the shop's professionals. Tab state lives in the URL (`?tab=`).
+ * exact location (pin picker), accounts, the shop's professionals and its subscription. Tab state lives in the URL
+ * (`?tab=`).
  */
 export default async function AdminShopPage({
   params,
@@ -109,6 +111,8 @@ export default async function AdminShopPage({
           ) : (
             <EmptyState icon="shield" title={t('detail.invite.title')} />
           );
+        } else if (tab === 'subscription') {
+          content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
         } else {
           const { data: professionals } = me.permissions.includes('Admin.Professionals.View')
             ? await api.GET('/api/v1/admin/professionals', {

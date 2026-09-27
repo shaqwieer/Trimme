@@ -42,10 +42,10 @@ Platform setting `ReminderOffsetMinutes`, default **30**, used for customer and 
 ## D-012 — "Any available professional" option — Proposed (Phase 10/12)
 Design shows "أي حلاق متاح" as default (3851, 4001). Kept: the server resolves a concrete professional inside the booking transaction (eligible = assigned to the service and free; tie-break = fewest bookings that day, then stable ID order). The booking always stores a concrete professional.
 
-## D-013 — Paused shops in discovery — Proposed (Phase 9/11)
+## D-013 — Paused shops in discovery — Accepted (setting in Phase 08; applied in Phase 9/11)
 Design hides paused shops from discovery (2512, 3789). Default: platform setting `HidePausedShopsFromDiscovery = true`; the shop page stays reachable by direct link and shows "الحجز متوقف مؤقتاً"; no availability returned while paused; existing bookings unaffected.
 
-## D-014 — Subscription expiry/suspension enforcement — Proposed (Phase 8)
+## D-014 — Subscription expiry/suspension enforcement — Accepted (Phase 08; see D-076, D-078)
 Platform setting `ExpiredSubscriptionEnforcement` ∈ {`None`, `HideAndBlockNewOnlineBookings`} default `HideAndBlockNewOnlineBookings` for `Expired`/`Suspended`; future bookings are **never** altered or deleted; walk-ins remain allowed; `ExpiringSoon` threshold setting default 14 days. Covered by tests.
 
 ## D-015 — Cancellation after the cutoff — Proposed (Phase 10/12)
@@ -494,3 +494,52 @@ The user asked in Session 4 to store media such as photos in the database. This 
 - The web image sets `KEEP_ALIVE_TIMEOUT=65000`, read by the Next.js standalone server. Node's default of 5 s closed idle sockets just as clients reused them, which gave intermittent "socket hang up" failures through the `/api` rewrite in E2E.
 - **Production rule:** the upstream's keep-alive timeout must stay above the idle timeout of whatever proxies it (Nginx `keepalive_timeout` or `upstream keepalive`, and load balancers at about 60 s), so the server never closes first. Recorded for the Nginx example in Phase 17.
 
+## D-076 — Platform settings — Accepted (Phase 08)
+- **One typed row** in `administration.platform_settings` (a CHECK pins the single id; range CHECKs mirror the validator). Optimistic concurrency uses `xmin`, and each edit is audited as `platform_settings.updated` with the changed field names, for example "Changed: expiringSoonThresholdDays, expiredSubscriptionEnforcement".
+- **Defaults** (spec §6, §12, §15, §16; D-013…D-017):
+  - lead time 60 min, horizon 30 days, slot step 5 min (5/10/15/20/30/60), cancellation cutoff 120 min, review window 7 days;
+  - reminder offset 30 min, expiring-soon threshold 14 days, enforcement `HideAndBlockNewOnlineBookings`, hide paused shops true;
+  - locale `ar`, currency `SAR`, time zone `Asia/Riyadh`, country `SA`, map centre 24.7136 / 46.6753, zoom 11.
+- **Who writes it.** The `migrate` command's `PlatformSettingsSynchronizer` inserts the defaults only when the row is missing and never overwrites an edit (tested by re-running migrate).
+- **Access.** `Admin.Settings.View` reads and `Admin.Settings.Edit` writes (Operations Manager views only). Other modules read it through `IPlatformSettings` (building-block contract, cached per request scope).
+- **Fixed in v1:** locale, currency, time zone and country are shown read-only. Changing them would re-date subscriptions and re-price catalogues, so it needs its own migration plan.
+
+## D-077 — Subscription periods and dates — Accepted (Phase 08)
+- **Calendar.** Subscription dates are days in the **platform** time zone (`IPlatformSettings.TimeZone`, Asia/Riyadh), not per shop. Subscriptions are platform-level commercial records, and one calendar lets the admin list filter statuses in SQL. All v1 shops are in Riyadh. The phase plan said "shop time zone"; this is the recorded deviation.
+- **End date** = start + interval − 1 day, inclusive (design a-subs: 1 Oct 2026 + 1 year → 30 Sep 2027). When the target month lacks the start day (31 Jan + 1 month), the period runs to that month's end (28/29 Feb), so a renewal chain never loses a day. An explicit `durationDays` gives start + days − 1. The web preview mirrors this and is unit-tested against the same cases.
+- **No future gaps.**
+  - An activation may be back-dated but cannot start in the future.
+  - A renewal starts the day after the current end, or, after a lapse, on any day from then up to today (default: today).
+  - So "today" is always inside a period or after the last one, and the status depends only on the stored `EndDate` (plus the suspended flag).
+- **Status:** None, then Suspended, Expired (today > end), ExpiringSoon (days left ≤ threshold, counting the end day), otherwise Active.
+- **Plans usable:**
+  - An activation needs a Published plan that is available to new shops.
+  - A renewal may also use an Inactive (no longer offered) plan, so existing shops can stay on it; never a Draft or Archived plan.
+- **Override** (SuperAdmin, reason ≥ 5): it changes the price and/or end of the period **in force** (or the latest one after a lapse). Only the latest period's end can move. The previous values are kept in `subscription_overrides`.
+- **Stored only in v1:** plan limits (max professionals/services), trial days and grace days are plan data, but nothing enforces them yet. Grace does not delay `Expired`. They are shown with that note in the editor.
+- **Concurrency.** Renew, override, suspend, reinstate and price-add carry the version. Two concurrent activations are stopped by the unique `shop_subscriptions.shop_id` (409, see D-080).
+
+## D-078 — Coverage read model and the bookability gate — Accepted (Phase 08)
+- `ShopSubscription`, its periods and overrides are `IShopOwned` (tenant-filtered; commercial data). A shop reads only its own subscription at `GET /shop/subscription`, without the override reasons.
+- **Coverage row.** `subscriptions.subscription_coverage` (shop id, end date, suspended) is a platform read model with no prices. It is written in the same unit of work as every subscription change, and it is deliberately not shop-owned (it is on the reviewed allow-list of the tenancy architecture test). This lets discovery (Phase 11, including SQL joins) and booking creation (Phase 10) read any shop's status without a tenant scope.
+- **`IShopBookability`** (building-block contract, implemented by Subscriptions) returns `AcceptsOnlineBookings`, `VisibleInDiscovery` and a reason code:
+  - a shop that is not Active is always blocked (`shop.not_active`);
+  - with enforcement `HideAndBlockNewOnlineBookings`, **no subscription** (`subscription.none`), `Expired` and `Suspended` are blocked, while `ExpiringSoon` still books;
+  - with enforcement `None`, the status is informational.
+- **Consequence for later phases.** A shop must have a subscription in force to appear in discovery. Test and E2E setup in Phases 10–12 must assign one (the demo shops have one). This is an overridable default: switching the enforcement setting to `None` removes it.
+- Existing and future bookings are never changed, and walk-ins do not ask the gate (asserted again in Phase 10).
+
+## D-079 — Plans and versioned prices — Accepted (Phase 08)
+- **Management.** Plans are managed only with `SuperAdmin.SubscriptionPlans.Manage`. `Admin.Subscriptions.View` can read them (to pick a plan when assigning or renewing).
+- **Plan data:** localized name and description, up to 12 bilingual feature lines (stored as JSON), billing unit Month (1–36) or Day (1–1095), optional limits, trial and grace days, available-to-new-shops, display order, status (Draft, Published, Inactive, Archived; archive is final and also closes the plan to new shops).
+- **Prices** (`plan_prices`) are append-only versions:
+  - the amount is 0–1,000,000 with at most 2 decimals, in the platform currency;
+  - the effective date is today or later;
+  - there is one version per date, and version numbers are sequential (both enforced by unique indexes);
+  - "current" is the latest version that started on or before a date.
+- **Periods.** A period stores the price version id, amount, currency and plan name at recording time, and never recomputes them (R-SUB-02).
+- **Publishing** needs at least one price version (a scheduled one is enough).
+- **No payment UI:** amounts are recorded values only (spec §15).
+
+## D-080 — Unique-index races answer 409 — Accepted (Phase 08)
+The global exception handler maps a PostgreSQL unique violation (`23505`) raised on save to **409 `resource.conflict`** instead of 500. Handlers still pre-check (for example `subscription.already_assigned`); the mapping covers only the race the pre-check cannot see (two concurrent activations, two price versions for the same date). It is tested by a concurrent-assign integration test.

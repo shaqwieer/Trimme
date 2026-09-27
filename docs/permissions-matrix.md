@@ -81,7 +81,7 @@
 
 The `Customer` role holds no catalogue permission. Customers use self-service endpoints that act only on their own account (`/me`, sessions, profile completion); booking and review ownership rules arrive with those features (Phases 10–12).
 
-## Endpoints (Phases 04–07)
+## Endpoints (Phases 04–08)
 
 | Endpoint | Access |
 |---|---|
@@ -144,6 +144,15 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `PUT /api/v1/admin/services/{id}/override` | `Admin.ShopServices.SupportOverride` · reason required · audited before → after |
 | `GET /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.View` |
 | `PUT /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.AssignServices` · the professional's own shop's services only · audited |
+| `GET /api/v1/admin/subscription-plans`, `GET .../{id}`, `GET .../{id}/prices` | `Admin.Subscriptions.View` |
+| `POST /api/v1/admin/subscription-plans`, `PUT .../{id}`, `POST .../{id}/publish|deactivate|archive`, `PUT .../order`, `POST .../{id}/prices` | `SuperAdmin.SubscriptionPlans.Manage` · prices are append-only versions · audited (D-079) |
+| `GET /api/v1/admin/subscriptions`, `GET /api/v1/admin/shops/{id}/subscription` | `Admin.Subscriptions.View` · counts over every shop |
+| `POST /api/v1/admin/shops/{id}/subscription/assign` | `Admin.Subscriptions.Assign` · published plan open to new shops · audited |
+| `POST /api/v1/admin/shops/{id}/subscription/renew` | `Admin.Subscriptions.Renew` · version-checked · audited |
+| `POST /api/v1/admin/shops/{id}/subscription/suspend|reinstate` | `Admin.Subscriptions.Suspend` · suspend needs a reason · audited |
+| `POST /api/v1/admin/shops/{id}/subscription/override` | `SuperAdmin.Subscriptions.Override` · reason required · previous values kept · audited |
+| `GET /api/v1/shop/subscription` | `Shop.Subscription.Read` · own shop only (tenant from claims) · no override reasons |
+| `GET /api/v1/admin/settings` / `PUT /api/v1/admin/settings` | `Admin.Settings.View` / `Admin.Settings.Edit` · version-checked · audited with the changed fields (D-076) |
 
 There is no endpoint that changes a professional's shop. Shops never assign services to professionals.
 

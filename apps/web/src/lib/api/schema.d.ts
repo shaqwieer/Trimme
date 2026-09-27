@@ -174,6 +174,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shop subscriptions by status (most urgent end date first), with counts over every shop. */
+        get: operations["ListSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in shop's own subscription and renewal history (read-only). */
+        get: operations["GetShopSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -1330,6 +1364,248 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/subscription-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every plan in display order, with its current price and full price history. */
+        get: operations["ListSubscriptionPlans"];
+        put?: never;
+        /** Creates a draft plan (SuperAdmin). */
+        post: operations["CreateSubscriptionPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/{planId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One plan with its price history. */
+        get: operations["GetSubscriptionPlan"];
+        /** Edits a plan's details (SuperAdmin; optimistic concurrency). Existing subscriptions keep their snapshots. */
+        put: operations["UpdateSubscriptionPlan"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/{planId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offers the plan (it needs a price). */
+        post: operations["PublishSubscriptionPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/{planId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stops offering the plan; existing subscriptions may still renew on it. */
+        post: operations["DeactivateSubscriptionPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/{planId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retires the plan for good; history keeps it. */
+        post: operations["ArchiveSubscriptionPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the display order of every non-archived plan (SuperAdmin). */
+        put: operations["ReorderSubscriptionPlans"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/subscription-plans/{planId}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The plan's price versions, newest first. */
+        get: operations["ListSubscriptionPlanPrices"];
+        put?: never;
+        /** Adds a price version from a date (today or later). It applies only to periods starting on or after that date. */
+        post: operations["AddSubscriptionPlanPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A shop's subscription: status, current period, every renewal and override. */
+        get: operations["GetAdminShopSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Starts the shop's subscription on a published plan; the price in force on the start date is recorded. */
+        post: operations["AssignShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a renewal period (no payment in v1); earlier periods never change. */
+        post: operations["RenewShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** SuperAdmin shop-specific price and/or end date for the period in force, with a reason (audited). */
+        post: operations["OverrideShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspends the subscription (reason required). Existing bookings are not touched. */
+        post: operations["SuspendShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lifts a suspension. */
+        post: operations["ReinstateShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The platform settings: booking policy, reminders, subscription enforcement, map defaults. */
+        get: operations["GetPlatformSettings"];
+        /** Edits the platform settings (audited, optimistic concurrency). */
+        put: operations["UpdatePlatformSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1338,6 +1614,15 @@ export interface components {
             token: string;
             displayName: string;
             password: string;
+        };
+        /** @description A new price version in the platform currency, effective from today or a later date. */
+        AddPlanPriceRequest: {
+            /** Format: double */
+            amount: number;
+            /** Format: date */
+            effectiveFrom: string;
+            /** Format: uint32 */
+            version: number;
         };
         AdminCategoryResponse: {
             /** Format: uuid */
@@ -1511,6 +1796,80 @@ export interface components {
             /** Format: date-time */
             updatedAt: null | string;
         };
+        /**
+         * @description A shop's subscription for admins. `Exists` is false (status `None`) until a plan is assigned;
+         *     `NextStart` is the default start date of the next assignment or renewal.
+         */
+        AdminShopSubscriptionResponse: {
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            exists: boolean;
+            status: components["schemas"]["SubscriptionStatus"];
+            /** Format: uuid */
+            planId: null | string;
+            planNameAr: null | string;
+            planNameEn: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            /** Format: int32 */
+            daysRemaining: number;
+            /** Format: double */
+            currentAmount: null | number;
+            currency: null | string;
+            isSuspended: boolean;
+            suspensionReason: null | string;
+            /** Format: date */
+            today: string;
+            /** Format: date */
+            nextStart: string;
+            /** Format: int32 */
+            expiringSoonThresholdDays: number;
+            periods: components["schemas"]["SubscriptionPeriodResponse"][];
+            overrides: components["schemas"]["SubscriptionOverrideResponse"][];
+            /** Format: uint32 */
+            version: null | number;
+        };
+        AdminSubscriptionListItem: {
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            shopSlug: string;
+            /** Format: uuid */
+            planId: string;
+            planNameAr: string;
+            planNameEn: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: int32 */
+            daysRemaining: number;
+            status: components["schemas"]["SubscriptionStatus"];
+            /** Format: double */
+            currentAmount: number;
+            currency: string;
+            /** Format: int32 */
+            renewalCount: number;
+        };
+        AdminSubscriptionListResponse: {
+            items: components["schemas"]["AdminSubscriptionListItem"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            counts: components["schemas"]["SubscriptionCounts"];
+            /** Format: int32 */
+            expiringSoonThresholdDays: number;
+            /** Format: date */
+            today: string;
+        };
         /** @description The WhatsApp settings an admin sees. The number itself is only ever masked here (reveal is a separate, audited action). */
         AdminWhatsAppResponse: {
             masked: null | string;
@@ -1523,6 +1882,21 @@ export interface components {
             /** Format: date-time */
             serverTimeUtc: string;
         };
+        /**
+         * @description Starts a shop's subscription. `StartDate` defaults to today (it cannot be in the future); the end follows the
+         *     plan's interval unless `DurationDays` is given.
+         */
+        AssignSubscriptionRequest: {
+            /** Format: uuid */
+            planId: string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: int32 */
+            durationDays: null | number;
+            notes: null | string;
+        };
+        /** @enum {unknown} */
+        BillingIntervalUnit: "Day" | "Month";
         /** @enum {unknown} */
         CatalogStateFilter: "Active" | "Inactive" | "Archived" | "Hidden" | null;
         CategoryRequest: {
@@ -1542,6 +1916,28 @@ export interface components {
             displayName: string;
             preferredLocale: string;
             termsAccepted: boolean;
+        };
+        /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
+        CreatePlanRequest: {
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            features: null | components["schemas"]["PlanFeatureDto"][];
+            /** Format: int32 */
+            maxProfessionals: null | number;
+            /** Format: int32 */
+            maxServices: null | number;
+            intervalUnit: components["schemas"]["BillingIntervalUnit"];
+            /** Format: int32 */
+            intervalCount: number;
+            /** Format: int32 */
+            trialDays: null | number;
+            /** Format: int32 */
+            graceDays: null | number;
+            availableToNewShops: boolean;
+            /** Format: double */
+            initialPrice: null | number;
         };
         /** @description The one shop is chosen here, at creation, and can never be changed afterwards (D-011). */
         CreateProfessionalRequest: {
@@ -1694,6 +2090,16 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description SuperAdmin override of the period in force: a shop-specific price and/or end date, with a reason. */
+        OverrideSubscriptionRequest: {
+            /** Format: double */
+            price: null | number;
+            /** Format: date */
+            endDate: null | string;
+            reason: string;
+            /** Format: uint32 */
+            version: number;
+        };
         PackageItemResponse: {
             /** Format: uuid */
             serviceId: string;
@@ -1741,10 +2147,105 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
+        /** @enum {unknown} */
+        PeriodKind: "Assigned" | "Renewed";
         PermissionResponse: {
             code: string;
             scope: string;
             userType: string;
+        };
+        PlanFeatureDto: {
+            ar: string;
+            en: string;
+        };
+        /** @description Every non-archived plan, in the new order. */
+        PlanOrderRequest: {
+            orderedIds: string[];
+        };
+        PlanPriceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            versionNumber: number;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            /** Format: date */
+            effectiveFrom: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /**
+         * @description A plan as SuperAdmin manages it. `CurrentPrice` is the version in force today (platform calendar) and
+         *     `UpcomingPrice` the next scheduled one; `Prices` is the full history, newest first.
+         */
+        PlanResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            features: components["schemas"]["PlanFeatureDto"][];
+            /** Format: int32 */
+            maxProfessionals: null | number;
+            /** Format: int32 */
+            maxServices: null | number;
+            intervalUnit: components["schemas"]["BillingIntervalUnit"];
+            /** Format: int32 */
+            intervalCount: number;
+            /** Format: int32 */
+            trialDays: null | number;
+            /** Format: int32 */
+            graceDays: null | number;
+            availableToNewShops: boolean;
+            status: components["schemas"]["PlanStatus"];
+            /** Format: int32 */
+            displayOrder: number;
+            currentPrice: null | components["schemas"]["PlanPriceResponse"];
+            upcomingPrice: null | components["schemas"]["PlanPriceResponse"];
+            prices: components["schemas"]["PlanPriceResponse"][];
+            /** Format: int32 */
+            subscriptionCount: number;
+            /** Format: uint32 */
+            version: number;
+        };
+        /**
+         * @description Draft (being prepared) → Published (offered) → Inactive (not offered, may return) → Archived (final).
+         * @enum {unknown}
+         */
+        PlanStatus: "Draft" | "Published" | "Inactive" | "Archived";
+        PlatformSettingsResponse: {
+            /** Format: int32 */
+            minLeadTimeMinutes: number;
+            /** Format: int32 */
+            bookingHorizonDays: number;
+            /** Format: int32 */
+            slotStepMinutes: number;
+            /** Format: int32 */
+            cancellationCutoffMinutes: number;
+            /** Format: int32 */
+            reviewWindowDays: number;
+            /** Format: int32 */
+            reminderOffsetMinutes: number;
+            /** Format: int32 */
+            expiringSoonThresholdDays: number;
+            expiredSubscriptionEnforcement: components["schemas"]["SubscriptionEnforcement"];
+            hidePausedShopsFromDiscovery: boolean;
+            defaultLocale: string;
+            currency: string;
+            timeZone: string;
+            countryCode: string;
+            /** Format: double */
+            mapDefaultLatitude: number;
+            /** Format: double */
+            mapDefaultLongitude: number;
+            /** Format: int32 */
+            mapDefaultZoom: number;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: uint32 */
+            version: number;
         };
         ProblemDetails: {
             type?: null | string;
@@ -1862,6 +2363,22 @@ export interface components {
             coverUrl: null | string;
             galleryUrls: string[];
             location: null | components["schemas"]["PublicShopLocationResponse"];
+        };
+        ReinstateSubscriptionRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description Records a renewal; the plan defaults to the current one and the start to the day after the current end. */
+        RenewSubscriptionRequest: {
+            /** Format: uuid */
+            planId: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: int32 */
+            durationDays: null | number;
+            notes: null | string;
+            /** Format: uint32 */
+            version: number;
         };
         /** @description Every non-archived item of the shop, in the new order. */
         ReorderRequest: {
@@ -2046,6 +2563,17 @@ export interface components {
             status: string;
             timeZone: string;
         };
+        ShopRenewalResponse: {
+            /** Format: date */
+            periodStart: string;
+            /** Format: date */
+            periodEnd: string;
+            planNameAr: string;
+            planNameEn: string;
+            /** Format: double */
+            amount: number;
+            currency: string;
+        };
         /**
          * @description A shop's own service as the shop manages it. Shop-facing contract: no customer data. `NameEn` may be null;
          *     clients show the Arabic name instead (D-070).
@@ -2078,6 +2606,24 @@ export interface components {
         };
         /** @enum {unknown} */
         ShopStatus: "Draft" | "Active" | "Suspended" | null;
+        /** @description The signed-in shop's own subscription, read-only (renewals go through the platform admins). */
+        ShopSubscriptionResponse: {
+            status: components["schemas"]["SubscriptionStatus"];
+            planNameAr: null | string;
+            planNameEn: null | string;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            /** Format: int32 */
+            daysRemaining: number;
+            /** Format: int32 */
+            elapsedPercent: number;
+            /** Format: int32 */
+            expiringSoonThresholdDays: number;
+            hiddenFromDiscovery: boolean;
+            renewals: components["schemas"]["ShopRenewalResponse"][];
+        };
         /**
          * @description Result of a successful sign-in; the session cookies are set on the response. `IsNewUser` is true when the OTP
          *     verification (or an invitation) created the account.
@@ -2090,6 +2636,76 @@ export interface components {
             email: string;
             password: string;
         };
+        /** @description Counts over every shop (a shop without a subscription counts as `None`). */
+        SubscriptionCounts: {
+            /** Format: int32 */
+            active: number;
+            /** Format: int32 */
+            expiringSoon: number;
+            /** Format: int32 */
+            expired: number;
+            /** Format: int32 */
+            suspended: number;
+            /** Format: int32 */
+            none: number;
+        };
+        /**
+         * @description What happens to a shop whose platform subscription is not in force (D-014).
+         * @enum {unknown}
+         */
+        SubscriptionEnforcement: "None" | "HideAndBlockNewOnlineBookings";
+        SubscriptionOverrideResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            periodId: string;
+            /** Format: double */
+            previousAmount: number;
+            /** Format: double */
+            newAmount: null | number;
+            /** Format: date */
+            previousEnd: string;
+            /** Format: date */
+            newEnd: null | string;
+            reason: string;
+            /** Format: date-time */
+            overriddenAt: string;
+        };
+        /** @description One recorded period with the plan name and price as they were charged (never recomputed). */
+        SubscriptionPeriodResponse: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["PeriodKind"];
+            /** Format: uuid */
+            planId: string;
+            planNameAr: string;
+            planNameEn: string;
+            /** Format: date */
+            periodStart: string;
+            /** Format: date */
+            periodEnd: string;
+            /** Format: uuid */
+            planPriceId: null | string;
+            /** Format: int32 */
+            priceVersionNumber: null | number;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            isOverridden: boolean;
+            notes: null | string;
+            /** Format: date-time */
+            recordedAt: string;
+        };
+        /**
+         * @description Spec §15 statuses. `None` is a shop that has never had a subscription.
+         * @enum {unknown}
+         */
+        SubscriptionStatus: "None" | "Active" | "ExpiringSoon" | "Expired" | "Suspended";
+        SuspendSubscriptionRequest: {
+            reason: string;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
         UpdateOwnShopProfileRequest: {
             nameAr: string;
@@ -2099,6 +2715,55 @@ export interface components {
             category: components["schemas"]["ShopCategory"];
             publicPhone: null | string;
             amenities: null | components["schemas"]["ShopAmenity"][];
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description Edits a plan's details; prices change only through a new price version. */
+        UpdatePlanRequest: {
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            features: null | components["schemas"]["PlanFeatureDto"][];
+            /** Format: int32 */
+            maxProfessionals: null | number;
+            /** Format: int32 */
+            maxServices: null | number;
+            intervalUnit: components["schemas"]["BillingIntervalUnit"];
+            /** Format: int32 */
+            intervalCount: number;
+            /** Format: int32 */
+            trialDays: null | number;
+            /** Format: int32 */
+            graceDays: null | number;
+            availableToNewShops: boolean;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description The editable platform settings; a stale `Version` answers 409. */
+        UpdatePlatformSettingsRequest: {
+            /** Format: int32 */
+            minLeadTimeMinutes: number;
+            /** Format: int32 */
+            bookingHorizonDays: number;
+            /** Format: int32 */
+            slotStepMinutes: number;
+            /** Format: int32 */
+            cancellationCutoffMinutes: number;
+            /** Format: int32 */
+            reviewWindowDays: number;
+            /** Format: int32 */
+            reminderOffsetMinutes: number;
+            /** Format: int32 */
+            expiringSoonThresholdDays: number;
+            expiredSubscriptionEnforcement: components["schemas"]["SubscriptionEnforcement"];
+            hidePausedShopsFromDiscovery: boolean;
+            /** Format: double */
+            mapDefaultLatitude: number;
+            /** Format: double */
+            mapDefaultLongitude: number;
+            /** Format: int32 */
+            mapDefaultZoom: number;
             /** Format: uint32 */
             version: number;
         };
@@ -2443,6 +3108,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPackageResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListSubscriptions: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["SubscriptionStatus"];
+                search?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSubscriptionListResponse"];
+                };
+            };
+        };
+    };
+    GetShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopSubscriptionResponse"];
                 };
             };
             /** @description Not Found */
@@ -5515,6 +6234,675 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListSubscriptionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"][];
+                };
+            };
+        };
+    };
+    CreateSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PublishSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ArchiveSubscriptionPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReorderSubscriptionPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListSubscriptionPlanPrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanPriceResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddSubscriptionPlanPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPlanPriceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAdminShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AssignShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenewShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenewSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    OverrideShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SuspendShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuspendSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReinstateShopSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReinstateSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopSubscriptionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPlatformSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSettingsResponse"];
+                };
+            };
+        };
+    };
+    UpdatePlatformSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlatformSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

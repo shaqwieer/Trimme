@@ -1,67 +1,69 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-27 (end of Session 4, Phases 06 and 07)
-- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 06 is pushed and CI-green (run 36316322648). Phase 07 is committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: a review follow-up on top of `9cb2593` (Phase 07: `feat: phase 07 services, categories and packages`), which sits on `e9ae5d3`. Run `git log --oneline -4`.
-- Working tree status: clean after the commit. The local Docker stack is **running**, recreated from an empty volume with the Phase 07 images (web 3300, API 8080, DB 5434, Mailpit UI 8325).
-- Current phase: 07 is complete. Phase 08 has not started.
-- Phase score: 100 / 100 (Phase 07); Phase 06 also 100 / 100 this session.
-- Last fully completed phase: 07, services, categories and packages
+- **Updated:** 2026-09-27 (end of Session 4: Phases 06, 07 and 08)
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 06 and 07 are pushed and CI-green (runs 36316322648 and 36323449600). Phase 08 is committed locally and **not pushed**; push only when the user asks.
+- **HEAD commit:** Phase 08, `feat: phase 08 subscriptions and platform settings`, on top of `22fadaf`. Run `git log --oneline -4` to see it.
+- **Working tree:** clean after the commit.
+- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 08 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
+- **Current phase:** 08 is complete. Phase 09 has not started.
+- **Phase score:** 100 / 100 (Phase 08). Phases 06 and 07 were also 100 / 100 this session.
+- **Last fully completed phase:** 08, subscriptions foundation and platform settings.
 
 ## Completed this session
-- **Phase 06** — shops, locations and professionals. Images are stored in PostgreSQL at the user's request (D-064). Details in its phase file; CI green.
-- **Phase 07** — services, categories and packages (`phases/phase-07-services-packages.md`):
-  - **Shop-owned services:** the shop's own price and duration (Arabic name required, English optional), on/off, keyboard reorder, final archive, and delete only when unused (packages now, bookings in Phase 10).
-  - **Packages:** 2–10 of the shop's own services, with an explicit price and duration; published only when every item is available.
-  - **Admin:**
-    - categories;
-    - platform-wide service and package lists;
-    - hide/unhide with a reason;
-    - audited support override (before → after);
-    - professional–service assignment limited to the professional's own shop, enforced by composite FKs including a cross-module one by entity-type name (D-073).
-  - **Public:** `/public/service-categories`, `/public/shops/{slug}/services|packages`.
-  - **Web:** `/shop/services` (+ packages tab and forms), `/admin/services` (+ detail, categories), `/admin/packages`, and the assigned-services card on the admin professional page.
-  - **Seed:** categories, per-shop services and prices, packages, assignments.
-  - **Docs:** D-070…D-074 (D-020 accepted), TRACEABILITY, domain model, permissions matrix, design deviations, README.
-  - **Infra:** the web image sets `KEEP_ALIVE_TIMEOUT=65000`, which fixes intermittent "socket hang up" through the web proxy.
+- **Phase 06:** shops, locations and professionals. Images are stored in PostgreSQL (D-064).
+- **Phase 07:** services, categories and packages.
+- **Phase 08** (`phases/phase-08-subscriptions-settings.md`):
+  - **Plans (SuperAdmin only).** Localized plans with bilingual features and a billing interval. Prices are append-only versions from a date (D-079).
+  - **Shop subscriptions.** Activation and renewal are recorded manually (no payment). Each period keeps the plan name and price version it was recorded with. Overrides are SuperAdmin-only, need a reason, and keep the previous values; suspend and reinstate are also available. There is no future gap in coverage, and dates follow the platform calendar (D-077).
+  - **Status.** Active / ExpiringSoon / Expired / Suspended / None, with the threshold as a setting.
+  - **Bookability.** `IShopBookability` reads a coverage row that is not tenant-scoped (D-078).
+  - **Platform settings.** One audited, version-checked row; `migrate` inserts the defaults and never overwrites edits (D-076).
+  - **Races.** A unique-index race now answers 409 (D-080).
+  - **Web:**
+    - `/admin/subscription-plans` (list/new/detail with the price timeline);
+    - `/admin/subscriptions` (KPIs, filter, search);
+    - the shop page's Subscription tab;
+    - `/shop/subscription` (warning and history);
+    - `/admin/settings`.
+  - **Seed:** 3 plans (the annual one with 2 price versions) and one subscription per status. Two extra demo shops without users: Lamsat Al Rajul (Expired) and Al Madina (Suspended).
 
-## Verification evidence
-- Command: `dotnet build Trimme.slnx -c Release --no-incremental`
-  Result: PASS, 0 warnings
-- Command: unit / architecture / integration tests
-  Result: PASS, 171 / 63 / 106. One earlier combined run had 4 integration timeouts (about 31 s) that did not reproduce in 3 later runs.
-- Command: `dotnet ef migrations has-pending-model-changes`
-  Result: PASS, no changes
-- Command: web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`)
-  Result: PASS, 196 web tests
-- Command: compose upgrade from the Phase 06 volume, then `down -v` + `up --build` + `pnpm e2e` ×2
-  Result: the first clean run was 41/42 twice (the admin flow raced `router.refresh()`, plus a keep-alive "socket hang up"). Both are fixed. A fresh `down -v` + `up --build` then PASSED 42/42 twice.
-- Command: no-transfer grep gate; gitleaks `dir` + `git`
-  Result: PASS, no hits and no leaks
+## Verification evidence (Phase 08)
+| Command | Result |
+|---|---|
+| `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
+| Unit / architecture / integration tests | PASS, 206 / 63 / 113. Integration was 113/113 on 5 of 6 full runs; one early run had 3 unreproduced timeouts at about 37 s (watch item) |
+| `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
+| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 212 web tests |
+| Compose upgrade from the Phase 07 volume; then `down -v` + `up --build` + `pnpm e2e` ×3 | Final fresh stack: 44/45, 45/45, 45/45. The single failure was a cold-stack 5 s wait in the Phase 04 OTP flow. An earlier stack found two real issues, both fixed (see the phase file) |
+| No-transfer grep gate; R-NEG-08 grep gate; gitleaks `dir` + `git` | PASS, no hits, no leaks |
 
 ## Database and migrations
-- Created this session: `ShopProfileLocationProfessionals` (Phase 06) and `ServicesPackages` (Phase 07). Applied locally only: Testcontainers databases and the compose volume.
+- Created this session: `ShopProfileLocationProfessionals` (Phase 06), `ServicesPackages` (Phase 07) and `SubscriptionsSettings` (Phase 08).
+- Applied locally only: Testcontainers databases and the compose volume.
 
 ## Decisions added
-- D-064…D-069 (Phase 06): images in PostgreSQL, shop profile/policy/location, public read scope, professionals and WhatsApp, map/geocoding adapters, test infrastructure.
-- D-070 localized catalogue text. D-071 shop service rules. D-072 packages. D-073 professional–service assignment. D-074 moderation and support override.
+- D-064…D-075 (Phases 06–07).
+- **Phase 08:** D-076 platform settings, D-077 subscription periods and dates, D-078 coverage read model and bookability gate, D-079 plans and versioned prices, D-080 unique races → 409.
+- D-013 and D-014 are now **Accepted**.
 
 ## Known issues or blockers
-- **Phase 07 not pushed.** After the user asks to push, confirm CI is green and record the run in the Phase 07 file and MASTER_PLAN.
-- Watch CI for the unreproduced integration timeouts (Phase 07 evidence).
-- **Pre-existing:** Serilog request logging records handled 400/409 exceptions as "responded 500". Logging only; fix in Phase 17.
-- **Local compose only:** an upload over the size limit sent through the Next.js rewrite gets a bare 500 instead of 413. Production Nginx needs `client_max_body_size 6m` (Phase 17).
-- **Deferred:** drag-and-drop reordering (keyboard move buttons exist).
-- **Completed in Phase 10 with bookings:** R-SVC-02 (booking delete guard) and R-SVC-05 (reporting expansion).
-- Port 8025 is taken on this machine: `TRIMME_MAILPIT_PORT=8325`, `E2E_MAILPIT_URL=http://localhost:8325`.
+- **Phase 08 not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 08 file and MASTER_PLAN.
+- **Default to confirm with the user (D-078).** A shop without a subscription in force is hidden from discovery and takes no online bookings. Setup for Phases 10–12 tests must assign a subscription, or set the enforcement to `None`.
+- **Watch item: timing.**
+  - Intermittent integration timeouts at about 31–37 s (Phases 07 and 08), not reproduced.
+  - The first E2E run on a freshly built stack occasionally exceeds a 5 s wait in an older flow.
+- **Not enforced yet:** grace/trial days and plan limits are stored only (D-077). Expiry notifications come in Phase 15.
+- **Pre-existing, logging only:** Serilog logs handled 400/409 as "responded 500". Fix in Phase 17.
+- **Local compose only:** an upload over the limit through the Next.js rewrite gets a bare 500. Production Nginx needs `client_max_body_size 6m` (Phase 17).
+- **Deferred:** drag-and-drop reordering; keyboard move buttons exist.
+- **Ports:** 8025 is taken on this machine. Use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
 1. If the user wants it, push `main` and confirm CI is green; record the run.
-2. Start Phase 08 (`phases/phase-08-subscriptions-settings.md`). Re-validate first with `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Services"` and `pnpm e2e`.
-3. Phase 08 notes:
-   - Plans and prices are SuperAdmin-only and versioned (spec §15).
-   - Shop subscriptions are `IShopOwned` with admin use cases in `*.Application.Admin`.
-   - Platform settings will also own map defaults and the operating currency; the catalogue currently stores `SAR`.
+2. Start Phase 09 (`phases/phase-09-*.md`). Re-validate first:
+   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Subscriptions"`
+   - `pnpm e2e`
+3. Phase 09 should read `IPlatformSettings` for the minimum lead time, horizon and slot step, and `IShopBookability` where availability must be hidden.
 
 ## Files intentionally left modified
 - None.

@@ -6,7 +6,10 @@ using Trimme.Modules.Shops.Domain;
 
 namespace Trimme.Modules.Shops.Infrastructure.Seeding;
 
-/// <summary>Two active Riyadh demo shops with fixed ids, a public profile and a map location (idempotent; development only).</summary>
+/// <summary>
+/// Active Riyadh demo shops with fixed ids, a public profile and a map location (idempotent; development only): the two
+/// main shops, and two extra ones without users that only illustrate subscription statuses (Phase 08).
+/// </summary>
 internal sealed class DemoShopsSeeder : IDevSeeder
 {
     private static readonly DateTimeOffset SeededAt = new(2026, 9, 1, 9, 0, 0, TimeSpan.Zero);
@@ -59,6 +62,22 @@ internal sealed class DemoShopsSeeder : IDevSeeder
                         $"{profile.Street}، حي {profile.District}، {profile.City}", LocationSource.Manual, SeededAt, confirmedBy: null).Value,
                     SeededAt);
             }
+        }
+
+        foreach (var extra in DemoData.ExtraShops)
+        {
+            if (await db.Set<Shop>().AnyAsync(s => s.Id == extra.Id, cancellationToken))
+            {
+                continue;
+            }
+
+            var shop = Shop.Create(extra.Id, extra.Slug, extra.NameAr, extra.NameEn, Shop.DefaultTimeZone, SeededAt).Value;
+            shop.Activate(SeededAt);
+            shop.SetLocation(
+                ShopLocation.Create(
+                    extra.Latitude, extra.Longitude, null, extra.District, "الرياض", $"حي {extra.District}، الرياض", LocationSource.Manual, SeededAt, confirmedBy: null).Value,
+                SeededAt);
+            db.Add(shop);
         }
 
         await db.SaveChangesAsync(cancellationToken);

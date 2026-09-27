@@ -136,8 +136,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 04 | Identity, sessions, roles & permissions | [x] | 100/100 | 03 | `phases/phase-04-identity.md` §Evidence (build 0 warnings; 99 unit / 56 architecture / 66 integration tests incl. endpoint matrix; web 165 tests; E2E 36/36 ×2 on a clean stack; gitleaks clean) | `54cf79a` (+ follow-up fix) | CI green: run 36270344233 |
 | 05 | Tenancy, privacy & audit core | [x] | 100/100 | 04 | `phases/phase-05-tenancy-privacy.md` §Evidence (124 unit / 61 architecture / 81 integration; web 170; E2E 38/38 ×2 on a clean stack; probes for every tenancy rule; gitleaks clean) | `6a65a9d` | CI green: run 36270344233 |
 | 06 | Shops, locations & professionals | [x] | 100/100 | 05 | `phases/phase-06-shops-professionals.md` §Evidence (build 0 warnings; 153 unit / 62 architecture / 97 integration; web 179; E2E 40/40 ×2 on a clean stack; images stored in PostgreSQL (D-064); no-transfer gate clean; gitleaks clean) | `805313b` | CI green: run 36316322648 |
-| 07 | Services, categories & packages | [x] | 100/100 | 06 | `phases/phase-07-services-packages.md` §Evidence (build 0 warnings; 171 unit / 63 architecture / 106 integration; web 196; E2E 42/42 ×2 on a fresh `down -v` stack after fixing a 41/42 first run; gitleaks clean) | `9cb2593` (+ follow-up) | Push when asked; CI to confirm |
-| 08 | Subscriptions foundation & platform settings | [ ] | 0/100 | 07 | — | — | Start next: item 8.1 re-validation |
+| 07 | Services, categories & packages | [x] | 100/100 | 06 | `phases/phase-07-services-packages.md` §Evidence (build 0 warnings; 171 unit / 63 architecture / 106 integration; web 196; E2E 42/42 ×2 on a fresh `down -v` stack after fixing a 41/42 first run; gitleaks clean) | `9cb2593` (+ follow-up) | CI green: run 36323449600 |
+| 08 | Subscriptions foundation & platform settings | [x] | 100/100 | 07 | `phases/phase-08-subscriptions-settings.md` §Evidence (build 0 warnings; 206 unit / 63 architecture / 113 integration; web 212; E2E on fresh stacks 45/45 twice after a 44/45 cold first run; R-NEG-08 + no-transfer gates and gitleaks clean) | see `git log` | Not pushed |
 | 09 | Schedules & availability engine | [ ] | 0/100 | 08 | — | — | — |
 | 10 | Booking core & integrity | [ ] | 0/100 | 09 | — | — | — |
 | 11 | Public discovery & shop pages | [ ] | 0/100 | 10 | — | — | — |
@@ -149,7 +149,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
 | 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 800 / 1900 points.**
+**Platform total: 900 / 1900 points.**
 
 ## 9. Risks and external dependencies
 

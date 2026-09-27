@@ -50,6 +50,12 @@ public interface IShopDirectory
     Task<ShopSummary?> FindBySlugAsync(string slug, CancellationToken cancellationToken);
 
     Task<IReadOnlyDictionary<ShopId, ShopSummary>> FindManyAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken);
+
+    /// <summary>Shops whose Arabic or English name or slug contains <paramref name="term"/> (case-insensitive), at most <paramref name="limit"/>.</summary>
+    Task<IReadOnlyList<ShopId>> SearchIdsAsync(string term, int limit, CancellationToken cancellationToken);
+
+    /// <summary>Every shop the caller may see (all of them for admins).</summary>
+    Task<int> CountAsync(CancellationToken cancellationToken);
 }
 
 public sealed record ShopSummary(ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status);
