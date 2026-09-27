@@ -27,6 +27,44 @@
         }
       }
     },
+    "/api/v1/media/{mediaId}": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "A stored image (JPEG, PNG or WebP). Public and immutable: a new upload always gets a new id.",
+        "operationId": "GetMedia",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "304": {
+            "description": "Not Modified"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -72,6 +110,115 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ShopProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "An active shop\u0027s public profile. No professional or customer contact data.",
+        "operationId": "GetPublicShop",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The shop\u0027s own professionals, read-only and without contact data.",
+        "operationId": "ListShopProfessionals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopProfessionalResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/professionals": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Active professionals of an active shop. No contact data.",
+        "operationId": "ListPublicShopProfessionals",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicProfessionalResponse"
+                  }
                 }
               }
             }
@@ -786,7 +933,7 @@
         "tags": [
           "Admin: shops"
         ],
-        "summary": "Shops, newest first, with search and status filter (paged).",
+        "summary": "Shops, newest first, with search (name, slug, district) and status filter (paged).",
         "operationId": "AdminListShops",
         "parameters": [
           {
@@ -839,7 +986,7 @@
         "tags": [
           "Admin: shops"
         ],
-        "summary": "One shop.",
+        "summary": "One shop with its profile, location and shop-edit policy.",
         "operationId": "AdminGetShop",
         "parameters": [
           {
@@ -858,13 +1005,73 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminShopResponse"
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
                 }
               }
             }
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Edits the public profile and verification (audited, optimistic concurrency).",
+        "operationId": "AdminUpdateShopProfile",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShopProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1011,6 +1218,1696 @@
           }
         }
       }
+    },
+    "/api/v1/admin/shops/{shopId}/location": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Sets the confirmed map point and address (audited).",
+        "operationId": "AdminSetShopLocation",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopLocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/editable-policy": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Sets which profile fields the shop may edit itself (audited).",
+        "operationId": "AdminSetShopEditablePolicy",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditablePolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/logo": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Replaces the logo (JPEG, PNG or WebP, at most 5 MB; audited).",
+        "operationId": "AdminUploadShopLogo",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Removes the logo (audited).",
+        "operationId": "AdminRemoveShopLogo",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/cover": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Replaces the cover image (1600\u00D7900 recommended; audited).",
+        "operationId": "AdminUploadShopCover",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Removes the cover image (audited).",
+        "operationId": "AdminRemoveShopCover",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/gallery": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Adds a gallery image (up to 12; audited).",
+        "operationId": "AdminAddShopGalleryImage",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/gallery/{mediaId}": {
+      "delete": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Removes a gallery image (audited).",
+        "operationId": "AdminRemoveShopGalleryImage",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/profile": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The shop\u0027s own profile and the admin\u0027s edit policy. Not available while suspended.",
+        "operationId": "GetOwnShopProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Edits the fields the admin policy opens to the shop; a locked field that changes answers 403.",
+        "operationId": "UpdateOwnShopProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOwnShopProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/profile/logo": {
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Replaces the logo, if the policy allows.",
+        "operationId": "UploadOwnShopLogo",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Removes the logo, if the policy allows.",
+        "operationId": "RemoveOwnShopLogo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/profile/cover": {
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Replaces the cover image, if the policy allows.",
+        "operationId": "UploadOwnShopCover",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Removes the cover image, if the policy allows.",
+        "operationId": "RemoveOwnShopCover",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/profile/gallery": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Adds a gallery image, if the policy allows.",
+        "operationId": "AddOwnShopGalleryImage",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/profile/gallery/{mediaId}": {
+      "delete": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Removes one of the shop\u0027s gallery images, if the policy allows.",
+        "operationId": "RemoveOwnShopGalleryImage",
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/location": {
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Sets the shop\u0027s map point, if the admin policy opens the location to the shop.",
+        "operationId": "SetOwnShopLocation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopLocationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnProfileResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/geo/search": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Address and district search for the location picker (server-side provider, cached).",
+        "operationId": "AdminGeocodeSearch",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GeocodedPlace"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/geo/reverse": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "The address at a map point, for the picker\u0027s confirmation card.",
+        "operationId": "AdminGeocodeReverse",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodedPlace"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/geo/search": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Address and district search for the location picker (server-side provider, cached).",
+        "operationId": "ShopGeocodeSearch",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GeocodedPlace"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/geo/reverse": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The address at a map point, for the picker\u0027s confirmation card.",
+        "operationId": "ShopGeocodeReverse",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeocodedPlace"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals": {
+      "post": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Creates a professional in exactly one shop (audited).",
+        "operationId": "AdminCreateProfessional",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProfessionalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Professionals with shop, status and search filters (paged). Numbers are masked.",
+        "operationId": "AdminListProfessionals",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProfessionalStatus"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminProfessionalListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}": {
+      "get": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "One professional. The WhatsApp number is masked.",
+        "operationId": "AdminGetProfessional",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Edits the profile (audited, optimistic concurrency). The shop cannot change.",
+        "operationId": "AdminUpdateProfessional",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfessionalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/disable": {
+      "post": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Hides the professional from booking (audited).",
+        "operationId": "AdminDisableProfessional",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangeProfessionalStatusRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/enable": {
+      "post": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Makes a disabled professional active again (audited).",
+        "operationId": "AdminEnableProfessional",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChangeProfessionalStatusRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/whatsapp": {
+      "put": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Sets or corrects the WhatsApp number and the notification toggle (audited, number never logged).",
+        "operationId": "AdminSetProfessionalWhatsApp",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetProfessionalWhatsAppRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/whatsapp/reveal": {
+      "post": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Returns the full number once, for a stated reason (audited; never cached).",
+        "operationId": "AdminRevealProfessionalWhatsApp",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealProfessionalWhatsAppRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevealedWhatsAppResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/professionals/{professionalId}/avatar": {
+      "put": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Replaces the photo (JPEG, PNG or WebP, at most 5 MB; audited).",
+        "operationId": "AdminUploadProfessionalAvatar",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: professionals"
+        ],
+        "summary": "Removes the photo (audited).",
+        "operationId": "AdminRemoveProfessionalAvatar",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProfessionalResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1034,6 +2931,302 @@
           }
         }
       },
+      "AdminProfessionalListItem": {
+        "required": [
+          "id",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "avatarUrl",
+          "status",
+          "whatsApp"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProfessionalStatus"
+          },
+          "whatsApp": {
+            "$ref": "#/components/schemas/AdminWhatsAppResponse"
+          }
+        },
+        "description": "A professional in the admin list."
+      },
+      "AdminProfessionalResponse": {
+        "required": [
+          "id",
+          "shopId",
+          "shopSlug",
+          "shopNameAr",
+          "shopNameEn",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "avatarUrl",
+          "status",
+          "whatsApp",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProfessionalStatus"
+          },
+          "whatsApp": {
+            "$ref": "#/components/schemas/AdminWhatsAppResponse"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A professional as the platform admin edits it. Guid AdminProfessionalResponse.ShopId is read-only: it is fixed at creation and no\nrequest can change it (R-NEG-01)."
+      },
+      "AdminShopDetailResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "category",
+          "publicPhone",
+          "amenities",
+          "isVerified",
+          "logoUrl",
+          "coverUrl",
+          "gallery",
+          "location",
+          "editableFields",
+          "status",
+          "timeZone",
+          "requireManualConfirmation",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "publicPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopAmenity"
+            }
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopImageResponse"
+            }
+          },
+          "location": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopLocationResponse"
+              }
+            ]
+          },
+          "editableFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopProfileField"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "requireManualConfirmation": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A shop with its full profile, location and shop-edit policy, as the platform admin edits it."
+      },
       "AdminShopResponse": {
         "required": [
           "id",
@@ -1043,6 +3236,9 @@
           "status",
           "timeZone",
           "requireManualConfirmation",
+          "district",
+          "isVerified",
+          "logoUrl",
           "createdAt",
           "updatedAt"
         ],
@@ -1070,6 +3266,21 @@
           "requireManualConfirmation": {
             "type": "boolean"
           },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1082,7 +3293,30 @@
             "format": "date-time"
           }
         },
-        "description": "A shop as the platform admin sees it."
+        "description": "A shop in the admin list."
+      },
+      "AdminWhatsAppResponse": {
+        "required": [
+          "masked",
+          "notificationsEnabled",
+          "verification"
+        ],
+        "type": "object",
+        "properties": {
+          "masked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notificationsEnabled": {
+            "type": "boolean"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/WhatsAppVerification"
+          }
+        },
+        "description": "The WhatsApp settings an admin sees. The number itself is only ever masked here (reveal is a separate, audited action)."
       },
       "ApiMetaResponse": {
         "required": [
@@ -1101,6 +3335,20 @@
           "serverTimeUtc": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ChangeProfessionalStatusRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1136,6 +3384,73 @@
             "type": "boolean"
           }
         }
+      },
+      "CreateProfessionalRequest": {
+        "required": [
+          "shopId",
+          "nameAr",
+          "nameEn",
+          "slug",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "whatsAppNumber",
+          "notificationsEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "slug": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "whatsAppNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notificationsEnabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "The one shop is chosen here, at creation, and can never be changed afterwards (D-011)."
       },
       "CreateShopRequest": {
         "required": [
@@ -1174,6 +3489,20 @@
           }
         }
       },
+      "EditablePolicyRequest": {
+        "required": [
+          "editableFields"
+        ],
+        "type": "object",
+        "properties": {
+          "editableFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopProfileField"
+            }
+          }
+        }
+      },
       "ForgotPasswordRequest": {
         "required": [
           "email",
@@ -1191,6 +3520,53 @@
             ]
           }
         }
+      },
+      "GeocodedPlace": {
+        "required": [
+          "latitude",
+          "longitude",
+          "formattedAddress",
+          "addressLine",
+          "district",
+          "city"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "formattedAddress": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An address search or reverse-geocoding result."
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
       },
       "InvitationResponse": {
         "required": [
@@ -1260,6 +3636,14 @@
             ]
           }
         }
+      },
+      "LocationSource": {
+        "enum": [
+          "Manual",
+          "Geocoded",
+          "Device"
+        ],
+        "description": "How the location point was chosen in the picker."
       },
       "MeResponse": {
         "required": [
@@ -1357,6 +3741,36 @@
         },
         "description": "Response to an OTP request. The code is never returned."
       },
+      "PagedResponseOfAdminProfessionalListItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProfessionalListItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
       "PagedResponseOfAdminShopResponse": {
         "required": [
           "items",
@@ -1442,6 +3856,211 @@
           }
         }
       },
+      "ProfessionalStatus": {
+        "enum": [
+          "Active",
+          "Disabled"
+        ]
+      },
+      "PublicProfessionalResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "avatarUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02)."
+      },
+      "PublicShopLocationResponse": {
+        "required": [
+          "latitude",
+          "longitude",
+          "addressLine",
+          "district",
+          "city",
+          "formattedAddress"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "addressLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formattedAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Where a customer finds the shop: the confirmed point and the address, without who confirmed it."
+      },
+      "PublicShopResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "category",
+          "publicPhone",
+          "amenities",
+          "isVerified",
+          "logoUrl",
+          "coverUrl",
+          "galleryUrls",
+          "location"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "publicPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopAmenity"
+            }
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "galleryUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "location": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicShopLocationResponse"
+              }
+            ]
+          }
+        },
+        "description": "A published shop\u0027s basic profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02)."
+      },
       "RequestOtpRequest": {
         "required": [
           "phone",
@@ -1480,6 +4099,29 @@
             "type": "string"
           },
           "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "RevealedWhatsAppResponse": {
+        "required": [
+          "number"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string"
+          }
+        },
+        "description": "The full number, returned once per audited reveal. Never cached."
+      },
+      "RevealProfessionalWhatsAppRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
             "type": "string"
           }
         }
@@ -1557,6 +4199,336 @@
           }
         }
       },
+      "SetProfessionalWhatsAppRequest": {
+        "required": [
+          "whatsAppNumber",
+          "notificationsEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "whatsAppNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notificationsEnabled": {
+            "type": "boolean"
+          },
+          "keepCurrentNumber": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "Sets, corrects or removes (null) the WhatsApp number (E.164 or a Saudi national format), and the notification\ntoggle. With \u0060KeepCurrentNumber\u0060 only the toggle changes, so an admin never needs to see the number to do that."
+      },
+      "ShopAmenity": {
+        "enum": [
+          "Parking",
+          "WiFi",
+          "KidsFriendly",
+          "WheelchairAccessible",
+          "WaitingArea",
+          "PrayerArea"
+        ]
+      },
+      "ShopCategory": {
+        "enum": [
+          "Barbershop",
+          "Salon",
+          "Unisex"
+        ],
+        "description": "Kind of business, shown on the public page and used by discovery filters (Phase 11)."
+      },
+      "ShopImageResponse": {
+        "required": [
+          "id",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ShopLocationRequest": {
+        "required": [
+          "latitude",
+          "longitude",
+          "addressLine",
+          "district",
+          "city",
+          "formattedAddress",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "addressLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formattedAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/LocationSource"
+          }
+        }
+      },
+      "ShopLocationResponse": {
+        "required": [
+          "latitude",
+          "longitude",
+          "addressLine",
+          "district",
+          "city",
+          "formattedAddress",
+          "source",
+          "confirmedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "addressLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formattedAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/LocationSource"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The confirmed shop entrance. Coordinates are WGS 84 decimal degrees."
+      },
+      "ShopOwnProfileResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "category",
+          "publicPhone",
+          "amenities",
+          "isVerified",
+          "logoUrl",
+          "coverUrl",
+          "gallery",
+          "location",
+          "editableFields",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "publicPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopAmenity"
+            }
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopImageResponse"
+            }
+          },
+          "location": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopLocationResponse"
+              }
+            ]
+          },
+          "editableFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopProfileField"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The signed-in shop\u0027s own profile, for its settings screen (s-settings). IReadOnlyList\u0026lt;ShopProfileField\u0026gt; ShopOwnProfileResponse.EditableFields is the admin\npolicy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;\nstring? ShopOwnProfileResponse.PublicPhone is the shop\u0027s own business number."
+      },
+      "ShopProfessionalResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "avatarUrl",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProfessionalStatus"
+          }
+        },
+        "description": "A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec \u00A77).\nShop-facing contract: no contact data of any kind."
+      },
+      "ShopProfileField": {
+        "enum": [
+          "Name",
+          "Description",
+          "Category",
+          "PublicPhone",
+          "Amenities",
+          "Logo",
+          "Cover",
+          "Gallery",
+          "Location"
+        ],
+        "description": "Profile areas an admin can open to or lock from the shop (DV-S16). Verification and slug are never shop-editable."
+      },
       "ShopProfileResponse": {
         "required": [
           "id",
@@ -1629,6 +4601,178 @@
           }
         }
       },
+      "UpdateOwnShopProfileRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "category",
+          "publicPhone",
+          "amenities",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "publicPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amenities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShopAmenity"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The shop\u0027s own edit. Send the whole form: fields locked by the admin policy must keep their current value."
+      },
+      "UpdateProfessionalRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "slug",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "slug": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop."
+      },
+      "UpdateShopProfileRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "category",
+          "publicPhone",
+          "amenities",
+          "isVerified",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "publicPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amenities": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShopAmenity"
+            }
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The admin\u0027s profile edit. \u0060Version\u0060 is the value the client read; a stale value answers 409\n\u0060resource.concurrency_conflict\u0060."
+      },
       "VerifyOtpRequest": {
         "required": [
           "challengeId",
@@ -1644,6 +4788,14 @@
             "type": "string"
           }
         }
+      },
+      "WhatsAppVerification": {
+        "enum": [
+          "Unverified",
+          "Verified",
+          "Failed"
+        ],
+        "description": "Delivery state of the WhatsApp number, set by the notification worker (Phase 15)."
       }
     }
   },
@@ -1652,16 +4804,25 @@
       "name": "Meta"
     },
     {
+      "name": "Media"
+    },
+    {
       "name": "Auth"
     },
     {
       "name": "Shop"
     },
     {
+      "name": "Public"
+    },
+    {
       "name": "Admin: identity"
     },
     {
       "name": "Admin: shops"
+    },
+    {
+      "name": "Admin: professionals"
     }
   ]
 }

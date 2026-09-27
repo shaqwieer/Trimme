@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,11 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "POST /api/v1/auth/refresh",
         "POST /api/v1/auth/sign-out",
         "GET /api/v1/dev/otp-inbox/latest",
+
+        // Phase 06: stored images and the published shop page (read-only, published data only, D-064/D-066).
+        "GET /api/v1/media/{mediaId:guid}",
+        "GET /api/v1/public/shops/{slug}",
+        "GET /api/v1/public/shops/{slug}/professionals",
     ];
 
     /// <summary>Endpoints any signed-in user may call about themselves (no permission needed).</summary>
@@ -207,11 +213,20 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
             .SelectMany(e => (e.Metadata.GetMetadata<Microsoft.AspNetCore.Routing.HttpMethodMetadata>()?.HttpMethods ?? ["GET"])
                 .Select(method => new ApiEndpoint(method, "/" + e.RoutePattern.RawText!.TrimStart('/'), e.Metadata)))];
 
-    private static Task<HttpResponseMessage> Send(ApiSession session, ApiEndpoint endpoint, CancellationToken ct)
+    private static async Task<HttpResponseMessage> Send(ApiSession session, ApiEndpoint endpoint, CancellationToken ct)
     {
         var path = RouteParameter().Replace(endpoint.Route, Guid.NewGuid().ToString());
+
+        // Upload endpoints only match multipart requests (anything else is 415 at routing), so send the right shape.
+        if (endpoint.Metadata.OfType<IAcceptsMetadata>().Any(m => m.ContentTypes.Contains("multipart/form-data")))
+        {
+            using var request = new HttpRequestMessage(new HttpMethod(endpoint.Method), path) { Content = new MultipartFormDataContent() };
+            request.Headers.Add(Csrf.HeaderName, await session.CsrfTokenAsync(ct));
+            return await session.Client.SendAsync(request, ct);
+        }
+
         var body = endpoint.Method is "POST" or "PUT" or "PATCH" ? new { } : null;
-        return session.SendAsync(new HttpMethod(endpoint.Method), path, body, ct);
+        return await session.SendAsync(new HttpMethod(endpoint.Method), path, body, ct);
     }
 
     [GeneratedRegex(@"\{[^}]+\}")]

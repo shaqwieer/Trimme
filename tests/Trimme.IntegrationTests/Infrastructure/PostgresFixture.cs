@@ -17,6 +17,10 @@ public sealed class PostgresFixture : IAsyncLifetime
         .WithDatabase("trimme_tests")
         .WithUsername("trimme")
         .WithPassword("trimme_tests")
+
+        // Every test database gets its own Npgsql pool and test classes run in parallel; the default 100 connections
+        // ran out once Phase 06 added its suites.
+        .WithCommand("-c", "max_connections=400")
         .Build();
 
     public string ConnectionString => _container.GetConnectionString();

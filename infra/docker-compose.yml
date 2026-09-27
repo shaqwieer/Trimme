@@ -17,6 +17,9 @@ x-api-environment: &api-environment
   # These higher limits are for local development and E2E only; production keeps the code defaults.
   RateLimiting__otp__PermitLimit: ${TRIMME_OTP_RATE_LIMIT:-500}
   RateLimiting__auth__PermitLimit: ${TRIMME_AUTH_RATE_LIMIT:-1000}
+  # Location picker geocoding (D-007): the built-in Riyadh gazetteer by default, so no automated run calls a third
+  # party. Set TRIMME_GEOCODER=Nominatim for real OpenStreetMap lookups (light development use only, 1 request/s).
+  Geocoding__Provider: ${TRIMME_GEOCODER:-Fake}
 
 services:
   postgres:
@@ -92,6 +95,8 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         TRIMME_API_INTERNAL_URL: http://api:8080
+        # Map tiles for the location picker; empty uses OpenStreetMap's public tiles (development only, D-007).
+        NEXT_PUBLIC_MAP_TILE_URL: ${TRIMME_MAP_TILE_URL:-}
     image: trimme-web:dev
     environment:
       TRIMME_API_INTERNAL_URL: http://api:8080

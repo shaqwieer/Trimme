@@ -17,6 +17,9 @@ COPY apps/web/ apps/web/
 # Destination of the /api and /hubs rewrites (fixed at build time; Nginx handles these paths in production).
 ARG TRIMME_API_INTERNAL_URL=http://api:8080
 ENV TRIMME_API_INTERNAL_URL=$TRIMME_API_INTERNAL_URL
+# Map tile template, inlined into the client bundle at build time; empty means OpenStreetMap's public tiles.
+ARG NEXT_PUBLIC_MAP_TILE_URL=
+ENV NEXT_PUBLIC_MAP_TILE_URL=$NEXT_PUBLIC_MAP_TILE_URL
 RUN pnpm --filter @trimme/web build
 
 FROM node:22-alpine AS runner

@@ -111,9 +111,9 @@
     },
     "upload": {
       "prompt": "Drag the cover image here or choose a file",
-      "constraints": "JPG/PNG · {width}×{height} · up to {maxMb}MB",
+      "constraints": "JPG/PNG/WebP · {width}×{height} · up to {maxMb} MB",
       "choose": "Choose file",
-      "typeError": "Unsupported file type — choose a JPG or PNG image",
+      "typeError": "Unsupported file — choose a JPG, PNG or WebP image",
       "sizeError": "Choose an image up to {maxMb}MB",
       "selected": "{name} selected"
     },
@@ -221,7 +221,17 @@
     "passwordMismatch": "The passwords do not match",
     "otpIncorrect": "The code is incorrect",
     "slugInvalid": "Use lowercase Latin letters, digits and dashes (3 to 60 characters)",
-    "slugTaken": "Another shop already uses this link"
+    "slugTaken": "Another shop already uses this link",
+    "coordinateInvalid": "Enter valid coordinates",
+    "imageType": "Choose a JPG, PNG or WebP image",
+    "imageTooLarge": "Choose an image of 5 MB or less",
+    "imageTooSmall": "The image is too small — choose a larger one",
+    "galleryFull": "The gallery is full (12 images at most)",
+    "whatsappTaken": "This number belongs to another professional",
+    "whatsappRequired": "Enter a WhatsApp number to turn notifications on",
+    "reasonRequired": "Give a clear reason (at least 5 characters)",
+    "tooShort": "Type at least 2 characters",
+    "businessPhoneInvalid": "Enter a valid shop phone number"
   },
   "auth": {
     "meta": {
@@ -363,7 +373,16 @@
     "rate_limit_exceeded": "Too many requests in a short time. Wait a moment and try again.",
     "server_unexpected": "Something went wrong. Please try again.",
     "shop_not_found": "The shop was not found.",
-    "shop_invalid_transition": "The shop cannot change to this status."
+    "shop_invalid_transition": "The shop cannot change to this status.",
+    "shop_profile_field_locked": "The platform admin has locked this field.",
+    "resource_concurrency_conflict": "Someone else changed this a moment ago. Reload the page and edit again.",
+    "shop_gallery_image_not_found": "The image is not in this shop's gallery.",
+    "professional_not_found": "The professional was not found.",
+    "professional_invalid_transition": "The professional's status cannot change this way.",
+    "professional_no_whatsapp": "This professional has no WhatsApp number.",
+    "geo_not_found": "No address was found at this point.",
+    "request_too_large": "The file is larger than allowed (5 MB).",
+    "auth_forbidden": "You don't have permission to do this."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -380,7 +399,9 @@
       "name": "Shop",
       "slug": "Link",
       "status": "Status",
-      "created": "Created"
+      "created": "Created",
+      "district": "District",
+      "verified": "Verification"
     },
     "empty": {
       "title": "No shops yet",
@@ -420,6 +441,235 @@
         "submit": "Send invitation",
         "sent": "Invitation sent."
       }
+    },
+    "verifiedBadge": "Verified",
+    "tabs": {
+      "label": "Shop sections",
+      "profile": "Profile & images",
+      "location": "Location",
+      "users": "Accounts",
+      "professionals": "Professionals"
+    },
+    "sections": {
+      "profile": "Shop profile",
+      "images": "Shop images",
+      "policy": "Shop edit permissions",
+      "location": "Shop location on the map"
+    },
+    "policy": {
+      "title": "Fields the shop edits itself",
+      "body": "Choose what the shop owner can change in their settings. Verification and the page link stay with the admin.",
+      "save": "Save permissions",
+      "saved": "Edit permissions saved."
+    },
+    "professionals": {
+      "title": "The shop's professionals",
+      "body": "Each professional belongs to this shop only.",
+      "add": "Add a professional to this shop",
+      "empty": "No professionals in this shop yet"
     }
+  },
+  "shopCategory": {
+    "Barbershop": "Men's barbershop",
+    "Salon": "Beauty salon",
+    "Unisex": "Unisex"
+  },
+  "amenity": {
+    "Parking": "Parking",
+    "WiFi": "Wi-Fi",
+    "KidsFriendly": "Kids friendly",
+    "WheelchairAccessible": "Wheelchair accessible",
+    "WaitingArea": "Waiting area",
+    "PrayerArea": "Prayer area"
+  },
+  "profileField": {
+    "Name": "Shop name",
+    "Description": "Description",
+    "Category": "Shop type",
+    "PublicPhone": "Shop phone",
+    "Amenities": "Amenities",
+    "Logo": "Logo",
+    "Cover": "Cover image",
+    "Gallery": "Gallery",
+    "Location": "Map location"
+  },
+  "locationSource": {
+    "Manual": "Set by hand",
+    "Geocoded": "From search",
+    "Device": "Device location"
+  },
+  "shopProfile": {
+    "nameAr": "Shop name in Arabic",
+    "nameEn": "Shop name in English",
+    "descriptionAr": "Description in Arabic",
+    "descriptionEn": "Description in English",
+    "category": "Shop type",
+    "publicPhone": "Shop phone number",
+    "publicPhoneHelper": "The shop's own number, shown to customers on the shop page",
+    "amenities": "Amenities",
+    "verified": "Verified shop",
+    "verifiedHint": "After checking the commercial registration and shop documents",
+    "save": "Save profile",
+    "saved": "Shop profile saved.",
+    "locked": "Locked by the admin",
+    "lockedHint": "The platform admin decides which fields the shop can edit.",
+    "images": {
+      "title": "Images",
+      "logo": "Logo",
+      "cover": "Cover image",
+      "gallery": "Gallery",
+      "galleryHint": "Up to 12 images. Higher quality means better visibility in discovery.",
+      "uploadLogo": "Drop the logo here or choose a file",
+      "uploadCover": "Drop the cover image here or choose a file",
+      "uploadGallery": "Drop a gallery image here or choose a file",
+      "remove": "Remove",
+      "removeImage": "Remove image {index}",
+      "uploading": "Uploading…",
+      "uploaded": "Image saved.",
+      "removed": "Image removed.",
+      "empty": "No image",
+      "galleryEmpty": "No gallery images yet",
+      "galleryImage": "Gallery image {index}"
+    }
+  },
+  "locationPicker": {
+    "title": "Map location",
+    "search": "Search for an address or district",
+    "searchSubmit": "Search",
+    "searching": "Searching…",
+    "noResults": "No results. Try the district or street name.",
+    "results": "Search results",
+    "useMyLocation": "Use my current location",
+    "locating": "Finding your location…",
+    "locationDenied": "Location permission was denied. Search for the address or enter it by hand.",
+    "locationUnavailable": "Your location could not be found right now.",
+    "dragHint": "Drag the pin to the exact shop entrance",
+    "mapLabel": "Map for placing the shop. Use the fields below to enter coordinates with the keyboard.",
+    "mapUnavailable": "The map is not available on this device. Enter the coordinates and address by hand.",
+    "mapLoading": "Loading the map…",
+    "pin": "Shop location pin",
+    "resolved": "Selected address",
+    "resolving": "Looking up the address…",
+    "unresolved": "No address found for this point — enter it by hand.",
+    "coordinates": "Coordinates",
+    "manual": "Enter the address and coordinates by hand",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "addressLine": "Street and building",
+    "district": "District",
+    "city": "City",
+    "formattedAddress": "Full address",
+    "changeWarning": "Changing the location changes the distance shown in search results.",
+    "confirm": "Confirm location",
+    "saved": "Location saved.",
+    "notSet": "The shop location is not set yet.",
+    "source": "Set by",
+    "confirmedAt": "Last confirmed",
+    "readOnlyTitle": "Location locked",
+    "readOnlyBody": "The platform admin sets the shop location. Contact the admin to change it.",
+    "attribution": "Map data © OpenStreetMap contributors"
+  },
+  "adminProfessionals": {
+    "title": "Professionals & their services",
+    "add": "Add professional",
+    "search": "Search by name",
+    "searchSubmit": "Search",
+    "caption": "Professionals",
+    "statusFilter": "Status",
+    "allStatuses": "All statuses",
+    "columns": {
+      "name": "Professional",
+      "shop": "Shop",
+      "whatsapp": "WhatsApp",
+      "status": "Status"
+    },
+    "noNumber": "No number",
+    "notificationsOff": "Notifications off",
+    "empty": {
+      "title": "No professionals yet",
+      "body": "Add a professional and choose the shop they work in."
+    },
+    "status": {
+      "Active": "Active",
+      "Disabled": "Disabled"
+    },
+    "create": {
+      "title": "Add professional",
+      "shop": "Shop",
+      "shopPlaceholder": "Choose the shop",
+      "shopHelper": "The shop is set when the professional is added and does not change afterwards.",
+      "nameAr": "Name in Arabic",
+      "nameEn": "Name in English",
+      "slug": "Profile link",
+      "slugHelper": "Optional — made from the English name if left empty",
+      "specialtyAr": "Specialty in Arabic",
+      "specialtyEn": "Specialty in English",
+      "bioAr": "Bio in Arabic",
+      "bioEn": "Bio in English",
+      "whatsapp": "Professional's WhatsApp number",
+      "whatsappHelper": "Receives booking and reminder notifications. Never shown to customers or other shops.",
+      "notifications": "Send WhatsApp notifications to this professional",
+      "submit": "Add professional"
+    },
+    "detail": {
+      "back": "All professionals",
+      "notFoundTitle": "Professional not found",
+      "notFoundBody": "The link may be wrong.",
+      "shop": "Shop",
+      "shopFixed": "The shop is set only when the professional is added.",
+      "profileTitle": "Professional profile",
+      "save": "Save profile",
+      "saved": "Profile saved.",
+      "photo": "Photo",
+      "uploadPhoto": "Drop the professional's photo here or choose a file",
+      "removePhoto": "Remove photo",
+      "photoSaved": "Photo saved.",
+      "statusTitle": "Status",
+      "disable": "Disable professional",
+      "enable": "Enable again",
+      "disableTitle": "Disable this professional?",
+      "disableBody": "They will not be offered for new bookings. Existing appointments stay as they are.",
+      "reason": "Reason (optional)",
+      "disabled": "Professional disabled.",
+      "enabled": "Professional enabled again."
+    },
+    "whatsapp": {
+      "title": "WhatsApp & notifications",
+      "number": "Number",
+      "none": "No number on file",
+      "verification": {
+        "Unverified": "Not verified yet",
+        "Verified": "Verified",
+        "Failed": "Delivery failed"
+      },
+      "notificationsOn": "Notifications on",
+      "notificationsOff": "Notifications off",
+      "edit": "Change the number or notifications",
+      "newNumber": "New WhatsApp number",
+      "newNumberHelper": "Leave empty to remove the number.",
+      "keepNumber": "Keep the current number",
+      "save": "Save",
+      "saved": "WhatsApp settings saved.",
+      "reveal": "Show the full number",
+      "revealTitle": "Show the professional's number",
+      "revealBody": "Every reveal is recorded in the activity log with the reason and your name.",
+      "reason": "Reason for showing it",
+      "revealSubmit": "Show",
+      "revealed": "Full number",
+      "hide": "Hide"
+    }
+  },
+  "shopSettings": {
+    "title": "Shop settings",
+    "tabs": {
+      "label": "Settings sections",
+      "profile": "Shop profile",
+      "location": "Location"
+    },
+    "profile": "Shop profile",
+    "images": "Shop images",
+    "location": "Shop location",
+    "unavailableTitle": "Settings are not available right now",
+    "unavailableBody": "The shop is suspended. Contact the platform admin."
   }
 }

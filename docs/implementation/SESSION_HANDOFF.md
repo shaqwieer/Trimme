@@ -1,55 +1,74 @@
 # TRIMME Session Handoff
 
-- Updated at: 2026-09-26 (end of Session 3, after Phases 04 and 05)
-- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 04 and 05 are pushed; GitHub Actions [run 36270344233](https://github.com/shaqwieer/Trimme/actions/runs/36270344233) on `d8f6adf` is green (all 4 jobs).
-- HEAD commit: the CI-record docs commit on top of `d8f6adf` (OpenAPI line-ending fix), `806cc01`, `6a65a9d` (Phase 05), `2aa5968` and `54cf79a` (Phase 04). Run `git log --oneline -7`.
-- Working tree status: clean after the commit. The local Docker stack is **running** (web 3300, API 8080, DB 5434, Mailpit UI 8325).
-- Current phase: 05 is complete. Phase 06 has not started.
-- Phase score: 100 / 100 (Phase 05); Phase 04 also 100 / 100 this session.
-- Last fully completed phase: 05, tenancy, privacy and audit core
+- Updated at: 2026-09-27 (end of Session 4, Phase 06)
+- Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 06 is committed locally and **not pushed** (push only when the user asks).
+- HEAD commit: the Phase 06 commit (`feat: phase 06 shops, locations and professionals; media stored in PostgreSQL`) on top of `d0d040a`. Run `git log --oneline -3`.
+- Working tree status: clean after the commit. The local Docker stack is **running**, recreated from an empty volume with the Phase 06 images (web 3300, API 8080, DB 5434, Mailpit UI 8325).
+- Current phase: 06 is complete. Phase 07 has not started.
+- Phase score: 100 / 100 (Phase 06)
+- Last fully completed phase: 06, shops, locations and professionals
 
 ## Completed this session
-- **Phase 04** — identity, sessions, roles and permissions (`phases/phase-04-identity.md`), plus a review follow-up: enumeration-safe forgot-password when SMTP fails, and the compose `seed` service builds its own image.
-- **Phase 05** — tenancy, privacy and audit core (`phases/phase-05-tenancy-privacy.md`):
-  - Tenancy core in `TrimmeDbContext`: `tenant` query filter on every `IShopOwned` (shop user → own rows, everyone else → none unless an explicit admin/system scope), stamping, immutable `ShopId`, tenant-root FKs, composite `(shop_id, id)` helpers, model-cache key per contributor set.
-  - Tenant from the `shop_id` session claim, only while the shop is not suspended (re-checked every request). Shop membership is `identity.users.shop_id` (D-059).
-  - Shops module: `Shop` lifecycle and admin endpoints; `GET /shop/me`; shop-user invitations; audit trail; paging envelope; `PhoneNumber` value object; demo seed (2 shops × owner + staff).
-  - Tests: data-layer isolation on PostgreSQL, HTTP tenancy (claims-only, immediate suspension, membership FK), phone-absence contract framework (fails closed), audit, seed determinism, architecture rules with built-in probes.
-  - Web: admin shops list/create/detail (activate/suspend, invite), `/shop` dashboard state. E2E tenancy flow.
-  - Docs: D-059…D-063, TRACEABILITY, permissions matrix, architecture, README, deviations.
+- **Phase 06** — shops, locations and professionals (`phases/phase-06-shops-professionals.md`):
+  - **User request:** photos and other media are **stored in PostgreSQL** (`media.media_files`, D-064), not on disk:
+    - validated by content (JPEG/PNG/WebP only);
+    - EXIF/GPS and other metadata stripped;
+    - served immutable from `GET /api/v1/media/{id}`.
+  - **Shop profile:** description, category, own phone, amenities, verification, logo/cover/gallery, and the admin edit policy enforced server-side (D-065).
+  - **Exact location:** `geography(Point,4326)` with a GiST index, set through the MapLibre pin picker with search, device location, drag, resolved address and typed fallback. Geocoding goes through the API: Fake in compose/tests/CI, Nominatim in `dotnet run` (D-068).
+  - **Professionals:** one shop fixed at creation; encrypted WhatsApp number with a unique lookup hash and a mask; toggle; audited reveal with a reason; disable/enable; photo. No transfer anywhere (D-067, D-011).
+  - **Public read scope** for anonymous pages (D-066): `/public/shops/{slug}` and `/public/shops/{slug}/professionals`.
+  - **Web:**
+    - admin shop detail tabs (profile & images, location, accounts, professionals) with the edit-policy card;
+    - `/admin/professionals` list, new and detail;
+    - `/shop/settings` and `/shop/settings/location` with locks.
+  - **Seed:** demo shop profiles and Riyadh locations, and 5 professionals with fake numbers.
+  - **Docs:** D-064…D-069, TRACEABILITY, `docs/domain-model.md` (new), architecture, permissions matrix, design deviations, README, `.env.example` files.
 
 ## Verification evidence
 - Command: `dotnet build Trimme.slnx -c Release --no-incremental`
   Result: PASS, 0 warnings
 - Command: unit / architecture / integration tests
-  Result: PASS, 124 / 61 / 81
-- Command: probes (remove `Produces` from `/shop/me`; built-in violating types for every architecture rule)
-  Result: each rule fails on its probe; production passes
+  Result: PASS, 153 / 62 / 97
 - Command: `dotnet ef migrations has-pending-model-changes`
   Result: PASS, no changes
-- Command: web gates (`lint`, `typecheck` + E2E, `format:check` + E2E, `test`, `openapi:check`, `build`)
-  Result: PASS, 170 web tests
-- Command: `docker compose down -v`, compose smoke, `pnpm e2e` ×2
-  Result: PASS, 38/38 both runs
-- Command: gitleaks `dir` + `git`
+- Command: web gates (`lint`, `typecheck` + E2E, `format:check`, `openapi:check`, `test`, `build`)
+  Result: PASS, 179 web tests
+- Command: compose on the Phase 05 volume (upgrade), then `docker compose down -v` + `up --build` + `pnpm e2e` ×2
+  Result: PASS, 40/40 both runs, including `flows/shops-professionals.spec.ts` (pin drag, cover upload, masked number, reveal, no transfer, owner locks)
+- Command: no-transfer grep gate (D-069 form, test files excluded)
+  Result: PASS, no hits
+- Command: gitleaks `dir` + `git` (Docker; set `MSYS_NO_PATHCONV=1` in Git Bash)
   Result: PASS, no leaks
 
 ## Database and migrations
-- Created this session: `20260926080806_Identity` (Phase 04), `ShopsTenancyAudit` (Phase 05). Applied locally only (Testcontainers databases and the local compose volume).
+- Created this session: `20260927101016_ShopProfileLocationProfessionals`, adding:
+  - the `media` schema with `media_files`;
+  - the `professionals` schema with `professionals` and `professional_contacts`;
+  - shop profile, policy and location columns, with the GiST index.
+- Applied locally only: the Testcontainers databases and the local compose volume, both upgraded from Phase 05 and recreated from empty.
 
 ## Decisions added
-- D-050…D-058 (Phase 04): Identity on the shared context, permission catalogue, cookie sessions, CSRF, OTP rules, staff passwords, email channel, strict JSON numbers, local stack.
-- D-059 Tenancy model (membership on `users.shop_id`, deny-all for non-shop callers). D-060 Phone value object. D-061 Shop lifecycle and tenant access. D-062 Explicit bypass scopes. D-063 Audit trail, paging, demo data.
+- D-064 Images stored in PostgreSQL (user request).
+- D-065 Shop profile, edit policy and location on the shop row.
+- D-066 Public read scope.
+- D-067 Professionals and the WhatsApp contact.
+- D-068 Map and geocoding adapters (implements D-007).
+- D-069 Test infrastructure and gates (test DB `max_connections=400`, multipart in the endpoint matrix, grep gate excludes tests).
 
 ## Known issues or blockers
-- CI is green for Phases 04–05 (run 36270344233). Lesson: generated artefacts must not depend on working-copy line endings; the OpenAPI generator now normalizes descriptions to LF.
-- No production `IShopOwned` entity exists yet; Phase 06 professionals are the first. Public/customer reads of shop-owned data will need an explicit per-shop read scope (Phase 11), because the filter is deny-all for non-shop callers.
+- **Not pushed:** CI has not run on Phase 06 yet. After the user asks to push, check the GitHub Actions run, in particular the OpenAPI drift check (the contract was regenerated on Windows with LF normalization) and the E2E job (WebGL in headless Chromium worked locally).
+- **Pre-existing, noticed this session:** Serilog request logging runs inside the exception handler, so a handled `RequestValidationException`/`DbUpdateConcurrencyException` is *logged* as "responded 500" while the client correctly gets 400/409. It is logging only; fix the middleware order in Phase 17 (observability).
+- Production map tile and geocoder hosts are still configuration to choose (D-007/D-068). Images in the database grow backups (D-064); add Nginx/CDN caching of `/api/v1/media/*` in Phase 17.
 - Port 8025 is taken on this machine: `TRIMME_MAILPIT_PORT=8325`, `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
-1. Start Phase 06 (`phases/phase-06-shops-professionals.md`). Re-validate with `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Tenancy"`, `dotnet test --project tests/Trimme.ArchitectureTests -c Release`, and `pnpm e2e` against the stack.
-2. **Shop-scoped authorization and data access must use `ICurrentTenant`, never `ICurrentUser.ShopId`:** the claim is still present while the shop is suspended, so reading it would silently bypass suspension (it is only for `/shop/me`-style status display). Add a guard test in Phase 06.
-3. Build professionals as the first `IShopOwned` aggregate: use `HasShopScopedKey`, admin use cases in `*.Application.Admin` with `IAdminDataScope`, `PhoneNumber.TryParseMobile` for WhatsApp numbers (encrypted + lookup hash, masked), audit every admin change, and add `CrossShop_*` tests with `ShopTestData.CreateTwoShopsAsync`.
+1. If the user wants it, push `main` and confirm CI is green; record the run in the Phase 06 file and MASTER_PLAN.
+2. Start Phase 07 (`phases/phase-07-services-packages.md`). Re-validate first with `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Professionals" --filter-namespace "*Shops"` and `pnpm e2e` against the stack.
+3. For Phase 07, three things carry over from this phase:
+   - Shop services are `IShopOwned` with `HasShopScopedKey`.
+   - Professional–service assignment references professionals through `HasShopScopedReference<…, Professional>`, which completes R-NEG-06.
+   - Public service reads use `IPublicDataScope` in `*.Application.Public`.
 
 ## Files intentionally left modified
 - None.

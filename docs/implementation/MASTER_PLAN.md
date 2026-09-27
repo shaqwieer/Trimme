@@ -135,8 +135,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 03 | Design-system component library | [x] | 100/100 | 02 | `phases/phase-03-design-system.md` §Evidence (147 unit tests incl. axe; gallery axe 0 serious incl. contrast ar/en; zero overflow 390–1440; RSC proof route; Playwright 30/30 ×2 on Docker stack; CI green: run 36201825328) | `610ebec` | — |
 | 04 | Identity, sessions, roles & permissions | [x] | 100/100 | 03 | `phases/phase-04-identity.md` §Evidence (build 0 warnings; 99 unit / 56 architecture / 66 integration tests incl. endpoint matrix; web 165 tests; E2E 36/36 ×2 on a clean stack; gitleaks clean) | `54cf79a` (+ follow-up fix) | CI green: run 36270344233 |
 | 05 | Tenancy, privacy & audit core | [x] | 100/100 | 04 | `phases/phase-05-tenancy-privacy.md` §Evidence (124 unit / 61 architecture / 81 integration; web 170; E2E 38/38 ×2 on a clean stack; probes for every tenancy rule; gitleaks clean) | `6a65a9d` | CI green: run 36270344233 |
-| 06 | Shops, locations & professionals | [ ] | 0/100 | 05 | — | — | Start next: item 6.1 re-validation |
-| 07 | Services, categories & packages | [ ] | 0/100 | 06 | — | — | — |
+| 06 | Shops, locations & professionals | [x] | 100/100 | 05 | `phases/phase-06-shops-professionals.md` §Evidence (build 0 warnings; 153 unit / 62 architecture / 97 integration; web 179; E2E 40/40 ×2 on a clean stack; images stored in PostgreSQL (D-064); no-transfer gate clean; gitleaks clean) | see phase file | Push when asked; CI to confirm |
+| 07 | Services, categories & packages | [ ] | 0/100 | 06 | — | — | Start next: item 7.1 re-validation |
 | 08 | Subscriptions foundation & platform settings | [ ] | 0/100 | 07 | — | — | — |
 | 09 | Schedules & availability engine | [ ] | 0/100 | 08 | — | — | — |
 | 10 | Booking core & integrity | [ ] | 0/100 | 09 | — | — | — |
@@ -149,7 +149,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
 | 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 600 / 1900 points.**
+**Platform total: 700 / 1900 points.**
 
 ## 9. Risks and external dependencies
 
@@ -158,7 +158,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | Customer auth model conflict (design: passwordless WhatsApp OTP; spec: Identity passwords + reset) | Resolved | D-005/D-037: passwordless OTP for customers |
 | Online booking confirmation mode (design contradicts itself) | Resolved | D-006/D-037: per-shop setting, default auto-confirm |
 | MediatR v13+ commercial licence (free Community tier < $5M revenue, key required; missing key only logs warnings) | Resolved | D-004/D-037: in-house dispatcher |
-| Production map tiles / geocoding provider; design has **no** location pin picker | Production needs a self-hosted or OSM-based host (public OSM services forbid heavy use) | D-007/D-037: OpenStreetMap behind adapters; the picker is designed in the TRIMME visual language (DV-A02) |
+| Production map tiles / geocoding provider; design has **no** location pin picker | Production needs a self-hosted or OSM-based host (public OSM services forbid heavy use) | D-007/D-037/D-068: OpenStreetMap behind `MapView`/`IGeocoder` adapters (built Phase 06); picker designed in the TRIMME visual language (DV-A02, applied); tile/geocoder hosts are configuration |
+| Images stored in PostgreSQL (user request, D-064) | DB size and backup volume grow with photos; no CDN yet | Immutable, cacheable media URLs (Nginx/CDN caching in Phase 17); `IMediaStore` isolates a later move to object storage |
 | OTP delivery channel (WhatsApp auth template / SMS fallback provider) | Phase 4 uses a fake sender; prod needs Meta auth template approval | Adapter + fake; recorded in `docs/whatsapp-integration.md` |
 | Email/SMTP provider for staff invitations and password resets | Mailpit locally (Phase 04); production needs a provider | `IEmailSender` (MailKit SMTP); `Email__Smtp__*` env vars only; API refuses to start in production without it (D-056) |
 | Meta WhatsApp Business account, phone number ID, approved templates | Phase 15 production readiness only | Fake provider locally; config documented |

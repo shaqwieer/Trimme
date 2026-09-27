@@ -81,7 +81,7 @@
 
 The `Customer` role holds no catalogue permission. Customers use self-service endpoints that act only on their own account (`/me`, sessions, profile completion); booking and review ownership rules arrive with those features (Phases 10–12).
 
-## Endpoints (Phases 04–05)
+## Endpoints (Phases 04–06)
 
 | Endpoint | Access |
 |---|---|
@@ -111,5 +111,28 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `POST /api/v1/admin/shops/{id}/users/invitations` | `Admin.Shops.ManageAccount` · ShopOwner/ShopStaff only · audited without the email |
 | `GET /api/v1/shop/me` | User type ShopUser · the shop comes from the session, never the request |
 | `GET /api/v1/dev/otp-inbox/latest` | Development/Testing only; not mapped otherwise; excluded from OpenAPI |
+| `GET /api/v1/media/{id}` | Anonymous · a stored image (JPEG/PNG/WebP), public and immutable (D-064) |
+| `GET /api/v1/public/shops/{slug}` | Anonymous · active shops only · read inside the public data scope (D-066) |
+| `GET /api/v1/public/shops/{slug}/professionals` | Anonymous · active professionals of an active shop · no contact data |
+| `PUT /api/v1/admin/shops/{id}` | `Admin.Shops.Edit` · profile + verification · optimistic concurrency (409) · audited |
+| `PUT /api/v1/admin/shops/{id}/location` | `Admin.Shops.Edit` · audited |
+| `PUT /api/v1/admin/shops/{id}/editable-policy` | `Admin.Shops.Edit` · which fields the shop edits · audited |
+| `PUT/DELETE /api/v1/admin/shops/{id}/logo`, `.../cover`; `POST .../gallery`; `DELETE .../gallery/{mediaId}` | `Admin.Shops.Edit` · multipart, ≤ 5 MB · audited |
+| `GET /api/v1/admin/geo/search`, `GET /api/v1/admin/geo/reverse` | `Admin.Shops.Edit` · rate limit `geocode` |
+| `GET /api/v1/shop/profile` | User type ShopUser · own shop from `ICurrentTenant`; 404 while suspended |
+| `PUT /api/v1/shop/profile` | `Shop.Profile.Edit` · a changed locked field → 403 `shop.profile_field_locked` |
+| `PUT/DELETE /api/v1/shop/profile/logo`, `.../cover`; `POST .../gallery`; `DELETE .../gallery/{mediaId}` | `Shop.Profile.Edit` · only if the policy opens the field · another shop's image → 404 |
+| `PUT /api/v1/shop/location` | `Shop.Location.Edit` · only if the policy opens Location |
+| `GET /api/v1/shop/geo/search`, `GET /api/v1/shop/geo/reverse` | `Shop.Location.Edit` · rate limit `geocode` |
+| `GET /api/v1/shop/professionals` | User type ShopUser · own professionals, read-only, no contact data |
+| `POST /api/v1/admin/professionals` | `Admin.Professionals.Create` · the one shop is chosen here · audited |
+| `GET /api/v1/admin/professionals`, `GET /api/v1/admin/professionals/{id}` | `Admin.Professionals.View` · WhatsApp masked |
+| `PUT /api/v1/admin/professionals/{id}` | `Admin.Professionals.Edit` · no shop field · optimistic concurrency · audited |
+| `PUT/DELETE /api/v1/admin/professionals/{id}/avatar` | `Admin.Professionals.Edit` · audited |
+| `POST /api/v1/admin/professionals/{id}/disable`, `.../enable` | `Admin.Professionals.Disable` · audited with optional reason |
+| `PUT /api/v1/admin/professionals/{id}/whatsapp` | `Admin.Professionals.ManageWhatsApp` · number never logged or audited |
+| `POST /api/v1/admin/professionals/{id}/whatsapp/reveal` | `Admin.Professionals.RevealWhatsApp` · reason required · audited · `no-store` |
+
+There is no endpoint that changes a professional's shop.
 
 All unsafe methods additionally require the CSRF header (`X-CSRF-Token` = `trimme-csrf` cookie), anonymous ones included.

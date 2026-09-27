@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
 using Trimme.BuildingBlocks.Web.Errors;
+using Trimme.BuildingBlocks.Web.Media;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
 using Trimme.BuildingBlocks.Web.Security;
@@ -43,6 +44,7 @@ internal static class ApiPipeline
             .RequireAuthorization()
             .RequireCsrf();
         MetaEndpoints.Map(api);
+        MediaEndpoints.Map(api);
         foreach (var module in modules)
         {
             module.MapEndpoints(api);

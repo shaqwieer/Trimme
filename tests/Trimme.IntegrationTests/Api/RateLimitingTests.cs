@@ -40,7 +40,7 @@ public sealed class RateLimitingTests
     {
         RateLimitPolicies.Defaults.Keys.ShouldBe(
             [RateLimitPolicies.Auth, RateLimitPolicies.Otp, RateLimitPolicies.Search, RateLimitPolicies.Availability,
-             RateLimitPolicies.Booking, RateLimitPolicies.Review, RateLimitPolicies.Qr],
+             RateLimitPolicies.Booking, RateLimitPolicies.Review, RateLimitPolicies.Qr, RateLimitPolicies.Geocode],
             ignoreOrder: true);
         RateLimitPolicies.Defaults.Values.ShouldAllBe(p => p.PermitLimit > 0 && p.WindowSeconds > 0);
     }

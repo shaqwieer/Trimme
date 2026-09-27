@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Formatting.Compact;
 using Trimme.BuildingBlocks.Application;
+using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Modules;
@@ -48,6 +49,7 @@ internal static class ApiServices
 
         services.AddTrimmeApplication();
         services.AddTrimmePersistence();
+        services.AddTrimmeMedia();
         services.AddTrimmeSecurity(configuration, builder.Environment);
         foreach (var module in modules)
         {

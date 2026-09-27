@@ -1,8 +1,8 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-26 (Session 3)
-- **Current phase:** 05 is complete and verified (Session 3). Next: Phase 06, shops, locations and professionals.
-- **Platform progress:** 600 / 1900 points (Phases 00–05)
+- **Updated:** 2026-09-27 (Session 4)
+- **Current phase:** 06 is complete and verified (Session 4). Next: Phase 07, services, categories and packages.
+- **Platform progress:** 700 / 1900 points (Phases 00–06)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -12,7 +12,7 @@
 | 03 Design-system components | [x] | 100/100 |
 | 04 Identity & sessions | [x] | 100/100 |
 | 05 Tenancy, privacy & audit | [x] | 100/100 |
-| 06 Shops, locations & professionals | [ ] | 0/100 |
+| 06 Shops, locations & professionals | [x] | 100/100 |
 | 07 Services & packages | [ ] | 0/100 |
 | 08 Subscriptions & settings | [ ] | 0/100 |
 | 09 Schedules & availability | [ ] | 0/100 |
@@ -34,6 +34,11 @@
 | D-005 | Customers sign in passwordless with mobile + 6-digit OTP over WhatsApp (fake in dev). Staff sign in with email + password, with reset over email (Mailpit in dev) |
 | D-006 | Per-shop `RequireManualConfirmation`, default off, so online bookings are auto-confirmed |
 | D-007 | OpenStreetMap: MapLibre with OSM tiles and a Nominatim-compatible geocoder. Production needs a self-hosted or OSM-based host, because the public OSM services' usage policies forbid heavy traffic |
+
+## Decisions made at the user's request
+| ID | Decision |
+|---|---|
+| D-064 | Photos and other media are stored in PostgreSQL (`media.media_files`), not on disk (Session 4) |
 
 ## Open decisions
 None are blocking. The product assumptions D-012…D-035 remain overridable defaults.

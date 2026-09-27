@@ -17,4 +17,7 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\TestImages.cs" Link="Shared\TestImages.cs" />
+  </ItemGroup>
 </Project>

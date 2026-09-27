@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Tenancy;
+using Trimme.BuildingBlocks.Infrastructure.Media;
 
 namespace Trimme.BuildingBlocks.Infrastructure.Persistence;
 
@@ -28,6 +29,8 @@ public sealed class TrimmeDbContext : DbContext
     private readonly IModelContributor[] _contributors;
     private readonly ICurrentTenant? _tenant;
     private int _unrestrictedDepth;
+    private bool _publicScope;
+    private ShopId? _publicShopId;
 
     public TrimmeDbContext(DbContextOptions<TrimmeDbContext> options, IEnumerable<IModelContributor> contributors)
         : this(options, contributors, tenant: null)
@@ -53,6 +56,13 @@ public sealed class TrimmeDbContext : DbContext
 
     private ShopId TenantShopId => _tenant?.ShopId ?? default;
 
+    // A public (anonymous-safe) read scope replaces the caller's tenant with one published shop; see EnterPublicScope.
+    private bool PublicScope => _publicScope;
+
+    private bool HasPublicShop => _publicShopId is not null;
+
+    private ShopId PublicShopId => _publicShopId ?? default;
+
     /// <summary>
     /// Lifts the tenant filter and write checks until disposed. Only the admin and system scope services call this;
     /// feature code uses <see cref="IAdminDataScope"/> or <see cref="ISystemDataScope"/>.
@@ -61,6 +71,23 @@ public sealed class TrimmeDbContext : DbContext
     {
         _unrestrictedDepth++;
         return new UnrestrictedScope(this);
+    }
+
+    /// <summary>
+    /// Read-only view of public data until disposed (D-066): every shop row is visible (the public directory) and
+    /// shop-owned rows only of <paramref name="shopId"/> (none when null), whoever the caller is. The caller's own
+    /// tenant is ignored, and saving changes throws while the scope is open. Only <see cref="IPublicDataScope"/> calls this.
+    /// </summary>
+    internal IDisposable EnterPublicScope(ShopId? shopId)
+    {
+        if (_publicScope)
+        {
+            throw new InvalidOperationException("A public data scope is already open.");
+        }
+
+        _publicScope = true;
+        _publicShopId = shopId;
+        return new PublicScopeHandle(this);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -86,6 +113,8 @@ public sealed class TrimmeDbContext : DbContext
             key.Property(k => k.Id).UseIdentityAlwaysColumn();
             key.Property(k => k.FriendlyName).HasMaxLength(200);
         });
+
+        StoredMediaModel.Configure(modelBuilder.Entity<StoredMedia>());
 
         foreach (var contributor in _contributors)
         {
@@ -170,17 +199,24 @@ public sealed class TrimmeDbContext : DbContext
         where TEntity : class, IShopOwned =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(
             TenantFilterName,
-            entity => Unrestricted || (HasTenant && entity.ShopId == TenantShopId));
+            entity => Unrestricted
+                      || (PublicScope && HasPublicShop && entity.ShopId == PublicShopId)
+                      || (!PublicScope && HasTenant && entity.ShopId == TenantShopId));
 
-    /// <summary>Shops are a public directory, but a shop user sees only their own shop row.</summary>
+    /// <summary>Shops are a public directory, but a shop user sees only their own shop row (outside a public scope).</summary>
     private void ApplyTenantRootFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ITenantRoot =>
         modelBuilder.Entity<TEntity>().HasQueryFilter(
             TenantFilterName,
-            shop => Unrestricted || !HasTenant || shop.Id == TenantShopId);
+            shop => Unrestricted || PublicScope || !HasTenant || shop.Id == TenantShopId);
 
     private void EnforceTenantRules()
     {
+        if (_publicScope)
+        {
+            throw new TenantViolationException("Changes cannot be saved inside a public (read-only) data scope.");
+        }
+
         foreach (var entry in ChangeTracker.Entries())
         {
             if (entry.Entity is IShopOwned owned)
@@ -218,6 +254,21 @@ public sealed class TrimmeDbContext : DbContext
                 throw new TenantViolationException($"{name}.ShopId cannot change.");
             case EntityState.Modified or EntityState.Deleted when !Unrestricted && (!HasTenant || owned.ShopId != TenantShopId):
                 throw new TenantViolationException($"Cannot change a {name} of another shop.");
+        }
+    }
+
+    private sealed class PublicScopeHandle(TrimmeDbContext context) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                context._publicScope = false;
+                context._publicShopId = null;
+            }
         }
     }
 

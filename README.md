@@ -50,6 +50,9 @@ bash infra/scripts/compose-smoke.sh
 - Local email (password resets, staff invitations) goes to **Mailpit**: http://localhost:8025 (`TRIMME_MAILPIT_PORT`).
 - The `seed` service creates the bootstrap SuperAdmin once (`TRIMME_BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD`; local defaults `admin@trimme.local` / `trimme local admin`). Staff sign in at `/ar/auth/staff/sign-in`.
 - The seed also creates two demo shops (Al Asala, Barber House), each with an owner and a staff account (`owner@al-asala.trimme.local`, `staff@al-asala.trimme.local`, …). Their password is `TRIMME_DEMO_PASSWORD` (local default `trimme local demo`).
+- Since Phase 06 the demo shops have a public profile and a map location in Riyadh (Al Malqa, Hittin), and separate professionals with fake WhatsApp numbers (`+966 50 010 01xx`). Seeding never sends messages.
+- **Images are stored in PostgreSQL** (`media.media_files`, D-064): shop logo, cover and gallery, and professional photos. They are served from `/api/v1/media/{id}`, and a database reset removes them. There is no upload directory.
+- **Maps:** the location picker uses MapLibre with OpenStreetMap tiles (development only; set `TRIMME_MAP_TILE_URL` / `NEXT_PUBLIC_MAP_TILE_URL` for another host). Geocoding goes through the API: compose uses the built-in Riyadh gazetteer (`TRIMME_GEOCODER=Fake`), and `dotnet run` in Development uses Nominatim at one request per second. Set `TRIMME_GEOCODER=Nominatim` in `infra/.env` for real lookups in compose.
 - Customers sign in with a mobile number and a 6-digit code. Locally the code is not sent anywhere: read it from `GET /api/v1/dev/otp-inbox/latest?phone=%2B9665XXXXXXXX` (Development/Testing only).
 - Development-only preview routes (`/ar/dev/shells/shop|admin|customer`) are enabled in the local stack through `TRIMME_ENABLE_DEV_ROUTES=true`. Never set this in production.
 

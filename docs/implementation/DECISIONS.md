@@ -365,3 +365,67 @@ The API uses `JsonNumberHandling.Strict`. The ASP.NET web defaults (numbers read
   - Account ids are derived from the email, so seeding is deterministic across machines.
   - The password comes from `TRIMME_DEMO_PASSWORD` (local default documented in `docs/local`).
   - Development only, through `seed --dev`.
+
+## D-064 — Images are stored in PostgreSQL — Accepted (user, Session 4, Phase 06)
+The user asked in Session 4 to store media such as photos in the database. This replaces the phase plan's "local storage adapter in dev" (`.data/uploads`).
+- **Table.** `media.media_files` holds id, purpose, content type, width, height, size, SHA-256 and the bytes (`bytea`). It sits in the building blocks next to the Data Protection keys, so the module count stays at twelve (D-001).
+- **No shop id on the row.** Ownership comes from the aggregate that references the image (shop logo/cover/gallery, professional avatar). An upload creates the image and its reference in one command and one `SaveChanges`. Clients never attach an existing media id, so one shop cannot point at another shop's image. Replacing or removing an image deletes the old row in the same unit of work.
+- **Validation by content.** Only JPEG, PNG and WebP are accepted, recognised from their bytes; the declared type and file name are ignored. SVG, HTML, GIF and malformed files are rejected. Other limits:
+  - at most 5 MB, enforced by a per-endpoint body limit;
+  - at most 8000 px per side and 40 MP;
+  - a minimum size per purpose.
+- **Metadata stripped before storage:** EXIF (including GPS), XMP, IPTC, comments and PNG text chunks. Pixels are never decoded or re-encoded, so no imaging library (and no licence) is needed.
+- **Serving.** `GET /api/v1/media/{id}` is anonymous (images are public page content). It sends the sniffed type, `nosniff`, the strict CSP, an ETag (304 supported) and `Cache-Control: public, max-age=31536000, immutable`. That is safe because bytes never change: a new upload always gets a new id.
+- **Upload endpoints** use `.AcceptsImageUpload()`: ASP.NET antiforgery is off, because the API's own CSRF check (D-053) still applies. The body limit is raised for that endpoint only.
+- **Trade-offs accepted:** database size and backup volume grow with images, and there is no CDN. Nginx or a CDN can cache the immutable URLs in production (Phase 17). Moving the bytes to object storage later only changes `IMediaStore` and the serving endpoint.
+
+## D-065 — Shop profile, edit policy and location on the shop row — Accepted (Phase 06)
+- **Profile.** Localized description, category (`Barbershop`/`Salon`/`Unisex`), the shop's own public phone (E.164, business data), amenities, admin-only `IsVerified`, logo, cover and an ordered gallery of up to 12 images (a `uuid[]` column).
+- **Edit policy (DV-S16).** `EditableFields` lists what the shop may change: Name, Description, Category, PublicPhone, Amenities, Logo, Cover, Gallery, Location.
+  - A new shop may edit Description, PublicPhone, Amenities, Logo, Cover and Gallery. Name, Category and Location stay locked until an admin opens them.
+  - Verification and the slug are never shop-editable.
+  - The shop sends the whole form. The server rejects (403 `shop.profile_field_locked`, with the `fields`) only a locked field whose value actually changes.
+  - Image and location endpoints check the same policy. Location also needs `Shop.Location.Edit`.
+- **Location.** An owned value on `shops.shops`: `location geography(Point,4326)` with a GiST index, plus address line, district, city, formatted address, source (Manual/Geocoded/Device), and confirmed at/by.
+  - Deviation from the phase plan's separate `shops.shop_locations` table: the shop is the public-directory root, so Phase 11 nearby search needs no tenant scope and no join.
+  - X = longitude, Y = latitude, rounded to 6 decimal places.
+- **Concurrency.** Admin and shop profile edits are optimistic (`xmin`). A stale version answers 409 `resource.concurrency_conflict`, which the exception handler maps from `DbUpdateConcurrencyException`.
+- **Suspended shops.** Shop self-service reads and writes resolve the shop from `ICurrentTenant`, never from the session claim, so they answer 404 while the shop is suspended (guard test).
+
+## D-066 — Public read scope — Accepted (Phase 06)
+`IPublicDataScope.Begin(shopId?)` is a read-only view for anonymous and customer pages.
+- While it is open, every shop row is visible (the directory), shop-owned rows only of the given shop (none when null), and the caller's own tenant is ignored. A signed-in owner of shop B therefore sees shop A's public page exactly as a visitor does.
+- `SaveChanges` throws while the scope is open.
+- Handlers still filter what is published: active shops and active professionals only.
+- Architecture rule plus probe: only `*.Application.Public` namespaces may depend on it.
+- Anonymous endpoints (reviewed allow-list): `GET /public/shops/{slug}`, `GET /public/shops/{slug}/professionals`, `GET /media/{id}`.
+
+## D-067 — Professionals and their WhatsApp contact — Accepted (Phase 06)
+- **Professional** (`professionals.professionals`, `IShopOwned`, `(shop_id, id)` key):
+  - localized name, specialty and bio, a slug unique per shop (derived from the English name when omitted), an avatar, Active/Disabled status and optimistic concurrency;
+  - `ShopId` is set by the factory only. No other public member takes a shop, no update contract carries one, and EF refuses to modify it because it is part of the alternate key (D-011, R-NEG-01).
+- **ProfessionalContact** (`professional_contacts`, keyed by professional, composite FK `(shop_id, professional_id)`):
+  - the E.164 number encrypted with Data Protection purpose `trimme.professional-whatsapp`;
+  - a keyed lookup hash, unique platform-wide, so the same person cannot be listed again in another shop (R-NEG-05);
+  - a stored mask for lists;
+  - the notification toggle, which can only be on while a number is set, and a verification state (Unverified until Phase 15 reports delivery). Changing the number resets verification.
+- **Reveal.** `POST .../whatsapp/reveal` needs `Admin.Professionals.RevealWhatsApp` and a reason of at least 5 characters. It is audited with the reason and returns `no-store`. Support can view professionals but cannot reveal.
+- **Toggle only.** `PUT .../whatsapp` with `keepCurrentNumber` changes just the toggle, so no admin must see the number to switch notifications.
+- **Audit.** Entries never contain the number, only what happened ("number changed", "notifications off").
+- **Shop view.** `GET /shop/professionals` is read-only for the tenant, with no contact data. Shops cannot create, edit or disable professionals (403).
+
+## D-068 — Map and geocoding adapters (implements D-007) — Accepted (Phase 06)
+- **API port `IGeocoder`**, proxied at `GET /admin/geo/{search|reverse}` (`Admin.Shops.Edit`) and `GET /shop/geo/{search|reverse}` (`Shop.Location.Edit`). Rate limit policy `geocode` is 30 per minute per user.
+- **Adapters:**
+  - `Nominatim`: `Geocoding:Provider=Nominatim`, identifying User-Agent, requests serialized and spaced ≥ 1.1 s, results cached 24 h, failures degrade to "no result". It is the default for `dotnet run` in Development.
+  - `Fake`: a gazetteer of seven Riyadh districts with real coordinates. It is the default everywhere else, including compose, tests and CI, so no automated run calls a third party. Set `TRIMME_GEOCODER=Nominatim` in compose for real lookups.
+- **Web map.** MapLibre GL 6.11.2 with raster tiles from `NEXT_PUBLIC_MAP_TILE_URL` (default: OpenStreetMap's public tiles, with attribution, light development use only). It sits behind a `MapView` contract, loads only when the picker mounts, and uses a DOM marker that can be dragged.
+  - When WebGL is missing, the picker falls back to typed coordinate and address fields. Those fields are also its keyboard alternative.
+  - Geolocation is requested only when the user presses "use my current location".
+- **Production** needs a self-hosted or commercial OSM-based tile host and geocoder (D-007). That choice is configuration, confirmed at Phase 17/18.
+
+## D-069 — Phase 06 test infrastructure and gates — Accepted (Phase 06)
+- **Test PostgreSQL connections.** The Testcontainers PostgreSQL runs with `max_connections=400`. Every test database has its own Npgsql pool, and the Phase 06 suites exhausted the default 100 ("too many clients").
+- **Authorization matrix.** The endpoint matrix sends multipart requests to multipart endpoints. Those match only multipart at routing, so a JSON probe got 415 before authorization.
+- **No-transfer grep gate.** Tests assert absence, so the gate excludes test files: `rg -i "transfer(Professional|Barber|Shop)|(professional|barber)\s*transfer|نقل حلاق|تنفيذ النقل" apps src -g '!**/*.test.*' -g '!**/node_modules/**'`. The unrefined gate already matched a Phase 05 test. Product code and comments avoid the term altogether (D-011).
+- **E2E.** Map tiles are stubbed with a blank PNG, and the pin is dragged only after it stops moving.

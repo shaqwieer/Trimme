@@ -18,6 +18,7 @@ public static class RateLimitPolicies
     public const string Booking = "booking";
     public const string Review = "review";
     public const string Qr = "qr";
+    public const string Geocode = "geocode";
 
     public static readonly IReadOnlyDictionary<string, RateLimitPolicyOptions> Defaults =
         new Dictionary<string, RateLimitPolicyOptions>(StringComparer.Ordinal)
@@ -29,6 +30,7 @@ public static class RateLimitPolicies
             [Booking] = new() { PermitLimit = 10, WindowSeconds = 60 },
             [Review] = new() { PermitLimit = 5, WindowSeconds = 60 },
             [Qr] = new() { PermitLimit = 30, WindowSeconds = 60 },
+            [Geocode] = new() { PermitLimit = 30, WindowSeconds = 60 },
         };
 }
 

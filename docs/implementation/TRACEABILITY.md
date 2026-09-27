@@ -8,12 +8,12 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter`; A `NoProfessionalUpdateContract_ContainsShopId`; I `OpenApi_HasNoTransferOperation`; I `PermissionCatalogue_HasNoTransferPermission` ✔ Phase 04; E `admin_professional_page_has_no_transfer_action`; C `grep` gate for transfer terms in `apps/` and `src/` | [~] |
+| R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter` ✔, `NoProfessionalUpdateContract_ContainsShopId` ✔ (unit, on the API contracts); I `OpenApi_HasNoTransferOperation` ✔, `Professional_ShopId_IsImmutable_AndTheUpdateContractCannotCarryIt` ✔ (EF refuses to modify the key; extra `shopId` in the body ignored); I `PermissionCatalogue_HasNoTransferPermission` ✔ Phase 04; W `no barber transfer anywhere in the UI copy` ✔; E admin professional page has no transfer/move action ✔ (`shops-professionals.spec.ts`); C grep gate (test files excluded, D-069) ✔ Phase 06 | [x] |
 | R-NEG-02 | No payment/checkout UI or charge flow | §2, §12, §23 | 12, 18 | E `booking_flow_has_no_payment_step`; C OpenAPI has no payment/charge operations; M review | [ ] |
 | R-NEG-03 | No customer export for shops | §7, §13 | 13 | I `ShopApi_HasNoExportEndpoints`; E `shop_dashboard_has_no_export_action` | [ ] |
 | R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` ✔ Phase 05 (every shop-facing endpoint found from metadata; fails closed without typed responses — probe-verified; recursive member scan + live JSON scan; non-vacuity test `PhoneScanner_FindsPhoneMembers_InNestedTypes`); U `SensitiveDataRedactorTests` (logs) ✔; I `ShopHub_Messages_DoNotContainPhone` (13); E `shop_pages_payload_has_no_customer_phone` (13) | [~] |
-| R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` (DB constraint) | [ ] |
-| R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateProfessional`, `Shop_CannotAssignProfessionalService` (403) | [ ] |
+| R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` ✔ (NOT NULL shop, composite contact FK rejects a cross-shop pair, the same WhatsApp number cannot be a professional in a second shop) | [x] |
+| R-NEG-06 | Shops cannot create/delete/move professionals or assign services | §7 | 6, 7 | I `Shop_CannotCreateOrChangeProfessionals_AndSeesOnlyItsOwn` ✔ Phase 06 (create/edit/disable → 403; read-only own list); `Shop_CannotAssignProfessionalService` (Phase 07) | [~] |
 | R-NEG-07 | Tokens never in `localStorage`/`sessionStorage` | §9 | 4 | C ESLint bans `localStorage`/`sessionStorage` (probe-verified) ✔; E `no_tokens_in_web_storage` baseline ✔; E auth flows assert empty Web Storage and that `document.cookie` exposes neither `trimme-access` nor `trimme-refresh` after customer and staff sign-in ✔; I `Cookies_AreSecureHttpOnly` (tokens never in a response body) ✔ Phase 04 | [x] |
 | R-NEG-08 | No hardcoded plan names/prices/durations/limits | §7, §15 | 8 | C grep gate; I plans served from DB only | [ ] |
 | R-NEG-09 | No hardcoded final WhatsApp message text in jobs/handlers | §16 | 15 | A `Notifications_Handlers_DoNotContainMessageLiterals`; I dispatch renders from active template version | [ ] |
@@ -81,7 +81,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-TEN-02 | Global query filters on every shop-owned entity | §7 | 5 → all | A `AllShopOwnedEntities_HaveTenantFilter` (+ tenant-root FK), `EntitiesWithAShopId_AreTenantScoped` (both probe-verified) ✔; I `ShopUser_SeesOnlyItsOwnRows_AndOthersSeeNone` on PostgreSQL ✔ | [x] |
 | R-TEN-03 | Server-side tenant stamping on writes | §7 | 5 | I `Create_StampsTenantFromClaims`, `ShopId_CannotChange_EvenInsideTheAdminScope` ✔ | [x] |
 | R-TEN-04 | Composite FKs prevent cross-shop references | §7 | 5 → all | I `CrossShopReference_RejectedByDatabase` (composite FK and tenant-root FK, application checks bypassed) ✔; I `ShopMembership_IsEnforcedByTheDatabase_AndCannotChange` ✔ | [x] |
-| R-TEN-05 | Explicit isolated admin bypass | §7 | 5 | A `IgnoreQueryFilters_IsNeverCalled` (IL scan), `AdminDataScope_IsUsedOnlyByAdminUseCases`, `SystemDataScope_IsUsedOnlyByHostingSeedingAndJobs` (each probe-verified) ✔; runtime guards in `AdminDataScope`/`SystemDataScope` | [x] |
+| R-TEN-05 | Explicit isolated admin bypass | §7 | 5 | A `IgnoreQueryFilters_IsNeverCalled` (IL scan), `AdminDataScope_IsUsedOnlyByAdminUseCases`, `SystemDataScope_IsUsedOnlyByHostingSeedingAndJobs` (each probe-verified) ✔; runtime guards in `AdminDataScope`/`SystemDataScope`; Phase 06: `PublicDataScope_IsUsedOnlyByPublicUseCases` (probe-verified), read-only public scope (D-066) | [x] |
 | R-TEN-06 | Cross-shop read/update/delete/booking/SignalR/enumeration (IDOR) tests | §7, §19 | 5 → 13 | I `CrossShop_ReadById_UpdateAndDelete_AreImpossible` (data layer), `ShopEndpoints_IgnoreClientSuppliedShopId`, `Suspending_A_Shop_RevokesTenantAccess_Immediately` ✔ Phase 05; isolation harness `ShopTestData.CreateTwoShopsAsync` ready; per-endpoint `CrossShop_*` suites as shop endpoints arrive (6–13); `ShopHub_DoesNotReceiveOtherShopEvents` (13) | [~] |
 | R-TEN-07 | Phone numbers normalized E.164, encrypted, masked, redacted | §7, §8 | 5, 6 | U `PhoneNumber_NormalizesToE164`, `PhoneNumber_Masks_AndNeverPrintsTheNumber`, `Customer_normaliser_and_value_object_agree` ✔; I customer mobile stored only encrypted + keyed hash (`Customer_SignUp_VerifiesMobile`) ✔; U redaction ✔; professional numbers Phase 06 | [~] |
 | R-TEN-08 | Audit log for admin/sensitive actions | §7, §14 | 5 → all | I `AdminShopActions_AreAudited_WithoutPersonalData` (create, activate, suspend with reason, invite; actor, correlation id, no email) ✔ Phase 05; `AdminServiceOverride_IsAudited` (7), `PhoneReveal_IsAudited` (6/14) | [~] |
@@ -90,11 +90,12 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-SHP-01 | Admin shop CRUD, activate/suspend, account setup | §14 | 5, 6 | I `Admin_CreatesShop_WithOwnerInvite`, `Suspending_A_Shop_RevokesTenantAccess_Immediately` ✔; E admin creates, activates, invites, suspends ✔ Phase 05; profile editing Phase 06 | [~] |
-| R-SHP-02 | Location via designed pin picker; stored as PostGIS geography with spatial index | §8 | 6 | I `ShopLocation_StoredAsGeography`; E flow 3 (pin drag) | [ ] |
-| R-SHP-03 | Shop public-profile edit limited to admin-permitted fields | §13 | 6 | I `Shop_CannotEditLockedField` | [ ] |
-| R-PRO-01 | Admin professional CRUD/disable, one shop, WhatsApp number masked, notifications toggle | §7, §14 | 6 | I `Admin_CreatesProfessional_WithMaskedWhatsApp`; E flow 3 | [ ] |
-| R-PRO-02 | Professional number absent from public/customer/other-shop DTOs | §8 | 6 | I `PublicProfessionalDto_HasNoPhone` | [ ] |
+| R-SHP-01 | Admin shop CRUD, activate/suspend, account setup | §14 | 5, 6 | I `Admin_CreatesShop_WithOwnerInvite`, `Suspending_A_Shop_RevokesTenantAccess_Immediately` ✔ Phase 05; I `Admin_EditsProfile_WithOptimisticConcurrency_AndAudit`, `Images_AreStoredInTheDatabase_ValidatedByContent_AndServedImmutable`, `PublicShopPage_ShowsOnlyActiveShops_ToEveryCaller` ✔ Phase 06; E admin edits profile + cover upload ✔ Phase 06 | [x] |
+| R-SHP-02 | Location via designed pin picker; stored as PostGIS geography with spatial index | §8 | 6 | I `ShopLocation_StoredAsGeography_WithGistIndex_AndUsedBySpatialQuery` ✔ (type `geography(Point,4326)`, GiST index, X=lng/Y=lat, `ST_Distance` ordering); U location rounding/axis ✔; W `LocationPicker` search/drag/fallback ✔; E search → drag pin → confirm → saved point moved within Riyadh ✔ | [x] |
+| R-SHP-03 | Shop public-profile edit limited to admin-permitted fields | §13 | 6 | I `Shop_CannotEditLockedField` ✔ (profile, location; staff 403; policy change applies); I `CrossShop_GalleryImageCannotBeRemovedByAnotherShop` ✔; I `SuspendedShop_HasNoProfileAccess_EvenThoughTheClaimRemains` ✔ | [x] |
+| R-SHP-04 | Shop and professional images stored in the database, validated by content, metadata (EXIF/GPS) stripped, served immutable (D-064) | §9, user | 6 | U `ImageSanitizerTests` ✔; I `Images_AreStoredInTheDatabase_ValidatedByContent_AndServedImmutable` ✔; E cover upload renders (`naturalWidth` 1600) ✔ | [x] |
+| R-PRO-01 | Admin professional CRUD/disable, one shop, WhatsApp number masked, notifications toggle | §7, §14 | 6 | I `Admin_CreatesProfessional_WithMaskedWhatsApp` ✔, `Reveal_RequiresPermissionAndReason_AndIsAudited` ✔, `DisabledProfessionals_LeaveThePublicPage_AndAvatarIsStored` ✔; U contact rules ✔; E flow 3 (masked number, audited reveal) ✔ | [x] |
+| R-PRO-02 | Professional number absent from public/customer/other-shop DTOs | §8 | 6 | I `PublicAndShopProfessionalDtos_HaveNoPhone` ✔ (raw JSON of the public and shop lists; contract members) | [x] |
 | R-SVC-01 | Shop creates/edits/activates/deactivates/archives/orders own services (ar/en, price, duration) | §10 | 7 | I `Shop_ServiceCrud_Flow`; E flow 2 | [ ] |
 | R-SVC-02 | Referenced services never physically deleted; archive only | §7 | 7 | I `Service_WithBookings_CannotBeDeleted` | [ ] |
 | R-SVC-03 | Cross-shop service isolation on reads and every mutation | §19 | 7 | I `CrossShop_Service_*` | [ ] |
@@ -154,7 +155,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-SD-06 | Own services CRUD + archive | §13 | s-services (corrected) | 7 | E flow 2 | [ ] |
 | R-SD-07 | Subscription status + expiry visibility | §13 | s-services | 8 | E | [ ] |
 | R-SD-08 | Notifications | §13 | (absent) | 15 | E | [ ] |
-| R-SD-09 | Profile editing within admin policy; location edit via pin | §13 | s-settings | 6 | E | [ ] |
+| R-SD-09 | Profile editing within admin policy; location edit via pin | §13 | s-settings | 6 | W `ShopProfileEditor` locks ✔; E `shop owner edits only the fields the admin policy opens` ✔ (locked fields disabled with shield; location read-only; API 403) | [x] |
 | R-SD-10 | Scoped SignalR live updates | §17 | — | 13 | I `ShopHub_ScopedToTenant` | [ ] |
 
 ## 10. Admin dashboard
@@ -210,7 +211,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 |---|---|---|---|
 | E1 | Customer registers/signs in, discovers, books, views, cancels/reschedules | 4, 11, 12 | 12 |
 | E2 | Shop creates/edits own service, sees only own data, walk-in, status changes, no foreign access/phone | 7, 9, 13 | 13 |
-| E3 | Admin creates shop + pin location, professional (masked WhatsApp), assigns shop+service, manages subscription, no transfer action | 6, 7, 8 | 8 |
+| E3 | Admin creates shop + pin location, professional (masked WhatsApp), assigns shop+service, manages subscription, no transfer action | 6, 7, 8 | 8 — Phase 06 part ✔ (`shops-professionals.spec.ts`: profile, cover, pin, professional, masked number, reveal, no transfer) |
 | E4 | Admin edits customer/professional templates; booking → fake dispatches + 30-min reminders for both audiences; no phone leakage | 15 | 15 |
 | E5 | SuperAdmin plan + price, assign, change future price, history unchanged | 8 | 8 |
 | E6 | Two concurrent customers, same slot, exactly one succeeds | 10 (API), 12 (UI) | 12 |

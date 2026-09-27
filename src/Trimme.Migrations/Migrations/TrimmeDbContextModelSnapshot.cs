@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 
@@ -156,6 +157,62 @@ namespace Trimme.Migrations.Migrations
                         .HasName("pk_user_tokens");
 
                     b.ToTable("user_tokens", "identity");
+                });
+
+            modelBuilder.Entity("Trimme.BuildingBlocks.Infrastructure.Media.StoredMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("purpose");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("sha256")
+                        .IsFixedLength();
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_media_files");
+
+                    b.ToTable("media_files", "media");
                 });
 
             modelBuilder.Entity("Trimme.BuildingBlocks.Infrastructure.Persistence.DataProtectionKeyRecord", b =>
@@ -717,11 +774,25 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("users", "identity");
                 });
 
-            modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
+            modelBuilder.Entity("Trimme.Modules.Professionals.Domain.Professional", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AvatarMediaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("avatar_media_id");
+
+                    b.Property<string>("BioAr")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("bio_ar");
+
+                    b.Property<string>("BioEn")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)")
+                        .HasColumnName("bio_en");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -738,6 +809,184 @@ namespace Trimme.Migrations.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name_en");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("SpecialtyAr")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("specialty_ar");
+
+                    b.Property<string>("SpecialtyEn")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("specialty_en");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_professionals");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_professionals_shop_id_id");
+
+                    b.HasIndex("AvatarMediaId")
+                        .HasDatabaseName("ix_professionals_avatar_media_id");
+
+                    b.HasIndex("ShopId", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_professionals_shop_id_slug");
+
+                    b.HasIndex("ShopId", "Status")
+                        .HasDatabaseName("ix_professionals_shop_id_status");
+
+                    b.ToTable("professionals", "professionals");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Professionals.Domain.ProfessionalContact", b =>
+                {
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<bool>("NotificationsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notifications_enabled");
+
+                    b.Property<string>("ProtectedWhatsApp")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("protected_whatsapp");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("Verification")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("whatsapp_verification");
+
+                    b.Property<string>("WhatsAppLookupHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("whatsapp_lookup_hash");
+
+                    b.Property<string>("WhatsAppMasked")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("whatsapp_masked");
+
+                    b.HasKey("ProfessionalId")
+                        .HasName("pk_professional_contacts");
+
+                    b.HasIndex("WhatsAppLookupHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_professional_contacts_whatsapp_lookup_hash")
+                        .HasFilter("whatsapp_lookup_hash IS NOT NULL");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_professional_contacts_shop_id_professional_id");
+
+                    b.ToTable("professional_contacts", "professionals");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<string[]>("Amenities")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("amenities");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("category");
+
+                    b.Property<Guid?>("CoverMediaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cover_media_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DescriptionAr")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description_ar");
+
+                    b.Property<string>("DescriptionEn")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description_en");
+
+                    b.PrimitiveCollection<string[]>("EditableFields")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("editable_fields");
+
+                    b.PrimitiveCollection<Guid[]>("GalleryMediaIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("gallery_media_ids");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_verified");
+
+                    b.Property<Guid?>("LogoMediaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("logo_media_id");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name_en");
+
+                    b.Property<string>("PublicPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("public_phone");
 
                     b.Property<bool>("RequireManualConfirmation")
                         .HasColumnType("boolean")
@@ -773,6 +1022,12 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_shops");
+
+                    b.HasIndex("CoverMediaId")
+                        .HasDatabaseName("ix_shops_cover_media_id");
+
+                    b.HasIndex("LogoMediaId")
+                        .HasDatabaseName("ix_shops_logo_media_id");
 
                     b.HasIndex("Slug")
                         .IsUnique()
@@ -901,6 +1156,116 @@ namespace Trimme.Migrations.Migrations
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_users_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Professionals.Domain.Professional", b =>
+                {
+                    b.HasOne("Trimme.BuildingBlocks.Infrastructure.Media.StoredMedia", null)
+                        .WithMany()
+                        .HasForeignKey("AvatarMediaId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_professionals_media_files_avatar_media_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_professionals_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Professionals.Domain.ProfessionalContact", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_contacts_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_contacts_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
+                {
+                    b.HasOne("Trimme.BuildingBlocks.Infrastructure.Media.StoredMedia", null)
+                        .WithMany()
+                        .HasForeignKey("CoverMediaId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shops_media_files_cover_media_id");
+
+                    b.HasOne("Trimme.BuildingBlocks.Infrastructure.Media.StoredMedia", null)
+                        .WithMany()
+                        .HasForeignKey("LogoMediaId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shops_media_files_logo_media_id");
+
+                    b.OwnsOne("Trimme.Modules.Shops.Domain.ShopLocation", "Location", b1 =>
+                        {
+                            b1.Property<Guid>("ShopId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("AddressLine")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("address_line");
+
+                            b1.Property<string>("City")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)")
+                                .HasColumnName("city");
+
+                            b1.Property<DateTimeOffset>("ConfirmedAt")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("location_confirmed_at");
+
+                            b1.Property<Guid?>("ConfirmedBy")
+                                .HasColumnType("uuid")
+                                .HasColumnName("location_confirmed_by");
+
+                            b1.Property<string>("District")
+                                .HasMaxLength(80)
+                                .HasColumnType("character varying(80)")
+                                .HasColumnName("district");
+
+                            b1.Property<string>("FormattedAddress")
+                                .HasMaxLength(300)
+                                .HasColumnType("character varying(300)")
+                                .HasColumnName("formatted_address");
+
+                            b1.Property<Point>("Point")
+                                .IsRequired()
+                                .HasColumnType("geography (point, 4326)")
+                                .HasColumnName("location");
+
+                            b1.Property<string>("Source")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("location_source");
+
+                            b1.HasKey("ShopId");
+
+                            b1.HasIndex("Point")
+                                .HasDatabaseName("ix_shops_location");
+
+                            NpgsqlIndexBuilderExtensions.HasMethod(b1.HasIndex("Point"), "gist");
+
+                            b1.ToTable("shops", "shops");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShopId")
+                                .HasConstraintName("fk_shops_shops_id");
+                        });
+
+                    b.Navigation("Location");
                 });
 #pragma warning restore 612, 618
         }

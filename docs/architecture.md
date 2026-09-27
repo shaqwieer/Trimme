@@ -81,8 +81,8 @@ These rules were proven non-vacuous with deliberate violations (recorded in `imp
 
 - **CORS:** a strict allowlist with credentials; wildcards are rejected at startup.
 - **Security headers:** `nosniff`, `DENY` framing, a strict CSP for API responses, a restrictive referrer policy and permissions policy, and no `Server` header.
-- **Request bodies:** limited to 1 MB by default (a 413 problem response). Upload endpoints will opt into larger limits.
-- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`), partitioned by user when signed in and by client IP otherwise. The limits are configurable, and rejections return a 429 problem response.
+- **Request bodies:** limited to 1 MB by default (a 413 problem response). Image upload endpoints opt into 5 MB plus multipart framing with `.AcceptsImageUpload()`, for that endpoint only.
+- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`, `geocode`), partitioned by user when signed in and by client IP otherwise. The limits are configurable, and rejections return a 429 problem response.
 - **Forwarded headers:** trusted only from configured proxies.
 - **Caching:** API responses default to `Cache-Control: no-store` (per-user data is never cached by browsers or proxies).
 
@@ -119,6 +119,32 @@ sequenceDiagram
   - Foreign keys to the shop, and composite `(shop_id, parent_id)` keys, make the database reject cross-shop references too.
   - `IgnoreQueryFilters` is banned by an IL-scanning architecture test.
 - **Audit:** admin actions add a PII-free `AuditEntry` to the same unit of work as the change (D-063).
+- **Public reads (Phase 06, D-066):** anonymous and customer pages read published data inside `IPublicDataScope.Begin(shopId)`: all shop rows, shop-owned rows of that one shop only, the caller's own tenant ignored, and `SaveChanges` refused. Only `*.Application.Public` use cases may open it (architecture test with probe).
+
+### Media (Phase 06, D-064)
+
+Images are stored in PostgreSQL, not on disk:
+
+```mermaid
+flowchart LR
+    U[Admin or shop upload<br/>multipart, ≤ 5 MB] --> E[Endpoint<br/>AcceptsImageUpload]
+    E --> C[Command handler<br/>shop / professional]
+    C --> S[IMediaStore.AddImage<br/>sniff JPEG/PNG/WebP · size limits · strip EXIF/XMP/text]
+    S --> T[(media.media_files<br/>bytea + SHA-256)]
+    C --> A[(aggregate row<br/>logo / cover / gallery / avatar id)]
+    T & A -. one SaveChanges .- C
+    B[Browser / next/image] -->|GET /api/v1/media/id| M[Media endpoint<br/>anonymous · ETag · immutable cache]
+    M --> T
+```
+
+- A media row has no shop id; the aggregate that references it owns it. Clients never attach an existing id, so no cross-shop reference is possible.
+- Replacing or removing an image deletes the old row in the same unit of work. URLs never change content (new upload → new id), so they are cached for a year.
+
+### Maps and geocoding (Phase 06, D-068)
+
+- The web `LocationPicker` depends on a `MapView` contract; the adapter is MapLibre GL with raster tiles from `NEXT_PUBLIC_MAP_TILE_URL` (OpenStreetMap by default, with attribution). Without WebGL the picker falls back to typed coordinates and address, which are also its keyboard alternative.
+- Geocoding goes through the API (`/admin/geo/*`, `/shop/geo/*`, `IGeocoder`): `Fake` (Riyadh gazetteer; compose, tests, CI) or `Nominatim` (development; 1 request/s, cached). The production tile and geocoder hosts are configuration (D-007).
+- The shop's point is `shops.shops.location geography(Point,4326)` with a GiST index (X = longitude, Y = latitude), ready for the Phase 11 nearby search.
 - **Authorization:** default deny on `/api/v1`; endpoints declare `AllowAnonymous()`, `RequireUserType(...)` or `RequirePermission(...)`. Permissions come from roles in the database, resolved per request. An integration test checks every endpoint against this classification.
 
 ## 3. Web application (Phase 02)

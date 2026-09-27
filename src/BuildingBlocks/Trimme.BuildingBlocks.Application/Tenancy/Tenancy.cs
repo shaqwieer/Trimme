@@ -31,10 +31,25 @@ public interface ISystemDataScope
     IDisposable Begin();
 }
 
+/// <summary>
+/// Read-only view of published data for anonymous and customer pages (D-066): every shop is visible, and shop-owned rows
+/// only of the one shop given (none when <see langword="null"/>). The caller's own tenant is ignored while it is open,
+/// and saving changes throws. Only public use cases (<c>*.Application.Public</c> namespaces, enforced by an
+/// architecture test) may depend on it. Handlers still filter what is published (for example active shops only).
+/// </summary>
+public interface IPublicDataScope
+{
+    IDisposable Begin(ShopId? shopId);
+}
+
 /// <summary>Read access to shops for other modules (implemented by the Shops module).</summary>
 public interface IShopDirectory
 {
     Task<ShopSummary?> FindAsync(ShopId shopId, CancellationToken cancellationToken);
+
+    Task<ShopSummary?> FindBySlugAsync(string slug, CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<ShopId, ShopSummary>> FindManyAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken);
 }
 
 public sealed record ShopSummary(ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status);

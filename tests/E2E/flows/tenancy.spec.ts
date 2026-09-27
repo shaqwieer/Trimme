@@ -73,6 +73,8 @@ test.describe('shops and tenancy (R-SHP-01, R-AUTH-02, R-TEN-01/06)', () => {
     await expect(admin.getByText('Shop activated')).toBeVisible();
     await expect(admin.getByText('Active', { exact: true })).toBeVisible();
 
+    // Invitations live on the shop's "Accounts" tab (Phase 06 tabs: profile, location, accounts, professionals).
+    await admin.getByRole('link', { name: 'Accounts' }).click();
     await admin.getByLabel('Email').fill(ownerEmail);
     await admin.getByRole('button', { name: 'Send invitation' }).click();
     await expect(admin.getByText('Invitation sent.')).toBeVisible();

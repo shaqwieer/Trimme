@@ -20,6 +20,12 @@ namespace Trimme.IntegrationTests.Tenancy;
 /// </summary>
 public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
 {
+    /// <summary>Reviewed phone-named members that are not customer data. Adding one is a reviewed decision.</summary>
+    private static readonly Dictionary<string, string> AllowedMembers = new(StringComparer.Ordinal)
+    {
+        ["ShopOwnProfileResponse.PublicPhone"] = "The shop's own public business number, which the shop itself edits (Phase 06).",
+    };
+
     [Fact]
     public async Task ShopFacingContracts_DoNotContainCustomerPhone()
     {
@@ -43,7 +49,9 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
 
             foreach (var type in responseTypes)
             {
-                violations.AddRange(PhoneLikeMembers(type, type.Name, []).Select(member => $"{key}: {member}"));
+                violations.AddRange(PhoneLikeMembers(type, type.Name, [])
+                    .Where(member => !AllowedMembers.ContainsKey(member))
+                    .Select(member => $"{key}: {member}"));
             }
         }
 

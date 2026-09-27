@@ -64,6 +64,20 @@ public sealed class ApiSession : IDisposable
         return await Client.SendAsync(request, cancellationToken);
     }
 
+    /// <summary>Sends one file as <c>multipart/form-data</c> (field <c>file</c>), like the web app's upload control.</summary>
+    public async Task<HttpResponseMessage> UploadAsync(HttpMethod method, string path, byte[] content, CancellationToken cancellationToken, string fileName = "photo.png", string contentType = "image/png")
+    {
+        using var file = new ByteArrayContent(content);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+        using var form = new MultipartFormDataContent { { file, "file", fileName } };
+        using var request = new HttpRequestMessage(method, path) { Content = form };
+        request.Headers.Add(Csrf.HeaderName, await CsrfTokenAsync(cancellationToken));
+        return await Client.SendAsync(request, cancellationToken);
+    }
+
+    public Task<HttpResponseMessage> PutAsync(string path, object? body, CancellationToken cancellationToken) =>
+        SendAsync(HttpMethod.Put, path, body, cancellationToken);
+
     /// <summary>Returns the current CSRF cookie, fetching one first if the "browser" has none (as the web client does).</summary>
     public async Task<string> CsrfTokenAsync(CancellationToken cancellationToken)
     {

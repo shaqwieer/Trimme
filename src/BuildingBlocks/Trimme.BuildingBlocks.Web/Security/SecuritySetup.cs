@@ -32,6 +32,7 @@ public static class SecuritySetup
         services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
         services.AddScoped<IAdminDataScope, AdminDataScope>();
         services.AddScoped<ISystemDataScope, SystemDataScope>();
+        services.AddScoped<IPublicDataScope, PublicDataScope>();
 
         services.AddAuthorization();
         services.AddSingleton<IAuthorizationPolicyProvider, TrimmeAuthorizationPolicyProvider>();

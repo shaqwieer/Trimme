@@ -52,6 +52,12 @@ internal sealed class AdminDataScope(TrimmeDbContext db, ICurrentUser user) : IA
     }
 }
 
+/// <summary>Read-only public view bound to one shop (D-066); available to any caller, including anonymous ones.</summary>
+internal sealed class PublicDataScope(TrimmeDbContext db) : IPublicDataScope
+{
+    public IDisposable Begin(ShopId? shopId) => db.EnterPublicScope(shopId);
+}
+
 /// <summary>System bypass for host commands and background jobs; refused inside an HTTP request.</summary>
 internal sealed class SystemDataScope(TrimmeDbContext db, IHttpContextAccessor accessor) : ISystemDataScope
 {

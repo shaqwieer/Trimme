@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A stored image (JPEG, PNG or WebP). Public and immutable: a new upload always gets a new id. */
+        get: operations["GetMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -47,6 +64,57 @@ export interface paths {
         };
         /** The signed-in shop user's shop, from the session (never from the request). */
         get: operations["GetMyShop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An active shop's public profile. No professional or customer contact data. */
+        get: operations["GetPublicShop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own professionals, read-only and without contact data. */
+        get: operations["ListShopProfessionals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/professionals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active professionals of an active shop. No contact data. */
+        get: operations["ListPublicShopProfessionals"];
         put?: never;
         post?: never;
         delete?: never;
@@ -351,7 +419,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Shops, newest first, with search and status filter (paged). */
+        /** Shops, newest first, with search (name, slug, district) and status filter (paged). */
         get: operations["AdminListShops"];
         put?: never;
         /** Creates a shop in Draft status. */
@@ -369,9 +437,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One shop. */
+        /** One shop with its profile, location and shop-edit policy. */
         get: operations["AdminGetShop"];
-        put?: never;
+        /** Edits the public profile and verification (audited, optimistic concurrency). */
+        put: operations["AdminUpdateShopProfile"];
         post?: never;
         delete?: never;
         options?: never;
@@ -413,6 +482,405 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the confirmed map point and address (audited). */
+        put: operations["AdminSetShopLocation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/editable-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets which profile fields the shop may edit itself (audited). */
+        put: operations["AdminSetShopEditablePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the logo (JPEG, PNG or WebP, at most 5 MB; audited). */
+        put: operations["AdminUploadShopLogo"];
+        post?: never;
+        /** Removes the logo (audited). */
+        delete: operations["AdminRemoveShopLogo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the cover image (1600×900 recommended; audited). */
+        put: operations["AdminUploadShopCover"];
+        post?: never;
+        /** Removes the cover image (audited). */
+        delete: operations["AdminRemoveShopCover"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/gallery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a gallery image (up to 12; audited). */
+        post: operations["AdminAddShopGalleryImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/gallery/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Removes a gallery image (audited). */
+        delete: operations["AdminRemoveShopGalleryImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own profile and the admin's edit policy. Not available while suspended. */
+        get: operations["GetOwnShopProfile"];
+        /** Edits the fields the admin policy opens to the shop; a locked field that changes answers 403. */
+        put: operations["UpdateOwnShopProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/profile/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the logo, if the policy allows. */
+        put: operations["UploadOwnShopLogo"];
+        post?: never;
+        /** Removes the logo, if the policy allows. */
+        delete: operations["RemoveOwnShopLogo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/profile/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the cover image, if the policy allows. */
+        put: operations["UploadOwnShopCover"];
+        post?: never;
+        /** Removes the cover image, if the policy allows. */
+        delete: operations["RemoveOwnShopCover"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/profile/gallery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a gallery image, if the policy allows. */
+        post: operations["AddOwnShopGalleryImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/profile/gallery/{mediaId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Removes one of the shop's gallery images, if the policy allows. */
+        delete: operations["RemoveOwnShopGalleryImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the shop's map point, if the admin policy opens the location to the shop. */
+        put: operations["SetOwnShopLocation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/geo/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Address and district search for the location picker (server-side provider, cached). */
+        get: operations["AdminGeocodeSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/geo/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The address at a map point, for the picker's confirmation card. */
+        get: operations["AdminGeocodeReverse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/geo/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Address and district search for the location picker (server-side provider, cached). */
+        get: operations["ShopGeocodeSearch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/geo/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The address at a map point, for the picker's confirmation card. */
+        get: operations["ShopGeocodeReverse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Professionals with shop, status and search filters (paged). Numbers are masked. */
+        get: operations["AdminListProfessionals"];
+        put?: never;
+        /** Creates a professional in exactly one shop (audited). */
+        post: operations["AdminCreateProfessional"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One professional. The WhatsApp number is masked. */
+        get: operations["AdminGetProfessional"];
+        /** Edits the profile (audited, optimistic concurrency). The shop cannot change. */
+        put: operations["AdminUpdateProfessional"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides the professional from booking (audited). */
+        post: operations["AdminDisableProfessional"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Makes a disabled professional active again (audited). */
+        post: operations["AdminEnableProfessional"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets or corrects the WhatsApp number and the notification toggle (audited, number never logged). */
+        put: operations["AdminSetProfessionalWhatsApp"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/whatsapp/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Returns the full number once, for a stated reason (audited; never cached). */
+        post: operations["AdminRevealProfessionalWhatsApp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/professionals/{professionalId}/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the photo (JPEG, PNG or WebP, at most 5 MB; audited). */
+        put: operations["AdminUploadProfessionalAvatar"];
+        post?: never;
+        /** Removes the photo (audited). */
+        delete: operations["AdminRemoveProfessionalAvatar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -422,7 +890,80 @@ export interface components {
             displayName: string;
             password: string;
         };
-        /** @description A shop as the platform admin sees it. */
+        /** @description A professional in the admin list. */
+        AdminProfessionalListItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            avatarUrl: null | string;
+            status: components["schemas"]["ProfessionalStatus"];
+            whatsApp: components["schemas"]["AdminWhatsAppResponse"];
+        };
+        /**
+         * @description A professional as the platform admin edits it. Guid AdminProfessionalResponse.ShopId is read-only: it is fixed at creation and no
+         *     request can change it (R-NEG-01).
+         */
+        AdminProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            shopId: string;
+            shopSlug: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            avatarUrl: null | string;
+            status: components["schemas"]["ProfessionalStatus"];
+            whatsApp: components["schemas"]["AdminWhatsAppResponse"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description A shop with its full profile, location and shop-edit policy, as the platform admin edits it. */
+        AdminShopDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            category: components["schemas"]["ShopCategory"];
+            publicPhone: null | string;
+            amenities: components["schemas"]["ShopAmenity"][];
+            isVerified: boolean;
+            logoUrl: null | string;
+            coverUrl: null | string;
+            gallery: components["schemas"]["ShopImageResponse"][];
+            location: null | components["schemas"]["ShopLocationResponse"];
+            editableFields: components["schemas"]["ShopProfileField"][];
+            status: string;
+            timeZone: string;
+            requireManualConfirmation: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description A shop in the admin list. */
         AdminShopResponse: {
             /** Format: uuid */
             id: string;
@@ -432,16 +973,28 @@ export interface components {
             status: string;
             timeZone: string;
             requireManualConfirmation: boolean;
+            district: null | string;
+            isVerified: boolean;
+            logoUrl: null | string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: null | string;
+        };
+        /** @description The WhatsApp settings an admin sees. The number itself is only ever masked here (reveal is a separate, audited action). */
+        AdminWhatsAppResponse: {
+            masked: null | string;
+            notificationsEnabled: boolean;
+            verification: components["schemas"]["WhatsAppVerification"];
         };
         ApiMetaResponse: {
             name: string;
             version: string;
             /** Format: date-time */
             serverTimeUtc: string;
+        };
+        ChangeProfessionalStatusRequest: {
+            reason: null | string;
         };
         ChangeShopStatusRequest: {
             reason: null | string;
@@ -450,6 +1003,20 @@ export interface components {
             displayName: string;
             preferredLocale: string;
             termsAccepted: boolean;
+        };
+        /** @description The one shop is chosen here, at creation, and can never be changed afterwards (D-011). */
+        CreateProfessionalRequest: {
+            /** Format: uuid */
+            shopId: string;
+            nameAr: string;
+            nameEn: string;
+            slug: null | string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            whatsAppNumber: null | string;
+            notificationsEnabled: boolean;
         };
         CreateShopRequest: {
             slug: string;
@@ -460,10 +1027,26 @@ export interface components {
         CsrfTokenResponse: {
             token: string;
         };
+        EditablePolicyRequest: {
+            editableFields: components["schemas"]["ShopProfileField"][];
+        };
         ForgotPasswordRequest: {
             email: string;
             locale: null | string;
         };
+        /** @description An address search or reverse-geocoding result. */
+        GeocodedPlace: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            formattedAddress: string;
+            addressLine: null | string;
+            district: null | string;
+            city: null | string;
+        };
+        /** Format: binary */
+        IFormFile: string;
         InvitationResponse: {
             /** Format: uuid */
             id: string;
@@ -482,6 +1065,11 @@ export interface components {
             role: string;
             locale: null | string;
         };
+        /**
+         * @description How the location point was chosen in the picker.
+         * @enum {unknown}
+         */
+        LocationSource: "Manual" | "Geocoded" | "Device";
         /**
          * @description The signed-in user (`GET /api/v1/me`). `UserType` is `Customer`, `ShopUser` or
          *     `PlatformAdmin`. A customer sees only their own number, masked. `ShopId` is set for shop users from
@@ -513,6 +1101,16 @@ export interface components {
             resendAvailableAt: string;
         };
         /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfAdminProfessionalListItem: {
+            items: components["schemas"]["AdminProfessionalListItem"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
         PagedResponseOfAdminShopResponse: {
             items: components["schemas"]["AdminShopResponse"][];
             /** Format: int32 */
@@ -535,6 +1133,53 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        /** @enum {unknown} */
+        ProfessionalStatus: "Active" | "Disabled";
+        /** @description A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02). */
+        PublicProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            avatarUrl: null | string;
+        };
+        /** @description Where a customer finds the shop: the confirmed point and the address, without who confirmed it. */
+        PublicShopLocationResponse: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            addressLine: null | string;
+            district: null | string;
+            city: null | string;
+            formattedAddress: null | string;
+        };
+        /**
+         * @description A published shop's basic profile (`GET /public/shops/{slug}`). Only active shops are published. The phone is the
+         *     shop's own business number; professional and customer numbers are never part of a public contract (R-PRO-02).
+         */
+        PublicShopResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            category: components["schemas"]["ShopCategory"];
+            publicPhone: null | string;
+            amenities: components["schemas"]["ShopAmenity"][];
+            isVerified: boolean;
+            logoUrl: null | string;
+            coverUrl: null | string;
+            galleryUrls: string[];
+            location: null | components["schemas"]["PublicShopLocationResponse"];
+        };
         RequestOtpRequest: {
             phone: string;
             termsAccepted: boolean;
@@ -545,6 +1190,13 @@ export interface components {
             userId: string;
             token: string;
             newPassword: string;
+        };
+        /** @description The full number, returned once per audited reveal. Never cached. */
+        RevealedWhatsAppResponse: {
+            number: string;
+        };
+        RevealProfessionalWhatsAppRequest: {
+            reason: string;
         };
         RevokedSessionsResponse: {
             /** Format: int32 */
@@ -568,6 +1220,98 @@ export interface components {
             lastSeenAt: string;
             isCurrent: boolean;
         };
+        /**
+         * @description Sets, corrects or removes (null) the WhatsApp number (E.164 or a Saudi national format), and the notification
+         *     toggle. With `KeepCurrentNumber` only the toggle changes, so an admin never needs to see the number to do that.
+         */
+        SetProfessionalWhatsAppRequest: {
+            whatsAppNumber: null | string;
+            notificationsEnabled: boolean;
+            /** @default false */
+            keepCurrentNumber: boolean;
+        };
+        /** @enum {unknown} */
+        ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
+        /**
+         * @description Kind of business, shown on the public page and used by discovery filters (Phase 11).
+         * @enum {unknown}
+         */
+        ShopCategory: "Barbershop" | "Salon" | "Unisex";
+        ShopImageResponse: {
+            /** Format: uuid */
+            id: string;
+            url: string;
+        };
+        ShopLocationRequest: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            addressLine: null | string;
+            district: null | string;
+            city: null | string;
+            formattedAddress: null | string;
+            source: components["schemas"]["LocationSource"];
+        };
+        /** @description The confirmed shop entrance. Coordinates are WGS 84 decimal degrees. */
+        ShopLocationResponse: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            addressLine: null | string;
+            district: null | string;
+            city: null | string;
+            formattedAddress: null | string;
+            source: components["schemas"]["LocationSource"];
+            /** Format: date-time */
+            confirmedAt: string;
+        };
+        /**
+         * @description The signed-in shop's own profile, for its settings screen (s-settings). IReadOnlyList&lt;ShopProfileField&gt; ShopOwnProfileResponse.EditableFields is the admin
+         *     policy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;
+         *     string? ShopOwnProfileResponse.PublicPhone is the shop's own business number.
+         */
+        ShopOwnProfileResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            category: components["schemas"]["ShopCategory"];
+            publicPhone: null | string;
+            amenities: components["schemas"]["ShopAmenity"][];
+            isVerified: boolean;
+            logoUrl: null | string;
+            coverUrl: null | string;
+            gallery: components["schemas"]["ShopImageResponse"][];
+            location: null | components["schemas"]["ShopLocationResponse"];
+            editableFields: components["schemas"]["ShopProfileField"][];
+            /** Format: uint32 */
+            version: number;
+        };
+        /**
+         * @description A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec §7).
+         *     Shop-facing contract: no contact data of any kind.
+         */
+        ShopProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            avatarUrl: null | string;
+            status: components["schemas"]["ProfessionalStatus"];
+        };
+        /**
+         * @description Profile areas an admin can open to or lock from the shop (DV-S16). Verification and slug are never shop-editable.
+         * @enum {unknown}
+         */
+        ShopProfileField: "Name" | "Description" | "Category" | "PublicPhone" | "Amenities" | "Logo" | "Cover" | "Gallery" | "Location";
         /**
          * @description The signed-in shop user's own shop (`GET /api/v1/shop/me`). Shop-facing contract: it must never carry customer
          *     contact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it.
@@ -595,11 +1339,56 @@ export interface components {
             email: string;
             password: string;
         };
+        /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
+        UpdateOwnShopProfileRequest: {
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            category: components["schemas"]["ShopCategory"];
+            publicPhone: null | string;
+            amenities: null | components["schemas"]["ShopAmenity"][];
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop. */
+        UpdateProfessionalRequest: {
+            nameAr: string;
+            nameEn: string;
+            slug: null | string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /**
+         * @description The admin's profile edit. `Version` is the value the client read; a stale value answers 409
+         *     `resource.concurrency_conflict`.
+         */
+        UpdateShopProfileRequest: {
+            nameAr: string;
+            nameEn: string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            category: components["schemas"]["ShopCategory"];
+            publicPhone: null | string;
+            amenities: null | components["schemas"]["ShopAmenity"][];
+            isVerified: boolean;
+            /** Format: uint32 */
+            version: number;
+        };
         VerifyOtpRequest: {
             /** Format: uuid */
             challengeId: string;
             code: string;
         };
+        /**
+         * @description Delivery state of the WhatsApp number, set by the notification worker (Phase 15).
+         * @enum {unknown}
+         */
+        WhatsAppVerification: "Unverified" | "Verified" | "Failed";
     };
     responses: never;
     parameters: never;
@@ -625,6 +1414,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiMetaResponse"];
+                };
+            };
+        };
+    };
+    GetMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Modified */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -674,6 +1499,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopProfileResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPublicShop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShopResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListShopProfessionals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopProfessionalResponse"][];
+                };
+            };
+        };
+    };
+    ListPublicShopProfessionals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProfessionalResponse"][];
                 };
             };
             /** @description Not Found */
@@ -1321,11 +2228,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminShopResponse"];
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
                 };
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdateShopProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShopProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1414,6 +2365,1222 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSetShopLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSetShopEditablePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditablePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUploadShopLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRemoveShopLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUploadShopCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRemoveShopCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminAddShopGalleryImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRemoveShopGalleryImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOwnShopProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateOwnShopProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOwnShopProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UploadOwnShopLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveOwnShopLogo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UploadOwnShopCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveOwnShopCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddOwnShopGalleryImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveOwnShopGalleryImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mediaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetOwnShopLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnProfileResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGeocodeSearch: {
+        parameters: {
+            query?: {
+                q?: string;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodedPlace"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGeocodeReverse: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodedPlace"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopGeocodeSearch: {
+        parameters: {
+            query?: {
+                q?: string;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodedPlace"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopGeocodeReverse: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeocodedPlace"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListProfessionals: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                shopId?: string;
+                status?: components["schemas"]["ProfessionalStatus"];
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminProfessionalListItem"];
+                };
+            };
+        };
+    };
+    AdminCreateProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProfessionalRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdateProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfessionalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminDisableProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ChangeProfessionalStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminEnableProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ChangeProfessionalStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSetProfessionalWhatsApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetProfessionalWhatsAppRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRevealProfessionalWhatsApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevealProfessionalWhatsAppRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevealedWhatsAppResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUploadProfessionalAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRemoveProfessionalAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProfessionalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -26,6 +26,7 @@ public sealed partial class TenancyRules
     private static readonly Dictionary<Type, string> UnscopedShopIdAllowList = new()
     {
         [typeof(AuditEntry)] = "Platform audit trail; shops never read it.",
+        [typeof(Trimme.Modules.Shops.Domain.ShopLocation)] = "Owned value stored in the shop row itself; its key is that shop's id.",
     };
 
     private static readonly Assembly[] ProductionAssemblies =
@@ -89,6 +90,13 @@ public sealed partial class TenancyRules
         ScopeUsersOutside<ISystemDataScope>([typeof(TenancyRules).Assembly], SystemNamespace()).ShouldContain(typeof(ProbeMisplacedScopeUser).FullName);
     }
 
+    [Fact]
+    public void PublicDataScope_IsUsedOnlyByPublicUseCases()
+    {
+        ScopeUsersOutside<IPublicDataScope>(ProductionAssemblies, PublicNamespace()).ShouldBeEmpty();
+        ScopeUsersOutside<IPublicDataScope>([typeof(TenancyRules).Assembly], PublicNamespace()).ShouldContain(typeof(ProbeMisplacedScopeUser).FullName);
+    }
+
     private static IEnumerable<string> UnscopedShopIdEntities(IModel model) =>
         model.GetEntityTypes()
             .Where(e => e.FindProperty(nameof(IShopOwned.ShopId)) is not null)
@@ -137,6 +145,9 @@ public sealed partial class TenancyRules
 
     [GeneratedRegex(@"(\.Seeding(\.|$)|\.Jobs(\.|$)|^Trimme\.Api\.Hosting$)")]
     private static partial Regex SystemNamespace();
+
+    [GeneratedRegex(@"\.Application\.Public(\.|$)")]
+    private static partial Regex PublicNamespace();
 }
 
 // ---------------------------------------------------------------- deliberate violations (probes)
@@ -174,9 +185,11 @@ internal static class ProbeQueries
     public static IQueryable<ProbeShopOwned> Bypass(IQueryable<ProbeShopOwned> query) => query.IgnoreQueryFilters();
 }
 
-internal sealed class ProbeMisplacedScopeUser(IAdminDataScope admin, ISystemDataScope system)
+internal sealed class ProbeMisplacedScopeUser(IAdminDataScope admin, ISystemDataScope system, IPublicDataScope published)
 {
     public IDisposable Admin() => admin.Begin();
 
     public IDisposable System() => system.Begin();
+
+    public IDisposable Public() => published.Begin(shopId: null);
 }

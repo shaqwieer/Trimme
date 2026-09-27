@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Trimme.BuildingBlocks.Application.Validation;
 
@@ -16,6 +17,8 @@ internal sealed partial class TrimmeExceptionHandler(
         {
             RequestValidationException validation =>
                 (StatusCodes.Status400BadRequest, ApiErrorCodes.ValidationFailed, "One or more validation errors occurred.", validation.Errors),
+            DbUpdateConcurrencyException =>
+                (StatusCodes.Status409Conflict, ApiErrorCodes.ConcurrencyConflict, "The resource was changed by someone else. Reload and try again.", null),
             BadHttpRequestException badRequest =>
                 (badRequest.StatusCode, ApiErrorCodes.ForStatus(badRequest.StatusCode), "The request is invalid.", null),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested =>

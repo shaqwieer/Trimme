@@ -8,6 +8,8 @@ import { Icon } from './icons';
 type UploadDropZoneProps = {
   /** Accessible label of the file input. */
   label: string;
+  /** Visible call to action; defaults to the cover-image prompt. */
+  prompt?: string;
   accept?: string[];
   maxBytes?: number;
   /** Recommended pixel size shown to the user (design: 1600×900 cover). */
@@ -30,6 +32,7 @@ export function validateUpload(file: File, accept: string[], maxBytes: number): 
  */
 export function UploadDropZone({
   label,
+  prompt,
   accept = DEFAULT_TYPES,
   maxBytes = 4 * 1024 * 1024,
   recommended = { width: 1600, height: 900 },
@@ -77,7 +80,7 @@ export function UploadDropZone({
         )}
       >
         <Icon name="download" className="size-5 rotate-180 text-brand-700" />
-        <span className="text-caption font-bold text-text-primary">{t('prompt')}</span>
+        <span className="text-caption font-bold text-text-primary">{prompt ?? t('prompt')}</span>
         <span className="font-latin text-helper text-text-tertiary">
           {t('constraints', { width: recommended.width, height: recommended.height, maxMb })}
         </span>

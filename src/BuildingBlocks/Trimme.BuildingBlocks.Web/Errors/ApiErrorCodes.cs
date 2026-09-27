@@ -14,6 +14,9 @@ public static class ApiErrorCodes
     public const string NotFound = "resource.not_found";
     public const string MethodNotAllowed = "http.method_not_allowed";
     public const string Conflict = "resource.conflict";
+
+    /// <summary>Optimistic concurrency: the client's version is stale (someone else saved first).</summary>
+    public const string ConcurrencyConflict = "resource.concurrency_conflict";
     public const string PayloadTooLarge = "request.too_large";
     public const string UnsupportedMediaType = "request.unsupported_media_type";
     public const string RateLimited = "rate_limit.exceeded";

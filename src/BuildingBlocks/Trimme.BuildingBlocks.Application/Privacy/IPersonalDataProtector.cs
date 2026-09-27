@@ -19,6 +19,9 @@ public interface IPersonalDataProtector
 public static class PersonalDataPurposes
 {
     public const string MobileNumber = "trimme.mobile-number";
+
+    /// <summary>A professional's WhatsApp number (Phase 06); readable by authorized admin commands and the notification worker.</summary>
+    public const string ProfessionalWhatsApp = "trimme.professional-whatsapp";
     public const string IpAddress = "trimme.ip-address";
     public const string OtpCode = "trimme.otp-code";
 }
