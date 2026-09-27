@@ -121,10 +121,17 @@ Session 4, 2026-09-27 (same session as Phase 06, at the user's request).
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 196 web tests (17 new: price parsing, name fallback, form validation, keyboard reorder + rollback; transfer-copy check covers the new catalogs) |
 | Compose on the Phase 06 volume (upgrade) and `down -v` + `up --build` (clean) | PASS — migrations and 5 seeders ran |
-| `pnpm e2e` on the clean stack | PASS — 42/42 twice, after two test/infra fixes (below); flows project 5/5 consecutive runs green |
+| `pnpm e2e` on a clean stack | First clean run (`down -v` + `up --build`): **41/42 twice**, the admin services flow failing (see findings). After the fixes, a new `down -v` + `up --build` with no further changes: **PASS 42/42 twice**. The flows project also passed 5 consecutive runs in between |
 | No-transfer grep gate (D-069) | PASS — no hits |
 | gitleaks `dir` + `git` | PASS — no leaks |
 | Visual: `/ar/shop/services`, packages tab and edit form at 390; `/ar/admin/services` at 390 and 1440; `/ar/admin/services/{id}`, `/en/admin/professionals/{id}` at 1440 | 0 px horizontal overflow at 390; RTL mirrored; Arabic-only names fall back in the English UI |
+
+**Review follow-up (same session, before any push)**
+- Row controls now name their item: "{name}: bookable" switch, and "Edit / Archive / Delete {name}" (spec §5 meaningful labels).
+- The category icon picker shows translated names (`catalog.icons.*`) instead of raw keys.
+- The admin E2E archives the service it creates, so the demo shop stays clean.
+- D-075 (keep-alive timeout) and DV-D03 (drag-and-drop deferred) are recorded.
+- Web: 196 tests, lint, typecheck (web + E2E) and format all green before the final clean-stack runs above.
 
 **Findings during the gates**
 - **Integration timeouts.** The first combined gate run had 4 integration failures (gallery, reveal, password reset, OTP), each timing out at about 31 s. The suite then passed 106/106 three times running alone. They were not reproduced and are recorded as a watch item.

@@ -143,12 +143,16 @@ export function ShopCatalogList({
         <div className="flex flex-wrap items-center gap-2">
           <Switch
             checked={item.isActive}
-            label={t('active')}
+            label={t('activeFor', { name: nameOf(item) })}
+            hideLabel
             disabled={busy !== null}
             onCheckedChange={(on) =>
               void run(`toggle-${item.id}`, () => send(kind, item.id, on ? 'activate' : 'deactivate'))
             }
           />
+          <span aria-hidden="true" className="text-caption text-text-primary">
+            {t('active')}
+          </span>
           {index !== null && (
             <>
               <IconButton
@@ -171,6 +175,7 @@ export function ShopCatalogList({
             variant="secondary"
             size="sm"
             icon="edit"
+            aria-label={t('editItem', { name: nameOf(item) })}
           >
             {t('edit')}
           </ButtonLink>
@@ -178,6 +183,7 @@ export function ShopCatalogList({
             variant="ghost"
             size="sm"
             icon="book"
+            aria-label={t('archiveItem', { name: nameOf(item) })}
             onClick={() => setConfirm({ item, action: 'archive' })}
           >
             {t('archive')}
@@ -187,6 +193,7 @@ export function ShopCatalogList({
               variant="ghost"
               size="sm"
               icon="trash"
+              aria-label={t('deleteItem', { name: nameOf(item) })}
               onClick={() => setConfirm({ item, action: 'delete' })}
             >
               {t('delete')}

@@ -696,7 +696,17 @@
     "hiddenReason": "Hidden by the platform: {reason}",
     "unbookable": "Not bookable: one of its services is off, archived or hidden",
     "noCategory": "No category",
-    "durationOption": "{minutes} min"
+    "durationOption": "{minutes} min",
+    "icons": {
+      "scissors": "Scissors",
+      "user": "Person",
+      "users": "People",
+      "star": "Star",
+      "heart": "Heart",
+      "layers": "Layers",
+      "tag": "Tag",
+      "coffee": "Cup"
+    }
   },
   "shopServices": {
     "title": "Services",
@@ -757,7 +767,11 @@
       "create": "Create service",
       "createPackage": "Create package",
       "save": "Save changes"
-    }
+    },
+    "activeFor": "{name}: bookable",
+    "editItem": "Edit {name}",
+    "archiveItem": "Archive {name}",
+    "deleteItem": "Delete {name}"
   },
   "adminServices": {
     "title": "Services & categories",

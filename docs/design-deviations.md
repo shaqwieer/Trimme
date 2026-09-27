@@ -96,3 +96,4 @@ DV-C02 — The OTP help text offers "أو اطلب الرمز عبر رسالة 
 |---|---|---|
 | DV-D01 | "طلب تواصل" contact mediation | D-023 deferred |
 | DV-D02 | Shop daily WhatsApp summary | D-024 deferred |
+| DV-D03 | Drag-and-drop reordering of shop services and packages | Deferred (D-071): keyboard move up/down buttons with an `aria-live` announcement cover reordering; drag can be added on the same `PUT …/order` endpoint |

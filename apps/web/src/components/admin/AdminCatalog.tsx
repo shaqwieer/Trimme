@@ -163,12 +163,13 @@ export function ServiceOverride({
   );
 }
 
-const ICONS = ['scissors', 'user', 'users', 'star', 'heart', 'layers', 'tag', 'coffee'];
+const ICONS = ['scissors', 'user', 'users', 'star', 'heart', 'layers', 'tag', 'coffee'] as const;
 
 /** Create, edit and turn categories on/off. Categories carry no price or duration (spec §10). */
 export function CategoryEditor({ category }: { category?: Schemas['AdminCategoryResponse'] }) {
   const t = useTranslations('adminServices.categories');
   const tv = useTranslations('validation');
+  const tIcons = useTranslations('catalog.icons');
   const router = useRouter();
   const { notice, ok, fail, clear } = useNotice();
   const [open, setOpen] = useState(false);
@@ -273,7 +274,7 @@ export function CategoryEditor({ category }: { category?: Schemas['AdminCategory
           <SelectField label={t('icon')} value={icon} onChange={(e) => setIcon(e.target.value)}>
             {ICONS.map((name) => (
               <option key={name} value={name}>
-                {name}
+                {tIcons(name)}
               </option>
             ))}
           </SelectField>

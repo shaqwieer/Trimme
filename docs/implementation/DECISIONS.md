@@ -489,3 +489,8 @@ The user asked in Session 4 to store media such as photos in the database. This 
 - **Categories** (`Admin.ServiceCategories.Manage`, listed with `Admin.ShopServices.View`) are platform-owned, with no price or duration.
   - They are deactivated, never deleted. Existing services keep an inactive category, but it cannot be chosen again.
   - Active categories are published anonymously at `GET /public/service-categories`.
+
+## D-075 — Web server keep-alive timeout — Accepted (Phase 07)
+- The web image sets `KEEP_ALIVE_TIMEOUT=65000`, read by the Next.js standalone server. Node's default of 5 s closed idle sockets just as clients reused them, which gave intermittent "socket hang up" failures through the `/api` rewrite in E2E.
+- **Production rule:** the upstream's keep-alive timeout must stay above the idle timeout of whatever proxies it (Nginx `keepalive_timeout` or `upstream keepalive`, and load balancers at about 60 s), so the server never closes first. Recorded for the Nginx example in Phase 17.
+

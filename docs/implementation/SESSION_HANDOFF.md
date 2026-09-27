@@ -2,7 +2,7 @@
 
 - Updated at: 2026-09-27 (end of Session 4, Phases 06 and 07)
 - Branch: `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 06 is pushed and CI-green (run 36316322648). Phase 07 is committed locally and **not pushed** (push only when the user asks).
-- HEAD commit: the Phase 07 commit (`feat: phase 07 services, categories and packages`) on top of `e9ae5d3`. Run `git log --oneline -4`.
+- HEAD commit: a review follow-up on top of `9cb2593` (Phase 07: `feat: phase 07 services, categories and packages`), which sits on `e9ae5d3`. Run `git log --oneline -4`.
 - Working tree status: clean after the commit. The local Docker stack is **running**, recreated from an empty volume with the Phase 07 images (web 3300, API 8080, DB 5434, Mailpit UI 8325).
 - Current phase: 07 is complete. Phase 08 has not started.
 - Phase score: 100 / 100 (Phase 07); Phase 06 also 100 / 100 this session.
@@ -35,7 +35,7 @@
 - Command: web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`)
   Result: PASS, 196 web tests
 - Command: compose upgrade from the Phase 06 volume, then `down -v` + `up --build` + `pnpm e2e` ×2
-  Result: PASS, 42/42 both runs; flows project 5/5 consecutive runs
+  Result: the first clean run was 41/42 twice (the admin flow raced `router.refresh()`, plus a keep-alive "socket hang up"). Both are fixed. A fresh `down -v` + `up --build` then PASSED 42/42 twice.
 - Command: no-transfer grep gate; gitleaks `dir` + `git`
   Result: PASS, no hits and no leaks
 

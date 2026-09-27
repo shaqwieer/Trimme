@@ -696,7 +696,17 @@
     "hiddenReason": "أخفتها إدارة المنصة: {reason}",
     "unbookable": "غير متاحة للحجز: إحدى خدماتها متوقفة أو مؤرشفة أو مخفية",
     "noCategory": "بلا تصنيف",
-    "durationOption": "{minutes} دقيقة"
+    "durationOption": "{minutes} دقيقة",
+    "icons": {
+      "scissors": "مقص",
+      "user": "شخص",
+      "users": "أشخاص",
+      "star": "نجمة",
+      "heart": "قلب",
+      "layers": "طبقات",
+      "tag": "وسم",
+      "coffee": "كوب"
+    }
   },
   "shopServices": {
     "title": "الخدمات",
@@ -757,7 +767,11 @@
       "create": "إنشاء الخدمة",
       "createPackage": "إنشاء الباقة",
       "save": "حفظ التعديلات"
-    }
+    },
+    "activeFor": "{name}: متاحة للحجز",
+    "editItem": "تعديل {name}",
+    "archiveItem": "أرشفة {name}",
+    "deleteItem": "حذف {name}"
   },
   "adminServices": {
     "title": "الخدمات والتصنيفات",

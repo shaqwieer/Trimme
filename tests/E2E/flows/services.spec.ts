@@ -74,9 +74,9 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     await expect(page.getByText(new RegExp(`${name} moved to position`))).toBeAttached();
 
     // Off, then archive (confirm).
-    await row.getByRole('switch', { name: 'Bookable' }).click();
+    await row.getByRole('switch', { name: `${name}: bookable` }).click();
     await expect(row).toContainText('Off');
-    await row.getByRole('button', { name: 'Archive' }).click();
+    await row.getByRole('button', { name: `Archive ${name}` }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
     await expect(page.getByTestId(`catalog-row-${serviceId}`)).toHaveCount(0);
     await page.getByRole('link', { name: 'Show archived' }).click();
@@ -149,6 +149,12 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
       data: { serviceIds: [service.id] },
     });
     expect(forbidden.status()).toBe(403);
+
+    // Leave the demo shop clean: retire the service this run created.
+    const archived = await owner.request.post(`/api/v1/shop/services/${service.id}/archive`, {
+      headers: { 'X-CSRF-Token': await csrf(ownerContext, owner.request) },
+    });
+    expect(archived.status()).toBe(200);
 
     await adminContext.close();
     await ownerContext.close();
