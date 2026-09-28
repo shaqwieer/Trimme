@@ -51,7 +51,18 @@ internal sealed class ShopConfiguration : IEntityTypeConfiguration<Shop>
     }
 }
 
-/// <summary><see cref="IShopDirectory"/> for other modules: a shop's identity and status.</summary>
+internal sealed class OnlineBookingPauseConfiguration : IEntityTypeConfiguration<OnlineBookingPause>
+{
+    public void Configure(EntityTypeBuilder<OnlineBookingPause> builder)
+    {
+        builder.ToTable("online_booking_pauses");
+        builder.HasKey(p => p.ShopId);
+        builder.Property(p => p.Reason).HasMaxLength(OnlineBookingPause.MaxReasonLength);
+        builder.HasOne<Shop>().WithOne().HasForeignKey<OnlineBookingPause>(p => p.ShopId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+/// <summary><see cref="IShopDirectory"/> for other modules: a shop's identity, status, time zone and pause state.</summary>
 internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
 {
     public async Task<ShopSummary?> FindAsync(ShopId shopId, CancellationToken cancellationToken) =>
@@ -90,6 +101,8 @@ internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
 
     private IQueryable<Shop> Shops() => db.Set<Shop>().AsNoTracking();
 
-    private static IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops) =>
-        shops.Select(s => new ShopSummary(s.Id, s.Slug, s.NameAr, s.NameEn, s.Status));
+    private IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops) =>
+        shops.Select(s => new ShopSummary(
+            s.Id, s.Slug, s.NameAr, s.NameEn, s.Status, s.TimeZone,
+            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault()));
 }

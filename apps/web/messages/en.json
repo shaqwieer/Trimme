@@ -246,7 +246,12 @@
     "periodGap": "Start the day after the current end, or no later than today",
     "periodNotLatest": "Only the latest period's end date can change",
     "outOfRange": "This value is out of range",
-    "tooMany": "Too many items"
+    "tooMany": "Too many items",
+    "hoursInvalid": "Check the times (5-minute steps, at most 24 hours)",
+    "hoursOverlap": "The ranges overlap, including the hours after midnight",
+    "rangeInvalid": "The end is before the start, or the range is longer than a year",
+    "breakDays": "Choose weekdays or a single date",
+    "immutable": "This value cannot change"
   },
   "auth": {
     "meta": {
@@ -409,7 +414,15 @@
     "subscription_not_found": "This shop has no subscription yet.",
     "subscription_already_assigned": "This shop already has a subscription. Renew it instead.",
     "resource_conflict": "Someone else saved at the same time. Reload and try again.",
-    "subscription_custom_pricing_required": "A custom duration or a past start date needs a SuperAdmin override with a total price and a reason."
+    "subscription_custom_pricing_required": "A custom duration or a past start date needs a SuperAdmin override with a total price and a reason.",
+    "schedule_closure_not_found": "The closure was not found.",
+    "schedule_break_not_found": "The break was not found.",
+    "schedule_time_off_not_found": "The time off was not found.",
+    "shop_online_booking_already_paused": "Online booking is already paused.",
+    "shop_online_booking_not_paused": "Online booking is not paused.",
+    "availability_offer_not_found": "This service is not offered.",
+    "availability_offer_not_online_bookable": "This service cannot be booked online.",
+    "availability_professional_not_eligible": "This professional does not provide this service."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -1119,5 +1132,128 @@
     "save": "Save settings",
     "saved": "Settings saved.",
     "readOnly": "You can view these settings but not change them."
+  },
+  "shopSchedule": {
+    "title": "Hours, breaks and time off",
+    "days": {
+      "Sunday": "Sunday",
+      "Monday": "Monday",
+      "Tuesday": "Tuesday",
+      "Wednesday": "Wednesday",
+      "Thursday": "Thursday",
+      "Friday": "Friday",
+      "Saturday": "Saturday"
+    },
+    "openOn": "Open on {day}",
+    "from": "From",
+    "to": "To",
+    "closed": "Closed",
+    "nextDay": "(next day)",
+    "addRange": "+ Add another range",
+    "removeRange": "Remove a range from {day}",
+    "invalidTimes": "Check the times on {day} (5-minute steps)",
+    "save": "Save",
+    "saveAnyway": "Save anyway",
+    "cancel": "Cancel",
+    "edit": "Edit {name}",
+    "delete": "Delete {name}",
+    "deleteTitle": "Delete {name}?",
+    "deleteBody": "The time becomes bookable again. Confirmed appointments are not affected.",
+    "deleteConfirm": "Delete",
+    "hours": {
+      "title": "Shop weekly hours",
+      "side": "The outer limit for professionals' hours",
+      "body": "Changes apply to upcoming days only and never cancel confirmed appointments.",
+      "save": "Save hours",
+      "saved": "Shop hours saved"
+    },
+    "pros": {
+      "title": "Professionals' hours",
+      "body": "Each professional works within the shop's hours. The shop edits times only, never the profile.",
+      "none": "Your shop has no professionals yet.",
+      "select": "Professional",
+      "disabled": "disabled",
+      "follows": "Follows the shop's hours",
+      "save": "Save professional's hours",
+      "saved": "Professional's hours saved"
+    },
+    "breaks": {
+      "title": "Recurring breaks",
+      "body": "Removed from bookable times on every selected day.",
+      "empty": "No breaks.",
+      "add": "Add break",
+      "addTitle": "Add break",
+      "editTitle": "Edit break",
+      "label": "Break name",
+      "labelRequired": "Name the break",
+      "appliesTo": "Applies to",
+      "everyone": "All professionals",
+      "repeat": "Repeat",
+      "weekly": "Weekly",
+      "once": "Once",
+      "days": "Days",
+      "daysRequired": "Choose at least one day",
+      "date": "Date",
+      "everyDay": "Every day",
+      "timesInvalid": "Choose an end time after the start (5-minute steps)"
+    },
+    "timeOff": {
+      "title": "Time off and closures",
+      "body": "A professional's leave removes only their hours; a shop closure closes the whole day.",
+      "empty": "No upcoming time off or closures.",
+      "add": "Record time off",
+      "addClosure": "Close the shop",
+      "addTitle": "Record time off",
+      "editTitle": "Edit time off",
+      "professional": "Professional",
+      "professionalRequired": "Choose the professional",
+      "kindLabel": "Type",
+      "kind": {
+        "Vacation": "Vacation",
+        "Sick": "Sick leave",
+        "Other": "Other"
+      },
+      "startDate": "From date",
+      "endDate": "To date",
+      "allDay": "Whole days",
+      "startTime": "From time",
+      "endTime": "To time",
+      "note": "Note",
+      "wholeShop": "Whole shop",
+      "state": {
+        "Active": "In force now",
+        "Scheduled": "Scheduled"
+      },
+      "effect": "Their times are removed; the other professionals work as usual.",
+      "closureEffect": "The day is fully closed and takes no bookings."
+    },
+    "closures": {
+      "addTitle": "Close the shop",
+      "editTitle": "Edit closure",
+      "body": "The shop is closed on the chosen days, including that day's hours after midnight.",
+      "startDate": "From date",
+      "endDate": "To date",
+      "reason": "Reason"
+    },
+    "conflicts": {
+      "title": "{count, plural, one {# existing appointment overlaps} other {# existing appointments overlap}}",
+      "body": "No appointment is cancelled and no message is sent to customers automatically. Contact them or reschedule yourself if needed."
+    },
+    "pause": {
+      "liveTitle": "Pause online booking",
+      "liveBody": "Use it when you are overbooked or in an emergency. Confirmed appointments are never cancelled, and the shop leaves search results until you resume.",
+      "pausedTitle": "Online booking is paused",
+      "pausedBody": "No new online bookings are taken and the shop is hidden from discovery. Confirmed appointments stay valid.",
+      "since": "Since {date}, {time}",
+      "pause": "Pause",
+      "resume": "Resume online booking",
+      "confirmTitle": "Pause online booking?",
+      "confirmBody": "The shop takes no new online bookings until you resume. Confirmed appointments are not affected.",
+      "reason": "Reason (for the shop only)",
+      "confirm": "Pause now",
+      "cancel": "Go back",
+      "pausedToast": "Online booking paused",
+      "resumedToast": "Online booking is back on"
+    }
   }
 }

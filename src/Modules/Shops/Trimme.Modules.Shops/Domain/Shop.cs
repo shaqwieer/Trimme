@@ -332,6 +332,10 @@ public static class ShopErrors
         Error.Validation("validation.failed", "The gallery is full.",
             new Dictionary<string, string[]>(StringComparer.Ordinal) { ["file"] = ["validation.gallery_full"] });
 
+    public static Error OnlineBookingAlreadyPaused() => Error.Conflict("shop.online_booking_already_paused", "Online booking is already paused.");
+
+    public static Error OnlineBookingNotPaused() => Error.Conflict("shop.online_booking_not_paused", "Online booking is not paused.");
+
     public static Error GalleryImageNotFound() => Error.NotFound("shop.gallery_image_not_found", "The image is not in this shop's gallery.");
 
     /// <summary>The admin policy does not let the shop change these fields (R-SHP-03).</summary>

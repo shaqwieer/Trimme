@@ -39,10 +39,10 @@ Platform setting `ReminderOffsetMinutes`, default **30**, used for customer and 
 ## D-011 — No barber transfer, enforced structurally — Accepted (Phase 0)
 `Professional.ShopId` set at creation, no setter after creation, not present in any update DTO; no route, permission, UI element, audit type, seed or doc mention (except `design-deviations.md` as removed, DV-S01). Tests: see TRACEABILITY `R-NEG-01`.
 
-## D-012 — "Any available professional" option — Proposed (Phase 10/12)
+## D-012 — "Any available professional" option — Proposed (Phase 10/12; candidate sets built in Phase 09, D-082)
 Design shows "أي حلاق متاح" as default (3851, 4001). Kept: the server resolves a concrete professional inside the booking transaction (eligible = assigned to the service and free; tie-break = fewest bookings that day, then stable ID order). The booking always stores a concrete professional.
 
-## D-013 — Paused shops in discovery — Accepted (setting in Phase 08; applied in Phase 9/11)
+## D-013 — Paused shops in discovery — Accepted (setting in Phase 08; pause and gate in Phase 09, D-083; discovery in Phase 11)
 Design hides paused shops from discovery (2512, 3789). Default: platform setting `HidePausedShopsFromDiscovery = true`; the shop page stays reachable by direct link and shows "الحجز متوقف مؤقتاً"; no availability returned while paused; existing bookings unaffected.
 
 ## D-014 — Subscription expiry/suspension enforcement — Accepted (Phase 08; see D-076, D-078)
@@ -558,3 +558,50 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
 - **Enforcement.** The domain refuses a non-standard period without custom pricing, so no caller can bypass the rule. The API checks the permission. The web form offers custom lengths and past dates only to SuperAdmin.
 - **Seed.** Demo history is recorded as of each period's own start date (standard at the time), not as back-dated overrides.
 - **Tests.** Unit `Assign_CannotStartInTheFuture_AndABackdatedStartNeedsCustomPricing`, `Renew_ContinuesTheDayAfter_…`; integration `NonSuperAdmin_CannotManagePlans_OrOverride` (Operations Manager: long custom duration, back-dated start, explicit price and plain custom days → 403) and `Assign_Renew_Override_Suspend_…` (price/reason required, explicit totals and standard amounts, audit text); web form tests; E2E flow 5.
+
+## D-082 — Schedules and the availability engine — Accepted (Phase 09)
+- **Model** (schema `availability`, every table `IShopOwned` with an `xmin` version):
+  - `shop_opening_hours`: one row per shop. The week's intervals are a JSON list, edited as a whole week, so one version check covers the week. The phase plan named a row per interval; nothing queries single intervals in SQL. No row means the shop has not set its hours, so it is closed.
+  - `professional_working_hours`: one row per professional, with a composite FK `(shop_id, professional_id)`. `follows_shop_hours` (the default when there is no row) means they work whenever the shop is open.
+  - `shop_closures`: whole local days, inclusive.
+  - `breaks`: a label; weekly on some weekdays or once on a date (a CHECK allows exactly one); within one day, on 5-minute steps. `professional_id` null means everyone (the design's shop-wide prayer breaks), otherwise a composite FK.
+  - `professional_time_off`: UTC instants plus kind (Vacation/Sick/Other) and `all_day`. An all-day entry runs from the local start of its first day to the local start of the day after its last.
+- **Intervals.** Minutes from the weekday's local midnight, on 5-minute steps. The start is 00:00–23:55; the end is after the start and at most 24 h later, so it may pass midnight (21:00–02:00 = 1260–1560). No two intervals of the week overlap, counting the part after midnight and Saturday night running into Sunday.
+- **Engine** (`AvailabilityEngine`, pure, clock injected):
+  - A professional is free where the shop is open (opening windows of business days that are not closed) ∩ they work (own hours, or the shop's), minus breaks, time off and existing bookings.
+  - A slot needs the whole item `[start, start + duration)` free.
+  - Starts sit on the slot-step grid counted from local midnight (5/10/15/20/30/60).
+  - **Instants, not labels.** Everything is computed on UTC instants. A local time skipped by DST resolves to the first instant after the gap, and a repeated local time to its first occurrence; slots step in UTC and their labels come from the instant (tested with New York spring and autumn).
+  - **Midnight.** A closure closes the *business day*: every window that opens on the closed date, including its hours after midnight. The previous day's window running into a closed date is not affected. Slots are dated by their local start (the date strip).
+  - **Edges.** Bookable dates are today … today + horizon − 1, and a slot starts at or after now + lead time (both exact, tested).
+  - **Periods** (for grouping, D-009): Morning 05:00–11:59, Afternoon 12:00–16:59, Evening otherwise (including after midnight).
+  - `IsBookable(shop, professional, start, duration, now, policy)` applies the same rules to one start. It is the recheck Phase 10 runs inside the booking transaction.
+- **Any professional (refines D-012).** A slot carries every eligible professional free for the whole item. Eligible = active and assigned to the service; for a package, assigned to every item service. The tie-break stays in Phase 10.
+- **Limits.** A zone whose DST shift is not a whole multiple of the step (for example 30 minutes with a 60-minute step) would shift the grid after the change. v1 shops are in Riyadh, which has no DST.
+
+## D-083 — Pausing online booking — Accepted (Phase 09, applies D-013)
+- The pause is its own row, `shops.online_booking_pauses` (shop id as the key, `paused_at`, `reason`); the row exists while the shop is paused, and `ShopSummary` exposes it. It is not tenant-filtered: the bookability gate and discovery read it for any shop. It is on the reviewed tenancy allow-list, next to the coverage read model, and only the shop's own pause and resume commands write it. `POST /shop/online-booking/pause|resume` needs `Shop.OnlineBooking.Pause` and is audited (`shop.online_booking_paused|resumed`). Pausing twice (or resuming a live shop) answers 409, so the original time is kept.
+- **One gate.** `IShopBookability` now also answers `shop.paused`: `AcceptsOnlineBookings = false`, and `VisibleInDiscovery = !HidePausedShopsFromDiscovery`. A subscription block wins over the pause, so an expired shop stays hidden even if it is also paused. Existing bookings and walk-ins are never affected.
+- The public shop page and catalogue stay reachable while paused (D-013). The availability API answers 200 with `bookable: false` and the reason.
+- **Why its own row.** The first version stored the pause on the shop row. Then pausing changed the shop's `xmin`, so a profile form open in another tab failed to save (409). The E2E suite caught it when the schedule flow and the profile flow ran in parallel. Now pause and resume never touch the shop row (an integration test asserts the profile version is unchanged), and a form never blocks an emergency pause.
+- The design has no confirmation or note. The web asks for confirmation with an optional note, because a mistaken tap would hide the shop (DV-A12).
+
+## D-084 — Availability contracts and API shape — Accepted (Phase 09)
+- **Building-block ports.** Availability references no other module.
+  - `IBookableOfferCatalog` (Services): the duration, whether it is online-bookable, and the eligible professionals of a published service or package (a package is online-bookable when every item is).
+  - `IBookedTimeReader` (Bookings, from Phase 10): busy intervals, and upcoming appointments for the conflict preview. The appointment shape has a customer name and the item name, and no phone field by construction. Until Phase 10 an empty reader is registered (`TryAdd`); Bookings replaces it.
+  - `IProfessionalDirectory.ListByShopAsync`.
+  - `ShopSummary` gains `TimeZone` and `OnlineBookingPausedAt`.
+- **Shop API** (the paths differ from the phase plan: breaks can be shop-wide, so they are not under one professional):
+  - `GET /shop/schedule` (`Shop.Schedule.Read`; staff read it, and the nav entry now needs Read);
+  - `PUT /shop/schedule/opening-hours`, `PUT /shop/professionals/{id}/working-hours`;
+  - `POST|PUT|DELETE /shop/schedule/closures|breaks|time-off`, and `POST …/preview` for each (all `Shop.Schedule.Manage`).
+  - The professional id is resolved through the tenant-filtered directory, so another shop's is 404.
+  - Opening and working hours are created by the first save (version null) and version-checked afterwards.
+  - Time off keeps its professional (edit → 400 `validation.immutable`; delete and re-add instead).
+- **Conflict preview.** It returns upcoming appointments overlapping the change: time off; a break's occurrences within the horizon; a closure's opening windows. Nothing is saved, cancelled or messaged (DV-S22). The web requires a second "save anyway" when some exist. Persisting a "flagged" state on bookings is a Phase 10 carry-over.
+- **Public API** (anonymous, rate limit `availability`):
+  - `GET /public/shops/{slug}/availability/dates?serviceId|packageId&professionalId&from&to` gives the slot count per date (default 14 days, at most 31);
+  - `GET …/slots?…&date=` gives the starts with local time, period and candidate professional ids.
+  - **Gate order:** active shop (else 404) → `IShopBookability`, including the pause (else 200 `bookable:false` + reason) → published item (404 `availability.offer_not_found`), online-bookable (422) → the chosen professional is active in the shop (404) and assigned (422 `availability.professional_not_eligible`).
+  - All reads use the public scope for that one shop, so a signed-in shop user sees another shop like anyone else. Schedules and busy times are loaded once for the whole range.

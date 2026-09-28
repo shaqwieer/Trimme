@@ -50,7 +50,7 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'calendar', href: '/shop/calendar', icon: CalendarDays, permission: 'Shop.Bookings.Read' },
   { key: 'appointments', href: '/shop/appointments', icon: List, permission: 'Shop.Bookings.Read' },
   { key: 'walkIn', href: '/shop/walk-in', icon: Plus, permission: 'Shop.Bookings.CreateWalkIn' },
-  { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Schedule.Manage' },
+  { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Schedule.Read' },
   { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
   { key: 'subscription', href: '/shop/subscription', icon: CreditCard, permission: 'Shop.Subscription.Read' },
   { key: 'notifications', href: '/shop/notifications', icon: Bell },

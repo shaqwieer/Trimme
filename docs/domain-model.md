@@ -89,6 +89,7 @@ erDiagram
   - `EditableFields` is the admin policy that opens profile areas to the shop. The server rejects a changed locked field with 403.
 - **Location.** An owned value stored on the shop row: `geography(Point,4326)` (X = longitude, Y = latitude, 6 decimal places), address line, district, city, formatted address, source (Manual, Geocoded, Device), and confirmed at/by. There is a GiST index for nearby search (Phase 11).
 - **Visibility.** The shops table is a public directory, but a shop user reads only their own shop row. Public pages publish active shops only (D-066).
+- **Online-booking pause** (D-083). A separate row, `online_booking_pauses` (shop id, paused at, optional reason), exists while the shop has paused online booking. It is kept off the shop row so pausing never changes the profile's version. `IShopBookability` reads it for any shop.
 
 ## Professionals (`professionals`)
 
@@ -143,6 +144,16 @@ there is no project reference between the modules.
 - Status (computed): None, Suspended, Expired, ExpiringSoon (≤ threshold days left, the end day counts), Active.
 
 **SubscriptionCoverage** (D-078) is a platform read model (shop id, end date, suspended) with no prices. It is written with every subscription change and read by `IShopBookability` without a tenant scope.
+
+## Availability (`availability`)
+
+All rows are `IShopOwned` with an `xmin` version, and the professional references are composite `(shop_id, professional_id)` FKs (D-082).
+- **ShopOpeningHours.** One row per shop; the week is a JSON list of intervals (weekday, start and end minute from local midnight; the end may pass midnight, at most 24 h later; no overlaps in the week). No row means closed.
+- **ProfessionalWorkingHours.** One row per professional: either follows the shop's hours (the default) or has its own week, always intersected with the shop's.
+- **ShopClosure.** Whole local days, inclusive. It closes each business day's windows, including the hours after midnight.
+- **ScheduleBreak.** A label, weekly on some weekdays or once on a date, and a time range within one day. It applies to one professional, or to everyone when the professional is null.
+- **ProfessionalTimeOff.** Kind (Vacation, Sick, Other), UTC start and end, whole days or times, and a note. The professional is fixed once recorded.
+- The **availability engine** (pure) turns these, the booking policy, the item's duration and the existing bookings into bookable slots (see `docs/availability-and-booking.md`).
 
 ## Administration settings
 

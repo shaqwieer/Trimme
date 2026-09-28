@@ -419,6 +419,254 @@ namespace Trimme.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ProfessionalTimeOff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllDay")
+                        .HasColumnType("boolean")
+                        .HasColumnName("all_day");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_professional_time_off");
+
+                    b.HasIndex("ShopId", "ProfessionalId", "EndsAt")
+                        .HasDatabaseName("ix_professional_time_off_shop_id_professional_id_ends_at");
+
+                    b.ToTable("professional_time_off", "availability", t =>
+                        {
+                            t.HasCheckConstraint("ck_professional_time_off_range", "ends_at > starts_at");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ProfessionalWorkingHours", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("FollowsShopHours")
+                        .HasColumnType("boolean")
+                        .HasColumnName("follows_shop_hours");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_professional_working_hours");
+
+                    b.HasIndex("ProfessionalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_professional_working_hours_professional_id");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_professional_working_hours_shop_id_professional_id");
+
+                    b.ToTable("professional_working_hours", "availability");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ScheduleBreak", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly?>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<int>("EndMinute")
+                        .HasColumnType("integer")
+                        .HasColumnName("end_minute");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("label");
+
+                    b.Property<Guid?>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<int>("StartMinute")
+                        .HasColumnType("integer")
+                        .HasColumnName("start_minute");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.PrimitiveCollection<int[]>("Weekdays")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("weekdays");
+
+                    b.HasKey("Id")
+                        .HasName("pk_breaks");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_breaks_shop_id_professional_id");
+
+                    b.ToTable("breaks", "availability", t =>
+                        {
+                            t.HasCheckConstraint("ck_breaks_minutes", "start_minute >= 0 AND end_minute <= 1440 AND end_minute > start_minute");
+
+                            t.HasCheckConstraint("ck_breaks_recurrence", "(date IS NULL) <> (cardinality(weekdays) = 0)");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ShopClosure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_closures");
+
+                    b.HasIndex("ShopId", "EndDate")
+                        .HasDatabaseName("ix_shop_closures_shop_id_end_date");
+
+                    b.ToTable("shop_closures", "availability", t =>
+                        {
+                            t.HasCheckConstraint("ck_shop_closures_range", "end_date >= start_date");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ShopOpeningHours", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shop_opening_hours");
+
+                    b.HasIndex("ShopId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_shop_opening_hours_shop_id");
+
+                    b.ToTable("shop_opening_hours", "availability");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1358,6 +1606,27 @@ namespace Trimme.Migrations.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Shops.Domain.OnlineBookingPause", b =>
+                {
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("PausedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paused_at");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("ShopId")
+                        .HasName("pk_online_booking_pauses");
+
+                    b.ToTable("online_booking_pauses", "shops");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1952,6 +2221,135 @@ namespace Trimme.Migrations.Migrations
                         .HasConstraintName("fk_user_tokens_users_user_id");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ProfessionalTimeOff", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_time_off_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_time_off_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ProfessionalWorkingHours", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_working_hours_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_professional_working_hours_professionals_shop_id_profession");
+
+                    b.OwnsMany("Trimme.Modules.Availability.Domain.HoursInterval", "Intervals", b1 =>
+                        {
+                            b1.Property<Guid>("ProfessionalWorkingHoursId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<int>("Day");
+
+                            b1.Property<int>("EndMinute");
+
+                            b1.Property<int>("StartMinute");
+
+                            b1.HasKey("ProfessionalWorkingHoursId", "__synthesizedOrdinal");
+
+                            b1.ToTable("professional_working_hours", "availability");
+
+                            b1
+                                .ToJson("intervals")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ProfessionalWorkingHoursId")
+                                .HasConstraintName("fk_professional_working_hours_professional_working_hours_profe");
+                        });
+
+                    b.Navigation("Intervals");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ScheduleBreak", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_breaks_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_breaks_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ShopClosure", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_closures_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Availability.Domain.ShopOpeningHours", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_shop_opening_hours_shops_shop_id");
+
+                    b.OwnsMany("Trimme.Modules.Availability.Domain.HoursInterval", "Intervals", b1 =>
+                        {
+                            b1.Property<Guid>("ShopOpeningHoursId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<int>("Day");
+
+                            b1.Property<int>("EndMinute");
+
+                            b1.Property<int>("StartMinute");
+
+                            b1.HasKey("ShopOpeningHoursId", "__synthesizedOrdinal");
+
+                            b1.ToTable("shop_opening_hours", "availability");
+
+                            b1
+                                .ToJson("intervals")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ShopOpeningHoursId")
+                                .HasConstraintName("fk_shop_opening_hours_shop_opening_hours_shop_opening_hours_id");
+                        });
+
+                    b.Navigation("Intervals");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>
                 {
                     b.HasOne("Trimme.Modules.Identity.Infrastructure.Persistence.ApplicationUser", null)
@@ -2124,6 +2522,16 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_shop_services_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Shops.Domain.OnlineBookingPause", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithOne()
+                        .HasForeignKey("Trimme.Modules.Shops.Domain.OnlineBookingPause", "ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_online_booking_pauses_shop_shop_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Shops.Domain.Shop", b =>

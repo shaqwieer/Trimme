@@ -1,72 +1,72 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-09-27 (end of Session 4: Phases 06, 07 and 08)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phases 06 and 07 are pushed and CI-green (runs 36316322648 and 36323449600). Phase 08 and its follow-ups are **pushed** at the user's request; CI is green (run 36333734614).
-- **HEAD commit:** `feat: phase 08 custom-period override (D-081) and map pin race fix`, on top of `7054b4e` (review follow-up) and `2f2b42c` (Phase 08). Run `git log --oneline -4`.
+- **Updated:** 2026-09-28 (end of Session 5: Phase 09)
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 08 is pushed and CI-green (run 36333734614). Phase 09 is committed locally and **not pushed**; push only when the user asks.
+- **HEAD commit:** `feat: phase 09 schedules and availability engine`. Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
-- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 08 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
-- **Current phase:** 08 is complete. Phase 09 has not started.
-- **Phase score:** 100 / 100 (Phase 08). Phases 06 and 07 were also 100 / 100 this session.
-- **Last fully completed phase:** 08, subscriptions foundation and platform settings.
+- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 09 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
+- **Current phase:** 09 is complete. Phase 10 has not started.
+- **Phase score:** 100 / 100 (Phase 09).
+- **Last fully completed phase:** 09, schedules and the availability engine.
 
 ## Completed this session
-- **Phase 06:** shops, locations and professionals. Images are stored in PostgreSQL (D-064).
-- **Phase 07:** services, categories and packages.
-- **Phase 08** (`phases/phase-08-subscriptions-settings.md`):
-  - **Plans (SuperAdmin only).** Localized plans with bilingual features and a billing interval. Prices are append-only versions from a date (D-079).
-  - **Shop subscriptions.** Activation and renewal are recorded manually (no payment). Each period keeps the plan name and price version it was recorded with. Overrides are SuperAdmin-only, need a reason, and keep the previous values; suspend and reinstate are also available. There is no future gap in coverage, and dates follow the platform calendar (D-077).
-  - **Status.** Active / ExpiringSoon / Expired / Suspended / None, with the threshold as a setting.
-  - **Bookability.** `IShopBookability` reads a coverage row that is not tenant-scoped (D-078).
-  - **Platform settings.** One audited, version-checked row; `migrate` inserts the defaults and never overwrites edits (D-076).
-  - **Races.** A unique-index race now answers 409 (D-080).
-  - **Web:**
-    - `/admin/subscription-plans` (list/new/detail with the price timeline);
-    - `/admin/subscriptions` (KPIs, filter, search);
-    - the shop page's Subscription tab;
-    - `/shop/subscription` (warning and history);
-    - `/admin/settings`.
-  - **Seed:** 3 plans (the annual one with 2 price versions) and one subscription per status. Two extra demo shops without users: Lamsat Al Rajul (Expired) and Al Madina (Suspended).
+- **Phase 09** (`phases/phase-09-availability.md`):
+  - **Schedules** (schema `availability`): shop opening hours and professional working hours (the week as JSON, one row each), closures, breaks (weekly or once; one professional or everyone), time off (UTC instants).
+  - **Pause.** Its own row, `shops.online_booking_pauses`; `POST /shop/online-booking/pause|resume` (audited). `IShopBookability` now returns `shop.paused` (D-083).
+  - **Engine.** Pure `AvailabilityEngine` (D-082): UTC instants with DST handled, closures of the business day, windows past midnight, exact lead/horizon edges, the 5-minute grid, and any-professional candidate sets. `IsBookable` is ready for the Phase 10 recheck.
+  - **API** (D-084):
+    - `GET /shop/schedule`, hours and working-hours PUTs, CRUD and preview for closures, breaks and time off;
+    - public `availability/dates` and `availability/slots` (anonymous, rate-limited, gated).
+  - **Ports:** `IBookableOfferCatalog` (Services) and `IBookedTimeReader` (an empty stand-in until Phase 10).
+  - **Web:** `/shop/schedule` (s-hours, DV-A03/A04/A12, DV-S22): hours grid, professionals' hours, break, time-off and closure dialogs with a conflict preview, the pause card; read-only for staff.
+  - **Seed:** demo hours, breaks, a National Day closure and time off.
+  - **Docs:** `docs/availability-and-booking.md` (availability).
 
-## Verification evidence (Phase 08)
+## Verification evidence (Phase 09)
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
-| Unit / architecture / integration tests | PASS, 206 / 63 / 113 at the commit (114 after the review follow-up, which added a features round-trip test; Subscriptions namespace 8/8). Integration was 113/113 on 5 of 6 full runs; one early run had 3 unreproduced timeouts at about 37 s (watch item) |
+| Unit / architecture / integration | PASS, 243 / 63 / 119. Integration was 119/119 on 5 of 6 full runs; the first had 9 failures whose details were lost (output truncated). Watch item |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
-| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 212 web tests |
-| Fresh `down -v` + `up --build` + `pnpm e2e` ×3, after the D-081 change and the map-pin race fix | **45/45 ×3** (the cold first run included). Web 217 tests |
-| No-transfer grep gate; R-NEG-08 grep gate; gitleaks `dir` + `git` | PASS, no hits, no leaks |
+| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 229 web tests |
+| Fresh `down -v` + `up --build` + `pnpm e2e` ×3 | PASS — final stack (fresh, the last code): **47/47, 47/47, 47/47** (cold first run included). Earlier fresh stacks failed on real defects that are now fixed (see the Phase 09 file, "Found and fixed while verifying"): 46/47 ×2 + 47 (form remount), 47, 46/47, 47 (edit reset on refresh), 45/47 (load timing + a Phase 06 sign-in under the same load), 47, 47, 46/47 (pause made the profile stale) |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS, no hits, no leaks |
 
 ## Database and migrations
-- Created this session: `ShopProfileLocationProfessionals` (Phase 06), `ServicesPackages` (Phase 07) and `SubscriptionsSettings` (Phase 08).
-- Applied locally only: Testcontainers databases and the compose volume.
+- Created this session: `Schedules` (`20260928101655`): five `availability` tables and `shops.online_booking_pauses`.
+- Applied locally only: Testcontainers databases and the compose volume (upgrade from Phase 08, then fresh).
 
 ## Decisions added
-- D-064…D-075 (Phases 06–07).
-- **Phase 08:** D-076 platform settings, D-077 subscription periods and dates, D-078 coverage read model and bookability gate (confirmed by the user), D-079 plans and versioned prices, D-080 unique races → 409, D-081 custom periods need a SuperAdmin override (user decision).
-- D-013 and D-014 are now **Accepted**.
+- D-082: schedules and engine semantics.
+- D-083: the pause as its own row (so the profile version is untouched); one bookability gate.
+- D-084: ports and API shape; the paths differ from the phase plan.
+- D-012 and D-013 are annotated. New deviations: DV-A12 (pause confirmation) and DV-T11 (closed-day contrast). DV-A03, DV-A04 and DV-S22 are applied.
 
 ## Known issues or blockers
-- **Phase 08 not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 08 file and MASTER_PLAN.
-- **User decisions (D-078 confirmed, D-081 implemented).**
-  - A shop without a subscription in force is hidden and takes no online bookings, so setup for Phases 10–12 tests must assign a standard subscription. `None` stays available only as a temporary warning-only setting.
-  - Custom durations and back-dated starts need a SuperAdmin override with an explicit total and a reason.
-- **Watch item: timing.**
-  - Intermittent integration timeouts at about 31–37 s (Phases 07 and 08), not reproduced.
-  - The earlier "slow map pin" E2E failures were a real race, now fixed.
-  - One cold-stack OTP-redirect timeout remains unexplained and did not recur in the final 3 runs.
-- **Not enforced yet:** grace/trial days and plan limits are stored only (D-077). Expiry notifications come in Phase 15.
-- **Pre-existing, logging only:** Serilog logs handled 400/409 as "responded 500". Fix in Phase 17.
-- **Local compose only:** an upload over the limit through the Next.js rewrite gets a bare 500. Production Nginx needs `client_max_body_size 6m` (Phase 17).
-- **Deferred:** drag-and-drop reordering; keyboard move buttons exist.
+- **Phase 09 is not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 09 file and MASTER_PLAN.
+- **Watch item: integration.** One full integration run had 9 failures with no details kept. Keep full logs: `dotnet test … > it.log`. Earlier timing watch items continue.
+- **Phase 10 carry-overs:**
+  - replace `NoBookedTime` with the Bookings reader (`services.Replace`);
+  - recheck with `AvailabilityEngine.IsBookable` inside the transaction, through a new building-block contract;
+  - the D-012 tie-break;
+  - persist the "flagged" state for bookings hit by time off, breaks or closures;
+  - assert that pause and expiry never touch future bookings.
+- **Earlier carry-overs:**
+  - Grace/trial days and plan limits are stored but not enforced (D-077).
+  - Serilog logs handled 400/409 as 500 (Phase 17).
+  - An upload over the size limit gets a bare 500 through the Next.js rewrite (Phase 17 Nginx).
+  - Drag-and-drop reordering is deferred.
 - **Ports:** 8025 is taken on this machine. Use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
-1. CI for Phase 08 is green (run 36333734614); nothing to push.
-2. Start Phase 09 (`phases/phase-09-*.md`). Re-validate first:
-   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Subscriptions"`
-   - `pnpm e2e`
-3. Phase 09 should read `IPlatformSettings` for the minimum lead time, horizon and slot step, and `IShopBookability` where availability must be hidden.
+1. If the user asks, push Phase 09 and confirm CI.
+2. Start Phase 10 (`phases/phase-10-booking-core.md`). Re-validate first:
+   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Availability"`
+   - `pnpm -C tests/E2E exec playwright test flows/shop-schedule.spec.ts` (with the E2E env vars)
+3. Phase 10 should:
+   - implement `IBookedTimeReader` in Bookings;
+   - expose a building-block contract from Availability (for example `IAvailabilityChecker`, wrapping `ScheduleLoader.CalendarsAsync` + `AvailabilityEngine.IsBookable`), because Bookings may not reference Availability internals, and call it in the booking transaction;
+   - gate new online bookings with `IShopBookability` (walk-ins skip the gate).
 
 ## Files intentionally left modified
 - None.

@@ -16,7 +16,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S04 | Professional-service assignment shows global prices | 4484–4488, 2859–2868 | §10 | Lists only the professional's own shop's services with that shop's price/duration; admin-only action. | 7 | **applied** (Phase 07): "الخدمات المسندة" card on the admin professional page lists only that shop's services with its prices (D-073) |
 | DV-S05 | Hardcoded plan "سنوي — 2,400 ر.س", fixed renewal presets; Operations Manager has subscription rights | 4466, 2992–3001, 4533–4538, 4572 | §7, §15 | Plans/prices/durations from the API (SuperAdmin-managed, versioned); price snapshot on subscriptions; overrides SuperAdmin-only. | 8 | **applied** (Phase 08): plan picker and durations from `/admin/subscription-plans`, read-only price preview of the version in force on the start date, "Plan period (n months)" or a custom number of days; Operations Manager assigns/renews/suspends, SuperAdmin alone manages plans and overrides |
 | DV-S06 | Reminder **3 hours** before (and a day-before reminder in notifications) | 1568, 1628, 3574, 4555, 4113 | §16 30 min | Setting `ReminderOffsetMinutes` (default 30) for customer and professional; copy reads the configured value. | 15 | planned |
-| DV-S07 | Unavailable slots rendered disabled with reason toasts | 3928–3937, 4000 | §11 only bookable slots | API returns only bookable slots; UI groups by period and shows an empty-period message. | 9/12 | planned |
+| DV-S07 | Unavailable slots rendered disabled with reason toasts | 3928–3937, 4000 | §11 only bookable slots | API returns only bookable slots; UI groups by period and shows an empty-period message. | 9/12 | API **applied** (Phase 09: slots carry a period; D-082); UI in Phase 12 |
 | DV-S08 | Shop drawer offers all status actions for every booking; no "Confirm" action; filter chips omit Arrived/No-show | 4299–4305, 2371–2376, 2389, 4262 | §11 state machine | Render only API `allowedTransitions`; add Confirm; cancel with reason dialog; all status chips. | 13 | planned |
 | DV-S09 | Single "ملغي" status | 3636, 4299 | §11 | `CancelledByCustomer` / `CancelledByShop` (shared badge colour, distinct sub-labels). | 10 | planned |
 | DV-S10 | "Cancellation request" after cutoff reviewed by shop (copy only) | 1779, 3501 | §11 | No online cancel after cutoff (setting); show policy + shop contact (D-015). | 12 | planned |
@@ -31,7 +31,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S19 | Calendar in fixed 30-minute rows | 4229–4240, 4191, 4345 | §11 5-min step | Minute-accurate positioning. | 13 | planned |
 | DV-S20 | Payment-method row in profile settings ("طريقة الدفع") | 4139 | §2 no payment | Read-only info row "الدفع في المحل" (no payment settings screen). | 12 | planned |
 | DV-S21 | Discovery hiding on pause/expiry stated as fixed behaviour | 2510, 2522, 2190, 4529, 4616, 3787 | §15 explicit settings | Settings-driven (D-013, D-014). | 8/9/11 | planned |
-| DV-S22 | Professional time off auto-notifies customers to reschedule | 4368 | §16 events | No automatic customer messages; affected bookings flagged to shop and admin. | 9 | planned |
+| DV-S22 | Professional time off auto-notifies customers to reschedule | 4368 | §16 events | No automatic customer messages; affected bookings flagged to shop and admin. | 9 | **applied** (Phase 09): the design's "سيُنبَّه العملاء…" copy is not used; the time-off, break and closure dialogs list overlapping bookings and say nothing is cancelled or sent. Persisting the flag on bookings: Phase 10 |
 
 ## DV-A — Absent from design, spec requires (designed in the TRIMME visual language)
 
@@ -39,14 +39,15 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 |---|---|---|---|
 | DV-A01 | Shop service create/edit form | §7, §10, §13 | 7 — **applied** (Phase 07): `ServiceForm` (ar required / en optional, category, price in SAR accepting Arabic-Indic digits, 5-minute duration select, online-bookable switch) |
 | DV-A02 | **Shop location picker** (search/manual address, use current location, click/drag pin, resolved address + coordinates, confirm & save). The design only has district/address text fields (4389–4390, 4463–4464). Built from customer-side map/pin patterns (970–983, 1131–1143, 1269–1273). | §8, §13, §14 | 6 — **applied** (Phase 06): `LocationPicker` in the TRIMME card style — search pill + results, "استخدم موقعي الحالي", MapLibre map with a draggable navy pin and "اسحب الدبوس…" chip, resolved-address row (1271 style) with LTR coordinates, typed coordinate/address fallback, amber change warning, confirm; admin `/admin/shops/[id]?tab=location`, shop `/shop/settings/location` (read-only when locked) |
-| DV-A03 | Professional working-hours editor + professional-scoped breaks | §11, §13 | 9 |
-| DV-A04 | Break / time-off create & edit dialogs with conflict preview | §13 | 9 |
+| DV-A03 | Professional working-hours editor + professional-scoped breaks | §11, §13 | 9 — **applied** (Phase 09): "دوام الحلاقين" card on `/shop/schedule` (professional select, "يتبع دوام المحل" switch, the same week grid as the shop's hours); breaks for everyone or one professional |
+| DV-A04 | Break / time-off create & edit dialogs with conflict preview | §13 | 9 — **applied** (Phase 09): break (weekly weekday chips or one date), time-off (professional, type, dates, whole days or times, note) and closure dialogs; preview lists overlapping bookings and needs "حفظ رغم التعارض" |
 | DV-A05 | Shop and admin notification inboxes | §13, §17 | 15 |
 | DV-A06 | Admin shop detail/edit (profile, location, users/invite, subscription, professionals, services, QR, activate/suspend) | §14 | 5/6 — Phase 05 slice **applied**: `/admin/shops` list (search, paging, table → cards), `/admin/shops/new`, `/admin/shops/[id]` with activate/suspend (confirm + reason) and owner/staff invitation; composed from the a-shops table and design-system cards. Profile, location and the rest in Phases 06–16; **Phase 06 slice applied**: tabs (URL `?tab=`) Profile & images (profile form, logo/cover/gallery, edit policy), Location (pin picker), Accounts (invite), Professionals (list + add); **Phase 08 slice applied**: Subscription tab |
 | DV-A07 | Admin professional create/edit with E.164 WhatsApp number, masking, audited reveal, notification toggle, disable | §7, §8, §14 | 6 — **applied** (Phase 06): `/admin/professionals` (search, status filter, masked numbers, cards on phones), `/new` (shop chosen once), `/[id]` (profile, photo, disable/enable with reason, WhatsApp card with masked number, toggle, correction, audited reveal with reason) |
 | DV-A08 | Admin customers list + profile | §14 | 14 |
 | DV-A09 | Admin booking detail + intervention | §14 | 14 |
 | DV-A10 | SuperAdmin plan editor + versioned price history | §7, §15 | 8 — **applied** (Phase 08): `/admin/subscription-plans` list with order buttons, `/new`, `/[id]` with availability actions, details editor and the append-only price timeline + add-version form |
+| DV-A12 | Pause confirmation with an optional note (the design toggles instantly) | §13 | 9 — **applied** (Phase 09, D-083) |
 | DV-A11 | Subscription assign/override/history/suspend | §7, §15 | 8 — **applied** (Phase 08): `/admin/subscriptions` (KPIs over every shop, status filter, search) and the shop page's subscription tab (activation/renewal, suspend/reinstate, SuperAdmin override, full history) |
 | DV-A12 | WhatsApp template editor (ar/en, audience, event, placeholders, preview, validate, activate, versions, safe test send) | §16 | 15 |
 | DV-A13 | WhatsApp dispatch log with retry, audience, masked recipient, template version, error | §14, §16 | 15 |
@@ -81,6 +82,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-T08 | Toast auto-dismiss after 2.6 s | 5 s, paused on hover/focus; never with an action (D-049) | 3 — **applied** |
 | DV-T09 | Design shows unavailable slots with reasons (slot legend) | Only bookable slots rendered (D-009); no disabled/reason slot state in `SlotGrid` | 3 — **applied** |
 | DV-T10 | Design dropdown includes "تغيير الحلاق" (change barber) | Not offered; sample menus use Confirm / Reschedule / Cancel only | 3 — **applied** |
+| DV-T11 | s-hours closed days drawn at 55% opacity, so their grey text drops below AA (axe colour-contrast) | Closed days keep full opacity; the switch and "مغلق" in secondary text carry the state | 9 — **applied** |
 
 ## DV-C — Copy/data inconsistencies not replicated
 

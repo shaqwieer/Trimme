@@ -174,6 +174,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/professionals/{professionalId}/working-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets one of the shop's own professionals' weekly hours (never their profile). */
+        put: operations["SetProfessionalWorkingHours"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscriptions": {
         parameters: {
             query?: never;
@@ -776,6 +793,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/online-booking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the shop's online booking is paused (D-013). */
+        get: operations["GetOnlineBookingState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/online-booking/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stops new online bookings and availability; confirmed appointments stay (audited). */
+        post: operations["PauseOnlineBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/online-booking/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Takes online bookings again (audited). */
+        post: operations["ResumeOnlineBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/geo/search": {
         parameters: {
             query?: never;
@@ -1364,6 +1432,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Opening hours, professionals' hours, current and upcoming closures, breaks and time off. */
+        get: operations["GetShopSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/opening-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the weekly opening hours; applies from now on, bookings are never cancelled. */
+        put: operations["SetShopOpeningHours"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Closes the shop on whole days (no slots on those business days). */
+        post: operations["CreateShopClosure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/closures/{closureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits a closure (optimistic concurrency). */
+        put: operations["UpdateShopClosure"];
+        post?: never;
+        /** Removes a closure. */
+        delete: operations["DeleteShopClosure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/closures/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upcoming bookings the closure would overlap (nothing is saved or cancelled). */
+        post: operations["PreviewShopClosure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/breaks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a weekly or one-off break for one professional or everyone. */
+        post: operations["CreateScheduleBreak"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/breaks/{breakId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits a break (optimistic concurrency). */
+        put: operations["UpdateScheduleBreak"];
+        post?: never;
+        /** Removes a break. */
+        delete: operations["DeleteScheduleBreak"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/breaks/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upcoming bookings (within the booking horizon) the break would overlap. */
+        post: operations["PreviewScheduleBreak"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/time-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a professional's time off (vacation, sick leave…). */
+        post: operations["CreateTimeOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/time-off/{timeOffId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits time off (same professional; optimistic concurrency). */
+        put: operations["UpdateTimeOff"];
+        post?: never;
+        /** Removes time off. */
+        delete: operations["DeleteTimeOff"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/schedule/time-off/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upcoming bookings of the professional the time off would overlap. */
+        post: operations["PreviewTimeOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/availability/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bookable slot counts per local date (default: 14 days from today, at most 31) for a service or package, one professional or any. */
+        get: operations["GetAvailableDates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/availability/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Only genuinely bookable starts of one local date, with the professionals free for each (any professional when none is given). */
+        get: operations["GetAvailableSlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscription-plans": {
         parameters: {
             query?: never;
@@ -1876,6 +2168,20 @@ export interface components {
             notificationsEnabled: boolean;
             verification: components["schemas"]["WhatsAppVerification"];
         };
+        /** @description An upcoming booking that a new break, time off or closure would overlap. Never carries a phone number. */
+        AffectedBookingResponse: {
+            /** Format: uuid */
+            bookingId: string;
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            customerName: string;
+            itemNameAr: string;
+            itemNameEn: null | string;
+        };
         ApiMetaResponse: {
             name: string;
             version: string;
@@ -1899,8 +2205,85 @@ export interface components {
             price?: null | number;
             reason?: null | string;
         };
+        /**
+         * @description A bookable start (D-009: only genuinely bookable slots are returned). `LocalTime` is `HH:mm` in the
+         *     shop's time zone; `ProfessionalIds` are every professional free for the whole item (D-012 candidates).
+         */
+        AvailabilitySlotResponse: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            localTime: string;
+            period: components["schemas"]["DayPeriod"];
+            professionalIds: string[];
+        };
+        AvailableDateResponse: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            slotCount: number;
+        };
+        /** @description Every date from `From` to `To` with its number of bookable slots (0 = none), for the date strip. */
+        AvailableDatesResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            timeZone: string;
+            bookable: boolean;
+            blockedReason: null | string;
+            dates: components["schemas"]["AvailableDateResponse"][];
+        };
+        /**
+         * @description Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force…),
+         *     `Bookable` is false, `BlockedReason` says why and there are no slots (D-013, D-078).
+         */
+        AvailableSlotsResponse: {
+            /** Format: date */
+            date: string;
+            timeZone: string;
+            bookable: boolean;
+            blockedReason: null | string;
+            slots: components["schemas"]["AvailabilitySlotResponse"][];
+        };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
+        /**
+         * @description A break for one professional or everyone (`ProfessionalId` null): weekly on `Weekdays`, or once on
+         *     `Date` (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps.
+         */
+        BreakRequest: {
+            /** Format: uuid */
+            professionalId: null | string;
+            label: string;
+            weekdays: null | components["schemas"]["DayOfWeek"][];
+            /** Format: date */
+            date: null | string;
+            /** Format: int32 */
+            startMinute: number;
+            /** Format: int32 */
+            endMinute: number;
+            /** Format: uint32 */
+            version: null | number;
+        };
+        /** @description A break; `ProfessionalId` null means everyone. Weekly (weekdays) or once (date). */
+        BreakResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            professionalId: null | string;
+            label: string;
+            weekdays: components["schemas"]["DayOfWeek"][];
+            /** Format: date */
+            date: null | string;
+            /** Format: int32 */
+            startMinute: number;
+            /** Format: int32 */
+            endMinute: number;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @enum {unknown} */
         CatalogStateFilter: "Active" | "Inactive" | "Archived" | "Hidden" | null;
         CategoryRequest: {
@@ -1916,10 +2299,39 @@ export interface components {
         ChangeShopStatusRequest: {
             reason: null | string;
         };
+        /** @description Closed days, inclusive. `Version` is needed to edit. */
+        ClosureRequest: {
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            reason: null | string;
+            /** Format: uint32 */
+            version: null | number;
+        };
+        ClosureResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            reason: null | string;
+            state: components["schemas"]["ScheduleEntryState"];
+            /** Format: uint32 */
+            version: number;
+        };
         CompleteProfileRequest: {
             displayName: string;
             preferredLocale: string;
             termsAccepted: boolean;
+        };
+        /**
+         * @description Bookings the change would overlap. Nothing is cancelled or messaged automatically (DV-S22): the shop sees them and
+         *     decides.
+         */
+        ConflictPreviewResponse: {
+            affectedBookings: components["schemas"]["AffectedBookingResponse"][];
         };
         /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
         CreatePlanRequest: {
@@ -1992,6 +2404,13 @@ export interface components {
         CsrfTokenResponse: {
             token: string;
         };
+        /** @enum {unknown} */
+        DayOfWeek: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
+        /**
+         * @description Where a slot sits in the day (D-009 groups the slot grid by period).
+         * @enum {unknown}
+         */
+        DayPeriod: "Morning" | "Afternoon" | "Evening";
         EditablePolicyRequest: {
             editableFields: components["schemas"]["ShopProfileField"][];
         };
@@ -2009,6 +2428,17 @@ export interface components {
             addressLine: null | string;
             district: null | string;
             city: null | string;
+        };
+        /**
+         * @description One weekly interval: minutes from the weekday's local midnight. `EndMinute` may pass 1440 when the window
+         *     closes after midnight (21:00–02:00 is 1260–1560).
+         */
+        HoursIntervalDto: {
+            day: components["schemas"]["DayOfWeek"];
+            /** Format: int32 */
+            startMinute: number;
+            /** Format: int32 */
+            endMinute: number;
         };
         /** Format: binary */
         IFormFile: string;
@@ -2066,6 +2496,28 @@ export interface components {
          * @enum {unknown}
          */
         ModerationState: "Visible" | "Hidden";
+        /**
+         * @description Whether the shop takes online bookings right now (s-hours pause card, D-013). While paused the shop gets no new
+         *     online bookings and no availability; confirmed appointments stay, and walk-ins still work.
+         */
+        OnlineBookingStateResponse: {
+            paused: boolean;
+            /** Format: date-time */
+            pausedAt: null | string;
+            reason: null | string;
+        };
+        /** @description The whole week of opening hours. Send the `Version` read (null only before the first save); stale → 409. */
+        OpeningHoursRequest: {
+            intervals: components["schemas"]["HoursIntervalDto"][];
+            /** Format: uint32 */
+            version: null | number;
+        };
+        /** @description The shop's weekly opening hours. `Version` is null until the shop saves its hours for the first time. */
+        OpeningHoursResponse: {
+            intervals: components["schemas"]["HoursIntervalDto"][];
+            /** Format: uint32 */
+            version: null | number;
+        };
         /** @description Response to an OTP request. The code is never returned. */
         OtpChallengeResponse: {
             /** Format: uuid */
@@ -2150,6 +2602,10 @@ export interface components {
             pageSize: number;
             /** Format: int32 */
             total: number;
+        };
+        /** @description Pausing online booking; the optional reason is the shop's own note (≤ 300 characters). */
+        PauseOnlineBookingRequest: {
+            reason: null | string;
         };
         /** @enum {unknown} */
         PeriodKind: "Assigned" | "Renewed";
@@ -2258,6 +2714,18 @@ export interface components {
             status?: null | number;
             detail?: null | string;
             instance?: null | string;
+        };
+        /** @description A professional's weekly hours as the shop manages them (no contact data). */
+        ProfessionalHoursResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            nameAr: string;
+            nameEn: string;
+            isActive: boolean;
+            followsShopHours: boolean;
+            intervals: components["schemas"]["HoursIntervalDto"][];
+            /** Format: uint32 */
+            version: null | number;
         };
         ProfessionalServiceOption: {
             /** Format: uuid */
@@ -2424,6 +2892,11 @@ export interface components {
             managed: boolean;
             permissions: string[];
         };
+        /**
+         * @description Whether a closure or time off is in force now or still ahead (past entries are not listed).
+         * @enum {unknown}
+         */
+        ScheduleEntryState: "Active" | "Scheduled";
         ServiceCategoryResponse: {
             /** Format: uuid */
             id: string;
@@ -2584,6 +3057,20 @@ export interface components {
             amount: number;
             currency: string;
         };
+        /** @description Everything the s-hours screen shows, for the signed-in shop. */
+        ShopScheduleResponse: {
+            timeZone: string;
+            /** Format: date */
+            today: string;
+            openingHours: components["schemas"]["OpeningHoursResponse"];
+            professionals: components["schemas"]["ProfessionalHoursResponse"][];
+            closures: components["schemas"]["ClosureResponse"][];
+            breaks: components["schemas"]["BreakResponse"][];
+            timeOff: components["schemas"]["TimeOffResponse"][];
+            onlineBookingPaused: boolean;
+            /** Format: date-time */
+            onlineBookingPausedAt: null | string;
+        };
         /**
          * @description A shop's own service as the shop manages it. Shop-facing contract: no customer data. `NameEn` may be null;
          *     clients show the Arabic name instead (D-070).
@@ -2719,6 +3206,56 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @enum {unknown} */
+        TimeOffKind: "Vacation" | "Sick" | "Other";
+        /**
+         * @description Time off from `StartDate` to `EndDate` (inclusive, shop-local). Without minutes it covers whole days;
+         *     otherwise it starts at `StartMinute` of the first day and ends at `EndMinute` of the last.
+         */
+        TimeOffRequest: {
+            /** Format: uuid */
+            professionalId: string;
+            kind: components["schemas"]["TimeOffKind"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: int32 */
+            startMinute: null | number;
+            /** Format: int32 */
+            endMinute: null | number;
+            note: null | string;
+            /** Format: uint32 */
+            version: null | number;
+        };
+        /**
+         * @description Time off. `StartDate`/`EndDate` are the shop-local days it covers (inclusive); the minutes are null for an
+         *     all-day entry.
+         */
+        TimeOffResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            professionalId: string;
+            kind: components["schemas"]["TimeOffKind"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            allDay: boolean;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: int32 */
+            startMinute: null | number;
+            /** Format: int32 */
+            endMinute: null | number;
+            note: null | string;
+            state: components["schemas"]["ScheduleEntryState"];
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
         UpdateOwnShopProfileRequest: {
             nameAr: string;
@@ -2847,6 +3384,13 @@ export interface components {
          * @enum {unknown}
          */
         WhatsAppVerification: "Unverified" | "Verified" | "Failed";
+        /** @description A professional's hours: follow the shop's opening hours, or their own weekly intervals. */
+        WorkingHoursRequest: {
+            followsShopHours: boolean;
+            intervals: null | components["schemas"]["HoursIntervalDto"][];
+            /** Format: uint32 */
+            version: null | number;
+        };
     };
     responses: never;
     parameters: never;
@@ -3125,6 +3669,59 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetProfessionalWorkingHours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkingHoursRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalHoursResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4649,6 +5246,97 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOnlineBookingState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnlineBookingStateResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PauseOnlineBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["PauseOnlineBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnlineBookingStateResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResumeOnlineBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnlineBookingStateResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6247,6 +6935,630 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopScheduleResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetShopOpeningHours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningHoursRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningHoursResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateShopClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosureRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateShopClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                closureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteShopClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                closureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PreviewShopClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClosureRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictPreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateScheduleBreak: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateScheduleBreak: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteScheduleBreak: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                breakId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PreviewScheduleBreak: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreakRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictPreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimeOffRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeOffResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timeOffId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimeOffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeOffResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timeOffId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PreviewTimeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimeOffRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictPreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAvailableDates: {
+        parameters: {
+            query?: {
+                serviceId?: string;
+                packageId?: string;
+                professionalId?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailableDatesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetAvailableSlots: {
+        parameters: {
+            query: {
+                serviceId?: string;
+                packageId?: string;
+                professionalId?: string;
+                date: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailableSlotsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

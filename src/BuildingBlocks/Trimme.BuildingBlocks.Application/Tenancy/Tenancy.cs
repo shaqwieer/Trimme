@@ -58,4 +58,15 @@ public interface IShopDirectory
     Task<int> CountAsync(CancellationToken cancellationToken);
 }
 
-public sealed record ShopSummary(ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status);
+/// <summary>A shop as other modules see it.</summary>
+/// <param name="Id">The shop (tenant) id.</param>
+/// <param name="Slug">URL identifier of the public shop page.</param>
+/// <param name="NameAr">Arabic name.</param>
+/// <param name="NameEn">English name.</param>
+/// <param name="Status">Lifecycle status.</param>
+/// <param name="TimeZone">IANA time zone of the shop's opening hours and availability (D-030).</param>
+/// <param name="OnlineBookingPausedAt">When the shop paused online booking; <see langword="null"/> while it is live (D-013).</param>
+public sealed record ShopSummary(ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status, string TimeZone, DateTimeOffset? OnlineBookingPausedAt)
+{
+    public bool OnlineBookingPaused => OnlineBookingPausedAt is not null;
+}

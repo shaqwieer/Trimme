@@ -29,6 +29,8 @@ public sealed partial class TenancyRules
         [typeof(Trimme.Modules.Shops.Domain.ShopLocation)] = "Owned value stored in the shop row itself; its key is that shop's id.",
         [typeof(Trimme.Modules.Subscriptions.Domain.SubscriptionCoverage)] =
             "Platform read model (end date, suspended flag) that discovery and booking gates read for any shop; no commercial data (D-078).",
+        [typeof(Trimme.Modules.Shops.Domain.OnlineBookingPause)] =
+            "Pause state keyed by the shop id, read for any shop by the bookability gate and discovery; written only by the shop's own pause command, tenant from claims (D-083).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

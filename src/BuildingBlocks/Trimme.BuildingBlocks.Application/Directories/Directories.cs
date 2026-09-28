@@ -9,6 +9,9 @@ namespace Trimme.BuildingBlocks.Application.Directories;
 public interface IProfessionalDirectory
 {
     Task<ProfessionalSummary?> FindAsync(ProfessionalId professionalId, CancellationToken cancellationToken);
+
+    /// <summary>The shop's professionals the caller may see, active and disabled, in name order.</summary>
+    Task<IReadOnlyList<ProfessionalSummary>> ListByShopAsync(ShopId shopId, CancellationToken cancellationToken);
 }
 
 public sealed record ProfessionalSummary(ProfessionalId Id, ShopId ShopId, string NameAr, string NameEn, bool IsActive);

@@ -111,9 +111,9 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-AVL-01 | Availability combines hours, closures, pause, pro hours, breaks, time off, duration, bookings, lead time, horizon, slot step (5-min capable) | §11 | 9 | U `Availability_*` suite (incl. midnight/DST-free tz boundaries) | [ ] |
-| R-AVL-02 | Only bookable slots returned | §11 | 9 | U/I `Availability_ExcludesPast_Conflicts_Breaks_TimeOff` | [ ] |
-| R-AVL-03 | Working hours, breaks, time off, pause/resume managed by shop | §13 | 9 | I `Shop_ManagesSchedule`; E flow 2 | [ ] |
+| R-AVL-01 | Availability combines hours, closures, pause, pro hours, breaks, time off, duration, bookings, lead time, horizon, slot step (5-min capable) | §11 | 9 | U `Availability/AvailabilityEngineTests` (22 incl. midnight, closures of the business day, lead/horizon edges, steps 5/10/15, New York DST gap and repeat) + `ScheduleDomainTests` (15) | [x] |
+| R-AVL-02 | Only bookable slots returned | §11 | 9 | I `Availability/ScheduleTests` (public slots follow hours, breaks, time off, closures, pause, bookings via a fake reader; gates 404/422; package; disabled professional); E `flows/shop-schedule.spec.ts` | [x] |
+| R-AVL-03 | Working hours, breaks, time off, pause/resume managed by shop | §13 | 9 | I `Shop_ManagesSchedule_AndThePublicSlotsFollowEveryChange`, `CrossShop_ScheduleIds_Are404_ForEveryVerb_AndNothingChanges`; E flow 2 schedule part (`shop-schedule.spec.ts`) | [x] |
 | R-BKG-01 | Booking aggregate with service/price/duration snapshot | §10 | 10 | I `Booking_KeepsSnapshot_AfterServiceEdit` | [ ] |
 | R-BKG-02 | State machine; invalid transitions rejected; history with actor/timestamp | §11 | 10 | U `BookingStateMachine_*`; I `InvalidTransition_Returns409` | [ ] |
 | R-BKG-03 | Transactional recheck + PostgreSQL exclusion constraint | §11 | 10 | I `ExclusionConstraint_RejectsOverlap` | [ ] |
@@ -199,7 +199,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 18 | M — initial README (Phase 01) | [~] |
-| R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M | [~] (design-deviations Phase 0; permissions-matrix Phase 04) |
+| R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M | [~] (design-deviations Phase 0; permissions-matrix Phase 04; availability-and-booking availability section Phase 09) |
 | R-DOC-03 | Mermaid: deployed topology + booking/reminder lifecycle | §22 | 1, 15 | M — topology + backend structure in `docs/architecture.md` (Phase 01); lifecycle Phase 10/15 | [~] |
 | R-DOC-04 | Nginx example, HTTPS-ready config, backup/restore instructions | §3 | 18 | M | [ ] |
 | R-DOC-05 | Demo credentials in local-only file excluded from builds | §20 | 4 | C `docs/local/DEMO_CREDENTIALS.local.md` is git-ignored (`git check-ignore` ✔) and `docs/` is excluded from every Docker build context (`.dockerignore`) ✔ | [x] |
@@ -234,10 +234,10 @@ All seven are re-run as the Phase 18 regression gate.
 | AuditEntry | Administration (`administration.audit_entries`) | Optional ShopId (allow-listed) | 5 | `ShopsTenancyAudit` ✔ | Holds no PII; append-only (D-063) |
 | Shop profile, gallery, EditablePolicy | Shops | ✓ | 6 | 0004 | |
 | ShopLocation | Shops | ✓ | 6 | 0004 | `geography(Point,4326)` with a GiST index |
-| ShopOpeningHour, ShopClosure, pause flag | Availability (`availability`) / Shops | ✓ | 9 | 0007_Schedules | |
+| ShopOpeningHour, ShopClosure, pause flag | Availability (`availability`) / Shops | ✓ | 9 | `Schedules` ✔ | `shop_opening_hours` (week as JSON, D-082), `shop_closures`; pause row `shops.online_booking_pauses` (D-083) |
 | Professional | Professionals (`professionals`) | ✓ | 6 | 0004 | ShopId is immutable |
 | ProfessionalContact / WhatsAppSettings | Professionals | ✓ | 6 | 0004 | E.164, encrypted and masked |
-| ProfessionalWorkingHour, ProfessionalBreak, ProfessionalTimeOff | Availability | ✓ | 9 | 0007 | |
+| ProfessionalWorkingHour, ProfessionalBreak, ProfessionalTimeOff | Availability | ✓ | 9 | `Schedules` ✔ | `professional_working_hours`, `breaks` (professional optional = everyone), `professional_time_off`; composite FKs to professionals |
 | ServiceCategory | Services (`services`) | — (platform) | 7 | 0005_ServicesPackages | |
 | ShopService | Services | ✓ | 7 | 0005 | Archive only once referenced |
 | ServicePackage, ServicePackageItem | Services | ✓ | 7 | 0005 | Items reference services in the same shop |

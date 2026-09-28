@@ -63,7 +63,8 @@ public interface IShopBookability
 /// <param name="AcceptsOnlineBookings">New online bookings are allowed.</param>
 /// <param name="VisibleInDiscovery">The shop may be listed in search and on the map.</param>
 /// <param name="BlockedReason">
-/// Why it is blocked, as a stable code: <c>shop.not_active</c>, <c>subscription.none</c>, <c>subscription.expired</c> or
-/// <c>subscription.suspended</c>; <see langword="null"/> when nothing blocks it.
+/// Why it is blocked, as a stable code: <c>shop.not_active</c>, <c>subscription.none</c>, <c>subscription.expired</c>,
+/// <c>subscription.suspended</c> or <c>shop.paused</c> (the shop paused online booking, D-013; it stays in discovery
+/// unless <c>HidePausedShopsFromDiscovery</c>); <see langword="null"/> when nothing blocks it.
 /// </param>
 public sealed record ShopBookability(bool AcceptsOnlineBookings, bool VisibleInDiscovery, string? BlockedReason);

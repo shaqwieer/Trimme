@@ -58,6 +58,9 @@ public sealed record ShopLocationRequest(
 
 public sealed record EditablePolicyRequest(IReadOnlyList<ShopProfileField> EditableFields);
 
+/// <summary>Pausing online booking; the optional reason is the shop's own note (≤ 300 characters).</summary>
+public sealed record PauseOnlineBookingRequest(string? Reason);
+
 internal static class ShopEndpoints
 {
     // Identity owns the permission catalogue; the codes are duplicated as literals here to keep modules decoupled.
@@ -68,6 +71,7 @@ internal static class ShopEndpoints
     private const string ShopsSuspend = "Admin.Shops.Suspend";
     private const string ShopProfileEdit = "Shop.Profile.Edit";
     private const string ShopLocationEdit = "Shop.Location.Edit";
+    private const string OnlineBookingPause = "Shop.OnlineBooking.Pause";
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -181,6 +185,22 @@ internal static class ShopEndpoints
         shop.MapPut("/location", SetOwnLocation).RequirePermission(ShopLocationEdit)
             .WithName("SetOwnShopLocation").WithSummary("Sets the shop's map point, if the admin policy opens the location to the shop.")
             .Produces<ShopOwnProfileResponse>().ProducesProblem(StatusCodes.Status403Forbidden);
+
+        shop.MapGet("/online-booking", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetOnlineBookingStateQuery(), ct) is { } state ? TypedResults.Ok(state) : ShopErrors.NotFound().ToProblem())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("GetOnlineBookingState").WithSummary("Whether the shop's online booking is paused (D-013).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapPost("/online-booking/pause", async (PauseOnlineBookingRequest? r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new PauseOnlineBookingCommand(r?.Reason), ct)).ToHttpResult())
+            .RequirePermission(OnlineBookingPause)
+            .WithName("PauseOnlineBooking").WithSummary("Stops new online bookings and availability; confirmed appointments stay (audited).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status409Conflict);
+        shop.MapPost("/online-booking/resume", async (IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ResumeOnlineBookingCommand(), ct)).ToHttpResult())
+            .RequirePermission(OnlineBookingPause)
+            .WithName("ResumeOnlineBooking").WithSummary("Takes online bookings again (audited).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static void MapGeocoding(RouteGroupBuilder group, string permission, string namePrefix)

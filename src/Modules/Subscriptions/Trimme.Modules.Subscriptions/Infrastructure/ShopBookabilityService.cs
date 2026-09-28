@@ -8,9 +8,9 @@ using Trimme.Modules.Subscriptions.Domain;
 namespace Trimme.Modules.Subscriptions.Infrastructure;
 
 /// <summary>
-/// D-014 gate for new online bookings and discovery. It reads the shop directory and the platform coverage row
-/// (D-078), so it needs no tenant scope and works for anonymous callers. It never touches bookings: expiry blocks only
-/// what is new, and walk-ins do not ask it.
+/// D-013/D-014 gate for new online bookings and discovery. It reads the shop directory (status and pause) and the
+/// platform coverage row (D-078), so it needs no tenant scope and works for anonymous callers. It never touches
+/// bookings: expiry and pause block only what is new, and walk-ins do not ask it.
 /// </summary>
 internal sealed class ShopBookabilityService(TrimmeDbContext db, IShopDirectory shops, IPlatformSettings settings, TimeProvider clock) : IShopBookability
 {
@@ -28,26 +28,35 @@ internal sealed class ShopBookabilityService(TrimmeDbContext db, IShopDirectory 
 
         return ids.ToDictionary(id => id, id =>
         {
-            if (summaries.GetValueOrDefault(id) is not { Status: ShopStatus.Active })
+            if (summaries.GetValueOrDefault(id) is not { Status: ShopStatus.Active } shop)
             {
                 return Blocked("shop.not_active");
             }
 
-            if (platform.ExpiredSubscriptionEnforcement == SubscriptionEnforcement.None)
+            var subscription = platform.ExpiredSubscriptionEnforcement == SubscriptionEnforcement.None
+                ? null
+                : Subscription(coverage.GetValueOrDefault(id), today, platform.ExpiringSoonThresholdDays);
+            if (subscription is not null)
             {
-                return new ShopBookability(true, true, null);
+                return subscription;
             }
 
-            var covered = coverage.GetValueOrDefault(id);
-            return SubscriptionStatusCalculator.Calculate(covered?.IsSuspended ?? false, covered?.EndDate, today, platform.ExpiringSoonThresholdDays) switch
-            {
-                SubscriptionStatus.None => Blocked("subscription.none"),
-                SubscriptionStatus.Expired => Blocked("subscription.expired"),
-                SubscriptionStatus.Suspended => Blocked("subscription.suspended"),
-                _ => new ShopBookability(true, true, null),
-            };
+            // D-013: a paused shop takes no online bookings; whether it stays listed is a platform setting.
+            return shop.OnlineBookingPaused
+                ? new ShopBookability(false, !platform.HidePausedShopsFromDiscovery, "shop.paused")
+                : new ShopBookability(true, true, null);
         });
     }
+
+    /// <summary>The block a subscription status imposes, or <see langword="null"/> when it is in force.</summary>
+    private static ShopBookability? Subscription(SubscriptionCoverage? covered, DateOnly today, int threshold) =>
+        SubscriptionStatusCalculator.Calculate(covered?.IsSuspended ?? false, covered?.EndDate, today, threshold) switch
+        {
+            SubscriptionStatus.None => Blocked("subscription.none"),
+            SubscriptionStatus.Expired => Blocked("subscription.expired"),
+            SubscriptionStatus.Suspended => Blocked("subscription.suspended"),
+            _ => null,
+        };
 
     private static ShopBookability Blocked(string reason) => new(false, false, reason);
 }

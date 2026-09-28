@@ -348,6 +348,78 @@
         }
       }
     },
+    "/api/v1/shop/professionals/{professionalId}/working-hours": {
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Sets one of the shop\u0027s own professionals\u0027 weekly hours (never their profile).",
+        "operationId": "SetProfessionalWorkingHours",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkingHoursRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalHoursResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscriptions": {
       "get": {
         "tags": [
@@ -2299,6 +2371,115 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/online-booking": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Whether the shop\u0027s online booking is paused (D-013).",
+        "operationId": "GetOnlineBookingState",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/online-booking/pause": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Stops new online bookings and availability; confirmed appointments stay (audited).",
+        "operationId": "PauseOnlineBooking",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PauseOnlineBookingRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/online-booking/resume": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Takes online bookings again (audited).",
+        "operationId": "ResumeOnlineBooking",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4585,6 +4766,844 @@
         }
       }
     },
+    "/api/v1/shop/schedule": {
+      "get": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Opening hours, professionals\u0027 hours, current and upcoming closures, breaks and time off.",
+        "operationId": "GetShopSchedule",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopScheduleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/opening-hours": {
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Replaces the weekly opening hours; applies from now on, bookings are never cancelled.",
+        "operationId": "SetShopOpeningHours",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpeningHoursRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningHoursResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/closures": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Closes the shop on whole days (no slots on those business days).",
+        "operationId": "CreateShopClosure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/closures/{closureId}": {
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Edits a closure (optimistic concurrency).",
+        "operationId": "UpdateShopClosure",
+        "parameters": [
+          {
+            "name": "closureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Removes a closure.",
+        "operationId": "DeleteShopClosure",
+        "parameters": [
+          {
+            "name": "closureId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/closures/preview": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Upcoming bookings the closure would overlap (nothing is saved or cancelled).",
+        "operationId": "PreviewShopClosure",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/breaks": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Adds a weekly or one-off break for one professional or everyone.",
+        "operationId": "CreateScheduleBreak",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreakResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/breaks/{breakId}": {
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Edits a break (optimistic concurrency).",
+        "operationId": "UpdateScheduleBreak",
+        "parameters": [
+          {
+            "name": "breakId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreakResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Removes a break.",
+        "operationId": "DeleteScheduleBreak",
+        "parameters": [
+          {
+            "name": "breakId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/breaks/preview": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Upcoming bookings (within the booking horizon) the break would overlap.",
+        "operationId": "PreviewScheduleBreak",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/time-off": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Records a professional\u0027s time off (vacation, sick leave\u2026).",
+        "operationId": "CreateTimeOff",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeOffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeOffResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/time-off/{timeOffId}": {
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Edits time off (same professional; optimistic concurrency).",
+        "operationId": "UpdateTimeOff",
+        "parameters": [
+          {
+            "name": "timeOffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeOffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeOffResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Removes time off.",
+        "operationId": "DeleteTimeOff",
+        "parameters": [
+          {
+            "name": "timeOffId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/schedule/time-off/preview": {
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Upcoming bookings of the professional the time off would overlap.",
+        "operationId": "PreviewTimeOff",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeOffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictPreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/availability/dates": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Bookable slot counts per local date (default: 14 days from today, at most 31) for a service or package, one professional or any.",
+        "operationId": "GetAvailableDates",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "packageId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableDatesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/availability/slots": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Only genuinely bookable starts of one local date, with the professionals free for each (any professional when none is given).",
+        "operationId": "GetAvailableSlots",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "packageId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailableSlotsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscription-plans": {
       "get": {
         "tags": [
@@ -6464,6 +7483,49 @@
         },
         "description": "The WhatsApp settings an admin sees. The number itself is only ever masked here (reveal is a separate, audited action)."
       },
+      "AffectedBookingResponse": {
+        "required": [
+          "bookingId",
+          "professionalId",
+          "startsAt",
+          "endsAt",
+          "customerName",
+          "itemNameAr",
+          "itemNameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "itemNameAr": {
+            "type": "string"
+          },
+          "itemNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An upcoming booking that a new break, time off or closure would overlap. Never carries a phone number."
+      },
       "ApiMetaResponse": {
         "required": [
           "name",
@@ -6533,11 +7595,248 @@
         },
         "description": "Starts a shop\u0027s subscription. \u0060StartDate\u0060 defaults to today (it cannot be in the future); the end follows the\nplan\u0027s interval. A custom \u0060DurationDays\u0060, a past start or an explicit \u0060Price\u0060 is a SuperAdmin override: it\nneeds \u0060SuperAdmin.Subscriptions.Override\u0060, the explicit total \u0060Price\u0060 and a \u0060Reason\u0060 (D-081)."
       },
+      "AvailabilitySlotResponse": {
+        "required": [
+          "startsAt",
+          "endsAt",
+          "localTime",
+          "period",
+          "professionalIds"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localTime": {
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/DayPeriod"
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "A bookable start (D-009: only genuinely bookable slots are returned). \u0060LocalTime\u0060 is \u0060HH:mm\u0060 in the\nshop\u0027s time zone; \u0060ProfessionalIds\u0060 are every professional free for the whole item (D-012 candidates)."
+      },
+      "AvailableDateResponse": {
+        "required": [
+          "date",
+          "slotCount"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "slotCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AvailableDatesResponse": {
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "bookable",
+          "blockedReason",
+          "dates"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "bookable": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailableDateResponse"
+            }
+          }
+        },
+        "description": "Every date from \u0060From\u0060 to \u0060To\u0060 with its number of bookable slots (0 = none), for the date strip."
+      },
+      "AvailableSlotsResponse": {
+        "required": [
+          "date",
+          "timeZone",
+          "bookable",
+          "blockedReason",
+          "slots"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "bookable": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilitySlotResponse"
+            }
+          }
+        },
+        "description": "Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force\u2026),\n\u0060Bookable\u0060 is false, \u0060BlockedReason\u0060 says why and there are no slots (D-013, D-078)."
+      },
       "BillingIntervalUnit": {
         "enum": [
           "Day",
           "Month"
         ]
+      },
+      "BreakRequest": {
+        "required": [
+          "professionalId",
+          "label",
+          "weekdays",
+          "date",
+          "startMinute",
+          "endMinute",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeek"
+            }
+          },
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "A break for one professional or everyone (\u0060ProfessionalId\u0060 null): weekly on \u0060Weekdays\u0060, or once on\n\u0060Date\u0060 (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps."
+      },
+      "BreakResponse": {
+        "required": [
+          "id",
+          "professionalId",
+          "label",
+          "weekdays",
+          "date",
+          "startMinute",
+          "endMinute",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeek"
+            }
+          },
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A break; \u0060ProfessionalId\u0060 null means everyone. Weekly (weekdays) or once (date)."
       },
       "CatalogStateFilter": {
         "enum": [
@@ -6600,6 +7899,77 @@
           }
         }
       },
+      "ClosureRequest": {
+        "required": [
+          "startDate",
+          "endDate",
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "Closed days, inclusive. \u0060Version\u0060 is needed to edit."
+      },
+      "ClosureResponse": {
+        "required": [
+          "id",
+          "startDate",
+          "endDate",
+          "reason",
+          "state",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ScheduleEntryState"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
+      },
       "CompleteProfileRequest": {
         "required": [
           "displayName",
@@ -6618,6 +7988,21 @@
             "type": "boolean"
           }
         }
+      },
+      "ConflictPreviewResponse": {
+        "required": [
+          "affectedBookings"
+        ],
+        "type": "object",
+        "properties": {
+          "affectedBookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AffectedBookingResponse"
+            }
+          }
+        },
+        "description": "Bookings the change would overlap. Nothing is cancelled or messaged automatically (DV-S22): the shop sees them and\ndecides."
       },
       "CreatePlanRequest": {
         "required": [
@@ -6922,6 +8307,25 @@
           }
         }
       },
+      "DayOfWeek": {
+        "enum": [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ]
+      },
+      "DayPeriod": {
+        "enum": [
+          "Morning",
+          "Afternoon",
+          "Evening"
+        ],
+        "description": "Where a slot sits in the day (D-009 groups the slot grid by period)."
+      },
       "EditablePolicyRequest": {
         "required": [
           "editableFields"
@@ -6996,6 +8400,28 @@
           }
         },
         "description": "An address search or reverse-geocoding result."
+      },
+      "HoursIntervalDto": {
+        "required": [
+          "day",
+          "startMinute",
+          "endMinute"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/DayOfWeek"
+          },
+          "startMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "One weekly interval: minutes from the weekday\u0027s local midnight. \u0060EndMinute\u0060 may pass 1440 when the window\ncloses after midnight (21:00\u201302:00 is 1260\u20131560)."
       },
       "IFormFile": {
         "type": "string",
@@ -7177,6 +8603,79 @@
           "Hidden"
         ],
         "description": "Platform moderation of a shop\u0027s service or package (DV-S02). A hidden item is never published."
+      },
+      "OnlineBookingStateResponse": {
+        "required": [
+          "paused",
+          "pausedAt",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean"
+          },
+          "pausedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Whether the shop takes online bookings right now (s-hours pause card, D-013). While paused the shop gets no new\nonline bookings and no availability; confirmed appointments stay, and walk-ins still work."
+      },
+      "OpeningHoursRequest": {
+        "required": [
+          "intervals",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoursIntervalDto"
+            }
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "The whole week of opening hours. Send the \u0060Version\u0060 read (null only before the first save); stale \u2192 409."
+      },
+      "OpeningHoursResponse": {
+        "required": [
+          "intervals",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoursIntervalDto"
+            }
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "The shop\u0027s weekly opening hours. \u0060Version\u0060 is null until the shop saves its hours for the first time."
       },
       "OtpChallengeResponse": {
         "required": [
@@ -7449,6 +8948,21 @@
           }
         },
         "description": "The paged envelope every list endpoint returns."
+      },
+      "PauseOnlineBookingRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Pausing online booking; the optional reason is the shop\u0027s own note (\u2264 300 characters)."
       },
       "PeriodKind": {
         "enum": [
@@ -7812,6 +9326,50 @@
             ]
           }
         }
+      },
+      "ProfessionalHoursResponse": {
+        "required": [
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "isActive",
+          "followsShopHours",
+          "intervals",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "followsShopHours": {
+            "type": "boolean"
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoursIntervalDto"
+            }
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "A professional\u0027s weekly hours as the shop manages them (no contact data)."
       },
       "ProfessionalServiceOption": {
         "required": [
@@ -8442,6 +10000,13 @@
           }
         }
       },
+      "ScheduleEntryState": {
+        "enum": [
+          "Active",
+          "Scheduled"
+        ],
+        "description": "Whether a closure or time off is in force now or still ahead (past entries are not listed)."
+      },
       "ServiceCategoryResponse": {
         "required": [
           "id",
@@ -8994,6 +10559,67 @@
           }
         }
       },
+      "ShopScheduleResponse": {
+        "required": [
+          "timeZone",
+          "today",
+          "openingHours",
+          "professionals",
+          "closures",
+          "breaks",
+          "timeOff",
+          "onlineBookingPaused",
+          "onlineBookingPausedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHoursResponse"
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalHoursResponse"
+            }
+          },
+          "closures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureResponse"
+            }
+          },
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakResponse"
+            }
+          },
+          "timeOff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeOffResponse"
+            }
+          },
+          "onlineBookingPaused": {
+            "type": "boolean"
+          },
+          "onlineBookingPausedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "Everything the s-hours screen shows, for the signed-in shop."
+      },
       "ShopServiceResponse": {
         "required": [
           "id",
@@ -9412,6 +11038,149 @@
             "format": "uint32"
           }
         }
+      },
+      "TimeOffKind": {
+        "enum": [
+          "Vacation",
+          "Sick",
+          "Other"
+        ]
+      },
+      "TimeOffRequest": {
+        "required": [
+          "professionalId",
+          "kind",
+          "startDate",
+          "endDate",
+          "startMinute",
+          "endMinute",
+          "note",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TimeOffKind"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startMinute": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "Time off from \u0060StartDate\u0060 to \u0060EndDate\u0060 (inclusive, shop-local). Without minutes it covers whole days;\notherwise it starts at \u0060StartMinute\u0060 of the first day and ends at \u0060EndMinute\u0060 of the last."
+      },
+      "TimeOffResponse": {
+        "required": [
+          "id",
+          "professionalId",
+          "kind",
+          "startsAt",
+          "endsAt",
+          "allDay",
+          "startDate",
+          "endDate",
+          "startMinute",
+          "endMinute",
+          "note",
+          "state",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/TimeOffKind"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "allDay": {
+            "type": "boolean"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startMinute": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/ScheduleEntryState"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Time off. \u0060StartDate\u0060/\u0060EndDate\u0060 are the shop-local days it covers (inclusive); the minutes are null for an\nall-day entry."
       },
       "UpdateOwnShopProfileRequest": {
         "required": [
@@ -9884,6 +11653,36 @@
           "Failed"
         ],
         "description": "Delivery state of the WhatsApp number, set by the notification worker (Phase 15)."
+      },
+      "WorkingHoursRequest": {
+        "required": [
+          "followsShopHours",
+          "intervals",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "followsShopHours": {
+            "type": "boolean"
+          },
+          "intervals": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/HoursIntervalDto"
+            }
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "A professional\u0027s hours: follow the shop\u0027s opening hours, or their own weekly intervals."
       }
     }
   },
@@ -9902,6 +11701,9 @@
     },
     {
       "name": "Public"
+    },
+    {
+      "name": "Shop: schedule"
     },
     {
       "name": "Admin: subscriptions"

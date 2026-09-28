@@ -60,4 +60,11 @@ internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalD
             .Where(p => p.Id == professionalId)
             .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
             .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ProfessionalSummary>> ListByShopAsync(ShopId shopId, CancellationToken cancellationToken) =>
+        await db.Set<Professional>().AsNoTracking()
+            .Where(p => p.ShopId == shopId)
+            .OrderBy(p => p.NameAr).ThenBy(p => p.Id)
+            .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
+            .ToListAsync(cancellationToken);
 }
