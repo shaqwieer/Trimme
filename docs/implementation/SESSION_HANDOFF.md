@@ -1,7 +1,7 @@
 # TRIMME Session Handoff
 
 - **Updated:** 2026-09-28 (end of Session 5: Phases 09 and 10)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 09 is pushed and CI-green (run 36411900841). Phase 10 is committed locally and **not pushed**; push only when the user asks.
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 09 is pushed and CI-green (run 36411900841). Phase 10 is **pushed** at the user's request; CI is green (run 36420287372: web, backend incl. integration and migrations, gitleaks, compose + Playwright smoke).
 - **HEAD commit:** a `fix:` follow-up on top of `41007e6` (`feat: phase 10 booking core and integrity`). Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 10 images (9 migrations, 9 seeders): web 3300, API 8080, DB 5434, Mailpit UI 8325.
@@ -50,7 +50,6 @@
 - D-012 and D-015 are now Accepted. DV-S08, DV-S10 and DV-S18 are applied on the API side.
 
 ## Known issues or blockers
-- **Phase 10 is not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 10 file and MASTER_PLAN.
 - **Not in v1 / later phases:**
   - packages across professionals (D-020);
   - "any professional" does not retry another candidate after losing a race;
@@ -65,7 +64,7 @@
 - **Ports:** 8025 is taken on this machine. Use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
-1. If the user asks, push Phase 10 and confirm CI.
+1. CI for Phase 10 is green (run 36420287372); nothing to push.
 2. Start Phase 11 (`phases/phase-11-public-discovery.md`). Re-validate first:
    - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Bookings"`
    - the concurrency loop in the Phase 10 file (a few runs)

@@ -1,7 +1,7 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-28 (Session 5)
-- **Current phase:** 10 is complete and verified (Session 5), committed locally and not pushed yet. Phase 09 is pushed and CI-green (run 36411900841). Next: Phase 11, public discovery.
+- **Current phase:** 10 is complete and verified (Session 5), pushed to `main`, CI green (run 36420287372). Next: Phase 11, public discovery.
 - **Platform progress:** 1100 / 1900 points (Phases 00–10)
 
 | Phase | Status | Points |

@@ -162,6 +162,7 @@ Session 5, 2026-09-28.
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 229 web tests (no web code changes; the OpenAPI schema was regenerated) |
 | Fresh `down -v` + `up --build`, `pnpm e2e` ×3 (regression; no new UI) | PASS — **47/47, 47/47, 47/47** (the first compose build hit a transient Docker BuildKit snapshot error, "parent snapshot does not exist"; the rebuild succeeded) |
+| GitHub Actions on `0087df9` (pushed at the user's request) | PASS — run 36420287372: web, gitleaks, backend (incl. integration, concurrency suite and migrations), compose + Playwright smoke |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS — the grep gates hit only excluded tests, Seeding and Geocoding; gitleaks no leaks on the committed code |
 
 **Commit:** `41007e6`, plus a `fix:` follow-up from the final review:
