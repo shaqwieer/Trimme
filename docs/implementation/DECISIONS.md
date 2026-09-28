@@ -575,7 +575,7 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - **Midnight.** A closure closes the *business day*: every window that opens on the closed date, including its hours after midnight. The previous day's window running into a closed date is not affected. Slots are dated by their local start (the date strip).
   - **Edges.** Bookable dates are today … today + horizon − 1, and a slot starts at or after now + lead time (both exact, tested).
   - **Periods** (for grouping, D-009): Morning 05:00–11:59, Afternoon 12:00–16:59, Evening otherwise (including after midnight).
-  - `IsBookable(shop, professional, start, duration, now, policy)` applies the same rules to one start. It is the recheck Phase 10 runs inside the booking transaction.
+  - `IsBookable(shop, professional, start, duration, now, policy)` applies the same rules to one start. It is the recheck Phase 10 runs inside the booking transaction. It includes the online policy (lead time, horizon, grid), so walk-ins need a collision-only check alongside it (Phase 10).
 - **Any professional (refines D-012).** A slot carries every eligible professional free for the whole item. Eligible = active and assigned to the service; for a package, assigned to every item service. The tie-break stays in Phase 10.
 - **Limits.** A zone whose DST shift is not a whole multiple of the step (for example 30 minutes with a 60-minute step) would shift the grid after the change. v1 shops are in Riyadh, which has no DST.
 

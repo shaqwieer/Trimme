@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Web.Hosting;
@@ -123,6 +124,13 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         blocked.GetProperty("blockedReason").GetString().ShouldBe("shop.paused");
         blocked.GetProperty("slots").GetArrayLength().ShouldBe(0);
         (await anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}", ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // D-013/D-083: a paused shop leaves discovery by default; with HidePausedShopsFromDiscovery off it stays listed
+        // but still takes no online bookings.
+        (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, false, "shop.paused"));
+        var settings = await OkAsync(s.Admin.GetAsync("/api/v1/admin/settings", ct), ct);
+        await OkAsync(s.Admin.PutAsync("/api/v1/admin/settings", SettingsBody(settings, hidePaused: false), ct), ct);
+        (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, true, "shop.paused"));
         (await OkAsync(s.StaffA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("onlineBookingPaused").GetBoolean().ShouldBeTrue();
         await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
 
@@ -333,6 +341,29 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         var slugA = (await OkAsync(admin.GetAsync($"/api/v1/admin/shops/{shops.A.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
         return new Arranged(factory, bookings, admin, shops, ownerA, staffA, ownerB, slugA, serviceA, serviceB, proA, proB);
     }
+
+    private static async Task<ShopBookability> GateAsync(TrimmeApiFactory factory, Guid shopId, CancellationToken ct)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IShopBookability>().GetAsync(new ShopId(shopId), ct);
+    }
+
+    private static object SettingsBody(JsonElement s, bool hidePaused) => new
+    {
+        minLeadTimeMinutes = s.GetProperty("minLeadTimeMinutes").GetInt32(),
+        bookingHorizonDays = s.GetProperty("bookingHorizonDays").GetInt32(),
+        slotStepMinutes = s.GetProperty("slotStepMinutes").GetInt32(),
+        cancellationCutoffMinutes = s.GetProperty("cancellationCutoffMinutes").GetInt32(),
+        reviewWindowDays = s.GetProperty("reviewWindowDays").GetInt32(),
+        reminderOffsetMinutes = s.GetProperty("reminderOffsetMinutes").GetInt32(),
+        expiringSoonThresholdDays = s.GetProperty("expiringSoonThresholdDays").GetInt32(),
+        expiredSubscriptionEnforcement = s.GetProperty("expiredSubscriptionEnforcement").GetString(),
+        hidePausedShopsFromDiscovery = hidePaused,
+        mapDefaultLatitude = s.GetProperty("mapDefaultLatitude").GetDouble(),
+        mapDefaultLongitude = s.GetProperty("mapDefaultLongitude").GetDouble(),
+        mapDefaultZoom = s.GetProperty("mapDefaultZoom").GetInt32(),
+        version = s.GetProperty("version").GetUInt32(),
+    };
 
     private static async Task<Guid> CreateProfessionalAsync(ApiSession admin, Guid shopId, string nameAr, string nameEn, CancellationToken ct) =>
         (await OkAsync(admin.PostAsync("/api/v1/admin/professionals", new { shopId, nameAr, nameEn }, ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();

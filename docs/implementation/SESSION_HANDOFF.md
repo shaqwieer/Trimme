@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-09-28 (end of Session 5: Phase 09)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 08 is pushed and CI-green (run 36333734614). Phase 09 is committed locally and **not pushed**; push only when the user asks.
-- **HEAD commit:** `feat: phase 09 schedules and availability engine`. Run `git log --oneline -3`.
+- **HEAD commit:** a `test:` follow-up on top of `a9a5aca` (`feat: phase 09 schedules and availability engine`). Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 09 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
 - **Current phase:** 09 is complete. Phase 10 has not started.
@@ -30,7 +30,7 @@
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 229 web tests |
 | Fresh `down -v` + `up --build` + `pnpm e2e` ×3 | PASS — final stack (fresh, the last code): **47/47, 47/47, 47/47** (cold first run included). Earlier fresh stacks failed on real defects that are now fixed (see the Phase 09 file, "Found and fixed while verifying"): 46/47 ×2 + 47 (form remount), 47, 46/47, 47 (edit reset on refresh), 45/47 (load timing + a Phase 06 sign-in under the same load), 47, 47, 46/47 (pause made the profile stale) |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS, no hits, no leaks |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS on the committed code: no hits outside the exclusions, no leaks (33 commits) |
 
 ## Database and migrations
 - Created this session: `Schedules` (`20260928101655`): five `availability` tables and `shops.online_booking_pauses`.
@@ -50,6 +50,8 @@
   - recheck with `AvailabilityEngine.IsBookable` inside the transaction, through a new building-block contract;
   - the D-012 tie-break;
   - persist the "flagged" state for bookings hit by time off, breaks or closures;
+  - **Walk-ins need a collision-only check.** `IsBookable` applies the whole online policy (lead time, horizon, the 5-minute grid). Online create and reschedule should use it. A walk-in (spec §11) needs the same collision checks (hours, breaks, time off, bookings) but not that policy: a walk-in "now" or at 10:02 must be allowed. Add a collision-only check next to it; do not reuse `IsBookable` for walk-ins.
+  - **Shared demo data in E2E.** `flows/shop-schedule.spec.ts` briefly pauses Al Asala, rewrites Faisal's hours and asserts exact slot lists. Seeded sample appointments (spec §20) or booking flows on Al Asala/Faisal would change those counts or hit the pause mid-run. Give the booking flows their own professional or date, or relax those assertions.
   - assert that pause and expiry never touch future bookings.
 - **Earlier carry-overs:**
   - Grace/trial days and plan limits are stored but not enforced (D-077).

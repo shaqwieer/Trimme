@@ -126,9 +126,11 @@ Session 5, 2026-09-28.
 | Upgrade on the Phase 08 compose volume | PASS — migrate applied `Schedules` (8 migrations), 7 seeders ran, public dates returned slot counts (Saturday 0) |
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 229 web tests (12 new) |
 | Fresh `down -v` + `up --build`, `pnpm e2e` ×3 | PASS — final stack (fresh, the last code): **47/47, 47/47, 47/47** (cold first run included). Earlier fresh stacks failed on real defects that are now fixed (see Found and fixed): 46/47 ×2 + 47 (form remount), 47, 46/47, 47 (edit reset on refresh), 45/47 (load timing + a Phase 06 sign-in under the same load), 47, 47, 46/47 (pause made the profile stale) |
-| No-transfer grep gate (D-069); R-NEG-08 grep gate | PASS — hits only in excluded tests, Seeding ("إجازة سنوية") and Geocoding |
-| gitleaks `dir` + `git` (v8.30.1, Docker) | PASS — no leaks (32 commits) |
+| No-transfer grep gate (D-069); R-NEG-08 grep gate | PASS — hits only in excluded tests, Seeding ("إجازة سنوية") and Geocoding (rerun on the committed code) |
+| gitleaks `dir` + `git` (v8.30.1, Docker) | PASS — no leaks; rerun on the committed code (33 commits) |
 | Visual check `/ar/shop/schedule` at 1440 and 390 | RTL mirrored, two columns on desktop and one on a phone, no overflow. Fixed a mirrored `play` icon and LTR-wrapped time ranges |
+
+**Commit:** `a9a5aca`. A `test:` follow-up added the assertion that a paused shop leaves discovery by default and stays listed (still unbookable) with `HidePausedShopsFromDiscovery` off (D-013/D-083; Availability integration 5/5).
 
 **Found and fixed while verifying**
 - **Missing toast provider.** The pause card used the toast, but the dashboard has no `ToastProvider`, so the page failed to render on the stack. The unit test had wrapped its own provider and hid this. The card now shows an inline status.
@@ -144,6 +146,8 @@ Session 5, 2026-09-28.
   - replace the empty `IBookedTimeReader` (`services.Replace`);
   - call `AvailabilityEngine.IsBookable` in the booking transaction, through a building-block contract exposed by Availability;
   - apply the D-012 tie-break;
+  - **Walk-ins need a collision-only check.** `IsBookable` applies the whole online policy (lead time, horizon, the 5-minute grid). Online create and reschedule should use it. A walk-in (spec §11) needs the same collision checks (hours, breaks, time off, bookings) but not that policy: a walk-in "now" or at 10:02 must be allowed. Add a collision-only check next to it; do not reuse `IsBookable` for walk-ins.
+  - **Shared demo data in E2E.** `flows/shop-schedule.spec.ts` briefly pauses Al Asala, rewrites Faisal's hours and asserts exact slot lists. Seeded sample appointments (spec §20) or booking flows on Al Asala/Faisal would change those counts or hit the pause mid-run. Give the booking flows their own professional or date, or relax those assertions.
   - persist the "flagged" state for bookings affected by time off, breaks or closures;
   - assert "future bookings untouched" for pause and expiry.
 - **Phase 11:** discovery hides paused shops through `IShopBookability.VisibleInDiscovery` (D-013).
