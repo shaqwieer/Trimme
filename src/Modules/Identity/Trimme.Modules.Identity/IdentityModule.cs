@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
@@ -56,6 +57,7 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<IAccountStore>(sp => sp.GetRequiredService<AccountStore>());
         services.AddScoped<IRoleDirectory>(sp => sp.GetRequiredService<AccountStore>());
         services.AddScoped<IPermissionResolver, PermissionResolver>();
+        services.AddScoped<ICustomerDirectory, CustomerDirectory>();
         services.AddScoped<SessionValidator>();
         services.AddScoped<SessionManager>();
         services.AddScoped<MeReader>();
@@ -64,6 +66,7 @@ public sealed class IdentityModule : ModuleBase
         services.AddSingleton<IReferenceDataSynchronizer, PermissionCatalogueSynchronizer>();
         services.AddSingleton<IDevSeeder, BootstrapAdminSeeder>();
         services.AddSingleton<IDevSeeder, DemoShopUsersSeeder>();
+        services.AddSingleton<IDevSeeder, DemoCustomersSeeder>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder api)

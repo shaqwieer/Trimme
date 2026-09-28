@@ -105,7 +105,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-SUB-02 | Price versioning; no retroactive change | §15 | 8 | U `Prices_AreVersioned_…`, `AddPrice_NeverRewritesHistory` ✔; I `ExistingSubscription_KeepsPriceSnapshot_WhenThePlanPriceChanges` ✔; E flow 5 ✔ (recorded period unchanged; renewal takes version 2) | [x] |
 | R-SUB-03 | Assign, renew, override (audited), history | §15 | 8 | I `Assign_Renew_Override_Suspend_KeepHistory_AndRejectInvalidChanges` ✔ (concurrent assign → one 409; overlap/gap; SuperAdmin custom periods with explicit total, standard amount and reason (D-081); override on the period in force; audit trail); U renew/override rules ✔; E flow 5 (suspend, reinstate, override) ✔ | [x] |
 | R-SUB-04 | Statuses Active/ExpiringSoon/Expired/Suspended with configurable threshold | §15 | 8, 15 | U `Status_FollowsDaysRemaining_AndTheThreshold`, `MonthPeriods_…`, `MonthlyRenewalChain_…` ✔; I `Status_FollowsThePlatformCalendar_AndGatesBookability` ✔ (threshold boundary on a moving clock). Automated expiry notifications: Phase 15 | [x] |
-| R-SUB-05 | Warnings to admin and shop; explicit enforcement; future bookings untouched | §15 | 8, 13, 15 | Phase 08 part ✔: shop warning + admin KPIs/list (E flow 3), enforcement setting and `IShopBookability` (I status test, settings test, D-078). `Expiry_DoesNotAlterFutureBookings`: Phase 10 | [~] |
+| R-SUB-05 | Warnings to admin and shop; explicit enforcement; future bookings untouched | §15 | 8, 13, 15 | Phase 08 part ✔: shop warning + admin KPIs/list (E flow 3), enforcement setting and `IShopBookability` (I status test, settings test, D-078). Phase 10 part ✔: I `PauseAndExpiry_NeverTouchExistingBookings_ButBlockNewOnesAndReschedules` (suspension blocks new online bookings, the booking keeps its status and time, walk-ins still allowed). Expiry notifications: Phase 15 | [~] |
 
 ## 7. Availability and booking
 
@@ -114,16 +114,16 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-AVL-01 | Availability combines hours, closures, pause, pro hours, breaks, time off, duration, bookings, lead time, horizon, slot step (5-min capable) | §11 | 9 | U `Availability/AvailabilityEngineTests` (22 incl. midnight, closures of the business day, lead/horizon edges, steps 5/10/15, New York DST gap and repeat) + `ScheduleDomainTests` (15) | [x] |
 | R-AVL-02 | Only bookable slots returned | §11 | 9 | I `Availability/ScheduleTests` (public slots follow hours, breaks, time off, closures, pause, bookings via a fake reader; gates 404/422; package; disabled professional); E `flows/shop-schedule.spec.ts` | [x] |
 | R-AVL-03 | Working hours, breaks, time off, pause/resume managed by shop | §13 | 9 | I `Shop_ManagesSchedule_AndThePublicSlotsFollowEveryChange`, `CrossShop_ScheduleIds_Are404_ForEveryVerb_AndNothingChanges`; E flow 2 schedule part (`shop-schedule.spec.ts`) | [x] |
-| R-BKG-01 | Booking aggregate with service/price/duration snapshot | §10 | 10 | I `Booking_KeepsSnapshot_AfterServiceEdit` | [ ] |
-| R-BKG-02 | State machine; invalid transitions rejected; history with actor/timestamp | §11 | 10 | U `BookingStateMachine_*`; I `InvalidTransition_Returns409` | [ ] |
-| R-BKG-03 | Transactional recheck + PostgreSQL exclusion constraint | §11 | 10 | I `ExclusionConstraint_RejectsOverlap` | [ ] |
-| R-BKG-04 | Concurrency: exactly one winner | §11, §19 | 10, 18 | I `ConcurrentBookings_ExactlyOneSucceeds`; E flow 6 | [ ] |
-| R-BKG-05 | Idempotent create/reschedule (idempotency keys) | §11, §18 | 10 | I `CreateBooking_SameKey_ReturnsSameResult` | [ ] |
-| R-BKG-06 | Typed conflict response | §11 | 10, 12 | I `SlotTaken_Returns409_WithCode`; E conflict UI | [ ] |
-| R-BKG-07 | Walk-ins use the same collision checks | §11 | 10, 13 | I `WalkIn_CannotOverlap`; E flow 2 | [ ] |
-| R-BKG-08 | Outbox message written in the booking transaction | §16 | 10 | I `BookingCreated_WritesOutbox_InSameTransaction`, `Rollback_WritesNoOutbox` | [ ] |
-| R-BKG-09 | Customer cancel/reschedule per policy | §12 | 10, 12 | I policy tests; E flow 1 | [ ] |
-| R-BKG-10 | Payment seam: neutral booking fields + documented abstraction | §2 | 10 | M doc `docs/availability-and-booking.md` §Payment seam | [ ] |
+| R-BKG-01 | Booking aggregate with service/price/duration snapshot | §10 | 10 | I `OnlineBooking_IsIdempotent_KeepsItsSnapshot_…` (price, name and duration kept after the service edit); U `Reschedule_KeepsTheSnapshot…` | [x] |
+| R-BKG-02 | State machine; invalid transitions rejected; history with actor/timestamp | §11 | 10 | U `StateMachine_AllowsExactlyTheDesignedTransitions` + `ShopTransitions_FollowTheStateMachine_AndRecordHistory` (49 pairs each), time rules; I `WalkIns_…Transitions…` (409 invalid, 422 too early, reason required, history) | [x] |
+| R-BKG-03 | Transactional recheck + PostgreSQL exclusion constraint | §11 | 10 | Migration `Bookings` exclusion constraint; I `TheDatabase_RefusesOverlappingActiveBookings_EvenWithoutTheApplication`; recheck in the transaction (D-089) | [x] |
+| R-BKG-04 | Concurrency: exactly one winner | §11, §19 | 10, 18 | I `BookingConcurrencyTests` (8-way race, partial overlaps, reschedule race); 20/20 local runs (Phase 10 evidence); E flow 6 in Phase 12/18 | [~] |
+| R-BKG-05 | Idempotent create/reschedule (idempotency keys) | §11, §18 | 10 | I `OnlineBooking_IsIdempotent_…` (required, replay, reuse 422), `TheSameIdempotencyKey_InParallel_CreatesOneBooking…`, reschedule replay | [x] |
+| R-BKG-06 | Typed conflict response | §11 | 10, 12 | I every conflict asserts `booking.slot_unavailable` (create, reschedule, walk-in, races); the conflict UI is Phase 12 | [~] |
+| R-BKG-07 | Walk-ins use the same collision checks | §11 | 10, 13 | I `WalkIns_UseTheSameCollisionChecks_…` (overlap 409, outside hours 409, off-grid allowed); U `WalkInRule_AllowsAnyMinute_ButNotACollision` | [x] |
+| R-BKG-08 | Outbox message written in the booking transaction | §16 | 10 | I outbox row per change, none for refused or losing commands (flow, races, refusals tests) | [x] |
+| R-BKG-09 | Customer cancel/reschedule per policy | §12 | 10, 12 | U cutoff boundary; I cancel and reschedule flows, pause/expiry block reschedule but not cancel; E flow 1 in Phase 12 | [~] |
+| R-BKG-10 | Payment seam: neutral booking fields + documented abstraction | §2 | 10 | M `docs/availability-and-booking.md` §Payment seam; `PaymentStatus`/`AmountDue` on every booking | [x] |
 
 ## 8. Customer experience
 
@@ -245,8 +245,8 @@ All seven are re-run as the Phase 18 regression gate.
 | SubscriptionPlan, SubscriptionPlanPrice | Subscriptions (`subscriptions`) | — | 8 | 0006 | Prices are versioned |
 | ShopSubscription, SubscriptionRenewal, SubscriptionOverride | Subscriptions | ✓ | 8 | 0006 | Price snapshot |
 | PlatformSettings | Administration | — | 8 | 0006 | Typed sections, audited |
-| Booking, BookingStatusHistory, BookingNote | Bookings (`bookings`) | ✓ | 10 | 0008_Bookings | `tstzrange` + exclusion constraint |
-| OutboxMessage, IdempotencyRecord | BuildingBlocks (`infra`) | — | 10 | 0008 | |
+| Booking, BookingStatusHistory, BookingNote | Bookings (`bookings`) | ✓ (+ customer-owned, D-085) | 10 | `Bookings` ✔ | `during tstzrange` + exclusion constraint; history owned (`booking_history`); snapshot (D-086) |
+| OutboxMessage, IdempotencyRecord | BuildingBlocks (`infra`) | — | 10 | `Bookings` ✔ | D-089 |
 | Review, rating aggregates | Reviews (`reviews`) | Tied to a shop through the booking | 11–12 | 0009 / 0010 | One review per booking |
 | Favorite | Customers | — | 12 | 0010 | |
 | WhatsAppTemplate, WhatsAppTemplateVersion, WhatsAppDispatch | Notifications (`notifications`) | — | 15 | 0012 | Dispatch records the template version |

@@ -30,6 +30,7 @@ public static class SecuritySetup
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpCurrentUser>();
         services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
+        services.AddScoped<ICurrentCustomer, HttpCurrentCustomer>();
         services.AddScoped<IAdminDataScope, AdminDataScope>();
         services.AddScoped<ISystemDataScope, SystemDataScope>();
         services.AddScoped<IPublicDataScope, PublicDataScope>();

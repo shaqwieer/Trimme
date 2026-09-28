@@ -20,7 +20,25 @@ public interface IBookableOfferCatalog
 /// Professionals assigned to the service, or for a package those assigned to every item service. Their status is not
 /// checked here; the caller keeps only the active ones.
 /// </param>
-public sealed record BookableOffer(Guid Id, bool IsPackage, int DurationMinutes, bool OnlineBookable, IReadOnlyList<ProfessionalId> EligibleProfessionalIds);
+/// <param name="NameAr">The shop's Arabic name for it, snapshotted onto bookings (R-BKG-01).</param>
+/// <param name="NameEn">The optional English name.</param>
+/// <param name="Price">The shop's own price.</param>
+/// <param name="Currency">ISO currency of the price.</param>
+/// <param name="Items">For a package, its services in order; empty for a service.</param>
+public sealed record BookableOffer(
+    Guid Id,
+    bool IsPackage,
+    int DurationMinutes,
+    bool OnlineBookable,
+    IReadOnlyList<ProfessionalId> EligibleProfessionalIds,
+    string NameAr,
+    string? NameEn,
+    decimal Price,
+    string Currency,
+    IReadOnlyList<BookableOfferItem> Items);
+
+/// <summary>One service of a package, for the booking snapshot and reporting.</summary>
+public sealed record BookableOfferItem(Guid ServiceId, string NameAr, string? NameEn);
 
 /// <summary>
 /// Existing, non-cancelled appointments, for availability and the schedule conflict preview. The Bookings module
@@ -41,7 +59,47 @@ public interface IBookedTimeReader
         ShopId shopId, ProfessionalId? professionalId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }
 
-public sealed record BusyTime(ProfessionalId ProfessionalId, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+public sealed record BusyTime(Guid BookingId, ProfessionalId ProfessionalId, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+/// <summary>How strictly a time is checked (D-088).</summary>
+public enum AvailabilityCheckMode
+{
+    /// <summary>Online create and reschedule: the full policy (lead time, horizon, the slot grid) plus every collision.</summary>
+    Online,
+
+    /// <summary>Walk-ins: the same collisions (hours, breaks, time off, closures, bookings) at any minute, starting now if needed.</summary>
+    WalkIn,
+}
+
+/// <summary>A booked time, for the schedule-conflict flags (DV-S22).</summary>
+public sealed record ScheduledTime(Guid BookingId, ProfessionalId ProfessionalId, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
+/// <summary>
+/// The availability rules for one exact time (implemented by the Availability module, D-088). It reads through the
+/// caller's data scope: a customer's booking opens the public scope for the shop so every booking of the professional is
+/// seen; a shop user reads its own shop. Bookings call it inside their transaction (the recheck, R-BKG-03).
+/// </summary>
+public interface IAvailabilityChecker
+{
+    /// <summary>
+    /// The candidates who can take <c>[start, start + duration)</c> in this mode, in the given order.
+    /// <paramref name="ignoreBookingId"/> is the booking being rescheduled, whose own time does not block it.
+    /// </summary>
+    Task<IReadOnlyList<ProfessionalId>> FreeProfessionalsAsync(
+        ShopId shopId,
+        IReadOnlyList<ProfessionalId> candidates,
+        DateTimeOffset start,
+        int durationMinutes,
+        AvailabilityCheckMode mode,
+        Guid? ignoreBookingId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The bookings that no longer fit their professional's schedule (hours, breaks, time off, closures), whatever the
+    /// other bookings: the shop sees them flagged, nothing is cancelled (DV-S22).
+    /// </summary>
+    Task<IReadOnlySet<Guid>> OutsideScheduleAsync(ShopId shopId, IReadOnlyCollection<ScheduledTime> bookings, CancellationToken cancellationToken);
+}
 
 /// <summary>A booking as the shop may see it: the customer's name and the booked item, never a phone number.</summary>
 public sealed record BookedAppointment(

@@ -104,5 +104,6 @@ internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
     private IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops) =>
         shops.Select(s => new ShopSummary(
             s.Id, s.Slug, s.NameAr, s.NameEn, s.Status, s.TimeZone,
-            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault()));
+            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault(),
+            s.RequireManualConfirmation));
 }

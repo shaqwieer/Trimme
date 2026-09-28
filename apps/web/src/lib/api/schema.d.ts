@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken. */
+        post: operations["CreateBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscriptions": {
         parameters: {
             query?: never;
@@ -1656,6 +1673,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's own bookings: upcoming (soonest first) or past (latest first). */
+        get: operations["ListMyBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the customer's own bookings with the actions still allowed; another customer's id is 404. */
+        get: operations["GetMyBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancels the customer's booking until the cancellation cutoff (D-015). */
+        post: operations["CancelMyBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moves the booking to another offered slot until the cutoff (Idempotency-Key required). */
+        post: operations["RescheduleMyBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The booking as an iCalendar event (add to calendar). */
+        get: operations["GetMyBookingCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's bookings by local date range, status and professional; search by customer name or reference only. */
+        get: operations["ListShopBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's bookings with its history and internal notes; never the customer's phone. */
+        get: operations["GetShopBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/walk-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a walk-in with the same collision checks as online bookings (R-BKG-07). */
+        post: operations["CreateWalkIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moves the booking along the state machine (D-016); invalid transitions answer 409. */
+        post: operations["TransitionShopBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds an internal note (never shown to the customer). */
+        post: operations["AddBookingNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bookings across shops (paged, latest first); search by customer name or reference. */
+        get: operations["AdminListBookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One booking with its history. */
+        get: operations["AdminGetBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancels on the shop's behalf with a reason (audited). */
+        post: operations["AdminCancelBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscription-plans": {
         parameters: {
             query?: never;
@@ -1907,12 +2145,27 @@ export interface components {
             displayName: string;
             password: string;
         };
+        /** @enum {unknown} */
+        ActorType: "Customer" | "ShopUser" | "PlatformAdmin" | "System";
         /** @description A new price version in the platform currency, effective from today or a later date. */
         AddPlanPriceRequest: {
             /** Format: double */
             amount: number;
             /** Format: date */
             effectiveFrom: string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description A booking in the admin views (the shop's view plus the shop and the customer's id; no contact data). */
+        AdminBookingResponse: {
+            shop: components["schemas"]["BookingShopResponse"];
+            /** Format: uuid */
+            customerId: null | string;
+            booking: components["schemas"]["ShopBookingResponse"];
+            history: components["schemas"]["BookingHistoryResponse"][];
+        };
+        AdminCancelBookingRequest: {
+            reason: string;
             /** Format: uint32 */
             version: number;
         };
@@ -2249,6 +2502,79 @@ export interface components {
         };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
+        BookedPackageItemResponse: {
+            /** Format: uuid */
+            serviceId: string;
+            nameAr: string;
+            nameEn: null | string;
+        };
+        /** @enum {unknown} */
+        BookingChannel: "Online" | "WalkIn";
+        /** @enum {unknown} */
+        BookingEventKind: "Created" | "StatusChanged" | "Rescheduled";
+        BookingHistoryResponse: {
+            kind: components["schemas"]["BookingEventKind"];
+            fromStatus: null | components["schemas"]["BookingStatus"];
+            toStatus: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            previousStartsAt: null | string;
+            actorType: components["schemas"]["ActorType"];
+            reason: null | string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        /** @description What was booked, as it was at booking time (R-BKG-01). */
+        BookingItemResponse: {
+            /** Format: uuid */
+            serviceId: null | string;
+            /** Format: uuid */
+            packageId: null | string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            packageItems: components["schemas"]["BookedPackageItemResponse"][];
+        };
+        BookingNoteRequest: {
+            text: string;
+        };
+        BookingNoteResponse: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        BookingProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+        };
+        BookingShopResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+        };
+        /** @enum {unknown} */
+        BookingsTab: "Upcoming" | "Past" | null;
+        /**
+         * @description The booking lifecycle (D-016).
+         * @enum {unknown}
+         */
+        BookingStatus: "Pending" | "Confirmed" | "Arrived" | "Completed" | "CancelledByCustomer" | "CancelledByShop" | "NoShow";
+        /** @description Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read. */
+        BookingTransitionRequest: {
+            to: components["schemas"]["BookingStatus"];
+            reason: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
         /**
          * @description A break for one professional or everyone (`ProfessionalId` null): weekly on `Weekdays`, or once on
          *     `Date` (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps.
@@ -2281,6 +2607,11 @@ export interface components {
             startMinute: number;
             /** Format: int32 */
             endMinute: number;
+            /** Format: uint32 */
+            version: number;
+        };
+        CancelBookingRequest: {
+            reason: null | string;
             /** Format: uint32 */
             version: number;
         };
@@ -2332,6 +2663,22 @@ export interface components {
          */
         ConflictPreviewResponse: {
             affectedBookings: components["schemas"]["AffectedBookingResponse"][];
+        };
+        /**
+         * @description A customer's online booking of a published service or package (exactly one of the two). Without a professional the
+         *     server picks a free one (D-012). The start must be one of the offered slots.
+         */
+        CreateBookingRequest: {
+            shopSlug: string;
+            /** Format: uuid */
+            serviceId: null | string;
+            /** Format: uuid */
+            packageId: null | string;
+            /** Format: uuid */
+            professionalId: null | string;
+            /** Format: date-time */
+            startsAt: string;
+            note: null | string;
         };
         /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
         CreatePlanRequest: {
@@ -2403,6 +2750,33 @@ export interface components {
         };
         CsrfTokenResponse: {
             token: string;
+        };
+        /** @enum {unknown} */
+        CustomerBookingAction: "Cancel" | "Reschedule";
+        /** @description A booking as its customer sees it, with what they may still do (cancel/reschedule until the cutoff, D-015). */
+        CustomerBookingResponse: {
+            /** Format: uuid */
+            id: string;
+            reference: string;
+            shop: components["schemas"]["BookingShopResponse"];
+            professional: components["schemas"]["BookingProfessionalResponse"];
+            item: components["schemas"]["BookingItemResponse"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["BookingChannel"];
+            note: null | string;
+            cancellationReason: null | string;
+            paymentStatus: components["schemas"]["PaymentStatus"];
+            /** Format: double */
+            amountDue: number;
+            allowedActions: components["schemas"]["CustomerBookingAction"][];
+            /** Format: int32 */
+            cancellationCutoffMinutes: number;
+            /** Format: uint32 */
+            version: number;
         };
         /** @enum {unknown} */
         DayOfWeek: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
@@ -2564,6 +2938,16 @@ export interface components {
             isAvailable: boolean;
         };
         /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfAdminBookingResponse: {
+            items: components["schemas"]["AdminBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
         PagedResponseOfAdminPackageListItem: {
             items: components["schemas"]["AdminPackageListItem"][];
             /** Format: int32 */
@@ -2603,10 +2987,35 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfCustomerBookingResponse: {
+            items: components["schemas"]["CustomerBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfShopBookingResponse: {
+            items: components["schemas"]["ShopBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
         /** @description Pausing online booking; the optional reason is the shop's own note (≤ 300 characters). */
         PauseOnlineBookingRequest: {
             reason: null | string;
         };
+        /**
+         * @description Payment seam (R-BKG-10): v1 takes no payments, so every booking is PaymentStatus.NotApplicable.
+         * @enum {unknown}
+         */
+        PaymentStatus: "NotApplicable";
         /** @enum {unknown} */
         PeriodKind: "Assigned" | "Renewed";
         PermissionResponse: {
@@ -2867,6 +3276,15 @@ export interface components {
             termsAccepted: boolean;
             locale: null | string;
         };
+        /** @description Moves the booking to another offered start (and optionally another eligible professional). Send the version read. */
+        RescheduleBookingRequest: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: uuid */
+            professionalId: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
         ResetPasswordRequest: {
             /** Format: uuid */
             userId: string;
@@ -2929,6 +3347,36 @@ export interface components {
         };
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
+        ShopBookingDetailResponse: {
+            booking: components["schemas"]["ShopBookingResponse"];
+            history: components["schemas"]["BookingHistoryResponse"][];
+            notes: components["schemas"]["BookingNoteResponse"][];
+        };
+        /**
+         * @description A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). `AllowedTransitions` is
+         *     what the UI may offer (DV-S08); `OutsideSchedule` flags an active booking that no longer fits the professional's
+         *     hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically.
+         */
+        ShopBookingResponse: {
+            /** Format: uuid */
+            id: string;
+            reference: string;
+            customerName: string;
+            channel: components["schemas"]["BookingChannel"];
+            professional: components["schemas"]["BookingProfessionalResponse"];
+            item: components["schemas"]["BookingItemResponse"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            status: components["schemas"]["BookingStatus"];
+            note: null | string;
+            cancellationReason: null | string;
+            allowedTransitions: components["schemas"]["BookingStatus"][];
+            outsideSchedule: boolean;
+            /** Format: uint32 */
+            version: number;
+        };
         /**
          * @description Kind of business, shown on the public page and used by discovery filters (Phase 11).
          * @enum {unknown}
@@ -3380,6 +3828,22 @@ export interface components {
             code: string;
         };
         /**
+         * @description A walk-in (D-035): without `StartsAt` it starts now and is marked Arrived; otherwise it is Confirmed. The
+         *     customer's name only. An `Idempotency-Key` header is honoured when sent.
+         */
+        WalkInRequest: {
+            /** Format: uuid */
+            serviceId: null | string;
+            /** Format: uuid */
+            packageId: null | string;
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date-time */
+            startsAt: null | string;
+            customerName: string;
+            note: null | string;
+        };
+        /**
          * @description Delivery state of the WhatsApp number, set by the notification worker (Phase 15).
          * @enum {unknown}
          */
@@ -3722,6 +4186,68 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateBooking: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7559,6 +8085,548 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyBookings: {
+        parameters: {
+            query?: {
+                tab?: components["schemas"]["BookingsTab"];
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfCustomerBookingResponse"];
+                };
+            };
+        };
+    };
+    GetMyBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CancelMyBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RescheduleMyBooking: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMyBookingCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListShopBookings: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                status?: components["schemas"]["BookingStatus"];
+                professionalId?: string;
+                search?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfShopBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateWalkIn: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalkInRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    TransitionShopBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddBookingNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingNoteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListBookings: {
+        parameters: {
+            query?: {
+                shopId?: string;
+                status?: components["schemas"]["BookingStatus"];
+                from?: string;
+                to?: string;
+                search?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminBookingResponse"];
+                };
+            };
+        };
+    };
+    AdminGetBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminCancelBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCancelBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

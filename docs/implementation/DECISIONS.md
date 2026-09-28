@@ -39,7 +39,7 @@ Platform setting `ReminderOffsetMinutes`, default **30**, used for customer and 
 ## D-011 — No barber transfer, enforced structurally — Accepted (Phase 0)
 `Professional.ShopId` set at creation, no setter after creation, not present in any update DTO; no route, permission, UI element, audit type, seed or doc mention (except `design-deviations.md` as removed, DV-S01). Tests: see TRACEABILITY `R-NEG-01`.
 
-## D-012 — "Any available professional" option — Proposed (Phase 10/12; candidate sets built in Phase 09, D-082)
+## D-012 — "Any available professional" option — Accepted (candidate sets Phase 09, D-082; resolution Phase 10, D-088)
 Design shows "أي حلاق متاح" as default (3851, 4001). Kept: the server resolves a concrete professional inside the booking transaction (eligible = assigned to the service and free; tie-break = fewest bookings that day, then stable ID order). The booking always stores a concrete professional.
 
 ## D-013 — Paused shops in discovery — Accepted (setting in Phase 08; pause and gate in Phase 09, D-083; discovery in Phase 11)
@@ -48,7 +48,7 @@ Design hides paused shops from discovery (2512, 3789). Default: platform setting
 ## D-014 — Subscription expiry/suspension enforcement — Accepted (Phase 08; see D-076, D-078)
 Platform setting `ExpiredSubscriptionEnforcement` ∈ {`None`, `HideAndBlockNewOnlineBookings`} default `HideAndBlockNewOnlineBookings` for `Expired`/`Suspended`; future bookings are **never** altered or deleted; walk-ins remain allowed; `ExpiringSoon` threshold setting default 14 days. Covered by tests.
 
-## D-015 — Cancellation after the cutoff — Proposed (Phase 10/12)
+## D-015 — Cancellation after the cutoff — Accepted (Phase 10 API, D-087; UI Phase 12)
 Design's "cancellation request reviewed by the shop" (1781, 3503) is not in the spec state machine. Default: customer can cancel online until `CancellationCutoffMinutes` (setting, default 120) before start; after that the UI shows the policy and the shop's public contact; no `CancellationRequest` entity in v1 (DV-S10).
 
 ## D-016 — Booking statuses — Accepted (Phase 0)
@@ -605,3 +605,67 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - `GET …/slots?…&date=` gives the starts with local time, period and candidate professional ids.
   - **Gate order:** active shop (else 404) → `IShopBookability`, including the pause (else 200 `bookable:false` + reason) → published item (404 `availability.offer_not_found`), online-bookable (422) → the chosen professional is active in the shop (404) and assigned (422 `availability.professional_not_eligible`).
   - All reads use the public scope for that one shop, so a signed-in shop user sees another shop like anyone else. Schedules and busy times are loaded once for the whole range.
+
+## D-085 — Customer-owned rows (data-layer isolation for customers) — Accepted (Phase 10)
+- **Marker.** `ICustomerOwned : IShopOwned` (`Guid? CustomerId`). `ICurrentCustomer` is read lazily from the session claims, like the tenant.
+- **Read filter.** For customer-owned types, the named `tenant` filter gains one branch: the signed-in customer sees their own rows. It is one named filter, because named filters are combined with AND. Everyone else sees exactly what the shop rules allow.
+- **Write rule** (`EnforceCustomerOwned`, in `SaveChanges`):
+  - `CustomerId` never changes;
+  - a customer with no tenant or scope may insert or change a customer-owned row only when it is theirs, and the shop id must be set explicitly;
+  - anything else is left to the shop rules.
+- **Recheck scope.** A customer's create and reschedule read the booked shop's schedule and bookings through the read-only public scope for that one shop, so the recheck sees every booking of the professional. The scope closes before saving, which throws inside it. The architecture rule that limits `IPublicDataScope` now allows `*.Application.Customer` as well as `*.Application.Public`.
+- **Why not a bypass scope.** An unrestricted "customer scope" would depend on every handler remembering to filter by customer. The data layer enforces it instead (spec §7), and a raw attempt to change another customer's booking throws (integration test).
+
+## D-086 — Booking model — Accepted (Phase 10)
+- **Row.** A `Booking` (schema `bookings`) is shop-owned and customer-owned. It holds:
+  - one concrete professional (composite FK);
+  - the service or the package (exactly one, CHECK), with same-shop composite FKs added by SQL, because the snapshot keeps plain ids;
+  - the snapshot: item name ar/en, price, currency, duration, package items (JSON), and the professional's and customer's names;
+  - start/end as UTC instants (any client offset is normalized) and a generated `during tstzrange` column;
+  - status, channel (Online/WalkIn), the customer's note, the cancellation reason;
+  - the payment seam: `PaymentStatus = NotApplicable` and `AmountDue` = the snapshotted price (R-BKG-10);
+  - a reference: 8 unambiguous characters, unique;
+  - an `xmin` version.
+- **History** is an owned collection in `booking_history`: kind (Created/StatusChanged/Rescheduled), from, to, previous start, actor id and type, reason, time. Being owned, it saves with the booking and needs no shop-owned write of its own.
+- **Notes** (`booking_notes`) are shop-owned and never shown to the customer.
+- **Names.** The customer's name is snapshotted from `ICustomerDirectory` (name only; Identity keeps the mobile). A customer with no name is refused (422 `booking.profile_incomplete`). A walk-in has a typed name and no phone field in v1.
+- **Deletion guard.** A service in any booking, or inside a booked package, is in use (`IShopServiceUsage`): archive it, never delete it (R-SVC-02).
+
+## D-087 — State machine, time rules and customer policy — Accepted (Phase 10; applies D-006, D-015, D-016, D-035)
+- **Transitions.** Exactly D-016 (unit-tested for all 49 pairs). The shop moves Pending→Confirmed, Confirmed→Arrived/NoShow, Arrived→Completed, and Pending/Confirmed→CancelledByShop. Only the customer's own command cancels as the customer. Anything else is 409 `booking.invalid_transition`.
+- **Time rules:**
+  - Arrived from 60 minutes before the start;
+  - NoShow only once the start has passed;
+  - CancelledByShop needs a reason (≥ 3 characters);
+  - responses carry `allowedTransitions` (DV-S08).
+- **Initial status.** Online bookings are Confirmed, or Pending when the shop requires manual confirmation (D-006). A walk-in that starts now is Arrived; a later one is Confirmed (D-035).
+- **Customer policy:**
+  - cancel and reschedule are allowed until `CancellationCutoffMinutes` before the start (exact boundary, tested), else 422 `booking.cancellation_cutoff_passed`;
+  - reschedule keeps the snapshot and the status and needs an offered slot;
+  - while the shop is paused or its subscription is not in force, reschedule is refused (422 `booking.shop_not_accepting`) but cancel still works.
+- **Admins** cancel on the shop's behalf (CancelledByShop, actor PlatformAdmin, reason), audited.
+
+## D-088 — The recheck, walk-ins and "any professional" — Accepted (Phase 10; applies D-012)
+- **`IAvailabilityChecker`** (implemented by Availability) answers which candidates can take an exact time.
+  - `Online` is Phase 09's `IsBookable`: lead time, horizon, the slot grid and every collision.
+  - `WalkIn` is `AvailabilityEngine.IsFree`: the same collisions (hours ∩ working hours, breaks, time off, closures, bookings) at any minute, including "now".
+  - The booking being rescheduled is ignored (`BusyTime` now carries the booking id).
+  - `OutsideScheduleAsync` flags active bookings that no longer fit the schedule. The flag is computed at read time, never stored (DV-S22).
+- **Any professional.** Among the free eligible professionals, the one with the fewest active bookings that local day wins, then the stable id order. The booking stores that professional. If a concurrent booking takes the time first, the answer is 409 (no automatic retry with the next candidate in v1).
+- **Gates.** Online create checks the shop is active, `IShopBookability` (subscription and pause), the published offer, online-bookable, an active and eligible professional, then the recheck. Walk-ins skip the bookability gate (D-014) but use the same collisions.
+
+## D-089 — Integrity under concurrency: transaction, exclusion constraint, idempotency, outbox — Accepted (Phase 10)
+- **One transaction per command:**
+  1. claim the idempotency key and save;
+  2. recheck (public scope for customers);
+  3. insert or update the booking with its history and outbox row;
+  4. save and commit.
+- **Exclusion constraint.** `ex_bookings_professional_overlap EXCLUDE USING gist (professional_id WITH =, during WITH &&) WHERE status IN ('Pending','Confirmed','Arrived')`, added by SQL in the `Bookings` migration. Cancelled, completed and no-show bookings free the time.
+- **Lost races are 409 `booking.slot_unavailable`.** That covers an exclusion violation (23P01) and a deadlock that PostgreSQL breaks between concurrent overlapping inserts (40P01). Both mean the request lost to a conflicting write, and EF's transient wrapping is unwrapped. The global handler also maps both to 409 as a fallback.
+- **Idempotency** (`infra.idempotency_records`, key = user + scope + key, 24 h):
+  - the `Idempotency-Key` header is required for customer create and reschedule, and honoured for walk-ins;
+  - the same key with the same request replays the resulting booking (`Idempotent-Replayed: true`);
+  - the same key with another request is 422 `idempotency.key_reused`;
+  - a concurrent same-key request waits on the key, then replays (tested with 4 parallel requests: one booking);
+  - a failed command rolls its claim back, so the key can be retried.
+- **Outbox** (`infra.outbox_messages`). `booking.created`, `booking.rescheduled`, `booking.cancelled` and `booking.status_changed` are written in the same transaction. Payloads hold ids, times, status, channel and actor type only: no names, no phone numbers. The processor is Phase 15. A losing or refused command writes no row (tested).

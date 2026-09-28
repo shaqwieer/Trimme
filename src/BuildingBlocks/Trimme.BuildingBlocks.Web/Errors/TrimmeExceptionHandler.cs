@@ -23,6 +23,13 @@ internal sealed partial class TrimmeExceptionHandler(
             // A unique index lost a race the handler's own check could not see (two concurrent creates): 409, not 500.
             DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } =>
                 (StatusCodes.Status409Conflict, ApiErrorCodes.Conflict, "The resource already exists or was changed at the same time.", null),
+            // An exclusion constraint (a booking overlapping another, R-BKG-03) that a handler did not translate itself.
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.ExclusionViolation } } =>
+                (StatusCodes.Status409Conflict, ApiErrorCodes.Conflict, "The time is no longer available.", null),
+            // A deadlock PostgreSQL broke between two conflicting writers (the loser of a race), wrapped or not.
+            _ when exception is DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.DeadlockDetected } }
+                   || exception.InnerException is DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.DeadlockDetected } } =>
+                (StatusCodes.Status409Conflict, ApiErrorCodes.Conflict, "The resource was changed at the same time. Try again.", null),
             BadHttpRequestException badRequest =>
                 (badRequest.StatusCode, ApiErrorCodes.ForStatus(badRequest.StatusCode), "The request is invalid.", null),
             OperationCanceledException when httpContext.RequestAborted.IsCancellationRequested =>

@@ -27,7 +27,9 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
 
             var professionals = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
                 .Where(a => a.ShopId == shopId && a.ServiceId == id).Select(a => a.ProfessionalId).ToListAsync(cancellationToken);
-            return new BookableOffer(service.Id.Value, IsPackage: false, service.DurationMinutes, service.OnlineBookable, professionals);
+            return new BookableOffer(
+                service.Id.Value, IsPackage: false, service.DurationMinutes, service.OnlineBookable, professionals,
+                service.NameAr, service.NameEn, service.Price, service.Currency, []);
         }
 
         if (packageId is { } rawPackageId && serviceId is null)
@@ -53,7 +55,10 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
             var eligible = assignments.GroupBy(a => a.ProfessionalId)
                 .Where(g => g.Select(a => a.ServiceId).Distinct().Count() == items.Count)
                 .Select(g => g.Key).ToList();
-            return new BookableOffer(package.Id.Value, IsPackage: true, package.DurationMinutes, items.All(item => services[item].OnlineBookable), eligible);
+            return new BookableOffer(
+                package.Id.Value, IsPackage: true, package.DurationMinutes, items.All(item => services[item].OnlineBookable), eligible,
+                package.NameAr, package.NameEn, package.Price, package.Currency,
+                [.. items.Select(item => new BookableOfferItem(item.Value, services[item].NameAr, services[item].NameEn))]);
         }
 
         return null;

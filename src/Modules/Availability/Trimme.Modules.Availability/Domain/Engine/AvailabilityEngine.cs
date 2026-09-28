@@ -139,6 +139,36 @@ public static class AvailabilityEngine
             .Any(s => s.StartsAt == start);
     }
 
+    /// <summary>
+    /// The professional's free time over the business days <paramref name="from"/> − 1 … <paramref name="to"/>: open ∩
+    /// working hours, minus breaks and everything in <see cref="ProfessionalCalendar.Blocked"/>.
+    /// </summary>
+    public static InstantSet FreeTime(ShopCalendar shop, ProfessionalCalendar professional, DateOnly from, DateOnly to)
+    {
+        ArgumentNullException.ThrowIfNull(shop);
+        var clock = new ShopClock(shop.TimeZone);
+        var businessDays = Days(from.AddDays(-1), to);
+        var open = Windows(clock, shop.OpeningHours, businessDays.Where(d => !shop.Closures.Any(c => c.Contains(d))));
+        return FreeTime(clock, shop, professional, businessDays, open);
+    }
+
+    /// <summary>
+    /// The walk-in rule (D-088): the professional is free for the whole item. Any start minute is allowed, including
+    /// "now"; there is no lead time, horizon or grid.
+    /// </summary>
+    public static bool IsFree(ShopCalendar shop, ProfessionalCalendar professional, DateTimeOffset start, int durationMinutes)
+    {
+        ArgumentNullException.ThrowIfNull(shop);
+        if (durationMinutes <= 0)
+        {
+            return false;
+        }
+
+        var clock = new ShopClock(shop.TimeZone);
+        var item = new InstantRange(start, start.AddMinutes(durationMinutes));
+        return FreeTime(shop, professional, clock.Date(item.Start), clock.Date(item.End)).Contains(item);
+    }
+
     public static DayPeriod PeriodOf(int localHour) => localHour switch
     {
         >= 5 and < 12 => DayPeriod.Morning,

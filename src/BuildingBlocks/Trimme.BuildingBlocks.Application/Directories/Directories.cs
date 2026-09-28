@@ -17,6 +17,22 @@ public interface IProfessionalDirectory
 public sealed record ProfessionalSummary(ProfessionalId Id, ShopId ShopId, string NameAr, string NameEn, bool IsActive);
 
 /// <summary>
+/// Customers for other modules (implemented by the Identity module). It exposes the display name only: the customer's
+/// mobile number never leaves the Identity module except to authorized admin commands and notifications (spec §7).
+/// </summary>
+public interface ICustomerDirectory
+{
+    Task<CustomerSummary?> FindAsync(Guid customerId, CancellationToken cancellationToken);
+}
+
+/// <summary>A customer as other modules see it.</summary>
+/// <param name="Id">The customer's user id.</param>
+/// <param name="DisplayName">Null until the customer completes their profile.</param>
+/// <param name="PreferredLocale"><c>ar</c> or <c>en</c>.</param>
+/// <param name="IsActive">False once the account is disabled.</param>
+public sealed record CustomerSummary(Guid Id, string? DisplayName, string PreferredLocale, bool IsActive);
+
+/// <summary>
 /// Whether something still references a shop service, so it may not be deleted (R-SVC-02). Each module that references
 /// services registers one: Services (package items) now, Bookings from Phase 10. Deletion checks them all.
 /// </summary>

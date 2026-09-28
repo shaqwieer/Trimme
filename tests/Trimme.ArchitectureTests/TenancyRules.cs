@@ -167,7 +167,11 @@ public sealed partial class TenancyRules
     [GeneratedRegex(@"(\.Seeding(\.|$)|\.Jobs(\.|$)|^Trimme\.Api\.Hosting$)")]
     private static partial Regex SystemNamespace();
 
-    [GeneratedRegex(@"\.Application\.Public(\.|$)")]
+    /// <summary>
+    /// Public read models, and customer use cases (D-085): a customer's booking reads the booked shop's schedule and
+    /// bookings through the read-only public scope for that one shop.
+    /// </summary>
+    [GeneratedRegex(@"\.Application\.(Public|Customer)(\.|$)")]
     private static partial Regex PublicNamespace();
 }
 

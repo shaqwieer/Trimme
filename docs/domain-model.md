@@ -155,6 +155,17 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 - **ProfessionalTimeOff.** Kind (Vacation, Sick, Other), UTC start and end, whole days or times, and a note. The professional is fixed once recorded.
 - The **availability engine** (pure) turns these, the booking policy, the item's duration and the existing bookings into bookable slots (see `docs/availability-and-booking.md`).
 
+## Bookings (`bookings`)
+
+**Booking** (D-085 … D-089) is shop-owned and customer-owned: the shop and the booking's own customer can read it; nobody else.
+- One concrete professional, and a service or a package with a snapshot: names, price, currency, duration, package items, and the professional's and customer's names.
+- Start and end (UTC), a generated `during` range, status (D-016), channel (Online/WalkIn), the customer's note, the cancellation reason, `PaymentStatus = NotApplicable` and `AmountDue` (payment seam), an 8-character reference, `xmin`.
+- **History** (owned, `booking_history`): every creation, status change and reschedule, with actor and time.
+- **BookingNote**: the shop's internal notes.
+- The exclusion constraint refuses two overlapping active bookings (Pending, Confirmed, Arrived) of one professional.
+
+**Outbox and idempotency** (`infra`): `outbox_messages` (events written in the booking's transaction, ids only) and `idempotency_records` (user + operation + key → the booking produced, 24 h).
+
 ## Administration settings
 
 **PlatformSettings** (D-076) is one typed row: booking policy, reminder offset, expiring-soon threshold, enforcement (D-014), hide paused shops (D-013), region (fixed in v1) and map defaults. It is version-checked and audited with the changed fields; `migrate` inserts the defaults only when the row is missing.

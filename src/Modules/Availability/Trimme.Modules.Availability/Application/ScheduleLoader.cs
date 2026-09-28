@@ -24,10 +24,19 @@ internal sealed class ScheduleLoader(TrimmeDbContext db, IBookedTimeReader booki
 
     /// <summary>
     /// The shop calendar and one calendar per professional for local dates <paramref name="from"/>…<paramref name="to"/>,
-    /// with a day of margin on each side for windows that pass midnight.
+    /// with a day of margin on each side for windows that pass midnight. <c>ignoreBookingId</c> is a booking whose own
+    /// time does not count (the one being rescheduled); <c>includeBookings: false</c> leaves bookings out, to test a
+    /// booking against the schedule alone.
     /// </summary>
     public async Task<(ShopCalendar Shop, IReadOnlyList<ProfessionalCalendar> Professionals)> CalendarsAsync(
-        ShopId shopId, TimeZoneInfo zone, IReadOnlyList<ProfessionalId> professionalIds, DateOnly from, DateOnly to, CancellationToken cancellationToken)
+        ShopId shopId,
+        TimeZoneInfo zone,
+        IReadOnlyList<ProfessionalId> professionalIds,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken,
+        Guid? ignoreBookingId = null,
+        bool includeBookings = true)
     {
         var clock = new ShopClock(zone);
         var windowStart = clock.StartOfDay(from.AddDays(-1));
@@ -46,7 +55,9 @@ internal sealed class ScheduleLoader(TrimmeDbContext db, IBookedTimeReader booki
         var timeOff = await db.Set<ProfessionalTimeOff>().AsNoTracking()
             .Where(t => t.ShopId == shopId && ids.Contains(t.ProfessionalId) && t.EndsAt > windowStart && t.StartsAt < windowEnd)
             .ToListAsync(cancellationToken);
-        var busy = ids.Length == 0 ? [] : await bookings.GetBusyAsync(shopId, ids, windowStart, windowEnd, cancellationToken);
+        var busy = ids.Length == 0 || !includeBookings
+            ? []
+            : (await bookings.GetBusyAsync(shopId, ids, windowStart, windowEnd, cancellationToken)).Where(b => b.BookingId != ignoreBookingId).ToList();
 
         var calendars = ids.Select(id => new ProfessionalCalendar(
             id,

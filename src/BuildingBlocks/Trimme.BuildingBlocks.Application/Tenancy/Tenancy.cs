@@ -13,6 +13,16 @@ public interface ICurrentTenant
 }
 
 /// <summary>
+/// The signed-in customer (from the session claims), resolved lazily at query time like <see cref="ICurrentTenant"/>.
+/// The data layer lets a customer see and change only their own <c>ICustomerOwned</c> rows (D-085).
+/// </summary>
+public interface ICurrentCustomer
+{
+    /// <summary>The customer's user id, or <see langword="null"/> for anyone who is not a signed-in customer.</summary>
+    Guid? CustomerId { get; }
+}
+
+/// <summary>
 /// Explicit, isolated bypass of the tenant filter for platform administrators (R-TEN-05). Only admin use cases
 /// (<c>*.Application.Admin</c> namespaces, enforced by an architecture test) may depend on it, and it throws unless the
 /// caller is a PlatformAdmin. Dispose the returned scope to restore isolation.
@@ -66,7 +76,9 @@ public interface IShopDirectory
 /// <param name="Status">Lifecycle status.</param>
 /// <param name="TimeZone">IANA time zone of the shop's opening hours and availability (D-030).</param>
 /// <param name="OnlineBookingPausedAt">When the shop paused online booking; <see langword="null"/> while it is live (D-013).</param>
-public sealed record ShopSummary(ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status, string TimeZone, DateTimeOffset? OnlineBookingPausedAt)
+/// <param name="RequireManualConfirmation">Online bookings start Pending and the shop confirms them (D-006); otherwise Confirmed.</param>
+public sealed record ShopSummary(
+    ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status, string TimeZone, DateTimeOffset? OnlineBookingPausedAt, bool RequireManualConfirmation)
 {
     public bool OnlineBookingPaused => OnlineBookingPausedAt is not null;
 }

@@ -416,7 +416,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
             Task.FromResult<IReadOnlyList<BusyTime>>(
             [
                 .. Appointments.Where(a => professionalIds.Contains(a.ProfessionalId) && a.StartsAt < to && from < a.EndsAt)
-                    .Select(a => new BusyTime(a.ProfessionalId, a.StartsAt, a.EndsAt)),
+                    .Select(a => new BusyTime(a.BookingId, a.ProfessionalId, a.StartsAt, a.EndsAt)),
             ]);
 
         public Task<IReadOnlyList<BookedAppointment>> GetAppointmentsAsync(

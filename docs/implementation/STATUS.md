@@ -1,8 +1,8 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-28 (Session 5)
-- **Current phase:** 09 is complete and verified (Session 5), pushed to `main`, CI green (run 36411900841). Next: Phase 10, booking core.
-- **Platform progress:** 1000 / 1900 points (Phases 00–09)
+- **Current phase:** 10 is complete and verified (Session 5), committed locally and not pushed yet. Phase 09 is pushed and CI-green (run 36411900841). Next: Phase 11, public discovery.
+- **Platform progress:** 1100 / 1900 points (Phases 00–10)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -16,7 +16,7 @@
 | 07 Services & packages | [x] | 100/100 |
 | 08 Subscriptions & settings | [x] | 100/100 |
 | 09 Schedules & availability | [x] | 100/100 |
-| 10 Booking core | [ ] | 0/100 |
+| 10 Booking core | [x] | 100/100 |
 | 11 Public discovery | [ ] | 0/100 |
 | 12 Customer booking & account | [ ] | 0/100 |
 | 13 Shop dashboard | [ ] | 0/100 |
@@ -43,7 +43,7 @@
 | D-081 | Custom durations and back-dated starts need a SuperAdmin override with an explicit total price and a reason, fully audited (Session 4) |
 
 ## Open decisions
-None are blocking. Phase 09 recorded D-082 (engine), D-083 (pause) and D-084 (contracts and API) as its own design decisions. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
+None are blocking. Phase 09 recorded D-082…D-084 and Phase 10 D-085…D-089 as their own design decisions; D-012 and D-015 are now Accepted. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
 
 ## Blockers
 None.

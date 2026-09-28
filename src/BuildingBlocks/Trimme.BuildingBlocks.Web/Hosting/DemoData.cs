@@ -55,6 +55,21 @@ public static class DemoData
     ];
 }
 
+/// <summary>
+/// Demo customers (spec §20) with fake Saudi mobiles in the <c>+966 50 010 03xx</c> range; they sign in with the
+/// development OTP inbox. Their bookings are seeded by the Bookings module.
+/// </summary>
+public static class DemoCustomers
+{
+    public static readonly DemoCustomer Noura = new(Guid.Parse("0199a0de-5a10-7000-8000-000000000901"), "نورة السبيعي", "+966500100301");
+
+    public static readonly DemoCustomer Khalid = new(Guid.Parse("0199a0de-5a10-7000-8000-000000000902"), "خالد الدوسري", "+966500100302");
+
+    public static IReadOnlyList<DemoCustomer> All { get; } = [Noura, Khalid];
+}
+
+public sealed record DemoCustomer(Guid Id, string Name, string Mobile);
+
 public sealed record DemoProfessional(
     Guid Id,
     ShopId ShopId,

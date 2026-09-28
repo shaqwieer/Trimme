@@ -28,6 +28,7 @@ public sealed class TrimmeDbContext : DbContext
 
     private readonly IModelContributor[] _contributors;
     private readonly ICurrentTenant? _tenant;
+    private readonly ICurrentCustomer? _customer;
     private int _unrestrictedDepth;
     private bool _publicScope;
     private ShopId? _publicShopId;
@@ -37,9 +38,11 @@ public sealed class TrimmeDbContext : DbContext
     {
     }
 
-    public TrimmeDbContext(DbContextOptions<TrimmeDbContext> options, IEnumerable<IModelContributor> contributors, ICurrentTenant? tenant)
+    public TrimmeDbContext(
+        DbContextOptions<TrimmeDbContext> options, IEnumerable<IModelContributor> contributors, ICurrentTenant? tenant, ICurrentCustomer? customer = null)
         : base(options)
     {
+        _customer = customer;
         _contributors = contributors.ToArray();
         _tenant = tenant;
         ModelSignature = string.Join('|', _contributors.Select(c => c.GetType().FullName).Order(StringComparer.Ordinal));
@@ -55,6 +58,10 @@ public sealed class TrimmeDbContext : DbContext
     private bool HasTenant => _tenant?.ShopId is not null;
 
     private ShopId TenantShopId => _tenant?.ShopId ?? default;
+
+    private bool HasCustomer => _customer?.CustomerId is not null;
+
+    private Guid CurrentCustomerId => _customer?.CustomerId ?? default;
 
     // A public (anonymous-safe) read scope replaces the caller's tenant with one published shop; see EnterPublicScope.
     private bool PublicScope => _publicScope;
@@ -115,6 +122,7 @@ public sealed class TrimmeDbContext : DbContext
         });
 
         StoredMediaModel.Configure(modelBuilder.Entity<StoredMedia>());
+        ReliabilityModel.Configure(modelBuilder);
 
         foreach (var contributor in _contributors)
         {
@@ -172,7 +180,10 @@ public sealed class TrimmeDbContext : DbContext
             var member = typeof(ITenantMember).IsAssignableFrom(entityType.ClrType);
             if (shopOwned)
             {
-                Invoke(nameof(ApplyShopOwnedFilter), entityType.ClrType, modelBuilder);
+                Invoke(
+                    typeof(ICustomerOwned).IsAssignableFrom(entityType.ClrType) ? nameof(ApplyCustomerOwnedFilter) : nameof(ApplyShopOwnedFilter),
+                    entityType.ClrType,
+                    modelBuilder);
             }
 
             if ((shopOwned || member) && root is not null)
@@ -202,6 +213,19 @@ public sealed class TrimmeDbContext : DbContext
             entity => Unrestricted
                       || (PublicScope && HasPublicShop && entity.ShopId == PublicShopId)
                       || (!PublicScope && HasTenant && entity.ShopId == TenantShopId));
+
+    /// <summary>
+    /// As <see cref="ApplyShopOwnedFilter{TEntity}"/>, plus the signed-in customer's own rows (D-085). It is one named
+    /// filter, because named filters are combined with AND.
+    /// </summary>
+    private void ApplyCustomerOwnedFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ICustomerOwned =>
+        modelBuilder.Entity<TEntity>().HasQueryFilter(
+            TenantFilterName,
+            entity => Unrestricted
+                      || (PublicScope && HasPublicShop && entity.ShopId == PublicShopId)
+                      || (!PublicScope && HasTenant && entity.ShopId == TenantShopId)
+                      || (!PublicScope && HasCustomer && entity.CustomerId == CurrentCustomerId));
 
     /// <summary>Shops are a public directory, but a shop user sees only their own shop row (outside a public scope).</summary>
     private void ApplyTenantRootFilter<TEntity>(ModelBuilder modelBuilder)
@@ -234,10 +258,52 @@ public sealed class TrimmeDbContext : DbContext
         }
     }
 
+    /// <summary>
+    /// D-085: the customer id never changes, and a signed-in customer (with no tenant or scope) may insert or change a
+    /// customer-owned row only when it is theirs; the shop id must be set explicitly. Returns true when the customer rule
+    /// decided; false leaves the row to the shop rules.
+    /// </summary>
+    private bool EnforceCustomerOwned(EntityEntry entry, ICustomerOwned owned)
+    {
+        var name = entry.Metadata.ClrType.Name;
+        var customer = entry.Property(nameof(ICustomerOwned.CustomerId));
+        if (entry.State == EntityState.Modified && customer.IsModified && !Equals(customer.OriginalValue, customer.CurrentValue))
+        {
+            throw new TenantViolationException($"{name}.CustomerId cannot change.");
+        }
+
+        if (HasTenant || Unrestricted || !HasCustomer)
+        {
+            return false;
+        }
+
+        var mine = entry.State == EntityState.Added
+            ? owned.CustomerId == CurrentCustomerId
+            : customer.OriginalValue is Guid original && original == CurrentCustomerId;
+        switch (entry.State)
+        {
+            case EntityState.Added when !mine:
+                throw new TenantViolationException($"A customer can create a {name} only for themselves.");
+            case EntityState.Added when owned.ShopId.Value == Guid.Empty:
+                throw new TenantViolationException($"A {name} created by a customer needs an explicit ShopId.");
+            case EntityState.Modified or EntityState.Deleted when !mine:
+                throw new TenantViolationException($"Cannot change another customer's {name}.");
+            case EntityState.Modified when entry.Property(nameof(IShopOwned.ShopId)).IsModified
+                                           && !Equals(entry.Property(nameof(IShopOwned.ShopId)).OriginalValue, owned.ShopId):
+                throw new TenantViolationException($"{name}.ShopId cannot change.");
+        }
+
+        return true;
+    }
+
     private void EnforceShopOwned(EntityEntry entry, IShopOwned owned)
     {
         var name = entry.Metadata.ClrType.Name;
         var shop = entry.Property(nameof(IShopOwned.ShopId));
+        if (owned is ICustomerOwned customerOwned && EnforceCustomerOwned(entry, customerOwned))
+        {
+            return;
+        }
 
         switch (entry.State)
         {

@@ -31,6 +31,16 @@ public interface IShopOwned
     ShopId ShopId { get; }
 }
 
+/// <summary>
+/// A shop-owned row that also belongs to one customer, such as a booking (D-085). Besides the shop's own users, the
+/// customer it belongs to may read it and change it; nobody else. <see cref="CustomerId"/> is null for rows that have no
+/// customer account (walk-ins) and never changes.
+/// </summary>
+public interface ICustomerOwned : IShopOwned
+{
+    Guid? CustomerId { get; }
+}
+
 /// <summary>The tenant root entity (the shop itself). Exactly one entity type in the model implements it.</summary>
 public interface ITenantRoot
 {

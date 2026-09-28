@@ -48,12 +48,18 @@ public sealed class ApiSession : IDisposable
         string path,
         object? body,
         CancellationToken cancellationToken,
-        bool withCsrf = true)
+        bool withCsrf = true,
+        IReadOnlyDictionary<string, string>? headers = null)
     {
         using var request = new HttpRequestMessage(method, path);
         if (body is not null)
         {
             request.Content = JsonContent.Create(body);
+        }
+
+        foreach (var (name, value) in headers ?? new Dictionary<string, string>())
+        {
+            request.Headers.Add(name, value);
         }
 
         if (withCsrf && method != HttpMethod.Get && method != HttpMethod.Head)

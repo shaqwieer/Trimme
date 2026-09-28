@@ -420,6 +420,86 @@
         }
       }
     },
+    "/api/v1/bookings": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken.",
+        "operationId": "CreateBooking",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscriptions": {
       "get": {
         "tags": [
@@ -5604,6 +5684,831 @@
         }
       }
     },
+    "/api/v1/me/bookings": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "The customer\u0027s own bookings: upcoming (soonest first) or past (latest first).",
+        "operationId": "ListMyBookings",
+        "parameters": [
+          {
+            "name": "tab",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BookingsTab"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfCustomerBookingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "One of the customer\u0027s own bookings with the actions still allowed; another customer\u0027s id is 404.",
+        "operationId": "GetMyBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}/cancel": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Cancels the customer\u0027s booking until the cancellation cutoff (D-015).",
+        "operationId": "CancelMyBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}/reschedule": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Moves the booking to another offered slot until the cutoff (Idempotency-Key required).",
+        "operationId": "RescheduleMyBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}/calendar.ics": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "The booking as an iCalendar event (add to calendar).",
+        "operationId": "GetMyBookingCalendar",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The shop\u0027s bookings by local date range, status and professional; search by customer name or reference only.",
+        "operationId": "ListShopBookings",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BookingStatus"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfShopBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "One of the shop\u0027s bookings with its history and internal notes; never the customer\u0027s phone.",
+        "operationId": "GetShopBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/walk-in": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Records a walk-in with the same collision checks as online bookings (R-BKG-07).",
+        "operationId": "CreateWalkIn",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalkInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/transitions": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Moves the booking along the state machine (D-016); invalid transitions answer 409.",
+        "operationId": "TransitionShopBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/notes": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Adds an internal note (never shown to the customer).",
+        "operationId": "AddBookingNote",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingNoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings": {
+      "get": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "Bookings across shops (paged, latest first); search by customer name or reference.",
+        "operationId": "AdminListBookings",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BookingStatus"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminBookingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "One booking with its history.",
+        "operationId": "AdminGetBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings/{bookingId}/cancel": {
+      "post": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "Cancels on the shop\u0027s behalf with a reason (audited).",
+        "operationId": "AdminCancelBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCancelBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscription-plans": {
       "get": {
         "tags": [
@@ -6538,6 +7443,14 @@
           }
         }
       },
+      "ActorType": {
+        "enum": [
+          "Customer",
+          "ShopUser",
+          "PlatformAdmin",
+          "System"
+        ]
+      },
       "AddPlanPriceRequest": {
         "required": [
           "amount",
@@ -6560,6 +7473,53 @@
           }
         },
         "description": "A new price version in the platform currency, effective from today or a later date."
+      },
+      "AdminBookingResponse": {
+        "required": [
+          "shop",
+          "customerId",
+          "booking",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "shop": {
+            "$ref": "#/components/schemas/BookingShopResponse"
+          },
+          "customerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "booking": {
+            "$ref": "#/components/schemas/ShopBookingResponse"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingHistoryResponse"
+            }
+          }
+        },
+        "description": "A booking in the admin views (the shop\u0027s view plus the shop and the customer\u0027s id; no contact data)."
+      },
+      "AdminCancelBookingRequest": {
+        "required": [
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
       },
       "AdminCategoryResponse": {
         "required": [
@@ -7727,6 +8687,267 @@
           "Month"
         ]
       },
+      "BookedPackageItemResponse": {
+        "required": [
+          "serviceId",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "BookingChannel": {
+        "enum": [
+          "Online",
+          "WalkIn"
+        ]
+      },
+      "BookingEventKind": {
+        "enum": [
+          "Created",
+          "StatusChanged",
+          "Rescheduled"
+        ]
+      },
+      "BookingHistoryResponse": {
+        "required": [
+          "kind",
+          "fromStatus",
+          "toStatus",
+          "previousStartsAt",
+          "actorType",
+          "reason",
+          "occurredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BookingEventKind"
+          },
+          "fromStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
+            ]
+          },
+          "toStatus": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "previousStartsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "actorType": {
+            "$ref": "#/components/schemas/ActorType"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BookingItemResponse": {
+        "required": [
+          "serviceId",
+          "packageId",
+          "nameAr",
+          "nameEn",
+          "price",
+          "currency",
+          "durationMinutes",
+          "packageItems"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "packageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "packageItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookedPackageItemResponse"
+            }
+          }
+        },
+        "description": "What was booked, as it was at booking time (R-BKG-01)."
+      },
+      "BookingNoteRequest": {
+        "required": [
+          "text"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "BookingNoteResponse": {
+        "required": [
+          "id",
+          "text",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "text": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BookingProfessionalResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          }
+        }
+      },
+      "BookingShopResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          }
+        }
+      },
+      "BookingsTab": {
+        "enum": [
+          "Upcoming",
+          "Past",
+          null
+        ]
+      },
+      "BookingStatus": {
+        "enum": [
+          "Pending",
+          "Confirmed",
+          "Arrived",
+          "Completed",
+          "CancelledByCustomer",
+          "CancelledByShop",
+          "NoShow"
+        ],
+        "description": "The booking lifecycle (D-016)."
+      },
+      "BookingTransitionRequest": {
+        "required": [
+          "to",
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read."
+      },
       "BreakRequest": {
         "required": [
           "professionalId",
@@ -7837,6 +9058,25 @@
           }
         },
         "description": "A break; \u0060ProfessionalId\u0060 null means everyone. Weekly (weekdays) or once (date)."
+      },
+      "CancelBookingRequest": {
+        "required": [
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        }
       },
       "CatalogStateFilter": {
         "enum": [
@@ -8003,6 +9243,54 @@
           }
         },
         "description": "Bookings the change would overlap. Nothing is cancelled or messaged automatically (DV-S22): the shop sees them and\ndecides."
+      },
+      "CreateBookingRequest": {
+        "required": [
+          "shopSlug",
+          "serviceId",
+          "packageId",
+          "professionalId",
+          "startsAt",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "shopSlug": {
+            "type": "string"
+          },
+          "serviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "packageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A customer\u0027s online booking of a published service or package (exactly one of the two). Without a professional the\nserver picks a free one (D-012). The start must be one of the offered slots."
       },
       "CreatePlanRequest": {
         "required": [
@@ -8306,6 +9594,99 @@
             "type": "string"
           }
         }
+      },
+      "CustomerBookingAction": {
+        "enum": [
+          "Cancel",
+          "Reschedule"
+        ]
+      },
+      "CustomerBookingResponse": {
+        "required": [
+          "id",
+          "reference",
+          "shop",
+          "professional",
+          "item",
+          "startsAt",
+          "endsAt",
+          "status",
+          "channel",
+          "note",
+          "cancellationReason",
+          "paymentStatus",
+          "amountDue",
+          "allowedActions",
+          "cancellationCutoffMinutes",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "shop": {
+            "$ref": "#/components/schemas/BookingShopResponse"
+          },
+          "professional": {
+            "$ref": "#/components/schemas/BookingProfessionalResponse"
+          },
+          "item": {
+            "$ref": "#/components/schemas/BookingItemResponse"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/BookingChannel"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cancellationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentStatus": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amountDue": {
+            "type": "number",
+            "format": "double"
+          },
+          "allowedActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerBookingAction"
+            }
+          },
+          "cancellationCutoffMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A booking as its customer sees it, with what they may still do (cancel/reschedule until the cutoff, D-015)."
       },
       "DayOfWeek": {
         "enum": [
@@ -8829,6 +10210,36 @@
           }
         }
       },
+      "PagedResponseOfAdminBookingResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
       "PagedResponseOfAdminPackageListItem": {
         "required": [
           "items",
@@ -8949,6 +10360,66 @@
         },
         "description": "The paged envelope every list endpoint returns."
       },
+      "PagedResponseOfCustomerBookingResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
+      "PagedResponseOfShopBookingResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
       "PauseOnlineBookingRequest": {
         "required": [
           "reason"
@@ -8963,6 +10434,12 @@
           }
         },
         "description": "Pausing online booking; the optional reason is the shop\u0027s own note (\u2264 300 characters)."
+      },
+      "PaymentStatus": {
+        "enum": [
+          "NotApplicable"
+        ],
+        "description": "Payment seam (R-BKG-10): v1 takes no payments, so every booking is PaymentStatus.NotApplicable."
       },
       "PeriodKind": {
         "enum": [
@@ -9914,6 +11391,32 @@
           }
         }
       },
+      "RescheduleBookingRequest": {
+        "required": [
+          "startsAt",
+          "professionalId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Moves the booking to another offered start (and optionally another eligible professional). Send the version read."
+      },
       "ResetPasswordRequest": {
         "required": [
           "userId",
@@ -10102,6 +11605,108 @@
           "WaitingArea",
           "PrayerArea"
         ]
+      },
+      "ShopBookingDetailResponse": {
+        "required": [
+          "booking",
+          "history",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/ShopBookingResponse"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingHistoryResponse"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingNoteResponse"
+            }
+          }
+        }
+      },
+      "ShopBookingResponse": {
+        "required": [
+          "id",
+          "reference",
+          "customerName",
+          "channel",
+          "professional",
+          "item",
+          "startsAt",
+          "endsAt",
+          "status",
+          "note",
+          "cancellationReason",
+          "allowedTransitions",
+          "outsideSchedule",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/BookingChannel"
+          },
+          "professional": {
+            "$ref": "#/components/schemas/BookingProfessionalResponse"
+          },
+          "item": {
+            "$ref": "#/components/schemas/BookingItemResponse"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cancellationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allowedTransitions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingStatus"
+            }
+          },
+          "outsideSchedule": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically."
       },
       "ShopCategory": {
         "enum": [
@@ -11646,6 +13251,54 @@
           }
         }
       },
+      "WalkInRequest": {
+        "required": [
+          "serviceId",
+          "packageId",
+          "professionalId",
+          "startsAt",
+          "customerName",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "packageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A walk-in (D-035): without \u0060StartsAt\u0060 it starts now and is marked Arrived; otherwise it is Confirmed. The\ncustomer\u0027s name only. An \u0060Idempotency-Key\u0060 header is honoured when sent."
+      },
       "WhatsAppVerification": {
         "enum": [
           "Unverified",
@@ -11706,6 +13359,9 @@
       "name": "Shop: schedule"
     },
     {
+      "name": "Customer: bookings"
+    },
+    {
       "name": "Admin: subscriptions"
     },
     {
@@ -11725,6 +13381,12 @@
     },
     {
       "name": "Admin: services"
+    },
+    {
+      "name": "Shop: bookings"
+    },
+    {
+      "name": "Admin: bookings"
     },
     {
       "name": "Admin: settings"

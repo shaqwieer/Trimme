@@ -38,6 +38,26 @@ internal sealed class HttpCurrentTenant(IHttpContextAccessor accessor) : ICurren
     }
 }
 
+/// <summary>
+/// The signed-in customer from the session claims (validated against the database at authentication, like the tenant).
+/// Anything else (anonymous, shop users, admins, host commands) has no customer.
+/// </summary>
+internal sealed class HttpCurrentCustomer(IHttpContextAccessor accessor) : ICurrentCustomer
+{
+    public Guid? CustomerId
+    {
+        get
+        {
+            var user = accessor.HttpContext?.User;
+            return user is { Identity.IsAuthenticated: true }
+                   && user.FindFirst(TrimmeClaims.UserType)?.Value == UserTypes.Customer
+                   && Guid.TryParse(user.FindFirst(TrimmeClaims.Subject)?.Value, out var id)
+                ? id
+                : null;
+        }
+    }
+}
+
 /// <summary>Admin bypass (R-TEN-05): only a signed-in platform admin may open it.</summary>
 internal sealed class AdminDataScope(TrimmeDbContext db, ICurrentUser user) : IAdminDataScope
 {
