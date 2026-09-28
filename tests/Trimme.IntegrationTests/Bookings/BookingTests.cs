@@ -141,6 +141,25 @@ public sealed class BookingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task ServiceKeptOnlyInABookedPackageSnapshot_IsStillInUse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "bkg_usage_pkg", ct);
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct, packageId: w.Package), ct, HttpStatusCode.Created);
+
+        // The package drops the beard service; only the booked snapshot still names it.
+        var facial = (await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/services", new { nameAr = "وجه", price = 40m, durationMinutes = 20, onlineBookable = true }, ct), ct, HttpStatusCode.Created))
+            .GetProperty("id").GetGuid();
+        var package = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/packages/{w.Package}", ct), ct);
+        await OkAsync(w.OwnerA.PutAsync($"/api/v1/shop/packages/{w.Package}", new
+        {
+            nameAr = "باقة", price = 80m, durationMinutes = 60, serviceIds = new[] { w.Haircut, facial }, version = package.GetProperty("version").GetUInt32(),
+        }, ct), ct);
+        await FailsAsync(w.OwnerA.DeleteAsync($"/api/v1/shop/services/{w.Beard}", ct), HttpStatusCode.Conflict, "service.in_use", ct);
+    }
+
+    [Fact]
     public async Task Customers_SeeAndChangeOnlyTheirOwnBookings_ShopsOnlyTheirOwn()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -317,7 +336,22 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 10, 2), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 22), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, DateTimeOffset.UtcNow.AddMinutes(10), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        // Text over its limit is a field error, never a database error.
+        var longNote = new string('x', 501);
+        await FailsAsync(noura.SendAsync(HttpMethod.Post, "/api/v1/bookings", new { shopSlug = w.SlugA, serviceId = w.Haircut, startsAt = At(Target, 10), note = longNote }, ct, headers: Key()),
+            HttpStatusCode.BadRequest, "validation.too_long", ct);
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 12), customerName = "x", note = longNote }, ct),
+            HttpStatusCode.BadRequest, "validation.too_long", ct);
         (await OutboxAsync(w.Factory, ct)).ShouldBeEmpty("a refused booking writes nothing");
+
+        var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
+        var id = booking.GetProperty("id").GetGuid();
+        var version = booking.GetProperty("version").GetUInt32();
+        var longReason = new string('x', 301);
+        await FailsAsync(noura.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
+        await FailsAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
+        await FailsAsync(w.Admin.PostAsync($"/api/v1/admin/bookings/{id}/cancel", new { reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
+        (await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("status").GetString().ShouldBe("Confirmed");
     }
 
     [Fact]

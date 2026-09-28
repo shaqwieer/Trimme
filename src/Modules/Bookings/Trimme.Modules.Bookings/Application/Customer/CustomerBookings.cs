@@ -130,6 +130,11 @@ internal sealed class CreateOnlineBookingHandler(
             return BookingErrors.NotFound();
         }
 
+        if (BookingRules.TooLong(command.Note, BookingRules.MaxNoteLength, "note") is { } tooLong)
+        {
+            return tooLong;
+        }
+
         var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty });
         if (await ReplayAsync(customerId, command.IdempotencyKey, hash, cancellationToken) is { } replayed)
         {

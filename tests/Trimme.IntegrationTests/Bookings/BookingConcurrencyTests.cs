@@ -96,7 +96,8 @@ public sealed class BookingConcurrencyTests(PostgresFixture postgres)
             };
             var overlap = await RaceAsync(partial, ct);
             overlap.Other.ShouldBeEmpty();
-            overlap.Created.ShouldBeInRange(1, 2, "11:15 and 11:30 overlap each other and the package; only the package or a non-overlapping pair can win");
+            overlap.Created.ShouldBe(1, "the package (11:00–12:00), 11:15–11:45 and 11:30–12:00 all overlap each other: exactly one wins");
+            overlap.Conflicts.ShouldBe(2);
             (await ActiveBookingsAsync(w.Factory, w.Omar, ct)).ShouldBe(overlap.Created);
 
             // Whoever won, no two active bookings of Omar overlap.

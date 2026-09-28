@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-09-28 (end of Session 5: Phases 09 and 10)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 09 is pushed and CI-green (run 36411900841). Phase 10 is committed locally and **not pushed**; push only when the user asks.
-- **HEAD commit:** `feat: phase 10 booking core and integrity`. Run `git log --oneline -3`.
+- **HEAD commit:** a `fix:` follow-up on top of `41007e6` (`feat: phase 10 booking core and integrity`). Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 10 images (9 migrations, 9 seeders): web 3300, API 8080, DB 5434, Mailpit UI 8325.
 - **Current phase:** 10 is complete. Phase 11 has not started.
@@ -28,8 +28,8 @@
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
-| Unit / architecture / integration | PASS, 349 / 63 / 132 (106 new unit, 13 new integration) |
-| Concurrency suite ×20 | PASS, 20/20 runs (4 tests each) |
+| Unit / architecture / integration | PASS, 349 / 63 / 133 (106 new unit, 14 new integration) |
+| Concurrency suite ×20 | PASS, 20/20 runs (4 tests each), then 5/5 after the partial-overlap assertion was tightened to exactly one winner. Local only; CI runs it once |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 229 web tests (no web code changes; schema regenerated) |
 | Fresh `down -v` + `up --build` + `pnpm e2e` ×3 | PASS, **47/47 ×3** (the first compose build hit a transient Docker BuildKit snapshot error; the rebuild succeeded) |

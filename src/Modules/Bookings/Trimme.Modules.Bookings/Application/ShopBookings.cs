@@ -154,6 +154,11 @@ internal sealed class CreateWalkInHandler(
                 new Dictionary<string, string[]>(StringComparer.Ordinal) { ["customerName"] = ["validation.required"] });
         }
 
+        if (BookingRules.TooLong(command.Note, BookingRules.MaxNoteLength, "note") is { } tooLong)
+        {
+            return tooLong;
+        }
+
         var now = clock.GetUtcNow();
         var startsNow = command.StartsAt is null;
         var start = command.StartsAt ?? now;

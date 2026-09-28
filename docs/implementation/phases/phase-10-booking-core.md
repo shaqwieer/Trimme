@@ -157,12 +157,17 @@ Session 5, 2026-09-28.
 | Command | Result |
 |---|---|
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS — 0 warnings, 0 errors |
-| Unit / architecture / integration | PASS — 349 / 63 / 132 (Phase 09 end: 243 / 63 / 119). New: 106 unit (`Bookings/BookingDomainTests`, incl. 49-pair theories ×2) and 13 integration (`Bookings/*`) |
-| Concurrency suite ×20 (`--filter-class "*BookingConcurrencyTests"`) | 20/20 runs pass (4 tests each, 80/80) |
+| Unit / architecture / integration | PASS — 349 / 63 / 133 (Phase 09 end: 243 / 63 / 119). New: 106 unit (`Bookings/BookingDomainTests`, incl. 49-pair theories ×2) and 14 integration (`Bookings/*`) |
+| Concurrency suite ×20 (`--filter-class "*BookingConcurrencyTests"`) | 20/20 runs pass (4 tests each, 80/80); after tightening the partial-overlap assertion to exactly one winner, 5/5 more. Local only |
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
 | Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — 229 web tests (no web code changes; the OpenAPI schema was regenerated) |
 | Fresh `down -v` + `up --build`, `pnpm e2e` ×3 (regression; no new UI) | PASS — **47/47, 47/47, 47/47** (the first compose build hit a transient Docker BuildKit snapshot error, "parent snapshot does not exist"; the rebuild succeeded) |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` + `git` | PASS — the grep gates hit only excluded tests, Seeding and Geocoding; gitleaks no leaks on the committed code |
+
+**Commit:** `41007e6`, plus a `fix:` follow-up from the final review:
+- Over-long notes and reasons are now 400 `validation.too_long`, where the database had answered 500. This covers the online and walk-in note, and the customer, shop and admin cancel reason. Integration assertions were added for each path.
+- The partial-overlap race asserts exactly one winner.
+- A test covers a service kept only in a booked package's snapshot, which stays in use.
 
 **Found and fixed while verifying**
 - **Offsets.** Npgsql writes only UTC `DateTimeOffset` values to `timestamptz`, and clients send `+03:00`. Every booking instant is now normalized to UTC in the domain and in the query filters.

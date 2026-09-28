@@ -134,6 +134,12 @@ public static class BookingRules
 
     public static bool IsActive(BookingStatus status) => Active.Contains(status);
 
+    /// <summary>A free-text field over its limit (after trimming) is a field error, never a database error.</summary>
+    public static Error? TooLong(string? value, int max, string field) =>
+        value?.Trim().Length > max
+            ? Error.Validation("validation.failed", "The text is too long.", new Dictionary<string, string[]>(StringComparer.Ordinal) { [field] = ["validation.too_long"] })
+            : null;
+
     public static bool IsCancelled(BookingStatus status) => status is BookingStatus.CancelledByCustomer or BookingStatus.CancelledByShop;
 
     public static string NewReference() =>
@@ -330,6 +336,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
                 return BookingErrors.ReasonRequired();
         }
 
+        if (BookingRules.TooLong(reason, BookingRules.MaxReasonLength, "reason") is { } tooLong)
+        {
+            return tooLong;
+        }
+
         Move(to, actor, Clean(reason), now);
         return Result.Success();
     }
@@ -345,6 +356,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         if (now > StartsAt.AddMinutes(-cutoffMinutes))
         {
             return BookingErrors.CutoffPassed(cutoffMinutes);
+        }
+
+        if (BookingRules.TooLong(reason, BookingRules.MaxReasonLength, "reason") is { } tooLong)
+        {
+            return tooLong;
         }
 
         Move(BookingStatus.CancelledByCustomer, new BookingActor(customerId, ActorType.Customer), Clean(reason), now);
