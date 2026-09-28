@@ -1,7 +1,7 @@
 # TRIMME Session Handoff
 
 - **Updated:** 2026-09-28 (end of Session 5: Phase 09)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 08 is pushed and CI-green (run 36333734614). Phase 09 is committed locally and **not pushed**; push only when the user asks.
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 08 is pushed and CI-green (run 36333734614). Phase 09 is **pushed** at the user's request; CI is green (run 36411900841: web, backend incl. integration and migrations, gitleaks, compose + Playwright smoke).
 - **HEAD commit:** a `test:` follow-up on top of `a9a5aca` (`feat: phase 09 schedules and availability engine`). Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 09 images: web 3300, API 8080, DB 5434, Mailpit UI 8325.
@@ -43,7 +43,6 @@
 - D-012 and D-013 are annotated. New deviations: DV-A12 (pause confirmation) and DV-T11 (closed-day contrast). DV-A03, DV-A04 and DV-S22 are applied.
 
 ## Known issues or blockers
-- **Phase 09 is not pushed.** When the user asks, push and confirm CI is green, then record the run in the Phase 09 file and MASTER_PLAN.
 - **Watch item: integration.** One full integration run had 9 failures with no details kept. Keep full logs: `dotnet test … > it.log`. Earlier timing watch items continue.
 - **Phase 10 carry-overs:**
   - replace `NoBookedTime` with the Bookings reader (`services.Replace`);
@@ -61,7 +60,7 @@
 - **Ports:** 8025 is taken on this machine. Use `TRIMME_MAILPIT_PORT=8325` and `E2E_MAILPIT_URL=http://localhost:8325`.
 
 ## Exact next action
-1. If the user asks, push Phase 09 and confirm CI.
+1. CI for Phase 09 is green (run 36411900841); nothing to push.
 2. Start Phase 10 (`phases/phase-10-booking-core.md`). Re-validate first:
    - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Availability"`
    - `pnpm -C tests/E2E exec playwright test flows/shop-schedule.spec.ts` (with the E2E env vars)

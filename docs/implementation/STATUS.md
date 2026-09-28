@@ -1,7 +1,7 @@
 # TRIMME — Status
 
 - **Updated:** 2026-09-28 (Session 5)
-- **Current phase:** 09 is complete and verified (Session 5), committed locally and not pushed yet. Next: Phase 10, booking core.
+- **Current phase:** 09 is complete and verified (Session 5), pushed to `main`, CI green (run 36411900841). Next: Phase 10, booking core.
 - **Platform progress:** 1000 / 1900 points (Phases 00–09)
 
 | Phase | Status | Points |

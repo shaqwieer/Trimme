@@ -128,6 +128,7 @@ Session 5, 2026-09-28.
 | Fresh `down -v` + `up --build`, `pnpm e2e` ×3 | PASS — final stack (fresh, the last code): **47/47, 47/47, 47/47** (cold first run included). Earlier fresh stacks failed on real defects that are now fixed (see Found and fixed): 46/47 ×2 + 47 (form remount), 47, 46/47, 47 (edit reset on refresh), 45/47 (load timing + a Phase 06 sign-in under the same load), 47, 47, 46/47 (pause made the profile stale) |
 | No-transfer grep gate (D-069); R-NEG-08 grep gate | PASS — hits only in excluded tests, Seeding ("إجازة سنوية") and Geocoding (rerun on the committed code) |
 | gitleaks `dir` + `git` (v8.30.1, Docker) | PASS — no leaks; rerun on the committed code (33 commits) |
+| GitHub Actions on `c994a29` (pushed at the user's request) | PASS — run 36411900841: web, gitleaks, backend (incl. integration and migrations), compose + Playwright smoke |
 | Visual check `/ar/shop/schedule` at 1440 and 390 | RTL mirrored, two columns on desktop and one on a phone, no overflow. Fixed a mirrored `play` icon and LTR-wrapped time ranges |
 
 **Commit:** `a9a5aca`. A `test:` follow-up added the assertion that a paused shop leaves discovery by default and stays listed (still unbookable) with `HidePausedShopsFromDiscovery` off (D-013/D-083; Availability integration 5/5).
