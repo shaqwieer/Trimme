@@ -15,10 +15,11 @@ export function PublicShell({
   variant = 'minimal',
 }: {
   children: ReactNode;
-  variant?: 'marketing' | 'minimal';
+  variant?: 'landing' | 'marketing' | 'minimal';
 }) {
   const t = useTranslations('common');
   const nav = useTranslations('publicNav');
+  const hasMarketingChrome = variant === 'landing' || variant === 'marketing';
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -31,42 +32,52 @@ export function PublicShell({
             <Link href="/" className="rounded-field">
               <Logo height={38} priority />
             </Link>
-            {variant === 'marketing' && (
+            {hasMarketingChrome && (
               <nav aria-label={nav('label')} className="hidden md:block">
                 <ul className="flex items-center gap-1">
                   <li>
                     <Link
-                      href="/"
-                      className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-bold text-text-strong hover:bg-bg-subtle"
-                    >
-                      {nav('home')}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       href="/shops"
-                      className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-medium text-text-secondary hover:bg-bg-subtle"
+                      className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-bold text-text-strong hover:bg-bg-subtle"
                     >
                       {nav('shops')}
                     </Link>
                   </li>
                   <li>
                     <Link
-                      href="/discover"
+                      href={variant === 'landing' ? '/#how-it-works' : '/discover'}
                       className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-medium text-text-secondary hover:bg-bg-subtle"
                     >
-                      {nav('discover')}
+                      {variant === 'landing' ? nav('howItWorks') : nav('discover')}
                     </Link>
                   </li>
+                  {variant === 'landing' && (
+                    <li>
+                      <Link
+                        href="/#for-shops"
+                        className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-medium text-text-secondary hover:bg-bg-subtle"
+                      >
+                        {nav('forShops')}
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </nav>
             )}
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            {variant === 'marketing' && (
-              <ButtonLink href="/auth/sign-in" variant="primary" size="sm" className="hidden sm:inline-flex">
+            {hasMarketingChrome && (
+              <Link
+                href="/auth/sign-in"
+                className="hidden min-h-11 items-center px-2 text-label font-bold text-text-strong hover:text-text-link lg:inline-flex"
+              >
                 {nav('signIn')}
+              </Link>
+            )}
+            {variant === 'landing' && (
+              <ButtonLink href="/shops" variant="primary" size="sm" className="hidden sm:inline-flex">
+                {nav('findBarber')}
               </ButtonLink>
             )}
           </div>
@@ -75,7 +86,7 @@ export function PublicShell({
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
         {children}
       </main>
-      {variant === 'marketing' && <SiteFooter />}
+      {hasMarketingChrome && <SiteFooter />}
     </div>
   );
 }
