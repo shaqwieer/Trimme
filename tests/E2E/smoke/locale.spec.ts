@@ -5,9 +5,7 @@ test.describe('locales (R-WEB-04)', () => {
     await page.goto('/ar');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'احجز حلاقتك في دقيقة، بلا اتصال ولا انتظار',
-    );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('حلاقتك الجاية، احجزها في دقيقة.');
   });
 
   test('locale_en_is_ltr', async ({ page }) => {
@@ -15,7 +13,7 @@ test.describe('locales (R-WEB-04)', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Book your haircut in a minute, no calls, no waiting',
+      'Your next haircut, booked in a minute.',
     );
   });
 

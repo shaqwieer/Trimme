@@ -300,7 +300,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
                 key={key}
                 className="relative rounded-section border border-border bg-bg-tile p-6 shadow-e1"
               >
-                <span className="absolute end-5 top-5 font-latin text-[2rem] font-extrabold text-brand-150">
+                <span className="absolute end-5 top-5 font-latin text-[2rem] font-extrabold text-brand-600">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <span className="flex size-11 items-center justify-center rounded-button bg-navy-900 text-on-navy">

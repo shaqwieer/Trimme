@@ -83,6 +83,8 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-T09 | Design shows unavailable slots with reasons (slot legend) | Only bookable slots rendered (D-009); no disabled/reason slot state in `SlotGrid` | 3 — **applied** |
 | DV-T10 | Design dropdown includes "تغيير الحلاق" (change barber) | Not offered; sample menus use Confirm / Reschedule / Cancel only | 3 — **applied** |
 | DV-T11 | s-hours closed days drawn at 55% opacity, so their grey text drops below AA (axe colour-contrast) | Closed days keep full opacity; the switch and "مغلق" in secondary text carry the state | 9 — **applied** |
+| DV-T12 | Secondary text `#647484` on the grey note boxes (`bg-muted`, `bg-subtle`) is 4.35–4.38:1 | `text-secondary` → `#5F6F80` (D-039); `tokens.test.ts` checks the grey surfaces | 13 — **applied** |
+| DV-T13 | Landing "how it works" step numerals `01–03` in `brand-150` on the tile are 1.18:1 (axe checks them even when hidden from assistive tech) | `brand-600` (4.10:1; the numerals are 32 px bold, so 3:1 applies) | 13 CI follow-up — **applied** |
 
 ## DV-C — Copy/data inconsistencies not replicated
 

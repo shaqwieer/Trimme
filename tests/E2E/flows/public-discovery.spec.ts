@@ -38,9 +38,7 @@ test.describe('public discovery (Phase 11)', () => {
     page,
   }) => {
     await page.goto('/ar');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'احجز حلاقتك في دقيقة، بلا اتصال ولا انتظار',
-    );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('حلاقتك الجاية، احجزها في دقيقة.');
     await expect(page.getByLabel('تريمي بالأرقام')).toContainText('صالون شريك');
     const topRated = page
       .getByRole('region', { name: /الأعلى تقييماً/ })
@@ -61,7 +59,7 @@ test.describe('public discovery (Phase 11)', () => {
 
     await page.goto('/en');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      'Book your haircut in a minute, no calls, no waiting',
+      'Your next haircut, booked in a minute.',
     );
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.getByRole('link', { name: 'Barber House' }).first()).toHaveAttribute(
