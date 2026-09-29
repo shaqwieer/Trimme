@@ -73,6 +73,15 @@ describe('tokens_match_design_snapshot (R-WEB-01)', () => {
     },
   );
 
+  it.each(['color-text-secondary', 'color-text-tertiary'])(
+    'grey text %s meets AA on the grey surfaces (notes, tracks, hovered links)',
+    (name) => {
+      for (const surface of ['color-bg-muted', 'color-bg-subtle', 'color-bg-app']) {
+        expect(contrast(token(name), token(surface)), surface).toBeGreaterThanOrEqual(4.5);
+      }
+    },
+  );
+
   it('segmented-control labels meet AA on the grey track (text-tertiary on bg-subtle)', () => {
     expect(contrast(token('color-text-tertiary'), token('color-bg-subtle'))).toBeGreaterThanOrEqual(4.5);
   });

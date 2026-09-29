@@ -150,10 +150,11 @@ These colours were measured in the WCAG check. The design's identity colours are
 - `text-tertiary`: design `#8C9BAA` (2.84:1) → **`#5F6F80`** (5.16:1 on white, 4.89:1 on the page background).
 - `text-placeholder`: design `#A9B6C4` (2.06:1) → **`#5F6F80`**. Search fields sit on light grey, so `#687888` was rejected (4.30:1 on the page background).
 - Link text uses `brand-700` `#2C5C8C` (6.96:1). `brand-600` `#4A7FB5` (4.20:1) is kept for icons and dots only.
-- The inactive bottom-nav label uses `text-secondary` `#647484` (4.80:1) instead of `#98A7B5` (2.46:1).
+- The inactive bottom-nav label uses `text-secondary` (now `#5F6F80`, 5.16:1; see below) instead of `#98A7B5` (2.46:1).
+- `text-secondary`: `#647484` → **`#5F6F80`** (Phase 13 CI follow-up). `#647484` was 4.35:1 on `bg-muted` and 4.38:1 on `bg-subtle`, the grey note boxes and hovered links. `#5F6F80` is at least 4.59:1 on every light surface, including `bg-app`.
 - White text is never placed on `success-500` or `brand-500` (3.38:1 and 2.92:1).
 
-`src/styles/tokens.test.ts` enforces 4.5:1 for every text token on white and on the page background, and for every booking-status badge.
+`src/styles/tokens.test.ts` enforces 4.5:1 for every text token on white and on the page background, for the secondary and tertiary greys on `bg-muted`, `bg-subtle` and `bg-app`, and for every booking-status badge.
 
 ## D-040 — Numerals, calendar and number formatting — Accepted (Phase 02)
 This follows the design's numeral rule (design/analysis/01 §1.5):
@@ -752,7 +753,7 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - The response also lists every saved id, so hearts can be filled.
   - Saved rows whose shop left discovery, or whose professional was disabled, are kept but not shown.
   - `PUT`/`DELETE /me/favorites/shops/{id}` and `…/professionals/{id}` (PUT takes `shopId`) are idempotent, rate-limited (`favorites`), and 404 for a shop discovery does not list or a professional not active in that shop.
-- **Hearts.** Client islands on the shop and professional pages. They probe `GET /me/favorites` with a plain `fetch`, so an anonymous visitor's 401 starts no session refresh or redirect. Signed out, the heart is a sign-in link with `returnTo`; staff (403) see none. Toggling is optimistic with rollback.
+- **Hearts.** Client islands on the shop and professional pages. They probe `GET /me/favorites` with a plain `fetch`, so an anonymous visitor's 401 starts no session refresh or redirect. Hearts that mount together share the request in flight, but no settled answer is kept: the heart's own sign-in round trip returns to the page by client-side navigation, sometimes in under a second. Signed out, the heart is a sign-in link with `returnTo`; staff (403) see none. Toggling is optimistic with rollback.
 - **Module order.** Customers now comes after Professionals in `ModuleCatalog`, because the favorites model references the professional entity by name.
 
 ## D-099 — Live operations updates over SignalR — Accepted (Phase 13)

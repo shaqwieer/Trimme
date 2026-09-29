@@ -16,6 +16,9 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // The app's reduced-motion rule makes transitions instant, so axe never measures a colour mid-fade (a slot
+    // turning navy measured 2.37:1 on a fast CI runner).
+    contextOptions: { reducedMotion: 'reduce' },
   },
   projects: [
     {

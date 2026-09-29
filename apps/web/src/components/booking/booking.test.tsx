@@ -415,9 +415,7 @@ describe('booking page parts (DV-S13, DV-S10)', () => {
 });
 
 describe('FavoriteButton after signing in (client-side return)', () => {
-  it('asks again on the next mount instead of keeping the signed-out answer', async () => {
-    const now = vi.spyOn(Date, 'now');
-    now.mockReturnValue(1_000_000);
+  it('asks again on the next mount instead of keeping the signed-out answer, however fast the return', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(null, { status: 401 }));
@@ -425,8 +423,7 @@ describe('FavoriteButton after signing in (client-side return)', () => {
     expect(await screen.findByRole('link', { name: /سجّل الدخول لحفظ/ })).toBeInTheDocument();
     first.unmount();
 
-    // Signed in meanwhile; the page comes back without a reload.
-    now.mockReturnValue(1_010_000);
+    // Signed in meanwhile (a fast round trip, no time passes); the page comes back without a reload.
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ shopIds: ['s1'], professionalIds: [] }), {
         status: 200,
@@ -440,6 +437,24 @@ describe('FavoriteButton after signing in (client-side return)', () => {
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
     fetchMock.mockRestore();
-    now.mockRestore();
+  });
+
+  it('hearts that mount together share one request', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ shopIds: [], professionalIds: ['p1'] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    renderWithIntl(
+      <>
+        <FavoriteButton target={{ kind: 'shop', id: 's1' }} name="باربر هاوس" />
+        <FavoriteButton target={{ kind: 'professional', id: 'p1', shopId: 's1' }} name="عمر" />
+      </>,
+    );
+    expect(await screen.findByRole('button', { name: 'أضف باربر هاوس إلى المفضلة' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'أزل عمر من المفضلة' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockRestore();
   });
 });

@@ -36,7 +36,7 @@
   /* Text */
   --color-text-primary: #17212b;
   --color-text-strong: #3d5266;
-  --color-text-secondary: #647484; /* 4.80:1 on white, 4.55:1 on page */
+  --color-text-secondary: #5f6f80; /* was #647484 (4.35:1 on bg-muted); 5.16:1 on white, 4.59:1 on bg-app */
   --color-text-tertiary: #5f6f80; /* AA: design #8C9BAA (2.84:1) → 5.16:1 */
   --color-text-placeholder: #5f6f80; /* AA: design #A9B6C4 (2.06:1) → 5.16:1 on white, 4.89:1 on page */
   --color-text-disabled: #aebac6;
