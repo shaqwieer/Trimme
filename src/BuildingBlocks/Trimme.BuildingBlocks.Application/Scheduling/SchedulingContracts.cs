@@ -110,3 +110,37 @@ public sealed record BookedAppointment(
     string CustomerName,
     string ItemNameAr,
     string? ItemNameEn);
+
+/// <summary>
+/// The working plan of a shop's business days (implemented by the Availability module, D-100): opening windows and, per
+/// professional, working time, breaks and time off. A business day owns every window that opens on it, including its
+/// part after midnight. Reads through the caller's data scope (the shop's own tenant).
+/// </summary>
+public interface IShopDayPlanReader
+{
+    Task<IReadOnlyList<ShopDayPlan>> GetAsync(
+        ShopId shopId, string timeZone, IReadOnlyList<ProfessionalId> professionalIds, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+}
+
+public sealed record TimeWindow(DateTimeOffset Start, DateTimeOffset End)
+{
+    public int Minutes => (int)Math.Round((End - Start).TotalMinutes);
+}
+
+/// <param name="Date">The business day.</param>
+/// <param name="Closed">A closure covers it (the shop's hours do not apply).</param>
+/// <param name="Open">The shop's opening windows (empty when closed or not open that weekday).</param>
+/// <param name="Professionals">One plan per professional asked for.</param>
+public sealed record ShopDayPlan(DateOnly Date, bool Closed, IReadOnlyList<TimeWindow> Open, IReadOnlyList<ProfessionalDayPlan> Professionals)
+{
+    /// <summary>Whether an instant falls in this business day's opening windows.</summary>
+    public bool Contains(DateTimeOffset instant) => Open.Any(w => w.Start <= instant && instant < w.End);
+}
+
+/// <param name="ProfessionalId">The professional.</param>
+/// <param name="Working">When they work (open ∩ their hours).</param>
+/// <param name="Breaks">Breaks within the working time.</param>
+/// <param name="TimeOff">Time off within the working time.</param>
+/// <param name="AvailableMinutes">Minutes they can take bookings: the working time outside breaks and time off.</param>
+public sealed record ProfessionalDayPlan(
+    ProfessionalId ProfessionalId, IReadOnlyList<TimeWindow> Working, IReadOnlyList<TimeWindow> Breaks, IReadOnlyList<TimeWindow> TimeOff, int AvailableMinutes);

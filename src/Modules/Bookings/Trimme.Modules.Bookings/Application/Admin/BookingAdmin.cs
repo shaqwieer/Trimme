@@ -49,7 +49,7 @@ internal sealed class ListAdminBookingsHandler(TrimmeDbContext db, IAdminDataSco
             bookings = bookings.Where(b => b.ShopId == shopId);
         }
 
-        var filtered = ShopBookingReader.Filter(bookings, query.From, query.To, query.Status, null, query.Search).OrderByDescending(b => b.StartsAt).ThenBy(b => b.Id);
+        var filtered = ShopBookingReader.Filter(bookings, query.From, query.To, query.Status is { } status ? [status] : null, null, query.Search).OrderByDescending(b => b.StartsAt).ThenBy(b => b.Id);
         var total = await filtered.CountAsync(cancellationToken);
         var page = await filtered.Skip(query.Page.Skip).Take(query.Page.PageSize).ToListAsync(cancellationToken);
         return new PagedResponse<AdminBookingResponse>(await mapper.MapAsync(page, withHistory: false, cancellationToken), query.Page.Page, query.Page.PageSize, total);

@@ -105,7 +105,7 @@ Rationale in `MASTER_PLAN.md` §7.
 ## D-033 — Guest booking via QR / inline auth — Superseded by D-096 (Phase 12)
 Design: phone requested only at confirmation (2059, 2079). Under D-005 default, the review step embeds phone → OTP → name sub-steps before `POST /bookings`; wizard state preserved in the URL.
 
-## D-034 — Shop week view — Proposed (Phase 13)
+## D-034 — Shop week view — Accepted, refined by D-100 (Phase 13)
 Real week grid (per day × professional, minute-accurate) plus the design's density heatmap as a summary strip (DV-A19).
 
 ## D-035 — Walk-in initial status — Proposed (Phase 13)
@@ -754,3 +754,36 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - `PUT`/`DELETE /me/favorites/shops/{id}` and `…/professionals/{id}` (PUT takes `shopId`) are idempotent, rate-limited (`favorites`), and 404 for a shop discovery does not list or a professional not active in that shop.
 - **Hearts.** Client islands on the shop and professional pages. They probe `GET /me/favorites` with a plain `fetch`, so an anonymous visitor's 401 starts no session refresh or redirect. Signed out, the heart is a sign-in link with `returnTo`; staff (403) see none. Toggling is optimistic with rollback.
 - **Module order.** Customers now comes after Professionals in `ModuleCatalog`, because the favorites model references the professional entity by name.
+
+## D-099 — Live operations updates over SignalR — Accepted (Phase 13)
+- **Hub.** `/hubs/operations` sits outside `/api/v1`, is cookie-authenticated and has no client-callable methods.
+  - On connect the server picks the only group: `shop:{id}` for a shop user of an operable (not suspended) shop with `Shop.Bookings.Read`; `admins` for a platform admin with `Admin.Bookings.View`. Every other connection is closed at once (customers, anonymous, no permission).
+  - The shop status and the permissions are read at connect time from the connection's own user. The endpoint permission handler reads the HTTP context, and with long polling the hub runs after the request that started it has ended.
+  - `CloseOnAuthenticationExpiration` closes a connection when the access cookie expires. The web client then refreshes the session and reconnects with backoff (1 s … 30 s).
+  - A revoked session or a suspended shop keeps receiving events only until the short-lived access cookie expires.
+- **Origin.** Hub requests carrying an `Origin` other than the web app's (the CORS origins and `Web:PublicBaseUrl`) get 403: negotiate, WebSocket, SSE and long polling. This is our own middleware, because CORS does not cover WebSockets and the framework's allow-list is skipped under the test server. Local compose now derives the web origin from `TRIMME_WEB_PORT`.
+- **Source of events.** An EF interceptor turns the outbox messages a unit of work wrote into events after the commit:
+  - outside an explicit transaction, after the save;
+  - inside one, on commit;
+  - dropped on rollback or failure.
+  Every booking writer is covered without calling anything. Modules project their own outbox payloads (`IOperationsEventProjector`; Bookings maps `booking.*`). A publish failure is logged, never thrown.
+- **Contract.** `bookingChanged { kind, shopId, bookingId, professionalId, status, startsAt, endsAt }`: ids, times and status only, never a customer id, name or phone (R-NEG-04). The outbox payload's `customerId` is dropped. Clients refetch what they show through the API.
+- **Transports.** WebSockets, SSE and long polling all deliver through the Next.js `/hubs` rewrite in local compose (spike: 58–720 ms, 34–80 ms and 52 ms). Production Nginx must forward `/hubs` with the WebSocket upgrade headers (Phase 17).
+- **Scale.** A single instance needs no backplane; scale-out (Redis backplane or Azure SignalR) is a Phase 17 note.
+- **Matrix.** The endpoint authorization matrix covers `/api/v1` only; the hub has its own tests (`RealtimeTests`: isolation, rejection, origins).
+
+## D-100 — The shop operations board: business days, load and the week view — Accepted (Phase 13; refines D-034)
+- **Business days.** A booking belongs to the day whose opening window contains its start, so 00:30 in a window that opened on Thursday is Thursday's. Outside every window, its local date decides.
+  - The Availability module exposes each business day's plan (`IShopDayPlanReader`): opening windows, and per professional their working time (open ∩ their hours), breaks and time off, from the engine's own rules (`AvailabilityEngine.DayOf`).
+  - The overview's "today", the calendar columns and the density strip all use it; the day view's axis runs past 24:00 when a window does.
+- **Overview.**
+  - KPIs: the day's bookings without cancellations, and the previous day's; bookings still pending from now on (any day); completed; no-shows; cancellations; free capacity.
+  - Load is minutes-based: each professional's booked minutes against their available minutes (working time outside breaks and time off).
+  - Free capacity is the sum of what remains, never below zero per professional. "On leave" means time off takes all of that day's working time.
+  - The hourly chart covers the last seven business days by local starting hour, without cancellations.
+- **Calendar.**
+  - Day view: one minute-accurate column per professional (DV-S19), with off-shift, breaks and time off shaded. Free half-hours link to a prefilled walk-in; the walk-in page offers the exact free times.
+  - Week view (refines D-034): seven day columns with every booking, overlapping ones side by side in lanes (one professional on demand), plus the design's density strip (day parts × days; closed days hatched).
+  - Cancellations are not drawn.
+- **Appointments list.** Any of several statuses. The chip counts use every other filter, and the cancelled chip counts both cancellation statuses (DV-S08). Search is by name or reference only (DV-S18). The detail drawer shows only the API's `allowedTransitions`, applied optimistically and rolled back on a refusal.
+- **Walk-in options.** `GET /shop/availability/walk-in` returns the active professionals assigned to the item (every item of a package), whether each is free now for the whole duration, the next free start and the day's free starts on the slot grid. These are the command's own collision rules. Online-only rules (lead time, horizon, the online-bookable flag, the pause) do not apply at the desk. The date may be up to 60 days ahead.

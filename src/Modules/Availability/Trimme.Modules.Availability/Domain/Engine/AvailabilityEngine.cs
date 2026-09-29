@@ -21,6 +21,12 @@ public sealed record ProfessionalCalendar(
     IReadOnlyList<BreakRule> Breaks,
     IReadOnlyList<InstantRange> Blocked);
 
+/// <summary>One professional's business day (<see cref="AvailabilityEngine.DayOf"/>).</summary>
+/// <param name="Working">Open and working.</param>
+/// <param name="Breaks">Breaks within the working time.</param>
+/// <param name="Blocked">Time off (and bookings, when loaded) within the working time.</param>
+public sealed record ProfessionalDay(InstantSet Working, InstantSet Breaks, InstantSet Blocked);
+
 /// <summary>Slots wanted for the local dates <see cref="From"/>…<see cref="To"/> (inclusive), for an item of <see cref="DurationMinutes"/>.</summary>
 public sealed record AvailabilityQuery(DateOnly From, DateOnly To, int DurationMinutes, DateTimeOffset Now, BookingPolicy Policy);
 
@@ -199,6 +205,33 @@ public static class AvailabilityEngine
         }
 
         return (false, null, null);
+    }
+
+    /// <summary>
+    /// The shop's opening windows of one business day: every window that opens on <paramref name="day"/>, including its
+    /// part after midnight; none when the day is closed.
+    /// </summary>
+    public static InstantSet OpenWindows(ShopCalendar shop, DateOnly day)
+    {
+        ArgumentNullException.ThrowIfNull(shop);
+        return shop.Closures.Any(c => c.Contains(day)) ? InstantSet.Empty : Windows(new ShopClock(shop.TimeZone), shop.OpeningHours, [day]);
+    }
+
+    /// <summary>
+    /// A professional's plan for one business day, for the shop's calendar and load (D-100): when they work (the shop's
+    /// windows of that day ∩ their hours), and within that the breaks and the blocked time (time off; bookings too when the
+    /// calendar was loaded with them). Breaks are dated by the calendar day they fall on, so the day after is included
+    /// for windows past midnight.
+    /// </summary>
+    public static ProfessionalDay DayOf(ShopCalendar shop, ProfessionalCalendar professional, DateOnly day)
+    {
+        ArgumentNullException.ThrowIfNull(shop);
+        ArgumentNullException.ThrowIfNull(professional);
+        var clock = new ShopClock(shop.TimeZone);
+        var working = OpenWindows(shop, day).Intersect(Windows(clock, professional.WorkingHours ?? shop.OpeningHours, [day]));
+        var breaks = InstantSet.From(professional.Breaks.SelectMany(b =>
+            new[] { day, day.AddDays(1) }.Where(b.AppliesOn).Select(d => new InstantRange(clock.At(d, b.StartMinute), clock.At(d, b.EndMinute)))));
+        return new ProfessionalDay(working, breaks.Intersect(working), InstantSet.From(professional.Blocked).Intersect(working));
     }
 
     public static DayPeriod PeriodOf(int localHour) => localHour switch

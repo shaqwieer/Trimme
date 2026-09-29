@@ -276,4 +276,30 @@ public sealed class AvailabilityEngineTests
         Find(shop, [Pro(A)], Sunday, Sunday, 30, Policy(step: 7)).ShouldBeEmpty("unsupported step");
         Find(shop, [Pro(A)], Sunday.AddDays(1), Sunday, 30).ShouldBeEmpty("reversed range");
     }
+
+    [Fact]
+    public void DayOf_GivesTheBusinessDaysWorkingTime_BreaksAndTimeOff_IncludingTheHoursAfterMidnight()
+    {
+        // Thursday 18:00 until 01:00 on Friday; a break on Friday 00:00–00:15 still belongs to Thursday's window.
+        var thursday = Sunday.AddDays(4);
+        var shop = Shop(Day(DayOfWeek.Thursday, M(18), M(25)));
+        var pro = Pro(
+            A,
+            hours: [Day(DayOfWeek.Thursday, M(19), M(25))],
+            breaks: [new BreakRule([DayOfWeek.Friday], null, 0, M(0, 15))],
+            blocked: [new InstantRange(Local(thursday, 20, 0), Local(thursday, 21, 0))]);
+
+        var day = AvailabilityEngine.DayOf(shop, pro, thursday);
+
+        day.Working.Ranges.ShouldBe([new InstantRange(Local(thursday, 19, 0), Local(thursday.AddDays(1), 1, 0))]);
+        day.Breaks.Ranges.ShouldBe([new InstantRange(Local(thursday.AddDays(1), 0, 0), Local(thursday.AddDays(1), 0, 15))]);
+        day.Blocked.Ranges.ShouldBe([new InstantRange(Local(thursday, 20, 0), Local(thursday, 21, 0))]);
+        AvailabilityEngine.OpenWindows(shop, thursday).Ranges.ShouldBe([new InstantRange(Local(thursday, 18, 0), Local(thursday.AddDays(1), 1, 0))]);
+
+        // Friday's own day has no window, and a closure empties Thursday.
+        AvailabilityEngine.DayOf(shop, pro, thursday.AddDays(1)).Working.Ranges.ShouldBeEmpty();
+        var closed = new ShopCalendar(Riyadh, shop.OpeningHours, [new DateRange(thursday, thursday)]);
+        AvailabilityEngine.DayOf(closed, pro, thursday).Working.Ranges.ShouldBeEmpty();
+        AvailabilityEngine.OpenWindows(closed, thursday).Ranges.ShouldBeEmpty();
+    }
 }

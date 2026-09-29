@@ -9,6 +9,7 @@ using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
+using Trimme.BuildingBlocks.Web.Realtime;
 using Trimme.BuildingBlocks.Web.Security;
 
 namespace Trimme.Api.Hosting;
@@ -47,6 +48,7 @@ internal static class ApiServices
         services.AddTrimmeCors(configuration);
         services.AddTrimmeRateLimiting(configuration);
         services.AddTrimmePublicCache();
+        services.AddTrimmeRealtime(configuration);
         services.Configure<ForwardedHeadersOptions>(options => ConfigureForwardedHeaders(options, configuration));
 
         services.AddTrimmeApplication();

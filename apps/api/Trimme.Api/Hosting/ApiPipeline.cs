@@ -7,6 +7,7 @@ using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Media;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
+using Trimme.BuildingBlocks.Web.Realtime;
 using Trimme.BuildingBlocks.Web.Security;
 
 namespace Trimme.Api.Hosting;
@@ -31,6 +32,7 @@ internal static class ApiPipeline
         }
 
         app.UseCors(CorsSetup.PolicyName);
+        app.UseOperationsHubOrigins();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseMiddleware<CsrfProtectionMiddleware>();
@@ -38,6 +40,9 @@ internal static class ApiPipeline
         app.UseOutputCache();
 
         MapPlatformEndpoints(app);
+
+        // Live operations updates (D-099): outside /api/v1, cookie-authenticated; the hub picks the group itself.
+        app.MapOperationsHub();
 
         // Default deny (R-AUTH-09): every feature endpoint requires a signed-in user unless it explicitly allows
         // anonymous access, and every unsafe method requires the CSRF header.

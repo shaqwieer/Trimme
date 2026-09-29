@@ -93,6 +93,12 @@ public sealed record ShopBookingResponse(
 
 public sealed record BookingNoteResponse(Guid Id, string Text, DateTimeOffset CreatedAt);
 
+/// <summary>How many bookings each status chip would list (every filter but the status applied).</summary>
+public sealed record ShopBookingCounts(int All, int Pending, int Confirmed, int Arrived, int Completed, int Cancelled, int NoShow);
+
+/// <summary>A page of the shop's bookings, with the status chips' counts.</summary>
+public sealed record ShopBookingListResponse(IReadOnlyList<ShopBookingResponse> Items, int Page, int PageSize, int Total, ShopBookingCounts Counts);
+
 public sealed record ShopBookingDetailResponse(ShopBookingResponse Booking, IReadOnlyList<BookingHistoryResponse> History, IReadOnlyList<BookingNoteResponse> Notes);
 
 /// <summary>A booking in the admin views (the shop's view plus the shop and the customer's id; no contact data).</summary>

@@ -63,6 +63,20 @@ public sealed class OpenApiContractTests(PostgresFixture postgres)
         statuses.ShouldBe(["NotApplicable"]);
     }
 
+    /// <summary>R-NEG-03: no bulk export of bookings or customer data (no export, CSV or download operation).</summary>
+    [Fact]
+    public async Task OpenApi_has_no_export_surface()
+    {
+        var path = Path.Combine(RepositoryRoot(), "apps", "api", "openapi", "v1.json");
+        var document = JsonNode.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken))!;
+
+        var paths = document["paths"]!.AsObject().Select(p => p.Key).ToList();
+        paths.ShouldNotContain(p => p.Contains("export", StringComparison.OrdinalIgnoreCase)
+                                    || p.Contains("csv", StringComparison.OrdinalIgnoreCase)
+                                    || p.Contains("download", StringComparison.OrdinalIgnoreCase)
+                                    || p.Contains("xlsx", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string Normalize(string json) =>
         JsonNode.Parse(json)!.ToJsonString(Indented).ReplaceLineEndings("\n");
 

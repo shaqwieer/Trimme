@@ -36,6 +36,7 @@ internal static class AvailabilityEndpoints
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
     private const string ScheduleRead = "Shop.Schedule.Read";
     private const string ScheduleManage = "Shop.Schedule.Manage";
+    private const string WalkIn = "Shop.Bookings.CreateWalkIn";
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -45,6 +46,13 @@ internal static class AvailabilityEndpoints
 
     private static void MapShop(IEndpointRouteBuilder api)
     {
+        api.MapGet("/shop/availability/walk-in", async (Guid? serviceId, Guid? packageId, DateOnly? date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetWalkInOptionsQuery(serviceId, packageId, date), ct)).ToHttpResult())
+            .RequirePermission(WalkIn).WithTags("Shop: bookings")
+            .WithName("GetWalkInOptions")
+            .WithSummary("The professionals who can do a walk-in of this service or package: free now, next free time and the day's free starts.")
+            .Produces<WalkInOptionsResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+
         var schedule = api.MapGroup("/shop/schedule").WithTags("Shop: schedule");
         schedule.MapGet("/", async (IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopScheduleQuery(), ct) is { } found ? TypedResults.Ok(found) : ScheduleErrors.ShopNotFound().ToProblem())

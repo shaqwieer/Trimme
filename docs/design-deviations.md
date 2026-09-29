@@ -17,7 +17,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S05 | Hardcoded plan "سنوي — 2,400 ر.س", fixed renewal presets; Operations Manager has subscription rights | 4466, 2992–3001, 4533–4538, 4572 | §7, §15 | Plans/prices/durations from the API (SuperAdmin-managed, versioned); price snapshot on subscriptions; overrides SuperAdmin-only. | 8 | **applied** (Phase 08): plan picker and durations from `/admin/subscription-plans`, read-only price preview of the version in force on the start date, "Plan period (n months)" or a custom number of days; Operations Manager assigns/renews/suspends, SuperAdmin alone manages plans and overrides |
 | DV-S06 | Reminder **3 hours** before (and a day-before reminder in notifications) | 1568, 1628, 3574, 4555, 4113 | §16 30 min | Setting `ReminderOffsetMinutes` (default 30) for customer and professional; copy reads the configured value. | 15 | planned |
 | DV-S07 | Unavailable slots rendered disabled with reason toasts | 3928–3937, 4000 | §11 only bookable slots | API returns only bookable slots; UI groups by period and shows an empty-period message. | 9/12 | API **applied** (Phase 09: slots carry a period; D-082); UI in Phase 12 |
-| DV-S08 | Shop drawer offers all status actions for every booking; no "Confirm" action; filter chips omit Arrived/No-show | 4299–4305, 2371–2376, 2389, 4262 | §11 state machine | Render only API `allowedTransitions`; add Confirm; cancel with reason dialog; all status chips. | 13 | API **applied** (Phase 10: `allowedTransitions`, Confirm, reason required, D-087); UI Phase 13 |
+| DV-S08 | Shop drawer offers all status actions for every booking; no "Confirm" action; filter chips omit Arrived/No-show | 4299–4305, 2371–2376, 2389, 4262 | §11 state machine | Render only API `allowedTransitions`; add Confirm; cancel with reason dialog; all status chips. | 13 | **applied** (Phase 10 API, Phase 13 UI): the drawer shows only `allowedTransitions` (Confirm included when pending), cancelling asks for a reason, every status has a chip with its count (cancellations together) |
 | DV-S09 | Single "ملغي" status | 3636, 4299 | §11 | `CancelledByCustomer` / `CancelledByShop` (shared badge colour, distinct sub-labels). | 10 | planned |
 | DV-S10 | "Cancellation request" after cutoff reviewed by shop (copy only) | 1779, 3501 | §11 | No online cancel after cutoff (setting); show policy + shop contact (D-015). | 12 | API **applied** (Phase 10); UI **applied** (Phase 12): after the cutoff the booking page hides cancel/reschedule, says the online window has closed and shows the shop's phone (web test `BookingPolicy`) |
 | DV-S11 | Home "popular services" tiles show a price with no shop | 1040–1048, 3755 | §10 | Category shortcuts with "from X ر.س" aggregated from nearby shops. | 11 | **applied** (Phase 11): `/discover` tiles are platform categories with the lowest price among nearby listed shops and the shop count (`GET /public/categories/popular`, D-091) |
@@ -27,8 +27,8 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S15 | Reviews show full customer names | 3819–3821, 1406 (vs promise at 1909) | privacy | First name + surname initial (D-017). | 11 | **applied** (Phase 11): reviews store and show "خالد د." (D-092) |
 | DV-S16 | Shop profile lock state hardcoded | 4387–4399 | §13 | `editableFields` from admin policy per shop, enforced server-side. | 6 | **applied** (Phase 06): admin "Shop edit permissions" card; shop settings disable locked fields with a shield note; API 403 `shop.profile_field_locked` (D-065) |
 | DV-S17 | Admin customer phone reveal described but not controlled | 2954–2957 | §7, §14 | Masked phone + "إظهار الرقم" with reason → audited, permission-gated. | 14 | planned |
-| DV-S18 | Shop search "by customer name or booking number" | 2141 | §7 | Backend search matches name/booking reference only, never phone. | 13 | API **applied** (Phase 10: `GET /shop/bookings?search=` matches the name or the 8-character reference); UI Phase 13 |
-| DV-S19 | Calendar in fixed 30-minute rows | 4229–4240, 4191, 4345 | §11 5-min step | Minute-accurate positioning. | 13 | planned |
+| DV-S18 | Shop search "by customer name or booking number" | 2141 | §7 | Backend search matches name/booking reference only, never phone. | 13 | **applied** (Phase 10 API, Phase 13 UI): the appointments search says "by customer name or booking number" and sends only that |
+| DV-S19 | Calendar in fixed 30-minute rows | 4229–4240, 4191, 4345 | §11 5-min step | Minute-accurate positioning. | 13 | **applied** (Phase 13): the day and week views place bookings by the minute; 30-minute lines are visual guides only |
 | DV-S20 | Payment-method row in profile settings ("طريقة الدفع") | 4139 | §2 no payment | Read-only info row "الدفع في المحل" (no payment settings screen). | 12 | **applied** (Phase 12): `/account` shows "طريقة الدفع — في المحل" as a read-only row |
 | DV-S21 | Discovery hiding on pause/expiry stated as fixed behaviour | 2510, 2522, 2190, 4529, 4616, 3787 | §15 explicit settings | Settings-driven (D-013, D-014). | 8/9/11 | **applied** (Phase 11): discovery lists only shops `IShopBookability` makes visible; the page of a hidden shop stays reachable, says why booking is off and is not indexed |
 | DV-S22 | Professional time off auto-notifies customers to reschedule | 4368 | §16 events | No automatic customer messages; affected bookings flagged to shop and admin. | 9 | **applied** (Phase 09): the design's "سيُنبَّه العملاء…" copy is not used; the time-off, break and closure dialogs list overlapping bookings and say nothing is cancelled or sent. Persisting the flag on bookings: Phase 10 |
@@ -56,7 +56,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A16 | Audit log page with filters | §14 | 14 |
 | DV-A17 | Platform settings page | §14, §15 | 8/14 |
 | DV-A18 | Service categories & packages admin | §7, §10, §14 | 7 |
-| DV-A19 | Real week calendar grid | §13 | 13 |
+| DV-A19 | Real week calendar grid | §13 | 13 — **applied** (D-100): seven day columns with every booking (side by side when they overlap) plus the design's density strip |
 | DV-A20 | Confirm dialogs and save bars on editable screens | general | 3+ — `ConfirmDialog` built (Phase 03); save bars arrive with the editable screens |
 | DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 — sign-in (same frame as sign-up, no terms), profile completion (name, language, terms) **applied** Phase 04; **location applied** Phase 11: `/onboarding/location` (the c-auth permission frame) and the `/discover` location sheet, with "allow" and a searchable list of districts that have listed shops (D-095) |
 | DV-A22 | Security/session settings (session list, revoke all), staff forgot/reset password | §9, §12 | 4 — **applied**: `/account/security`, `/auth/staff/sign-in`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/accept-invite`, all composed from the c-auth card and design-system parts |
@@ -108,6 +108,15 @@ DV-C07 — Account and appointments (Phase 12):
 - Upcoming cards show "التفاصيل" and "إعادة جدولة" as in the design; past cards show "قيّم الزيارة", "تم التقييم ★ n" or "إعادة الحجز", depending on the API's `allowedActions`.
 
 DV-C02 — The OTP help text offers "أو اطلب الرمز عبر رسالة نصية" (request by SMS). v1 has no SMS channel (WhatsApp only, D-005), so the copy asks the user to check WhatsApp and request a new code after the countdown. Phase 04.
+
+DV-C08 — Shop dashboard (Phase 13):
+- **Drawer.** The appointment drawer opens from the inline end (left in Arabic) as the app's standard sheet, 420 px or full width on phones. The design draws it from the inline start. It keeps the design's content plus internal notes.
+- **Not built.** "إعادة إرسال التأكيد" (resend confirmation) arrives with WhatsApp messaging (Phase 15); "طلب تواصل" stays deferred (D-023, DV-D01).
+- **Header CTA.** The top-bar "+ حجز حضوري" button is the walk-in item in the navigation. The header shows the live-updates state instead.
+- **Subscription card.** The overview's subscription card became dashboard-wide banners (paused, ending soon, ended, suspended) on every shop page.
+- **Overview.** It adds the spec's free-capacity KPI and the day's cancellations. The professional load is minutes-based (booked ÷ available), not "12 / 14" slots (D-100).
+- **Calendar.** Free half-hours in the day view link to a walk-in prefilled with that professional and time; the walk-in page offers the exact free times. The week view keeps the design's density strip and adds real columns (D-100).
+- **Walk-in time.** "وقت مخصص" (custom time) became a day picker plus that day's free starts on the slot grid, from the same rules as the walk-in command. "ابدأ الآن" is offered only when the professional is free for the whole duration.
 
 ## DV-D — Design features deferred
 

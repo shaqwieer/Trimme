@@ -817,6 +817,73 @@
         }
       }
     },
+    "/api/v1/shop/availability/walk-in": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The professionals who can do a walk-in of this service or package: free now, next free time and the day\u0027s free starts.",
+        "operationId": "GetWalkInOptions",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "packageId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalkInOptionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/professionals/{professionalId}/working-hours": {
       "put": {
         "tags": [
@@ -958,6 +1025,115 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/dashboard/overview": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The business day\u0027s KPIs, next bookings, each professional\u0027s load and the last seven days by hour (s-overview).",
+        "operationId": "GetShopOverview",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOverviewResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/calendar": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "One to seven business days: each professional\u0027s working time, breaks and time off, and the bookings (s-calendar).",
+        "operationId": "GetShopCalendar",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopCalendarResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6725,7 +6901,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "The shop\u0027s bookings by local date range, status and professional; search by customer name or reference only.",
+        "summary": "The shop\u0027s bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip.",
         "operationId": "ListShopBookings",
         "parameters": [
           {
@@ -6748,7 +6924,10 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/BookingStatus"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
             }
           },
           {
@@ -6789,7 +6968,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResponseOfShopBookingResponse"
+                  "$ref": "#/components/schemas/ShopBookingListResponse"
                 }
               }
             }
@@ -9981,6 +10160,156 @@
         },
         "description": "A break; \u0060ProfessionalId\u0060 null means everyone. Weekly (weekdays) or once (date)."
       },
+      "CalendarBookingResponse": {
+        "required": [
+          "id",
+          "reference",
+          "professionalId",
+          "startsAt",
+          "endsAt",
+          "customerName",
+          "itemNameAr",
+          "itemNameEn",
+          "status",
+          "channel"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "itemNameAr": {
+            "type": "string"
+          },
+          "itemNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "channel": {
+            "$ref": "#/components/schemas/BookingChannel"
+          }
+        },
+        "description": "A booking block on the calendar: the customer\u0027s name and the booked item, never a phone number."
+      },
+      "CalendarDayResponse": {
+        "required": [
+          "date",
+          "closed",
+          "open",
+          "lanes",
+          "bookings"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindowResponse"
+            }
+          },
+          "lanes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarLaneResponse"
+            }
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarBookingResponse"
+            }
+          }
+        }
+      },
+      "CalendarLaneResponse": {
+        "required": [
+          "professionalId",
+          "working",
+          "breaks",
+          "timeOff"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "working": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindowResponse"
+            }
+          },
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindowResponse"
+            }
+          },
+          "timeOff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindowResponse"
+            }
+          }
+        },
+        "description": "A professional\u0027s lane on a business day: working time, breaks and time off (the calendar shades the rest)."
+      },
+      "CalendarProfessionalResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "CancelBookingRequest": {
         "required": [
           "reason",
@@ -11082,6 +11411,23 @@
         },
         "description": "An address search or reverse-geocoding result."
       },
+      "HourCountResponse": {
+        "required": [
+          "hour",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "HoursIntervalDto": {
         "required": [
           "day",
@@ -11801,36 +12147,6 @@
         },
         "description": "The paged envelope every list endpoint returns."
       },
-      "PagedResponseOfShopBookingResponse": {
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ShopBookingResponse"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "description": "The paged envelope every list endpoint returns."
-      },
       "PauseOnlineBookingRequest": {
         "required": [
           "reason"
@@ -12324,6 +12640,57 @@
           }
         },
         "description": "A professional\u0027s weekly hours as the shop manages them (no contact data)."
+      },
+      "ProfessionalLoadResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "bookings",
+          "bookedMinutes",
+          "availableMinutes",
+          "working",
+          "onLeave"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The professional.",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string",
+            "description": "Arabic name."
+          },
+          "nameEn": {
+            "type": "string",
+            "description": "English name."
+          },
+          "bookings": {
+            "type": "integer",
+            "description": "Their bookings that day (cancellations left out).",
+            "format": "int32"
+          },
+          "bookedMinutes": {
+            "type": "integer",
+            "description": "The minutes those bookings take.",
+            "format": "int32"
+          },
+          "availableMinutes": {
+            "type": "integer",
+            "description": "Their working time that day outside breaks and time off.",
+            "format": "int32"
+          },
+          "working": {
+            "type": "boolean",
+            "description": "They have working time that day."
+          },
+          "onLeave": {
+            "type": "boolean",
+            "description": "Time off takes all of their working time that day."
+          }
+        }
       },
       "ProfessionalNextSlotsResponse": {
         "required": [
@@ -13600,6 +13967,49 @@
           "PrayerArea"
         ]
       },
+      "ShopBookingCounts": {
+        "required": [
+          "all",
+          "pending",
+          "confirmed",
+          "arrived",
+          "completed",
+          "cancelled",
+          "noShow"
+        ],
+        "type": "object",
+        "properties": {
+          "all": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrived": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "noShow": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many bookings each status chip would list (every filter but the status applied)."
+      },
       "ShopBookingDetailResponse": {
         "required": [
           "booking",
@@ -13624,6 +14034,40 @@
             }
           }
         }
+      },
+      "ShopBookingListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ShopBookingCounts"
+          }
+        },
+        "description": "A page of the shop\u0027s bookings, with the status chips\u0027 counts."
       },
       "ShopBookingResponse": {
         "required": [
@@ -13701,6 +14145,42 @@
           }
         },
         "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically."
+      },
+      "ShopCalendarResponse": {
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "professionals",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarProfessionalResponse"
+            }
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarDayResponse"
+            }
+          }
+        },
+        "description": "Business days \u0060From\u0060\u2026\u0060To\u0060 (at most seven) with lanes per professional and their bookings (s-calendar)."
       },
       "ShopCategory": {
         "enum": [
@@ -13829,6 +14309,106 @@
           }
         },
         "description": "The confirmed shop entrance. Coordinates are WGS 84 decimal degrees."
+      },
+      "ShopOverviewKpis": {
+        "required": [
+          "total",
+          "previousDayTotal",
+          "pendingUpcoming",
+          "completed",
+          "noShow",
+          "cancelled",
+          "freeMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "The day\u0027s bookings, cancellations left out.",
+            "format": "int32"
+          },
+          "previousDayTotal": {
+            "type": "integer",
+            "description": "The same for the day before (the design\u0027s \u0022vs yesterday\u0022).",
+            "format": "int32"
+          },
+          "pendingUpcoming": {
+            "type": "integer",
+            "description": "Bookings still waiting for the shop\u0027s confirmation, from now on (any day).",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "description": "The day\u0027s completed visits.",
+            "format": "int32"
+          },
+          "noShow": {
+            "type": "integer",
+            "description": "The day\u0027s no-shows.",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "description": "The day\u0027s cancellations (by the customer or the shop).",
+            "format": "int32"
+          },
+          "freeMinutes": {
+            "type": "integer",
+            "description": "Bookable minutes left that day: each professional\u0027s available time minus their booked time.",
+            "format": "int32"
+          }
+        }
+      },
+      "ShopOverviewResponse": {
+        "required": [
+          "date",
+          "timeZone",
+          "now",
+          "kpis",
+          "upcoming",
+          "professionals",
+          "hourly",
+          "onlineBookingPaused"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/ShopOverviewKpis"
+          },
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalLoadResponse"
+            }
+          },
+          "hourly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HourCountResponse"
+            }
+          },
+          "onlineBookingPaused": {
+            "type": "boolean"
+          }
+        },
+        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out)."
       },
       "ShopOwnProfileResponse": {
         "required": [
@@ -15069,6 +15649,23 @@
         },
         "description": "Time off. \u0060StartDate\u0060/\u0060EndDate\u0060 are the shop-local days it covers (inclusive); the minutes are null for an\nall-day entry."
       },
+      "TimeWindowResponse": {
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "TopProfessionalResponse": {
         "required": [
           "id",
@@ -15601,6 +16198,86 @@
           }
         }
       },
+      "WalkInOptionsResponse": {
+        "required": [
+          "date",
+          "timeZone",
+          "now",
+          "durationMinutes",
+          "slotStepMinutes",
+          "professionals"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalkInProfessionalResponse"
+            }
+          }
+        },
+        "description": "Walk-in choices for a service or package on one shop-local date (s-walkin)."
+      },
+      "WalkInProfessionalResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "freeNow",
+          "nextFreeAt",
+          "starts"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "freeNow": {
+            "type": "boolean"
+          },
+          "nextFreeAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "starts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "description": "One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day\u0027s\ngrid, and every free start that day."
+      },
       "WalkInRequest": {
         "required": [
           "serviceId",
@@ -15706,6 +16383,9 @@
       "name": "Public"
     },
     {
+      "name": "Shop: bookings"
+    },
+    {
       "name": "Shop: schedule"
     },
     {
@@ -15731,9 +16411,6 @@
     },
     {
       "name": "Admin: services"
-    },
-    {
-      "name": "Shop: bookings"
     },
     {
       "name": "Admin: bookings"

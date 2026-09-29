@@ -6,9 +6,9 @@ name: trimme
 x-api-environment: &api-environment
   ASPNETCORE_ENVIRONMENT: ${TRIMME_API_ENVIRONMENT:-Development}
   ConnectionStrings__Trimme: Host=postgres;Port=5432;Database=${TRIMME_DB_NAME:-trimme};Username=${TRIMME_DB_USER:-trimme};Password=${TRIMME_DB_PASSWORD:-trimme_local_dev};Gss Encryption Mode=Disable
-  Cors__AllowedOrigins__0: ${TRIMME_WEB_ORIGIN:-http://localhost:3000}
+  Cors__AllowedOrigins__0: ${TRIMME_WEB_ORIGIN:-http://localhost:${TRIMME_WEB_PORT:-3000}}
   # Links in emails (password reset, invitations) point at the web app.
-  Web__PublicBaseUrl: ${TRIMME_WEB_ORIGIN:-http://localhost:3000}
+  Web__PublicBaseUrl: ${TRIMME_WEB_ORIGIN:-http://localhost:${TRIMME_WEB_PORT:-3000}}
   # Local email goes to Mailpit (web UI: http://localhost:8025). Production SMTP is configured only via env vars.
   Email__Smtp__Host: mailpit
   Email__Smtp__Port: "1025"

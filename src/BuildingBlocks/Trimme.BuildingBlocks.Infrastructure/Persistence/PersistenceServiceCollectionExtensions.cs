@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Trimme.BuildingBlocks.Application.Realtime;
 
 namespace Trimme.BuildingBlocks.Infrastructure.Persistence;
 
@@ -30,6 +32,15 @@ public static class PersistenceServiceCollectionExtensions
             if (serviceProvider.GetService<IPublicContentChangeSink>() is { } sink)
             {
                 options.AddInterceptors(new PublicContentInterceptor(sink));
+            }
+
+            // Live operations events after commit (D-099), when the host registers a publisher.
+            if (serviceProvider.GetService<IOperationsPublisher>() is { } publisher)
+            {
+                options.AddInterceptors(new OperationsEventsInterceptor(
+                    publisher,
+                    [.. serviceProvider.GetServices<IOperationsEventProjector>()],
+                    serviceProvider.GetRequiredService<ILogger<OperationsEventsInterceptor>>()));
             }
         });
 

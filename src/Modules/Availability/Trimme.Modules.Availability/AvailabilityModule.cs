@@ -32,6 +32,7 @@ public sealed class AvailabilityModule : ModuleBase
         services.AddScoped<ConflictFinder>();
         services.AddScoped<PublicAvailabilityService>();
         services.AddScoped<IAvailabilityChecker, AvailabilityChecker>();
+        services.AddScoped<IShopDayPlanReader, ShopDayPlanReader>();
         services.AddScoped<IShopOpeningReader, ShopOpeningReader>();
         services.AddScoped<ISlotProbe, SlotProbe>();
         services.TryAddScoped<IBookedTimeReader, NoBookedTime>();

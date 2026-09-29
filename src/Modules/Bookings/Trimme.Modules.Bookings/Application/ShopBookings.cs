@@ -16,8 +16,9 @@ namespace Trimme.Modules.Bookings.Application;
 // The shop's own bookings (spec §13). The shop comes from ICurrentTenant; the tenant filter scopes every read, so another
 // shop's booking id is 404. Responses carry the customer's name only, never a phone number (R-NEG-04).
 
-internal sealed record ListShopBookingsQuery(DateOnly? From, DateOnly? To, BookingStatus? Status, Guid? ProfessionalId, string? Search, PageRequest Page)
-    : IQuery<PagedResponse<ShopBookingResponse>?>;
+internal sealed record ListShopBookingsQuery(
+    DateOnly? From, DateOnly? To, IReadOnlyCollection<BookingStatus>? Statuses, Guid? ProfessionalId, string? Search, PageRequest Page)
+    : IQuery<ShopBookingListResponse?>;
 
 internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingDetailResponse?>;
 
@@ -49,9 +50,9 @@ internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker
         return new ShopBookingDetailResponse(mapped, BookingMapping.History(booking), notes);
     }
 
-    /// <summary>Filters shared by the shop and admin lists: local-date range, status, professional, name or reference.</summary>
+    /// <summary>Filters shared by the shop and admin lists: local-date range, statuses (any of), professional, name or reference.</summary>
     public static IQueryable<Booking> Filter(
-        IQueryable<Booking> bookings, DateTimeOffset? from, DateTimeOffset? to, BookingStatus? status, Guid? professionalId, string? search)
+        IQueryable<Booking> bookings, DateTimeOffset? from, DateTimeOffset? to, IReadOnlyCollection<BookingStatus>? statuses, Guid? professionalId, string? search)
     {
         if (from?.ToUniversalTime() is { } start)
         {
@@ -63,9 +64,10 @@ internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker
             bookings = bookings.Where(b => b.StartsAt < end);
         }
 
-        if (status is { } s)
+        if (statuses is { Count: > 0 })
         {
-            bookings = bookings.Where(b => b.Status == s);
+            var wanted = statuses.Distinct().ToArray();
+            bookings = bookings.Where(b => wanted.Contains(b.Status));
         }
 
         if (professionalId is { } p)
@@ -87,10 +89,15 @@ internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker
     }
 }
 
+/// <summary>
+/// The appointments list (s-appointments, DV-S08/DV-S18): local-date range, any of several statuses, professional, name
+/// or reference search, paged by start. The status chips' counts use every filter except the status, so each chip shows
+/// what it would list; the cancelled chip counts both cancellation statuses.
+/// </summary>
 internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant tenant, IShopDirectory shops, ShopBookingReader reader)
-    : IQueryHandler<ListShopBookingsQuery, PagedResponse<ShopBookingResponse>?>
+    : IQueryHandler<ListShopBookingsQuery, ShopBookingListResponse?>
 {
-    public async Task<PagedResponse<ShopBookingResponse>?> Handle(ListShopBookingsQuery query, CancellationToken cancellationToken)
+    public async Task<ShopBookingListResponse?> Handle(ListShopBookingsQuery query, CancellationToken cancellationToken)
     {
         if (tenant.ShopId is not { } shopId || await shops.FindAsync(shopId, cancellationToken) is not { } shop)
         {
@@ -100,11 +107,23 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
         var zone = TimeZoneInfo.FindSystemTimeZoneById(shop.TimeZone);
         DateTimeOffset? Start(DateOnly? date) =>
             date is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), zone.GetUtcOffset(d.ToDateTime(TimeOnly.MinValue))).ToUniversalTime() : null;
-        var bookings = ShopBookingReader.Filter(db.Set<Booking>().AsNoTracking(), Start(query.From), Start(query.To?.AddDays(1)), query.Status, query.ProfessionalId, query.Search)
-            .OrderBy(b => b.StartsAt).ThenBy(b => b.Id);
+        var unfiltered = ShopBookingReader.Filter(db.Set<Booking>().AsNoTracking(), Start(query.From), Start(query.To?.AddDays(1)), null, query.ProfessionalId, query.Search);
+        var byStatus = await unfiltered.GroupBy(b => b.Status).Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
+        int Count(params BookingStatus[] statuses) => statuses.Sum(s => byStatus.GetValueOrDefault(s));
+        var counts = new ShopBookingCounts(
+            byStatus.Values.Sum(),
+            Count(BookingStatus.Pending),
+            Count(BookingStatus.Confirmed),
+            Count(BookingStatus.Arrived),
+            Count(BookingStatus.Completed),
+            Count(BookingStatus.CancelledByCustomer, BookingStatus.CancelledByShop),
+            Count(BookingStatus.NoShow));
+
+        var bookings = ShopBookingReader.Filter(unfiltered, null, null, query.Statuses, null, null).OrderBy(b => b.StartsAt).ThenBy(b => b.Id);
         var total = await bookings.CountAsync(cancellationToken);
         var page = await bookings.Skip(query.Page.Skip).Take(query.Page.PageSize).ToListAsync(cancellationToken);
-        return new PagedResponse<ShopBookingResponse>(await reader.MapAsync(shopId, page, cancellationToken), query.Page.Page, query.Page.PageSize, total);
+        return new ShopBookingListResponse(await reader.MapAsync(shopId, page, cancellationToken), query.Page.Page, query.Page.PageSize, total, counts);
     }
 }
 

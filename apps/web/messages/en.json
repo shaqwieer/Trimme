@@ -1897,5 +1897,247 @@
     "signInToSave": "Sign in to save {name} to favourites",
     "book": "Book",
     "bookWith": "Book with {name}"
+  },
+  "shopBoard": {
+    "live": {
+      "connecting": "Connecting…",
+      "live": "Live",
+      "offline": "Reconnecting…"
+    },
+    "banners": {
+      "paused": {
+        "title": "Online booking is paused",
+        "body": "Your shop isn't taking new bookings in the app; existing appointments stay. Walk-ins still work.",
+        "action": "Manage the pause"
+      },
+      "expiring": {
+        "title": "{days, plural, one {Your subscription ends in 1 day} other {Your subscription ends in # days}}",
+        "body": "When it ends the shop leaves discovery; existing appointments stay. Contact the platform team to renew."
+      },
+      "none": {
+        "title": "Your shop has no subscription"
+      },
+      "expired": {
+        "title": "Your subscription has ended"
+      },
+      "suspended": {
+        "title": "Your subscription is suspended"
+      },
+      "hiddenBody": "Your shop is hidden from discovery and takes no new online bookings. Existing appointments stay.",
+      "visibleBody": "Contact the platform team to sort out the subscription. Existing appointments stay."
+    },
+    "overview": {
+      "noAccess": "You don't have access to the shop's appointments.",
+      "kpis": {
+        "total": "Today's appointments",
+        "vsYesterday": "{percent}% vs yesterday",
+        "pending": "Awaiting confirmation",
+        "needsAction": "Needs action now",
+        "completed": "Completed today",
+        "outOf": "out of {total}",
+        "noShow": "No-shows",
+        "share": "{percent}% of the day",
+        "free": "Free capacity",
+        "freeValue": "{hours} h {minutes} min",
+        "cancelled": "{count, plural, =0 {No cancellations} one {1 cancellation} other {# cancellations}}"
+      },
+      "upcoming": {
+        "title": "Today's upcoming schedule",
+        "calendar": "View calendar",
+        "empty": "No more appointments today."
+      },
+      "load": {
+        "title": "Barbers' load today",
+        "onLeave": "On leave",
+        "off": "Not working today",
+        "value": "{bookings, plural, =0 {No appointments} one {1 appointment} other {# appointments}} · {percent}%"
+      },
+      "hourly": {
+        "title": "Bookings by hour",
+        "subtitle": "Last 7 days",
+        "hour": "Hour",
+        "count": "Appointments"
+      }
+    },
+    "drawer": {
+      "title": "Appointment details",
+      "close": "Close details",
+      "loading": "Loading the appointment…",
+      "notFound": "The appointment was not found.",
+      "when": "Time",
+      "outsideSchedule": "This appointment no longer fits the barber's schedule (time off, a break or a closure). Nothing was cancelled — follow up with the customer if needed.",
+      "rows": {
+        "customer": "Customer",
+        "service": "Service",
+        "professional": "Barber",
+        "source": "Source",
+        "amount": "Amount",
+        "note": "Customer's note",
+        "cancellationReason": "Cancellation reason"
+      },
+      "amount": "{price} — paid at the shop",
+      "channel": {
+        "Online": "Customer app",
+        "WalkIn": "Walk-in"
+      },
+      "noPhone": {
+        "title": "The customer's number isn't available",
+        "body": "The customer is messaged automatically through the platform's WhatsApp; their number is never shown to the shop."
+      },
+      "changeStatus": "Change status",
+      "actions": {
+        "Pending": "Awaiting confirmation",
+        "Confirmed": "Confirm",
+        "Arrived": "Customer arrived",
+        "Completed": "Completed",
+        "NoShow": "No-show",
+        "CancelledByShop": "Cancel",
+        "CancelledByCustomer": "Cancelled by customer"
+      },
+      "stale": "The appointment changed a moment ago — we refreshed it; check and try again.",
+      "notes": {
+        "title": "Internal notes",
+        "add": "New note",
+        "internal": "Never shown to the customer.",
+        "save": "Add note"
+      },
+      "history": {
+        "title": "History",
+        "created": "Appointment created",
+        "rescheduled": "Time changed",
+        "status": "Status: {status}"
+      },
+      "actor": {
+        "Customer": "Customer",
+        "ShopUser": "Shop",
+        "PlatformAdmin": "Platform team",
+        "System": "System"
+      },
+      "cancel": {
+        "title": "Cancel the appointment?",
+        "body": "The customer is told and the time is released. This cannot be undone.",
+        "reason": "Reason",
+        "confirm": "Yes, cancel it",
+        "keep": "Keep it"
+      }
+    },
+    "appointments": {
+      "title": "Appointments",
+      "loading": "Loading appointments…",
+      "loadError": "Couldn't load the appointments. Try again.",
+      "empty": "No appointments match these filters.",
+      "statusFilter": "Filter by status",
+      "chips": {
+        "all": "All",
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "arrived": "Arrived",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "noShow": "No-show"
+      },
+      "from": "From",
+      "to": "To",
+      "professional": "Barber",
+      "allProfessionals": "All barbers",
+      "search": "Search appointments",
+      "searchPlaceholder": "Search by customer name or booking number",
+      "caption": "The shop's appointments",
+      "columns": {
+        "time": "Time",
+        "customer": "Customer & service",
+        "professional": "Barber",
+        "status": "Status",
+        "source": "Source",
+        "actions": "Actions"
+      },
+      "open": "Details of {name}'s appointment",
+      "details": "Details",
+      "paging": "Appointment pages",
+      "summary": "Showing {from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "walkIn": {
+      "title": "Walk-in booking",
+      "noServices": "No active services. Add a service first.",
+      "intro": "The time is taken at once and disappears from the times customers see in the app.",
+      "steps": {
+        "service": "1. Service",
+        "professional": "2. Barber",
+        "time": "3. Time",
+        "customer": "4. Customer"
+      },
+      "date": "Day",
+      "loading": "Loading times…",
+      "loadError": "Couldn't load the times.",
+      "noProfessionals": "No active barber offers this service.",
+      "freeNow": "Available now",
+      "freeAt": "Available {time}",
+      "noTimes": "No times this day",
+      "startNow": "Start now {time}",
+      "name": "Customer's name",
+      "nameTooLong": "The name is too long.",
+      "note": "Note",
+      "notePlaceholder": "e.g. short fade",
+      "noPhone": "The customer's mobile number isn't asked for at the desk. If they want WhatsApp reminders, invite them to install the app and scan the shop's code.",
+      "summary": {
+        "title": "Booking summary",
+        "service": "Service",
+        "professional": "Barber",
+        "starts": "Starts",
+        "ends": "Ends",
+        "total": "Total"
+      },
+      "submit": "Record booking",
+      "blocksOnline": "This time is blocked from online booking at once.",
+      "taken": "That time isn't free any more — we refreshed the times; pick another.",
+      "done": {
+        "title": "Walk-in recorded",
+        "body": "Booking {reference}. The time is blocked in the app.",
+        "view": "View appointment",
+        "another": "Another walk-in"
+      }
+    },
+    "calendar": {
+      "title": "Day & week calendar",
+      "loading": "Loading the calendar…",
+      "loadError": "Couldn't load the calendar.",
+      "view": "View",
+      "day": "Day",
+      "week": "Week",
+      "previous": "Previous",
+      "next": "Next",
+      "today": "Today",
+      "weekOf": "{from} — {to}",
+      "professional": "Barber",
+      "allProfessionals": "All barbers",
+      "legend": "Legend",
+      "legendItems": {
+        "Confirmed": "Confirmed",
+        "Pending": "Pending",
+        "Arrived": "Arrived",
+        "Completed": "Completed",
+        "break": "Break / closed"
+      },
+      "noProfessionals": "The shop has no active barbers.",
+      "closed": "The shop is closed this day.",
+      "closedShort": "Closed",
+      "count": "{count, plural, =0 {No appointments} one {1 appointment} other {# appointments}}",
+      "offShift": "Off shift",
+      "break": "Break",
+      "timeOff": "Time off",
+      "walkIn": "Walk-in",
+      "walkInAt": "Walk-in with {name} at {time}",
+      "open": "{name}'s appointment: {item}, {time}",
+      "density": "Booking density",
+      "parts": {
+        "morning": "Morning",
+        "noon": "Afternoon",
+        "evening": "Evening",
+        "night": "Night"
+      },
+      "closedCell": "Closed"
+    }
   }
 }

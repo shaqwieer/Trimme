@@ -327,6 +327,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/availability/walk-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The professionals who can do a walk-in of this service or package: free now, next free time and the day's free starts. */
+        get: operations["GetWalkInOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/professionals/{professionalId}/working-hours": {
         parameters: {
             query?: never;
@@ -355,6 +372,40 @@ export interface paths {
         put?: never;
         /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken. */
         post: operations["CreateBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/dashboard/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The business day's KPIs, next bookings, each professional's load and the last seven days by hour (s-overview). */
+        get: operations["GetShopOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One to seven business days: each professional's working time, breaks and time off, and the bookings (s-calendar). */
+        get: operations["GetShopCalendar"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1986,7 +2037,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The shop's bookings by local date range, status and professional; search by customer name or reference only. */
+        /** The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip. */
         get: operations["ListShopBookings"];
         put?: never;
         post?: never;
@@ -2884,6 +2935,46 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A booking block on the calendar: the customer's name and the booked item, never a phone number. */
+        CalendarBookingResponse: {
+            /** Format: uuid */
+            id: string;
+            reference: string;
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            customerName: string;
+            itemNameAr: string;
+            itemNameEn: null | string;
+            status: components["schemas"]["BookingStatus"];
+            channel: components["schemas"]["BookingChannel"];
+        };
+        CalendarDayResponse: {
+            /** Format: date */
+            date: string;
+            closed: boolean;
+            open: components["schemas"]["TimeWindowResponse"][];
+            lanes: components["schemas"]["CalendarLaneResponse"][];
+            bookings: components["schemas"]["CalendarBookingResponse"][];
+        };
+        /** @description A professional's lane on a business day: working time, breaks and time off (the calendar shades the rest). */
+        CalendarLaneResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            working: components["schemas"]["TimeWindowResponse"][];
+            breaks: components["schemas"]["TimeWindowResponse"][];
+            timeOff: components["schemas"]["TimeWindowResponse"][];
+        };
+        CalendarProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+            isActive: boolean;
+        };
         CancelBookingRequest: {
             reason: null | string;
             /** Format: uint32 */
@@ -3190,6 +3281,12 @@ export interface components {
             district: null | string;
             city: null | string;
         };
+        HourCountResponse: {
+            /** Format: int32 */
+            hour: number;
+            /** Format: int32 */
+            count: number;
+        };
         /**
          * @description One weekly interval: minutes from the weekday's local midnight. `EndMinute` may pass 1440 when the window
          *     closes after midnight (21:00–02:00 is 1260–1560).
@@ -3421,16 +3518,6 @@ export interface components {
             /** Format: int32 */
             total: number;
         };
-        /** @description The paged envelope every list endpoint returns. */
-        PagedResponseOfShopBookingResponse: {
-            items: components["schemas"]["ShopBookingResponse"][];
-            /** Format: int32 */
-            page: number;
-            /** Format: int32 */
-            pageSize: number;
-            /** Format: int32 */
-            total: number;
-        };
         /** @description Pausing online booking; the optional reason is the shop's own note (≤ 300 characters). */
         PauseOnlineBookingRequest: {
             reason: null | string;
@@ -3583,6 +3670,36 @@ export interface components {
             intervals: components["schemas"]["HoursIntervalDto"][];
             /** Format: uint32 */
             version: null | number;
+        };
+        ProfessionalLoadResponse: {
+            /**
+             * Format: uuid
+             * @description The professional.
+             */
+            id: string;
+            /** @description Arabic name. */
+            nameAr: string;
+            /** @description English name. */
+            nameEn: string;
+            /**
+             * Format: int32
+             * @description Their bookings that day (cancellations left out).
+             */
+            bookings: number;
+            /**
+             * Format: int32
+             * @description The minutes those bookings take.
+             */
+            bookedMinutes: number;
+            /**
+             * Format: int32
+             * @description Their working time that day outside breaks and time off.
+             */
+            availableMinutes: number;
+            /** @description They have working time that day. */
+            working: boolean;
+            /** @description Time off takes all of their working time that day. */
+            onLeave: boolean;
         };
         /**
          * @description The professional's earliest bookable starts (the design's "earliest times available today"): the first day with any,
@@ -3962,10 +4079,38 @@ export interface components {
         };
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
+        /** @description How many bookings each status chip would list (every filter but the status applied). */
+        ShopBookingCounts: {
+            /** Format: int32 */
+            all: number;
+            /** Format: int32 */
+            pending: number;
+            /** Format: int32 */
+            confirmed: number;
+            /** Format: int32 */
+            arrived: number;
+            /** Format: int32 */
+            completed: number;
+            /** Format: int32 */
+            cancelled: number;
+            /** Format: int32 */
+            noShow: number;
+        };
         ShopBookingDetailResponse: {
             booking: components["schemas"]["ShopBookingResponse"];
             history: components["schemas"]["BookingHistoryResponse"][];
             notes: components["schemas"]["BookingNoteResponse"][];
+        };
+        /** @description A page of the shop's bookings, with the status chips' counts. */
+        ShopBookingListResponse: {
+            items: components["schemas"]["ShopBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            counts: components["schemas"]["ShopBookingCounts"];
         };
         /**
          * @description A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). `AllowedTransitions` is
@@ -3991,6 +4136,16 @@ export interface components {
             outsideSchedule: boolean;
             /** Format: uint32 */
             version: number;
+        };
+        /** @description Business days `From`…`To` (at most seven) with lanes per professional and their bookings (s-calendar). */
+        ShopCalendarResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            timeZone: string;
+            professionals: components["schemas"]["CalendarProfessionalResponse"][];
+            days: components["schemas"]["CalendarDayResponse"][];
         };
         /**
          * @description Kind of business, shown on the public page and used by discovery filters (Phase 11).
@@ -4026,6 +4181,59 @@ export interface components {
             source: components["schemas"]["LocationSource"];
             /** Format: date-time */
             confirmedAt: string;
+        };
+        ShopOverviewKpis: {
+            /**
+             * Format: int32
+             * @description The day's bookings, cancellations left out.
+             */
+            total: number;
+            /**
+             * Format: int32
+             * @description The same for the day before (the design's "vs yesterday").
+             */
+            previousDayTotal: number;
+            /**
+             * Format: int32
+             * @description Bookings still waiting for the shop's confirmation, from now on (any day).
+             */
+            pendingUpcoming: number;
+            /**
+             * Format: int32
+             * @description The day's completed visits.
+             */
+            completed: number;
+            /**
+             * Format: int32
+             * @description The day's no-shows.
+             */
+            noShow: number;
+            /**
+             * Format: int32
+             * @description The day's cancellations (by the customer or the shop).
+             */
+            cancelled: number;
+            /**
+             * Format: int32
+             * @description Bookable minutes left that day: each professional's available time minus their booked time.
+             */
+            freeMinutes: number;
+        };
+        /**
+         * @description The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
+         *     last seven days by starting hour (local time; cancellations left out).
+         */
+        ShopOverviewResponse: {
+            /** Format: date */
+            date: string;
+            timeZone: string;
+            /** Format: date-time */
+            now: string;
+            kpis: components["schemas"]["ShopOverviewKpis"];
+            upcoming: components["schemas"]["ShopBookingResponse"][];
+            professionals: components["schemas"]["ProfessionalLoadResponse"][];
+            hourly: components["schemas"]["HourCountResponse"][];
+            onlineBookingPaused: boolean;
         };
         /**
          * @description The signed-in shop's own profile, for its settings screen (s-settings). IReadOnlyList&lt;ShopProfileField&gt; ShopOwnProfileResponse.EditableFields is the admin
@@ -4399,6 +4607,12 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        TimeWindowResponse: {
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+        };
         /** @description A highly rated professional of a listed shop (only stored ratings; no contact data). */
         TopProfessionalResponse: {
             /** Format: uuid */
@@ -4539,6 +4753,33 @@ export interface components {
             /** Format: uuid */
             challengeId: string;
             code: string;
+        };
+        /** @description Walk-in choices for a service or package on one shop-local date (s-walkin). */
+        WalkInOptionsResponse: {
+            /** Format: date */
+            date: string;
+            timeZone: string;
+            /** Format: date-time */
+            now: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            /** Format: int32 */
+            slotStepMinutes: number;
+            professionals: components["schemas"]["WalkInProfessionalResponse"][];
+        };
+        /**
+         * @description One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day's
+         *     grid, and every free start that day.
+         */
+        WalkInProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+            freeNow: boolean;
+            /** Format: date-time */
+            nextFreeAt: null | string;
+            starts: string[];
         };
         /**
          * @description A walk-in (D-035): without `StartsAt` it starts now and is marked Arrived; otherwise it is Confirmed. The
@@ -5121,6 +5362,48 @@ export interface operations {
             };
         };
     };
+    GetWalkInOptions: {
+        parameters: {
+            query?: {
+                serviceId?: string;
+                packageId?: string;
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalkInOptionsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     SetProfessionalWorkingHours: {
         parameters: {
             query?: never;
@@ -5227,6 +5510,79 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopOverview: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOverviewResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopCalendar: {
+        parameters: {
+            query: {
+                from: string;
+                to?: string;
+                professionalId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopCalendarResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9463,7 +9819,7 @@ export interface operations {
             query?: {
                 from?: string;
                 to?: string;
-                status?: components["schemas"]["BookingStatus"];
+                status?: components["schemas"]["BookingStatus"][];
                 professionalId?: string;
                 search?: string;
                 page?: number;
@@ -9481,7 +9837,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedResponseOfShopBookingResponse"];
+                    "application/json": components["schemas"]["ShopBookingListResponse"];
                 };
             };
             /** @description Not Found */

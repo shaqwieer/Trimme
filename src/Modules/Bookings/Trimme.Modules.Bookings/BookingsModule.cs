@@ -35,7 +35,9 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<RescheduleAvailability>();
         services.AddScoped<ProfessionalPicker>();
         services.AddScoped<ShopBookingReader>();
+        services.AddScoped<ShopBoardLoader>();
         services.AddScoped<AdminBookingMapper>();
+        services.AddSingleton<BuildingBlocks.Application.Realtime.IOperationsEventProjector, BookingOperationsProjector>();
 
         // Replaces the Availability module's stand-in (registered with TryAdd before this module).
         services.Replace(ServiceDescriptor.Scoped<IBookedTimeReader, BookedTimeReader>());

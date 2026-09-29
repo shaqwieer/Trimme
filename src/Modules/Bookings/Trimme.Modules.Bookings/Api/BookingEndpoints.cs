@@ -55,6 +55,7 @@ internal static class BookingEndpoints
     {
         MapCustomer(api);
         MapShop(api.MapGroup("/shop/bookings").WithTags("Shop: bookings"));
+        MapBoard(api);
         MapAdmin(api.MapGroup("/admin/bookings").WithTags("Admin: bookings"));
     }
 
@@ -117,13 +118,14 @@ internal static class BookingEndpoints
 
     private static void MapShop(RouteGroupBuilder group)
     {
-        group.MapGet("/", async (DateOnly? from, DateOnly? to, BookingStatus? status, Guid? professionalId, string? search, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
+        group.MapGet("/", async (DateOnly? from, DateOnly? to, [FromQuery] BookingStatus[]? status, Guid? professionalId, string? search, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new ListShopBookingsQuery(from, to, status, professionalId, search, new PageRequest(page, pageSize)), ct) is { } list
                     ? TypedResults.Ok(list)
                     : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
-            .WithName("ListShopBookings").WithSummary("The shop's bookings by local date range, status and professional; search by customer name or reference only.")
-            .Produces<PagedResponse<ShopBookingResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+            .WithName("ListShopBookings")
+            .WithSummary("The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip.")
+            .Produces<ShopBookingListResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
@@ -147,6 +149,22 @@ internal static class BookingEndpoints
             .RequirePermission(ShopUpdateStatus)
             .WithName("AddBookingNote").WithSummary("Adds an internal note (never shown to the customer).")
             .Produces<BookingNoteResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapBoard(IEndpointRouteBuilder api)
+    {
+        api.MapGet("/shop/dashboard/overview", async (DateOnly? date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopOverviewQuery(date), ct)).ToHttpResult())
+            .RequirePermission(ShopRead).WithTags("Shop: bookings")
+            .WithName("GetShopOverview")
+            .WithSummary("The business day's KPIs, next bookings, each professional's load and the last seven days by hour (s-overview).")
+            .Produces<ShopOverviewResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        api.MapGet("/shop/calendar", async (DateOnly from, DateOnly? to, Guid? professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopCalendarQuery(from, to, professionalId), ct)).ToHttpResult())
+            .RequirePermission(ShopRead).WithTags("Shop: bookings")
+            .WithName("GetShopCalendar")
+            .WithSummary("One to seven business days: each professional's working time, breaks and time off, and the bookings (s-calendar).")
+            .Produces<ShopCalendarResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static void MapAdmin(RouteGroupBuilder group)

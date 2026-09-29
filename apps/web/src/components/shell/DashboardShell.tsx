@@ -18,6 +18,8 @@ type DashboardShellProps = {
   permissions?: readonly string[];
   /** Optional card pinned to the bottom of the sidebar (e.g. the shop name and subscription status). */
   sidebarFooter?: ReactNode;
+  /** Shown next to the page title (e.g. the live-updates indicator). */
+  titleAddon?: ReactNode;
 };
 
 /**
@@ -32,6 +34,7 @@ export function DashboardShell({
   children,
   permissions,
   sidebarFooter,
+  titleAddon,
 }: DashboardShellProps) {
   const t = useTranslations();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -71,6 +74,7 @@ export function DashboardShell({
             {sidebar(() => setDrawerOpen(false))}
           </Sheet>
           <h1 className="truncate text-page-title font-bold text-navy-900">{title}</h1>
+          {titleAddon}
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
             <IconButton icon="bell" label={t('shell.notifications')} />

@@ -1,8 +1,8 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-29 (Session 7)
-- **Current phase:** 12 is complete and verified (Session 7), committed locally (not pushed). Phase 11 was pushed at the start of the session; its CI run 36543760813 succeeded. Next: Phase 13, shop operational dashboard.
-- **Platform progress:** 1300 / 1900 points (Phases 00–12)
+- **Updated:** 2026-09-29 (Session 8)
+- **Current phase:** 13 is complete and verified (Session 8), committed locally (not pushed; Phase 12 is not pushed either). Next: Phase 14, admin operations.
+- **Platform progress:** 1400 / 1900 points (Phases 00–13)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -19,7 +19,7 @@
 | 10 Booking core | [x] | 100/100 |
 | 11 Public discovery | [x] | 100/100 |
 | 12 Customer booking & account | [x] | 100/100 |
-| 13 Shop dashboard | [ ] | 0/100 |
+| 13 Shop dashboard | [x] | 100/100 |
 | 14 Admin dashboard | [ ] | 0/100 |
 | 15 WhatsApp & notifications | [ ] | 0/100 |
 | 16 QR & attribution | [ ] | 0/100 |
@@ -43,7 +43,7 @@
 | D-081 | Custom durations and back-dated starts need a SuperAdmin override with an explicit total price and a reason, fully audited (Session 4) |
 
 ## Open decisions
-None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095 and Phase 12 D-096…D-098 as their own design decisions (D-096 supersedes the inline part of D-033); D-012 and D-015 are now Accepted. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
+None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095, Phase 12 D-096…D-098 and Phase 13 D-099…D-100 as their own design decisions (D-096 supersedes the inline part of D-033; D-100 refines D-034); D-012 and D-015 are now Accepted. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
 
 ## Blockers
 None.
