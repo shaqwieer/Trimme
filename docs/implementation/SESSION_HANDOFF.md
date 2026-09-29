@@ -3,7 +3,7 @@
 - **Updated:** 2026-09-29 (Session 9: CI run #17 follow-up after Phase 13)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Pushed: Phases 12 and 13 up to `32619ba` (CI run #17: web, backend and gitleaks green; compose + Playwright **failed** 3 tests, fixed below), then the user's landing redesign `41ac0a0` (CI run #18 **cancelled**).
-  - **Local and not pushed:** `9a7450c` (CI #17 fixes) and `3d2d99e` (landing follow-up and evidence), plus this docs commit. Push only when the user asks, then record the CI run in the Phase 13 file.
+  - Then `9a7450c` (CI #17 fixes), `3d2d99e` (landing follow-up) and `8d6e8e8` (docs): **CI run #19 (36582588166) green**, all four jobs. Only this `docs:` commit recording it is local.
 - **HEAD commit:** this `docs:` commit on top of `3d2d99e` and `9a7450c`. Run `git log --oneline -6`.
 - **Working tree:** clean after the commit. `next dev` re-creates untracked `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` each time it starts (Next.js agent rules); they were deleted, and whether to disable, ignore or commit them is the user's call.
 - **Local stack: running, with the web app in dev mode.** Compose `postgres`, `migrate`/`seed` (done), `api` and `mailpit` are up on a volume created this session. The compose `web` container is **stopped**, and `next dev --port 3300` (a background task of Session 9) serves http://localhost:3300 with `TRIMME_API_INTERNAL_URL=http://localhost:8080`. `/api` and `/hubs` go through its rewrites (anonymous negotiate answers 401). To go back: stop `next dev`, then `docker compose -f infra/docker-compose.yml start web`.
@@ -55,7 +55,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS, no hits, no leaks |
 | Session 9: web `lint`, `typecheck`, `format:check`, `test`; E2E `typecheck`, `format:check` | PASS, 318 web tests |
 | Session 9: fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **62/62**, no retries (before the landing fixes: 57/62, the 5 landing failures) |
-| Session 9: CI | Not yet confirmed: the fixes are not pushed |
+| Session 9: CI | **Run #19 green** on `8d6e8e8` (web, backend, gitleaks, compose + Playwright) |
 
 ## Database and migrations
 - None this phase (the `(shop_id, starts_at)` booking index from Phase 10 serves the board).
@@ -81,7 +81,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
   - Serilog 400/409-as-500 (e.g. `PUT /admin/settings` validation, once per E2E run) and oversized uploads (Phase 17).
 
 ## Exact next action
-1. If the user asks, push `main` and record the CI run (expected: all four jobs green) in the Phase 13 file.
+1. Push the CI-record `docs:` commit when the user asks.
 2. Start Phase 14 (`phases/phase-14-admin-dashboard.md`). Re-validate first:
    - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*RealtimeTests"`
    - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 npx playwright test flows/shop-dashboard.spec.ts`
