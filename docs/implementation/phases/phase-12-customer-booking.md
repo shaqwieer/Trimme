@@ -135,6 +135,8 @@ Session 7, 2026-09-29.
 - **E2E.** The favorites test left the page before the optimistic heart's PUT finished; it now waits for the API response. The Phase 11 review count assertion now allows the reviews E7 adds.
 - **Flakes seen under the heavier parallel load** (pre-existing tests, not Phase 12 code): E5 (subscription card refresh, dev run) and the Phase 07 services toggle (final run 1). Each passed on rerun and in every other full run. Watch item for Phase 17/18.
 
+**Commit:** `f8fa5be` (feat). gitleaks `git` on the committed code: 41 commits, no leaks. Not pushed.
+
 **Review follow-up (after commit `f8fa5be`)**
 - **Heart after sign-in (bug).** `FavoriteButton` kept the signed-out answer in module state, which survives client-side navigation. After the heart's own sign-in round trip, the shop page still showed the sign-in link, and after sign-out a stale "saved" state could show.
   - Fix: hearts that mount together share one request for 2 s only.

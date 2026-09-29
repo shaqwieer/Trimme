@@ -4,9 +4,9 @@
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Phase 11 was pushed at the start of this session (`79280f6..4f441de`); CI run 36543760813 succeeded (recorded in the Phase 11 file).
   - Phase 12 is **committed locally and not pushed**. Push only when the user asks, then record the CI run in the Phase 12 file.
-- **HEAD commit:** the Phase 12 `feat:` commit, plus a `docs:` commit recording its hash. Run `git log --oneline -3`.
+- **HEAD commit:** `f8fa5be` (`feat: phase 12 customer booking and account`), then `11d76ef` (review follow-up fix), then a `docs:` commit recording both. Run `git log --oneline -4`.
 - **Working tree:** clean after the commit.
-- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 12 images (11 migrations, 10 seeders). E2E ran four times on it, so Sara has four reviewed visits and four left. It was stopped for the integration run and started again.
+- **Local Docker stack: running.** It was recreated from an empty volume with the final images (11 migrations, 10 seeders), and E2E ran three times on it. Sara has three reviewed visits and five left; each demo customer has used 3 of its 5 OTP codes this hour.
   - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325.
   - Started with `TRIMME_SITE_URL=http://localhost:3300`.
 - **Current phase:** 12 is complete. Phase 13 has not started.
@@ -47,8 +47,9 @@ Phase 12 (`phases/phase-12-customer-booking.md`):
 | Unit / architecture / integration | PASS, 377 / 63 / 143 (the full integration suite ran alone: 2 min) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 282 web tests |
-| Fresh `down -v` + `up --build` + `pnpm e2e` | First stack: **60/60 ×3**. Final code (after the demo rename): run 1 59/60 (a Phase 07 services toggle flake on the cold stack), then **runs 2–4 60/60 ×3**. 0 HTTP 429, 0 HTTP 5xx |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` | PASS after renaming the demo surname «الشهري» (contains «شهري») and rewording one comment; no leaks |
+| Fresh `down -v` + `up --build` + `pnpm e2e` | First stack: **60/60 ×3**. Phase commit (after the demo rename): run 1 59/60 (a Phase 07 services toggle flake on the cold stack), then **runs 2–4 60/60 ×3**. Review follow-up (fresh stack): **60/60 ×3**. 0 HTTP 429, 0 HTTP 5xx |
+| Review follow-up (`11d76ef`) | A heart stayed "signed out" after the sign-in round trip (module cache across client navigation): fixed, with a web test that fails on the old code and an E2E round trip. The Pending copy and the after-cutoff policy now have web tests. 285 web tests |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (42 commits) | PASS after renaming the demo surname «الشهري» (contains «شهري») and rewording one comment; no leaks |
 
 ## Database and migrations
 - Created this session: `20260929085259_ReviewTagsAndFavorites` (`reviews.reviews.tags`, `customers.favorites`).
@@ -66,6 +67,7 @@ Phase 12 (`phases/phase-12-customer-booking.md`):
   - Phase 08 E5: the subscription card was not refreshed within 5 s, once in a development run.
   - Both passed on rerun. Suspected: a click before hydration, or a slow `router.refresh()` under parallel load. Worth a look in Phase 17/18.
 - **Sara's reviewable visits expire seven days after seeding.** E7 then fails with a clear message; reset the volume.
+- **At most five E2E runs per hour on one stack.** Each run signs in the demo customers Noura, Khalid and Sara once, and the OTP limit is 5 codes per number per hour. Recreate the stack (`down -v`) or wait between batches.
 - **Integration suite:** run it alone (host load causes Npgsql timeouts; see Phase 11).
 - **Production must-haves** (Phase 17): unchanged from Phase 11 (Nginx `X-Forwarded-For` and `KnownNetworks`, web reachable only via Nginx, `TRIMME_SITE_URL`, log retention of `lat`/`lng`, tile and geocoder host).
 - **Carry-overs:**
