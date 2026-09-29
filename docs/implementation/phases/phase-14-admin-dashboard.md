@@ -155,7 +155,7 @@ Session 10, 2026-09-29. Actual results:
 | E2E `typecheck`, `format:check` | PASS |
 | Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **68/68 ×2** (2.4 and 2.3 min), no retries. API log over both runs: no 5xx, no 429 |
 | No-transfer and R-NEG-08 grep gates | PASS: no hits outside the seeders and the excluded geocoder |
-| gitleaks v8.30.1 `dir` | PASS, no leaks (`git` mode after the commit, see the handoff) |
+| gitleaks v8.30.1 `dir` and `git` | PASS, no leaks (`git`: 54 commits, after commit `e9231a5`) |
 | Visual check (ar 1440/390, en 1440): overview, bookings, customer, reviews, roles, audit, settings | RTL mirrored. Fixed during the check: the permission matrix overflowed at 390 (its `sr-only` cells escaped the scroller, the D-049 pattern, so the scroller is now `relative w-0 min-w-full`); the bookings filter grid overflowed at 768; actor names needed `<bdi>` in mixed text; "no earlier figure" deltas are neutral |
 
 Problems found and fixed while building:
@@ -173,3 +173,5 @@ The acceptance criterion "a Support role cannot reveal a phone unless granted" i
 - **The design's review action «تواصل مع المحل» (contact the shop)** waits for shop notifications (Phase 15).
 
 Next: Phase 15 — WhatsApp, outbox, Hangfire & notifications.
+
+**Commit:** `e9231a5` (feat: phase 14 admin operations dashboard). Not pushed.
