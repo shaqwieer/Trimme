@@ -176,7 +176,7 @@ Next: Phase 15 — WhatsApp, outbox, Hangfire & notifications.
 
 **Commit:** `e9231a5` (feat: phase 14 admin operations dashboard). Not pushed.
 
-**Review follow-up (after `e9231a5`)**
+**Review follow-up (after `e9231a5`; commit `714661c`, gitleaks `git` 55 commits: no leaks)**
 - **Blocking, fixed: staff invitations bypassed the escalation guards.** `POST /admin/staff/invitations` only checked that the role existed. An admin holding `Admin.Staff.Manage` through a custom role could have invited an address they control as SuperAdmin, or with any role whose permissions they lack.
   - Invitations now use the same `StaffGuards.CheckGrantableAsync` as role assignment (D-106 addendum).
   - The invite form offers only the roles the admin could grant.

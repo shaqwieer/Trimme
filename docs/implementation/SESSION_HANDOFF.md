@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-09-29 (Session 10: Phase 14)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). The Phase 14 commit and its `docs:` follow-up are **local, not pushed**; everything up to `26114ee` was pushed (CI run #19 green).
-- **HEAD commit:** the follow-up `docs:` commit on top of the `fix: phase 14 review follow-up` commit, `212da66` (docs) and `e9231a5` (feat: phase 14 admin operations dashboard). Run `git log --oneline -5`.
+- **HEAD commit:** the follow-up `docs:` commit on top of `714661c` (fix: phase 14 review follow-up), `212da66` (docs) and `e9231a5` (feat: phase 14 admin operations dashboard). Run `git log --oneline -5`.
 - **Working tree:** clean after the commits. `next dev` re-creates untracked `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` when it starts; delete them or leave them untracked (the user's call).
 - **Local stack: running, all in compose.** It runs on a fresh volume from this session's `down -v` + `up --build`: `postgres`, `migrate`/`seed` (done, 12 migrations), `api`, `web` (production build of this session's code) and `mailpit`.
   - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
@@ -56,7 +56,7 @@ Phase 14 (`phases/phase-14-admin-dashboard.md`):
 | Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 337 web tests |
 | E2E `typecheck`, `format:check` | PASS |
 | Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **68/68 ×2** at `e9231a5`, then **68/68 ×2** again on a new volume after the review follow-up; no retries; API log: no 5xx, no 429 |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (54 commits, after `e9231a5`) | PASS: no hits, no leaks |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (55 commits, after `714661c`) | PASS: no hits, no leaks |
 
 ## Database and migrations
 - Created and applied locally: `20260929164439_AdminOperations`, applied on the compose volume and from empty in the integration tests. No production migration was run.
