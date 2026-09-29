@@ -46,12 +46,14 @@ public enum ReviewStatus
 /// the author's public display name (first name and surname initial) and the booked item's name, snapshotted when it is
 /// written, so the public page never needs the customer's account. Creation by customers arrives in Phase 12.
 /// </summary>
-public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicContent
+public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicContent, IConcurrencyVersioned
 {
     public const int MinRating = 1;
     public const int MaxRating = 5;
     public const int MaxCommentLength = 1000;
     public const int MaxNameLength = 120;
+    public const int MaxReasonLength = 300;
+    public const int MinReasonLength = 5;
 
     private Review(ReviewId id, ReviewedBooking booking, int rating, IReadOnlyCollection<ReviewTag> tags, string? comment, DateTimeOffset now)
         : base(id)
@@ -100,6 +102,83 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>Why a staff member reported the review for moderation (<c>Admin.Reviews.Flag</c>); null when not reported.</summary>
+    public string? FlagReason { get; private set; }
+
+    public DateTimeOffset? FlaggedAt { get; private set; }
+
+    /// <summary>Why a moderator hid the review; kept while it is hidden (D-102).</summary>
+    public string? ModerationReason { get; private set; }
+
+    /// <summary>The last hide or publish by a moderator.</summary>
+    public DateTimeOffset? ModeratedAt { get; private set; }
+
+    public uint Version { get; private set; }
+
+    /// <summary>What moderators should look at (computed, never stored): a report, a low rating, a phone number in the text.</summary>
+    public IReadOnlyList<ReviewFlag> Flags => ReviewModeration.FlagsOf(Rating, Comment, FlagReason is not null);
+
+    /// <summary>A staff member reports a published review for a moderator (it stays published).</summary>
+    public Result Flag(string? reason, DateTimeOffset now)
+    {
+        if (Status != ReviewStatus.Published)
+        {
+            return ReviewErrors.NotPublished();
+        }
+
+        if (FlagReason is not null)
+        {
+            return ReviewErrors.AlreadyFlagged();
+        }
+
+        if (ReviewModeration.ReasonError(reason) is { } error)
+        {
+            return error;
+        }
+
+        FlagReason = reason!.Trim();
+        FlaggedAt = now;
+        return Result.Success();
+    }
+
+    /// <summary>A moderator hides the review with a reason (D-017): it leaves the public pages and the ratings, never deleted.</summary>
+    public Result Hide(string? reason, DateTimeOffset now)
+    {
+        if (Status == ReviewStatus.Hidden)
+        {
+            return ReviewErrors.AlreadyHidden();
+        }
+
+        if (ReviewModeration.ReasonError(reason) is { } error)
+        {
+            return error;
+        }
+
+        Status = ReviewStatus.Hidden;
+        ModerationReason = reason!.Trim();
+        ModeratedAt = now;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// A moderator publishes the review: a hidden one returns to the pages and the ratings; a reported one is cleared
+    /// (the design's «نشر»). Anything else has nothing to publish.
+    /// </summary>
+    public Result Publish(DateTimeOffset now)
+    {
+        if (Status == ReviewStatus.Published && FlagReason is null)
+        {
+            return ReviewErrors.NothingToPublish();
+        }
+
+        Status = ReviewStatus.Published;
+        ModerationReason = null;
+        FlagReason = null;
+        FlaggedAt = null;
+        ModeratedAt = now;
+        return Result.Success();
+    }
+
     /// <summary>A review of a completed booking, by its customer.</summary>
     public static Result<Review> Create(ReviewId id, ReviewedBooking booking, int rating, string? comment, DateTimeOffset now, IReadOnlyCollection<ReviewTag>? tags = null)
     {
@@ -122,6 +201,62 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
 
         return new Review(id, booking, rating, tags ?? [], text, now);
     }
+}
+
+/// <summary>Why a review is in the moderation queue (D-102).</summary>
+public enum ReviewFlag
+{
+    /// <summary>Reported by a staff member with a reason.</summary>
+    Reported,
+
+    /// <summary>One or two stars.</summary>
+    LowRating,
+
+    /// <summary>The comment looks like it contains a phone number (eight or more digits, Latin or Arabic-Indic).</summary>
+    ContainsPhone,
+}
+
+public static class ReviewModeration
+{
+    public const int LowRatingMax = 2;
+
+    /// <summary>
+    /// Eight or more digits (Latin, Arabic-Indic or Extended Arabic-Indic), optionally separated by one space, dot or dash.
+    /// The same pattern runs in .NET and in PostgreSQL (<c>~</c>), so the list filter and the flag always agree.
+    /// </summary>
+    public const string PhonePattern = "([0-9٠-٩۰-۹][ .-]?){8,}";
+
+    private static readonly System.Text.RegularExpressions.Regex Phone = new(PhonePattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+
+    public static bool ContainsPhone(string? text) => text is not null && Phone.IsMatch(text);
+
+    public static IReadOnlyList<ReviewFlag> FlagsOf(int rating, string? comment, bool reported)
+    {
+        var flags = new List<ReviewFlag>(3);
+        if (reported)
+        {
+            flags.Add(ReviewFlag.Reported);
+        }
+
+        if (rating <= LowRatingMax)
+        {
+            flags.Add(ReviewFlag.LowRating);
+        }
+
+        if (ContainsPhone(comment))
+        {
+            flags.Add(ReviewFlag.ContainsPhone);
+        }
+
+        return flags;
+    }
+
+    public static Error? ReasonError(string? reason) =>
+        (reason?.Trim().Length ?? 0) < Review.MinReasonLength
+            ? Error.Validation("validation.failed", "A reason is required.", new Dictionary<string, string[]> { ["reason"] = ["validation.reason_required"] })
+            : reason!.Trim().Length > Review.MaxReasonLength
+                ? Error.Validation("validation.failed", "The reason is too long.", new Dictionary<string, string[]> { ["reason"] = ["validation.too_long"] })
+                : null;
 }
 
 /// <summary>
@@ -228,6 +363,16 @@ public static class ReviewAuthor
 
 public static class ReviewErrors
 {
+    public static Error NotFound() => Error.NotFound("review.not_found", "The review was not found.");
+
+    public static Error NotPublished() => Error.Conflict("review.not_published", "Only a published review can be reported.");
+
+    public static Error AlreadyFlagged() => Error.Conflict("review.already_flagged", "The review has already been reported.");
+
+    public static Error AlreadyHidden() => Error.Conflict("review.already_hidden", "The review is already hidden.");
+
+    public static Error NothingToPublish() => Error.Conflict("review.nothing_to_publish", "The review is published and not reported.");
+
     public static Error NotCompleted() => Error.Conflict("review.booking_not_completed", "Only a completed booking can be reviewed.");
 
     public static Error AlreadyExists() => Error.Conflict("review.already_exists", "This booking has already been reviewed.");

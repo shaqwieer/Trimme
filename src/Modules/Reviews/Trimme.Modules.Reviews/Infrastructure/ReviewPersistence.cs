@@ -32,6 +32,9 @@ internal sealed class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.Property(r => r.ItemNameAr).HasMaxLength(Review.MaxNameLength);
         builder.Property(r => r.ItemNameEn).HasMaxLength(Review.MaxNameLength);
         builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.FlagReason).HasMaxLength(Review.MaxReasonLength);
+        builder.Property(r => r.ModerationReason).HasMaxLength(Review.MaxReasonLength);
+        builder.Ignore(r => r.Flags);
         builder.PrimitiveCollection(r => r.Tags).ElementType(e => e.HasConversion<string>());
     }
 }

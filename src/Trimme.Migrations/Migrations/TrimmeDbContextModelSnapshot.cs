@@ -377,6 +377,13 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("reason");
 
+                    b.Property<long>("Sequence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequence");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Sequence"));
+
                     b.Property<Guid?>("ShopId")
                         .HasColumnType("uuid")
                         .HasColumnName("shop_id");
@@ -392,8 +399,18 @@ namespace Trimme.Migrations.Migrations
                     b.HasIndex("OccurredAt")
                         .HasDatabaseName("ix_audit_entries_occurred_at");
 
+                    b.HasIndex("Sequence")
+                        .IsUnique()
+                        .HasDatabaseName("ix_audit_entries_sequence");
+
                     b.HasIndex("ShopId")
                         .HasDatabaseName("ix_audit_entries_shop_id");
+
+                    b.HasIndex("Action", "Sequence")
+                        .HasDatabaseName("ix_audit_entries_action_sequence");
+
+                    b.HasIndex("ActorUserId", "Sequence")
+                        .HasDatabaseName("ix_audit_entries_actor_user_id_sequence");
 
                     b.HasIndex("EntityType", "EntityId")
                         .HasDatabaseName("ix_audit_entries_entity_type_entity_id");
@@ -1701,6 +1718,15 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("customer_id");
 
+                    b.Property<string>("FlagReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("flag_reason");
+
+                    b.Property<DateTimeOffset?>("FlaggedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("flagged_at");
+
                     b.Property<string>("ItemNameAr")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -1711,6 +1737,15 @@ namespace Trimme.Migrations.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)")
                         .HasColumnName("item_name_en");
+
+                    b.Property<DateTimeOffset?>("ModeratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("moderated_at");
+
+                    b.Property<string>("ModerationReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("moderation_reason");
 
                     b.Property<Guid>("ProfessionalId")
                         .HasColumnType("uuid")
@@ -1734,6 +1769,12 @@ namespace Trimme.Migrations.Migrations
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("tags");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_reviews");

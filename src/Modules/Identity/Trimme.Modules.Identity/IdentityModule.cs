@@ -56,8 +56,12 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<AccountStore>();
         services.AddScoped<IAccountStore>(sp => sp.GetRequiredService<AccountStore>());
         services.AddScoped<IRoleDirectory>(sp => sp.GetRequiredService<AccountStore>());
+        services.AddScoped<Application.Admin.IAdminAccounts, AdminAccounts>();
+        services.AddScoped<Application.Admin.CallerRights>();
         services.AddScoped<IPermissionResolver, PermissionResolver>();
         services.AddScoped<ICustomerDirectory, CustomerDirectory>();
+        services.AddScoped<BuildingBlocks.Application.Reporting.ICustomerStatistics, CustomerStatistics>();
+        services.AddScoped<IUserNameLookup, UserNameLookup>();
         services.AddScoped<SessionValidator>();
         services.AddScoped<SessionManager>();
         services.AddScoped<MeReader>();
@@ -73,6 +77,7 @@ public sealed class IdentityModule : ModuleBase
     {
         AuthEndpoints.Map(api);
         AdminIdentityEndpoints.Map(api);
+        AdminAccountEndpoints.Map(api);
         DevOtpInboxEndpoints.Map(api);
     }
 

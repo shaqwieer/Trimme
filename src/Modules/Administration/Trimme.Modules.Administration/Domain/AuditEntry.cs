@@ -45,6 +45,9 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         ActorType = Action = EntityType = EntityId = string.Empty;
     }
 
+    /// <summary>Insertion order, assigned by the database (an identity column): the audit list's keyset cursor (D-104).</summary>
+    public long Sequence { get; private set; }
+
     public DateTimeOffset OccurredAt { get; private set; }
 
     public Guid? ActorUserId { get; private set; }

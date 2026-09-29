@@ -47,8 +47,12 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
         builder.Property(e => e.Summary).HasMaxLength(500);
         builder.Property(e => e.Reason).HasMaxLength(500);
         builder.Property(e => e.CorrelationId).HasMaxLength(64);
+        builder.Property(e => e.Sequence).UseIdentityAlwaysColumn();
+        builder.HasIndex(e => e.Sequence).IsUnique();
         builder.HasIndex(e => e.OccurredAt);
         builder.HasIndex(e => new { e.EntityType, e.EntityId });
         builder.HasIndex(e => e.ShopId);
+        builder.HasIndex(e => new { e.Action, e.Sequence });
+        builder.HasIndex(e => new { e.ActorUserId, e.Sequence });
     }
 }

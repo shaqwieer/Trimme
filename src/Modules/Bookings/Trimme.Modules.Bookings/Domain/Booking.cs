@@ -384,7 +384,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// Moves a Pending or Confirmed booking to a new start (and optionally another professional) with the same snapshot
     /// and status (D-087). The caller has rechecked availability; the customer's cutoff applies to the current start.
     /// </summary>
-    public Result Reschedule(DateTimeOffset newStart, BookedProfessional professional, BookingActor actor, DateTimeOffset now, int? cutoffMinutes)
+    public Result Reschedule(DateTimeOffset newStart, BookedProfessional professional, BookingActor actor, DateTimeOffset now, int? cutoffMinutes, string? reason = null)
     {
         if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
         {
@@ -401,7 +401,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         EndsAt = StartsAt.AddMinutes(DurationMinutes);
         SetProfessional(professional);
         UpdatedAt = now;
-        _history.Add(new BookingHistoryEntry(BookingEventKind.Rescheduled, Status, Status, previous, actor, null, now));
+        _history.Add(new BookingHistoryEntry(BookingEventKind.Rescheduled, Status, Status, previous, actor, Clean(reason), now));
         return Result.Success();
     }
 

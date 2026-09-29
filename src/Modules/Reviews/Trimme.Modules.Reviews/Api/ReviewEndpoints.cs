@@ -7,6 +7,7 @@ using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Security;
+using Trimme.Modules.Reviews.Application.Admin;
 using Trimme.Modules.Reviews.Application.Customer;
 using Trimme.Modules.Reviews.Application.Public;
 using Trimme.Modules.Reviews.Domain;
@@ -16,10 +17,23 @@ namespace Trimme.Modules.Reviews.Api;
 /// <summary>Stars 1–5, optional tags from the fixed list, optional comment (≤ 1000 characters).</summary>
 public sealed record SubmitReviewRequest(int Rating, IReadOnlyList<ReviewTag>? Tags, string? Comment);
 
+/// <summary>A reason (5–300 characters) for a report or a hide; send the version read.</summary>
+public sealed record ModerateReviewRequest(string? Reason, uint Version);
+
+/// <summary>Publishing needs only the version read.</summary>
+public sealed record PublishReviewRequest(uint Version);
+
 internal static class ReviewEndpoints
 {
+    // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
+    private const string AdminView = "Admin.Reviews.View";
+    private const string AdminFlag = "Admin.Reviews.Flag";
+    private const string AdminModerate = "Admin.Reviews.Moderate";
+
     public static void Map(IEndpointRouteBuilder api)
     {
+        MapAdmin(api.MapGroup("/admin/reviews").WithTags("Admin: reviews"));
+
         api.MapGet("/public/shops/{slug}/reviews", ListPublic).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopReviews")
             .WithSummary("Published reviews of an active shop, or of one of its professionals, newest first, with the rating summary.")
@@ -31,6 +45,33 @@ internal static class ReviewEndpoints
             .WithSummary("Reviews the customer's own completed booking once, within the review window; published with the first name and initial only.")
             .Produces<MyReviewResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+    }
+
+    private static void MapAdmin(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (ReviewQueue? queue, ReviewFlag? flag, Guid? shopId, int? rating, string? search, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
+                TypedResults.Ok(await d.Send(new ListAdminReviewsQuery(queue ?? ReviewQueue.NeedsReview, flag, shopId, rating, search, new PageRequest(page, pageSize)), ct)))
+            .RequirePermission(AdminView)
+            .WithName("AdminListReviews")
+            .WithSummary("Reviews for moderation: the queue (published with a report, a low rating or a phone number in the text), published, hidden or all; with counts.")
+            .Produces<AdminReviewListResponse>();
+        group.MapPost("/{reviewId:guid}/flag", async (Guid reviewId, ModerateReviewRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ModerateReviewCommand(reviewId, ModerationAction.Flag, r.Reason, r.Version), ct)).ToHttpResult())
+            .RequirePermission(AdminFlag)
+            .WithName("AdminFlagReview").WithSummary("Reports a published review to the moderators with a reason (it stays published; audited).")
+            .Produces<AdminReviewResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        group.MapPost("/{reviewId:guid}/hide", async (Guid reviewId, ModerateReviewRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ModerateReviewCommand(reviewId, ModerationAction.Hide, r.Reason, r.Version), ct)).ToHttpResult())
+            .RequirePermission(AdminModerate)
+            .WithName("AdminHideReview").WithSummary("Hides a review with a reason: it leaves the public pages and the rating totals (audited; never deleted).")
+            .Produces<AdminReviewResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        group.MapPost("/{reviewId:guid}/publish", async (Guid reviewId, PublishReviewRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ModerateReviewCommand(reviewId, ModerationAction.Publish, null, r.Version), ct)).ToHttpResult())
+            .RequirePermission(AdminModerate)
+            .WithName("AdminPublishReview").WithSummary("Publishes a hidden review again, or clears a report on a published one (audited).")
+            .Produces<AdminReviewResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static async Task<IResult> Submit(Guid bookingId, SubmitReviewRequest request, IDispatcher dispatcher, CancellationToken cancellationToken) =>

@@ -788,3 +788,93 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - Cancellations are not drawn.
 - **Appointments list.** Any of several statuses. The chip counts use every other filter, and the cancelled chip counts both cancellation statuses (DV-S08). Search is by name or reference only (DV-S18). The detail drawer shows only the API's `allowedTransitions`, applied optimistically and rolled back on a refusal.
 - **Walk-in options.** `GET /shop/availability/walk-in` returns the active professionals assigned to the item (every item of a package), whether each is free now for the whole duration, the next free start and the day's free starts on the slot grid. These are the command's own collision rules. Online-only rules (lead time, horizon, the online-bookable flag, the pause) do not apply at the desk. The date may be up to 60 days ahead.
+
+## D-101 — Admin overview: KPI definitions and read ports — Accepted (Phase 14)
+- **Where.** `GET /admin/dashboard/overview?days=1|7|30` (`Admin.Dashboard.View`) lives in Administration. It opens `IAdminDataScope` once and calls small building-block read ports (`BuildingBlocks.Application.Reporting`), each implemented by the module that owns the data:
+  - `IBookingStatistics` (Bookings);
+  - `IShopStatistics` (Shops);
+  - `IProfessionalStatistics` (Professionals);
+  - `ICustomerStatistics` (Identity);
+  - `IServiceCategoryLookup` (Services).
+
+  Every figure is an SQL aggregate (GROUP BY and COUNT in PostgreSQL). The ports read through the caller's scope, like `IProfessionalDirectory`, so no implementation needs an `*.Application.Admin` namespace.
+- **Calendar.** Days are platform-calendar days (`IPlatformSettings.TimeZone`, Asia/Riyadh), dated by the booking's local start. This is not the shop's business day (D-100), because the platform view is not one shop's desk. The daily trend groups in SQL with `AT TIME ZONE`, which Npgsql translates from `TimeZoneInfo.ConvertTimeBySystemTimeZoneId`.
+- **Definitions:**
+  - **Appointments today / yesterday:** bookings starting on that platform day (the whole day), cancellations excluded.
+  - **Rates:** over bookings that *started* from the window's first day until now (`days` = 1, 7 or 30, today included). The denominator counts every status, cancellations included. Completion = Completed ÷ total, cancellation = both cancellation statuses ÷ total, no-show = NoShow ÷ total, in percent with one decimal (0 when the total is 0). Future bookings never dilute the rates.
+  - **Previous period:** the same elapsed length immediately before, for the deltas: rates as percentage points, counts as percent.
+  - **Active shops:** shop status Active, out of all shops. Subscriptions are a separate KPI read from `GET /admin/subscriptions` counts (ExpiringSoon, plus Expired and Suspended).
+  - **Active professionals:** status Active, plus those created in the window.
+  - **New customers:** customer accounts created in the window, and in the previous one.
+  - **Trend:** the last 14 platform days, with every day present, split into completed, cancelled-or-no-show and other (still pending, confirmed or arrived).
+  - **Popular:** bookings in the window, cancellations excluded, grouped by platform **category** (services are shop-owned, DV-S02). Packages form their own bucket; services without a category form "uncategorised". Top 5.
+  - **Top shops:** the 5 shops with the most bookings in the window (cancellations included), with their cancellation rate and stored rating.
+- **Test.** `Overview_CountsThePlatformDay_RatesAndRankings_OnTheRiyadhCalendar` uses a fake clock and bookings at 23:30 and 00:30 Riyadh, which fall on one UTC date but on two platform days. It checks exact counts, rates, trend, categories and ranking.
+
+## D-102 — Reviews moderation — Accepted (Phase 14; completes D-017)
+- **Post-moderation stays.** Reviews publish at once. The moderation queue ("needs review") holds published reviews with any flag:
+  - `Reported`: a staff member reported it with a reason, through `POST /admin/reviews/{id}/flag` (`Admin.Reviews.Flag`, Support's default);
+  - `LowRating`: one or two stars;
+  - `ContainsPhone`: eight or more Latin, Arabic-Indic or Extended Arabic-Indic digits, optionally separated by a space, dot or dash.
+
+  Low rating and phone are computed, never stored. The phone pattern is one string used both by .NET and by PostgreSQL (`~`, translated from `Regex.IsMatch`), so the list filter and the flag always agree.
+- **Moderators** (`Admin.Reviews.Moderate`):
+  - `hide` needs a reason (5–300 characters). The review leaves the public pages and the rating totals, and is never deleted.
+  - `publish` returns a hidden review, or clears a report on a published one (the design's «نشر»).
+  - Both are audited (`review.flagged`, `review.hidden`, `review.published`, `review.report_cleared`).
+- **Totals move once.** The review now carries an `xmin` version. The status change and `RatingBook ±1` run in one explicit transaction, so of two moderators hiding at once, one gets 409 and the totals move once (integration test with two parallel hides).
+  - Subtracting is a plain `UPDATE`: PostgreSQL checks the table's CHECK constraints on the proposed insert row of an `INSERT … ON CONFLICT` before resolving the conflict, and a count of −1 fails `ck_rating_aggregates_count`. Adding back uses the Phase 12 upsert.
+  - The public cache is evicted after the commit.
+- **Migration** `AdminOperations`: `flag_reason`, `flagged_at`, `moderation_reason`, `moderated_at`, and the version, which is the system column.
+- The design's "contact the shop" action waits for shop notifications (Phase 15).
+
+## D-103 — Admin booking intervention — Accepted (Phase 14; extends D-087)
+- **Transitions.** `POST /admin/bookings/{id}/transitions` (`Admin.Bookings.Intervene`) applies the shop's own state machine with the PlatformAdmin actor:
+  - Arrived only from an hour before;
+  - NoShow once started;
+  - never CancelledByCustomer.
+
+  Every admin intervention needs a reason of 5–300 characters, stricter than the shop's 3 for a cancellation, so an admin's reason is always meaningful. It is audited (`booking.status_changed_by_admin` / `booking.cancelled_by_admin`) and writes the outbox event. The Phase 10 `…/cancel` stays as an alias of a transition to CancelledByShop.
+- **Reschedule.** `POST /admin/bookings/{id}/reschedule` requires `Idempotency-Key`. It moves a Pending or Confirmed booking to another start, and optionally another active professional assigned to the booked item (only its own professional when the item is no longer offered). It keeps the snapshot and duration.
+  - **Rules:** the shop desk's collision rules (hours, breaks, time off, closures, other bookings, at any minute; `AvailabilityCheckMode.WalkIn`). The customer's cutoff and the online gates (lead time, grid, pause, subscription) do not apply: the platform intervenes on the shop's behalf, as a walk-in does. The start may not be in the past.
+  - **Path:** the customer reschedule's path (D-089): one transaction, idempotency claim, recheck, exclusion constraint. A lost race answers 409 `booking.slot_unavailable`, and a replay answers `Idempotent-Replayed: true`.
+  - **Trail:** the history entry carries the reason, and the audit entry records old → new times.
+- **Choices.** `GET /admin/bookings/{id}/reschedule/options?date=&professionalId=` lists the professionals it may move to and the online-grid starts of one date (`ISlotProbe`, with the booking's own time ignored). This is a subset of what the command accepts.
+- **List.** Filters are shop, any of several statuses, time range, channel, customer, professional, and search by name or reference only; there are chip counts and a sort order. Detail adds the shop's internal notes, read-only.
+
+## D-104 — The audit log read side — Accepted (Phase 14; completes D-063)
+- **Endpoints.** `GET /admin/audit` (`Admin.Audit.View`) filters by actor, action, entity type and id, shop and a time range, newest first. `GET /admin/audit/facets` lists the recorded actions and entity types for the filters.
+- **Actor names** come from `IUserNameLookup` (Identity): display name and user type only, never an email or phone.
+- **Keyset paging.** A new identity column `sequence` gives the insertion order. Existing rows are numbered by `occurred_at` in the migration; then the identity continues. The cursor is the last sequence shown, and the page size is at most 100. Indexes: `(sequence)` unique, `(action, sequence)` and `(actor_user_id, sequence)`.
+- The log stays append-only, with no edit or delete path.
+
+## D-105 — Customers directory and the audited reveal — Accepted (Phase 14; DV-S17)
+- **Where.** In Identity, which owns the account and the encrypted mobile (D-050).
+  - `GET /admin/customers` searches by **name only**, newest first. Each row carries booking count, upcoming count, last and next booking (from `IBookingStatistics` inside the admin scope). There is no phone in the list: an exact-number search would be a contact oracle for anyone with `Admin.Customers.View`.
+  - `GET /admin/customers/{id}` returns the mask (`+966 5•• ••• •03`) and the figures. Upcoming and previous bookings come from `GET /admin/bookings?customerId=`.
+- **Reveal.** `POST /admin/customers/{id}/contact/reveal` needs `Admin.Customers.ViewContact` and a reason of 5–300 characters. It returns the E.164 number once (`no-store`) and is audited as `customer.contact_revealed` with the reason and without the number.
+  - Support holds the permission by default (D-051). Removing the grant through the roles API refuses the next request; the acceptance test does exactly that.
+
+## D-106 — Roles and staff management and its escalation guards — Accepted (Phase 14; completes D-051)
+- **Roles.** Admins with `Admin.Roles.Manage` create, rename and delete platform-admin roles and set their permissions.
+  - Managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) cannot be edited (409 `role.managed`). Seed roles keep their names and cannot be deleted, because the catalogue synchroniser finds them by name. Shop and customer roles are not visible to these endpoints (404).
+  - `SuperAdmin.*` permissions are never grantable to another role (400 `role.permission_not_grantable`), and neither are permissions of another user type.
+  - **No escalation:** an admin adds only permissions they hold (403 `role.escalation`). Removing is always allowed.
+  - A role can be deleted only when nobody holds it (409 `role.in_use`).
+  - Custom roles survive `migrate`, because the synchroniser touches only seed roles.
+- **Staff.** `GET /admin/staff` (`Admin.Roles.View`) lists staff. `PUT /admin/staff/{id}/roles` and `POST …/disable|enable` need `Admin.Staff.Manage`, with these guards:
+  - never your own roles or account (409 `staff.self`);
+  - only platform-admin roles, and at least one;
+  - no role whose permissions you lack (403 `role.escalation`);
+  - only a holder of the SuperAdmin role gives, takes or disables SuperAdmin (403 `role.superadmin_only`);
+  - never the last enabled SuperAdmin (409 `role.last_superadmin`). With the other guards this is unreachable through the API; it is kept as defence in depth.
+
+  Disabling takes effect on the account's next request (the session check reads `disabled_at`).
+- **Audit.** Every change is audited (`role.*`, `staff.*`). Permissions are resolved per request (D-051), so a change applies at once.
+
+## D-107 — The platform settings screen — Accepted (Phase 14; DV-A17)
+- **Sections.** The Phase 08 form is now the full sectioned screen: booking policy, reminders, subscriptions and enforcement, discovery, map defaults, and region (read-only in v1, D-076).
+  - Each section says what the platform uses it for, and each number shows the API's accepted range, checked before saving.
+  - A sticky save bar tracks unsaved changes and offers discard.
+  - Admins with `Admin.Audit.View` see the last five changes with who made them.
+- **DV-S14.** The remaining design constants are now settings-driven, or not rules at all: cancellation cutoff, review window, horizon, expiring threshold and reminder offset come from these settings. The design's "late more than 15 minutes" is not a rule (Phase 11). The 30/15/7-day expiry reminders are Phase 15 notifications and use the expiring-soon threshold.

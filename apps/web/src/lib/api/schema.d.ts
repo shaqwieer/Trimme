@@ -480,6 +480,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/dashboard/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Platform KPIs for today or the last 7 or 30 days, the 14-day trend, popular categories and top shops (SQL aggregates, platform calendar). */
+        get: operations["GetAdminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -728,7 +745,8 @@ export interface paths {
         /** Roles with their granted permissions. */
         get: operations["ListRoles"];
         put?: never;
-        post?: never;
+        /** Creates a platform-admin role with no permissions (audited). */
+        post: operations["CreateRole"];
         delete?: never;
         options?: never;
         head?: never;
@@ -763,6 +781,160 @@ export interface paths {
         put?: never;
         /** Emails a ShopOwner or ShopStaff invitation for one shop (audited). */
         post: operations["InviteShopUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customers, newest first, searchable by name only; booking count, upcoming, last and next booking. No contact data. */
+        get: operations["AdminListCustomers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/customers/{customerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A customer's profile with the mobile masked and their booking figures. */
+        get: operations["AdminGetCustomer"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/customers/{customerId}/contact/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Returns the customer's full mobile once, for support; a reason of at least 5 characters is required and the view is audited (never cached). */
+        post: operations["AdminRevealCustomerContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Renames a role created by an admin; seed roles keep their names (audited). */
+        put: operations["RenameRole"];
+        post?: never;
+        /** Deletes a role created by an admin that nobody holds (audited). */
+        delete: operations["DeleteRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/roles/{roleId}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets an editable admin role's permissions. Managed roles 409; SuperAdmin permissions never; only permissions you hold (403 role.escalation). Audited. */
+        put: operations["SetRolePermissions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Platform staff with their roles (search by name or email; filter by role). */
+        get: operations["ListStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/staff/{userId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces a staff member's admin roles. Not your own; SuperAdmin only by a SuperAdmin; never the last SuperAdmin; no role with permissions you lack. Audited. */
+        put: operations["SetStaffRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/staff/{userId}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Blocks a staff account; its sessions stop on the next request (audited). */
+        post: operations["DisableStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/staff/{userId}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unblocks a staff account (audited). */
+        post: operations["EnableStaff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2122,7 +2294,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bookings across shops (paged, latest first); search by customer name or reference. */
+        /** Bookings across shops (paged; latest first unless sort=asc): shop, any of several statuses, time range, channel, customer, professional; search by customer name or reference only. Status chip counts. */
         get: operations["AdminListBookings"];
         put?: never;
         post?: never;
@@ -2139,10 +2311,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One booking with its history. */
+        /** One booking with its history and the shop's internal notes (read-only). */
         get: operations["AdminGetBooking"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moves the booking along the state machine on the shop's behalf; a reason is required (audited). Invalid transitions answer 409. */
+        post: operations["AdminTransitionBooking"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2158,8 +2347,110 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancels on the shop's behalf with a reason (audited). */
+        /** Cancels on the shop's behalf with a reason (audited); the same as a transition to CancelledByShop. */
         post: operations["AdminCancelBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}/reschedule/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The professionals a booking may move to and the free starts on one date for its duration (its own time does not block it). */
+        get: operations["AdminGetRescheduleOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moves a pending or confirmed booking to a free start (the desk's collision rules, not in the past) with a reason; Idempotency-Key required; audited. 409 booking.slot_unavailable when the time was taken. */
+        post: operations["AdminRescheduleBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reviews for moderation: the queue (published with a report, a low rating or a phone number in the text), published, hidden or all; with counts. */
+        get: operations["AdminListReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{reviewId}/flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reports a published review to the moderators with a reason (it stays published; audited). */
+        post: operations["AdminFlagReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{reviewId}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides a review with a reason: it leaves the public pages and the rating totals (audited; never deleted). */
+        post: operations["AdminHideReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reviews/{reviewId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publishes a hidden review again, or clears a report on a published one (audited). */
+        post: operations["AdminPublishReview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2461,6 +2752,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The audit trail, newest first (keyset cursor; at most 100 per page). Entries hold no personal data and are never edited. */
+        get: operations["ListAuditEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every recorded action code and entity type, for the filters. */
+        get: operations["GetAuditFacets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2480,6 +2805,22 @@ export interface components {
             effectiveFrom: string;
             /** Format: uint32 */
             version: number;
+        };
+        /** @description One booking for an admin: the shop's view, its history and internal notes (read-only here). */
+        AdminBookingDetailResponse: {
+            booking: components["schemas"]["AdminBookingResponse"];
+            notes: components["schemas"]["BookingNoteResponse"][];
+        };
+        /** @description A page of bookings across shops, with the status chips' counts (every filter but the status applied). */
+        AdminBookingListResponse: {
+            items: components["schemas"]["AdminBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            counts: components["schemas"]["ShopBookingCounts"];
         };
         /** @description A booking in the admin views (the shop's view plus the shop and the customer's id; no contact data). */
         AdminBookingResponse: {
@@ -2505,6 +2846,76 @@ export interface components {
             isActive: boolean;
             /** Format: int32 */
             serviceCount: number;
+        };
+        AdminCustomerListItem: {
+            /** Format: uuid */
+            id: string;
+            displayName: null | string;
+            /** Format: date-time */
+            registeredAt: string;
+            isDisabled: boolean;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: int32 */
+            upcoming: number;
+            /** Format: date-time */
+            lastBookingAt: null | string;
+            /** Format: date-time */
+            nextBookingAt: null | string;
+        };
+        /** @description A customer's profile for support: `PhoneMasked` only (for example `+966 5•• ••• •12`) and their booking figures. */
+        AdminCustomerResponse: {
+            /** Format: uuid */
+            id: string;
+            displayName: null | string;
+            preferredLocale: string;
+            /** Format: date-time */
+            registeredAt: string;
+            isDisabled: boolean;
+            phoneMasked: null | string;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: int32 */
+            upcoming: number;
+            /** Format: int32 */
+            completed: number;
+            /** Format: int32 */
+            cancelled: number;
+            /** Format: int32 */
+            noShows: number;
+            /** Format: date-time */
+            lastBookingAt: null | string;
+            /** Format: date-time */
+            nextBookingAt: null | string;
+        };
+        /**
+         * @description `Days`: The KPI window: today only (1), or the last 7 or 30 days including today.
+         *             `AppointmentsToday`: Today's bookings (the whole platform day) without cancellations.
+         *             `Period`: Bookings that started from the window's first day until now.
+         *             `Previous`: The same elapsed length immediately before, for the deltas.
+         *             `Trend`: The last 14 days, oldest first, every day present.
+         */
+        AdminOverviewResponse: {
+            /** Format: int32 */
+            days: number;
+            /** Format: date */
+            today: string;
+            timeZone: string;
+            /** Format: int32 */
+            appointmentsToday: number;
+            /** Format: int32 */
+            appointmentsYesterday: number;
+            period: components["schemas"]["OverviewPeriod"];
+            previous: components["schemas"]["OverviewPeriod"];
+            shops: components["schemas"]["ShopCounts"];
+            professionals: components["schemas"]["ProfessionalCounts"];
+            /** Format: int32 */
+            newCustomers: number;
+            /** Format: int32 */
+            newCustomersPrevious: number;
+            trend: components["schemas"]["OverviewTrendDay"][];
+            popularCategories: components["schemas"]["OverviewCategory"][];
+            topShops: components["schemas"]["OverviewTopShop"][];
         };
         AdminPackageListItem: {
             /** Format: uuid */
@@ -2569,6 +2980,98 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description An admin reschedule: the new start, optionally another eligible professional, a reason (≥ 5 characters) and the version read. */
+        AdminRescheduleBookingRequest: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: uuid */
+            professionalId: null | string;
+            reason: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /**
+         * @description Free starts on one shop-local date for the booking's duration and the chosen professional (the booking's own time does
+         *     not block it), and the professionals it may move to: the active ones assigned to the booked item, or only its own
+         *     professional when the item is no longer offered.
+         */
+        AdminRescheduleOptionsResponse: {
+            timeZone: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            professionalId: string;
+            professionals: components["schemas"]["AdminRescheduleProfessional"][];
+            slots: components["schemas"]["AdminRescheduleSlot"][];
+        };
+        AdminRescheduleProfessional: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: string;
+        };
+        AdminRescheduleSlot: {
+            /** Format: date-time */
+            startsAt: string;
+            localTime: string;
+            period: string;
+        };
+        AdminReviewCounts: {
+            /** Format: int32 */
+            needsReview: number;
+            /** Format: int32 */
+            published: number;
+            /** Format: int32 */
+            hidden: number;
+            /** Format: int32 */
+            all: number;
+        };
+        AdminReviewListResponse: {
+            items: components["schemas"]["AdminReviewResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            counts: components["schemas"]["AdminReviewCounts"];
+        };
+        /** @description A review as moderators see it: the public name and text, the shop and professional, the flags and the moderation state. */
+        AdminReviewResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bookingId: string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: uuid */
+            professionalId: string;
+            professionalNameAr: string;
+            professionalNameEn: string;
+            /** Format: uuid */
+            customerId: null | string;
+            authorName: string;
+            /** Format: int32 */
+            rating: number;
+            tags: components["schemas"]["ReviewTag"][];
+            comment: null | string;
+            itemNameAr: string;
+            itemNameEn: null | string;
+            status: components["schemas"]["ReviewStatus"];
+            flags: components["schemas"]["ReviewFlag"][];
+            flagReason: null | string;
+            /** Format: date-time */
+            flaggedAt: null | string;
+            moderationReason: null | string;
+            /** Format: date-time */
+            moderatedAt: null | string;
+            /** Format: date-time */
+            createdAt: string;
             /** Format: uint32 */
             version: number;
         };
@@ -2782,6 +3285,40 @@ export interface components {
             /** Format: double */
             price?: null | number;
             reason?: null | string;
+        };
+        /**
+         * @description `ActorName`: The acting account's display name (never an email or phone); null for the system.
+         *             `ShopNameAr`: The shop the action concerns, when it concerns one.
+         */
+        AuditEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            actorUserId: null | string;
+            actorName: null | string;
+            actorType: string;
+            action: string;
+            entityType: string;
+            entityId: string;
+            /** Format: uuid */
+            shopId: null | string;
+            shopNameAr: null | string;
+            shopNameEn: null | string;
+            summary: null | string;
+            reason: null | string;
+            correlationId: null | string;
+        };
+        /** @description The values the filters can take: every action code and entity type recorded so far. */
+        AuditFacetsResponse: {
+            actions: string[];
+            entityTypes: string[];
+        };
+        /** @description `NextCursor`: Pass it back as `cursor` for the next (older) page; null on the last page. */
+        AuditPageResponse: {
+            items: components["schemas"]["AuditEntryResponse"][];
+            nextCursor: null | string;
         };
         /**
          * @description A bookable start (D-009: only genuinely bookable slots are returned). `LocalTime` is `HH:mm` in the
@@ -3150,6 +3687,10 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description The customer's full mobile in E.164, returned once to an authorized admin (never cached, never logged). */
+        CustomerContactResponse: {
+            phone: string;
+        };
         /** @enum {unknown} */
         DayOfWeek: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
         /**
@@ -3342,6 +3883,12 @@ export interface components {
             shopId: null | string;
             profileComplete: boolean;
         };
+        /** @description A reason (5–300 characters) for a report or a hide; send the version read. */
+        ModerateReviewRequest: {
+            reason: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @enum {unknown} */
         ModerationAction: "Hide" | "Unhide";
         /** @description Hide needs a reason (audited); unhide does not. */
@@ -3441,6 +3988,67 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description Bookings of one platform category (services are shop-owned, so they are never grouped by a global service, DV-S02). */
+        OverviewCategory: {
+            kind: components["schemas"]["OverviewCategoryKind"];
+            /** Format: uuid */
+            categoryId: null | string;
+            nameAr: null | string;
+            nameEn: null | string;
+            /** Format: int32 */
+            bookings: number;
+        };
+        /** @enum {unknown} */
+        OverviewCategoryKind: "Category" | "Packages" | "Uncategorised";
+        /**
+         * @description `Total`: Bookings that started in the window, cancellations included (the rates' denominator).
+         *             `CompletionRate`: Completed ÷ total, in percent with one decimal; 0 when there were none.
+         */
+        OverviewPeriod: {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            completed: number;
+            /** Format: int32 */
+            cancelled: number;
+            /** Format: int32 */
+            noShows: number;
+            /** Format: double */
+            completionRate: number;
+            /** Format: double */
+            cancellationRate: number;
+            /** Format: double */
+            noShowRate: number;
+        };
+        OverviewTopShop: {
+            /** Format: uuid */
+            shopId: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: double */
+            cancellationRate: number;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+        };
+        OverviewTrendDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            completed: number;
+            /** Format: int32 */
+            cancelledOrNoShow: number;
+            /** Format: int32 */
+            other: number;
+        };
         PackageItemResponse: {
             /** Format: uuid */
             serviceId: string;
@@ -3449,8 +4057,8 @@ export interface components {
             isAvailable: boolean;
         };
         /** @description The paged envelope every list endpoint returns. */
-        PagedResponseOfAdminBookingResponse: {
-            items: components["schemas"]["AdminBookingResponse"][];
+        PagedResponseOfAdminCustomerListItem: {
+            items: components["schemas"]["AdminCustomerListItem"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -3511,6 +4119,16 @@ export interface components {
         /** @description The paged envelope every list endpoint returns. */
         PagedResponseOfPublicReviewResponse: {
             items: components["schemas"]["PublicReviewResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfStaffAccountResponse: {
+            items: components["schemas"]["StaffAccountResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -3658,6 +4276,14 @@ export interface components {
             professionalId: string;
             /** Format: date-time */
             nextAvailableAt: null | string;
+        };
+        ProfessionalCounts: {
+            /** Format: int32 */
+            active: number;
+            /** Format: int32 */
+            disabled: number;
+            /** Format: int32 */
+            addedSince: number;
         };
         /** @description A professional's weekly hours as the shop manages them (no contact data). */
         ProfessionalHoursResponse: {
@@ -3929,6 +4555,11 @@ export interface components {
             blockedReason: null | string;
             professionals: components["schemas"]["ProfessionalAvailabilityResponse"][];
         };
+        /** @description Publishing needs only the version read. */
+        PublishReviewRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description Average and count, and the number of reviews per star (index 0 = one star … 4 = five stars). */
         RatingSummaryResponse: {
             /** Format: double */
@@ -4013,6 +4644,9 @@ export interface components {
             token: string;
             newPassword: string;
         };
+        RevealContactRequest: {
+            reason: null | string;
+        };
         /** @description The full number, returned once per audited reveal. Never cached. */
         RevealedWhatsAppResponse: {
             number: string;
@@ -4021,6 +4655,15 @@ export interface components {
             reason: string;
         };
         /**
+         * @description Why a review is in the moderation queue (D-102).
+         * @enum {unknown}
+         */
+        ReviewFlag: "Reported" | "LowRating" | "ContainsPhone";
+        /** @enum {unknown} */
+        ReviewQueue: "NeedsReview" | "Published" | "Hidden" | "All" | null;
+        /** @enum {unknown} */
+        ReviewStatus: "Published" | "Hidden";
+        /**
          * @description What the customer liked (design c-rate "ما الذي أعجبك؟"): a fixed list, translated by the clients.
          * @enum {unknown}
          */
@@ -4028,6 +4671,12 @@ export interface components {
         RevokedSessionsResponse: {
             /** Format: int32 */
             revoked: number;
+        };
+        RoleNameRequest: {
+            name: null | string;
+        };
+        RolePermissionsRequest: {
+            permissions: null | string[];
         };
         RoleResponse: {
             /** Format: uuid */
@@ -4152,6 +4801,16 @@ export interface components {
          * @enum {unknown}
          */
         ShopCategory: "Barbershop" | "Salon" | "Unisex";
+        ShopCounts: {
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            active: number;
+            /** Format: int32 */
+            draft: number;
+            /** Format: int32 */
+            suspended: number;
+        };
         ShopImageResponse: {
             /** Format: uuid */
             id: string;
@@ -4473,9 +5132,30 @@ export interface components {
             updatedAt: string;
             professionalSlugs: string[];
         };
+        StaffAccountResponse: {
+            /** Format: uuid */
+            id: string;
+            displayName: null | string;
+            email: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            isDisabled: boolean;
+            roles: components["schemas"]["StaffRoleRef"][];
+        };
+        StaffRoleRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        StaffRolesRequest: {
+            roles: null | string[];
+        };
         StaffSignInRequest: {
             email: string;
             password: string;
+        };
+        StaffStatusRequest: {
+            reason: null | string;
         };
         /** @description Stars 1–5, optional tags from the fixed list, optional comment (≤ 1000 characters). */
         SubmitReviewRequest: {
@@ -5743,6 +6423,37 @@ export interface operations {
             };
         };
     };
+    GetAdminOverview: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     GetCsrfToken: {
         parameters: {
             query?: never;
@@ -6207,6 +6918,39 @@ export interface operations {
             };
         };
     };
+    CreateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleNameRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     InviteStaff: {
         parameters: {
             query?: never;
@@ -6293,6 +7037,442 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListCustomers: {
+        parameters: {
+            query?: {
+                search?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfAdminCustomerListItem"];
+                };
+            };
+        };
+    };
+    AdminGetCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCustomerResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRevealCustomerContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevealContactRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerContactResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenameRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleNameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetRolePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolePermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListStaff: {
+        parameters: {
+            query?: {
+                search?: string;
+                roleId?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedResponseOfStaffAccountResponse"];
+                };
+            };
+        };
+    };
+    SetStaffRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffRolesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAccountResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DisableStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAccountResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EnableStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAccountResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10045,10 +11225,14 @@ export interface operations {
         parameters: {
             query?: {
                 shopId?: string;
-                status?: components["schemas"]["BookingStatus"];
+                status?: components["schemas"]["BookingStatus"][];
                 from?: string;
                 to?: string;
+                channel?: components["schemas"]["BookingChannel"];
+                customerId?: string;
+                professionalId?: string;
                 search?: string;
+                sort?: string;
                 page?: number;
                 pageSize?: number;
             };
@@ -10064,7 +11248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedResponseOfAdminBookingResponse"];
+                    "application/json": components["schemas"]["AdminBookingListResponse"];
                 };
             };
         };
@@ -10086,11 +11270,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminBookingResponse"];
+                    "application/json": components["schemas"]["AdminBookingDetailResponse"];
                 };
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminTransitionBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10131,6 +11377,309 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetRescheduleOptions: {
+        parameters: {
+            query?: {
+                date?: string;
+                professionalId?: string;
+            };
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRescheduleOptionsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRescheduleBooking: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminRescheduleBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListReviews: {
+        parameters: {
+            query?: {
+                queue?: components["schemas"]["ReviewQueue"];
+                flag?: components["schemas"]["ReviewFlag"];
+                shopId?: string;
+                rating?: number;
+                search?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReviewListResponse"];
+                };
+            };
+        };
+    };
+    AdminFlagReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminHideReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminPublishReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReviewResponse"];
                 };
             };
             /** @description Not Found */
@@ -10985,6 +12534,56 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListAuditEntries: {
+        parameters: {
+            query?: {
+                actorUserId?: string;
+                action?: string;
+                entityType?: string;
+                entityId?: string;
+                shopId?: string;
+                from?: string;
+                to?: string;
+                cursor?: string;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPageResponse"];
+                };
+            };
+        };
+    };
+    GetAuditFacets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditFacetsResponse"];
                 };
             };
         };

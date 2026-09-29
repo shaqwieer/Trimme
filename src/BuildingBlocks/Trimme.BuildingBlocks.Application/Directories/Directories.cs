@@ -50,3 +50,15 @@ public interface IShopServiceUsage
 {
     Task<bool> IsInUseAsync(ShopId shopId, Guid serviceId, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// Display names of accounts by id, for admin views such as the audit log (implemented by the Identity module). Names
+/// and user types only: never an email address or a phone number.
+/// </summary>
+public interface IUserNameLookup
+{
+    Task<IReadOnlyDictionary<Guid, UserNameEntry>> FindAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken);
+}
+
+/// <summary>An account's display name and user type (<c>Customer</c>, <c>ShopUser</c> or <c>PlatformAdmin</c>).</summary>
+public sealed record UserNameEntry(Guid Id, string? DisplayName, string UserType);

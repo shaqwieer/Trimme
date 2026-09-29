@@ -39,6 +39,9 @@ public sealed record BookingNoteRequest(string Text);
 
 public sealed record AdminCancelBookingRequest(string Reason, uint Version);
 
+/// <summary>An admin reschedule: the new start, optionally another eligible professional, a reason (≥ 5 characters) and the version read.</summary>
+public sealed record AdminRescheduleBookingRequest(DateTimeOffset StartsAt, Guid? ProfessionalId, string? Reason, uint Version);
+
 internal static class BookingEndpoints
 {
     public const string IdempotencyHeader = "Idempotency-Key";
@@ -169,22 +172,65 @@ internal static class BookingEndpoints
 
     private static void MapAdmin(RouteGroupBuilder group)
     {
-        group.MapGet("/", async (Guid? shopId, BookingStatus? status, DateTimeOffset? from, DateTimeOffset? to, string? search, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
-                TypedResults.Ok(await d.Send(new ListAdminBookingsQuery(shopId, status, from, to, search, new PageRequest(page, pageSize)), ct)))
+        group.MapGet("/", async (Guid? shopId, [FromQuery] BookingStatus[]? status, DateTimeOffset? from, DateTimeOffset? to, BookingChannel? channel, Guid? customerId,
+                    Guid? professionalId, string? search, string? sort, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
+                TypedResults.Ok(await d.Send(new ListAdminBookingsQuery(
+                    shopId, status, from, to, channel, customerId, professionalId, search, !string.Equals(sort, "asc", StringComparison.OrdinalIgnoreCase),
+                    new PageRequest(page, pageSize)), ct)))
             .RequirePermission(AdminView)
-            .WithName("AdminListBookings").WithSummary("Bookings across shops (paged, latest first); search by customer name or reference.")
-            .Produces<PagedResponse<AdminBookingResponse>>();
+            .WithName("AdminListBookings")
+            .WithSummary("Bookings across shops (paged; latest first unless sort=asc): shop, any of several statuses, time range, channel, customer, professional; search by customer name or reference only. Status chip counts.")
+            .Produces<AdminBookingListResponse>();
         group.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetAdminBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(AdminView)
-            .WithName("AdminGetBooking").WithSummary("One booking with its history.")
-            .Produces<AdminBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound);
-        group.MapPost("/{bookingId:guid}/cancel", async (Guid bookingId, AdminCancelBookingRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new AdminCancelBookingCommand(bookingId, r.Reason ?? string.Empty, r.Version), ct)).ToHttpResult())
+            .WithName("AdminGetBooking").WithSummary("One booking with its history and the shop's internal notes (read-only).")
+            .Produces<AdminBookingDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPost("/{bookingId:guid}/transitions", async (Guid bookingId, BookingTransitionRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminTransitionBookingCommand(bookingId, r.To, r.Reason, r.Version), ct)).ToHttpResult())
             .RequirePermission(AdminIntervene)
-            .WithName("AdminCancelBooking").WithSummary("Cancels on the shop's behalf with a reason (audited).")
+            .WithName("AdminTransitionBooking")
+            .WithSummary("Moves the booking along the state machine on the shop's behalf; a reason is required (audited). Invalid transitions answer 409.")
+            .Produces<AdminBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/cancel", async (Guid bookingId, AdminCancelBookingRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminTransitionBookingCommand(bookingId, BookingStatus.CancelledByShop, r.Reason, r.Version), ct)).ToHttpResult())
+            .RequirePermission(AdminIntervene)
+            .WithName("AdminCancelBooking").WithSummary("Cancels on the shop's behalf with a reason (audited); the same as a transition to CancelledByShop.")
             .Produces<AdminBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
+        group.MapGet("/{bookingId:guid}/reschedule/options", async (Guid bookingId, DateOnly? date, Guid? professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetAdminRescheduleOptionsQuery(bookingId, date, professionalId), ct)).ToHttpResult())
+            .RequirePermission(AdminIntervene)
+            .WithName("AdminGetRescheduleOptions")
+            .WithSummary("The professionals a booking may move to and the free starts on one date for its duration (its own time does not block it).")
+            .Produces<AdminRescheduleOptionsResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/reschedule", async (Guid bookingId, [FromHeader(Name = IdempotencyHeader)] string? key, AdminRescheduleBookingRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
+            {
+                if (KeyError(key) is { } missing)
+                {
+                    return missing.ToProblem();
+                }
+
+                var result = await d.Send(new AdminRescheduleBookingCommand(bookingId, r.StartsAt, r.ProfessionalId, r.Reason, r.Version, key!), ct);
+                if (result.IsFailure)
+                {
+                    return result.Error.ToProblem();
+                }
+
+                if (result.Value.Replayed)
+                {
+                    http.Response.Headers[ReplayedHeader] = "true";
+                }
+
+                return TypedResults.Ok(result.Value.Booking);
+            })
+            .RequirePermission(AdminIntervene)
+            .WithName("AdminRescheduleBooking")
+            .WithSummary("Moves a pending or confirmed booking to a free start (the desk's collision rules, not in the past) with a reason; Idempotency-Key required; audited. 409 booking.slot_unavailable when the time was taken.")
+            .Produces<AdminBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
     }
 
     private static Error? KeyError(string? key) =>

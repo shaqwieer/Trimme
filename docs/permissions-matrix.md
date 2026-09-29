@@ -7,7 +7,7 @@
 - The API enforces every rule; the web app only hides navigation (spec §7, R-WEB-13).
 - Every `/api/v1` endpoint is **default-deny**: it requires a signed-in user unless it explicitly allows anonymous access. The endpoint matrix test (`AuthorizationMatrixTests.Endpoint_WithoutPermission_Returns403`) fails if an endpoint is anonymous without being on the reviewed allow-list, or authenticated without a permission, a user type or a reviewed self-service entry.
 - A role belongs to one user type (Customer, ShopUser, PlatformAdmin) and can hold only permissions of that type. `SuperAdmin.*` permissions are held only by the SuperAdmin role.
-- Managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are reset to these grants on every `migrate`. OperationsManager and Support receive these defaults once and are editable by `Admin.Roles.Manage` (UI in Phase 14).
+- Managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are reset to these grants on every `migrate`. OperationsManager and Support receive these defaults once and are editable by `Admin.Roles.Manage` at `/admin/roles` (Phase 14, D-106), which also creates custom platform-admin roles.
 - **Never** in the catalogue: moving/transferring a professional between shops (D-011), customer data export, shop access to customer contact details. `PermissionCatalogue_HasNoTransferPermission` guards this.
 - Shop permissions are always tenant-scoped to the user's own shop: the tenant comes from the session and the shop's current status, every shop-owned row is filtered by it, and a suspended shop has no tenant (D-059, D-061).
 
@@ -81,7 +81,7 @@
 
 The `Customer` role holds no catalogue permission. Customers use self-service endpoints that act only on their own account (`/me`, sessions, profile completion); booking and review ownership rules arrive with those features (Phases 10–12).
 
-## Endpoints (Phases 04–08)
+## Endpoints (Phases 04–14)
 
 | Endpoint | Access |
 |---|---|
@@ -153,6 +153,19 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `POST /api/v1/admin/shops/{id}/subscription/override` | `SuperAdmin.Subscriptions.Override` · reason required · previous values kept · audited |
 | `GET /api/v1/shop/subscription` | `Shop.Subscription.Read` · own shop only (tenant from claims) · no override reasons |
 | `GET /api/v1/admin/settings` / `PUT /api/v1/admin/settings` | `Admin.Settings.View` / `Admin.Settings.Edit` · version-checked · audited with the changed fields (D-076) |
+| `GET /api/v1/admin/dashboard/overview` | `Admin.Dashboard.View` · SQL aggregates on the platform calendar (D-101) |
+| `GET /api/v1/admin/bookings`, `GET /api/v1/admin/bookings/{id}` | `Admin.Bookings.View` · search by name or reference only; detail with history and notes; no phone |
+| `POST /api/v1/admin/bookings/{id}/transitions`, `POST .../cancel` | `Admin.Bookings.Intervene` · reason required (5–300) · the shop's state machine · audited (D-103) |
+| `GET /api/v1/admin/bookings/{id}/reschedule/options`, `POST .../reschedule` | `Admin.Bookings.Intervene` · reschedule: `Idempotency-Key`, reason, collision rules, not in the past · audited (D-103) |
+| `GET /api/v1/admin/customers`, `GET /api/v1/admin/customers/{id}` | `Admin.Customers.View` · name search only; list without contact data; detail with the masked mobile (D-105) |
+| `POST /api/v1/admin/customers/{id}/contact/reveal` | `Admin.Customers.ViewContact` · reason required · audited without the number · `no-store` (D-105) |
+| `GET /api/v1/admin/reviews` | `Admin.Reviews.View` · queue, flags, counts (D-102) |
+| `POST /api/v1/admin/reviews/{id}/flag` | `Admin.Reviews.Flag` · reason required · audited |
+| `POST /api/v1/admin/reviews/{id}/hide`, `POST .../publish` | `Admin.Reviews.Moderate` · hide needs a reason · version-checked · rating totals move in the same transaction · audited (D-102) |
+| `POST /api/v1/admin/roles`, `PUT .../{id}`, `DELETE .../{id}`, `PUT .../{id}/permissions` | `Admin.Roles.Manage` · platform-admin roles only; managed roles 409; no `SuperAdmin.*`; only permissions you hold · audited (D-106) |
+| `GET /api/v1/admin/staff` | `Admin.Roles.View` |
+| `PUT /api/v1/admin/staff/{id}/roles`, `POST .../disable`, `POST .../enable` | `Admin.Staff.Manage` · not yourself; SuperAdmin only by a SuperAdmin; never the last one; no role with permissions you lack · audited (D-106) |
+| `GET /api/v1/admin/audit`, `GET /api/v1/admin/audit/facets` | `Admin.Audit.View` · keyset cursor · actor names only (D-104) |
 
 There is no endpoint that changes a professional's shop. Shops never assign services to professionals.
 

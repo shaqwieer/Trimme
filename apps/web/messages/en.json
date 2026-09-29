@@ -246,7 +246,8 @@
     "hoursOverlap": "The ranges overlap, including the hours after midnight",
     "rangeInvalid": "The end is before the start, or the range is longer than a year",
     "breakDays": "Choose weekdays or a single date",
-    "immutable": "This value cannot change"
+    "immutable": "This value cannot change",
+    "roleNameTaken": "Another role already has this name."
   },
   "auth": {
     "meta": {
@@ -381,12 +382,6 @@
       "saved": "Your details were saved."
     }
   },
-  "adminHome": {
-    "title": "Platform overview",
-    "welcome": "Welcome, {name}",
-    "body": "Operational platform indicators will appear here when the admin dashboard launches.",
-    "roles": "Your roles"
-  },
   "shopHome": {
     "title": "Overview",
     "body": "Today's appointments and your shop's indicators will appear here when the shop dashboard launches.",
@@ -459,7 +454,24 @@
     "review_already_exists": "You already rated this visit.",
     "review_window_closed": "The time to rate this visit has passed.",
     "review_booking_not_completed": "You can rate it once the visit is completed.",
-    "favorites_limit_reached": "You reached the favourites limit."
+    "favorites_limit_reached": "You reached the favourites limit.",
+    "booking_too_early": "It's too early for this status; try again closer to the appointment.",
+    "idempotency_key_required": "The request could not be sent safely. Reload and try again.",
+    "auth_user_not_found": "The account was not found.",
+    "review_not_found": "The review was not found.",
+    "review_not_published": "Only a published review can be reported.",
+    "review_already_flagged": "This review has already been reported.",
+    "review_already_hidden": "This review is already hidden.",
+    "review_nothing_to_publish": "This review is already published with no report.",
+    "role_not_found": "The role was not found.",
+    "role_managed": "This role is managed by the platform and cannot be changed.",
+    "role_in_use": "Staff still hold this role. Remove it from them first.",
+    "role_permission_not_grantable": "Some of these permissions cannot be given to this role.",
+    "role_escalation": "You can only grant permissions you hold yourself.",
+    "role_superadmin_only": "Only a general manager can give or take the general manager role.",
+    "role_last_superadmin": "The platform must keep at least one active general manager.",
+    "role_not_assignable": "These roles cannot be given to platform staff.",
+    "staff_self": "You cannot change your own roles or disable your own account."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -1134,7 +1146,7 @@
   },
   "platformSettings": {
     "title": "Platform settings",
-    "intro": "These values apply to every shop, and each change is recorded in the activity log. More sections arrive with their features.",
+    "intro": "These values apply to every shop, and each change is recorded in the activity log. Region values are fixed in v1.",
     "sections": {
       "booking": "Booking policy",
       "notifications": "Reminders",
@@ -1168,7 +1180,25 @@
     "enforcementHelper": "Existing bookings are never changed, and shops can still record walk-ins.",
     "save": "Save settings",
     "saved": "Settings saved.",
-    "readOnly": "You can view these settings but not change them."
+    "readOnly": "You can view these settings but not change them.",
+    "descriptions": {
+      "booking": "What customers may book online: how far ahead, how soon, on which time grid, until when they can cancel or move a booking, and for how long they can review a visit.",
+      "notifications": "When the customer's and the barber's WhatsApp reminders go out before an appointment.",
+      "subscriptions": "When a shop's subscription counts as ending soon, and what happens while none is in force. Existing bookings are never changed.",
+      "discovery": "Whether shops that paused online booking still appear in search and on the map. Their page stays reachable by link.",
+      "map": "Where maps open when there is no location yet (the shop location picker and search).",
+      "regional": "Language, currency, time zone and country. Changing them needs a migration plan, so they are fixed in v1."
+    },
+    "range": "Between {min} and {max}",
+    "discard": "Discard changes",
+    "unsaved": "You have unsaved changes.",
+    "upToDate": "All changes are saved.",
+    "recent": {
+      "title": "Recent changes",
+      "all": "Full history",
+      "empty": "No changes recorded yet.",
+      "changed": "Settings changed"
+    }
   },
   "shopSchedule": {
     "title": "Hours, breaks and time off",
@@ -2207,6 +2237,458 @@
         "night": "Night"
       },
       "closedCell": "Closed"
+    }
+  },
+  "adminOverview": {
+    "title": "Platform overview",
+    "subtitle": "TRIMME platform · {date}",
+    "kpis": "Platform indicators",
+    "period": {
+      "label": "Period",
+      "d1": "Today",
+      "d7": "Last 7 days",
+      "d30": "Last 30 days"
+    },
+    "kpi": {
+      "appointmentsToday": "Appointments today",
+      "completionRate": "Completion rate",
+      "cancellationRate": "Cancellation rate",
+      "noShowRate": "No-show rate",
+      "activeShops": "Active shops",
+      "expiringSubscriptions": "Subscriptions expiring soon",
+      "activeProfessionals": "Active professionals",
+      "newCustomers": "New customers"
+    },
+    "delta": {
+      "vsYesterday": "{change} vs yesterday",
+      "percent": "{sign}{value}%",
+      "points": "{sign}{value} pts vs previous period",
+      "noBase": "No earlier figure",
+      "ofTotal": "of {count} bookings so far",
+      "ofShops": "of {total} shops",
+      "endedOrSuspended": "{count} ended or suspended",
+      "added": "+{count} added in this period"
+    },
+    "trend": {
+      "title": "Bookings over 14 days",
+      "completed": "Completed",
+      "cancelledOrNoShow": "Cancelled or no-show",
+      "other": "Upcoming or in progress",
+      "table": "Bookings per day",
+      "date": "Date"
+    },
+    "popular": {
+      "title": "Most booked categories",
+      "empty": "No bookings in this period yet.",
+      "Packages": "Packages",
+      "Uncategorised": "Without a category"
+    },
+    "topShops": {
+      "title": "Busiest shops",
+      "empty": "No bookings in this period yet.",
+      "shop": "Shop",
+      "bookings": "Bookings",
+      "cancellation": "Cancellations",
+      "rating": "Rating"
+    },
+    "followUp": {
+      "title": "Subscriptions to follow up",
+      "all": "All subscriptions",
+      "empty": "No subscription ends soon.",
+      "ends": "Ends {date}",
+      "expired": "{count, plural, =0 {No ended subscriptions} one {# ended} other {# ended}}",
+      "suspended": "{count, plural, =0 {none suspended} one {# suspended} other {# suspended}}"
+    }
+  },
+  "adminBookings": {
+    "title": "Bookings",
+    "detailTitle": "Booking details",
+    "notFound": "The booking was not found.",
+    "filters": "Filter bookings",
+    "search": "Search",
+    "searchPlaceholder": "Customer name or booking number",
+    "from": "From",
+    "to": "To",
+    "channel": "Source",
+    "allChannels": "All sources",
+    "apply": "Apply",
+    "clear": "Clear filters",
+    "scopedShop": "Showing one shop's bookings.",
+    "scopedCustomer": "Showing one customer's bookings.",
+    "statusFilter": "Filter by status",
+    "caption": "Bookings across all shops",
+    "empty": {
+      "title": "No bookings match these filters",
+      "body": "Change the dates, the status or the search."
+    },
+    "columns": {
+      "when": "Time",
+      "customer": "Customer & service",
+      "shop": "Shop & barber",
+      "status": "Status",
+      "source": "Source",
+      "reference": "Number"
+    },
+    "rows": {
+      "shop": "Shop"
+    },
+    "noPhone": "The customer's number is not part of a booking. Support can reveal it from the customer's profile, with a reason; every view is recorded.",
+    "noNotes": "No internal notes.",
+    "history": {
+      "rescheduled": "Time changed (was {from})",
+      "reason": "Reason: {reason}"
+    },
+    "intervene": {
+      "heading": "Intervene",
+      "title": "{action} on the shop's behalf",
+      "rescheduleTitle": "Reschedule the booking",
+      "auditNote": "The shop and the customer see the change. A reason is required and recorded in the activity log.",
+      "reason": "Reason",
+      "submit": "Confirm",
+      "reschedule": "Reschedule",
+      "rescheduleSubmit": "Confirm the new time",
+      "date": "Date",
+      "professional": "Barber",
+      "time": "Free times",
+      "noSlots": "No free time on this day for this barber.",
+      "none": "No action is available for this booking.",
+      "changed": "The booking was updated.",
+      "rescheduled": "The booking was rescheduled."
+    }
+  },
+  "adminCustomers": {
+    "title": "Customers",
+    "detailTitle": "Customer profile",
+    "notFound": "The customer was not found.",
+    "search": "Search customers",
+    "searchPlaceholder": "Search by name",
+    "searchSubmit": "Search",
+    "privacy": "Customer numbers are visible to the platform team only, for support, and every view is recorded in the activity log.",
+    "caption": "Customers",
+    "empty": {
+      "title": "No customers found",
+      "body": "Try another name."
+    },
+    "columns": {
+      "name": "Customer",
+      "bookings": "Bookings",
+      "upcoming": "Upcoming",
+      "last": "Last booking",
+      "registered": "Registered"
+    },
+    "noName": "No name yet",
+    "disabled": "Disabled",
+    "since": "Customer since {date}",
+    "stats": "Booking figures",
+    "kpi": {
+      "bookings": "Bookings",
+      "completed": "Completed",
+      "cancelled": "Cancellations",
+      "noShows": "No-shows"
+    },
+    "upcoming": "Upcoming bookings",
+    "previous": "Previous bookings",
+    "noUpcoming": "No upcoming bookings.",
+    "noPrevious": "No previous bookings.",
+    "allBookings": "All bookings",
+    "contact": {
+      "none": "No number",
+      "reveal": "Show number",
+      "hide": "Hide",
+      "privacy": "Visible to the platform team only, for support. Every view is recorded.",
+      "title": "Show the customer's number?",
+      "body": "Say why you need it. The view is recorded in the activity log with your name and the reason.",
+      "reason": "Reason",
+      "submit": "Show number"
+    }
+  },
+  "adminReviews": {
+    "title": "Reviews",
+    "queues": "Review lists",
+    "queue": {
+      "NeedsReview": "Needs review",
+      "Published": "Published",
+      "Hidden": "Hidden",
+      "All": "All"
+    },
+    "flagFilter": "Filter by reason",
+    "flag": {
+      "any": "Any reason",
+      "Reported": "Reported",
+      "LowRating": "Low rating",
+      "ContainsPhone": "Contains a phone number"
+    },
+    "search": "Search by name or text",
+    "searchSubmit": "Search",
+    "list": "Reviews",
+    "empty": {
+      "title": "No reviews here",
+      "body": "Change the list or the filter.",
+      "queue": "Nothing waits for moderation."
+    },
+    "hidden": "Hidden",
+    "item": "Service: {name}",
+    "booking": "View the booking",
+    "reportedFor": "Reported: {reason}",
+    "hiddenFor": "Hidden: {reason}",
+    "actions": {
+      "flag": "Report",
+      "hide": "Hide",
+      "publish": "Publish",
+      "reason": "Reason",
+      "flagTitle": "Report this review?",
+      "flagBody": "It stays published; a moderator decides. Your reason is recorded.",
+      "hideTitle": "Hide this review?",
+      "hideBody": "It leaves the shop's page and its rating. It is kept, not deleted, and the reason is recorded.",
+      "publishTitle": "Publish this review?",
+      "publishBody": "It returns to the shop's page and counts in its rating again.",
+      "clearBody": "It stays published and leaves the moderation queue; the report is cleared."
+    }
+  },
+  "permissions": {
+    "areas": {
+      "Dashboard": "Overview",
+      "Shops": "Shops",
+      "Professionals": "Professionals",
+      "ServiceCategories": "Service categories",
+      "ShopServices": "Shop services",
+      "Packages": "Packages",
+      "Bookings": "Bookings",
+      "Customers": "Customers",
+      "Reviews": "Reviews",
+      "Subscriptions": "Subscriptions",
+      "Qr": "QR codes",
+      "WhatsApp": "WhatsApp",
+      "Roles": "Roles",
+      "Staff": "Platform staff",
+      "Audit": "Activity log",
+      "Settings": "Platform settings",
+      "SuperAdmin": "SuperAdmin only"
+    },
+    "codes": {
+      "Admin_Dashboard_View": "View the platform overview",
+      "Admin_Shops_View": "View shops",
+      "Admin_Shops_Create": "Create shops",
+      "Admin_Shops_Edit": "Edit shop profiles and locations",
+      "Admin_Shops_Suspend": "Activate and suspend shops",
+      "Admin_Shops_ManageAccount": "Invite shop accounts",
+      "Admin_Professionals_View": "View professionals",
+      "Admin_Professionals_Create": "Create professionals",
+      "Admin_Professionals_Edit": "Edit professionals",
+      "Admin_Professionals_Disable": "Disable and enable professionals",
+      "Admin_Professionals_AssignServices": "Assign services to professionals",
+      "Admin_Professionals_ManageWhatsApp": "Manage professionals' WhatsApp numbers",
+      "Admin_Professionals_RevealWhatsApp": "Reveal professionals' WhatsApp numbers",
+      "Admin_ServiceCategories_Manage": "Manage service categories",
+      "Admin_ShopServices_View": "View shop services",
+      "Admin_ShopServices_Moderate": "Hide and restore shop services",
+      "Admin_ShopServices_SupportOverride": "Correct a shop service (support override)",
+      "Admin_Packages_Manage": "Manage platform packages",
+      "Admin_Bookings_View": "View bookings",
+      "Admin_Bookings_Intervene": "Change and reschedule bookings",
+      "Admin_Customers_View": "View customers",
+      "Admin_Customers_ViewContact": "Reveal customer numbers",
+      "Admin_Reviews_View": "View reviews",
+      "Admin_Reviews_Moderate": "Hide and publish reviews",
+      "Admin_Reviews_Flag": "Report reviews",
+      "Admin_Subscriptions_View": "View subscriptions",
+      "Admin_Subscriptions_Assign": "Activate subscriptions",
+      "Admin_Subscriptions_Renew": "Renew subscriptions",
+      "Admin_Subscriptions_Suspend": "Suspend and reinstate subscriptions",
+      "Admin_Qr_View": "View QR codes",
+      "Admin_Qr_Manage": "Manage QR codes",
+      "Admin_WhatsApp_View": "View WhatsApp messages",
+      "Admin_WhatsApp_Templates_Edit": "Edit WhatsApp templates",
+      "Admin_WhatsApp_Templates_Activate": "Activate WhatsApp templates",
+      "Admin_WhatsApp_TestSend": "Send WhatsApp test messages",
+      "Admin_WhatsApp_Dispatches_Retry": "Retry WhatsApp messages",
+      "Admin_Roles_View": "View roles and staff",
+      "Admin_Roles_Manage": "Manage roles and their permissions",
+      "Admin_Staff_Manage": "Invite staff and assign their roles",
+      "Admin_Audit_View": "View the activity log",
+      "Admin_Settings_View": "View platform settings",
+      "Admin_Settings_Edit": "Edit platform settings",
+      "SuperAdmin_SubscriptionPlans_Manage": "Manage subscription plans and prices",
+      "SuperAdmin_Subscriptions_Override": "Override a shop's subscription"
+    }
+  },
+  "adminRoles": {
+    "title": "Roles & permissions",
+    "notFound": "The role was not found.",
+    "sections": "Roles and staff",
+    "tabs": {
+      "roles": "Permission matrix",
+      "staff": "Platform staff"
+    },
+    "intro": "The more specific permission wins. Every change is recorded in the activity log, and it applies from the account's next request.",
+    "matrix": "Permission matrix",
+    "permission": "Permission",
+    "granted": "Allowed",
+    "notGranted": "Not allowed",
+    "managedRole": "Managed by the platform",
+    "roleNames": {
+      "SuperAdmin": "General manager",
+      "OperationsManager": "Operations manager",
+      "Support": "Support"
+    },
+    "create": {
+      "title": "New role",
+      "name": "Role name",
+      "submit": "Create role"
+    },
+    "editor": {
+      "title": "Role permissions",
+      "managed": "This role is managed by the platform and cannot be changed here.",
+      "readOnly": "You can view this role but not change it.",
+      "name": "Role name",
+      "rename": "Rename",
+      "delete": "Delete role",
+      "deleteTitle": "Delete this role?",
+      "deleteBody": "Only a role nobody holds can be deleted. This cannot be undone.",
+      "notHeld": "You don't hold this permission, so you can't grant it.",
+      "save": "Save permissions",
+      "saved": "Permissions saved.",
+      "renamed": "Role renamed.",
+      "auditNote": "Recorded in the activity log."
+    },
+    "staff": {
+      "title": "Platform staff",
+      "search": "Search by name or email",
+      "searchSubmit": "Search",
+      "caption": "Platform staff",
+      "empty": "No staff found.",
+      "columns": {
+        "name": "Name",
+        "roles": "Roles",
+        "status": "Access",
+        "since": "Joined"
+      },
+      "active": "Active",
+      "disabled": "Disabled",
+      "you": "You",
+      "edit": "Roles",
+      "editFor": "Change {name}'s roles",
+      "editTitle": "{name}'s roles",
+      "editBody": "Choose at least one role. You can only assign roles whose permissions you hold.",
+      "roles": "Roles",
+      "save": "Save roles",
+      "disable": "Disable",
+      "enable": "Enable",
+      "disableFor": "Disable {name}",
+      "enableFor": "Enable {name}",
+      "disableTitle": "Disable {name}?",
+      "disableBody": "They are signed out on their next request and cannot sign in until enabled again.",
+      "enableTitle": "Enable {name}?",
+      "enableBody": "They can sign in again with their roles."
+    },
+    "invite": {
+      "title": "Invite a staff member",
+      "email": "Email",
+      "role": "Role",
+      "submit": "Send invitation",
+      "sent": "Invitation sent to {email}."
+    }
+  },
+  "adminAudit": {
+    "title": "Activity log",
+    "filters": "Filter the activity log",
+    "action": "Action",
+    "allActions": "All actions",
+    "entityType": "Record",
+    "allEntities": "All records",
+    "entityId": "Record ID",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "filtered": "Filtered view.",
+    "clear": "Show everything",
+    "entries": "Entries",
+    "empty": "No activity matches these filters.",
+    "reason": "Reason: {reason}",
+    "open": "Open the {type}",
+    "history": "This record's history",
+    "byActor": "Everything by this person",
+    "newest": "Newest entries",
+    "older": "Older entries",
+    "actorType": {
+      "PlatformAdmin": "Platform team",
+      "ShopUser": "Shop",
+      "Customer": "Customer",
+      "System": "System"
+    },
+    "entities": {
+      "Shop": "shop",
+      "Professional": "professional",
+      "Booking": "booking",
+      "Customer": "customer",
+      "Review": "review",
+      "Role": "role",
+      "User": "staff member",
+      "Invitation": "invitation",
+      "ShopService": "service",
+      "ServicePackage": "package",
+      "ServiceCategory": "category",
+      "SubscriptionPlan": "plan",
+      "ShopSubscription": "subscription",
+      "PlatformSettings": "settings"
+    },
+    "actions": {
+      "shop_created": "Shop created",
+      "shop_activated": "Shop activated",
+      "shop_suspended": "Shop suspended",
+      "shop_profile_updated": "Shop profile edited",
+      "shop_location_set": "Shop location set",
+      "shop_editable_policy_set": "Shop edit permissions changed",
+      "shop_image_changed": "Shop image changed",
+      "shop_online_booking_paused": "Online booking paused",
+      "shop_online_booking_resumed": "Online booking resumed",
+      "shop_user_invited": "Shop account invited",
+      "professional_created": "Professional created",
+      "professional_updated": "Professional edited",
+      "professional_disabled": "Professional disabled",
+      "professional_enabled": "Professional enabled",
+      "professional_avatar_changed": "Professional photo changed",
+      "professional_services_assigned": "Services assigned",
+      "professional_whatsapp_changed": "WhatsApp settings changed",
+      "professional_whatsapp_revealed": "Professional's number viewed",
+      "service_hidden": "Service hidden",
+      "service_unhidden": "Service restored",
+      "service_support_override": "Service corrected by support",
+      "package_hidden": "Package hidden",
+      "package_unhidden": "Package restored",
+      "service_category_created": "Category created",
+      "service_category_updated": "Category edited",
+      "service_category_activated": "Category activated",
+      "service_category_deactivated": "Category deactivated",
+      "plan_created": "Plan created",
+      "plan_updated": "Plan edited",
+      "plan_published": "Plan published",
+      "plan_deactivated": "Plan withdrawn",
+      "plan_archived": "Plan archived",
+      "plan_reordered": "Plans reordered",
+      "plan_price_added": "Plan price version added",
+      "subscription_assigned": "Subscription activated",
+      "subscription_renewed": "Subscription renewed",
+      "subscription_overridden": "Subscription overridden",
+      "subscription_suspended": "Subscription suspended",
+      "subscription_reinstated": "Subscription reinstated",
+      "platform_settings_updated": "Platform settings changed",
+      "booking_cancelled_by_admin": "Booking cancelled by the platform",
+      "booking_status_changed_by_admin": "Booking status changed by the platform",
+      "booking_rescheduled_by_admin": "Booking rescheduled by the platform",
+      "customer_contact_revealed": "Customer's number viewed",
+      "review_flagged": "Review reported",
+      "review_hidden": "Review hidden",
+      "review_published": "Review published",
+      "review_report_cleared": "Review report cleared",
+      "role_created": "Role created",
+      "role_renamed": "Role renamed",
+      "role_deleted": "Role deleted",
+      "role_permissions_changed": "Role permissions changed",
+      "staff_invited": "Staff member invited",
+      "staff_roles_changed": "Staff roles changed",
+      "staff_disabled": "Staff member disabled",
+      "staff_enabled": "Staff member enabled"
     }
   }
 }

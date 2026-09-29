@@ -26,6 +26,7 @@ public sealed class ReviewsModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<IRatingReader, RatingReader>();
+        services.AddScoped<Application.Admin.AdminReviewMapper>();
         services.AddScoped<IReviewLookup, Application.Customer.ReviewLookup>();
         services.AddSingleton<IDevSeeder, DemoReviewsSeeder>();
     }

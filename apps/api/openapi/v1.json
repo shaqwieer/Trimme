@@ -1376,6 +1376,47 @@
         }
       }
     },
+    "/api/v1/admin/dashboard/overview": {
+      "get": {
+        "tags": [
+          "Admin: overview"
+        ],
+        "summary": "Platform KPIs for today or the last 7 or 30 days, the 14-day trend, popular categories and top shops (SQL aggregates, platform calendar).",
+        "operationId": "GetAdminOverview",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/csrf": {
       "get": {
         "tags": [
@@ -1904,6 +1945,45 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Creates a platform-admin role with no permissions (audited).",
+        "operationId": "CreateRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/staff/invitations": {
@@ -2018,6 +2098,623 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/customers": {
+      "get": {
+        "tags": [
+          "Admin: customers"
+        ],
+        "summary": "Customers, newest first, searchable by name only; booking count, upcoming, last and next booking. No contact data.",
+        "operationId": "AdminListCustomers",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfAdminCustomerListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/customers/{customerId}": {
+      "get": {
+        "tags": [
+          "Admin: customers"
+        ],
+        "summary": "A customer\u0027s profile with the mobile masked and their booking figures.",
+        "operationId": "AdminGetCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCustomerResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/customers/{customerId}/contact/reveal": {
+      "post": {
+        "tags": [
+          "Admin: customers"
+        ],
+        "summary": "Returns the customer\u0027s full mobile once, for support; a reason of at least 5 characters is required and the view is audited (never cached).",
+        "operationId": "AdminRevealCustomerContact",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealContactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerContactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/roles/{roleId}": {
+      "put": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Renames a role created by an admin; seed roles keep their names (audited).",
+        "operationId": "RenameRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Deletes a role created by an admin that nobody holds (audited).",
+        "operationId": "DeleteRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/roles/{roleId}/permissions": {
+      "put": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Sets an editable admin role\u0027s permissions. Managed roles 409; SuperAdmin permissions never; only permissions you hold (403 role.escalation). Audited.",
+        "operationId": "SetRolePermissions",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePermissionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/staff": {
+      "get": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Platform staff with their roles (search by name or email; filter by role).",
+        "operationId": "ListStaff",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponseOfStaffAccountResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/staff/{userId}/roles": {
+      "put": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Replaces a staff member\u0027s admin roles. Not your own; SuperAdmin only by a SuperAdmin; never the last SuperAdmin; no role with permissions you lack. Audited.",
+        "operationId": "SetStaffRoles",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffRolesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/staff/{userId}/disable": {
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Blocks a staff account; its sessions stop on the next request (audited).",
+        "operationId": "DisableStaff",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAccountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/staff/{userId}/enable": {
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Unblocks a staff account (audited).",
+        "operationId": "EnableStaff",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffAccountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7247,7 +7944,7 @@
         "tags": [
           "Admin: bookings"
         ],
-        "summary": "Bookings across shops (paged, latest first); search by customer name or reference.",
+        "summary": "Bookings across shops (paged; latest first unless sort=asc): shop, any of several statuses, time range, channel, customer, professional; search by customer name or reference only. Status chip counts.",
         "operationId": "AdminListBookings",
         "parameters": [
           {
@@ -7262,7 +7959,10 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/BookingStatus"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BookingStatus"
+              }
             }
           },
           {
@@ -7282,7 +7982,37 @@
             }
           },
           {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BookingChannel"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
             "in": "query",
             "schema": {
               "type": "string"
@@ -7311,7 +8041,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResponseOfAdminBookingResponse"
+                  "$ref": "#/components/schemas/AdminBookingListResponse"
                 }
               }
             }
@@ -7324,7 +8054,7 @@
         "tags": [
           "Admin: bookings"
         ],
-        "summary": "One booking with its history.",
+        "summary": "One booking with its history and the shop\u0027s internal notes (read-only).",
         "operationId": "AdminGetBooking",
         "parameters": [
           {
@@ -7343,7 +8073,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminBookingResponse"
+                  "$ref": "#/components/schemas/AdminBookingDetailResponse"
                 }
               }
             }
@@ -7361,12 +8091,94 @@
         }
       }
     },
+    "/api/v1/admin/bookings/{bookingId}/transitions": {
+      "post": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "Moves the booking along the state machine on the shop\u0027s behalf; a reason is required (audited). Invalid transitions answer 409.",
+        "operationId": "AdminTransitionBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/bookings/{bookingId}/cancel": {
       "post": {
         "tags": [
           "Admin: bookings"
         ],
-        "summary": "Cancels on the shop\u0027s behalf with a reason (audited).",
+        "summary": "Cancels on the shop\u0027s behalf with a reason (audited); the same as a transition to CancelledByShop.",
         "operationId": "AdminCancelBooking",
         "parameters": [
           {
@@ -7406,6 +8218,465 @@
               "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings/{bookingId}/reschedule/options": {
+      "get": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "The professionals a booking may move to and the free starts on one date for its duration (its own time does not block it).",
+        "operationId": "AdminGetRescheduleOptions",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRescheduleOptionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings/{bookingId}/reschedule": {
+      "post": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "Moves a pending or confirmed booking to a free start (the desk\u0027s collision rules, not in the past) with a reason; Idempotency-Key required; audited. 409 booking.slot_unavailable when the time was taken.",
+        "operationId": "AdminRescheduleBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRescheduleBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reviews": {
+      "get": {
+        "tags": [
+          "Admin: reviews"
+        ],
+        "summary": "Reviews for moderation: the queue (published with a report, a low rating or a phone number in the text), published, hidden or all; with counts.",
+        "operationId": "AdminListReviews",
+        "parameters": [
+          {
+            "name": "queue",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReviewQueue"
+            }
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReviewFlag"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReviewListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reviews/{reviewId}/flag": {
+      "post": {
+        "tags": [
+          "Admin: reviews"
+        ],
+        "summary": "Reports a published review to the moderators with a reason (it stays published; audited).",
+        "operationId": "AdminFlagReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerateReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reviews/{reviewId}/hide": {
+      "post": {
+        "tags": [
+          "Admin: reviews"
+        ],
+        "summary": "Hides a review with a reason: it leaves the public pages and the rating totals (audited; never deleted).",
+        "operationId": "AdminHideReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerateReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/reviews/{reviewId}/publish": {
+      "post": {
+        "tags": [
+          "Admin: reviews"
+        ],
+        "summary": "Publishes a hidden review again, or clears a report on a published one (audited).",
+        "operationId": "AdminPublishReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReviewResponse"
                 }
               }
             }
@@ -8521,6 +9792,118 @@
           }
         }
       }
+    },
+    "/api/v1/admin/audit": {
+      "get": {
+        "tags": [
+          "Admin: audit"
+        ],
+        "summary": "The audit trail, newest first (keyset cursor; at most 100 per page). Entries hold no personal data and are never edited.",
+        "operationId": "ListAuditEntries",
+        "parameters": [
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/audit/facets": {
+      "get": {
+        "tags": [
+          "Admin: audit"
+        ],
+        "summary": "Every recorded action code and entity type, for the filters.",
+        "operationId": "GetAuditFacets",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFacetsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8574,6 +9957,59 @@
           }
         },
         "description": "A new price version in the platform currency, effective from today or a later date."
+      },
+      "AdminBookingDetailResponse": {
+        "required": [
+          "booking",
+          "notes"
+        ],
+        "type": "object",
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/AdminBookingResponse"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingNoteResponse"
+            }
+          }
+        },
+        "description": "One booking for an admin: the shop\u0027s view, its history and internal notes (read-only here)."
+      },
+      "AdminBookingListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ShopBookingCounts"
+          }
+        },
+        "description": "A page of bookings across shops, with the status chips\u0027 counts (every filter but the status applied)."
       },
       "AdminBookingResponse": {
         "required": [
@@ -8659,6 +10095,220 @@
             "format": "int32"
           }
         }
+      },
+      "AdminCustomerListItem": {
+        "required": [
+          "id",
+          "displayName",
+          "registeredAt",
+          "isDisabled",
+          "bookings",
+          "upcoming",
+          "lastBookingAt",
+          "nextBookingAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isDisabled": {
+            "type": "boolean"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "upcoming": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastBookingAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextBookingAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminCustomerResponse": {
+        "required": [
+          "id",
+          "displayName",
+          "preferredLocale",
+          "registeredAt",
+          "isDisabled",
+          "phoneMasked",
+          "bookings",
+          "upcoming",
+          "completed",
+          "cancelled",
+          "noShows",
+          "lastBookingAt",
+          "nextBookingAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "preferredLocale": {
+            "type": "string"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isDisabled": {
+            "type": "boolean"
+          },
+          "phoneMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "upcoming": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "noShows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastBookingAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextBookingAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A customer\u0027s profile for support: \u0060PhoneMasked\u0060 only (for example \u0060\u002B966 5\u2022\u2022 \u2022\u2022\u2022 \u202212\u0060) and their booking figures."
+      },
+      "AdminOverviewResponse": {
+        "required": [
+          "days",
+          "today",
+          "timeZone",
+          "appointmentsToday",
+          "appointmentsYesterday",
+          "period",
+          "previous",
+          "shops",
+          "professionals",
+          "newCustomers",
+          "newCustomersPrevious",
+          "trend",
+          "popularCategories",
+          "topShops"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "appointmentsToday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "appointmentsYesterday": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "period": {
+            "$ref": "#/components/schemas/OverviewPeriod"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/OverviewPeriod"
+          },
+          "shops": {
+            "$ref": "#/components/schemas/ShopCounts"
+          },
+          "professionals": {
+            "$ref": "#/components/schemas/ProfessionalCounts"
+          },
+          "newCustomers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "newCustomersPrevious": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverviewTrendDay"
+            }
+          },
+          "popularCategories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverviewCategory"
+            }
+          },
+          "topShops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OverviewTopShop"
+            }
+          }
+        },
+        "description": "\u0060Days\u0060: The KPI window: today only (1), or the last 7 or 30 days including today.\n        \u0060AppointmentsToday\u0060: Today\u0027s bookings (the whole platform day) without cancellations.\n        \u0060Period\u0060: Bookings that started from the window\u0027s first day until now.\n        \u0060Previous\u0060: The same elapsed length immediately before, for the deltas.\n        \u0060Trend\u0060: The last 14 days, oldest first, every day present."
       },
       "AdminPackageListItem": {
         "required": [
@@ -8899,6 +10549,312 @@
           }
         },
         "description": "A professional as the platform admin edits it. Guid AdminProfessionalResponse.ShopId is read-only: it is fixed at creation and no\nrequest can change it (R-NEG-01)."
+      },
+      "AdminRescheduleBookingRequest": {
+        "required": [
+          "startsAt",
+          "professionalId",
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "An admin reschedule: the new start, optionally another eligible professional, a reason (\u2265 5 characters) and the version read."
+      },
+      "AdminRescheduleOptionsResponse": {
+        "required": [
+          "timeZone",
+          "date",
+          "professionalId",
+          "professionals",
+          "slots"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRescheduleProfessional"
+            }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRescheduleSlot"
+            }
+          }
+        },
+        "description": "Free starts on one shop-local date for the booking\u0027s duration and the chosen professional (the booking\u0027s own time does\nnot block it), and the professionals it may move to: the active ones assigned to the booked item, or only its own\nprofessional when the item is no longer offered."
+      },
+      "AdminRescheduleProfessional": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminRescheduleSlot": {
+        "required": [
+          "startsAt",
+          "localTime",
+          "period"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localTime": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminReviewCounts": {
+        "required": [
+          "needsReview",
+          "published",
+          "hidden",
+          "all"
+        ],
+        "type": "object",
+        "properties": {
+          "needsReview": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "published": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hidden": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "all": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminReviewListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminReviewResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AdminReviewCounts"
+          }
+        }
+      },
+      "AdminReviewResponse": {
+        "required": [
+          "id",
+          "bookingId",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "professionalId",
+          "professionalNameAr",
+          "professionalNameEn",
+          "customerId",
+          "authorName",
+          "rating",
+          "tags",
+          "comment",
+          "itemNameAr",
+          "itemNameEn",
+          "status",
+          "flags",
+          "flagReason",
+          "flaggedAt",
+          "moderationReason",
+          "moderatedAt",
+          "createdAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalNameAr": {
+            "type": "string"
+          },
+          "professionalNameEn": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewTag"
+            }
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itemNameAr": {
+            "type": "string"
+          },
+          "itemNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReviewStatus"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewFlag"
+            }
+          },
+          "flagReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "flaggedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "moderationReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "moderatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A review as moderators see it: the public name and text, the shop and professional, the flags and the moderation state."
       },
       "AdminServiceListItem": {
         "required": [
@@ -9655,6 +11611,142 @@
           }
         },
         "description": "Starts a shop\u0027s subscription. \u0060StartDate\u0060 defaults to today (it cannot be in the future); the end follows the\nplan\u0027s interval. A custom \u0060DurationDays\u0060, a past start or an explicit \u0060Price\u0060 is a SuperAdmin override: it\nneeds \u0060SuperAdmin.Subscriptions.Override\u0060, the explicit total \u0060Price\u0060 and a \u0060Reason\u0060 (D-081)."
+      },
+      "AuditEntryResponse": {
+        "required": [
+          "id",
+          "occurredAt",
+          "actorUserId",
+          "actorName",
+          "actorType",
+          "action",
+          "entityType",
+          "entityId",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "summary",
+          "reason",
+          "correlationId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "shopId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shopNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "correlationId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "\u0060ActorName\u0060: The acting account\u0027s display name (never an email or phone); null for the system.\n        \u0060ShopNameAr\u0060: The shop the action concerns, when it concerns one."
+      },
+      "AuditFacetsResponse": {
+        "required": [
+          "actions",
+          "entityTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entityTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The values the filters can take: every action code and entity type recorded so far."
+      },
+      "AuditPageResponse": {
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEntryResponse"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "\u0060NextCursor\u0060: Pass it back as \u0060cursor\u0060 for the next (older) page; null on the last page."
       },
       "AvailabilitySlotResponse": {
         "required": [
@@ -10956,6 +13048,18 @@
         },
         "description": "A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a\ncompleted visit until \u0060ReviewDeadline\u0060. \u0060ReviewRating\u0060 is the stars they gave, once reviewed."
       },
+      "CustomerContactResponse": {
+        "required": [
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          }
+        },
+        "description": "The customer\u0027s full mobile in E.164, returned once to an authorized admin (never cached, never logged)."
+      },
       "DayOfWeek": {
         "enum": [
           "Sunday",
@@ -11599,6 +13703,26 @@
         },
         "description": "The signed-in user (\u0060GET /api/v1/me\u0060). \u0060UserType\u0060 is \u0060Customer\u0060, \u0060ShopUser\u0060 or\n\u0060PlatformAdmin\u0060. A customer sees only their own number, masked. \u0060ShopId\u0060 is set for shop users from\nPhase 05. \u0060ProfileComplete\u0060 is false until a customer has given a name and accepted the terms."
       },
+      "ModerateReviewRequest": {
+        "required": [
+          "reason",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A reason (5\u2013300 characters) for a report or a hide; send the version read."
+      },
       "ModerationAction": {
         "enum": [
           "Hide",
@@ -11910,6 +14034,176 @@
         },
         "description": "SuperAdmin override of the period in force: a shop-specific price and/or end date, with a reason."
       },
+      "OverviewCategory": {
+        "required": [
+          "kind",
+          "categoryId",
+          "nameAr",
+          "nameEn",
+          "bookings"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/OverviewCategoryKind"
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Bookings of one platform category (services are shop-owned, so they are never grouped by a global service, DV-S02)."
+      },
+      "OverviewCategoryKind": {
+        "enum": [
+          "Category",
+          "Packages",
+          "Uncategorised"
+        ]
+      },
+      "OverviewPeriod": {
+        "required": [
+          "from",
+          "to",
+          "total",
+          "completed",
+          "cancelled",
+          "noShows",
+          "completionRate",
+          "cancellationRate",
+          "noShowRate"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "noShows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completionRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "cancellationRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "noShowRate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "description": "\u0060Total\u0060: Bookings that started in the window, cancellations included (the rates\u0027 denominator).\n        \u0060CompletionRate\u0060: Completed \u00F7 total, in percent with one decimal; 0 when there were none."
+      },
+      "OverviewTopShop": {
+        "required": [
+          "shopId",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "bookings",
+          "cancellationRate",
+          "rating",
+          "reviewCount"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancellationRate": {
+            "type": "number",
+            "format": "double"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OverviewTrendDay": {
+        "required": [
+          "date",
+          "completed",
+          "cancelledOrNoShow",
+          "other"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancelledOrNoShow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "other": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PackageItemResponse": {
         "required": [
           "serviceId",
@@ -11937,7 +14231,7 @@
           }
         }
       },
-      "PagedResponseOfAdminBookingResponse": {
+      "PagedResponseOfAdminCustomerListItem": {
         "required": [
           "items",
           "page",
@@ -11949,7 +14243,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AdminBookingResponse"
+              "$ref": "#/components/schemas/AdminCustomerListItem"
             }
           },
           "page": {
@@ -12130,6 +14424,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PublicReviewResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
+      "PagedResponseOfStaffAccountResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffAccountResponse"
             }
           },
           "page": {
@@ -12596,6 +14920,28 @@
           }
         },
         "description": "When a professional can next be booked online (today or tomorrow, their shortest bookable service)."
+      },
+      "ProfessionalCounts": {
+        "required": [
+          "active",
+          "disabled",
+          "addedSince"
+        ],
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "disabled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "addedSince": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "ProfessionalHoursResponse": {
         "required": [
@@ -13495,6 +15841,19 @@
         },
         "description": "The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is\nopen (and why not: \u0060shop.paused\u0060, \u0060subscription.expired\u0060\u2026), and each active professional\u0027s next free time."
       },
+      "PublishReviewRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Publishing needs only the version read."
+      },
       "RatingSummaryResponse": {
         "required": [
           "average",
@@ -13775,6 +16134,20 @@
           }
         }
       },
+      "RevealContactRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "RevealedWhatsAppResponse": {
         "required": [
           "number"
@@ -13798,6 +16171,29 @@
           }
         }
       },
+      "ReviewFlag": {
+        "enum": [
+          "Reported",
+          "LowRating",
+          "ContainsPhone"
+        ],
+        "description": "Why a review is in the moderation queue (D-102)."
+      },
+      "ReviewQueue": {
+        "enum": [
+          "NeedsReview",
+          "Published",
+          "Hidden",
+          "All",
+          null
+        ]
+      },
+      "ReviewStatus": {
+        "enum": [
+          "Published",
+          "Hidden"
+        ]
+      },
       "ReviewTag": {
         "enum": [
           "Punctuality",
@@ -13817,6 +16213,37 @@
           "revoked": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "RoleNameRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RolePermissionsRequest": {
+        "required": [
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -14189,6 +16616,33 @@
           "Unisex"
         ],
         "description": "Kind of business, shown on the public page and used by discovery filters (Phase 11)."
+      },
+      "ShopCounts": {
+        "required": [
+          "total",
+          "active",
+          "draft",
+          "suspended"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "draft": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suspended": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "ShopImageResponse": {
         "required": [
@@ -15247,6 +17701,81 @@
           }
         }
       },
+      "StaffAccountResponse": {
+        "required": [
+          "id",
+          "displayName",
+          "email",
+          "createdAt",
+          "isDisabled",
+          "roles"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isDisabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRoleRef"
+            }
+          }
+        }
+      },
+      "StaffRoleRef": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "StaffRolesRequest": {
+        "required": [
+          "roles"
+        ],
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "StaffSignInRequest": {
         "required": [
           "email",
@@ -15259,6 +17788,20 @@
           },
           "password": {
             "type": "string"
+          }
+        }
+      },
+      "StaffStatusRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -16398,7 +18941,13 @@
       "name": "Shop: subscription"
     },
     {
+      "name": "Admin: overview"
+    },
+    {
       "name": "Admin: identity"
+    },
+    {
+      "name": "Admin: customers"
     },
     {
       "name": "Admin: shops"
@@ -16416,10 +18965,16 @@
       "name": "Admin: bookings"
     },
     {
+      "name": "Admin: reviews"
+    },
+    {
       "name": "Customer: favorites"
     },
     {
       "name": "Admin: settings"
+    },
+    {
+      "name": "Admin: audit"
     }
   ]
 }

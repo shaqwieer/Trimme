@@ -246,7 +246,8 @@
     "hoursOverlap": "الفترات متداخلة، بما فيها ما بعد منتصف الليل",
     "rangeInvalid": "تاريخ النهاية قبل البداية أو المدة أطول من سنة",
     "breakDays": "اختر أياماً أسبوعية أو تاريخاً واحداً",
-    "immutable": "لا يمكن تغيير هذه القيمة"
+    "immutable": "لا يمكن تغيير هذه القيمة",
+    "roleNameTaken": "هذا الاسم مستخدم لدور آخر."
   },
   "auth": {
     "meta": {
@@ -381,12 +382,6 @@
       "saved": "حُفظت بياناتك."
     }
   },
-  "adminHome": {
-    "title": "نظرة عامة على المنصة",
-    "welcome": "مرحباً {name}",
-    "body": "ستظهر مؤشرات المنصة التشغيلية هنا عند إطلاق لوحة الإدارة.",
-    "roles": "أدوارك"
-  },
   "shopHome": {
     "title": "النظرة التشغيلية",
     "body": "ستظهر مواعيد اليوم ومؤشرات محلك هنا عند تفعيل لوحة المحل.",
@@ -459,7 +454,24 @@
     "review_already_exists": "قيّمت هذه الزيارة من قبل.",
     "review_window_closed": "انتهت مهلة التقييم لهذه الزيارة.",
     "review_booking_not_completed": "يمكنك التقييم بعد اكتمال الزيارة.",
-    "favorites_limit_reached": "وصلت إلى الحد الأقصى للمفضلة."
+    "favorites_limit_reached": "وصلت إلى الحد الأقصى للمفضلة.",
+    "booking_too_early": "الوقت مبكر لهذه الحالة؛ حاول قرب موعد الحجز.",
+    "idempotency_key_required": "تعذّر إرسال الطلب بأمان. أعد تحميل الصفحة وحاول مجدداً.",
+    "auth_user_not_found": "لم يُعثر على الحساب.",
+    "review_not_found": "لم يُعثر على التقييم.",
+    "review_not_published": "لا يمكن الإبلاغ إلا عن تقييم منشور.",
+    "review_already_flagged": "سبق الإبلاغ عن هذا التقييم.",
+    "review_already_hidden": "هذا التقييم مخفي بالفعل.",
+    "review_nothing_to_publish": "هذا التقييم منشور ولا بلاغ عليه.",
+    "role_not_found": "لم يُعثر على الدور.",
+    "role_managed": "هذا الدور تديره المنصة ولا يمكن تغييره.",
+    "role_in_use": "ما زال أعضاء في الفريق يحملون هذا الدور. أزله عنهم أولاً.",
+    "role_permission_not_grantable": "بعض هذه الصلاحيات لا يمكن منحها لهذا الدور.",
+    "role_escalation": "لا يمكنك منح صلاحية لا تملكها.",
+    "role_superadmin_only": "لا يمنح دور المدير العام أو يسحبه إلا مدير عام.",
+    "role_last_superadmin": "يجب أن يبقى للمنصة مدير عام نشط واحد على الأقل.",
+    "role_not_assignable": "لا يمكن إسناد هذه الأدوار لفريق المنصة.",
+    "staff_self": "لا يمكنك تغيير أدوارك أو تعطيل حسابك بنفسك."
   },
   "shopStatus": {
     "Draft": "مسودة",
@@ -1134,7 +1146,7 @@
   },
   "platformSettings": {
     "title": "إعدادات المنصة",
-    "intro": "تنطبق هذه القيم على كل المحلات، ويُسجَّل كل تغيير في سجل النشاط. تُضاف أقسام أخرى مع ميزاتها.",
+    "intro": "تنطبق هذه القيم على كل المحلات، ويُسجَّل كل تغيير في سجل النشاط. قيم المنطقة ثابتة في الإصدار الأول.",
     "sections": {
       "booking": "سياسة الحجز",
       "notifications": "التذكيرات",
@@ -1168,7 +1180,25 @@
     "enforcementHelper": "لا تتغير الحجوزات القائمة أبداً، ويبقى بإمكان المحل تسجيل حجوزات الحضور المباشر.",
     "save": "حفظ الإعدادات",
     "saved": "حُفظت الإعدادات.",
-    "readOnly": "يمكنك عرض هذه الإعدادات دون تغييرها."
+    "readOnly": "يمكنك عرض هذه الإعدادات دون تغييرها.",
+    "descriptions": {
+      "booking": "ما يستطيع العملاء حجزه إلكترونياً: إلى أي مدى مسبقاً وقبل كم من الوقت، وعلى أي تدرّج زمني، ومتى يمكنهم الإلغاء أو التعديل، وخلال كم يوماً يقيّمون الزيارة.",
+      "notifications": "متى تُرسل تذكيرات واتساب للعميل وللحلاق قبل الموعد.",
+      "subscriptions": "متى يُعدّ اشتراك المحل قرب الانتهاء، وماذا يحدث حين لا يسري اشتراك. لا تتغير الحجوزات القائمة أبداً.",
+      "discovery": "هل تظهر المحلات التي أوقفت الحجز الإلكتروني في البحث والخريطة. تبقى صفحتها متاحة بالرابط.",
+      "map": "أين تُفتح الخرائط حين لا يوجد موقع بعد (محدد موقع المحل والبحث).",
+      "regional": "اللغة والعملة والمنطقة الزمنية والدولة. تغييرها يحتاج خطة ترحيل، لذا فهي ثابتة في الإصدار الأول."
+    },
+    "range": "بين {min} و{max}",
+    "discard": "تجاهل التغييرات",
+    "unsaved": "لديك تغييرات غير محفوظة.",
+    "upToDate": "كل التغييرات محفوظة.",
+    "recent": {
+      "title": "آخر التغييرات",
+      "all": "السجل الكامل",
+      "empty": "لا تغييرات مسجلة بعد.",
+      "changed": "تغيّرت الإعدادات"
+    }
   },
   "shopSchedule": {
     "title": "الدوام والاستراحات والإجازات",
@@ -2207,6 +2237,458 @@
         "night": "ليلاً"
       },
       "closedCell": "مغلق"
+    }
+  },
+  "adminOverview": {
+    "title": "نظرة عامة على المنصة",
+    "subtitle": "منصة تريمي · {date}",
+    "kpis": "مؤشرات المنصة",
+    "period": {
+      "label": "الفترة",
+      "d1": "اليوم",
+      "d7": "آخر ٧ أيام",
+      "d30": "آخر ٣٠ يوماً"
+    },
+    "kpi": {
+      "appointmentsToday": "مواعيد اليوم",
+      "completionRate": "نسبة الإكمال",
+      "cancellationRate": "معدل الإلغاء",
+      "noShowRate": "معدل عدم الحضور",
+      "activeShops": "محلات نشطة",
+      "expiringSubscriptions": "اشتراكات قرب الانتهاء",
+      "activeProfessionals": "حلاقون نشطون",
+      "newCustomers": "عملاء جدد"
+    },
+    "delta": {
+      "vsYesterday": "{change} عن أمس",
+      "percent": "{sign}{value}%",
+      "points": "{sign}{value} نقطة عن الفترة السابقة",
+      "noBase": "لا رقم سابق للمقارنة",
+      "ofTotal": "من {count} حجزاً حتى الآن",
+      "ofShops": "من {total} محلاً",
+      "endedOrSuspended": "{count} منتهية أو موقوفة",
+      "added": "+{count} أضيفوا في هذه الفترة"
+    },
+    "trend": {
+      "title": "الحجوزات خلال ١٤ يوماً",
+      "completed": "مكتملة",
+      "cancelledOrNoShow": "ملغاة أو لم يحضر",
+      "other": "قادمة أو جارية",
+      "table": "الحجوزات لكل يوم",
+      "date": "التاريخ"
+    },
+    "popular": {
+      "title": "التصنيفات الأكثر حجزاً",
+      "empty": "لا حجوزات في هذه الفترة بعد.",
+      "Packages": "الباقات",
+      "Uncategorised": "دون تصنيف"
+    },
+    "topShops": {
+      "title": "المحلات الأعلى نشاطاً",
+      "empty": "لا حجوزات في هذه الفترة بعد.",
+      "shop": "المحل",
+      "bookings": "مواعيد",
+      "cancellation": "إلغاء",
+      "rating": "تقييم"
+    },
+    "followUp": {
+      "title": "اشتراكات تحتاج متابعة",
+      "all": "كل الاشتراكات",
+      "empty": "لا اشتراك ينتهي قريباً.",
+      "ends": "ينتهي {date}",
+      "expired": "{count, plural, =0 {لا اشتراكات منتهية} one {اشتراك منتهٍ} two {اشتراكان منتهيان} few {# اشتراكات منتهية} many {# اشتراكاً منتهياً} other {# اشتراك منتهٍ}}",
+      "suspended": "{count, plural, =0 {لا موقوف} one {اشتراك موقوف} two {اشتراكان موقوفان} few {# اشتراكات موقوفة} many {# اشتراكاً موقوفاً} other {# اشتراك موقوف}}"
+    }
+  },
+  "adminBookings": {
+    "title": "المواعيد",
+    "detailTitle": "تفاصيل الموعد",
+    "notFound": "لم يُعثر على الموعد.",
+    "filters": "تصفية المواعيد",
+    "search": "بحث",
+    "searchPlaceholder": "اسم العميل أو رقم الحجز",
+    "from": "من",
+    "to": "إلى",
+    "channel": "المصدر",
+    "allChannels": "كل المصادر",
+    "apply": "تطبيق",
+    "clear": "مسح التصفية",
+    "scopedShop": "تعرض مواعيد محل واحد.",
+    "scopedCustomer": "تعرض مواعيد عميل واحد.",
+    "statusFilter": "التصفية حسب الحالة",
+    "caption": "المواعيد في كل المحلات",
+    "empty": {
+      "title": "لا مواعيد تطابق هذه التصفية",
+      "body": "غيّر التواريخ أو الحالة أو البحث."
+    },
+    "columns": {
+      "when": "الوقت",
+      "customer": "العميل والخدمة",
+      "shop": "المحل والحلاق",
+      "status": "الحالة",
+      "source": "المصدر",
+      "reference": "الرقم"
+    },
+    "rows": {
+      "shop": "المحل"
+    },
+    "noPhone": "رقم العميل ليس جزءاً من الموعد. يستطيع الدعم إظهاره من ملف العميل مع ذكر السبب، ويُسجَّل كل اطلاع.",
+    "noNotes": "لا ملاحظات داخلية.",
+    "history": {
+      "rescheduled": "تغيّر الوقت (كان {from})",
+      "reason": "السبب: {reason}"
+    },
+    "intervene": {
+      "heading": "تدخّل الإدارة",
+      "title": "{action} نيابةً عن المحل",
+      "rescheduleTitle": "إعادة جدولة الموعد",
+      "auditNote": "يرى المحل والعميل التغيير. السبب مطلوب ويُسجَّل في سجل النشاط.",
+      "reason": "السبب",
+      "submit": "تأكيد",
+      "reschedule": "إعادة جدولة",
+      "rescheduleSubmit": "تأكيد الموعد الجديد",
+      "date": "التاريخ",
+      "professional": "الحلاق",
+      "time": "الأوقات المتاحة",
+      "noSlots": "لا وقت متاح لهذا الحلاق في هذا اليوم.",
+      "none": "لا إجراء متاح لهذا الموعد.",
+      "changed": "حُدّث الموعد.",
+      "rescheduled": "أُعيدت جدولة الموعد."
+    }
+  },
+  "adminCustomers": {
+    "title": "العملاء",
+    "detailTitle": "ملف العميل",
+    "notFound": "لم يُعثر على العميل.",
+    "search": "البحث في العملاء",
+    "searchPlaceholder": "ابحث بالاسم",
+    "searchSubmit": "بحث",
+    "privacy": "رقم العميل مرئي لفريق المنصة فقط ولأغراض الدعم، ويُسجَّل كل اطلاع في سجل النشاط.",
+    "caption": "العملاء",
+    "empty": {
+      "title": "لا عملاء مطابقين",
+      "body": "جرّب اسماً آخر."
+    },
+    "columns": {
+      "name": "العميل",
+      "bookings": "الحجوزات",
+      "upcoming": "القادمة",
+      "last": "آخر حجز",
+      "registered": "تاريخ التسجيل"
+    },
+    "noName": "بلا اسم بعد",
+    "disabled": "معطّل",
+    "since": "عميل منذ {date}",
+    "stats": "أرقام الحجوزات",
+    "kpi": {
+      "bookings": "حجز",
+      "completed": "مكتملة",
+      "cancelled": "إلغاء",
+      "noShows": "عدم حضور"
+    },
+    "upcoming": "الحجوزات القادمة",
+    "previous": "الحجوزات السابقة",
+    "noUpcoming": "لا حجوزات قادمة.",
+    "noPrevious": "لا حجوزات سابقة.",
+    "allBookings": "كل الحجوزات",
+    "contact": {
+      "none": "لا رقم",
+      "reveal": "إظهار الرقم",
+      "hide": "إخفاء",
+      "privacy": "مرئي لفريق المنصة فقط ولأغراض الدعم. يُسجَّل كل اطلاع.",
+      "title": "إظهار رقم العميل؟",
+      "body": "اذكر سبب حاجتك إليه. يُسجَّل الاطلاع في سجل النشاط باسمك وبالسبب.",
+      "reason": "السبب",
+      "submit": "إظهار الرقم"
+    }
+  },
+  "adminReviews": {
+    "title": "التقييمات",
+    "queues": "قوائم التقييمات",
+    "queue": {
+      "NeedsReview": "بانتظار المراجعة",
+      "Published": "منشورة",
+      "Hidden": "مخفية",
+      "All": "الكل"
+    },
+    "flagFilter": "التصفية حسب السبب",
+    "flag": {
+      "any": "كل الأسباب",
+      "Reported": "مُبلَّغ عنه",
+      "LowRating": "تقييم منخفض",
+      "ContainsPhone": "يحتوي رقم جوال"
+    },
+    "search": "ابحث بالاسم أو النص",
+    "searchSubmit": "بحث",
+    "list": "التقييمات",
+    "empty": {
+      "title": "لا تقييمات هنا",
+      "body": "غيّر القائمة أو التصفية.",
+      "queue": "لا شيء بانتظار المراجعة."
+    },
+    "hidden": "مخفي",
+    "item": "الخدمة: {name}",
+    "booking": "عرض الموعد",
+    "reportedFor": "بلاغ: {reason}",
+    "hiddenFor": "أُخفي: {reason}",
+    "actions": {
+      "flag": "إبلاغ",
+      "hide": "إخفاء",
+      "publish": "نشر",
+      "reason": "السبب",
+      "flagTitle": "الإبلاغ عن هذا التقييم؟",
+      "flagBody": "يبقى منشوراً ويقرر المشرف. يُسجَّل سببك.",
+      "hideTitle": "إخفاء هذا التقييم؟",
+      "hideBody": "يختفي من صفحة المحل ومن تقييمه. يبقى محفوظاً ولا يُحذف، ويُسجَّل السبب.",
+      "publishTitle": "نشر هذا التقييم؟",
+      "publishBody": "يعود إلى صفحة المحل ويُحتسب في تقييمه من جديد.",
+      "clearBody": "يبقى منشوراً ويخرج من قائمة المراجعة، ويُلغى البلاغ."
+    }
+  },
+  "permissions": {
+    "areas": {
+      "Dashboard": "النظرة العامة",
+      "Shops": "المحلات",
+      "Professionals": "الحلاقون",
+      "ServiceCategories": "تصنيفات الخدمات",
+      "ShopServices": "خدمات المحلات",
+      "Packages": "الباقات",
+      "Bookings": "المواعيد",
+      "Customers": "العملاء",
+      "Reviews": "التقييمات",
+      "Subscriptions": "الاشتراكات",
+      "Qr": "رموز QR",
+      "WhatsApp": "واتساب",
+      "Roles": "الأدوار",
+      "Staff": "فريق المنصة",
+      "Audit": "سجل النشاط",
+      "Settings": "إعدادات المنصة",
+      "SuperAdmin": "للمدير العام فقط"
+    },
+    "codes": {
+      "Admin_Dashboard_View": "عرض النظرة العامة على المنصة",
+      "Admin_Shops_View": "عرض المحلات",
+      "Admin_Shops_Create": "إنشاء المحلات",
+      "Admin_Shops_Edit": "تعديل ملفات المحلات ومواقعها",
+      "Admin_Shops_Suspend": "تفعيل المحلات وإيقافها",
+      "Admin_Shops_ManageAccount": "دعوة حسابات المحلات",
+      "Admin_Professionals_View": "عرض الحلاقين",
+      "Admin_Professionals_Create": "إنشاء الحلاقين",
+      "Admin_Professionals_Edit": "تعديل الحلاقين",
+      "Admin_Professionals_Disable": "تعطيل الحلاقين وتفعيلهم",
+      "Admin_Professionals_AssignServices": "إسناد الخدمات للحلاقين",
+      "Admin_Professionals_ManageWhatsApp": "إدارة أرقام واتساب للحلاقين",
+      "Admin_Professionals_RevealWhatsApp": "إظهار أرقام واتساب للحلاقين",
+      "Admin_ServiceCategories_Manage": "إدارة تصنيفات الخدمات",
+      "Admin_ShopServices_View": "عرض خدمات المحلات",
+      "Admin_ShopServices_Moderate": "إخفاء خدمات المحلات وإعادتها",
+      "Admin_ShopServices_SupportOverride": "تصحيح خدمة محل (تدخّل الدعم)",
+      "Admin_Packages_Manage": "إدارة باقات المنصة",
+      "Admin_Bookings_View": "عرض المواعيد",
+      "Admin_Bookings_Intervene": "تغيير المواعيد وإعادة جدولتها",
+      "Admin_Customers_View": "عرض العملاء",
+      "Admin_Customers_ViewContact": "إظهار أرقام العملاء",
+      "Admin_Reviews_View": "عرض التقييمات",
+      "Admin_Reviews_Moderate": "إخفاء التقييمات ونشرها",
+      "Admin_Reviews_Flag": "الإبلاغ عن التقييمات",
+      "Admin_Subscriptions_View": "عرض الاشتراكات",
+      "Admin_Subscriptions_Assign": "تفعيل الاشتراكات",
+      "Admin_Subscriptions_Renew": "تجديد الاشتراكات",
+      "Admin_Subscriptions_Suspend": "إيقاف الاشتراكات وإعادتها",
+      "Admin_Qr_View": "عرض رموز QR",
+      "Admin_Qr_Manage": "إدارة رموز QR",
+      "Admin_WhatsApp_View": "عرض رسائل واتساب",
+      "Admin_WhatsApp_Templates_Edit": "تعديل قوالب واتساب",
+      "Admin_WhatsApp_Templates_Activate": "تفعيل قوالب واتساب",
+      "Admin_WhatsApp_TestSend": "إرسال رسائل واتساب تجريبية",
+      "Admin_WhatsApp_Dispatches_Retry": "إعادة إرسال رسائل واتساب",
+      "Admin_Roles_View": "عرض الأدوار والفريق",
+      "Admin_Roles_Manage": "إدارة الأدوار وصلاحياتها",
+      "Admin_Staff_Manage": "دعوة الفريق وتحديد أدوارهم",
+      "Admin_Audit_View": "عرض سجل النشاط",
+      "Admin_Settings_View": "عرض إعدادات المنصة",
+      "Admin_Settings_Edit": "تعديل إعدادات المنصة",
+      "SuperAdmin_SubscriptionPlans_Manage": "إدارة باقات الاشتراك وأسعارها",
+      "SuperAdmin_Subscriptions_Override": "تعديل استثنائي لاشتراك محل"
+    }
+  },
+  "adminRoles": {
+    "title": "الأدوار والصلاحيات",
+    "notFound": "لم يُعثر على الدور.",
+    "sections": "الأدوار والفريق",
+    "tabs": {
+      "roles": "مصفوفة الصلاحيات",
+      "staff": "فريق المنصة"
+    },
+    "intro": "الصلاحية الأدق تتغلب على العامة. أي تغيير يُسجَّل في سجل النشاط، ويسري من الطلب التالي للحساب.",
+    "matrix": "مصفوفة الصلاحيات",
+    "permission": "الصلاحية",
+    "granted": "مسموح",
+    "notGranted": "غير مسموح",
+    "managedRole": "تُدار من المنصة",
+    "roleNames": {
+      "SuperAdmin": "مدير عام",
+      "OperationsManager": "مدير عمليات",
+      "Support": "دعم"
+    },
+    "create": {
+      "title": "دور جديد",
+      "name": "اسم الدور",
+      "submit": "إنشاء الدور"
+    },
+    "editor": {
+      "title": "صلاحيات الدور",
+      "managed": "هذا الدور تديره المنصة ولا يمكن تغييره هنا.",
+      "readOnly": "يمكنك عرض هذا الدور دون تغييره.",
+      "name": "اسم الدور",
+      "rename": "إعادة التسمية",
+      "delete": "حذف الدور",
+      "deleteTitle": "حذف هذا الدور؟",
+      "deleteBody": "لا يُحذف إلا دور لا يحمله أحد. لا يمكن التراجع.",
+      "notHeld": "لا تملك هذه الصلاحية، فلا يمكنك منحها.",
+      "save": "حفظ الصلاحيات",
+      "saved": "حُفظت الصلاحيات.",
+      "renamed": "أُعيدت تسمية الدور.",
+      "auditNote": "يُسجَّل في سجل النشاط."
+    },
+    "staff": {
+      "title": "فريق المنصة",
+      "search": "ابحث بالاسم أو البريد",
+      "searchSubmit": "بحث",
+      "caption": "فريق المنصة",
+      "empty": "لا أعضاء مطابقين.",
+      "columns": {
+        "name": "الاسم",
+        "roles": "الأدوار",
+        "status": "الدخول",
+        "since": "الانضمام"
+      },
+      "active": "نشط",
+      "disabled": "معطّل",
+      "you": "أنت",
+      "edit": "الأدوار",
+      "editFor": "تغيير أدوار {name}",
+      "editTitle": "أدوار {name}",
+      "editBody": "اختر دوراً واحداً على الأقل. لا يمكنك إسناد دور إلا إذا كنت تملك صلاحياته.",
+      "roles": "الأدوار",
+      "save": "حفظ الأدوار",
+      "disable": "تعطيل",
+      "enable": "تفعيل",
+      "disableFor": "تعطيل {name}",
+      "enableFor": "تفعيل {name}",
+      "disableTitle": "تعطيل {name}؟",
+      "disableBody": "يُسجَّل خروجه عند طلبه التالي ولا يستطيع الدخول حتى يُفعَّل من جديد.",
+      "enableTitle": "تفعيل {name}؟",
+      "enableBody": "يستطيع الدخول من جديد بأدواره."
+    },
+    "invite": {
+      "title": "دعوة عضو في الفريق",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "submit": "إرسال الدعوة",
+      "sent": "أُرسلت الدعوة إلى {email}."
+    }
+  },
+  "adminAudit": {
+    "title": "سجل النشاط",
+    "filters": "تصفية سجل النشاط",
+    "action": "الإجراء",
+    "allActions": "كل الإجراءات",
+    "entityType": "السجل",
+    "allEntities": "كل السجلات",
+    "entityId": "معرّف السجل",
+    "from": "من",
+    "to": "إلى",
+    "apply": "تطبيق",
+    "filtered": "عرض مُصفّى.",
+    "clear": "عرض الكل",
+    "entries": "الإدخالات",
+    "empty": "لا نشاط يطابق هذه التصفية.",
+    "reason": "السبب: {reason}",
+    "open": "فتح {type}",
+    "history": "سجل هذا العنصر",
+    "byActor": "كل ما قام به هذا الشخص",
+    "newest": "الأحدث",
+    "older": "أقدم",
+    "actorType": {
+      "PlatformAdmin": "فريق المنصة",
+      "ShopUser": "المحل",
+      "Customer": "العميل",
+      "System": "النظام"
+    },
+    "entities": {
+      "Shop": "المحل",
+      "Professional": "الحلاق",
+      "Booking": "الموعد",
+      "Customer": "العميل",
+      "Review": "التقييم",
+      "Role": "الدور",
+      "User": "عضو الفريق",
+      "Invitation": "الدعوة",
+      "ShopService": "الخدمة",
+      "ServicePackage": "الباقة",
+      "ServiceCategory": "التصنيف",
+      "SubscriptionPlan": "باقة الاشتراك",
+      "ShopSubscription": "الاشتراك",
+      "PlatformSettings": "الإعدادات"
+    },
+    "actions": {
+      "shop_created": "إنشاء محل",
+      "shop_activated": "تفعيل محل",
+      "shop_suspended": "إيقاف محل",
+      "shop_profile_updated": "تعديل ملف محل",
+      "shop_location_set": "تحديد موقع محل",
+      "shop_editable_policy_set": "تغيير صلاحيات تعديل المحل",
+      "shop_image_changed": "تغيير صورة محل",
+      "shop_online_booking_paused": "إيقاف الحجز الإلكتروني",
+      "shop_online_booking_resumed": "استئناف الحجز الإلكتروني",
+      "shop_user_invited": "دعوة حساب محل",
+      "professional_created": "إنشاء حلاق",
+      "professional_updated": "تعديل حلاق",
+      "professional_disabled": "تعطيل حلاق",
+      "professional_enabled": "تفعيل حلاق",
+      "professional_avatar_changed": "تغيير صورة حلاق",
+      "professional_services_assigned": "إسناد خدمات",
+      "professional_whatsapp_changed": "تغيير إعدادات واتساب",
+      "professional_whatsapp_revealed": "اطلاع على رقم حلاق",
+      "service_hidden": "إخفاء خدمة",
+      "service_unhidden": "إعادة خدمة",
+      "service_support_override": "تصحيح خدمة من الدعم",
+      "package_hidden": "إخفاء باقة",
+      "package_unhidden": "إعادة باقة",
+      "service_category_created": "إنشاء تصنيف",
+      "service_category_updated": "تعديل تصنيف",
+      "service_category_activated": "تفعيل تصنيف",
+      "service_category_deactivated": "إيقاف تصنيف",
+      "plan_created": "إنشاء باقة اشتراك",
+      "plan_updated": "تعديل باقة اشتراك",
+      "plan_published": "نشر باقة اشتراك",
+      "plan_deactivated": "سحب باقة اشتراك",
+      "plan_archived": "أرشفة باقة اشتراك",
+      "plan_reordered": "إعادة ترتيب الباقات",
+      "plan_price_added": "إضافة إصدار سعر",
+      "subscription_assigned": "تفعيل اشتراك",
+      "subscription_renewed": "تجديد اشتراك",
+      "subscription_overridden": "تعديل استثنائي لاشتراك",
+      "subscription_suspended": "إيقاف اشتراك",
+      "subscription_reinstated": "إعادة اشتراك",
+      "platform_settings_updated": "تغيير إعدادات المنصة",
+      "booking_cancelled_by_admin": "إلغاء موعد من المنصة",
+      "booking_status_changed_by_admin": "تغيير حالة موعد من المنصة",
+      "booking_rescheduled_by_admin": "إعادة جدولة موعد من المنصة",
+      "customer_contact_revealed": "اطلاع على رقم عميل",
+      "review_flagged": "الإبلاغ عن تقييم",
+      "review_hidden": "إخفاء تقييم",
+      "review_published": "نشر تقييم",
+      "review_report_cleared": "إلغاء بلاغ تقييم",
+      "role_created": "إنشاء دور",
+      "role_renamed": "إعادة تسمية دور",
+      "role_deleted": "حذف دور",
+      "role_permissions_changed": "تغيير صلاحيات دور",
+      "staff_invited": "دعوة عضو فريق",
+      "staff_roles_changed": "تغيير أدوار عضو فريق",
+      "staff_disabled": "تعطيل عضو فريق",
+      "staff_enabled": "تفعيل عضو فريق"
     }
   }
 }

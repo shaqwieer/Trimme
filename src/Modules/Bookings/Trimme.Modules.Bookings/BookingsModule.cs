@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Reporting;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Modules;
@@ -43,6 +44,7 @@ public sealed class BookingsModule : ModuleBase
         services.Replace(ServiceDescriptor.Scoped<IBookedTimeReader, BookedTimeReader>());
         services.AddScoped<IShopServiceUsage, BookingServiceUsage>();
         services.AddScoped<IBookingReviewSource, BookingReviewSource>();
+        services.AddScoped<IBookingStatistics, BookingStatistics>();
         services.AddSingleton<IDevSeeder, DemoBookingsSeeder>();
     }
 

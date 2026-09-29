@@ -30,6 +30,7 @@ public sealed class ServicesModule : ModuleBase
         services.AddScoped<IShopServiceUsage, PackageServiceUsage>();
         services.AddScoped<IBookableOfferCatalog, BookableOfferCatalog>();
         services.AddScoped<IShopOfferReader, ShopOfferReader>();
+        services.AddScoped<BuildingBlocks.Application.Reporting.IServiceCategoryLookup, ServiceCategoryLookup>();
         services.AddSingleton<IDevSeeder, DemoCatalogSeeder>();
     }
 

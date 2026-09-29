@@ -1,8 +1,8 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-29 (Session 9)
-- **Current phase:** 13 is complete and verified (Session 8) and pushed; CI run #17 failed 3 E2E tests, which Session 9 fixed (CI run #19 green on `8d6e8e8`). Next: Phase 14, admin operations.
-- **Platform progress:** 1400 / 1900 points (Phases 00–13)
+- **Updated:** 2026-09-29 (Session 10)
+- **Current phase:** 14 is complete and verified (Session 10): admin overview, bookings intervention, customers directory with the audited reveal, reviews moderation, roles and staff, audit log, settings screen. It is committed locally and not pushed. Next: Phase 15, WhatsApp, outbox, Hangfire and notifications.
+- **Platform progress:** 1500 / 1900 points (Phases 00–14)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -20,7 +20,7 @@
 | 11 Public discovery | [x] | 100/100 |
 | 12 Customer booking & account | [x] | 100/100 |
 | 13 Shop dashboard | [x] | 100/100 |
-| 14 Admin dashboard | [ ] | 0/100 |
+| 14 Admin dashboard | [x] | 100/100 |
 | 15 WhatsApp & notifications | [ ] | 0/100 |
 | 16 QR & attribution | [ ] | 0/100 |
 | 17 Hardening | [ ] | 0/100 |
@@ -43,7 +43,7 @@
 | D-081 | Custom durations and back-dated starts need a SuperAdmin override with an explicit total price and a reason, fully audited (Session 4) |
 
 ## Open decisions
-None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095, Phase 12 D-096…D-098 and Phase 13 D-099…D-100 as their own design decisions (D-096 supersedes the inline part of D-033; D-100 refines D-034); D-012 and D-015 are now Accepted. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
+None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095, Phase 12 D-096…D-098, Phase 13 D-099…D-100 and Phase 14 D-101…D-107 as their own design decisions (D-096 supersedes the inline part of D-033; D-100 refines D-034); D-012 and D-015 are now Accepted; D-017 (reviews) is completed by D-102. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
 
 ## Blockers
 None.
