@@ -1,5 +1,6 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { RefreshOutcome } from '@/lib/api/client';
 import { renderWithIntl } from '@/test/render';
 import { LiveIndicator, OperationsLiveProvider, STABLE_CONNECTION_MS } from './OperationsLive';
 
@@ -11,7 +12,7 @@ type FakeConnection = {
 };
 
 const hub = vi.hoisted(() => ({ connections: [] as FakeConnection[], failStarts: false }));
-const session = vi.hoisted(() => ({ refreshSession: vi.fn<() => Promise<boolean>>() }));
+const session = vi.hoisted(() => ({ refreshSessionOutcome: vi.fn<() => Promise<RefreshOutcome>>() }));
 
 vi.mock('@microsoft/signalr', () => {
   class HubConnectionBuilder {
@@ -57,7 +58,7 @@ describe('OperationsLiveProvider reconnection', () => {
     vi.useFakeTimers();
     hub.connections.length = 0;
     hub.failStarts = false;
-    session.refreshSession.mockReset().mockResolvedValue(true);
+    session.refreshSessionOutcome.mockReset().mockResolvedValue('refreshed');
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -84,7 +85,7 @@ describe('OperationsLiveProvider reconnection', () => {
       expect(indicator()).toBe('live');
     }
     // One refresh per reconnection, never more.
-    expect(session.refreshSession).toHaveBeenCalledTimes(7);
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(7);
   });
 
   it('starts the backoff again once a connection has stayed up', async () => {
@@ -107,16 +108,38 @@ describe('OperationsLiveProvider reconnection', () => {
       await expectReconnectAfter(delay);
       expect(indicator()).toBe('offline');
     }
-    expect(session.refreshSession).toHaveBeenCalledTimes(4);
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(4);
   });
 
-  it('stops when the session cannot be refreshed', async () => {
+  it('keeps retrying with backoff while the API cannot be reached', async () => {
     await mount();
-    session.refreshSession.mockResolvedValue(false);
+    session.refreshSessionOutcome
+      .mockResolvedValueOnce('unavailable')
+      .mockResolvedValueOnce('unavailable')
+      .mockResolvedValueOnce('refreshed');
+    await act(async () => latest().close());
+
+    await act(() => vi.advanceTimersByTimeAsync(1_000));
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1_999));
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(2);
+    expect(hub.connections).toHaveLength(1);
+    expect(indicator()).toBe('offline');
+
+    await expectReconnectAfter(4_000);
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(3);
+    expect(indicator()).toBe('live');
+  });
+
+  it('stops when the server refuses the refresh (the session is gone)', async () => {
+    await mount();
+    session.refreshSessionOutcome.mockResolvedValue('expired');
     await act(async () => latest().close());
     await act(() => vi.advanceTimersByTimeAsync(60_000));
 
-    expect(session.refreshSession).toHaveBeenCalledTimes(1);
+    expect(session.refreshSessionOutcome).toHaveBeenCalledTimes(1);
     expect(hub.connections).toHaveLength(1);
     expect(indicator()).toBe('offline');
   });
@@ -128,7 +151,7 @@ describe('OperationsLiveProvider reconnection', () => {
     view.unmount();
     await act(() => vi.advanceTimersByTimeAsync(60_000));
 
-    expect(session.refreshSession).not.toHaveBeenCalled();
+    expect(session.refreshSessionOutcome).not.toHaveBeenCalled();
     expect(hub.connections).toHaveLength(1);
   });
 });

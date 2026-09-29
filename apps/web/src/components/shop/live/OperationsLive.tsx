@@ -13,7 +13,7 @@ import {
   useState,
 } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { refreshSession } from '@/lib/api/client';
+import { refreshSessionOutcome } from '@/lib/api/client';
 import { cn } from '@/lib/cn';
 
 /** A change on the shop's board (D-099): ids, times and status only; pages refetch what they show. */
@@ -51,7 +51,8 @@ export const STABLE_CONNECTION_MS = 30_000;
  * session. The connection closes when the short-lived access cookie expires; the provider then refreshes the session
  * (the refresh cookie is HttpOnly and scoped to the auth API) and connects again. Failures back off (1 s … 30 s), and a
  * connection the server drops right after opening (a suspended shop, a removed permission) counts as a failure, so the
- * provider never spins. If the session cannot be refreshed it stops; the page's own requests then lead to sign-in.
+ * provider never spins. It stops only when the server refuses the refresh (the page's own requests then lead to sign-in);
+ * an unreachable or busy API is retried with the same backoff.
  */
 export function OperationsLiveProvider({ children }: { children: ReactNode }) {
   const listeners = useRef(new Set<Listener>());
@@ -70,7 +71,13 @@ export function OperationsLiveProvider({ children }: { children: ReactNode }) {
       timer = setTimeout(
         async () => {
           if (stopped) return;
-          if (!(await refreshSession())) return;
+          const outcome = await refreshSessionOutcome();
+          if (stopped || outcome === 'expired') return;
+          if (outcome === 'unavailable') {
+            failures += 1;
+            retry();
+            return;
+          }
           void connect();
         },
         reconnectDelay(failures - 1),

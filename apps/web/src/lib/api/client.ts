@@ -35,14 +35,17 @@ async function withCsrf(request: Request): Promise<Request> {
   return next;
 }
 
-let refreshing: Promise<boolean> | null = null;
+/** `expired`: the server refused the refresh (401/403); `unavailable`: no answer, 429 or 5xx, worth trying later. */
+export type RefreshOutcome = 'refreshed' | 'expired' | 'unavailable';
+
+let refreshing: Promise<RefreshOutcome> | null = null;
 
 /**
  * Rotates the session once for every caller that hit a 401 at the same time. A 409 means another tab refreshed
  * a moment ago (cookies are shared), which is as good as success.
  */
-export function refreshSession(): Promise<boolean> {
-  refreshing ??= (async () => {
+export function refreshSessionOutcome(): Promise<RefreshOutcome> {
+  refreshing ??= (async (): Promise<RefreshOutcome> => {
     try {
       const token = await csrfToken();
       const response = await fetch('/api/v1/auth/refresh', {
@@ -51,9 +54,10 @@ export function refreshSession(): Promise<boolean> {
         cache: 'no-store',
         headers: token ? { [CSRF_HEADER]: token } : undefined,
       });
-      return response.ok || response.status === 409;
+      if (response.ok || response.status === 409) return 'refreshed';
+      return response.status === 401 || response.status === 403 ? 'expired' : 'unavailable';
     } catch {
-      return false;
+      return 'unavailable';
     } finally {
       setTimeout(() => {
         refreshing = null;
@@ -61,6 +65,11 @@ export function refreshSession(): Promise<boolean> {
     }
   })();
   return refreshing;
+}
+
+/** Whether the session could be rotated right now (see `refreshSessionOutcome`). */
+export async function refreshSession(): Promise<boolean> {
+  return (await refreshSessionOutcome()) === 'refreshed';
 }
 
 /** Called when the session cannot be restored; the app shell navigates to sign-in with `returnTo`. */
