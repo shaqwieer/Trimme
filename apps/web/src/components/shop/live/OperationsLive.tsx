@@ -43,10 +43,15 @@ export function reconnectDelay(attempt: number): number {
   return Math.min(30_000, 1_000 * 2 ** Math.min(Math.max(attempt, 0), 5));
 }
 
+/** A connection that stayed up this long counts as healthy: the next drop starts the backoff again. */
+export const STABLE_CONNECTION_MS = 30_000;
+
 /**
  * One live connection for the shop dashboard (spec §13, D-099). The server puts it in the shop's group from the
  * session. The connection closes when the short-lived access cookie expires; the provider then refreshes the session
- * (the refresh cookie is HttpOnly and scoped to the auth API) and connects again, backing off while it fails.
+ * (the refresh cookie is HttpOnly and scoped to the auth API) and connects again. Failures back off (1 s … 30 s), and a
+ * connection the server drops right after opening (a suspended shop, a removed permission) counts as a failure, so the
+ * provider never spins. If the session cannot be refreshed it stops; the page's own requests then lead to sign-in.
  */
 export function OperationsLiveProvider({ children }: { children: ReactNode }) {
   const listeners = useRef(new Set<Listener>());
@@ -56,16 +61,23 @@ export function OperationsLiveProvider({ children }: { children: ReactNode }) {
     let stopped = false;
     let connection: HubConnection | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let failures = 0;
+    let connectedAt = 0;
 
-    const retry = (attempt: number) => {
+    const retry = () => {
       if (stopped) return;
-      timer = setTimeout(async () => {
-        await refreshSession();
-        void connect(attempt);
-      }, reconnectDelay(attempt));
+      setState('offline');
+      timer = setTimeout(
+        async () => {
+          if (stopped) return;
+          if (!(await refreshSession())) return;
+          void connect();
+        },
+        reconnectDelay(failures - 1),
+      );
     };
 
-    const connect = async (attempt: number) => {
+    const connect = async () => {
       if (stopped) return;
       const current = new HubConnectionBuilder()
         .withUrl(HUB_PATH, { withCredentials: true })
@@ -77,8 +89,8 @@ export function OperationsLiveProvider({ children }: { children: ReactNode }) {
       });
       current.onclose(() => {
         if (stopped || connection !== current) return;
-        setState('offline');
-        retry(0);
+        failures = Date.now() - connectedAt >= STABLE_CONNECTION_MS ? 1 : failures + 1;
+        retry();
       });
       try {
         await current.start();
@@ -86,15 +98,16 @@ export function OperationsLiveProvider({ children }: { children: ReactNode }) {
           await current.stop();
           return;
         }
+        connectedAt = Date.now();
         setState('live');
       } catch {
         if (stopped) return;
-        setState('offline');
-        retry(attempt + 1);
+        failures += 1;
+        retry();
       }
     };
 
-    void connect(0);
+    void connect();
     return () => {
       stopped = true;
       clearTimeout(timer);

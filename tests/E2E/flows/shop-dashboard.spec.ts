@@ -2,9 +2,10 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
 /**
- * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in seen live by a second staff screen,
- * the calendar, the appointment drawer (note, cancel with a reason), no access to another shop's bookings, no customer
- * phone anywhere in the dashboard's API responses or live messages, and no export (R-NEG-03).
+ * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in made by staff and seen live on the
+ * owner's screen, the calendar, the appointment drawer (note, cancel with a reason), all with the staff role's
+ * permissions; no access to another shop's bookings, no customer phone anywhere in the dashboard's API responses or live
+ * messages, and no export (R-NEG-03).
  * Barber House with Omar, two days ahead: the customer flows use him 3–13 days ahead, Majed is on seeded time off, and
  * Al Asala's Faisal is kept for the schedule flow. Each run cancels its walk-in, so reruns find free time again.
  */
@@ -76,7 +77,7 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
   }) => {
     const traffic = recordTraffic(page);
     const customer = `زائر ${Date.now().toString(36).slice(-5)}`;
-    await staffSignIn(page, OWNER);
+    await staffSignIn(page, STAFF);
     await expect(page.getByTestId('shop-overview')).toBeVisible();
     await expect(page.getByTestId('shop-kpis')).toBeVisible();
     await expect(page.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
@@ -84,12 +85,12 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     });
     await expectNoSeriousAxe(page, 'overview');
 
-    // A second screen (staff) watching the appointments two days ahead.
+    // A second screen (the owner) watching the appointments two days ahead.
     const date = riyadhDate(2);
     const watcherContext = await browser.newContext();
     const watcher = await watcherContext.newPage();
     const watcherTraffic = recordTraffic(watcher);
-    await staffSignIn(watcher, STAFF);
+    await staffSignIn(watcher, OWNER);
     await watcher.goto(`/ar/shop/appointments?from=${date}&to=${date}&professional=${OMAR}`);
     await expect(watcher.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
@@ -127,7 +128,7 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(drawer).toContainText('يفضّل المقص');
     const bookingId = new URL(page.url()).searchParams.get('booking')!;
 
-    // The calendar shows it in Majed's column that day; the week view has the density strip.
+    // The calendar shows it in Omar's column that day; the week view has the density strip.
     const calendar = await page.context().newPage();
     const calendarTraffic = recordTraffic(calendar);
     await calendar.goto(`/ar/shop/calendar?date=${date}&professional=${OMAR}`);
