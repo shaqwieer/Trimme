@@ -50,6 +50,19 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         // Phase 09: computed availability of published items (rate-limited; no professional contact or booking details).
         "GET /api/v1/public/shops/{slug}/availability/dates",
         "GET /api/v1/public/shops/{slug}/availability/slots",
+
+        // Phase 11: discovery and the public shop, professional and review pages (published data only; searches and
+        // live status rate-limited; no contact data; reviewers shown as first name and initial, D-090…D-093).
+        "GET /api/v1/public/shops/search",
+        "GET /api/v1/public/categories/popular",
+        "GET /api/v1/public/professionals/top",
+        "GET /api/v1/public/stats",
+        "GET /api/v1/public/areas",
+        "GET /api/v1/public/sitemap",
+        "GET /api/v1/public/shops/{slug}/status",
+        "GET /api/v1/public/shops/{slug}/reviews",
+        "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}",
+        "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots",
     ];
 
     /// <summary>Endpoints any signed-in user may call about themselves (no permission needed).</summary>

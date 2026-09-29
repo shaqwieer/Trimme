@@ -7,6 +7,7 @@ using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Domain.Tenancy;
+using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Media;
 using Trimme.BuildingBlocks.Web.Security;
@@ -80,9 +81,37 @@ internal static class ShopEndpoints
         MapGeocoding(api.MapGroup("/admin/geo").WithTags("Admin: shops"), ShopsEdit, "Admin");
         MapGeocoding(api.MapGroup("/shop/geo").WithTags("Shop"), ShopLocationEdit, "Shop");
 
-        api.MapGet("/public/shops/{slug}", GetPublic).AllowAnonymous().WithTags("Public")
-            .WithName("GetPublicShop").WithSummary("An active shop's public profile. No professional or customer contact data.")
+        MapPublic(api);
+    }
+
+    private static void MapPublic(IEndpointRouteBuilder api)
+    {
+        api.MapGet("/public/shops/search", SearchShops).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Search).WithTags("Public")
+            .WithName("SearchShops")
+            .WithSummary("Discovery: shops near a point (or in a city) with text, category, open-now, verified, bookable-today and price filters, sorted by distance, rating or earliest slot.")
+            .Produces<ShopSearchResponse>().ProducesProblem(StatusCodes.Status400BadRequest);
+        api.MapGet("/public/categories/popular", PopularCategories).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Search).WithTags("Public")
+            .WithName("ListPopularCategories").WithSummary("Categories offered by the shops around a point, with the lowest price among them (never a global price).")
+            .Produces<IReadOnlyList<PopularCategoryResponse>>().ProducesProblem(StatusCodes.Status400BadRequest);
+        api.MapGet("/public/professionals/top", TopProfessionals).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Search).WithTags("Public")
+            .WithName("ListTopProfessionals").WithSummary("The best-rated professionals of the listed shops around a point (stored ratings only; no contact data).")
+            .Produces<IReadOnlyList<TopProfessionalResponse>>().ProducesProblem(StatusCodes.Status400BadRequest);
+        api.MapGet("/public/stats", async (IDispatcher d, CancellationToken ct) => TypedResults.Ok(await d.Send(new DiscoveryStatsQuery(), ct)))
+            .AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("GetDiscoveryStats").WithSummary("Listed shops, their active professionals and the average of their stored ratings.");
+        api.MapGet("/public/areas", async (IDispatcher d, CancellationToken ct) => TypedResults.Ok(await d.Send(new DiscoveryAreasQuery(), ct)))
+            .AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("ListDiscoveryAreas").WithSummary("Cities and districts with listed shops (manual location) and the default map centre.");
+        api.MapGet("/public/sitemap", async (IDispatcher d, CancellationToken ct) => TypedResults.Ok(await d.Send(new SitemapQuery(), ct)))
+            .AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("GetSitemapData").WithSummary("Listed shops and their active professionals' slugs, for sitemap.xml.");
+
+        api.MapGet("/public/shops/{slug}", GetPublic).AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("GetPublicShop").WithSummary("An active shop's public profile, rating, prices and hours. No professional or customer contact data.")
             .Produces<PublicShopResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        api.MapGet("/public/shops/{slug}/status", GetPublicStatus).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Availability).WithTags("Public")
+            .WithName("GetPublicShopStatus").WithSummary("Live part of the shop page: open now, online booking state and each professional's next free time.")
+            .Produces<PublicShopStatusResponse>().ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static void MapAdmin(IEndpointRouteBuilder api)
@@ -329,4 +358,54 @@ internal static class ShopEndpoints
         await dispatcher.Send(new GetPublicShopQuery(slug), cancellationToken) is { } shop
             ? TypedResults.Ok(shop)
             : ShopErrors.NotFound().ToProblem();
+
+    private static async Task<IResult> GetPublicStatus(string slug, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        await dispatcher.Send(new GetPublicShopStatusQuery(slug), cancellationToken) is { } status
+            ? TypedResults.Ok(status)
+            : ShopErrors.NotFound().ToProblem();
+
+    private static async Task<IResult> SearchShops(
+        double? lat,
+        double? lng,
+        double? radiusKm,
+        string? city,
+        string? q,
+        Guid? categoryId,
+        bool? openNow,
+        bool? verified,
+        bool? bookableToday,
+        decimal? minPrice,
+        decimal? maxPrice,
+        DiscoverySort? sort,
+        int? page,
+        int? pageSize,
+        IDispatcher dispatcher,
+        CancellationToken cancellationToken)
+    {
+        var area = DiscoveryRules.Area(lat, lng, radiusKm, city);
+        if (area.IsFailure)
+        {
+            return area.Error.ToProblem();
+        }
+
+        var query = new SearchShopsQuery(
+            area.Value, q, categoryId, openNow ?? false, verified ?? false, bookableToday ?? false, minPrice, maxPrice, sort, page ?? 1, pageSize ?? 20);
+        return (await dispatcher.Send(query, cancellationToken)).ToHttpResult();
+    }
+
+    private static async Task<IResult> TopProfessionals(double? lat, double? lng, double? radiusKm, int? limit, IDispatcher dispatcher, CancellationToken cancellationToken)
+    {
+        var area = DiscoveryRules.Area(lat, lng, radiusKm, null);
+        return area.IsFailure
+            ? area.Error.ToProblem()
+            : (await dispatcher.Send(new TopProfessionalsQuery(area.Value, limit ?? 6), cancellationToken)).ToHttpResult();
+    }
+
+    private static async Task<IResult> PopularCategories(double? lat, double? lng, double? radiusKm, IDispatcher dispatcher, CancellationToken cancellationToken)
+    {
+        var area = DiscoveryRules.Area(lat, lng, radiusKm, null);
+        return area.IsFailure
+            ? area.Error.ToProblem()
+            : (await dispatcher.Send(new PopularCategoriesQuery(area.Value), cancellationToken)).ToHttpResult();
+    }
 }

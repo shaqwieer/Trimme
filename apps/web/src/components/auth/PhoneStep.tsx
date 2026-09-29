@@ -96,7 +96,17 @@ export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string })
             <Checkbox
               {...form.register('termsAccepted')}
               label={t.rich('signUp.terms', {
-                strong: (chunks) => <strong className="font-bold">{chunks}</strong>,
+                // The legal pages open in a new tab, so the sign-up in progress is not lost (DV-A28).
+                terms: (chunks) => (
+                  <Link href="/terms" target="_blank" className="font-bold text-text-link underline">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" target="_blank" className="font-bold text-text-link underline">
+                    {chunks}
+                  </Link>
+                ),
               })}
               aria-invalid={form.formState.errors.termsAccepted ? true : undefined}
             />

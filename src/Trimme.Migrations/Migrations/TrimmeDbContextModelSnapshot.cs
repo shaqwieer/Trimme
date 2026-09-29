@@ -1572,6 +1572,148 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("professional_contacts", "professionals");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Reviews.Domain.RatingAggregate", b =>
+                {
+                    b.Property<string>("Subject")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("subject");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer")
+                        .HasColumnName("count");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<int>("Stars1")
+                        .HasColumnType("integer")
+                        .HasColumnName("stars1");
+
+                    b.Property<int>("Stars2")
+                        .HasColumnType("integer")
+                        .HasColumnName("stars2");
+
+                    b.Property<int>("Stars3")
+                        .HasColumnType("integer")
+                        .HasColumnName("stars3");
+
+                    b.Property<int>("Stars4")
+                        .HasColumnType("integer")
+                        .HasColumnName("stars4");
+
+                    b.Property<int>("Stars5")
+                        .HasColumnType("integer")
+                        .HasColumnName("stars5");
+
+                    b.Property<int>("Sum")
+                        .HasColumnType("integer")
+                        .HasColumnName("sum");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Subject", "SubjectId")
+                        .HasName("pk_rating_aggregates");
+
+                    b.HasIndex("ShopId")
+                        .HasDatabaseName("ix_rating_aggregates_shop_id");
+
+                    b.ToTable("rating_aggregates", "reviews", t =>
+                        {
+                            t.HasCheckConstraint("ck_rating_aggregates_count", "count >= 0 AND count = stars1 + stars2 + stars3 + stars4 + stars5");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Reviews.Domain.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("author_name");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("ItemNameAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("item_name_ar");
+
+                    b.Property<string>("ItemNameEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("item_name_en");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reviews");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reviews_booking_id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_reviews_customer_id");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_reviews_shop_id_professional_id");
+
+                    b.HasIndex("ProfessionalId", "Status", "CreatedAt")
+                        .HasDatabaseName("ix_reviews_professional_id_status_created_at");
+
+                    b.HasIndex("ShopId", "Status", "CreatedAt")
+                        .HasDatabaseName("ix_reviews_shop_id_status_created_at");
+
+                    b.ToTable("reviews", "reviews", t =>
+                        {
+                            t.HasCheckConstraint("ck_reviews_rating", "rating BETWEEN 1 AND 5");
+                        });
+                });
+
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ProfessionalServiceAssignment", b =>
                 {
                     b.Property<Guid>("ProfessionalId")
@@ -2876,6 +3018,24 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_professional_contacts_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Reviews.Domain.Review", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_reviews_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_reviews_professionals_shop_id_professional_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ProfessionalServiceAssignment", b =>

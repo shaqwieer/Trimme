@@ -31,6 +31,8 @@ public sealed partial class TenancyRules
             "Platform read model (end date, suspended flag) that discovery and booking gates read for any shop; no commercial data (D-078).",
         [typeof(Trimme.Modules.Shops.Domain.OnlineBookingPause)] =
             "Pause state keyed by the shop id, read for any shop by the bookability gate and discovery; written only by the shop's own pause command, tenant from claims (D-083).",
+        [typeof(Trimme.Modules.Reviews.Domain.RatingAggregate)] =
+            "Platform read model of rating totals (counts per star, no personal data) that discovery sorts and filters for any shop; written only with a review in the same unit of work (D-092).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

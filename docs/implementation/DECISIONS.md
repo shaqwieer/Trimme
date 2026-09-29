@@ -669,3 +669,60 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - a concurrent same-key request waits on the key, then replays (tested with 4 parallel requests: one booking);
   - a failed command rolls its claim back, so the key can be retried.
 - **Outbox** (`infra.outbox_messages`). `booking.created`, `booking.rescheduled`, `booking.cancelled` and `booking.status_changed` are written in the same transaction. Payloads hold ids, times, status, channel and actor type only: no names, no phone numbers. The processor is Phase 15. A losing or refused command writes no row (tested).
+
+## D-090 — A public scope for many shops at once — Accepted (Phase 11)
+- **Why.** Discovery reads published offers, schedules and professionals of a whole result set. The D-066 public scope shows the shop-owned rows of one shop only, so a scope per shop would have been N+1 queries (spec §21).
+- **What.** `IPublicDataScope.BeginMany(shopIds)` opens the same read-only view for a set of shops (at most `MaxShops` = 250).
+  - While it is open, the tenant filter shows exactly the rows of those shops, through a separate filter branch (`PublicShopSet.Contains(ShopId)`).
+  - The one-shop branch is unchanged. Saving throws, as in every public scope, and the caller's own tenant is ignored.
+- **Rules.** Only `*.Application.Public` (and `*.Application.Customer`) types may use it (the existing architecture rule). The integration test `PublicScopeForManyShops_ShowsExactlyThoseShopsRows_AndIsReadOnly` proves that a shop outside the set stays invisible, that closing the scope restores isolation, and that saving inside it fails.
+
+## D-091 — Discovery pipeline, text search and the bounded probe — Accepted (Phase 11)
+- **Pipeline** (`DiscoveryCatalog`, Shops module):
+  1. Active shops with a location, nearest first within the radius, using PostGIS `ST_DWithin`/`ST_Distance` on the GiST index. The default radius is 10 km and the maximum 50 km. Without a location the query takes a city, or everywhere. At most 200 candidates.
+  2. Only shops that `IShopBookability` lets appear in discovery (subscription and pause, D-013/D-014).
+  3. One multi-shop scope (D-090) for published offers (`IShopOfferReader`, Services), ratings (`IRatingReader`, Reviews) and opening status (`IShopOpeningReader`, Availability), with a fixed number of queries.
+  4. A shop without any published service or package is not listed, because there is nothing to book.
+- **Text search** (`SearchText`, building-block domain):
+  - Normalization: case folding, no tashkeel or tatweel, أ/إ/آ/ٱ→ا, ى→ي, ة→ه, ؤ→و, ئ→ي, Arabic-Indic digits → Latin.
+  - A shop matches when every query word appears in its name, slug or district, or in a published offer's name or category.
+  - It runs in memory over the candidate set. That fits the v1 scale (one city, at most 200 nearest). When a city has more shops, add a normalized column with a trigram index.
+- **Filters and sorts.**
+  - Category: the shop has a published service in it.
+  - Open now; verified.
+  - Price, on the *pin price* (the matched offer, else the lowest price, mapRules #1). The response carries the price range computed before the price filter.
+  - Sort by distance (the default with a location), rating (average, then count; the default without a location) or earliest slot. API enum values are PascalCase; the web maps its own URL values.
+- **Bounded probe.** "Earliest slot" and "bookable today" run the real availability engine (`ISlotProbe`) for today and tomorrow on each shop's probe offer. That is the matched offer if online-bookable, otherwise the shortest online-bookable offer with an assigned professional.
+  - Only the first 24 shops after the other filters are probed. With "bookable today", shops beyond them are left out; with "earliest", they follow in the base order.
+  - The shops on the returned page are always probed, so every card shows its earliest time.
+- **Other endpoints.** Popular categories ("from X" over the shops nearby, DV-S11), landing stats, areas for manual location (D-095), sitemap data, top professionals, the shop's live status (open now plus each professional's next time), professional detail and next slots. Opening status uses the engine's own rules (`AvailabilityEngine.OpenStatus`), including closures and windows past midnight; the web app never recomputes it.
+- **Reserved slug.** `/public/shops/search` shadows a shop slug of `search`, so that slug is reserved (`Shop.ReservedSlugs`).
+
+## D-092 — Reviews read side and rating aggregates — Accepted (Phase 11; review creation in Phase 12)
+- **Review.** `reviews.reviews` is shop-owned and customer-owned (D-085), one per booking (unique `booking_id`). It keeps a snapshot of the author's public name (first name + surname initial, skipping «ال», D-017/DV-S15) and of the booked item's name. A review needs a completed booking and a rating from 1 to 5. The comment is optional, up to 1000 characters.
+- **Keys.** A composite FK `(shop_id, professional_id)` references the professional. The same-shop booking reference `(shop_id, booking_id)` → `bookings.bookings` is added by SQL in the `Reviews` migration, because the booking's key type belongs to the Bookings module. The Reviews module reads bookings through `IBookingReviewSource`.
+- **Aggregates.** `reviews.rating_aggregates` holds count, sum and per-star counts per shop and per professional. They are a platform read model with no personal data, on the reviewed tenancy allow-list, so discovery can sort any candidate by rating. `RatingBook` updates them in the same unit of work as the review (R-RVW-01).
+- **Demo data.** Six completed demo visits (`DemoVisits`) get reviews: four at Al Asala, two at Barber House, none for Faisal (his exact free slots are asserted by the schedule E2E). The public list is paged and newest first; it can be filtered to one professional. The public professional list now carries each professional's rating.
+
+## D-093 — Public response cache with eviction on save — Accepted (Phase 11)
+- **Why not Next.js tag revalidation.** It would need the API to call the web app after each change: an extra route behind the `/api` rewrite and the locale middleware, a secret, and no durable delivery.
+- **What.** The API caches anonymous public GET responses in memory (ASP.NET Core output caching, `CachePublicly()`, 5 minutes, varying by query).
+  - Covered endpoints: shop page, services, packages, professionals, professional detail, reviews, categories, stats, areas and sitemap.
+  - Search, status and next slots are never cached: they depend on location or time.
+  - The framework's default policy skips authenticated requests and responses that set cookies, and the public handlers answer the same for everyone, so no authorization-sensitive data is ever shared.
+- **Eviction.** Entities whose changes alter public pages carry `IPublicContent`: shop, pause, services, packages, categories, assignments, professionals, opening hours, reviews, aggregates, coverage and platform settings. After a successful save that touches one, an EF interceptor (`PublicContentInterceptor`) evicts the whole public tag. Inside an explicit transaction the eviction comes just before the commit, which can leave a page stale for at most the expiry.
+- **Web.** Server-rendered public pages call the API through `getPublicApi()`: no cookies (so the cache applies), `no-store` in Next.js, and the visitor's address forwarded (D-094). Time-dependent and per-visitor parts are outside the cached payloads: open status, booking state and next times come from `/status`; distance is computed in the browser. The pages are rendered per request, so `next build` never needs the API; `sitemap.xml` is dynamic and lists the static pages when the API is unreachable.
+- **Limit.** The cache is per API instance, so another instance can serve a page up to 5 minutes old. `PublicResponses_AreCachedForAnonymousReaders_AndEvictedByAnyPublicContentSave` proves that anonymous responses are cached, signed-in ones are not, and a save evicts.
+
+## D-094 — Client address for server-rendered calls — Accepted (Phase 11)
+- **Problem.** Server-rendered public pages call the API from the web server, so per-IP rate limits would see one client for everyone.
+- **Web side.** `getPublicApi()` forwards the visitor's address as `X-Forwarded-For`: the **last** hop of the incoming header (appended by Nginx), else `X-Real-IP`, and only if it is a plain IPv4/IPv6 address.
+- **API side.** The header is honoured only from configured proxies: `ReverseProxy:KnownProxies` (addresses) and the new `ReverseProxy:KnownNetworks` (CIDR, for the web container network).
+- **Production (Phase 17 Nginx example).** Nginx must set `X-Forwarded-For $remote_addr` (overwrite, not append) to both the web and the API. The web server's network is listed in `KnownNetworks`.
+- **Local compose.** Local compose raises the `search` and `availability` limits for development and E2E, as D-058 did for `otp` and `auth` (the E2E runs showed no 429s, but every call there comes from one container address).
+
+## D-095 — The customer's location stays on the device — Accepted (Phase 11)
+- **Where it lives.** The chosen location is a first-party cookie, `trimme-location`: `SameSite=Lax`, `Secure` on HTTPS, 30 days. It holds latitude and longitude rounded to 3 decimals (about 100 m), a district label and the source (device or district). Server-rendered discovery pages read it; the API receives it only as search parameters and never stores it (Serilog request logging records the path without the query string).
+- **Asking.** The browser is asked for geolocation only when the customer presses "allow". Manual choice lists the districts that have listed shops (`GET /public/areas`, their average position), so there is no third-party geocoding call.
+- **Distance on the shop page** is computed in the browser from the cookie, so the shared page never depends on who views it.
+- **Configuration.** `TRIMME_SITE_URL` (the public origin for canonical URLs, hreflang, Open Graph and the sitemap) and `TRIMME_PARTNER_CONTACT_URL` (the optional landing "become a partner" link; the button is hidden when empty) are runtime settings of the web server.

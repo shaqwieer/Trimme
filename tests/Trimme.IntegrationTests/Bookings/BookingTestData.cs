@@ -132,7 +132,7 @@ internal static class BookingTestData
             ct,
             headers: Key(key));
 
-    private static async Task SubscribeAsync(ApiSession admin, Guid shopId, CancellationToken ct, string suffix = "A")
+    public static async Task SubscribeAsync(ApiSession admin, Guid shopId, CancellationToken ct, string suffix = "A")
     {
         var plan = new
         {

@@ -32,6 +32,8 @@ public sealed class TrimmeDbContext : DbContext
     private int _unrestrictedDepth;
     private bool _publicScope;
     private ShopId? _publicShopId;
+    private List<ShopId> _publicShopSet = [];
+    private bool _publicShopSetOpen;
 
     public TrimmeDbContext(DbContextOptions<TrimmeDbContext> options, IEnumerable<IModelContributor> contributors)
         : this(options, contributors, tenant: null)
@@ -70,6 +72,11 @@ public sealed class TrimmeDbContext : DbContext
 
     private ShopId PublicShopId => _publicShopId ?? default;
 
+    // A multi-shop public scope (discovery, D-090) shows shop-owned rows of exactly these shops.
+    private bool HasPublicShopSet => _publicShopSetOpen;
+
+    private List<ShopId> PublicShopSet => _publicShopSet;
+
     /// <summary>
     /// Lifts the tenant filter and write checks until disposed. Only the admin and system scope services call this;
     /// feature code uses <see cref="IAdminDataScope"/> or <see cref="ISystemDataScope"/>.
@@ -95,6 +102,24 @@ public sealed class TrimmeDbContext : DbContext
         _publicScope = true;
         _publicShopId = shopId;
         return new PublicScopeHandle(this);
+    }
+
+    /// <summary>
+    /// The public scope for a set of shops at once (D-090): shop-owned rows of exactly <paramref name="shopIds"/> are
+    /// visible. Same read-only rules as <see cref="EnterPublicScope(ShopId?)"/>. Only <see cref="IPublicDataScope"/> calls this.
+    /// </summary>
+    internal IDisposable EnterPublicScopeMany(IReadOnlyCollection<ShopId> shopIds)
+    {
+        ArgumentNullException.ThrowIfNull(shopIds);
+        if (shopIds.Count > IPublicDataScope.MaxShops)
+        {
+            throw new ArgumentException($"A public data scope covers at most {IPublicDataScope.MaxShops} shops.", nameof(shopIds));
+        }
+
+        var handle = EnterPublicScope(shopId: null);
+        _publicShopSet = [.. shopIds.Distinct()];
+        _publicShopSetOpen = true;
+        return handle;
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -212,6 +237,7 @@ public sealed class TrimmeDbContext : DbContext
             TenantFilterName,
             entity => Unrestricted
                       || (PublicScope && HasPublicShop && entity.ShopId == PublicShopId)
+                      || (PublicScope && HasPublicShopSet && PublicShopSet.Contains(entity.ShopId))
                       || (!PublicScope && HasTenant && entity.ShopId == TenantShopId));
 
     /// <summary>
@@ -224,6 +250,7 @@ public sealed class TrimmeDbContext : DbContext
             TenantFilterName,
             entity => Unrestricted
                       || (PublicScope && HasPublicShop && entity.ShopId == PublicShopId)
+                      || (PublicScope && HasPublicShopSet && PublicShopSet.Contains(entity.ShopId))
                       || (!PublicScope && HasTenant && entity.ShopId == TenantShopId)
                       || (!PublicScope && HasCustomer && entity.CustomerId == CurrentCustomerId));
 
@@ -334,6 +361,8 @@ public sealed class TrimmeDbContext : DbContext
                 _disposed = true;
                 context._publicScope = false;
                 context._publicShopId = null;
+                context._publicShopSet = [];
+                context._publicShopSetOpen = false;
             }
         }
     }

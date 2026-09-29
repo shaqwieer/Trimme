@@ -35,6 +35,7 @@ internal static class ApiPipeline
         app.UseAuthorization();
         app.UseMiddleware<CsrfProtectionMiddleware>();
         app.UseRateLimiter();
+        app.UseOutputCache();
 
         MapPlatformEndpoints(app);
 

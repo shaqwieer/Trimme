@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Modules;
@@ -28,6 +29,7 @@ public sealed class ServicesModule : ModuleBase
         services.AddScoped<ShopCatalogReader>();
         services.AddScoped<IShopServiceUsage, PackageServiceUsage>();
         services.AddScoped<IBookableOfferCatalog, BookableOfferCatalog>();
+        services.AddScoped<IShopOfferReader, ShopOfferReader>();
         services.AddSingleton<IDevSeeder, DemoCatalogSeeder>();
     }
 

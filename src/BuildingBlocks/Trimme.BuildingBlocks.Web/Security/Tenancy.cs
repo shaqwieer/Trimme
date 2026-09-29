@@ -76,6 +76,8 @@ internal sealed class AdminDataScope(TrimmeDbContext db, ICurrentUser user) : IA
 internal sealed class PublicDataScope(TrimmeDbContext db) : IPublicDataScope
 {
     public IDisposable Begin(ShopId? shopId) => db.EnterPublicScope(shopId);
+
+    public IDisposable BeginMany(IReadOnlyCollection<ShopId> shopIds) => db.EnterPublicScopeMany(shopIds);
 }
 
 /// <summary>System bypass for host commands and background jobs; refused inside an HTTP request.</summary>

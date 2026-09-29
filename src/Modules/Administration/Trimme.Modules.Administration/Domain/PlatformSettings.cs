@@ -31,7 +31,7 @@ public sealed record EditablePlatformSettings(
 /// names of the fields that changed. The <c>migrate</c> command inserts the defaults when the row is missing and never
 /// overwrites an admin's edit.
 /// </summary>
-public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyVersioned
+public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyVersioned, IPublicContent
 {
     public static readonly IReadOnlyList<int> SlotSteps = [5, 10, 15, 20, 30, 60];
 

@@ -17,7 +17,7 @@ public enum ProfessionalStatus
 /// <see cref="ShopId"/> is set once, here, and never changes (D-011, R-NEG-01).
 /// The WhatsApp number lives in <see cref="ProfessionalContact"/>, never in this aggregate's public shape.
 /// </summary>
-public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopOwned, IConcurrencyVersioned
+public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopOwned, IConcurrencyVersioned, IPublicContent
 {
     public const int MaxNameLength = 120;
     public const int MaxSpecialtyLength = 80;

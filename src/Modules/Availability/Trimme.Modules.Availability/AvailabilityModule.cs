@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Modules;
@@ -31,6 +32,8 @@ public sealed class AvailabilityModule : ModuleBase
         services.AddScoped<ConflictFinder>();
         services.AddScoped<PublicAvailabilityService>();
         services.AddScoped<IAvailabilityChecker, AvailabilityChecker>();
+        services.AddScoped<IShopOpeningReader, ShopOpeningReader>();
+        services.AddScoped<ISlotProbe, SlotProbe>();
         services.TryAddScoped<IBookedTimeReader, NoBookedTime>();
         services.AddSingleton<IDevSeeder, DemoSchedulesSeeder>();
     }

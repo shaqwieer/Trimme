@@ -1,3 +1,4 @@
+using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.Modules.Shops.Domain;
@@ -8,7 +9,7 @@ namespace Trimme.Modules.Shops.Domain;
 /// the profile in another). It is read for any shop by the bookability gate and discovery, so it is not tenant-filtered;
 /// only the shop's own pause and resume commands (tenant from claims) write it.
 /// </summary>
-public sealed class OnlineBookingPause
+public sealed class OnlineBookingPause : IPublicContent
 {
     public const int MaxReasonLength = 300;
 

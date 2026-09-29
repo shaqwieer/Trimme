@@ -396,7 +396,9 @@ public sealed class BookingTests(PostgresFixture postgres)
         await using var scope = factory.Services.CreateAsyncScope();
         using var system = scope.ServiceProvider.GetRequiredService<ISystemDataScope>().Begin();
         var bookings = await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<Booking>().AsNoTracking().ToListAsync(ct);
-        bookings.Select(b => b.Status).Order().ShouldBe([BookingStatus.Confirmed, BookingStatus.Confirmed, BookingStatus.Completed, BookingStatus.CancelledByCustomer, BookingStatus.NoShow], ignoreOrder: true);
+        bookings.Select(b => b.Status).Order().ShouldBe(
+            [BookingStatus.Confirmed, BookingStatus.Confirmed, BookingStatus.CancelledByCustomer, BookingStatus.NoShow, .. Enumerable.Repeat(BookingStatus.Completed, DemoVisits.All.Count)],
+            ignoreOrder: true);
         bookings.ShouldAllBe(b => b.ProfessionalId != new ProfessionalId(Guid.Parse("0199a0de-5a10-7000-8000-000000000101")), "Faisal is kept free for the schedule E2E");
         bookings.Where(b => b.IsActive).ShouldAllBe(b => b.StartsAt > DateTimeOffset.UtcNow);
         bookings.Select(b => b.CustomerId).Distinct().ShouldBe(DemoCustomers.All.Select(c => (Guid?)c.Id), ignoreOrder: true);

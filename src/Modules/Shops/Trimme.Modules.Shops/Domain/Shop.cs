@@ -11,7 +11,7 @@ namespace Trimme.Modules.Shops.Domain;
 /// profile, its exact location and the admin policy that says which profile fields the shop may edit (Phase 06).
 /// Booking settings arrive in Phases 08–10.
 /// </summary>
-public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurrencyVersioned
+public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurrencyVersioned, IPublicContent
 {
     public const string DefaultTimeZone = "Asia/Riyadh";
     public const int MaxNameLength = 120;
@@ -98,7 +98,7 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     public static Result<Shop> Create(ShopId id, string slug, string nameAr, string nameEn, string? timeZone, DateTimeOffset now)
     {
         var normalizedSlug = slug.Trim().ToLowerInvariant();
-        if (!SlugPattern().IsMatch(normalizedSlug))
+        if (!IsValidSlug(normalizedSlug))
         {
             return ShopErrors.InvalidSlug();
         }
@@ -245,7 +245,10 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
         return true;
     }
 
-    public static bool IsValidSlug(string slug) => SlugPattern().IsMatch(slug);
+    /// <summary>Slugs that name API routes under <c>/public/shops/</c> (the discovery search) and so cannot be shop pages.</summary>
+    public static readonly IReadOnlySet<string> ReservedSlugs = new HashSet<string>(StringComparer.Ordinal) { "search" };
+
+    public static bool IsValidSlug(string slug) => SlugPattern().IsMatch(slug) && !ReservedSlugs.Contains(slug);
 
     [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])$", RegexOptions.CultureInvariant)]
     private static partial Regex SlugPattern();

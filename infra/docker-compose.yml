@@ -17,6 +17,10 @@ x-api-environment: &api-environment
   # These higher limits are for local development and E2E only; production keeps the code defaults.
   RateLimiting__otp__PermitLimit: ${TRIMME_OTP_RATE_LIMIT:-500}
   RateLimiting__auth__PermitLimit: ${TRIMME_AUTH_RATE_LIMIT:-1000}
+  # Server-rendered public pages call the API from the web container, so in local compose every visitor and E2E
+  # worker shares one address (D-094); production counts real clients through Nginx.
+  RateLimiting__search__PermitLimit: ${TRIMME_SEARCH_RATE_LIMIT:-1000}
+  RateLimiting__availability__PermitLimit: ${TRIMME_AVAILABILITY_RATE_LIMIT:-1000}
   # Location picker geocoding (D-007): the built-in Riyadh gazetteer by default, so no automated run calls a third
   # party. Set TRIMME_GEOCODER=Nominatim for real OpenStreetMap lookups (light development use only, 1 request/s).
   Geocoding__Provider: ${TRIMME_GEOCODER:-Fake}
@@ -102,6 +106,10 @@ services:
       TRIMME_API_INTERNAL_URL: http://api:8080
       # Development-only preview routes (/[locale]/dev/*) used by the E2E smoke tests. Never enable in production.
       TRIMME_ENABLE_DEV_ROUTES: ${TRIMME_ENABLE_DEV_ROUTES:-true}
+      # Public origin for canonical URLs, hreflang, Open Graph and the sitemap (R-WEB-10).
+      TRIMME_SITE_URL: ${TRIMME_SITE_URL:-http://localhost:3000}
+      # Optional "become a partner" link on the landing page (mailto: or a form); the button is hidden when empty.
+      TRIMME_PARTNER_CONTACT_URL: ${TRIMME_PARTNER_CONTACT_URL:-}
     ports:
       - "${TRIMME_WEB_PORT:-3000}:3000"
     depends_on:

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -67,4 +68,23 @@ internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalD
             .OrderBy(p => p.NameAr).ThenBy(p => p.Id)
             .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<PublicProfessionalCard>> ListActiveProfilesAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken)
+    {
+        if (shopIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = shopIds.Distinct().ToArray();
+        var professionals = await db.Set<Professional>().AsNoTracking()
+            .Where(p => ids.Contains(p.ShopId) && p.Status == ProfessionalStatus.Active)
+            .OrderBy(p => p.NameAr).ThenBy(p => p.Id)
+            .ToListAsync(cancellationToken);
+        return
+        [
+            .. professionals.Select(p => new PublicProfessionalCard(
+                p.Id, p.ShopId, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, MediaRules.Url(p.AvatarMediaId))),
+        ];
+    }
 }

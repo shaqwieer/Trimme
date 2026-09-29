@@ -321,6 +321,10 @@ internal sealed class AddPlanPriceHandler(TrimmeDbContext db, IAdminDataScope sc
         // A child with a preset key reached through a navigation would be taken for an existing row; add it explicitly.
         var price = added.Value;
         db.Add(price);
+
+        // Always update the plan row, so the version check runs even when UpdatedAt ends up equal to the stored value
+        // (the database keeps microseconds; a stale version must never add a price).
+        db.Entry(plan).Property(p => p.UpdatedAt).IsModified = true;
         audit.Record(new AuditRecord(
             "plan.price_added", "SubscriptionPlan", plan.Id.ToString(), null,
             $"Price version {price.VersionNumber}: {PlanReader.Money(price.Amount, price.Currency)} from {PlanReader.Day(price.EffectiveFrom)}", null));

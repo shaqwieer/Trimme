@@ -17,11 +17,6 @@
       "logoAlt": "TRIMME"
     }
   },
-  "home": {
-    "title": "Book your next haircut",
-    "subtitle": "Discover shops near you, then choose the service, the barber and a time that is genuinely available.",
-    "comingSoon": "The platform is under construction — see you soon."
-  },
   "shell": {
     "mainNavigation": "Main navigation",
     "openMenu": "Open menu",
@@ -262,7 +257,7 @@
     "signUp": {
       "title": "Welcome to TRIMME",
       "subtitle": "Enter your mobile number and we'll send you a verification code on WhatsApp",
-      "terms": "I agree to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong>",
+      "terms": "I agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>",
       "submit": "Send code",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in"
@@ -1254,6 +1249,385 @@
       "cancel": "Go back",
       "pausedToast": "Online booking paused",
       "resumedToast": "Online booking is back on"
+    }
+  },
+  "publicNav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "shops": "Shops",
+    "discover": "Nearby",
+    "signIn": "Sign in"
+  },
+  "footer": {
+    "label": "Site links",
+    "tagline": "Book a real, available appointment at a salon near you, with confirmations on WhatsApp.",
+    "shops": "Shops",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy",
+    "rights": "© {year} TRIMME. All rights reserved."
+  },
+  "opening": {
+    "openUntil": "Open until {time}",
+    "opensAt": "Opens {time}",
+    "opensOn": "Opens {day} {time}",
+    "closed": "Closed",
+    "open": "Open",
+    "openNow": "Open now",
+    "closesAt": "Closes {time}"
+  },
+  "landing": {
+    "meta": {
+      "title": "Book your haircut in a minute",
+      "description": "TRIMME brings together the best barbers in your city and shows the times that are really free with the barber you choose, with confirmations on WhatsApp."
+    },
+    "badge": "Now available in {city}",
+    "badgeGeneric": "Now available in your city",
+    "title": "Book your haircut in a minute, no calls, no waiting",
+    "lead": "TRIMME brings together the best barbers in your city and shows the times that are really free with the barber you choose, with confirmations on WhatsApp.",
+    "search": {
+      "label": "Search for a service or a shop",
+      "placeholder": "Service or shop name",
+      "location": "Your location",
+      "locationUnset": "Set your location",
+      "submit": "Search"
+    },
+    "stats": {
+      "label": "TRIMME in numbers",
+      "shops": "partner salons",
+      "professionals": "professional barbers",
+      "rating": "average rating"
+    },
+    "heroCard": {
+      "title": "Your appointment is confirmed",
+      "body": "Details and a reminder arrive on WhatsApp"
+    },
+    "heroAlt": "Booking a barber appointment with TRIMME",
+    "values": {
+      "label": "Why TRIMME",
+      "time": {
+        "title": "Real times only",
+        "body": "Every time shown can be booked, worked out from the barber's hours and your service's length."
+      },
+      "choose": {
+        "title": "Choose your barber",
+        "body": "Book with the barber you trust, or let us suggest the earliest one."
+      },
+      "whatsapp": {
+        "title": "WhatsApp confirmation",
+        "body": "Instant confirmation and a reminder before your visit, no extra apps."
+      },
+      "qr": {
+        "title": "Scan and book",
+        "body": "Scan the shop's QR code and book straight away."
+      }
+    },
+    "topRated": {
+      "title": "Top rated",
+      "titleCity": "Top rated in {city}",
+      "viewAll": "View all",
+      "empty": "No shops are published yet."
+    },
+    "partner": {
+      "title": "Own a salon? Take bookings without the chaos",
+      "body": "A simple dashboard for appointments, hours and time off, with automatic WhatsApp confirmations for your customers.",
+      "cta": "Become a partner"
+    }
+  },
+  "shopsList": {
+    "meta": {
+      "title": "Barbershops",
+      "titleCity": "Barbershops in {city}",
+      "description": "Browse the barbershops on TRIMME, compare ratings and prices, and book an available appointment."
+    },
+    "title": "Barbershops",
+    "titleCity": "Barbershops in {city}",
+    "intro": "Every shop listed takes bookings on TRIMME, with its own prices and durations.",
+    "cities": "Cities",
+    "allCities": "All cities",
+    "empty": "No shops are published in this city yet.",
+    "count": "{count, plural, =0 {No shops} one {# shop} other {# shops}}"
+  },
+  "discover": {
+    "meta": {
+      "title": "Discover nearby shops"
+    },
+    "yourLocation": "Your location",
+    "currentLocation": "My current location",
+    "setLocation": "Set your location",
+    "changeLocation": "Change location: {label}",
+    "search": {
+      "label": "Search for a shop or service",
+      "placeholder": "Search for a shop or service",
+      "submit": "Search"
+    },
+    "categories": "Categories",
+    "all": "All",
+    "nearYou": "Near you",
+    "map": "Map",
+    "nearEmpty": {
+      "title": "No shops nearby",
+      "body": "There are no shops within {km} km. Widen the search or change the district.",
+      "cta": "Widen to {km} km"
+    },
+    "noLocation": {
+      "title": "Set your location to see what's nearest",
+      "body": "We sort shops by distance from the place you choose, and we don't keep it on our servers.",
+      "cta": "Set location"
+    },
+    "popular": {
+      "title": "Popular services",
+      "from": "From {price}",
+      "shops": "{count, plural, one {# shop} other {# shops}}"
+    },
+    "topPros": {
+      "title": "Highly rated barbers"
+    },
+    "topRated": "Top rated"
+  },
+  "search": {
+    "meta": {
+      "title": "Search results"
+    },
+    "back": "Back",
+    "label": "Search for a shop or service",
+    "placeholder": "Search for a shop or service",
+    "submit": "Search",
+    "filters": "Filters",
+    "filtersCount": "Filters · {count}",
+    "quick": "Quick filters",
+    "nearest": "Nearest",
+    "openNow": "Open now",
+    "results": "{count, plural, =0 {No results} one {# result} other {# results}} within {km} km",
+    "resultsAll": "{count, plural, =0 {No results} one {# result} other {# results}}",
+    "noLocation": "Without a location, results are sorted by rating.",
+    "setLocation": "Set your location",
+    "earliest": "Earliest {time}",
+    "tomorrow": "Tomorrow {time}",
+    "notBookable": "Online booking paused",
+    "matched": "{service} · {price} · {duration}",
+    "showMap": "Show map",
+    "showList": "Show list",
+    "view": "View",
+    "list": "List",
+    "mapTab": "Map",
+    "empty": {
+      "title": "No matching shops",
+      "body": "Try other words, remove some filters or widen the search.",
+      "widen": "Widen to {km} km",
+      "clear": "Clear filters"
+    },
+    "more": "Show more",
+    "page": "Page {page}",
+    "book": "Book",
+    "map": {
+      "label": "Map of results",
+      "pin": "{shop}, from {price}",
+      "you": "Your location",
+      "selected": "Selected shop",
+      "close": "Close",
+      "open": "View shop"
+    }
+  },
+  "filters": {
+    "open": "Open filters",
+    "title": "Filter & sort",
+    "close": "Close",
+    "sort": "Sort by",
+    "sortNearest": "Nearest",
+    "sortRating": "Highest rated",
+    "sortEarliest": "Earliest available",
+    "service": "Service",
+    "anyService": "All services",
+    "price": "Price",
+    "priceRange": "{min} — {max}",
+    "minPrice": "Minimum price",
+    "maxPrice": "Maximum price",
+    "openNow": "Open now only",
+    "verified": "Verified shops only",
+    "today": "Takes bookings today",
+    "clear": "Clear",
+    "apply": "{count, plural, =0 {No results} one {Show # result} other {Show # results}}",
+    "applyPending": "Show results",
+    "counting": "Counting results…"
+  },
+  "location": {
+    "meta": {
+      "title": "Set your location"
+    },
+    "title": "Turn on location to see what's nearest",
+    "body": "We use your location to sort shops by distance. It stays on your device, and you can change it at any time.",
+    "allow": "Allow location access",
+    "manual": "Enter your district",
+    "locating": "Finding your location…",
+    "denied": "We couldn't access your location. Choose your district instead.",
+    "unavailable": "Your browser can't share a location. Choose your district instead.",
+    "manualTitle": "Choose your district",
+    "filter": "Search districts",
+    "areasLabel": "Available districts",
+    "noAreas": "No matching districts.",
+    "areaShops": "{count, plural, one {# shop} other {# shops}}",
+    "skip": "Skip for now",
+    "mapPreview": "Map preview",
+    "sheetTitle": "Your location",
+    "areaLabel": "{district}, {city}"
+  },
+  "shopPage": {
+    "meta": {
+      "description": "{name}, {area}. See services, prices, barbers and reviews, and book an available appointment.",
+      "descriptionNoArea": "{name}. See services, prices, barbers and reviews, and book an available appointment."
+    },
+    "breadcrumb": {
+      "home": "Home",
+      "shops": "Shops"
+    },
+    "back": "Back",
+    "gallery": "Shop photos",
+    "galleryImage": "Photo {index} of {total}",
+    "logoAlt": "{name} logo",
+    "verified": "Verified",
+    "verifiedHint": "TRIMME has checked this shop's details",
+    "noReviews": "No reviews yet",
+    "distance": "{km} away",
+    "address": "Address",
+    "directions": "Directions",
+    "mapLabel": "{name} on the map",
+    "tabs": {
+      "label": "Shop sections",
+      "services": "Services",
+      "professionals": "Barbers",
+      "reviews": "Reviews",
+      "about": "About"
+    },
+    "services": {
+      "title": "Services",
+      "empty": "No services are published right now.",
+      "book": "Book",
+      "bookLabel": "Book {name}",
+      "packages": "Packages",
+      "includes": "Includes: {items}",
+      "walkInOnly": "In-shop only"
+    },
+    "pros": {
+      "title": "Barbers",
+      "empty": "No barbers are published right now.",
+      "today": "Today {time}",
+      "tomorrow": "Tomorrow {time}",
+      "none": "No times soon",
+      "profile": "{name}'s profile"
+    },
+    "about": {
+      "description": "About the shop",
+      "hours": "Opening hours",
+      "closed": "Closed",
+      "noHours": "The shop hasn't set its hours yet.",
+      "policies": "Policies",
+      "cancel": "Free cancellation up to {duration} before the appointment",
+      "payAtShop": "Pay at the shop",
+      "amenities": "Amenities",
+      "phone": "Shop phone",
+      "category": "Type"
+    },
+    "footer": {
+      "from": "Starts from",
+      "book": "Book now",
+      "unavailable": "Online booking is paused right now"
+    },
+    "paused": {
+      "title": "Online booking is paused",
+      "body": "The shop has paused online booking for now. Confirmed appointments still stand."
+    },
+    "notListed": {
+      "title": "Online booking isn't available right now",
+      "body": "This shop isn't taking new bookings through TRIMME at the moment."
+    },
+    "duration": {
+      "hours": "{count, plural, one {# hour} other {# hours}}",
+      "minutes": "{count, plural, one {# minute} other {# minutes}}"
+    }
+  },
+  "proPage": {
+    "meta": {
+      "title": "{name} — {shop}",
+      "description": "{name}, {specialty} at {shop}. See services, reviews and the earliest free times, and book."
+    },
+    "back": "Back to the shop",
+    "heading": "Barber",
+    "worksAt": "Works at {shop}",
+    "next": {
+      "title": "Earliest available times",
+      "titleToday": "Earliest available times today",
+      "titleOn": "Earliest available times on {day}",
+      "more": "+{count} more",
+      "none": "No free times in the coming week.",
+      "unavailable": "This shop has paused online booking.",
+      "slot": "Book {time}"
+    },
+    "services": {
+      "title": "Services offered",
+      "empty": "No published services for this barber."
+    },
+    "reviews": {
+      "title": "Latest reviews",
+      "all": "All reviews"
+    },
+    "book": "Book with {name}"
+  },
+  "reviewsList": {
+    "title": "Reviews",
+    "average": "{value} out of 5",
+    "basedOn": "{count, plural, one {# review} other {# reviews}}",
+    "empty": {
+      "title": "No reviews yet",
+      "body": "Reviews appear after the first completed visit."
+    },
+    "pages": "Review pages",
+    "note": "Reviews come from customers who completed their visit, shown by first name only."
+  },
+  "legal": {
+    "draft": "Draft, pending legal review before launch.",
+    "terms": {
+      "title": "Terms of use",
+      "description": "The terms for using TRIMME to book salon appointments.",
+      "sections": {
+        "service": {
+          "title": "The service",
+          "body": "TRIMME shows the times that are free at participating salons and records your booking. The shop provides the service and sets its own prices and durations."
+        },
+        "account": {
+          "title": "Your account",
+          "body": "You sign in with your mobile number and a code sent on WhatsApp. You are responsible for your details and for bookings made from your account."
+        },
+        "bookings": {
+          "title": "Bookings and cancellation",
+          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the shop directly. There are no payments through the platform in this version; you pay at the shop."
+        },
+        "reviews": {
+          "title": "Reviews",
+          "body": "You can review a completed visit once. Reviews show your first name and the initial of your family name, and reviews that break the rules may be hidden."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "description": "How TRIMME handles your personal data.",
+      "sections": {
+        "data": {
+          "title": "What we collect",
+          "body": "Your mobile number, name, bookings and reviews. Shops never see your mobile number."
+        },
+        "location": {
+          "title": "Your location",
+          "body": "The location you choose is kept on your device only, to sort shops by distance. We don't store it on our servers."
+        },
+        "messages": {
+          "title": "Messages",
+          "body": "We send verification codes, booking confirmations and reminders on WhatsApp to your number only."
+        },
+        "rights": {
+          "title": "Your rights",
+          "body": "You can edit your details and end your sessions from your account page, and ask support to delete your account."
+        }
+      }
     }
   }
 }

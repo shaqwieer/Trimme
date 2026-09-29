@@ -28,7 +28,13 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
     /// The fake clock starts at the real "now": the API validates tokens on the fake clock, while the test cookie jar
     /// drops cookies that expired in real time, so the clock may only move forward from here.
     /// </summary>
-    private static readonly DateTimeOffset Start = DateTimeOffset.UtcNow;
+    private static readonly DateTimeOffset Start = WholeMicroseconds(DateTimeOffset.UtcNow);
+
+    /// <summary>
+    /// Whole microseconds, as PostgreSQL stores them: a later write at the same fake instant then changes no column, which
+    /// is exactly when a stale version must still be refused (the plan price-version check, fixed in Phase 11).
+    /// </summary>
+    private static DateTimeOffset WholeMicroseconds(DateTimeOffset value) => new(value.UtcTicks - (value.UtcTicks % 10), TimeSpan.Zero);
 
     /// <summary>The platform (Asia/Riyadh) calendar day at <see cref="Start"/>.</summary>
     private static readonly DateOnly Today =

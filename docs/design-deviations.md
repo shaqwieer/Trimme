@@ -20,17 +20,17 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S08 | Shop drawer offers all status actions for every booking; no "Confirm" action; filter chips omit Arrived/No-show | 4299–4305, 2371–2376, 2389, 4262 | §11 state machine | Render only API `allowedTransitions`; add Confirm; cancel with reason dialog; all status chips. | 13 | API **applied** (Phase 10: `allowedTransitions`, Confirm, reason required, D-087); UI Phase 13 |
 | DV-S09 | Single "ملغي" status | 3636, 4299 | §11 | `CancelledByCustomer` / `CancelledByShop` (shared badge colour, distinct sub-labels). | 10 | planned |
 | DV-S10 | "Cancellation request" after cutoff reviewed by shop (copy only) | 1779, 3501 | §11 | No online cancel after cutoff (setting); show policy + shop contact (D-015). | 12 | API **applied** (Phase 10: 422 `booking.cancellation_cutoff_passed`, no request entity); UI Phase 12 |
-| DV-S11 | Home "popular services" tiles show a price with no shop | 1040–1048, 3755 | §10 | Category shortcuts with "from X ر.س" aggregated from nearby shops. | 11 | planned |
-| DV-S12 | Packages modelled as a single service row | 3505, 3844, 1398 | §10 | Packages with items, explicit price/duration, shown in a packages section on the shop page (D-020). | 7/11 | **applied in the dashboards** (Phase 07): packages with items, explicit price/duration (D-072); shop page section in Phase 11 |
+| DV-S11 | Home "popular services" tiles show a price with no shop | 1040–1048, 3755 | §10 | Category shortcuts with "from X ر.س" aggregated from nearby shops. | 11 | **applied** (Phase 11): `/discover` tiles are platform categories with the lowest price among nearby listed shops and the shop count (`GET /public/categories/popular`, D-091) |
+| DV-S12 | Packages modelled as a single service row | 3505, 3844, 1398 | §10 | Packages with items, explicit price/duration, shown in a packages section on the shop page (D-020). | 7/11 | **applied** (Phase 07 dashboards; Phase 11 shop page: a "الباقات" section under the services with the items, price, duration and a booking link) |
 | DV-S13 | Success copy "تم تأكيد حجزك" regardless of status | 1584, 857, 1612 | §11 | Copy depends on resulting status (D-006). | 12 | planned |
-| DV-S14 | Hardcoded policy values (2 h free cancellation, 15 min lateness, 7-day review window, 14-day horizon, expiry reminders 30/15/7 days) | 1348–1349, 1568, 1779, 2587, 4404, 3555 | §14, §15 | Platform/shop settings drive values and copy. | 8/14 | planned |
-| DV-S15 | Reviews show full customer names | 3819–3821, 1406 (vs promise at 1909) | privacy | First name + surname initial (D-017). | 12 | planned |
+| DV-S14 | Hardcoded policy values (2 h free cancellation, 15 min lateness, 7-day review window, 14-day horizon, expiry reminders 30/15/7 days) | 1348–1349, 1568, 1779, 2587, 4404, 3555 | §14, §15 | Platform/shop settings drive values and copy. | 8/11/14 | partly **applied** (Phase 11): the shop page's cancellation policy comes from `CancellationCutoffMinutes`; the "late more than 15 minutes" row is not shown because no such rule exists; the rest in Phase 14 |
+| DV-S15 | Reviews show full customer names | 3819–3821, 1406 (vs promise at 1909) | privacy | First name + surname initial (D-017). | 11 | **applied** (Phase 11): reviews store and show "خالد د." (D-092) |
 | DV-S16 | Shop profile lock state hardcoded | 4387–4399 | §13 | `editableFields` from admin policy per shop, enforced server-side. | 6 | **applied** (Phase 06): admin "Shop edit permissions" card; shop settings disable locked fields with a shield note; API 403 `shop.profile_field_locked` (D-065) |
 | DV-S17 | Admin customer phone reveal described but not controlled | 2954–2957 | §7, §14 | Masked phone + "إظهار الرقم" with reason → audited, permission-gated. | 14 | planned |
 | DV-S18 | Shop search "by customer name or booking number" | 2141 | §7 | Backend search matches name/booking reference only, never phone. | 13 | API **applied** (Phase 10: `GET /shop/bookings?search=` matches the name or the 8-character reference); UI Phase 13 |
 | DV-S19 | Calendar in fixed 30-minute rows | 4229–4240, 4191, 4345 | §11 5-min step | Minute-accurate positioning. | 13 | planned |
 | DV-S20 | Payment-method row in profile settings ("طريقة الدفع") | 4139 | §2 no payment | Read-only info row "الدفع في المحل" (no payment settings screen). | 12 | planned |
-| DV-S21 | Discovery hiding on pause/expiry stated as fixed behaviour | 2510, 2522, 2190, 4529, 4616, 3787 | §15 explicit settings | Settings-driven (D-013, D-014). | 8/9/11 | planned |
+| DV-S21 | Discovery hiding on pause/expiry stated as fixed behaviour | 2510, 2522, 2190, 4529, 4616, 3787 | §15 explicit settings | Settings-driven (D-013, D-014). | 8/9/11 | **applied** (Phase 11): discovery lists only shops `IShopBookability` makes visible; the page of a hidden shop stays reachable, says why booking is off and is not indexed |
 | DV-S22 | Professional time off auto-notifies customers to reschedule | 4368 | §16 events | No automatic customer messages; affected bookings flagged to shop and admin. | 9 | **applied** (Phase 09): the design's "سيُنبَّه العملاء…" copy is not used; the time-off, break and closure dialogs list overlapping bookings and say nothing is cancelled or sent. Persisting the flag on bookings: Phase 10 |
 
 ## DV-A — Absent from design, spec requires (designed in the TRIMME visual language)
@@ -58,14 +58,14 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A18 | Service categories & packages admin | §7, §10, §14 | 7 |
 | DV-A19 | Real week calendar grid | §13 | 13 |
 | DV-A20 | Confirm dialogs and save bars on editable screens | general | 3+ — `ConfirmDialog` built (Phase 03); save bars arrive with the editable screens |
-| DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 — sign-in (same frame as sign-up, no terms), profile completion (name, language, terms) **applied** Phase 04; location sheet Phase 11 |
+| DV-A21 | Distinct sign-in screen, profile completion (name), manual location selection sheet | §9, §12 | 4/11 — sign-in (same frame as sign-up, no terms), profile completion (name, language, terms) **applied** Phase 04; **location applied** Phase 11: `/onboarding/location` (the c-auth permission frame) and the `/discover` location sheet, with "allow" and a searchable list of districts that have listed shops (D-095) |
 | DV-A22 | Security/session settings (session list, revoke all), staff forgot/reset password | §9, §12 | 4 — **applied**: `/account/security`, `/auth/staff/sign-in`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/accept-invite`, all composed from the c-auth card and design-system parts |
-| DV-A23 | Shop gallery, shop mini-map, shop description, packages section on shop page | §12 | 11 |
+| DV-A23 | Shop gallery, shop mini-map, shop description, packages section on shop page | §12 | 11 — **applied**: a gallery strip under the address, the description, hours, policies, amenities and phone in "عن المحل" with a small MapLibre map (loaded when shown), and the packages section |
 | DV-A24 | Booking-conflict state at confirm (typed 409) | §11 | 12 |
 | DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 — `ExpiredSession`, `PermissionDenied`, `ErrorState` built (Phase 03); wired to 401/403 in Phase 04 — **applied** (session restore page, PermissionDenied on the wrong surface) |
 | DV-A26 | English (LTR) versions of all screens; desktop/tablet layouts for customer screens other than landing | §5, §6 | 2+ |
-| DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 |
-| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — until the pages exist, the terms checkbox shows the two names in bold instead of dead links (Phase 04) |
+| DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 — **applied**: `/shops` with city links, rating order, paging and breadcrumb data |
+| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — **applied**: `/terms` and `/privacy` (placeholder text stating the real product rules, marked for legal review); the sign-up checkbox links to them in a new tab; the marketing footer links them |
 
 ## DV-T — Tokens, visual and accessibility fixes
 
@@ -89,6 +89,12 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 Weekday/date pairs are from 2025 (e.g. "الخميس ١٨ سبتمبر"; 18 Sep 2026 is a Friday); `addMin` AM/PM bug around noon (server computes end times); professionals shown under two shops in sample data (seed data must respect one shop per professional); headcount mismatches ("٦ حلاقين" vs 3); admin subtitle "١٢٨ محلاً نشطاً" vs KPI 114/128; shop footer "تبدأ من 30" vs cheapest 35; always-on verified shield; favorites header counts; period headers counts; notifications bottom-nav highlight; rating tags auto-selected; stars editable after submit. All demo data is generated from the seed, never copied from the prototype.
 
 DV-C01 — OTP length: design shows 4 digits; D-005/D-037 uses 6 digits for security. The copy says "٦ أرقام" and the field has 6 positions (single LTR input, D-048). **Applied** Phase 04.
+
+DV-C03 — Landing (c-landing): the nav's "للأعمال"/"عن تريمي" links have no pages, so the header links Home, Shops and Nearby; the hero photo placeholder is a brand panel with a decorative, name-free confirmation card; the stats row shows only real, non-zero figures; the partner button appears only when `TRIMME_PARTNER_CONTACT_URL` is configured (there is no partner sign-up flow, shops are admin-created). Phase 11.
+
+DV-C04 — Professional profile: the design's "1,240 موعد مكتمل" and "98% التزام بالموعد" tiles are not shown: punctuality has no definition and invented figures are not allowed (spec §6). The rating, services, next free times and latest reviews are shown. Phase 11.
+
+DV-C05 — Shop page header: the QR and heart buttons on the cover are not shown yet (favorites arrive in Phase 12, QR in Phase 16). The back button is replaced by the breadcrumb on this page. Phase 11.
 
 DV-C02 — The OTP help text offers "أو اطلب الرمز عبر رسالة نصية" (request by SMS). v1 has no SMS channel (WhatsApp only, D-005), so the copy asks the user to check WhatsApp and request a new code after the countdown. Phase 04.
 

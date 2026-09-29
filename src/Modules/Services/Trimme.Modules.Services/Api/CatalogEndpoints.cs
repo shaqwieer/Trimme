@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Domain.Results;
+using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Security;
 using Trimme.Modules.Services.Application;
@@ -97,13 +98,13 @@ internal static class CatalogEndpoints
         MapShopPackages(api.MapGroup("/shop/packages").WithTags("Shop: services"));
         MapAdmin(api);
 
-        api.MapGet("/public/service-categories", PublicCategories).AllowAnonymous().WithTags("Public")
+        api.MapGet("/public/service-categories", PublicCategories).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicServiceCategories").WithSummary("Active service categories, in display order.")
             .Produces<IReadOnlyList<ServiceCategoryResponse>>();
-        api.MapGet("/public/shops/{slug}/services", PublicServices).AllowAnonymous().WithTags("Public")
+        api.MapGet("/public/shops/{slug}/services", PublicServices).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopServices").WithSummary("An active shop's published services (active, not archived, not hidden).")
             .Produces<IReadOnlyList<PublicServiceResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
-        api.MapGet("/public/shops/{slug}/packages", PublicPackages).AllowAnonymous().WithTags("Public")
+        api.MapGet("/public/shops/{slug}/packages", PublicPackages).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopPackages").WithSummary("An active shop's published packages whose every service is available.")
             .Produces<IReadOnlyList<PublicPackageResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
     }

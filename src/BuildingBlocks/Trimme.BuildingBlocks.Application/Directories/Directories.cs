@@ -12,9 +12,19 @@ public interface IProfessionalDirectory
 
     /// <summary>The shop's professionals the caller may see, active and disabled, in name order.</summary>
     Task<IReadOnlyList<ProfessionalSummary>> ListByShopAsync(ShopId shopId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The active professionals of these shops with their public profile, in name order (discovery, D-091). Opened with
+    /// <c>IPublicDataScope.BeginMany</c> for the shops. Never carries a phone or WhatsApp number (R-PRO-02).
+    /// </summary>
+    Task<IReadOnlyList<PublicProfessionalCard>> ListActiveProfilesAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken);
 }
 
 public sealed record ProfessionalSummary(ProfessionalId Id, ShopId ShopId, string NameAr, string NameEn, bool IsActive);
+
+/// <summary>An active professional's public profile, as discovery lists them.</summary>
+public sealed record PublicProfessionalCard(
+    ProfessionalId Id, ShopId ShopId, string Slug, string NameAr, string NameEn, string? SpecialtyAr, string? SpecialtyEn, string? AvatarUrl);
 
 /// <summary>
 /// Customers for other modules (implemented by the Identity module). It exposes the display name only: the customer's

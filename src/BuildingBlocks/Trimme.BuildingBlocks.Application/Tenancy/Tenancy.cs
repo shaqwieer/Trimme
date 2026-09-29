@@ -49,7 +49,16 @@ public interface ISystemDataScope
 /// </summary>
 public interface IPublicDataScope
 {
+    /// <summary>At most this many shops in one <see cref="BeginMany"/> scope (a discovery page's candidate set, D-090).</summary>
+    const int MaxShops = 250;
+
     IDisposable Begin(ShopId? shopId);
+
+    /// <summary>
+    /// The same read-only view for a set of published shops at once (discovery, D-090): shop-owned rows of exactly these
+    /// shops are visible, so one query can read prices or schedules of a whole result page. At most <see cref="MaxShops"/>.
+    /// </summary>
+    IDisposable BeginMany(IReadOnlyCollection<ShopId> shopIds);
 }
 
 /// <summary>Read access to shops for other modules (implemented by the Shops module).</summary>

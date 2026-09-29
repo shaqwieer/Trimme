@@ -166,6 +166,18 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 
 **Outbox and idempotency** (`infra`): `outbox_messages` (events written in the booking's transaction, ids only) and `idempotency_records` (user + operation + key → the booking produced, 24 h).
 
+## Reviews (`reviews`)
+
+**Review** (D-017, D-092) is shop-owned and customer-owned, one per completed booking (unique `booking_id`; same-shop foreign keys to the booking and the professional).
+- Rating 1–5, an optional comment (≤ 1000), status Published/Hidden (admins hide in Phase 14), and snapshots of the author's public name (first name + surname initial) and the booked item's name.
+- Customers write reviews from Phase 12; Phase 11 has the read side and the demo reviews.
+
+**RatingAggregate** is a platform read model per shop and per professional: count, sum and per-star counts, no personal data. It is updated in the same unit of work as the review, and discovery reads it for any shop.
+
+## Discovery (read side, no tables of its own)
+
+Discovery (D-090, D-091) combines the shop's location (PostGIS), visibility (`IShopBookability`), published offers (Services), ratings (Reviews) and opening status and a bounded slot probe (Availability), through building-block contracts inside one read-only public scope for the candidate shops. Public responses are cached by the API and evicted when public content changes (D-093).
+
 ## Administration settings
 
 **PlatformSettings** (D-076) is one typed row: booking policy, reminder offset, expiring-soon threshold, enforcement (D-014), hide paused shops (D-013), region (fixed in v1) and map defaults. It is version-checked and audited with the changed fields; `migrate` inserts the defaults only when the row is missing.

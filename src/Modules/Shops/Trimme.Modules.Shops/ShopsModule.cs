@@ -24,6 +24,7 @@ public sealed class ShopsModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<IShopDirectory, ShopDirectory>();
+        services.AddScoped<Application.Public.DiscoveryCatalog>();
         services.AddSingleton<IDevSeeder, DemoShopsSeeder>();
 
         var geocoding = configuration.GetSection(GeocodingOptions.SectionName);

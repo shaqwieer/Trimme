@@ -140,7 +140,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 08 | Subscriptions foundation & platform settings | [x] | 100/100 | 07 | `phases/phase-08-subscriptions-settings.md` §Evidence (build 0 warnings; 206 unit / 63 architecture / 114 integration; web 217; E2E 45/45 ×3 on a fresh stack after the D-081 change and the map-pin race fix; R-NEG-08 + no-transfer gates and gitleaks clean) | `2f2b42c` (+ follow-ups `7054b4e`, `8ccef02`) | CI green: run 36333734614 |
 | 09 | Schedules & availability engine | [x] | 100/100 | 08 | `phases/phase-09-availability.md` §Evidence (build 0 warnings; 243 unit / 63 architecture / 119 integration; web 229; E2E 47/47 ×3 on a fresh stack after fixing two form-refresh races and moving the pause off the shop row; engine tested incl. DST and midnight; gitleaks clean) | `a9a5aca` (+ follow-up `c994a29`) | CI green: run 36411900841 |
 | 10 | Booking core & integrity | [x] | 100/100 | 09 | `phases/phase-10-booking-core.md` §Evidence (build 0 warnings; 349 unit / 63 architecture / 133 integration; concurrency suite 20/20 + 5/5 runs; web 229; E2E 47/47 ×3 on a fresh stack; gitleaks clean) | `41007e6` (+ follow-up `0087df9`) | CI green: run 36420287372 |
-| 11 | Public discovery & shop pages | [ ] | 0/100 | 10 | — | — | — |
+| 11 | Public discovery & shop pages | [x] | 100/100 | 10 | `phases/phase-11-public-discovery.md` §Evidence (build 0 warnings; 373 unit / 63 architecture / 138 integration; web 257; fresh stack E2E 55/55 ×3 after fixing the new robots assertion (runs 1–3: 54/55, that test only); axe clean on public pages; gitleaks clean) | see `git log` (phase 11 commit) | Push when the user asks; Phase 12 next |
 | 12 | Customer booking & account | [ ] | 0/100 | 11 | — | — | — |
 | 13 | Shop operational dashboard | [ ] | 0/100 | 12 | — | — | — |
 | 14 | Admin operations dashboard | [ ] | 0/100 | 13 | — | — | — |
@@ -149,7 +149,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
 | 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 1100 / 1900 points.**
+**Platform total: 1200 / 1900 points.**
 
 ## 9. Risks and external dependencies
 

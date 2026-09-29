@@ -449,7 +449,7 @@ public static class SubscriptionErrors
 /// Deliberately not shop-owned, so discovery and booking gates can read any shop's status without a tenant scope
 /// (D-078); it is written only together with the shop's <see cref="ShopSubscription"/>, in the same unit of work.
 /// </summary>
-public sealed class SubscriptionCoverage
+public sealed class SubscriptionCoverage : IPublicContent
 {
     public SubscriptionCoverage(ShopId shopId)
     {

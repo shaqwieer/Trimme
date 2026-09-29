@@ -306,7 +306,14 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, path[0], null, BookingActor.System, null, createdAt));
         foreach (var next in path.Skip(1))
         {
-            booking._history.Add(new BookingHistoryEntry(BookingEventKind.StatusChanged, booking.Status, next, null, BookingActor.System, reason, createdAt));
+            // Visit steps happen when the visit does: arrival at the start, completion or no-show at the end.
+            var at = next switch
+            {
+                BookingStatus.Arrived => booking.StartsAt,
+                BookingStatus.Completed or BookingStatus.NoShow => booking.EndsAt,
+                _ => createdAt,
+            };
+            booking._history.Add(new BookingHistoryEntry(BookingEventKind.StatusChanged, booking.Status, next, null, BookingActor.System, reason, at));
             booking.Status = next;
         }
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Tenancy;
@@ -8,7 +9,10 @@ using Trimme.Modules.Professionals.Domain;
 
 namespace Trimme.Modules.Professionals.Application.Public;
 
-/// <summary>A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02).</summary>
+/// <summary>
+/// A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone
+/// or WhatsApp number (R-PRO-02).
+/// </summary>
 public sealed record PublicProfessionalResponse(
     Guid Id,
     string Slug,
@@ -18,7 +22,9 @@ public sealed record PublicProfessionalResponse(
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
-    string? AvatarUrl);
+    string? AvatarUrl,
+    decimal Rating,
+    int ReviewCount);
 
 internal sealed record ListPublicProfessionalsQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicProfessionalResponse>?>;
 
@@ -26,7 +32,7 @@ internal sealed record ListPublicProfessionalsQuery(string ShopSlug) : IQuery<IR
 /// Active professionals of an active shop, read inside <see cref="IPublicDataScope"/> bound to that one shop.
 /// Returns <see langword="null"/> when the shop is not published.
 /// </summary>
-internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops)
+internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops, IRatingReader ratings)
     : IQueryHandler<ListPublicProfessionalsQuery, IReadOnlyList<PublicProfessionalResponse>?>
 {
     private const int MaxProfessionals = 200;
@@ -44,16 +50,22 @@ internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublic
             return null;
         }
 
-        using var _ = scope.Begin(shop.Id);
-        var professionals = await db.Set<Professional>().AsNoTracking()
-            .Where(p => p.ShopId == shop.Id && p.Status == ProfessionalStatus.Active)
-            .OrderBy(p => p.NameAr)
-            .Take(MaxProfessionals)
-            .ToListAsync(cancellationToken);
+        List<Professional> professionals;
+        using (scope.Begin(shop.Id))
+        {
+            professionals = await db.Set<Professional>().AsNoTracking()
+                .Where(p => p.ShopId == shop.Id && p.Status == ProfessionalStatus.Active)
+                .OrderBy(p => p.NameAr)
+                .Take(MaxProfessionals)
+                .ToListAsync(cancellationToken);
+        }
+
+        var rated = await ratings.GetAsync(RatingSubject.Professional, [.. professionals.Select(p => p.Id.Value)], cancellationToken);
         return
         [
             .. professionals.Select(p => new PublicProfessionalResponse(
-                p.Id.Value, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, p.BioAr, p.BioEn, MediaRules.Url(p.AvatarMediaId))),
+                p.Id.Value, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, p.BioAr, p.BioEn, MediaRules.Url(p.AvatarMediaId),
+                rated.GetValueOrDefault(p.Id.Value)?.Average ?? 0, rated.GetValueOrDefault(p.Id.Value)?.Count ?? 0)),
         ];
     }
 }

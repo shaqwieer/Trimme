@@ -25,6 +25,12 @@ public static class PersistenceServiceCollectionExtensions
                     $"Connection string '{ConnectionStringName}' is not configured (ConnectionStrings__{ConnectionStringName}).");
 
             options.UseTrimmeNpgsql(connectionString);
+
+            // Public response cache eviction (D-093), when the host registers a sink.
+            if (serviceProvider.GetService<IPublicContentChangeSink>() is { } sink)
+            {
+                options.AddInterceptors(new PublicContentInterceptor(sink));
+            }
         });
 
         return services;

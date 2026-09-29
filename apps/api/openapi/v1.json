@@ -127,12 +127,342 @@
         }
       }
     },
+    "/api/v1/public/shops/search": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Discovery: shops near a point (or in a city) with text, category, open-now, verified, bookable-today and price filters, sorted by distance, rating or earliest slot.",
+        "operationId": "SearchShops",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "openNow",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "verified",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "bookableToday",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DiscoverySort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/categories/popular": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Categories offered by the shops around a point, with the lowest price among them (never a global price).",
+        "operationId": "ListPopularCategories",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PopularCategoryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/professionals/top": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "The best-rated professionals of the listed shops around a point (stored ratings only; no contact data).",
+        "operationId": "ListTopProfessionals",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopProfessionalResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/stats": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Listed shops, their active professionals and the average of their stored ratings.",
+        "operationId": "GetDiscoveryStats",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/areas": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Cities and districts with listed shops (manual location) and the default map centre.",
+        "operationId": "ListDiscoveryAreas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryAreasResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/sitemap": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Listed shops and their active professionals\u0027 slugs, for sitemap.xml.",
+        "operationId": "GetSitemapData",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitemapResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/shops/{slug}": {
       "get": {
         "tags": [
           "Public"
         ],
-        "summary": "An active shop\u0027s public profile. No professional or customer contact data.",
+        "summary": "An active shop\u0027s public profile, rating, prices and hours. No professional or customer contact data.",
         "operationId": "GetPublicShop",
         "parameters": [
           {
@@ -151,6 +481,47 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/status": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Live part of the shop page: open now, online booking state and each professional\u0027s next free time.",
+        "operationId": "GetPublicShopStatus",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicShopStatusResponse"
                 }
               }
             }
@@ -219,6 +590,104 @@
                   "items": {
                     "$ref": "#/components/schemas/PublicProfessionalResponse"
                   }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/professionals/{professionalSlug}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "An active professional of an active shop: profile, rating and the services they do. No contact data.",
+        "operationId": "GetPublicProfessional",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "professionalSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfessionalDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "The professional\u0027s earliest bookable starts (first day with any, within a week) for their shortest service.",
+        "operationId": "GetProfessionalNextSlots",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "professionalSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalNextSlotsResponse"
                 }
               }
             }
@@ -489,6 +958,71 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/shops/{slug}/reviews": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Published reviews of an active shop, or of one of its professionals, newest first, with the rating summary.",
+        "operationId": "ListPublicShopReviews",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicReviewsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9707,6 +10241,147 @@
         ],
         "description": "Where a slot sits in the day (D-009 groups the slot grid by period)."
       },
+      "DiscoveryAreaResponse": {
+        "required": [
+          "city",
+          "district",
+          "latitude",
+          "longitude",
+          "shopCount"
+        ],
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "shopCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A district with listed shops, and where it is (the average of its shops), for manual location (DV-A21)."
+      },
+      "DiscoveryAreasResponse": {
+        "required": [
+          "areas",
+          "defaultLatitude",
+          "defaultLongitude",
+          "defaultZoom"
+        ],
+        "type": "object",
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryAreaResponse"
+            }
+          },
+          "defaultLatitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "defaultLongitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "defaultZoom": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The districts customers can pick, and the platform\u0027s default map centre."
+      },
+      "DiscoveryOfferResponse": {
+        "required": [
+          "id",
+          "isPackage",
+          "nameAr",
+          "nameEn",
+          "price",
+          "currency",
+          "durationMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isPackage": {
+            "type": "boolean"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The offer a search matched, or the one a price pin shows (the shop\u0027s own name, price and duration)."
+      },
+      "DiscoverySort": {
+        "enum": [
+          "Distance",
+          "Rating",
+          "Earliest"
+        ]
+      },
+      "DiscoveryStatsResponse": {
+        "required": [
+          "shopCount",
+          "professionalCount",
+          "averageRating",
+          "reviewCount"
+        ],
+        "type": "object",
+        "properties": {
+          "shopCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "professionalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageRating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Real platform totals for the landing page; the web hides any that is zero (no fabricated figures)."
+      },
       "EditablePolicyRequest": {
         "required": [
           "editableFields"
@@ -9985,6 +10660,23 @@
         ],
         "description": "Platform moderation of a shop\u0027s service or package (DV-S02). A hidden item is never published."
       },
+      "NextSlotResponse": {
+        "required": [
+          "startsAt",
+          "localTime"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localTime": {
+            "type": "string"
+          }
+        },
+        "description": "A bookable start: the instant and its local time (\u0060HH:mm\u0060, shop time zone)."
+      },
       "OnlineBookingStateResponse": {
         "required": [
           "paused",
@@ -10057,6 +10749,28 @@
           }
         },
         "description": "The shop\u0027s weekly opening hours. \u0060Version\u0060 is null until the shop saves its hours for the first time."
+      },
+      "OpeningIntervalResponse": {
+        "required": [
+          "day",
+          "startMinute",
+          "endMinute"
+        ],
+        "type": "object",
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/DayOfWeek"
+          },
+          "startMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A weekly opening window: minutes from the weekday\u0027s local midnight; the end may pass midnight (up to 24 h later)."
       },
       "OtpChallengeResponse": {
         "required": [
@@ -10373,6 +11087,36 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CustomerBookingResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The paged envelope every list endpoint returns."
+      },
+      "PagedResponseOfPublicReviewResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicReviewResponse"
             }
           },
           "page": {
@@ -10768,6 +11512,51 @@
           }
         }
       },
+      "PopularCategoryResponse": {
+        "required": [
+          "categoryId",
+          "minPrice",
+          "currency",
+          "shopCount"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "shopCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A platform category offered nearby, with the lowest price among those shops (DV-S11, D-025: never a global price)."
+      },
+      "PriceRangeResponse": {
+        "required": [
+          "min",
+          "max"
+        ],
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number",
+            "format": "double"
+          },
+          "max": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "description": "The lowest and highest pin price of the results before the price filter (the price slider\u0027s range)."
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -10803,6 +11592,27 @@
             ]
           }
         }
+      },
+      "ProfessionalAvailabilityResponse": {
+        "required": [
+          "professionalId",
+          "nextAvailableAt"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nextAvailableAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "When a professional can next be booked online (today or tomorrow, their shortest bookable service)."
       },
       "ProfessionalHoursResponse": {
         "required": [
@@ -10847,6 +11657,56 @@
           }
         },
         "description": "A professional\u0027s weekly hours as the shop manages them (no contact data)."
+      },
+      "ProfessionalNextSlotsResponse": {
+        "required": [
+          "bookable",
+          "blockedReason",
+          "offer",
+          "date",
+          "slots",
+          "remainingCount"
+        ],
+        "type": "object",
+        "properties": {
+          "bookable": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "offer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicProfessionalOfferResponse"
+              }
+            ]
+          },
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NextSlotResponse"
+            }
+          },
+          "remainingCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The professional\u0027s earliest bookable starts (the design\u0027s \u0022earliest times available today\u0022): the first day with any,\nwithin a week, for their shortest online-bookable offer. Not cached. \u0060Bookable\u0060 is false, with the reason, when\nthe shop takes no online bookings."
       },
       "ProfessionalServiceOption": {
         "required": [
@@ -11021,7 +11881,7 @@
         },
         "description": "A published package: itself and every item service are available."
       },
-      "PublicProfessionalResponse": {
+      "PublicProfessionalDetailResponse": {
         "required": [
           "id",
           "slug",
@@ -11031,7 +11891,14 @@
           "specialtyEn",
           "bioAr",
           "bioEn",
-          "avatarUrl"
+          "avatarUrl",
+          "shopId",
+          "shopSlug",
+          "shopNameAr",
+          "shopNameEn",
+          "rating",
+          "reviewCount",
+          "offers"
         ],
         "type": "object",
         "properties": {
@@ -11077,9 +11944,213 @@
               "null",
               "string"
             ]
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicProfessionalOfferResponse"
+            }
           }
         },
-        "description": "A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02)."
+        "description": "A professional\u0027s public page (\u0060/shops/{slug}/professionals/{proSlug}\u0060): profile, their shop, rating and the\npublished services they do. Never carries a phone or WhatsApp number (R-PRO-02). Cached (D-093)."
+      },
+      "PublicProfessionalOfferResponse": {
+        "required": [
+          "id",
+          "isPackage",
+          "nameAr",
+          "nameEn",
+          "price",
+          "currency",
+          "durationMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isPackage": {
+            "type": "boolean"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A service or package the professional does, with the shop\u0027s own price and duration."
+      },
+      "PublicProfessionalResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "avatarUrl",
+          "rating",
+          "reviewCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone\nor WhatsApp number (R-PRO-02)."
+      },
+      "PublicReviewResponse": {
+        "required": [
+          "id",
+          "authorName",
+          "rating",
+          "comment",
+          "itemNameAr",
+          "itemNameEn",
+          "professionalId",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itemNameAr": {
+            "type": "string"
+          },
+          "itemNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A published review as the public sees it (D-017): the author\u0027s first name and surname initial, never the full name\nor any contact data (DV-S15). \u0060ItemNameAr/En\u0060 is the booked service or package (the design links reviews to a\nservice)."
+      },
+      "PublicReviewsResponse": {
+        "required": [
+          "summary",
+          "reviews"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/RatingSummaryResponse"
+          },
+          "reviews": {
+            "$ref": "#/components/schemas/PagedResponseOfPublicReviewResponse"
+          }
+        }
       },
       "PublicServiceResponse": {
         "required": [
@@ -11206,7 +12277,15 @@
           "logoUrl",
           "coverUrl",
           "galleryUrls",
-          "location"
+          "location",
+          "timeZone",
+          "rating",
+          "minPrice",
+          "currency",
+          "openingHours",
+          "cancellationCutoffMinutes",
+          "listedInDiscovery",
+          "updatedAt"
         ],
         "type": "object",
         "properties": {
@@ -11280,9 +12359,117 @@
                 "$ref": "#/components/schemas/PublicShopLocationResponse"
               }
             ]
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/ShopRatingResponse"
+          },
+          "minPrice": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "openingHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpeningIntervalResponse"
+            }
+          },
+          "cancellationCutoffMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "listedInDiscovery": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
-        "description": "A published shop\u0027s basic profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02)."
+        "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02). The\nresponse is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed)."
+      },
+      "PublicShopStatusResponse": {
+        "required": [
+          "isOpenNow",
+          "closesAt",
+          "nextOpensAt",
+          "acceptsOnlineBookings",
+          "blockedReason",
+          "professionals"
+        ],
+        "type": "object",
+        "properties": {
+          "isOpenNow": {
+            "type": "boolean"
+          },
+          "closesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextOpensAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "acceptsOnlineBookings": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalAvailabilityResponse"
+            }
+          }
+        },
+        "description": "The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is\nopen (and why not: \u0060shop.paused\u0060, \u0060subscription.expired\u0060\u2026), and each active professional\u0027s next free time."
+      },
+      "RatingSummaryResponse": {
+        "required": [
+          "average",
+          "count",
+          "histogram"
+        ],
+        "type": "object",
+        "properties": {
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "histogram": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "description": "Average and count, and the number of reviews per star (index 0 = one star \u2026 4 = five stars)."
       },
       "ReinstateSubscriptionRequest": {
         "required": [
@@ -12130,6 +13317,24 @@
         },
         "description": "The signed-in shop user\u0027s own shop (\u0060GET /api/v1/shop/me\u0060). Shop-facing contract: it must never carry customer\ncontact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it."
       },
+      "ShopRatingResponse": {
+        "required": [
+          "average",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The shop\u0027s published rating (from stored reviews only; zero reviews means no rating to show)."
+      },
       "ShopRenewalResponse": {
         "required": [
           "periodStart",
@@ -12224,6 +13429,208 @@
           }
         },
         "description": "Everything the s-hours screen shows, for the signed-in shop."
+      },
+      "ShopSearchItemResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "category",
+          "isVerified",
+          "district",
+          "city",
+          "latitude",
+          "longitude",
+          "distanceKm",
+          "rating",
+          "reviewCount",
+          "minPrice",
+          "pinPrice",
+          "currency",
+          "matchedOffer",
+          "isOpenNow",
+          "closesAt",
+          "nextOpensAt",
+          "acceptsOnlineBookings",
+          "earliestSlotAt",
+          "timeZone",
+          "coverUrl",
+          "logoUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ShopCategory"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "distanceKm": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "pinPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "matchedOffer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DiscoveryOfferResponse"
+              }
+            ]
+          },
+          "isOpenNow": {
+            "type": "boolean"
+          },
+          "closesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextOpensAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "acceptsOnlineBookings": {
+            "type": "boolean"
+          },
+          "earliestSlotAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A shop in discovery results. \u0060PinPrice\u0060 is the matched offer\u0027s price, else the shop\u0027s lowest (the map pin and\nthe \u0022from\u0022 price, mapRules #1). \u0060DistanceKm\u0060 is set only when the search has a location. \u0060EarliestSlotAt\u0060 is\nthe first bookable start today or tomorrow (null when there is none, or when the shop was not probed). No phone numbers."
+      },
+      "ShopSearchResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "radiusKm",
+          "sort",
+          "priceRange"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopSearchItemResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "radiusKm": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/DiscoverySort"
+          },
+          "priceRange": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PriceRangeResponse"
+              }
+            ]
+          }
+        }
       },
       "ShopServiceResponse": {
         "required": [
@@ -12414,6 +13821,44 @@
           }
         },
         "description": "Result of a successful sign-in; the session cookies are set on the response. \u0060IsNewUser\u0060 is true when the OTP\nverification (or an invitation) created the account."
+      },
+      "SitemapResponse": {
+        "required": [
+          "shops"
+        ],
+        "type": "object",
+        "properties": {
+          "shops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitemapShopResponse"
+            }
+          }
+        },
+        "description": "Every shop listed in discovery, with its active professionals\u0027 slugs (the sitemap, R-WEB-10)."
+      },
+      "SitemapShopResponse": {
+        "required": [
+          "slug",
+          "updatedAt",
+          "professionalSlugs"
+        ],
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "professionalSlugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "StaffSignInRequest": {
         "required": [
@@ -12786,6 +14231,74 @@
           }
         },
         "description": "Time off. \u0060StartDate\u0060/\u0060EndDate\u0060 are the shop-local days it covers (inclusive); the minutes are null for an\nall-day entry."
+      },
+      "TopProfessionalResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "avatarUrl",
+          "shopSlug",
+          "shopNameAr",
+          "shopNameEn",
+          "rating",
+          "reviewCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A highly rated professional of a listed shop (only stored ratings; no contact data)."
       },
       "UpdateOwnShopProfileRequest": {
         "required": [

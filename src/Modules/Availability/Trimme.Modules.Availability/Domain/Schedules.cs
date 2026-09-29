@@ -129,7 +129,7 @@ public static class ScheduleRules
 /// The shop's weekly opening hours (s-hours "دوام المحل الأسبوعي"): one row per shop, edited as a whole week. They are
 /// the outer limit of every professional's hours. No row means the shop has not set its hours and is closed.
 /// </summary>
-public sealed class ShopOpeningHours : AggregateRoot<OpeningHoursId>, IShopOwned, IConcurrencyVersioned
+public sealed class ShopOpeningHours : AggregateRoot<OpeningHoursId>, IShopOwned, IConcurrencyVersioned, IPublicContent
 {
     private ShopOpeningHours(OpeningHoursId id, ShopId shopId, DateTimeOffset now)
         : base(id)

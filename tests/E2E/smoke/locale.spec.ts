@@ -5,14 +5,18 @@ test.describe('locales (R-WEB-04)', () => {
     await page.goto('/ar');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('احجز حلاقتك القادمة');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'احجز حلاقتك في دقيقة، بلا اتصال ولا انتظار',
+    );
   });
 
   test('locale_en_is_ltr', async ({ page }) => {
     await page.goto('/en');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Book your next haircut');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Book your haircut in a minute, no calls, no waiting',
+    );
   });
 
   // The browser locale drives the navigation Accept-Language header (extraHTTPHeaders do not override it).

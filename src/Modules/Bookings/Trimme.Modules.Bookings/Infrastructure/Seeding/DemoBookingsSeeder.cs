@@ -12,7 +12,7 @@ using Trimme.Modules.Bookings.Domain;
 namespace Trimme.Modules.Bookings.Infrastructure.Seeding;
 
 /// <summary>
-/// Sample appointments (spec §20): completed, no-show and cancelled history, and upcoming bookings placed on real free
+/// Sample appointments (spec §20): completed (reviewed, <see cref="DemoVisits"/>), no-show and cancelled history, and upcoming bookings placed on real free
 /// slots found by the availability rules, so they are valid. Faisal gets none (the schedule E2E asserts his exact slots).
 /// Idempotent by fixed ids; development only; no outbox rows, so seeding never sends messages.
 /// </summary>
@@ -85,8 +85,13 @@ internal sealed class DemoBookingsSeeder : IDevSeeder
             }
         }
 
-        await PastAsync(Guid.Parse("0199a0de-5a10-7000-8000-000000000a01"), DemoData.AlAsala.Id, DemoCustomers.Noura, Haircut, Rakan,
-            At(today.AddDays(-7), 17), [BookingStatus.Confirmed, BookingStatus.Arrived, BookingStatus.Completed], null);
+        // Completed visits the demo customers reviewed (the Reviews seeder adds the reviews, D-092).
+        foreach (var visit in DemoVisits.All)
+        {
+            await PastAsync(visit.BookingId, visit.ShopId, visit.Customer, visit.ServiceId, new ProfessionalId(visit.ProfessionalId),
+                At(today.AddDays(-visit.DaysAgo), visit.Hour, visit.Minute), [BookingStatus.Confirmed, BookingStatus.Arrived, BookingStatus.Completed], null);
+        }
+
         await PastAsync(Guid.Parse("0199a0de-5a10-7000-8000-000000000a02"), DemoData.BarberHouse.Id, DemoCustomers.Khalid, KidsCut, Omar,
             At(today.AddDays(-3), 18, 30), [BookingStatus.Confirmed, BookingStatus.NoShow], null);
         await PastAsync(Guid.Parse("0199a0de-5a10-7000-8000-000000000a03"), DemoData.AlAsala.Id, DemoCustomers.Khalid, BeardTrim, Sultan,

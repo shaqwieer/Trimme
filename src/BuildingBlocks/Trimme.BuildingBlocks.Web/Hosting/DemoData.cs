@@ -70,6 +70,49 @@ public static class DemoCustomers
 
 public sealed record DemoCustomer(Guid Id, string Name, string Mobile);
 
+/// <summary>
+/// Completed demo visits and the review each customer left (spec §20, D-092). The Bookings seeder records the completed
+/// booking, then the Reviews seeder adds the review and the rating aggregates. Dates are relative to the seeding day.
+/// Faisal has none: the schedule E2E asserts his exact free slots.
+/// </summary>
+public static class DemoVisits
+{
+    public static IReadOnlyList<DemoVisit> All { get; } =
+    [
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a01"), DemoData.AlAsala.Id, DemoCustomers.Noura,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000103"), Guid.Parse("0199a0de-5a10-7000-8000-000000000401"), 7, 17, 0,
+            4, "الحجز وفّر علي الانتظار، دخلت وجلست على الكرسي مباشرة."),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a21"), DemoData.AlAsala.Id, DemoCustomers.Khalid,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000102"), Guid.Parse("0199a0de-5a10-7000-8000-000000000402"), 12, 19, 0,
+            5, "التزام دقيق بالموعد، وتهذيب اللحية نظيف جداً."),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a22"), DemoData.AlAsala.Id, DemoCustomers.Noura,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000103"), Guid.Parse("0199a0de-5a10-7000-8000-000000000403"), 20, 17, 30,
+            5, "حجزت لابني، والحلاق صبور والمكان مرتب."),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a23"), DemoData.AlAsala.Id, DemoCustomers.Khalid,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000102"), Guid.Parse("0199a0de-5a10-7000-8000-000000000404"), 15, 18, 0,
+            5, "جلسة عناية بالوجه مريحة، والمكان نظيف ومرتب."),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a24"), DemoData.BarberHouse.Id, DemoCustomers.Khalid,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000202"), Guid.Parse("0199a0de-5a10-7000-8000-000000000411"), 9, 20, 0,
+            4, "خدمة ممتازة والأسعار واضحة، لا توجد مفاجآت."),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a25"), DemoData.BarberHouse.Id, DemoCustomers.Noura,
+            Guid.Parse("0199a0de-5a10-7000-8000-000000000201"), Guid.Parse("0199a0de-5a10-7000-8000-000000000413"), 25, 16, 0,
+            5, "تعامل رائع مع الأطفال، سنعود بإذن الله."),
+    ];
+}
+
+/// <summary>A completed booking <c>DaysAgo</c> local days before seeding, and its review's stars (1–5) and comment.</summary>
+public sealed record DemoVisit(
+    Guid BookingId,
+    ShopId ShopId,
+    DemoCustomer Customer,
+    Guid ProfessionalId,
+    Guid ServiceId,
+    int DaysAgo,
+    int Hour,
+    int Minute,
+    int Rating,
+    string Comment);
+
 public sealed record DemoProfessional(
     Guid Id,
     ShopId ShopId,

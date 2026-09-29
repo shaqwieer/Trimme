@@ -6,6 +6,7 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import { localeDirection, routing } from '@/i18n/routing';
+import { siteUrl } from '@/lib/seo/site';
 import { BRAND_NAVY_900 } from '@/styles/brand';
 import '../globals.css';
 
@@ -39,6 +40,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = hasLocale(routing.locales, param) ? param : routing.defaultLocale;
   const t = await getTranslations({ locale, namespace: 'metadata' });
   return {
+    // Canonical, hreflang and Open Graph URLs resolve against the public origin (R-WEB-10).
+    metadataBase: siteUrl(),
     title: { default: t('title'), template: `%s · ${t('appName')}` },
     description: t('description'),
     applicationName: t('appName'),

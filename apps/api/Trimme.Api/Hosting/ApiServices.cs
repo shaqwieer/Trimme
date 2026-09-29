@@ -5,6 +5,7 @@ using Serilog.Formatting.Compact;
 using Trimme.BuildingBlocks.Application;
 using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
+using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
@@ -45,6 +46,7 @@ internal static class ApiServices
         services.AddTrimmeProblemDetails();
         services.AddTrimmeCors(configuration);
         services.AddTrimmeRateLimiting(configuration);
+        services.AddTrimmePublicCache();
         services.Configure<ForwardedHeadersOptions>(options => ConfigureForwardedHeaders(options, configuration));
 
         services.AddTrimmeApplication();
@@ -109,7 +111,11 @@ internal static class ApiServices
         }
     }
 
-    /// <summary>Trusts X-Forwarded-* only from explicitly configured proxies (Nginx), so rate limits see real client IPs.</summary>
+    /// <summary>
+    /// Trusts X-Forwarded-* only from explicitly configured proxies, so rate limits see real client IPs: Nginx, and the web
+    /// app's server, whose server-rendered calls forward the visitor's address (D-094). <c>KnownProxies</c> are addresses;
+    /// <c>KnownNetworks</c> are CIDR ranges (for example the container network the web app runs in).
+    /// </summary>
     private static void ConfigureForwardedHeaders(ForwardedHeadersOptions options, ConfigurationManager configuration)
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -118,6 +124,14 @@ internal static class ApiServices
             if (System.Net.IPAddress.TryParse(proxy, out var address))
             {
                 options.KnownProxies.Add(address);
+            }
+        }
+
+        foreach (var network in configuration.GetSection("ReverseProxy:KnownNetworks").Get<string[]>() ?? [])
+        {
+            if (System.Net.IPNetwork.TryParse(network, out var parsed))
+            {
+                options.KnownIPNetworks.Add(parsed);
             }
         }
     }

@@ -72,6 +72,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/shops/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discovery: shops near a point (or in a city) with text, category, open-now, verified, bookable-today and price filters, sorted by distance, rating or earliest slot. */
+        get: operations["SearchShops"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/categories/popular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Categories offered by the shops around a point, with the lowest price among them (never a global price). */
+        get: operations["ListPopularCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/professionals/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The best-rated professionals of the listed shops around a point (stored ratings only; no contact data). */
+        get: operations["ListTopProfessionals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listed shops, their active professionals and the average of their stored ratings. */
+        get: operations["GetDiscoveryStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cities and districts with listed shops (manual location) and the default map centre. */
+        get: operations["ListDiscoveryAreas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listed shops and their active professionals' slugs, for sitemap.xml. */
+        get: operations["GetSitemapData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/shops/{slug}": {
         parameters: {
             query?: never;
@@ -79,8 +181,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** An active shop's public profile. No professional or customer contact data. */
+        /** An active shop's public profile, rating, prices and hours. No professional or customer contact data. */
         get: operations["GetPublicShop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live part of the shop page: open now, online booking state and each professional's next free time. */
+        get: operations["GetPublicShopStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -115,6 +234,40 @@ export interface paths {
         };
         /** Active professionals of an active shop. No contact data. */
         get: operations["ListPublicShopProfessionals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/professionals/{professionalSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An active professional of an active shop: profile, rating and the services they do. No contact data. */
+        get: operations["GetPublicProfessional"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The professional's earliest bookable starts (first day with any, within a week) for their shortest service. */
+        get: operations["GetProfessionalNextSlots"];
         put?: never;
         post?: never;
         delete?: never;
@@ -202,6 +355,23 @@ export interface paths {
         put?: never;
         /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken. */
         post: operations["CreateBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/shops/{slug}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published reviews of an active shop, or of one of its professionals, newest first, with the rating summary. */
+        get: operations["ListPublicShopReviews"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2785,6 +2955,53 @@ export interface components {
          * @enum {unknown}
          */
         DayPeriod: "Morning" | "Afternoon" | "Evening";
+        /** @description A district with listed shops, and where it is (the average of its shops), for manual location (DV-A21). */
+        DiscoveryAreaResponse: {
+            city: string;
+            district: null | string;
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            /** Format: int32 */
+            shopCount: number;
+        };
+        /** @description The districts customers can pick, and the platform's default map centre. */
+        DiscoveryAreasResponse: {
+            areas: components["schemas"]["DiscoveryAreaResponse"][];
+            /** Format: double */
+            defaultLatitude: number;
+            /** Format: double */
+            defaultLongitude: number;
+            /** Format: int32 */
+            defaultZoom: number;
+        };
+        /** @description The offer a search matched, or the one a price pin shows (the shop's own name, price and duration). */
+        DiscoveryOfferResponse: {
+            /** Format: uuid */
+            id: string;
+            isPackage: boolean;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+        };
+        /** @enum {unknown} */
+        DiscoverySort: "Distance" | "Rating" | "Earliest";
+        /** @description Real platform totals for the landing page; the web hides any that is zero (no fabricated figures). */
+        DiscoveryStatsResponse: {
+            /** Format: int32 */
+            shopCount: number;
+            /** Format: int32 */
+            professionalCount: number;
+            /** Format: double */
+            averageRating: number;
+            /** Format: int32 */
+            reviewCount: number;
+        };
         EditablePolicyRequest: {
             editableFields: components["schemas"]["ShopProfileField"][];
         };
@@ -2870,6 +3087,12 @@ export interface components {
          * @enum {unknown}
          */
         ModerationState: "Visible" | "Hidden";
+        /** @description A bookable start: the instant and its local time (`HH:mm`, shop time zone). */
+        NextSlotResponse: {
+            /** Format: date-time */
+            startsAt: string;
+            localTime: string;
+        };
         /**
          * @description Whether the shop takes online bookings right now (s-hours pause card, D-013). While paused the shop gets no new
          *     online bookings and no availability; confirmed appointments stay, and walk-ins still work.
@@ -2891,6 +3114,14 @@ export interface components {
             intervals: components["schemas"]["HoursIntervalDto"][];
             /** Format: uint32 */
             version: null | number;
+        };
+        /** @description A weekly opening window: minutes from the weekday's local midnight; the end may pass midnight (up to 24 h later). */
+        OpeningIntervalResponse: {
+            day: components["schemas"]["DayOfWeek"];
+            /** Format: int32 */
+            startMinute: number;
+            /** Format: int32 */
+            endMinute: number;
         };
         /** @description Response to an OTP request. The code is never returned. */
         OtpChallengeResponse: {
@@ -2990,6 +3221,16 @@ export interface components {
         /** @description The paged envelope every list endpoint returns. */
         PagedResponseOfCustomerBookingResponse: {
             items: components["schemas"]["CustomerBookingResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+        };
+        /** @description The paged envelope every list endpoint returns. */
+        PagedResponseOfPublicReviewResponse: {
+            items: components["schemas"]["PublicReviewResponse"][];
             /** Format: int32 */
             page: number;
             /** Format: int32 */
@@ -3116,6 +3357,23 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A platform category offered nearby, with the lowest price among those shops (DV-S11, D-025: never a global price). */
+        PopularCategoryResponse: {
+            /** Format: uuid */
+            categoryId: string;
+            /** Format: double */
+            minPrice: number;
+            currency: string;
+            /** Format: int32 */
+            shopCount: number;
+        };
+        /** @description The lowest and highest pin price of the results before the price filter (the price slider's range). */
+        PriceRangeResponse: {
+            /** Format: double */
+            min: number;
+            /** Format: double */
+            max: number;
+        };
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -3123,6 +3381,13 @@ export interface components {
             status?: null | number;
             detail?: null | string;
             instance?: null | string;
+        };
+        /** @description When a professional can next be booked online (today or tomorrow, their shortest bookable service). */
+        ProfessionalAvailabilityResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date-time */
+            nextAvailableAt: null | string;
         };
         /** @description A professional's weekly hours as the shop manages them (no contact data). */
         ProfessionalHoursResponse: {
@@ -3135,6 +3400,21 @@ export interface components {
             intervals: components["schemas"]["HoursIntervalDto"][];
             /** Format: uint32 */
             version: null | number;
+        };
+        /**
+         * @description The professional's earliest bookable starts (the design's "earliest times available today"): the first day with any,
+         *     within a week, for their shortest online-bookable offer. Not cached. `Bookable` is false, with the reason, when
+         *     the shop takes no online bookings.
+         */
+        ProfessionalNextSlotsResponse: {
+            bookable: boolean;
+            blockedReason: null | string;
+            offer: null | components["schemas"]["PublicProfessionalOfferResponse"];
+            /** Format: date */
+            date: null | string;
+            slots: components["schemas"]["NextSlotResponse"][];
+            /** Format: int32 */
+            remainingCount: number;
         };
         ProfessionalServiceOption: {
             /** Format: uuid */
@@ -3183,7 +3463,49 @@ export interface components {
             durationMinutes: number;
             items: components["schemas"]["PublicPackageItemResponse"][];
         };
-        /** @description A professional on the public shop page. Never carries a phone or WhatsApp number (R-PRO-02). */
+        /**
+         * @description A professional's public page (`/shops/{slug}/professionals/{proSlug}`): profile, their shop, rating and the
+         *     published services they do. Never carries a phone or WhatsApp number (R-PRO-02). Cached (D-093).
+         */
+        PublicProfessionalDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            avatarUrl: null | string;
+            /** Format: uuid */
+            shopId: string;
+            shopSlug: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+            offers: components["schemas"]["PublicProfessionalOfferResponse"][];
+        };
+        /** @description A service or package the professional does, with the shop's own price and duration. */
+        PublicProfessionalOfferResponse: {
+            /** Format: uuid */
+            id: string;
+            isPackage: boolean;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+        };
+        /**
+         * @description A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone
+         *     or WhatsApp number (R-PRO-02).
+         */
         PublicProfessionalResponse: {
             /** Format: uuid */
             id: string;
@@ -3195,6 +3517,33 @@ export interface components {
             bioAr: null | string;
             bioEn: null | string;
             avatarUrl: null | string;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+        };
+        /**
+         * @description A published review as the public sees it (D-017): the author's first name and surname initial, never the full name
+         *     or any contact data (DV-S15). `ItemNameAr/En` is the booked service or package (the design links reviews to a
+         *     service).
+         */
+        PublicReviewResponse: {
+            /** Format: uuid */
+            id: string;
+            authorName: string;
+            /** Format: int32 */
+            rating: number;
+            comment: null | string;
+            itemNameAr: string;
+            itemNameEn: null | string;
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PublicReviewsResponse: {
+            summary: components["schemas"]["RatingSummaryResponse"];
+            reviews: components["schemas"]["PagedResponseOfPublicReviewResponse"];
         };
         /** @description A published service: active, not archived, not hidden by the platform. `NameEn` may be null (D-070). */
         PublicServiceResponse: {
@@ -3225,8 +3574,10 @@ export interface components {
             formattedAddress: null | string;
         };
         /**
-         * @description A published shop's basic profile (`GET /public/shops/{slug}`). Only active shops are published. The phone is the
-         *     shop's own business number; professional and customer numbers are never part of a public contract (R-PRO-02).
+         * @description A published shop's public profile (`GET /public/shops/{slug}`). Only active shops are published. The phone is the
+         *     shop's own business number; professional and customer numbers are never part of a public contract (R-PRO-02). The
+         *     response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
+         *     `/status`. `ListedInDiscovery` is false while the subscription hides the shop (the page is then not indexed).
          */
         PublicShopResponse: {
             /** Format: uuid */
@@ -3244,6 +3595,39 @@ export interface components {
             coverUrl: null | string;
             galleryUrls: string[];
             location: null | components["schemas"]["PublicShopLocationResponse"];
+            timeZone: string;
+            rating: components["schemas"]["ShopRatingResponse"];
+            /** Format: double */
+            minPrice: null | number;
+            currency: null | string;
+            openingHours: components["schemas"]["OpeningIntervalResponse"][];
+            /** Format: int32 */
+            cancellationCutoffMinutes: number;
+            listedInDiscovery: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /**
+         * @description The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is
+         *     open (and why not: `shop.paused`, `subscription.expired`…), and each active professional's next free time.
+         */
+        PublicShopStatusResponse: {
+            isOpenNow: boolean;
+            /** Format: date-time */
+            closesAt: null | string;
+            /** Format: date-time */
+            nextOpensAt: null | string;
+            acceptsOnlineBookings: boolean;
+            blockedReason: null | string;
+            professionals: components["schemas"]["ProfessionalAvailabilityResponse"][];
+        };
+        /** @description Average and count, and the number of reviews per star (index 0 = one star … 4 = five stars). */
+        RatingSummaryResponse: {
+            /** Format: double */
+            average: number;
+            /** Format: int32 */
+            count: number;
+            histogram: number[];
         };
         ReinstateSubscriptionRequest: {
             /** Format: uint32 */
@@ -3494,6 +3878,13 @@ export interface components {
             status: string;
             timeZone: string;
         };
+        /** @description The shop's published rating (from stored reviews only; zero reviews means no rating to show). */
+        ShopRatingResponse: {
+            /** Format: double */
+            average: number;
+            /** Format: int32 */
+            count: number;
+        };
         ShopRenewalResponse: {
             /** Format: date */
             periodStart: string;
@@ -3518,6 +3909,62 @@ export interface components {
             onlineBookingPaused: boolean;
             /** Format: date-time */
             onlineBookingPausedAt: null | string;
+        };
+        /**
+         * @description A shop in discovery results. `PinPrice` is the matched offer's price, else the shop's lowest (the map pin and
+         *     the "from" price, mapRules #1). `DistanceKm` is set only when the search has a location. `EarliestSlotAt` is
+         *     the first bookable start today or tomorrow (null when there is none, or when the shop was not probed). No phone numbers.
+         */
+        ShopSearchItemResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            category: components["schemas"]["ShopCategory"];
+            isVerified: boolean;
+            district: null | string;
+            city: null | string;
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            /** Format: double */
+            distanceKm: null | number;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+            /** Format: double */
+            minPrice: number;
+            /** Format: double */
+            pinPrice: number;
+            currency: string;
+            matchedOffer: null | components["schemas"]["DiscoveryOfferResponse"];
+            isOpenNow: boolean;
+            /** Format: date-time */
+            closesAt: null | string;
+            /** Format: date-time */
+            nextOpensAt: null | string;
+            acceptsOnlineBookings: boolean;
+            /** Format: date-time */
+            earliestSlotAt: null | string;
+            timeZone: string;
+            coverUrl: null | string;
+            logoUrl: null | string;
+        };
+        ShopSearchResponse: {
+            items: components["schemas"]["ShopSearchItemResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: double */
+            radiusKm: null | number;
+            sort: components["schemas"]["DiscoverySort"];
+            priceRange: null | components["schemas"]["PriceRangeResponse"];
         };
         /**
          * @description A shop's own service as the shop manages it. Shop-facing contract: no customer data. `NameEn` may be null;
@@ -3576,6 +4023,16 @@ export interface components {
         SignInResponse: {
             isNewUser: boolean;
             user: components["schemas"]["MeResponse"];
+        };
+        /** @description Every shop listed in discovery, with its active professionals' slugs (the sitemap, R-WEB-10). */
+        SitemapResponse: {
+            shops: components["schemas"]["SitemapShopResponse"][];
+        };
+        SitemapShopResponse: {
+            slug: string;
+            /** Format: date-time */
+            updatedAt: string;
+            professionalSlugs: string[];
         };
         StaffSignInRequest: {
             email: string;
@@ -3703,6 +4160,24 @@ export interface components {
             state: components["schemas"]["ScheduleEntryState"];
             /** Format: uint32 */
             version: number;
+        };
+        /** @description A highly rated professional of a listed shop (only stored ratings; no contact data). */
+        TopProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            avatarUrl: null | string;
+            shopSlug: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
         };
         /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
         UpdateOwnShopProfileRequest: {
@@ -3978,6 +4453,177 @@ export interface operations {
             };
         };
     };
+    SearchShops: {
+        parameters: {
+            query?: {
+                lat?: number;
+                lng?: number;
+                radiusKm?: number;
+                city?: string;
+                q?: string;
+                categoryId?: string;
+                openNow?: boolean;
+                verified?: boolean;
+                bookableToday?: boolean;
+                minPrice?: number;
+                maxPrice?: number;
+                sort?: components["schemas"]["DiscoverySort"];
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopSearchResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPopularCategories: {
+        parameters: {
+            query?: {
+                lat?: number;
+                lng?: number;
+                radiusKm?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PopularCategoryResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListTopProfessionals: {
+        parameters: {
+            query?: {
+                lat?: number;
+                lng?: number;
+                radiusKm?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopProfessionalResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDiscoveryStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoveryStatsResponse"];
+                };
+            };
+        };
+    };
+    ListDiscoveryAreas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscoveryAreasResponse"];
+                };
+            };
+        };
+    };
+    GetSitemapData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapResponse"];
+                };
+            };
+        };
+    };
     GetPublicShop: {
         parameters: {
             query?: never;
@@ -3996,6 +4642,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicShopResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPublicShopStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicShopStatusResponse"];
                 };
             };
             /** @description Not Found */
@@ -4047,6 +4724,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicProfessionalResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPublicProfessional: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                professionalSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProfessionalDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetProfessionalNextSlots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                professionalSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalNextSlotsResponse"];
                 };
             };
             /** @description Not Found */
@@ -4248,6 +4989,41 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPublicShopReviews: {
+        parameters: {
+            query?: {
+                professionalId?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicReviewsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Web.Hosting;
@@ -38,6 +39,7 @@ public sealed class BookingsModule : ModuleBase
         // Replaces the Availability module's stand-in (registered with TryAdd before this module).
         services.Replace(ServiceDescriptor.Scoped<IBookedTimeReader, BookedTimeReader>());
         services.AddScoped<IShopServiceUsage, BookingServiceUsage>();
+        services.AddScoped<IBookingReviewSource, BookingReviewSource>();
         services.AddSingleton<IDevSeeder, DemoBookingsSeeder>();
     }
 

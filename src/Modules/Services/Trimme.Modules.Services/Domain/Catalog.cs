@@ -56,7 +56,7 @@ public static class CatalogRules
 /// A platform-level category (hair, beard, care…) that shops file their services under. Platform-owned: it carries no
 /// price or duration (spec §10). Both languages are required, as admins manage a short list (D-070).
 /// </summary>
-public sealed class ServiceCategory : AggregateRoot<ServiceCategoryId>
+public sealed class ServiceCategory : AggregateRoot<ServiceCategoryId>, IPublicContent
 {
     /// <summary>Design icon keys a category may use (icons.tsx).</summary>
     public static readonly IReadOnlyList<string> Icons = ["scissors", "user", "users", "star", "heart", "layers", "tag", "coffee"];
@@ -125,7 +125,7 @@ public sealed record CatalogText(string NameAr, string? NameEn, string? Descript
 /// (DV-S02/S03). It is never physically deleted once used, only archived (R-SVC-02). Admins can hide it (moderation)
 /// or correct it through an audited support override; neither changes who owns it.
 /// </summary>
-public sealed class ShopService : AggregateRoot<ShopServiceId>, IShopOwned, IConcurrencyVersioned
+public sealed class ShopService : AggregateRoot<ShopServiceId>, IShopOwned, IConcurrencyVersioned, IPublicContent
 {
     private ShopService(ShopServiceId id, ShopId shopId, CatalogText text, ServiceCategoryId? categoryId, decimal price, int durationMinutes, bool onlineBookable, int displayOrder, DateTimeOffset now)
         : base(id)
@@ -271,7 +271,7 @@ public sealed class ShopService : AggregateRoot<ShopServiceId>, IShopOwned, ICon
 /// contiguous appointment. Items reference services of the same shop through composite keys, so the database rejects a
 /// package built from another shop's services.
 /// </summary>
-public sealed class ServicePackage : AggregateRoot<ServicePackageId>, IShopOwned, IConcurrencyVersioned
+public sealed class ServicePackage : AggregateRoot<ServicePackageId>, IShopOwned, IConcurrencyVersioned, IPublicContent
 {
     private readonly List<ServicePackageItem> _items = [];
 
@@ -478,7 +478,7 @@ public sealed class ServicePackageItem : IShopOwned
 /// A professional assigned to one of their own shop's services (spec §10: the platform admin assigns). Both
 /// references include the shop id, so the database rejects any cross-shop pairing (R-NEG-06, D-073).
 /// </summary>
-public sealed class ProfessionalServiceAssignment : IShopOwned
+public sealed class ProfessionalServiceAssignment : IShopOwned, IPublicContent
 {
     public ProfessionalServiceAssignment(ShopId shopId, ProfessionalId professionalId, ShopServiceId serviceId, DateTimeOffset assignedAt)
     {

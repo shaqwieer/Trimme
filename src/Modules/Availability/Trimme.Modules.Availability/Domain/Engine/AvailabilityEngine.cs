@@ -169,6 +169,38 @@ public static class AvailabilityEngine
         return FreeTime(shop, professional, clock.Date(item.Start), clock.Date(item.End)).Contains(item);
     }
 
+    /// <summary>How far ahead <see cref="OpenStatus"/> looks for the next opening.</summary>
+    public const int OpenStatusLookaheadDays = 7;
+
+    /// <summary>
+    /// Whether the shop is open at <paramref name="now"/> (a window of a business day that is not closed contains it),
+    /// when the current window ends (touching windows are joined, so 21:00–24:00 followed by 00:00–02:00 closes at 02:00),
+    /// or when it opens next within <see cref="OpenStatusLookaheadDays"/> days. Same closure rule as the slots: a closure
+    /// closes the business day, including its hours after midnight.
+    /// </summary>
+    public static (bool IsOpen, DateTimeOffset? ClosesAt, DateTimeOffset? NextOpensAt) OpenStatus(ShopCalendar shop, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(shop);
+        var clock = new ShopClock(shop.TimeZone);
+        var today = clock.Date(now);
+        var businessDays = Days(today.AddDays(-1), today.AddDays(OpenStatusLookaheadDays));
+        var open = Windows(clock, shop.OpeningHours, businessDays.Where(d => !shop.Closures.Any(c => c.Contains(d))));
+        foreach (var window in open.Ranges)
+        {
+            if (window.Start <= now && now < window.End)
+            {
+                return (true, window.End, null);
+            }
+
+            if (window.Start > now)
+            {
+                return (false, null, window.Start);
+            }
+        }
+
+        return (false, null, null);
+    }
+
     public static DayPeriod PeriodOf(int localHour) => localHour switch
     {
         >= 5 and < 12 => DayPeriod.Morning,

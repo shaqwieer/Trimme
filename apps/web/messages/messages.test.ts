@@ -19,8 +19,12 @@ function flatten(catalog: Catalog, prefix = ''): Map<string, string> {
   return entries;
 }
 
+/**
+ * ICU argument names: `{name}` or `{name, plural|select…`. The text inside plural branches (`one {# shop}`,
+ * `=0 {No shops}`) is not an argument, so a name must be followed by `}` or `,`.
+ */
 const placeholders = (message: string) =>
-  [...message.matchAll(/\{\s*([A-Za-z0-9_]+)/g)].map((m) => m[1]).sort();
+  [...new Set([...message.matchAll(/\{\s*([A-Za-z0-9_]+)\s*[,}]/g)].map((m) => m[1]))].sort();
 
 describe('messages_have_key_parity (R-WEB-05)', () => {
   const arEntries = flatten(ar as Catalog);

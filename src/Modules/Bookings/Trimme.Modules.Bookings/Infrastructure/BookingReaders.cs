@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Domain.Tenancy;
@@ -52,5 +53,29 @@ internal sealed class BookingServiceUsage(TrimmeDbContext db) : IShopServiceUsag
         // Package items are a JSON list on the booking; they reference services the package already keeps in use, but a
         // package may later drop an item, so check the booked snapshots too.
         return await db.Set<Booking>().AnyAsync(b => b.ShopId == shopId && b.PackageId != null && b.PackageItems.Any(i => i.ServiceId == serviceId), cancellationToken);
+    }
+}
+
+/// <summary>
+/// <see cref="IBookingReviewSource"/> for the Reviews module (D-092). Reads through the caller's data scope, so a customer
+/// finds only their own bookings (D-085). The completion time is the history entry that moved the booking to Completed.
+/// </summary>
+internal sealed class BookingReviewSource(TrimmeDbContext db) : IBookingReviewSource
+{
+    public async Task<ReviewableBooking?> FindAsync(Guid bookingId, CancellationToken cancellationToken)
+    {
+        var id = new BookingId(bookingId);
+        var booking = await db.Set<Booking>().AsNoTracking().SingleOrDefaultAsync(b => b.Id == id, cancellationToken);
+        if (booking is null)
+        {
+            return null;
+        }
+
+        var completedAt = booking.Status == BookingStatus.Completed
+            ? booking.History.Where(h => h.ToStatus == BookingStatus.Completed).Select(h => (DateTimeOffset?)h.OccurredAt).LastOrDefault()
+            : null;
+        return new ReviewableBooking(
+            booking.Id.Value, booking.ShopId, booking.CustomerId, booking.CustomerName, booking.ProfessionalId,
+            booking.ItemNameAr, booking.ItemNameEn, completedAt);
     }
 }

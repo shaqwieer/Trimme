@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Domain.Results;
+using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
 using Trimme.BuildingBlocks.Web.Media;
 using Trimme.BuildingBlocks.Web.Security;
@@ -103,10 +104,27 @@ internal static class ProfessionalEndpoints
             .WithName("ListShopProfessionals").WithSummary("The shop's own professionals, read-only and without contact data.")
             .Produces<IReadOnlyList<ShopProfessionalResponse>>();
 
-        api.MapGet("/public/shops/{slug}/professionals", PublicList).AllowAnonymous().WithTags("Public")
+        api.MapGet("/public/shops/{slug}/professionals", PublicList).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopProfessionals").WithSummary("Active professionals of an active shop. No contact data.")
             .Produces<IReadOnlyList<PublicProfessionalResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+        api.MapGet("/public/shops/{slug}/professionals/{professionalSlug}", PublicDetail).AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("GetPublicProfessional").WithSummary("An active professional of an active shop: profile, rating and the services they do. No contact data.")
+            .Produces<PublicProfessionalDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        api.MapGet("/public/shops/{slug}/professionals/{professionalSlug}/next-slots", PublicNextSlots)
+            .AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Availability).WithTags("Public")
+            .WithName("GetProfessionalNextSlots").WithSummary("The professional's earliest bookable starts (first day with any, within a week) for their shortest service.")
+            .Produces<ProfessionalNextSlotsResponse>().ProducesProblem(StatusCodes.Status404NotFound);
     }
+
+    private static async Task<IResult> PublicDetail(string slug, string professionalSlug, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        await dispatcher.Send(new GetPublicProfessionalQuery(slug, professionalSlug), cancellationToken) is { } professional
+            ? TypedResults.Ok(professional)
+            : Error.NotFound("professional.not_found", "The professional was not found.").ToProblem();
+
+    private static async Task<IResult> PublicNextSlots(string slug, string professionalSlug, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        await dispatcher.Send(new GetProfessionalNextSlotsQuery(slug, professionalSlug), cancellationToken) is { } slots
+            ? TypedResults.Ok(slots)
+            : Error.NotFound("professional.not_found", "The professional was not found.").ToProblem();
 
     private static async Task<IResult> CreateProfessional(CreateProfessionalRequest request, IDispatcher dispatcher, CancellationToken cancellationToken)
     {
