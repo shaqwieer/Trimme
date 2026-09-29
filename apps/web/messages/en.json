@@ -529,7 +529,8 @@
         "staffHint": "Appointments and walk-ins only",
         "submit": "Send invitation",
         "sent": "Invitation sent."
-      }
+      },
+      "bookings": "Bookings at this shop"
     },
     "verifiedBadge": "Verified",
     "tabs": {

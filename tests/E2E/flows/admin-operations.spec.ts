@@ -96,6 +96,8 @@ test.describe('admin operations (Phase 14)', () => {
 
     // Global search by the customer's name finds the walk-in; the detail has no phone.
     await page.goto(`/en/admin/bookings?q=${encodeURIComponent(customerName)}`);
+    await expect(page.getByText(customerName).first()).toBeVisible();
+    await expectNoSeriousAxeViolations(page);
     await page.getByRole('link', { name: /\d/ }).filter({ hasText: /am|pm/ }).first().click();
     await expect(page).toHaveURL(new RegExp(`/en/admin/bookings/${bookingId}$`));
     await expect(page.getByText(customerName).first()).toBeVisible();
@@ -132,7 +134,8 @@ test.describe('admin operations (Phase 14)', () => {
 
   test('customers directory: figures, masked number, audited reveal with a reason', async ({ page }) => {
     await staffSignIn(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-    await page.goto('/en/admin/customers');
+    // Newest first, and every E2E run signs up new customers, so find the seeded one by name.
+    await page.goto(`/en/admin/customers?q=${encodeURIComponent('سارة العنزي')}`);
     await expect(page.getByRole('link', { name: 'سارة العنزي' }).first()).toBeVisible();
     await expect(page.getByText(SARA.phone)).toHaveCount(0);
     await expectNoSeriousAxeViolations(page);

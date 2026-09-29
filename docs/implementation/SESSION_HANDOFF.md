@@ -2,12 +2,12 @@
 
 - **Updated:** 2026-09-29 (Session 10: Phase 14)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). The Phase 14 commit and its `docs:` follow-up are **local, not pushed**; everything up to `26114ee` was pushed (CI run #19 green).
-- **HEAD commit:** the Phase 14 `docs:` commit on top of `e9231a5` (feat: phase 14 admin operations dashboard). Run `git log --oneline -4`.
+- **HEAD commit:** the follow-up `docs:` commit on top of the `fix: phase 14 review follow-up` commit, `212da66` (docs) and `e9231a5` (feat: phase 14 admin operations dashboard). Run `git log --oneline -5`.
 - **Working tree:** clean after the commits. `next dev` re-creates untracked `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` when it starts; delete them or leave them untracked (the user's call).
 - **Local stack: running, all in compose.** It runs on a fresh volume from this session's `down -v` + `up --build`: `postgres`, `migrate`/`seed` (done, 12 migrations), `api`, `web` (production build of this session's code) and `mailpit`.
   - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
   - The Session 9 `next dev` server had crashed (a "Jest worker" runtime error) and was stopped.
-  - Two full E2E runs used this volume's hourly OTP budget twice (at most five per hour).
+  - The final fresh volume (created after the review follow-up) has had two full E2E runs this hour (at most five per hour, OTP).
 - **Current phase:** 14 is complete. Phase 15 has not started.
 - **Phase score:** 100 / 100 (Phase 14).
 - **Last fully completed phase:** 14, admin operations dashboard.
@@ -55,7 +55,7 @@ Phase 14 (`phases/phase-14-admin-dashboard.md`):
 | OpenAPI contract test (regenerated) and `pnpm openapi:check` | PASS |
 | Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 337 web tests |
 | E2E `typecheck`, `format:check` | PASS |
-| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **68/68 ×2**, no retries; API log: no 5xx, no 429 |
+| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **68/68 ×2** at `e9231a5`, then **68/68 ×2** again on a new volume after the review follow-up; no retries; API log: no 5xx, no 429 |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (54 commits, after `e9231a5`) | PASS: no hits, no leaks |
 
 ## Database and migrations
@@ -70,6 +70,12 @@ Phase 14 (`phases/phase-14-admin-dashboard.md`):
 - D-106: roles and staff management with escalation guards.
 - D-107: the settings screen; the remaining DV-S14 values are settled.
 - Design deviations: DV-S14 and DV-S17 are applied; DV-A08, A09, A15, A16 and A17 are applied; new DV-C09 (overview, bookings, reviews and roles choices).
+
+## Review follow-up (same session)
+- **Staff invitations now apply the escalation guards.** SuperAdmin only from a SuperAdmin; no role with permissions the inviter lacks. Before this, an admin with `Admin.Staff.Manage` from a custom role could invite themselves as SuperAdmin. The invite form offers only grantable roles (D-106 addendum).
+- **The review list's N+1 is removed** (`IProfessionalDirectory.FindManyAsync`).
+- **Coverage and navigation:** axe now also runs on the bookings list, and the shop page links to that shop's bookings.
+- **E2E fixes:** the Phase 13 walk-in count waits for the list; the customers E2E searches by name.
 
 ## Known issues or blockers
 - **Guards and presentation:**

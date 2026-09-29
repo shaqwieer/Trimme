@@ -122,7 +122,7 @@ DV-C08 — Shop dashboard (Phase 13):
 
 DV-C09 — Admin operations (Phase 14):
 - **Overview.** The KPI row keeps the design's eight tiles. "Subscriptions expiring soon" counts the configured threshold rather than "within 30 days", and its delta names ended and suspended subscriptions. The period switch (today, 7, 30 days) is an addition. The trend adds a third series ("upcoming or in progress") so each day's total is honest. "Most booked services" became categories (DV-S02). "Top shops" shows name, bookings, cancellation rate and rating, without the district (not on the shop directory contract). The header subtitle shows the platform date instead of "١٢٨ محلاً نشطاً" (DV-C, D19).
-- **Bookings.** The design's "today / this week" chips became a date range plus the status chips of the shop board. Rows open a detail page rather than a side card.
+- **Bookings.** The design's "today / this week" chips became a date range plus the status chips of the shop board. Rows open a detail page rather than a side card. A shop's page links to its bookings (`?shop=`), and a customer's profile to theirs (`?customer=`).
 - **Reviews.** The queue is a tab ("بانتظار المراجعة") among published, hidden and all. «تواصل مع المحل» (contact the shop) waits for shop notifications (Phase 15).
 - **Roles.** The matrix is read-only on the list page and editable per role on its own page, where boxes for permissions you do not hold are disabled with a note.
 

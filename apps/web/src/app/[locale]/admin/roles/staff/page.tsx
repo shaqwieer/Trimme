@@ -43,8 +43,12 @@ export default async function AdminStaffPage({
         ]);
         if (!staff || !roles) return <ErrorState />;
         const label = (name: string) => roleLabel(name, (key) => t(`roleNames.${key}`));
-        const options = roles
-          .filter((r) => r.userType === 'PlatformAdmin')
+        const adminRoles = roles.filter((r) => r.userType === 'PlatformAdmin');
+        const options = adminRoles.map((r) => ({ name: r.name, label: label(r.name) }));
+        // Invitations offer only the roles this admin could assign (D-106): the API refuses the others.
+        const invitable = adminRoles
+          .filter((r) => r.name !== 'SuperAdmin' || me.roles.includes('SuperAdmin'))
+          .filter((r) => r.permissions.every((code) => me.permissions.includes(code)))
           .map((r) => ({ name: r.name, label: label(r.name) }));
         const canManage = me.permissions.includes('Admin.Staff.Manage');
 
@@ -60,7 +64,7 @@ export default async function AdminStaffPage({
             {canManage && (
               <Card as="section" className="flex flex-col gap-3 p-5">
                 <h2 className="text-h3 font-bold text-navy-900">{t('invite.title')}</h2>
-                <InviteStaffForm roles={options} />
+                <InviteStaffForm roles={invitable} />
               </Card>
             )}
             <form method="get" role="search" className="flex min-w-0 gap-2 md:max-w-[460px]">

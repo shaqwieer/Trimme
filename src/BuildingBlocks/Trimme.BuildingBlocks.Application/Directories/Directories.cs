@@ -13,6 +13,9 @@ public interface IProfessionalDirectory
     /// <summary>The shop's professionals the caller may see, active and disabled, in name order.</summary>
     Task<IReadOnlyList<ProfessionalSummary>> ListByShopAsync(ShopId shopId, CancellationToken cancellationToken);
 
+    /// <summary>These professionals, as far as the caller may see them, in one query (lists across shops, no N+1).</summary>
+    Task<IReadOnlyDictionary<ProfessionalId, ProfessionalSummary>> FindManyAsync(IReadOnlyCollection<ProfessionalId> professionalIds, CancellationToken cancellationToken);
+
     /// <summary>
     /// The active professionals of these shops with their public profile, in name order (discovery, D-091). Opened with
     /// <c>IPublicDataScope.BeginMany</c> for the shops. Never carries a phone or WhatsApp number (R-PRO-02).

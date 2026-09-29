@@ -195,6 +195,17 @@ export default async function AdminShopPage({
               {me.permissions.includes('Admin.Shops.Suspend') && (
                 <ShopStatusActions shopId={shop.id} status={shop.status} />
               )}
+              {me.permissions.includes('Admin.Bookings.View') && (
+                <ButtonLink
+                  href={`/admin/bookings?shop=${shop.id}`}
+                  variant="outline"
+                  size="md"
+                  icon="calendar"
+                  className="self-start"
+                >
+                  {t('detail.bookings')}
+                </ButtonLink>
+              )}
             </section>
 
             <LinkTabs

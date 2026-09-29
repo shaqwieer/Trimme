@@ -79,6 +79,30 @@ internal sealed class CallerRights(ICurrentUser user, IPermissionResolver permis
         (await accounts.FindAsync(UserId, cancellationToken))?.Roles.Contains(SystemRoles.SuperAdmin, StringComparer.Ordinal) == true;
 }
 
+/// <summary>
+/// Which admin roles the caller may hand out, by assignment or by invitation (D-106): the SuperAdmin role only by a
+/// SuperAdmin, and no role that carries a permission the caller does not hold.
+/// </summary>
+internal static class StaffGuards
+{
+    public static async Task<Error?> CheckGrantableAsync(
+        TrimmeDbContext db, CallerRights caller, IReadOnlyCollection<RoleRow> added, CancellationToken cancellationToken)
+    {
+        if (added.Any(r => r.Name == SystemRoles.SuperAdmin) && !await caller.IsSuperAdminAsync(cancellationToken))
+        {
+            return RoleErrors.SuperAdminOnly();
+        }
+
+        var ids = added.Select(r => r.Id).ToArray();
+        var codes = await db.Set<RolePermission>().AsNoTracking().Where(g => ids.Contains(g.RoleId)).Select(g => g.PermissionCode).Distinct()
+            .ToListAsync(cancellationToken);
+        var held = await caller.PermissionsAsync(cancellationToken);
+        return codes.Where(code => !held.Contains(code)).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } missing
+            ? RoleErrors.Escalation(missing)
+            : null;
+    }
+}
+
 internal static class RoleRules
 {
     public const int MinNameLength = 2;
@@ -285,13 +309,10 @@ internal sealed class SetStaffRolesHandler(TrimmeDbContext db, IAdminAccounts ac
         }
 
         // No escalation through a role: every permission of a role being added must already be the caller's.
-        var addedIds = after.Except(before).ToArray();
-        var addedCodes = await db.Set<RolePermission>().AsNoTracking().Where(g => addedIds.Contains(g.RoleId)).Select(g => g.PermissionCode).Distinct()
-            .ToListAsync(cancellationToken);
-        var held = await caller.PermissionsAsync(cancellationToken);
-        if (addedCodes.Where(code => !held.Contains(code)).Order(StringComparer.Ordinal).ToList() is { Count: > 0 } escalation)
+        var added = roles.Where(r => !before.Contains(r.Id)).ToList();
+        if (await StaffGuards.CheckGrantableAsync(db, caller, added, cancellationToken) is { } escalation)
         {
-            return RoleErrors.Escalation(escalation);
+            return escalation;
         }
 
         await accounts.SetRolesAsync(staff.Id, after, cancellationToken);

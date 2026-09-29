@@ -9,6 +9,7 @@ using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
+using Trimme.Modules.Identity.Application.Admin;
 using Trimme.Modules.Identity.Application.Sessions;
 using Trimme.Modules.Identity.Domain;
 
@@ -154,10 +155,25 @@ internal sealed class InvitationIssuer(
     }
 }
 
-internal sealed class InviteStaffHandler(InvitationIssuer issuer) : ICommandHandler<InviteStaffCommand, Result<InvitationResponse>>
+/// <summary>
+/// Invites a platform-admin colleague with one admin role. The role must be one the inviter could assign directly
+/// (D-106): the SuperAdmin role only by a SuperAdmin, and no role with a permission the inviter lacks. Otherwise an
+/// admin who may invite staff could invite an address they control with more rights than their own.
+/// </summary>
+internal sealed class InviteStaffHandler(InvitationIssuer issuer, IAdminAccounts accounts, CallerRights caller, TrimmeDbContext db)
+    : ICommandHandler<InviteStaffCommand, Result<InvitationResponse>>
 {
-    public Task<Result<InvitationResponse>> Handle(InviteStaffCommand command, CancellationToken cancellationToken) =>
-        issuer.IssueAsync(command.Email, UserType.PlatformAdmin, command.Role, shopId: null, command.Locale, command.InvitedByUserId, cancellationToken);
+    public async Task<Result<InvitationResponse>> Handle(InviteStaffCommand command, CancellationToken cancellationToken)
+    {
+        if (await accounts.FindRoleByNameAsync(command.Role, cancellationToken) is { UserType: UserType.PlatformAdmin } role
+            && await StaffGuards.CheckGrantableAsync(db, caller, [role], cancellationToken) is { } refused)
+        {
+            return refused;
+        }
+
+        return await issuer.IssueAsync(
+            command.Email, UserType.PlatformAdmin, command.Role, shopId: null, command.Locale, command.InvitedByUserId, cancellationToken);
+    }
 }
 
 internal sealed class InviteShopUserHandler(InvitationIssuer issuer) : ICommandHandler<InviteShopUserCommand, Result<InvitationResponse>>

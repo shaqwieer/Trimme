@@ -353,6 +353,12 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         using var manager = await IdentityTestData.SignInStaffAsync(factory, managerEmail, ct);
         await FailsAsync(manager.PutAsync($"/api/v1/admin/staff/{keeperId}/roles", new { roles = new[] { SystemRoles.SuperAdmin } }, ct), HttpStatusCode.Forbidden, "role.superadmin_only", ct);
         await FailsAsync(manager.PutAsync($"/api/v1/admin/staff/{keeperId}/roles", new { roles = new[] { "Auditors" } }, ct), HttpStatusCode.Forbidden, "role.escalation", ct);
+
+        // The same rules hold for invitations, or an admin could invite an address they control with more rights.
+        await FailsAsync(manager.PostAsync("/api/v1/admin/staff/invitations", new { email = IdentityTestData.NewEmail("self"), role = SystemRoles.SuperAdmin, locale = "en" }, ct),
+            HttpStatusCode.Forbidden, "role.superadmin_only", ct);
+        await FailsAsync(manager.PostAsync("/api/v1/admin/staff/invitations", new { email = IdentityTestData.NewEmail("self"), role = "Auditors", locale = "en" }, ct),
+            HttpStatusCode.Forbidden, "role.escalation", ct);
         await FailsAsync(manager.PutAsync($"/api/v1/admin/staff/{managerId}/roles", new { roles = new[] { "Staff managers", "Auditors" } }, ct), HttpStatusCode.Conflict, "staff.self", ct);
         await OkAsync(manager.PutAsync($"/api/v1/admin/staff/{keeperId}/roles", new { roles = new[] { "Staff managers" } }, ct), ct);
         var adminId = (await OkAsync(admin.GetAsync("/api/v1/me", ct), ct)).GetProperty("id").GetGuid();

@@ -95,6 +95,10 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(watcher.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
     });
+    // Count only once the list has loaded (rows or the empty state): an earlier run's walk-ins may already be listed.
+    await expect(
+      watcher.getByTestId('appointment-row').first().or(watcher.getByText('لا مواعيد بهذه الفلاتر.')),
+    ).toBeVisible();
     const rowsBefore = await watcher.getByTestId('appointment-row').count();
 
     // Walk-in at the desk: service, barber, first free time that day, the name only (no phone field).

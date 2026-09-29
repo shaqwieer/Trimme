@@ -69,6 +69,21 @@ internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalD
             .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyDictionary<ProfessionalId, ProfessionalSummary>> FindManyAsync(
+        IReadOnlyCollection<ProfessionalId> professionalIds, CancellationToken cancellationToken)
+    {
+        if (professionalIds.Count == 0)
+        {
+            return new Dictionary<ProfessionalId, ProfessionalSummary>();
+        }
+
+        var ids = professionalIds.Distinct().ToArray();
+        return await db.Set<Professional>().AsNoTracking()
+            .Where(p => ids.Contains(p.Id))
+            .Select(p => new ProfessionalSummary(p.Id, p.ShopId, p.NameAr, p.NameEn, p.Status == ProfessionalStatus.Active))
+            .ToDictionaryAsync(p => p.Id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<PublicProfessionalCard>> ListActiveProfilesAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken)
     {
         if (shopIds.Count == 0)

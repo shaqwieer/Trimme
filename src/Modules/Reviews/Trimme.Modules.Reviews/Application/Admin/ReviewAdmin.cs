@@ -71,23 +71,15 @@ internal sealed class AdminReviewMapper(IShopDirectory shops, IProfessionalDirec
 {
     public async Task<IReadOnlyList<AdminReviewResponse>> MapAsync(IReadOnlyList<Review> reviews, CancellationToken cancellationToken)
     {
-        var shopIds = reviews.Select(r => r.ShopId).Distinct().ToList();
-        var names = await shops.FindManyAsync(shopIds, cancellationToken);
-        var staff = new Dictionary<Guid, ProfessionalSummary>();
-        foreach (var shopId in shopIds)
-        {
-            foreach (var professional in await professionals.ListByShopAsync(shopId, cancellationToken))
-            {
-                staff[professional.Id.Value] = professional;
-            }
-        }
+        var names = await shops.FindManyAsync([.. reviews.Select(r => r.ShopId).Distinct()], cancellationToken);
+        var staff = await professionals.FindManyAsync([.. reviews.Select(r => r.ProfessionalId).Distinct()], cancellationToken);
 
         return
         [
             .. reviews.Select(r =>
             {
                 var shop = names.GetValueOrDefault(r.ShopId);
-                var professional = staff.GetValueOrDefault(r.ProfessionalId.Value);
+                var professional = staff.GetValueOrDefault(r.ProfessionalId);
                 return new AdminReviewResponse(
                     r.Id.Value, r.BookingId, r.ShopId.Value, shop?.NameAr ?? string.Empty, shop?.NameEn ?? string.Empty, r.ProfessionalId.Value,
                     professional?.NameAr ?? string.Empty, professional?.NameEn ?? string.Empty, r.CustomerId, r.AuthorName, r.Rating, r.Tags, r.Comment,

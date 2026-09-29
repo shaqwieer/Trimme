@@ -871,6 +871,7 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
 
   Disabling takes effect on the account's next request (the session check reads `disabled_at`).
 - **Audit.** Every change is audited (`role.*`, `staff.*`). Permissions are resolved per request (D-051), so a change applies at once.
+- **Addendum (review follow-up): invitations.** `POST /admin/staff/invitations` applies the same `StaffGuards.CheckGrantableAsync` as role assignment: the SuperAdmin role only from a SuperAdmin (403 `role.superadmin_only`), and no role with a permission the inviter lacks (403 `role.escalation`). Without it, an admin granted `Admin.Staff.Manage` through a custom role could invite an address they control as SuperAdmin. The invite form offers only the roles the admin could grant. Shop-user invitations are unchanged (their roles carry shop permissions only, and they need `Admin.Shops.ManageAccount`).
 
 ## D-107 — The platform settings screen — Accepted (Phase 14; DV-A17)
 - **Sections.** The Phase 08 form is now the full sectioned screen: booking policy, reminders, subscriptions and enforcement, discovery, map defaults, and region (read-only in v1, D-076).

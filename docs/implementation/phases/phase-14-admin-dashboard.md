@@ -175,3 +175,22 @@ The acceptance criterion "a Support role cannot reveal a phone unless granted" i
 Next: Phase 15 — WhatsApp, outbox, Hangfire & notifications.
 
 **Commit:** `e9231a5` (feat: phase 14 admin operations dashboard). Not pushed.
+
+**Review follow-up (after `e9231a5`)**
+- **Blocking, fixed: staff invitations bypassed the escalation guards.** `POST /admin/staff/invitations` only checked that the role existed. An admin holding `Admin.Staff.Manage` through a custom role could have invited an address they control as SuperAdmin, or with any role whose permissions they lack.
+  - Invitations now use the same `StaffGuards.CheckGrantableAsync` as role assignment (D-106 addendum).
+  - The invite form offers only the roles the admin could grant.
+  - `Roles_AndStaff_…` asserts both refusals (`role.superadmin_only`, `role.escalation`).
+- **The N+1 in the review list is removed.** `IProfessionalDirectory.FindManyAsync` replaces one query per shop.
+- **Axe now also runs on the bookings list.**
+- **A shop's page links to its bookings** (`?shop=`), so the shop filter is reachable.
+- **R-TEN-08 is back to `[~]`** (a "5 → all" row; Phase 15 adds notification actions).
+- **E2E robustness:**
+  - `shop-dashboard.spec.ts` counted rows before the list had loaded; on a reused volume, earlier runs' walk-ins made it flaky once (passed on retry). It now waits for the rows or the empty state.
+  - The customers E2E searched the first page for a seeded customer, whom newer sign-ups push off it; it now searches by name.
+- **Verification:**
+  - build 0 warnings;
+  - unit / architecture / integration **378 / 63 / 158**;
+  - `has-pending-model-changes` clean; OpenAPI contract unchanged;
+  - web `format:check`, `lint`, `typecheck` and `test` (**337**), `openapi:check`; E2E `typecheck` and format;
+  - **fresh `down -v` + `up --build`: 68/68 ×2** (`CI=1`, 2 workers), no retries; API log: no 5xx, no 429.
