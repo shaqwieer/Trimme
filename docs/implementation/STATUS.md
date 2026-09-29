@@ -1,7 +1,7 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-29 (Session 8)
-- **Current phase:** 13 is complete and verified (Session 8), committed locally (not pushed; Phase 12 is not pushed either). Next: Phase 14, admin operations.
+- **Updated:** 2026-09-29 (Session 9)
+- **Current phase:** 13 is complete and verified (Session 8) and pushed; CI run #17 failed 3 E2E tests, which Session 9 fixed (local 62/62; the fix commits are not pushed yet, so CI is unconfirmed). Next: Phase 14, admin operations.
 - **Platform progress:** 1400 / 1900 points (Phases 00–13)
 
 | Phase | Status | Points |

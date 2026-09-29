@@ -1,19 +1,26 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-09-29 (end of Session 8: Phase 13)
+- **Updated:** 2026-09-29 (Session 9: CI run #17 follow-up after Phase 13)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Phase 11 is pushed and CI-green (run 36543760813).
-  - Phases 12 (`f8fa5be`, `11d76ef`, `c8a2c00`) and 13 (`6448b1c`, `77dcc1c`, `031aebc`) are **committed locally and not pushed**. Push only when the user asks, then record the CI run in the phase files.
-- **HEAD commit:** a `docs:` commit recording the Phase 13 hashes, on top of `031aebc` and `77dcc1c` (review follow-ups) and `6448b1c` (Phase 13). Run `git log --oneline -6`.
-- **Working tree:** clean after the commit.
-- **Local Docker stack: stopped** (containers kept; `docker compose -f infra/docker-compose.yml start` brings it back). It was recreated from an empty volume with the final Phase 13 images and E2E ran twice on it.
-  - Each demo customer has used 2 of its 5 OTP codes this hour; Sara has two fewer reviewable visits than seeded.
+  - Pushed: Phases 12 and 13 up to `32619ba` (CI run #17: web, backend and gitleaks green; compose + Playwright **failed** 3 tests, fixed below), then the user's landing redesign `41ac0a0` (CI run #18 **cancelled**).
+  - **Local and not pushed:** `9a7450c` (CI #17 fixes) and `3d2d99e` (landing follow-up and evidence), plus this docs commit. Push only when the user asks, then record the CI run in the Phase 13 file.
+- **HEAD commit:** this `docs:` commit on top of `3d2d99e` and `9a7450c`. Run `git log --oneline -6`.
+- **Working tree:** clean after the commit. `next dev` re-creates untracked `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` each time it starts (Next.js agent rules); they were deleted, and whether to disable, ignore or commit them is the user's call.
+- **Local stack: running, with the web app in dev mode.** Compose `postgres`, `migrate`/`seed` (done), `api` and `mailpit` are up on a volume created this session. The compose `web` container is **stopped**, and `next dev --port 3300` (a background task of Session 9) serves http://localhost:3300 with `TRIMME_API_INTERNAL_URL=http://localhost:8080`. `/api` and `/hubs` go through its rewrites (anonymous negotiate answers 401). To go back: stop `next dev`, then `docker compose -f infra/docker-compose.yml start web`.
+  - Three full E2E runs used this hour's demo OTP codes on earlier volumes; the current volume has had one full run.
   - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325; start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Current phase:** 13 is complete. Phase 14 has not started.
 - **Phase score:** 100 / 100 (Phase 13).
 - **Last fully completed phase:** 13, shop operational dashboard and live updates.
 
-## Completed this session
+## Completed this session (Session 9)
+CI run #17 follow-up (details and proofs in `phases/phase-13-shop-dashboard.md`, "CI run #17 follow-up"):
+- **Favorites heart after a fast sign-in:** only the request in flight is shared now (D-098); a regression unit test fails on the old component.
+- **Grey text contrast:** `text-secondary` `#647484` → `#5F6F80` (4.35:1 on `bg-muted` before; D-039, DV-T12); `tokens.test.ts` covers the grey surfaces.
+- **axe mid-transition:** E2E browsers emulate `prefers-reduced-motion: reduce` (a clicked slot measured 2.37:1 mid-fade).
+- **Landing redesign (`41ac0a0`, committed by the user during the session):** step numerals `brand-150` → `brand-600` (DV-T13); the locale and discovery specs expect the new headline. The Phase 11 landing checks still hold.
+
+## Completed in Session 8
 Phase 13 (`phases/phase-13-shop-dashboard.md`):
 - **Live updates** (D-099):
   - The hub is `/hubs/operations`: cookie auth; the server picks the group (`shop:{id}` or `admins`); no client methods; closes with the session; allowed origins only.
@@ -46,6 +53,9 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 299 web tests at `6448b1c`, 313 after the follow-ups |
 | Fresh `down -v` + `up --build` + `pnpm e2e` | After fixing a duplicated subscription warning and lightening load: run 1 61/62 (a Phase 04 admin invitation navigation timed out on the cold stack), **runs 2–4 62/62 ×3**. After the follow-up, on a new empty volume: **62/62 ×2**. 0 HTTP 429. The only 5xx log lines are the settings validation 400s logged as 500 (the earlier "0 5xx" used a pattern that never matched; see the Phase 13 correction) |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS, no hits, no leaks |
+| Session 9: web `lint`, `typecheck`, `format:check`, `test`; E2E `typecheck`, `format:check` | PASS, 318 web tests |
+| Session 9: fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **62/62**, no retries (before the landing fixes: 57/62, the 5 landing failures) |
+| Session 9: CI | Not yet confirmed: the fixes are not pushed |
 
 ## Database and migrations
 - None this phase (the `(shop_id, starts_at)` booking index from Phase 10 serves the board).
@@ -71,7 +81,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
   - Serilog 400/409-as-500 (e.g. `PUT /admin/settings` validation, once per E2E run) and oversized uploads (Phase 17).
 
 ## Exact next action
-1. If the user asks, push `main` and record the CI run in the Phase 12 and 13 files.
+1. If the user asks, push `main` and record the CI run (expected: all four jobs green) in the Phase 13 file.
 2. Start Phase 14 (`phases/phase-14-admin-dashboard.md`). Re-validate first:
    - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*RealtimeTests"`
    - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 npx playwright test flows/shop-dashboard.spec.ts`
