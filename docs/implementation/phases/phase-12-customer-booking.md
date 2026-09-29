@@ -150,6 +150,8 @@ Session 7, 2026-09-29.
   - The new sign-up step first filled the phone field before the client navigation to sign-up finished; it now waits for the sign-up page.
   - More than five runs within an hour on one stack exhaust the demo customers' OTP limit (5 codes per number per hour), so later runs fail at sign-in. This is an environment limit: recreate the stack, or wait, between batches of runs.
 
+**Correction (Phase 13 follow-up).** The "0 HTTP 5xx" counts in this file were taken with a pattern for JSON logs (`"StatusCode":5xx`), which the plain-text API log never contains, so they were always 0; the 429 counts used the right pattern. Re-counted with `responded 5xx` on the Phase 13 stack, the only 5xx lines are `PUT /api/v1/admin/settings responded 500`, one per full run: the known carry-over where Serilog's request log records a validation failure as 500 while the client receives the 400 (the settings E2E sees "This value is out of range"). Fix planned for Phase 17.
+
 ## Remaining risks → next phase
 - The wizard offers only bookable dates and slots, without disabled reasons (D-009). "Any professional" is assigned at submit and does not retry on a lost race (carry-over).
 - The WhatsApp notification preference row is a placeholder until Phase 15.

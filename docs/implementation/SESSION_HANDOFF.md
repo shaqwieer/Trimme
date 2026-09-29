@@ -3,11 +3,11 @@
 - **Updated:** 2026-09-29 (end of Session 8: Phase 13)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Phase 11 is pushed and CI-green (run 36543760813).
-  - Phases 12 (`f8fa5be`, `11d76ef`, `c8a2c00`) and 13 are **committed locally and not pushed**. Push only when the user asks, then record the CI run in the phase files.
-- **HEAD commit:** the Phase 13 `feat:` commit, plus a `docs:` commit recording its hash. Run `git log --oneline -6`.
+  - Phases 12 (`f8fa5be`, `11d76ef`, `c8a2c00`) and 13 (`6448b1c`, `77dcc1c`) are **committed locally and not pushed**. Push only when the user asks, then record the CI run in the phase files.
+- **HEAD commit:** a `docs:` commit recording the Phase 13 hashes, on top of `77dcc1c` (review follow-up) and `6448b1c` (Phase 13). Run `git log --oneline -6`.
 - **Working tree:** clean after the commit.
-- **Local Docker stack: stopped** (containers kept; `docker compose -f infra/docker-compose.yml start` brings it back). It was recreated from an empty volume with the Phase 13 images and E2E ran four times on it.
-  - Each demo customer has used 4 of its 5 OTP codes this hour; Sara has four reviewable visits left.
+- **Local Docker stack: stopped** (containers kept; `docker compose -f infra/docker-compose.yml start` brings it back). It was recreated from an empty volume with the final Phase 13 images and E2E ran twice on it.
+  - Each demo customer has used 2 of its 5 OTP codes this hour; Sara has two fewer reviewable visits than seeded.
   - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325; start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Current phase:** 13 is complete. Phase 14 has not started.
 - **Phase score:** 100 / 100 (Phase 13).
@@ -18,7 +18,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 - **Live updates** (D-099):
   - The hub is `/hubs/operations`: cookie auth; the server picks the group (`shop:{id}` or `admins`); no client methods; closes with the session; allowed origins only.
   - Events come after commit from the booking outbox via an EF interceptor, and carry ids, times and status only.
-  - The web provider reconnects after a session refresh; there is a live indicator.
+  - The web provider reconnects after a session refresh, backing off across closes (reset after 30 s connected) and stopping if the refresh fails; there is a live indicator.
   - Verified end to end through the Next.js rewrite on all three transports.
 - **Board API** (D-100):
   - the business-day plan (`IShopDayPlanReader`, engine `DayOf`);
@@ -34,8 +34,8 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 - **Tests:**
   - integration `ShopDashboardTests`, `RealtimeTests`, `OpenApi_has_no_export_surface`;
   - unit `DayOf_…`;
-  - web `lib/shop/board.test.ts`, `components/shop/board/board.test.tsx`;
-  - E2E `flows/shop-dashboard.spec.ts` (E2 plus layouts).
+  - web `lib/shop/board.test.ts`, `components/shop/board/board.test.tsx`, `components/shop/live/OperationsLive.test.tsx`;
+  - E2E `flows/shop-dashboard.spec.ts` (E2 run by staff with the owner watching, plus layouts).
 
 ## Verification evidence
 | Command | Result |
@@ -43,8 +43,8 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 | `dotnet build -c Release` | PASS, 0 warnings |
 | Unit / architecture / integration | PASS, 378 / 63 / 152 (the full integration suite ran alone) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes (no migration this phase) |
-| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 299 web tests |
-| Fresh `down -v` + `up --build` + `pnpm e2e` | After fixing a duplicated subscription warning and lightening load: run 1 61/62 (a Phase 04 admin invitation navigation timed out on the cold stack), **runs 2–4 62/62 ×3**. 0 HTTP 429, 0 HTTP 5xx |
+| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 299 web tests at `6448b1c`, 304 after the follow-up |
+| Fresh `down -v` + `up --build` + `pnpm e2e` | After fixing a duplicated subscription warning and lightening load: run 1 61/62 (a Phase 04 admin invitation navigation timed out on the cold stack), **runs 2–4 62/62 ×3**. After the follow-up, on a new empty volume: **62/62 ×2**. 0 HTTP 429. The only 5xx log lines are the settings validation 400s logged as 500 (the earlier "0 5xx" used a pattern that never matched; see the Phase 13 correction) |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS, no hits, no leaks |
 
 ## Database and migrations
@@ -68,7 +68,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
   - packages across professionals (D-020);
   - outbox processing and resend confirmation (Phase 15);
   - grace days and limits (D-077);
-  - Serilog 400/409-as-500 and oversized uploads (Phase 17).
+  - Serilog 400/409-as-500 (e.g. `PUT /admin/settings` validation, once per E2E run) and oversized uploads (Phase 17).
 
 ## Exact next action
 1. If the user asks, push `main` and record the CI run in the Phase 12 and 13 files.

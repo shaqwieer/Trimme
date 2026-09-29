@@ -135,6 +135,19 @@ Long polling first failed at connect: the hub read the request's tenant flags, a
 - **Drawer date line:** it failed axe colour contrast (secondary text on the subtle background); the stronger text colour is used.
 - **E2E specifics:** Majed is on seeded time off, so E2 uses Omar two days ahead. Hidden radio inputs are clicked through their labels. Each run uses a unique customer name, because failed attempts could leave walk-ins behind.
 
+**Review follow-up (after commit `6448b1c`, fixed in `77dcc1c`)**
+- **Live reconnect spun (bug).** Every close restarted the backoff at attempt 0. A connection the server drops right after the handshake (a suspended shop, a removed permission) therefore reconnected about once a second, and each attempt refreshed the session first, rotating the refresh token (the auth rate limit is 10 a minute in production).
+  - Fix: failures count across closes and failed starts (1 s, 2 s … 30 s). The count resets only after a connection stayed up 30 s. The provider stops (the indicator stays on «إعادة الاتصال…») when the session cannot be refreshed; the page's own requests then lead to sign-in.
+  - Web test `OperationsLive.test.tsx` (mocked SignalR client, fake timers), 5 cases: immediate closes back off 1→2→4→8→16→30→30 s with one refresh per attempt; a stable connection resets to 1 s; failed starts back off; a failed refresh stops; unmount stops. With the old behaviour restored (probe), 3 of the 5 fail.
+- **E2 ran as the owner only.** The owner has every shop permission, so the staff role's permissions for the walk-in, the drawer note and the cancel were not exercised in the browser. E2 now performs them as `staff@barber-house`; the owner is the live watcher.
+- **Verification.**
+  - Web gates PASS: `lint`, `typecheck`, `format:check`, `openapi:check`, `test` (**304**), `build`.
+  - Web image rebuilt; `pnpm e2e` on the running stack (previously used this hour): run 1 61/62 (the Phase 03 sign-up did not reach its URL within 5 s just after the restart; `auth.spec.ts` then 6/6 alone), run 2 59/62 (three customer sign-ins answered 429: the demo customers' hourly OTP limit, see Phase 12).
+  - Fresh `down -v` + `up --build`, then `pnpm e2e`: **62/62, 62/62**. API log: 0 `responded 429`; the only 5xx lines are the two settings validation lines described in the correction below.
+  - gitleaks v8.30.1 (Docker): `git` 45 commits, no leaks; `dir` on the repository, no leaks.
+
+**Correction (Phase 13 follow-up).** The "0 HTTP 5xx" counts in this file were taken with a pattern for JSON logs (`"StatusCode":5xx`), which the plain-text API log never contains, so they were always 0; the 429 counts used the right pattern. Re-counted with `responded 5xx` on the Phase 13 stack, the only 5xx lines are `PUT /api/v1/admin/settings responded 500`, one per full run: the known carry-over where Serilog's request log records a validation failure as 500 while the client receives the 400 (the settings E2E sees "This value is out of range"). Fix planned for Phase 17.
+
 ## Remaining risks → next phase
 - **Production Nginx** must forward `/hubs` with the WebSocket upgrade headers (and allow SSE without buffering) (Phase 17).
 - **Scale-out** needs a SignalR backplane (Phase 17).
