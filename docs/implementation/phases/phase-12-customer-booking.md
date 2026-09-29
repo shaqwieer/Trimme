@@ -124,7 +124,7 @@ Session 7, 2026-09-29.
 | `dotnet build -c Release` | PASS — 0 warnings, 0 errors |
 | Unit / architecture / integration | PASS — **377 / 63 / 143** (Phase 11 end: 373 / 63 / 138). New: 4 unit (`CustomerAccountDomainTests`), 5 integration (`CustomerAccountTests` ×4, `OpenApi_has_no_payment_surface`); the full integration suite ran alone (2 min) |
 | `dotnet ef migrations has-pending-model-changes` | PASS — no changes |
-| Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — **282** web tests (25 new); `/[locale]/shops/[slug]/book` rendered per request |
+| Web `lint` / `typecheck` / `format:check` / `openapi:check` / `test` / `build` | PASS — **282** web tests (25 new) at the phase commit, **285** after the review follow-up; `/[locale]/shops/[slug]/book` rendered per request |
 | Fresh `down -v` + `up --build`, then `pnpm e2e` (before the demo rename, see below) | **60/60, 60/60, 60/60**; 0 HTTP 429, 0 HTTP 5xx |
 | Fresh `down -v` + `up --build` with the final code, then `pnpm e2e` | Run 1: 59/60. The failure was the Phase 07 services test: a toggle click did not flip within 5 s on the cold stack. It passed in all five other full runs. **Runs 2–4: 60/60, 60/60, 60/60**; 0 HTTP 429, 0 HTTP 5xx |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` | PASS after two fixes: a code comment used the forbidden term, and the new demo surname «الشهري» contains «شهري» (renamed to «العنزي»). gitleaks: no leaks |
@@ -134,6 +134,19 @@ Session 7, 2026-09-29.
 - **Lint (React 19 rules).** The wizard set state in an effect; the "gone/conflict" notice moved into the URL. The booking page called `Date.now()` in render; the countdown decides for itself.
 - **E2E.** The favorites test left the page before the optimistic heart's PUT finished; it now waits for the API response. The Phase 11 review count assertion now allows the reviews E7 adds.
 - **Flakes seen under the heavier parallel load** (pre-existing tests, not Phase 12 code): E5 (subscription card refresh, dev run) and the Phase 07 services toggle (final run 1). Each passed on rerun and in every other full run. Watch item for Phase 17/18.
+
+**Review follow-up (after commit `f8fa5be`)**
+- **Heart after sign-in (bug).** `FavoriteButton` kept the signed-out answer in module state, which survives client-side navigation. After the heart's own sign-in round trip, the shop page still showed the sign-in link, and after sign-out a stale "saved" state could show.
+  - Fix: hearts that mount together share one request for 2 s only.
+  - Web test "asks again on the next mount…" fails with the old caching (probe) and passes now.
+  - The favorites E2E now does the real round trip: guest heart → sign-in → create account → complete profile → back on the shop page with a working heart.
+- **Evidence gaps.** The Pending confirmation copy (DV-S13) and the after-cutoff policy with the shop's phone (DV-S10) had no test. They are now small components (`CreatedBanner`, `BookingPolicy`) used by the booking page and covered by web tests.
+- **Verification.**
+  - Web gates PASS (285 tests); `pnpm build` exit 0.
+  - Web image rebuilt; fresh `down -v` + `up --build`, then `pnpm e2e` **60/60, 60/60, 60/60**; 0 HTTP 429, 0 HTTP 5xx.
+- **Two E2E issues found on the way:**
+  - The new sign-up step first filled the phone field before the client navigation to sign-up finished; it now waits for the sign-up page.
+  - More than five runs within an hour on one stack exhaust the demo customers' OTP limit (5 codes per number per hour), so later runs fail at sign-in. This is an environment limit: recreate the stack, or wait, between batches of runs.
 
 ## Remaining risks → next phase
 - The wizard offers only bookable dates and slots, without disabled reasons (D-009). "Any professional" is assigned at submit and does not retry on a lost race (carry-over).

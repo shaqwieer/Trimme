@@ -286,19 +286,31 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
 
   test('favorites and profile: hearts on the shop and barber pages, the favorites list, and editing the name', async ({
     page,
-    browser,
   }) => {
-    // A guest's heart asks them to sign in and brings them back.
-    const guestContext = await browser.newContext();
-    const guest = await guestContext.newPage();
-    await guest.goto(`/ar/shops/${BARBER_HOUSE}`);
-    await expect(guest.getByRole('link', { name: /سجّل الدخول لحفظ باربر هاوس/ })).toHaveAttribute(
-      'href',
-      '/ar/auth/sign-in?returnTo=%2Fshops%2Fbarber-house',
-    );
-    await guestContext.close();
+    // A guest's heart asks them to sign in; a new customer signs up from there and lands back on the shop page
+    // (client-side navigation), where the heart now works (the signed-out answer is not kept).
+    await page.goto(`/ar/shops/${BARBER_HOUSE}`);
+    const guestHeart = page.getByRole('link', { name: /سجّل الدخول لحفظ باربر هاوس/ });
+    await expect(guestHeart).toHaveAttribute('href', '/ar/auth/sign-in?returnTo=%2Fshops%2Fbarber-house');
+    await guestHeart.click();
+    await expect(page).toHaveURL(/\/ar\/auth\/sign-in\?returnTo=%2Fshops%2Fbarber-house/);
+    await page.getByRole('link', { name: 'أنشئ حساباً' }).click();
+    await expect(page).toHaveURL(/\/ar\/auth\/sign-up\?returnTo=%2Fshops%2Fbarber-house/);
+    await expect(page.getByRole('heading', { name: 'أهلاً بك في تريمي' })).toBeVisible();
+    const national = newPhone();
+    await page.getByLabel('رقم الجوال').fill(national);
+    await page.getByLabel(/أوافق على/).check();
+    await page.getByRole('button', { name: 'إرسال الرمز' }).click();
+    await expect(page).toHaveURL(/\/ar\/auth\/verify\?returnTo=/);
+    await page.getByLabel('رمز التحقق').fill(await latestOtp(page.request, national));
+    await page.getByRole('button', { name: 'تحقق' }).click();
+    await expect(page).toHaveURL(/\/ar\/auth\/complete-profile\?returnTo=/);
+    await page.getByLabel('الاسم الكامل').fill('ليان القحطاني');
+    await page.getByLabel(/أوافق على/).check();
+    await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
+    await expect(page).toHaveURL(/\/ar\/shops\/barber-house$/);
+    await expect(page.getByRole('button', { name: 'أضف باربر هاوس إلى المفضلة' })).toBeVisible();
 
-    await signUp(page, 'ليان القحطاني');
     // The heart turns at once (optimistic); wait for the API to store it before leaving the page.
     const saved = (kind: string) =>
       page.waitForResponse(

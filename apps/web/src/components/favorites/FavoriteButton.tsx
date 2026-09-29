@@ -11,22 +11,32 @@ import { cn } from '@/lib/cn';
 
 type Saved = { shopIds: string[]; professionalIds: string[] };
 
-/** What the visitor saved, `'signedOut'` (401) or `'notCustomer'` (403, staff). One request per page load. */
+/** What the visitor saved, `'signedOut'` (401) or `'notCustomer'` (403, staff). */
 type Probe = Saved | 'signedOut' | 'notCustomer';
-let probe: Promise<Probe> | null = null;
+
+/**
+ * Hearts that mount together (one page) share one request; a later mount asks again. The module outlives client-side
+ * navigation, so a longer-lived answer would go stale across sign-in and sign-out (the heart's own round trip returns
+ * here without a page load).
+ */
+const SHARE_MS = 2_000;
+let probe: { at: number; answer: Promise<Probe> } | null = null;
 
 /**
  * A plain fetch, not the session client: an anonymous visitor's 401 must not start a session refresh or a redirect.
  * A signed-in customer whose access cookie just expired is shown the sign-in link, which returns them here.
  */
 function savedFavorites(): Promise<Probe> {
-  probe ??= fetch('/api/v1/me/favorites', { credentials: 'include', cache: 'no-store' })
-    .then(async (response): Promise<Probe> => {
-      if (response.ok) return (await response.json()) as Saved;
-      return response.status === 403 ? 'notCustomer' : 'signedOut';
-    })
-    .catch((): Probe => 'signedOut');
-  return probe;
+  if (!probe || Date.now() - probe.at > SHARE_MS) {
+    const answer = fetch('/api/v1/me/favorites', { credentials: 'include', cache: 'no-store' })
+      .then(async (response): Promise<Probe> => {
+        if (response.ok) return (await response.json()) as Saved;
+        return response.status === 403 ? 'notCustomer' : 'signedOut';
+      })
+      .catch((): Probe => 'signedOut');
+    probe = { at: Date.now(), answer };
+  }
+  return probe.answer;
 }
 
 type Target = { kind: 'shop'; id: string } | { kind: 'professional'; id: string; shopId: string };

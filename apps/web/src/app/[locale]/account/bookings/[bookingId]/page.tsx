@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { isActive, rebookHref } from '@/components/booking/BookingCards';
 import { CancelBookingButton, Countdown } from '@/components/booking/BookingDetailClient';
+import { BookingPolicy, CreatedBanner } from '@/components/booking/BookingDetailParts';
 import { Ltr } from '@/components/text/Ltr';
 import { StatusBadge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
@@ -14,14 +15,12 @@ import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
 import { requireCustomer } from '@/lib/auth/server';
-import { changeDeadline, cutoffParts } from '@/lib/booking/format';
 import { directionsUrl } from '@/lib/booking/links';
 import { getPublicShop } from '@/lib/discovery/shop-data';
 import {
   type AppLocale,
   formatDate,
   formatDurationMinutes,
-  formatPhone,
   formatPrice,
   formatRating,
   formatTime,
@@ -79,22 +78,13 @@ export default async function BookingDetailPage({
   const service = localizedName(locale, booking.item.nameAr, booking.item.nameEn);
   const shopName = localizedName(locale, booking.shop.nameAr, booking.shop.nameEn);
   const when = `${formatDate(booking.startsAt, locale, { timeZone })} ${formatTime(booking.startsAt, locale, timeZone)}`;
-  const cutoff = cutoffParts(booking.cancellationCutoffMinutes);
-  const windowText = t(`window.${cutoff.unit}`, { count: cutoff.count });
   const created = firstParam(query.created) === '1';
 
   return (
     <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 md:px-6" data-testid="booking-detail">
       <Breadcrumb items={[{ label: tList('title'), href: '/account/bookings' }, { label: t('title') }]} />
 
-      {created && (
-        <InlineAlert
-          tone="success"
-          title={t(`created.${booking.status === 'Pending' ? 'pending' : 'confirmed'}.title`)}
-        >
-          {t(`created.${booking.status === 'Pending' ? 'pending' : 'confirmed'}.body`)}
-        </InlineAlert>
-      )}
+      {created && <CreatedBanner status={booking.status} />}
       {firstParam(query.rescheduled) === '1' && <InlineAlert tone="success" title={t('rescheduled')} />}
       {firstParam(query.cancelled) === '1' && <InlineAlert tone="success" title={t('cancelled')} />}
       {firstParam(query.reviewed) === '1' && <InlineAlert tone="success" title={t('reviewed')} />}
@@ -171,33 +161,13 @@ export default async function BookingDetailPage({
       </dl>
 
       {active && (
-        <section aria-labelledby="policy-title" className="flex flex-col gap-2 rounded-card bg-bg-subtle p-4">
-          <h2 id="policy-title" className="text-label font-bold text-text-primary">
-            {t('policy.title')}
-          </h2>
-          {actions.has('Cancel') ? (
-            <p className="text-helper leading-[1.8] text-text-secondary">
-              {t('policy.before', {
-                time: `${formatDate(changeDeadline(booking.startsAt, booking.cancellationCutoffMinutes), locale, { timeZone })} ${formatTime(changeDeadline(booking.startsAt, booking.cancellationCutoffMinutes), locale, timeZone)}`,
-              })}
-            </p>
-          ) : (
-            <>
-              <p className="text-helper leading-[1.8] text-text-secondary" data-testid="cutoff-passed">
-                {t('policy.after', { window: windowText })}
-              </p>
-              {shop?.publicPhone && (
-                <a
-                  href={`tel:${shop.publicPhone}`}
-                  className="inline-flex min-h-11 items-center gap-2 self-start rounded-button border border-border-input bg-surface px-4 text-label font-bold text-text-strong"
-                >
-                  <Icon name="phone" className="size-4" />
-                  {t('policy.callShop')} <Ltr>{formatPhone(shop.publicPhone)}</Ltr>
-                </a>
-              )}
-            </>
-          )}
-        </section>
+        <BookingPolicy
+          startsAt={booking.startsAt}
+          cutoffMinutes={booking.cancellationCutoffMinutes}
+          canChange={actions.has('Cancel')}
+          shopPhone={shop?.publicPhone ?? null}
+          timeZone={timeZone}
+        />
       )}
 
       {booking.reviewRating != null && (
