@@ -966,6 +966,47 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("booking_notes", "bookings");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Customers.Domain.Favorite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid?>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_favorites");
+
+                    b.HasIndex("CustomerId", "ProfessionalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_favorites_customer_id_professional_id")
+                        .HasFilter("professional_id IS NOT NULL");
+
+                    b.HasIndex("CustomerId", "ShopId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_favorites_customer_id_shop_id_shop")
+                        .HasFilter("professional_id IS NULL");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_favorites_shop_id_professional_id");
+
+                    b.ToTable("favorites", "customers");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1688,6 +1729,11 @@ namespace Trimme.Migrations.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
+
+                    b.PrimitiveCollection<string[]>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("tags");
 
                     b.HasKey("Id")
                         .HasName("pk_reviews");
@@ -2922,6 +2968,23 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_booking_notes_bookings_shop_id_booking_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Customers.Domain.Favorite", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_favorites_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_favorites_professionals_shop_id_professional_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Identity.Domain.Invitation", b =>

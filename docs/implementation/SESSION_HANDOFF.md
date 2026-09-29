@@ -1,86 +1,92 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-09-29 (end of Session 6: Phase 11)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 10 is pushed and CI-green (run 36420287372). Phase 11 is **committed locally and not pushed**. Push only when the user asks; then record the CI run in the Phase 11 file.
-- **HEAD commit:** a `docs:` commit recording the hash, on top of `8832a12` (`feat: phase 11 public discovery and shop pages`). Run `git log --oneline -3`.
+- **Updated:** 2026-09-29 (end of Session 7: Phase 12)
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
+  - Phase 11 was pushed at the start of this session (`79280f6..4f441de`); CI run 36543760813 succeeded (recorded in the Phase 11 file).
+  - Phase 12 is **committed locally and not pushed**. Push only when the user asks, then record the CI run in the Phase 12 file.
+- **HEAD commit:** the Phase 12 `feat:` commit, plus a `docs:` commit recording its hash. Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
-- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 11 images (10 migrations, 10 seeders). Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325, started with `TRIMME_SITE_URL=http://localhost:3300`.
-- **Current phase:** 11 is complete. Phase 12 has not started.
-- **Phase score:** 100 / 100 (Phase 11).
-- **Last fully completed phase:** 11, public discovery and shop pages.
+- **Local Docker stack: running.** It was recreated from an empty volume with the Phase 12 images (11 migrations, 10 seeders). E2E ran four times on it, so Sara has four reviewed visits and four left. It was stopped for the integration run and started again.
+  - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325.
+  - Started with `TRIMME_SITE_URL=http://localhost:3300`.
+- **Current phase:** 12 is complete. Phase 13 has not started.
+- **Phase score:** 100 / 100 (Phase 12).
+- **Last fully completed phase:** 12, customer booking and account.
 
 ## Completed this session
-Phase 11 (`phases/phase-11-public-discovery.md`):
-- **Discovery API** (D-090/D-091):
-  - PostGIS nearby search (nearest first, radius, city);
-  - Arabic-normalized text search over shop names and offers;
-  - category, open-now, verified, bookable-today and price filters; distance, rating or earliest sort; paging;
-  - a bounded availability probe that takes each professional's shortest bookable offer;
-  - popular categories ("from X"), stats, areas, sitemap data and top professionals.
-  All of it reads through a new multi-shop public scope with a fixed number of queries.
-- **Public pages API.** The shop detail is extended (rating, prices, hours, cancellation policy, listed flag). New endpoints: the live `/status` (open now, booking state, each professional's next time), professional detail and next slots, and paged reviews.
-- **Reviews** (D-092). A `Review` entity (shop- and customer-owned, one per booking, first name + initial), plus rating aggregates as a platform read model, updated with the review by `RatingBook`. Six demo visits have reviews. The review *command* is Phase 12.
-- **Caching** (D-093). The API output-caches anonymous public reads for 5 minutes, and saving any `IPublicContent` entity evicts them. The web reads public data with a cookie-less, `no-store` client that forwards the visitor's address (D-094).
-- **Web:**
-  - the landing page, `/shops`, `/discover`, `/search` (list, map, filter drawer), `/onboarding/location` and the location sheet (the cookie stays on the device, D-095);
-  - the shop page (all sections), the professional page, `/terms` and `/privacy`;
-  - dynamic `robots.txt` and `sitemap.xml`; canonical, hreflang, Open Graph and JSON-LD.
-  - The sign-up terms checkbox now links to the legal pages.
-- **Fixes found while verifying:** see the phase file (the earliest-slot probe; a stale plan-price version accepted, a Phase 08 latent bug; review fixes).
+Phase 12 (`phases/phase-12-customer-booking.md`):
+- **Booking wizard** `/shops/[slug]/book` (D-028, D-096):
+  - Steps: service or package → professional (eligible only, "any" preselected) → date strip → slots by period → review (price paid at the shop, the policy window, optional note).
+  - The URL holds every choice, so links from the shop and professional pages open on the right step.
+  - Guests sign in when they confirm and come back to the re-checked review.
+  - The submit uses one idempotency key per request. A 409 returns the customer to fresh times with "just taken".
+  - After booking, the customer lands on the booking page with Confirmed or Pending copy.
+- **Account:**
+  - `/account/bookings`: upcoming/past, contextual actions, rebook card.
+  - The booking page: countdown, `.ics`, directions, snapshot, the policy (after the cutoff: closed window + shop phone), cancel dialog with reasons.
+  - `/reschedule`, `/review`, `/account/favorites`, and the `/account` profile rows plus `/account/profile` (name, language).
+- **API:**
+  - Review command: owner, Completed, 7-day window, once; tags; an atomic aggregate upsert (D-097).
+  - Reschedule dates and slots, ignoring the booking's own interval.
+  - `Review` action, `reviewRating` and `reviewDeadline` on customer bookings.
+  - Favorites (Customers module, customer-owned, composite FK to the professional; D-098). `IShopCards` (discovery pipeline by ids, chunked).
+  - `professionalIds` on public services and packages.
+  - `favorites` rate limit.
+- **Hearts** on the shop and professional pages. They probe with a plain fetch, so a guest sees a sign-in link; staff see none.
+- **Demo seed:** Sara (`+966500100303`), with eight unreviewed visits (one to four days before seeding) and one upcoming booking, for E7.
+- **Tests:**
+  - integration `CustomerAccountTests` (reviews, double submit and parallel totals, favorites isolation, reschedule availability) and `OpenApi_has_no_payment_surface`;
+  - unit `CustomerAccountDomainTests`;
+  - 25 web tests;
+  - E2E `customer-booking.spec.ts`: E1, E6, E7, favorites and profile, viewports.
 
 ## Verification evidence
 | Command | Result |
 |---|---|
-| `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
-| Unit / architecture / integration | PASS, 373 / 63 / 138 (the full integration suite run alone) |
+| `dotnet build -c Release` | PASS, 0 warnings |
+| Unit / architecture / integration | PASS, 377 / 63 / 143 (the full integration suite ran alone: 2 min) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
-| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 257 web tests |
-| Fresh `down -v` + `up --build` + `pnpm e2e` | Runs 1–3: 54/55. The only failure was the new robots test's own regex, then fixed. Runs 4–6: **55/55 ×3**. 0 HTTP 429 |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (39 commits) | PASS, no hits outside the exclusions, no leaks |
+| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 282 web tests |
+| Fresh `down -v` + `up --build` + `pnpm e2e` | First stack: **60/60 ×3**. Final code (after the demo rename): run 1 59/60 (a Phase 07 services toggle flake on the cold stack), then **runs 2–4 60/60 ×3**. 0 HTTP 429, 0 HTTP 5xx |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` | PASS after renaming the demo surname «الشهري» (contains «شهري») and rewording one comment; no leaks |
 
 ## Database and migrations
-- Created this session: `20260929065351_Reviews` (`reviews.reviews`, `reviews.rating_aggregates`, plus the same-shop review→booking FK by SQL).
+- Created this session: `20260929085259_ReviewTagsAndFavorites` (`reviews.reviews.tags`, `customers.favorites`).
 - Applied locally only: Testcontainers databases and the compose volume.
 
 ## Decisions added
-- D-090: multi-shop public scope.
-- D-091: discovery pipeline, text search and the bounded probe.
-- D-092: reviews read side and aggregates.
-- D-093: API public cache with eviction on save.
-- D-094: client address for server-rendered calls.
-- D-095: location kept on the device; `TRIMME_SITE_URL` and `TRIMME_PARTNER_CONTACT_URL`.
-- Design deviations: DV-S11, S12, S15, S21, A21, A23, A27 and A28 applied; DV-S14 partly applied. New: DV-C03 (landing), DV-C04 (professional statistics not shown) and DV-C05 (shop header QR/heart later).
+- D-096: guests confirm through a sign-in round trip (supersedes the inline part of D-033); idempotency key per request; conflict notice in the URL.
+- D-097: review command, window and tags; atomic aggregates; reschedule availability; Sara's demo visits.
+- D-098: favorites (model, API, hearts, module order).
+- Design deviations: DV-S10 (UI), DV-S13, DV-S20 and DV-A24 applied. New: DV-C06 (wizard) and DV-C07 (account and appointments). DV-C05 updated (the heart is next to the shop name).
 
 ## Known issues or blockers
-- **Integration suite under host load.** With a build running and about 10 other containers, full runs hit 30 s Npgsql connection-open timeouts. A quiet run passes 138/138. Run the full suite alone and keep the log.
-- **Booking links** from the shop and professional pages go to `/shops/{slug}/book?…`, which answers 404 until Phase 12 builds the wizard (`robots.txt` disallows it).
-- **Production must-haves** (Phase 17):
-  - Nginx overwrites `X-Forwarded-For` to both the web and the API, and the web network goes in `ReverseProxy:KnownNetworks` (D-094). Without it, public search shares one rate-limit bucket;
-  - the web container is reachable only through Nginx;
-  - `TRIMME_SITE_URL` is set;
-  - the Nginx access logs will contain `lat`/`lng` from the browser's search calls, so decide their retention;
-  - the tile and geocoder host (D-007).
-- **Scale limits (D-091):** at most 200 search candidates, the probe covers 24 shops, and the cache is per instance.
-- **Earlier carry-overs:**
+- **Flaky pre-existing E2E under load.**
+  - Phase 07 services toggle: a click did not flip within 5 s on a cold stack, once in six full runs.
+  - Phase 08 E5: the subscription card was not refreshed within 5 s, once in a development run.
+  - Both passed on rerun. Suspected: a click before hydration, or a slow `router.refresh()` under parallel load. Worth a look in Phase 17/18.
+- **Sara's reviewable visits expire seven days after seeding.** E7 then fails with a clear message; reset the volume.
+- **Integration suite:** run it alone (host load causes Npgsql timeouts; see Phase 11).
+- **Production must-haves** (Phase 17): unchanged from Phase 11 (Nginx `X-Forwarded-For` and `KnownNetworks`, web reachable only via Nginx, `TRIMME_SITE_URL`, log retention of `lat`/`lng`, tile and geocoder host).
+- **Carry-overs:**
+  - "any professional" is assigned at submit and does not retry;
   - packages across professionals (D-020);
-  - "any professional" does not retry;
-  - outbox processing (Phase 15);
-  - grace days and limits not enforced (D-077);
-  - Serilog logs handled 400/409 as 500 (Phase 17);
-  - oversized uploads through the rewrite (Phase 17);
+  - outbox processing and the WhatsApp preference row (Phase 15);
+  - grace days and limits (D-077);
+  - Serilog 400/409-as-500 and oversized uploads (Phase 17);
   - drag-and-drop ordering deferred.
-- **Ports:** use `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`. The public E2E checks the sitemap URL in `robots.txt` against the address under test.
+- **Ports:** use `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 
 ## Exact next action
-1. If the user asks, push `main` and record the CI run in the Phase 11 file.
-2. Start Phase 12 (`phases/phase-12-customer-booking.md`). Re-validate first:
-   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-namespace "*Discovery"`
-   - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 npx playwright test flows/public-discovery.spec.ts`
-3. Phase 12 builds on this:
-   - the booking wizard at the existing links (`/shops/{slug}/book?service|package|pro|date|time`);
-   - the review command (`IBookingReviewSource` + `RatingBook` exist; the reviews table and aggregates are ready);
-   - favorites; the shop header heart (DV-C05).
-   Use Barber House or new shops in the booking E2E (the schedule flow pauses Al Asala).
+1. If the user asks, push `main` and record the CI run in the Phase 12 file.
+2. Start Phase 13 (`phases/phase-13-shop-dashboard.md`). Re-validate first:
+   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*CustomerAccountTests"`
+   - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 npx playwright test flows/customer-booking.spec.ts` (on a volume seeded within seven days)
+3. Phase 13 builds on:
+   - the shop bookings API (Phase 10: list, detail, transitions, notes, walk-in);
+   - `CustomerBookingAction`/`allowedTransitions` patterns;
+   - the booking UI components (`components/booking/*`, `StatusBadge`, `SlotGrid`, `DateStrip`).
+   Keep Faisal free (schedule E2E), and use Omar and Majed at Barber House carefully: E1/E6 book Omar 3–13 days ahead and cancel, and E7 uses Majed's past visits.
 
 ## Files intentionally left modified
 - None.

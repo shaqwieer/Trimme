@@ -82,7 +82,8 @@ public interface ISlotProbe
 {
     /// <summary>
     /// Bookable starts of an item of <paramref name="durationMinutes"/> for these professionals over local dates <paramref name="from"/>…<paramref name="to"/>,
-    /// earliest first, at most <paramref name="maxSlots"/>.
+    /// earliest first, at most <paramref name="maxSlots"/>. <paramref name="ignoreBookingId"/> is a booking being rescheduled,
+    /// whose own time does not block it.
     /// </summary>
     Task<IReadOnlyList<ProbedSlot>> ProbeAsync(
         ShopId shopId,
@@ -92,7 +93,8 @@ public interface ISlotProbe
         DateOnly from,
         DateOnly to,
         int maxSlots,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        Guid? ignoreBookingId = null);
 
     /// <summary>The shop's local date at <paramref name="now"/>.</summary>
     DateOnly Today(string timeZone, DateTimeOffset now);
@@ -102,7 +104,8 @@ public interface ISlotProbe
 /// <param name="Date">Its local date.</param>
 /// <param name="LocalTime">Its local time, <c>HH:mm</c>.</param>
 /// <param name="ProfessionalIds">Every professional free for the whole item.</param>
-public sealed record ProbedSlot(DateTimeOffset StartsAt, DateOnly Date, string LocalTime, IReadOnlyList<ProfessionalId> ProfessionalIds);
+/// <param name="Period">Morning, Afternoon or Evening (the slot grid's groups, D-009).</param>
+public sealed record ProbedSlot(DateTimeOffset StartsAt, DateOnly Date, string LocalTime, IReadOnlyList<ProfessionalId> ProfessionalIds, string Period);
 
 /// <summary>
 /// Rating aggregates (implemented by the Reviews module, D-092). They are a platform read model with no personal data,
@@ -126,3 +129,31 @@ public sealed record RatingSummary(decimal Average, int Count, IReadOnlyList<int
 {
     public static readonly RatingSummary Empty = new(0, 0, [0, 0, 0, 0, 0]);
 }
+
+/// <summary>
+/// Public cards of shops by id, for the customer's favorites (implemented by the Shops module, D-098). Only shops
+/// discovery would list are returned (active, visible, with something to book), in the order of the ids given.
+/// </summary>
+public interface IShopCards
+{
+    Task<IReadOnlyList<ShopCard>> GetAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken);
+}
+
+/// <summary>A published shop as the favorites list shows it (the shop's own business data only).</summary>
+public sealed record ShopCard(
+    ShopId Id,
+    string Slug,
+    string NameAr,
+    string NameEn,
+    bool IsVerified,
+    string? District,
+    decimal Rating,
+    int ReviewCount,
+    decimal? MinPrice,
+    string? Currency,
+    bool IsOpenNow,
+    DateTimeOffset? ClosesAt,
+    DateTimeOffset? NextOpensAt,
+    string TimeZone,
+    string? CoverUrl,
+    string? LogoUrl);

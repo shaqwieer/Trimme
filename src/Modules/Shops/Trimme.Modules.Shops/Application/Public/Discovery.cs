@@ -74,12 +74,22 @@ internal sealed class DiscoveryCatalog(
 
     public DateTimeOffset Now => clock.GetUtcNow();
 
-    public async Task<IReadOnlyList<DiscoveryCandidate>> CandidatesAsync(DiscoveryArea area, CancellationToken cancellationToken)
+    /// <param name="area">Where to look.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <param name="only">When given, only these shops (the customer's favorites, D-098); the area still applies.</param>
+    public async Task<IReadOnlyList<DiscoveryCandidate>> CandidatesAsync(
+        DiscoveryArea area, CancellationToken cancellationToken, IReadOnlyCollection<ShopId>? only = null)
     {
         List<DiscoveryCandidate> candidates;
         using (scope.Begin(shopId: null))
         {
             var shops = db.Set<Shop>().AsNoTracking().Where(s => s.Status == ShopStatus.Active && s.Location != null);
+            if (only is not null)
+            {
+                var ids = only.Distinct().ToArray();
+                shops = shops.Where(s => ids.Contains(s.Id));
+            }
+
             if (!string.IsNullOrWhiteSpace(area.City))
             {
                 var city = area.City.Trim();

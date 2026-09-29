@@ -161,7 +161,7 @@ Session 6, 2026-09-29.
   - seeded visits record arrival and completion at the visit times.
 - **Message parity test.** It read English plural-branch text as argument names. It now counts real arguments only; the probe (removing `{km}`) fails.
 
-**Commit:** `8832a12`. gitleaks `git` on the committed code: 39 commits, no leaks. Not pushed.
+**Commit:** `8832a12`. gitleaks `git` on the committed code: 39 commits, no leaks. Pushed (with the docs commit `4f441de`) at the start of Phase 12, as the user asked. **CI:** GitHub Actions run 36543760813 on `4f441de` — completed, conclusion **success**.
 
 ## Remaining risks → next phase
 - **Production configuration:**
@@ -170,7 +170,7 @@ Session 6, 2026-09-29.
   - Nginx must overwrite `X-Forwarded-For` to both the web and the API, and the web network goes in `ReverseProxy:KnownNetworks` (D-094). Otherwise all public search shares one rate-limit bucket;
   - the web container must be reachable only through Nginx;
   - the Nginx access logs will record the browser's `lat`/`lng` search parameters (Phase 17).
-- **Booking links** (`/shops/{slug}/book?…`) answer 404 until Phase 12 builds the wizard; `robots.txt` disallows them.
+- **Booking links** (`/shops/{slug}/book?…`) answer 404 until Phase 12 builds the wizard; `robots.txt` disallows them. (Resolved in Phase 12.)
 - **Scale limits (D-091):**
   - text search runs in memory over at most 200 nearest candidates;
   - the earliest-slot probe covers the first 24 shops;

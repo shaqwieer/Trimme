@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
@@ -49,6 +50,7 @@ internal sealed class CustomerBookingSupport(
     IShopDirectory shops,
     IPublicDataScope scope,
     IPlatformSettings settings,
+    IReviewLookup reviews,
     TimeProvider clock)
 {
     public Guid? CustomerId => customer.CustomerId;
@@ -80,8 +82,17 @@ internal sealed class CustomerBookingSupport(
         return query.SingleOrDefaultAsync(b => b.Id == id, cancellationToken);
     }
 
+    /// <summary>The policy, the clock and the customer's own ratings for these bookings, read once per response.</summary>
+    public async Task<CustomerBookingView> ViewAsync(IReadOnlyCollection<Booking> bookings, CancellationToken cancellationToken)
+    {
+        var platform = await settings.GetAsync(cancellationToken);
+        var completed = bookings.Where(b => b.Status == BookingStatus.Completed).Select(b => b.Id.Value).ToList();
+        var ratings = completed.Count == 0 ? new Dictionary<Guid, int>() : await reviews.RatingsByBookingAsync(completed, cancellationToken);
+        return new CustomerBookingView(Now, platform.CancellationCutoffMinutes, platform.ReviewWindowDays, ratings);
+    }
+
     public async Task<CustomerBookingResponse> ResponseAsync(Booking booking, CancellationToken cancellationToken) =>
-        BookingMapping.ToCustomer(booking, await ShopAsync(booking.ShopId, cancellationToken), Now, await CutoffAsync(cancellationToken));
+        BookingMapping.ToCustomer(booking, await ShopAsync(booking.ShopId, cancellationToken), await ViewAsync([booking], cancellationToken));
 }
 
 /// <summary>
@@ -230,7 +241,7 @@ internal sealed class CreateOnlineBookingHandler(
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return new CustomerBookingResult(BookingMapping.ToCustomer(booking, shop, now, await support.CutoffAsync(cancellationToken)), Replayed: false);
+        return new CustomerBookingResult(BookingMapping.ToCustomer(booking, shop, await support.ViewAsync([booking], cancellationToken)), Replayed: false);
     }
 
     private async Task<Result<CustomerBookingResult>?> ReplayAsync(Guid customerId, string key, string hash, CancellationToken cancellationToken)
@@ -427,9 +438,9 @@ internal sealed class ListMyBookingsHandler(TrimmeDbContext db, CustomerBookingS
             shopsById = await shops.FindManyAsync([.. page.Select(b => b.ShopId)], cancellationToken);
         }
 
-        var cutoff = await support.CutoffAsync(cancellationToken);
+        var view = await support.ViewAsync(page, cancellationToken);
         return new PagedResponse<CustomerBookingResponse>(
-            [.. page.Select(b => BookingMapping.ToCustomer(b, shopsById.GetValueOrDefault(b.ShopId), now, cutoff))], query.Page.Page, query.Page.PageSize, total);
+            [.. page.Select(b => BookingMapping.ToCustomer(b, shopsById.GetValueOrDefault(b.ShopId), view))], query.Page.Page, query.Page.PageSize, total);
     }
 }
 

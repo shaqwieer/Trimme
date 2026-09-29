@@ -22,6 +22,16 @@ public sealed record ReviewedBooking(
     string? ItemNameEn,
     DateTimeOffset? CompletedAt);
 
+/// <summary>What the customer liked (design c-rate "ما الذي أعجبك؟"): a fixed list, translated by the clients.</summary>
+public enum ReviewTag
+{
+    Punctuality,
+    Quality,
+    Cleanliness,
+    Manners,
+    Price,
+}
+
 public enum ReviewStatus
 {
     /// <summary>Shown on the shop and professional pages (post-moderation, D-017).</summary>
@@ -43,9 +53,10 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
     public const int MaxCommentLength = 1000;
     public const int MaxNameLength = 120;
 
-    private Review(ReviewId id, ReviewedBooking booking, int rating, string? comment, DateTimeOffset now)
+    private Review(ReviewId id, ReviewedBooking booking, int rating, IReadOnlyCollection<ReviewTag> tags, string? comment, DateTimeOffset now)
         : base(id)
     {
+        Tags = [.. tags.Distinct().Order()];
         ShopId = booking.ShopId;
         CustomerId = booking.CustomerId;
         BookingId = booking.BookingId;
@@ -74,6 +85,8 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
 
     public int Rating { get; private set; }
 
+    public ReviewTag[] Tags { get; private set; } = [];
+
     public string? Comment { get; private set; }
 
     /// <summary>The public name: first name and surname initial (D-017, DV-S15).</summary>
@@ -88,7 +101,7 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>A review of a completed booking, by its customer.</summary>
-    public static Result<Review> Create(ReviewId id, ReviewedBooking booking, int rating, string? comment, DateTimeOffset now)
+    public static Result<Review> Create(ReviewId id, ReviewedBooking booking, int rating, string? comment, DateTimeOffset now, IReadOnlyCollection<ReviewTag>? tags = null)
     {
         ArgumentNullException.ThrowIfNull(booking);
         if (booking.CompletedAt is null)
@@ -107,7 +120,7 @@ public sealed class Review : AggregateRoot<ReviewId>, ICustomerOwned, IPublicCon
             return ReviewErrors.CommentTooLong();
         }
 
-        return new Review(id, booking, rating, text, now);
+        return new Review(id, booking, rating, tags ?? [], text, now);
     }
 }
 
@@ -216,6 +229,13 @@ public static class ReviewAuthor
 public static class ReviewErrors
 {
     public static Error NotCompleted() => Error.Conflict("review.booking_not_completed", "Only a completed booking can be reviewed.");
+
+    public static Error AlreadyExists() => Error.Conflict("review.already_exists", "This booking has already been reviewed.");
+
+    public static Error WindowClosed() =>
+        Error.BusinessRule("review.window_closed", "The time to review this visit has passed.");
+
+    public static Error BookingNotFound() => Error.NotFound("booking.not_found", "The booking was not found.");
 
     public static Error InvalidRating() =>
         Error.Validation("validation.failed", "The rating must be 1 to 5.",

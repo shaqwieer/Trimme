@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { ReviewsPanel } from '@/components/shops/public/ShopPanels';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/data';
@@ -191,7 +192,14 @@ export default async function ProfessionalPage({
             { label: name },
           ]}
         />
-        <section className="flex flex-col items-center gap-3 rounded-card border border-border bg-surface p-6 text-center shadow-e1">
+        <section className="relative flex flex-col items-center gap-3 rounded-card border border-border bg-surface p-6 text-center shadow-e1">
+          {shop.listedInDiscovery && (
+            <FavoriteButton
+              target={{ kind: 'professional', id: pro.id, shopId: shop.id }}
+              name={name}
+              className="absolute end-4 top-4"
+            />
+          )}
           <Avatar name={name} src={pro.avatarUrl} size="xl" />
           <h1 className="text-h1 font-bold text-navy-900">{name}</h1>
           {specialty && <p className="text-body text-text-secondary">{specialty}</p>}

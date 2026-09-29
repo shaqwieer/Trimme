@@ -95,6 +95,17 @@ internal static class BookingEndpoints
             .WithName("RescheduleMyBooking").WithSummary("Moves the booking to another offered slot until the cutoff (Idempotency-Key required).")
             .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        mine.MapGet("/{bookingId:guid}/reschedule/dates", async (Guid bookingId, DateOnly? from, DateOnly? to, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetRescheduleDatesQuery(bookingId, from, to), ct)).ToHttpResult())
+            .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Availability)
+            .WithName("GetMyBookingRescheduleDates")
+            .WithSummary("Dates the booking can move to (same professional and duration) with their free starts; the booking's own time does not block it.")
+            .Produces<RescheduleDatesResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        mine.MapGet("/{bookingId:guid}/reschedule/slots", async (Guid bookingId, DateOnly date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetRescheduleSlotsQuery(bookingId, date), ct)).ToHttpResult())
+            .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Availability)
+            .WithName("GetMyBookingRescheduleSlots").WithSummary("The free starts on one date the booking can move to.")
+            .Produces<RescheduleSlotsResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         mine.MapGet("/{bookingId:guid}/calendar.ics", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetMyBookingCalendarQuery(bookingId), ct) is { } calendar
                     ? Results.Text(calendar, "text/calendar; charset=utf-8")

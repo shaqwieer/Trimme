@@ -68,7 +68,8 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
         DateOnly from,
         DateOnly to,
         int maxSlots,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Guid? ignoreBookingId = null)
     {
         ArgumentNullException.ThrowIfNull(professionalIds);
         if (professionalIds.Count == 0 || maxSlots <= 0 || to < from)
@@ -78,12 +79,12 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
 
         var zone = ScheduleLoader.Zone(timeZone);
         var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
-        var (shop, calendars) = await loader.CalendarsAsync(shopId, zone, professionalIds, from, to, cancellationToken);
+        var (shop, calendars) = await loader.CalendarsAsync(shopId, zone, professionalIds, from, to, cancellationToken, ignoreBookingId);
         var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(from, to, durationMinutes, clock.GetUtcNow(), policy));
         return
         [
             .. slots.Take(maxSlots).Select(s => new ProbedSlot(
-                s.StartsAt, s.Date, s.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture), s.Professionals)),
+                s.StartsAt, s.Date, s.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture), s.Professionals, s.Period.ToString())),
         ];
     }
 

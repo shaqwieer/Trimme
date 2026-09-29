@@ -56,6 +56,18 @@ export function formatDate(
   }).format(toDate(value));
 }
 
+/** Month name for a date block ("سبتمبر" / "Sep"). */
+export function formatMonthShort(
+  value: DateInput,
+  locale: AppLocale,
+  timeZone = OPERATING_TIME_ZONE,
+): string {
+  return new Intl.DateTimeFormat(TIME_LOCALE[locale], {
+    month: locale === 'ar' ? 'long' : 'short',
+    timeZone,
+  }).format(toDate(value));
+}
+
 /** Day-of-month number for calendar cells — a quantity, so always Latin digits (design 3650–3668). */
 export function formatDayNumber(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
   return new Intl.DateTimeFormat(QUANTITY_LOCALE[locale], { day: 'numeric', timeZone }).format(toDate(value));

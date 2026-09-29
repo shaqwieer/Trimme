@@ -102,7 +102,7 @@ Single production domain; Nginx: `/api/*`, `/hubs/*` → API, else → web. Acce
 ## D-032 — Phase split (19 phases) — Accepted (Phase 0)
 Rationale in `MASTER_PLAN.md` §7.
 
-## D-033 — Guest booking via QR / inline auth — Proposed (Phase 12)
+## D-033 — Guest booking via QR / inline auth — Superseded by D-096 (Phase 12)
 Design: phone requested only at confirmation (2059, 2079). Under D-005 default, the review step embeds phone → OTP → name sub-steps before `POST /bookings`; wizard state preserved in the URL.
 
 ## D-034 — Shop week view — Proposed (Phase 13)
@@ -726,3 +726,31 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
 - **Asking.** The browser is asked for geolocation only when the customer presses "allow". Manual choice lists the districts that have listed shops (`GET /public/areas`, their average position), so there is no third-party geocoding call.
 - **Distance on the shop page** is computed in the browser from the cookie, so the shared page never depends on who views it.
 - **Configuration.** `TRIMME_SITE_URL` (the public origin for canonical URLs, hreflang, Open Graph and the sitemap) and `TRIMME_PARTNER_CONTACT_URL` (the optional landing "become a partner" link; the button is hidden when empty) are runtime settings of the web server.
+
+## D-096 — Guests confirm through a sign-in round trip, not inline auth sub-steps — Accepted (Phase 12; supersedes the inline part of D-033)
+- **What.** A guest goes through the whole wizard. At the review step "confirm" first tries a silent session refresh (the access cookie may just have expired). If there is no session it goes to the existing mobile sign-in with `returnTo` = the wizard URL at the review step. The OTP pages carry `returnTo` through sign-in → verify → complete profile (new customers), then back to the same review, where the customer confirms again.
+- **Why.** The auth screens, their rate limits, CSRF handling and tests already exist (Phase 04). Embedding phone → code → name inside the wizard would duplicate them and mix auth state into booking state. The URL already holds every choice (D-028): service or package, professional, date and local time, step. The note is kept only in the page, so it is never put in a URL.
+- **Safety.** The returned review re-checks the time against fresh slots, and moves to the time step with a notice if it is gone. `returnTo` stays under `safeReturnTo`'s 512-character limit (web test). `booking.profile_incomplete` also leads to complete-profile and back. Staff accounts see "customers only" and cannot confirm.
+- **Idempotency.** The wizard keeps one idempotency key per request tuple (offer, professional, start, note): a double click or a retry after a network error replays the same booking, and any change gets a new key (R-BKG-05).
+- **Conflict.** A 409 `booking.slot_unavailable` returns to the time step with "this time was just taken" (`notice=conflict` in the URL) and fresh slots (DV-A24).
+
+## D-097 — Reviews by customers, and reschedule availability — Accepted (Phase 12)
+- **Review command.** `POST /me/bookings/{id}/review`, customer only, rate-limited (`review`). The booking is read through `IBookingReviewSource`, and only the customer's own is found (404 otherwise).
+  - Not completed → 409 `review.booking_not_completed`.
+  - After `ReviewWindowDays` (platform setting, default 7) counted from the completion time → 422 `review.window_closed`.
+  - A second review → 409 `review.already_exists`, also when two submissions race: the unique `booking_id` index decides.
+  - Optional tags from a fixed list (`Punctuality`, `Quality`, `Cleanliness`, `Manners`, `Price`; design "ما الذي أعجبك؟"), stored once each and in order. Comment up to 1000 characters.
+- **Aggregates.** `RatingBook` now upserts both aggregate rows with one atomic `INSERT … ON CONFLICT DO UPDATE` that adds in SQL, inside the review's transaction. Parallel reviews of one shop never lose an update, and the first two never race on creating the row (integration test: a double submit gives one 201 and one 409; six parallel reviews give exact totals). The public cache is evicted again after the commit.
+- **Booking view.** `Booking.CompletedAt` is the time of the transition to Completed. The customer's booking response adds `Review` to `allowedActions` while the booking is completed, has a customer, is unrated and is within the window. It also carries `reviewRating` and `reviewDeadline`. Ratings come from `IReviewLookup`, filtered by the customer.
+- **Reschedule availability.** `GET /me/bookings/{id}/reschedule/dates` and `/reschedule/slots` return the same online rules as the public slots (lead time, horizon, grid, every collision) for the booking's own professional and duration. The booking's own interval is ignored, so it can move a few minutes. They are refused after the cutoff or for a closed booking, and report `bookable: false` while the shop takes no online bookings. The move itself is the Phase 10 command (D-089).
+- **Demo data.** Sara (`+966500100303`) has eight completed, unreviewed visits at Barber House with Majed, one to four days before seeding, and one upcoming booking. They serve the review E2E. On a database seeded more than seven days ago none is reviewable, so reset the volume.
+
+## D-098 — Favorites — Accepted (Phase 12)
+- **Model.** `customers.favorites` is customer-owned (D-085), so only its customer reads, adds or removes it; the data layer refuses anything else. Each row is one saved shop, or one saved professional with the professional's own shop as `shop_id`: composite FK `(shop_id, professional_id)`, so a favorite can never point at another shop's professional. Two filtered unique indexes make saving idempotent; at most 200 of each kind per customer.
+- **API.**
+  - `GET /me/favorites` returns the cards discovery would show. `IShopCards` runs the discovery pipeline on those shop ids, in chunks of the candidate cap. Professional cards come from `IProfessionalDirectory` in one multi-shop public scope, plus ratings.
+  - The response also lists every saved id, so hearts can be filled.
+  - Saved rows whose shop left discovery, or whose professional was disabled, are kept but not shown.
+  - `PUT`/`DELETE /me/favorites/shops/{id}` and `…/professionals/{id}` (PUT takes `shopId`) are idempotent, rate-limited (`favorites`), and 404 for a shop discovery does not list or a professional not active in that shop.
+- **Hearts.** Client islands on the shop and professional pages. They probe `GET /me/favorites` with a plain `fetch`, so an anonymous visitor's 401 starts no session refresh or redirect. Signed out, the heart is a sign-in link with `returnTo`; staff (403) see none. Toggling is optimistic with rollback.
+- **Module order.** Customers now comes after Professionals in `ModuleCatalog`, because the favorites model references the professional entity by name.

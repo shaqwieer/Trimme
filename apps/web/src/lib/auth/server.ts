@@ -40,3 +40,16 @@ export async function redirectIfSignedIn(locale: string, returnTo: string | unde
     redirect({ href: returnTo ?? homeFor(me.userType), locale: asLocale(locale) });
   }
 }
+
+/**
+ * Guard for the customer's own pages: a signed-in customer with a complete profile (name), else the complete-profile
+ * step with `returnTo`. Returns `null` for staff accounts, which the page answers with a permission notice.
+ */
+export async function requireCustomer(locale: string, returnTo: string): Promise<Me | null> {
+  const me = await requireUser(locale, returnTo);
+  if (me.userType !== 'Customer') return null;
+  if (!me.profileComplete) {
+    redirect({ href: withReturnTo('/auth/complete-profile', returnTo), locale: asLocale(locale) });
+  }
+  return me;
+}

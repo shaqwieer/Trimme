@@ -1034,6 +1034,88 @@
         }
       }
     },
+    "/api/v1/me/bookings/{bookingId}/review": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Reviews the customer\u0027s own completed booking once, within the review window; published with the first name and initial only.",
+        "operationId": "SubmitReview",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscriptions": {
       "get": {
         "tags": [
@@ -6467,6 +6549,135 @@
         }
       }
     },
+    "/api/v1/me/bookings/{bookingId}/reschedule/dates": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Dates the booking can move to (same professional and duration) with their free starts; the booking\u0027s own time does not block it.",
+        "operationId": "GetMyBookingRescheduleDates",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescheduleDatesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}/reschedule/slots": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "The free starts on one date the booking can move to.",
+        "operationId": "GetMyBookingRescheduleSlots",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescheduleSlotsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/bookings/{bookingId}/calendar.ics": {
       "get": {
         "tags": [
@@ -7039,6 +7250,183 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/me/favorites": {
+      "get": {
+        "tags": [
+          "Customer: favorites"
+        ],
+        "summary": "The customer\u0027s saved shops and professionals, most recently saved first; ones discovery no longer shows are left out of the cards.",
+        "operationId": "ListMyFavorites",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoritesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/favorites/shops/{shopId}": {
+      "put": {
+        "tags": [
+          "Customer: favorites"
+        ],
+        "summary": "Saves a shop (idempotent).",
+        "operationId": "SaveShopFavorite",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Customer: favorites"
+        ],
+        "summary": "Removes a saved shop (idempotent).",
+        "operationId": "RemoveShopFavorite",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/me/favorites/professionals/{professionalId}": {
+      "put": {
+        "tags": [
+          "Customer: favorites"
+        ],
+        "summary": "Saves an active professional of a listed shop (idempotent).",
+        "operationId": "SaveProfessionalFavorite",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveProfessionalFavoriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Customer: favorites"
+        ],
+        "summary": "Removes a saved professional (idempotent).",
+        "operationId": "RemoveProfessionalFavorite",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -10132,7 +10520,8 @@
       "CustomerBookingAction": {
         "enum": [
           "Cancel",
-          "Reschedule"
+          "Reschedule",
+          "Review"
         ]
       },
       "CustomerBookingResponse": {
@@ -10152,6 +10541,8 @@
           "amountDue",
           "allowedActions",
           "cancellationCutoffMinutes",
+          "reviewRating",
+          "reviewDeadline",
           "version"
         ],
         "type": "object",
@@ -10215,12 +10606,26 @@
             "type": "integer",
             "format": "int32"
           },
+          "reviewRating": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "reviewDeadline": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "version": {
             "type": "integer",
             "format": "uint32"
           }
         },
-        "description": "A booking as its customer sees it, with what they may still do (cancel/reschedule until the cutoff, D-015)."
+        "description": "A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a\ncompleted visit until \u0060ReviewDeadline\u0060. \u0060ReviewRating\u0060 is the stars they gave, once reviewed."
       },
       "DayOfWeek": {
         "enum": [
@@ -10395,6 +10800,226 @@
             }
           }
         }
+      },
+      "FavoriteProfessionalResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "avatarUrl",
+          "shopId",
+          "shopSlug",
+          "shopNameAr",
+          "shopNameEn",
+          "rating",
+          "reviewCount",
+          "savedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A saved professional with their shop; never a phone or WhatsApp number (R-PRO-02)."
+      },
+      "FavoriteShopResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "isVerified",
+          "district",
+          "rating",
+          "reviewCount",
+          "minPrice",
+          "currency",
+          "isOpenNow",
+          "closesAt",
+          "nextOpensAt",
+          "timeZone",
+          "coverUrl",
+          "logoUrl",
+          "savedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "isVerified": {
+            "type": "boolean"
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rating": {
+            "type": "number",
+            "format": "double"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPrice": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isOpenNow": {
+            "type": "boolean"
+          },
+          "closesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "nextOpensAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "logoUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A saved shop, as its discovery card shows it."
+      },
+      "FavoritesResponse": {
+        "required": [
+          "shops",
+          "professionals",
+          "shopIds",
+          "professionalIds"
+        ],
+        "type": "object",
+        "properties": {
+          "shops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteShopResponse"
+            }
+          },
+          "professionals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteProfessionalResponse"
+            }
+          },
+          "shopIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "description": "The customer\u0027s favorites, most recently saved first. Only shops and professionals discovery would show are listed;\n\u0060ShopIds\u0060 and \u0060ProfessionalIds\u0060 are everything saved (to fill the heart buttons)."
       },
       "ForgotPasswordRequest": {
         "required": [
@@ -10659,6 +11284,48 @@
           "Hidden"
         ],
         "description": "Platform moderation of a shop\u0027s service or package (DV-S02). A hidden item is never published."
+      },
+      "MyReviewResponse": {
+        "required": [
+          "id",
+          "bookingId",
+          "rating",
+          "tags",
+          "comment",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bookingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewTag"
+            }
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The review the customer just published (shown to them; the public list shows first name \u002B initial only)."
       },
       "NextSlotResponse": {
         "required": [
@@ -11832,7 +12499,8 @@
           "price",
           "currency",
           "durationMinutes",
-          "items"
+          "items",
+          "professionalIds"
         ],
         "type": "object",
         "properties": {
@@ -11877,9 +12545,16 @@
             "items": {
               "$ref": "#/components/schemas/PublicPackageItemResponse"
             }
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
-        "description": "A published package: itself and every item service are available."
+        "description": "A published package: itself and every item service are available. \u0060ProfessionalIds\u0060 are the professionals\nassigned to every one of its services (who can perform the whole package)."
       },
       "PublicProfessionalDetailResponse": {
         "required": [
@@ -12163,7 +12838,8 @@
           "price",
           "currency",
           "durationMinutes",
-          "onlineBookable"
+          "onlineBookable",
+          "professionalIds"
         ],
         "type": "object",
         "properties": {
@@ -12212,9 +12888,16 @@
           },
           "onlineBookable": {
             "type": "boolean"
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
-        "description": "A published service: active, not archived, not hidden by the platform. \u0060NameEn\u0060 may be null (D-070)."
+        "description": "A published service: active, not archived, not hidden by the platform. \u0060NameEn\u0060 may be null (D-070).\n\u0060ProfessionalIds\u0060 are the professionals assigned to it (the booking wizard shows the active ones among them)."
       },
       "PublicShopLocationResponse": {
         "required": [
@@ -12604,6 +13287,107 @@
         },
         "description": "Moves the booking to another offered start (and optionally another eligible professional). Send the version read."
       },
+      "RescheduleDateResponse": {
+        "required": [
+          "date",
+          "slotCount"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "slotCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "RescheduleDatesResponse": {
+        "required": [
+          "bookable",
+          "blockedReason",
+          "timeZone",
+          "dates"
+        ],
+        "type": "object",
+        "properties": {
+          "bookable": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RescheduleDateResponse"
+            }
+          }
+        },
+        "description": "Dates the customer can move their booking to (same professional and duration), with the number of free starts on each.\n\u0060Bookable\u0060 is false with the reason while the shop takes no online bookings (reschedule is then refused, D-087)."
+      },
+      "RescheduleSlotResponse": {
+        "required": [
+          "startsAt",
+          "localTime",
+          "period"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localTime": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          }
+        }
+      },
+      "RescheduleSlotsResponse": {
+        "required": [
+          "bookable",
+          "blockedReason",
+          "timeZone",
+          "date",
+          "slots"
+        ],
+        "type": "object",
+        "properties": {
+          "bookable": {
+            "type": "boolean"
+          },
+          "blockedReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RescheduleSlotResponse"
+            }
+          }
+        }
+      },
       "ResetPasswordRequest": {
         "required": [
           "userId",
@@ -12647,6 +13431,16 @@
           }
         }
       },
+      "ReviewTag": {
+        "enum": [
+          "Punctuality",
+          "Quality",
+          "Cleanliness",
+          "Manners",
+          "Price"
+        ],
+        "description": "What the customer liked (design c-rate \u0022\u0645\u0627 \u0627\u0644\u0630\u064A \u0623\u0639\u062C\u0628\u0643\u061F\u0022): a fixed list, translated by the clients."
+      },
       "RevokedSessionsResponse": {
         "required": [
           "revoked"
@@ -12689,6 +13483,19 @@
             }
           }
         }
+      },
+      "SaveProfessionalFavoriteRequest": {
+        "required": [
+          "shopId"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "The professional\u0027s shop (a professional belongs to exactly one shop)."
       },
       "ScheduleEntryState": {
         "enum": [
@@ -13875,6 +14682,36 @@
           }
         }
       },
+      "SubmitReviewRequest": {
+        "required": [
+          "rating",
+          "tags",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReviewTag"
+            }
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Stars 1\u20135, optional tags from the fixed list, optional comment (\u2264 1000 characters)."
+      },
       "SubscriptionCounts": {
         "required": [
           "active",
@@ -14900,6 +15737,9 @@
     },
     {
       "name": "Admin: bookings"
+    },
+    {
+      "name": "Customer: favorites"
     },
     {
       "name": "Admin: settings"

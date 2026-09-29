@@ -6,39 +6,44 @@ using Trimme.Modules.Reviews.Domain;
 namespace Trimme.Modules.Reviews.Application;
 
 /// <summary>
-/// Keeps the rating aggregates in step with published reviews (R-RVW-01, D-092): every change is applied to the shop's and
-/// the professional's row in the caller's unit of work, so a review and its totals commit or roll back together.
+/// Keeps the rating aggregates in step with published reviews (R-RVW-01, D-092/D-097). Each change is one atomic
+/// `INSERT … ON CONFLICT DO UPDATE` that adds to the counters in SQL, so concurrent reviews of the same shop or
+/// professional never lose an update and the first two reviews never race on creating the row. Call it inside the
+/// review's transaction, so a review and its totals commit or roll back together.
 /// </summary>
 internal static class RatingBook
 {
     public static async Task ApplyAsync(TrimmeDbContext db, Review review, int sign, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var shop = await GetOrAddAsync(db, RatingSubjectKind.Shop, review.ShopId.Value, review, cancellationToken);
-        var professional = await GetOrAddAsync(db, RatingSubjectKind.Professional, review.ProfessionalId.Value, review, cancellationToken);
-        shop.Apply(review.Rating, sign, now);
-        professional.Apply(review.Rating, sign, now);
+        await UpsertAsync(db, nameof(RatingSubjectKind.Shop), review.ShopId.Value, review, sign, now, cancellationToken);
+        await UpsertAsync(db, nameof(RatingSubjectKind.Professional), review.ProfessionalId.Value, review, sign, now, cancellationToken);
     }
 
     public static ReviewedBooking ToReviewed(ReviewableBooking booking) =>
         new(booking.BookingId, booking.ShopId, booking.CustomerId, booking.CustomerName, booking.ProfessionalId,
             booking.ItemNameAr, booking.ItemNameEn, booking.CompletedAt);
 
-    private static async Task<RatingAggregate> GetOrAddAsync(
-        TrimmeDbContext db, RatingSubjectKind subject, Guid subjectId, Review review, CancellationToken cancellationToken)
+    private static Task<int> UpsertAsync(
+        TrimmeDbContext db, string subject, Guid subjectId, Review review, int sign, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        var local = db.Set<RatingAggregate>().Local.SingleOrDefault(a => a.Subject == subject && a.SubjectId == subjectId);
-        if (local is not null)
-        {
-            return local;
-        }
-
-        var row = await db.Set<RatingAggregate>().SingleOrDefaultAsync(a => a.Subject == subject && a.SubjectId == subjectId, cancellationToken);
-        if (row is null)
-        {
-            row = RatingAggregate.For(subject, subjectId, review.ShopId);
-            db.Add(row);
-        }
-
-        return row;
+        var shopId = review.ShopId.Value;
+        var sum = sign * review.Rating;
+        int Star(int stars) => review.Rating == stars ? sign : 0;
+        return db.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO reviews.rating_aggregates AS a
+                (subject, subject_id, shop_id, count, sum, stars1, stars2, stars3, stars4, stars5, updated_at)
+            VALUES ({subject}, {subjectId}, {shopId}, {sign}, {sum}, {Star(1)}, {Star(2)}, {Star(3)}, {Star(4)}, {Star(5)}, {now})
+            ON CONFLICT (subject, subject_id) DO UPDATE SET
+                count = a.count + EXCLUDED.count,
+                sum = a.sum + EXCLUDED.sum,
+                stars1 = a.stars1 + EXCLUDED.stars1,
+                stars2 = a.stars2 + EXCLUDED.stars2,
+                stars3 = a.stars3 + EXCLUDED.stars3,
+                stars4 = a.stars4 + EXCLUDED.stars4,
+                stars5 = a.stars5 + EXCLUDED.stars5,
+                updated_at = EXCLUDED.updated_at
+            """,
+            cancellationToken);
     }
 }

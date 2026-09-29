@@ -172,7 +172,9 @@ test.describe('public discovery (Phase 11)', () => {
     const data = await jsonLd(page);
     const business = data.find((d) => d['@type'] === 'HairSalon')!;
     expect(business).toMatchObject({ name: 'باربر هاوس', geo: { '@type': 'GeoCoordinates' } });
-    expect(business.aggregateRating).toMatchObject({ '@type': 'AggregateRating', reviewCount: 2 });
+    // Two seeded reviews; the review E2E (Phase 12) adds one per run, so there may be more.
+    expect(business.aggregateRating).toMatchObject({ '@type': 'AggregateRating' });
+    expect((business.aggregateRating as { reviewCount: number }).reviewCount).toBeGreaterThanOrEqual(2);
     expect(data.map((d) => d['@type'])).toContain('BreadcrumbList');
     await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
       'href',

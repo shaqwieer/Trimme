@@ -323,6 +323,12 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public bool IsActive => BookingRules.IsActive(Status);
 
+    /// <summary>When the shop marked the visit Completed (from the history); null while it is not Completed.</summary>
+    public DateTimeOffset? CompletedAt =>
+        Status == BookingStatus.Completed
+            ? _history.Where(h => h.ToStatus == BookingStatus.Completed).Select(h => (DateTimeOffset?)h.OccurredAt).LastOrDefault()
+            : null;
+
     /// <summary>
     /// A shop's transition (D-016, D-087): confirm, mark arrived (from an hour before the start), complete, mark a no-show
     /// (once the start has passed) or cancel (with a reason). Admins cancel through the same rule with their own actor.

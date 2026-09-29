@@ -25,3 +25,12 @@ public sealed record ReviewableBooking(
     string ItemNameAr,
     string? ItemNameEn,
     DateTimeOffset? CompletedAt);
+
+/// <summary>
+/// The customer's own submitted reviews, by booking (implemented by the Reviews module, D-097). It reads through the caller's
+/// data scope, so a customer sees only their own. Used to show "rated ★ n" and hide the review action.
+/// </summary>
+public interface IReviewLookup
+{
+    Task<IReadOnlyDictionary<Guid, int>> RatingsByBookingAsync(IReadOnlyCollection<Guid> bookingIds, CancellationToken cancellationToken);
+}

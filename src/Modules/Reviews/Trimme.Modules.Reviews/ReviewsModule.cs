@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Modules;
@@ -25,6 +26,7 @@ public sealed class ReviewsModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<IRatingReader, RatingReader>();
+        services.AddScoped<IReviewLookup, Application.Customer.ReviewLookup>();
         services.AddSingleton<IDevSeeder, DemoReviewsSeeder>();
     }
 

@@ -14,19 +14,22 @@ using Trimme.Modules.Subscriptions;
 
 namespace Trimme.Api;
 
-/// <summary>Explicit list of feature modules composed into the API (D-038). Order is not significant.</summary>
+/// <summary>
+/// Explicit list of feature modules composed into the API (D-038). Order matters only for the model: a module that
+/// references another module's entity by name (<c>HasShopScopedReference</c>) comes after it.
+/// </summary>
 public static class ModuleCatalog
 {
     public static IReadOnlyList<IModule> All { get; } =
     [
         new IdentityModule(),
-        new CustomersModule(),
         new ShopsModule(),
         new ProfessionalsModule(),
         new ServicesModule(),
         new AvailabilityModule(),
         new BookingsModule(),
         new ReviewsModule(),
+        new CustomersModule(),
         new SubscriptionsModule(),
         new NotificationsModule(),
         new QrAnalyticsModule(),

@@ -13,10 +13,40 @@ export function setPathname(pathname: string) {
   currentPathname = pathname;
 }
 
+/** Like Next.js, history.pushState / replaceState update `useSearchParams` (the booking wizard keeps its steps there). */
+const LOCATION_EVENT = 'test:location';
+if (typeof window !== 'undefined' && !('__trimmePatched' in window.history)) {
+  for (const method of ['pushState', 'replaceState'] as const) {
+    const original = window.history[method].bind(window.history);
+    window.history[method] = (...args: Parameters<History['pushState']>) => {
+      original(...args);
+      window.dispatchEvent(new Event(LOCATION_EVENT));
+    };
+  }
+  Object.defineProperty(window.history, '__trimmePatched', { value: true });
+}
+
 vi.mock(import('next/navigation'), async (importOriginal) => {
   const actual = await importOriginal();
+  const { useMemo, useSyncExternalStore } = await import('react');
+  const subscribe = (onChange: () => void) => {
+    window.addEventListener(LOCATION_EVENT, onChange);
+    window.addEventListener('popstate', onChange);
+    return () => {
+      window.removeEventListener(LOCATION_EVENT, onChange);
+      window.removeEventListener('popstate', onChange);
+    };
+  };
   return {
     ...actual,
+    useSearchParams: (() => {
+      const search = useSyncExternalStore(
+        subscribe,
+        () => window.location.search,
+        () => '',
+      );
+      return useMemo(() => new URLSearchParams(search), [search]);
+    }) as unknown as typeof actual.useSearchParams,
     usePathname: () => currentPathname,
     useRouter: () =>
       ({

@@ -352,6 +352,33 @@
       "revokedOthers": "{count, plural, one {# device signed out} other {# devices signed out}}",
       "revoked": "Signed out of the device",
       "onlyThisDevice": "No other devices are signed in."
+    },
+    "editProfile": "Edit personal info",
+    "groups": {
+      "preferences": "Preferences",
+      "account": "Account",
+      "support": "Support"
+    },
+    "rows": {
+      "language": "Language",
+      "notifications": "WhatsApp notifications",
+      "notificationsSoon": "Managed here soon",
+      "personal": "Personal info",
+      "bookings": "My appointments",
+      "favorites": "Favourites",
+      "payment": "Payment",
+      "paymentValue": "At the shop",
+      "privacy": "Privacy & data",
+      "terms": "Terms of use"
+    },
+    "profile": {
+      "title": "Personal info",
+      "nameLabel": "Full name",
+      "languageLabel": "Language of the app and messages",
+      "arabic": "العربية",
+      "english": "English",
+      "save": "Save changes",
+      "saved": "Your details were saved."
     }
   },
   "adminHome": {
@@ -417,7 +444,22 @@
     "shop_online_booking_not_paused": "Online booking is not paused.",
     "availability_offer_not_found": "This service is not offered.",
     "availability_offer_not_online_bookable": "This service cannot be booked online.",
-    "availability_professional_not_eligible": "This professional does not provide this service."
+    "availability_professional_not_eligible": "This professional does not provide this service.",
+    "booking_slot_unavailable": "That time was just booked. Pick another one.",
+    "booking_not_found": "The appointment was not found.",
+    "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the shop directly.",
+    "booking_not_reschedulable": "This appointment can't be changed now.",
+    "booking_invalid_transition": "This appointment's status can't change now.",
+    "booking_shop_not_accepting": "The shop isn't taking online bookings right now.",
+    "booking_offer_not_found": "The service is no longer offered.",
+    "booking_offer_not_online_bookable": "This service can't be booked online.",
+    "booking_professional_not_eligible": "This barber doesn't offer this service.",
+    "booking_profile_incomplete": "Add your name to your profile before booking.",
+    "idempotency_key_reused": "The request changed while sending. Try again.",
+    "review_already_exists": "You already rated this visit.",
+    "review_window_closed": "The time to rate this visit has passed.",
+    "review_booking_not_completed": "You can rate it once the visit is completed.",
+    "favorites_limit_reached": "You reached the favourites limit."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -1629,5 +1671,231 @@
         }
       }
     }
+  },
+  "booking": {
+    "meta": {
+      "title": "Book at {shop}"
+    },
+    "steps": {
+      "service": "Service",
+      "professional": "Barber",
+      "date": "Date",
+      "time": "Time",
+      "review": "Review"
+    },
+    "titles": {
+      "service": "Choose the service",
+      "professional": "Choose the barber",
+      "date": "Choose the date",
+      "time": "Choose the time",
+      "review": "Review your booking"
+    },
+    "back": "Previous step",
+    "backToShop": "Back to the shop",
+    "next": "Next",
+    "confirm": "Confirm booking",
+    "loading": "Loading times…",
+    "retry": "Try again",
+    "services": "Services",
+    "packages": "Packages",
+    "noServices": "This shop has no services you can book online right now.",
+    "any": {
+      "title": "Any available barber",
+      "body": "We pick the earliest one for you",
+      "tag": "More times"
+    },
+    "noProfessionals": "No barber offers this service right now.",
+    "timeZoneNote": "Times are in Riyadh time",
+    "slotCount": "{count, plural, =0 {No times available} one {1 time available} other {# times available}}",
+    "noDates": "There are no free times in the coming days.",
+    "tryAny": "Choose \"Any available barber\" to see more times.",
+    "durationNote": "{service} takes {duration} — only times that fit it are shown",
+    "loadError": "Couldn't load the times — nothing was booked. Check your connection and try again.",
+    "blocked": {
+      "paused": "The shop has paused online booking. Try later or contact the shop.",
+      "other": "This shop isn't taking online bookings right now."
+    },
+    "notices": {
+      "timeGone": {
+        "title": "That time is no longer available",
+        "body": "Pick another time from the ones available now."
+      },
+      "dateGone": {
+        "title": "That day is no longer available",
+        "body": "Pick another day."
+      },
+      "conflict": {
+        "title": "This time was just booked",
+        "body": "Another customer booked it first. We refreshed the times — pick another one."
+      }
+    },
+    "summary": {
+      "service": "Service",
+      "professional": "Barber",
+      "anyAssigned": "Any available barber — assigned when you confirm",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "total": "Total (paid at the shop)"
+    },
+    "note": {
+      "label": "Note for the barber",
+      "placeholder": "e.g. short fade on the sides"
+    },
+    "policy": {
+      "title": "Cancelling and payment",
+      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the shop — there is no payment in TRIMME."
+    },
+    "window": {
+      "hours": "{count, plural, one {1 hour} other {# hours}}",
+      "minutes": "{count, plural, one {1 minute} other {# minutes}}"
+    },
+    "signInNote": "When you confirm we ask for your mobile number and send a code on WhatsApp, then bring you back to this step.",
+    "customersOnly": "Only customer accounts can book. Sign in with a customer account."
+  },
+  "bookings": {
+    "title": "My appointments",
+    "tabsLabel": "Appointments",
+    "tabs": {
+      "upcoming": "Upcoming",
+      "past": "Past"
+    },
+    "empty": {
+      "title": "Your schedule is empty",
+      "body": "Book your next haircut at your favourite shops in two taps.",
+      "pastTitle": "No past appointments yet",
+      "pastBody": "Your visits appear here once they are done.",
+      "cta": "Explore shops"
+    },
+    "actions": {
+      "details": "Details",
+      "detailsLabel": "Details of the {service} appointment",
+      "reschedule": "Reschedule",
+      "review": "Rate the visit",
+      "rated": "Rated ★ {rating}",
+      "rebook": "Book again"
+    },
+    "bookNext": {
+      "title": "Book your next appointment",
+      "body": "Same shop, same barber, two taps"
+    },
+    "detail": {
+      "title": "Appointment details",
+      "addToCalendar": "Add to calendar",
+      "directions": "Directions",
+      "rows": {
+        "shop": "Shop",
+        "service": "Service",
+        "professional": "Barber",
+        "duration": "Duration",
+        "reference": "Booking number",
+        "note": "Your note",
+        "cancellationReason": "Cancellation reason"
+      },
+      "total": "Total (paid at the shop)",
+      "policy": {
+        "title": "Cancellation policy",
+        "before": "You can cancel or reschedule in TRIMME for free until {time}.",
+        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the shop directly.",
+        "callShop": "Call the shop"
+      },
+      "window": {
+        "hours": "{count, plural, one {1 hour} other {# hours}}",
+        "minutes": "{count, plural, one {1 minute} other {# minutes}}"
+      },
+      "created": {
+        "confirmed": {
+          "title": "Your booking is confirmed",
+          "body": "We send the details to you on WhatsApp. You can manage it from \"My appointments\" at any time."
+        },
+        "pending": {
+          "title": "Your booking request was sent",
+          "body": "The shop will confirm it soon, and you will get a WhatsApp message."
+        }
+      },
+      "rescheduled": "Your appointment was moved.",
+      "cancelled": "The appointment was cancelled and the shop was notified.",
+      "reviewed": "Your review is published — thank you."
+    },
+    "cancel": {
+      "open": "Cancel appointment",
+      "title": "Cancel the appointment on {when}?",
+      "body": "The shop is told at once and the time is offered to others. This cannot be undone.",
+      "reasonLabel": "Reason (optional)",
+      "reasons": {
+        "emergency": "An emergency",
+        "timeChanged": "My plans changed",
+        "bookLater": "I'll book later"
+      },
+      "confirm": "Yes, cancel it",
+      "keep": "Keep it"
+    },
+    "reschedule": {
+      "title": "Reschedule",
+      "currentTitle": "Your current appointment stays until you confirm the new one",
+      "current": "Current appointment: {when}. It stays booked until you confirm the new one.",
+      "blocked": "The shop isn't taking online changes right now.",
+      "pickDate": "Pick a new date",
+      "pickTime": "Available times — {date}",
+      "pickPrompt": "Pick a new date and time",
+      "new": "New: {when}",
+      "confirm": "Confirm new time",
+      "loading": "Loading times…",
+      "taken": "That time was just booked — pick another from the refreshed times.",
+      "notAllowed": "This appointment can't be changed in TRIMME now.",
+      "backToBooking": "Back to the appointment"
+    }
+  },
+  "review": {
+    "title": "Rate the visit",
+    "heading": "How was your visit with {name}?",
+    "starsLegend": "Your rating",
+    "stars": {
+      "0": "Choose your rating",
+      "1": "Poor",
+      "2": "Fair",
+      "3": "Good",
+      "4": "Excellent",
+      "5": "Exceptional"
+    },
+    "tagsLegend": "What did you like?",
+    "tags": {
+      "Punctuality": "Punctuality",
+      "Quality": "Cut quality",
+      "Cleanliness": "Cleanliness",
+      "Manners": "Service",
+      "Price": "Price"
+    },
+    "commentLabel": "Comment",
+    "commentPlaceholder": "Share details to help others",
+    "privacy": "Your review shows your first name and initial only, and cannot be edited once published.",
+    "submitIdle": "Choose the stars first",
+    "submit": "Submit review",
+    "done": {
+      "title": "Thanks for your review",
+      "body": "Your review is published — thank you."
+    },
+    "backToBooking": "Back to the appointment",
+    "unavailable": {
+      "reviewed": "You already rated this visit.",
+      "closed": "The time to rate this visit has passed.",
+      "notCompleted": "You can rate it once the visit is completed."
+    }
+  },
+  "favorites": {
+    "title": "Favourites",
+    "count": "{shops, plural, one {{shopsText} shop} other {{shopsText} shops}} · {pros, plural, one {{prosText} barber} other {{prosText} barbers}}",
+    "shops": "Shops",
+    "professionals": "Barbers",
+    "empty": {
+      "title": "No favourites yet",
+      "body": "Tap the heart on any shop or barber to find them here quickly.",
+      "cta": "Explore shops"
+    },
+    "add": "Add {name} to favourites",
+    "remove": "Remove {name} from favourites",
+    "signInToSave": "Sign in to save {name} to favourites",
+    "book": "Book",
+    "bookWith": "Book with {name}"
   }
 }

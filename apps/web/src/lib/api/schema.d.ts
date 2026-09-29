@@ -378,6 +378,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/bookings/{bookingId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reviews the customer's own completed booking once, within the review window; published with the first name and initial only. */
+        post: operations["SubmitReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscriptions": {
         parameters: {
             query?: never;
@@ -1911,6 +1928,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/bookings/{bookingId}/reschedule/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dates the booking can move to (same professional and duration) with their free starts; the booking's own time does not block it. */
+        get: operations["GetMyBookingRescheduleDates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}/reschedule/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The free starts on one date the booking can move to. */
+        get: operations["GetMyBookingRescheduleSlots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/bookings/{bookingId}/calendar.ics": {
         parameters: {
             query?: never;
@@ -2059,6 +2110,59 @@ export interface paths {
         /** Cancels on the shop's behalf with a reason (audited). */
         post: operations["AdminCancelBooking"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's saved shops and professionals, most recently saved first; ones discovery no longer shows are left out of the cards. */
+        get: operations["ListMyFavorites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/shops/{shopId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Saves a shop (idempotent). */
+        put: operations["SaveShopFavorite"];
+        post?: never;
+        /** Removes a saved shop (idempotent). */
+        delete: operations["RemoveShopFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/favorites/professionals/{professionalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Saves an active professional of a listed shop (idempotent). */
+        put: operations["SaveProfessionalFavorite"];
+        post?: never;
+        /** Removes a saved professional (idempotent). */
+        delete: operations["RemoveProfessionalFavorite"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2922,8 +3026,11 @@ export interface components {
             token: string;
         };
         /** @enum {unknown} */
-        CustomerBookingAction: "Cancel" | "Reschedule";
-        /** @description A booking as its customer sees it, with what they may still do (cancel/reschedule until the cutoff, D-015). */
+        CustomerBookingAction: "Cancel" | "Reschedule" | "Review";
+        /**
+         * @description A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
+         *     completed visit until `ReviewDeadline`. `ReviewRating` is the stars they gave, once reviewed.
+         */
         CustomerBookingResponse: {
             /** Format: uuid */
             id: string;
@@ -2945,6 +3052,10 @@ export interface components {
             allowedActions: components["schemas"]["CustomerBookingAction"][];
             /** Format: int32 */
             cancellationCutoffMinutes: number;
+            /** Format: int32 */
+            reviewRating: null | number;
+            /** Format: date-time */
+            reviewDeadline: null | string;
             /** Format: uint32 */
             version: number;
         };
@@ -3004,6 +3115,65 @@ export interface components {
         };
         EditablePolicyRequest: {
             editableFields: components["schemas"]["ShopProfileField"][];
+        };
+        /** @description A saved professional with their shop; never a phone or WhatsApp number (R-PRO-02). */
+        FavoriteProfessionalResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            avatarUrl: null | string;
+            /** Format: uuid */
+            shopId: string;
+            shopSlug: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+            /** Format: date-time */
+            savedAt: string;
+        };
+        /** @description A saved shop, as its discovery card shows it. */
+        FavoriteShopResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            isVerified: boolean;
+            district: null | string;
+            /** Format: double */
+            rating: number;
+            /** Format: int32 */
+            reviewCount: number;
+            /** Format: double */
+            minPrice: null | number;
+            currency: null | string;
+            isOpenNow: boolean;
+            /** Format: date-time */
+            closesAt: null | string;
+            /** Format: date-time */
+            nextOpensAt: null | string;
+            timeZone: string;
+            coverUrl: null | string;
+            logoUrl: null | string;
+            /** Format: date-time */
+            savedAt: string;
+        };
+        /**
+         * @description The customer's favorites, most recently saved first. Only shops and professionals discovery would show are listed;
+         *     `ShopIds` and `ProfessionalIds` are everything saved (to fill the heart buttons).
+         */
+        FavoritesResponse: {
+            shops: components["schemas"]["FavoriteShopResponse"][];
+            professionals: components["schemas"]["FavoriteProfessionalResponse"][];
+            shopIds: string[];
+            professionalIds: string[];
         };
         ForgotPasswordRequest: {
             email: string;
@@ -3087,6 +3257,19 @@ export interface components {
          * @enum {unknown}
          */
         ModerationState: "Visible" | "Hidden";
+        /** @description The review the customer just published (shown to them; the public list shows first name + initial only). */
+        MyReviewResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bookingId: string;
+            /** Format: int32 */
+            rating: number;
+            tags: components["schemas"]["ReviewTag"][];
+            comment: null | string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         /** @description A bookable start: the instant and its local time (`HH:mm`, shop time zone). */
         NextSlotResponse: {
             /** Format: date-time */
@@ -3448,7 +3631,10 @@ export interface components {
             nameAr: string;
             nameEn: null | string;
         };
-        /** @description A published package: itself and every item service are available. */
+        /**
+         * @description A published package: itself and every item service are available. `ProfessionalIds` are the professionals
+         *     assigned to every one of its services (who can perform the whole package).
+         */
         PublicPackageResponse: {
             /** Format: uuid */
             id: string;
@@ -3462,6 +3648,7 @@ export interface components {
             /** Format: int32 */
             durationMinutes: number;
             items: components["schemas"]["PublicPackageItemResponse"][];
+            professionalIds: string[];
         };
         /**
          * @description A professional's public page (`/shops/{slug}/professionals/{proSlug}`): profile, their shop, rating and the
@@ -3545,7 +3732,10 @@ export interface components {
             summary: components["schemas"]["RatingSummaryResponse"];
             reviews: components["schemas"]["PagedResponseOfPublicReviewResponse"];
         };
-        /** @description A published service: active, not archived, not hidden by the platform. `NameEn` may be null (D-070). */
+        /**
+         * @description A published service: active, not archived, not hidden by the platform. `NameEn` may be null (D-070).
+         *     `ProfessionalIds` are the professionals assigned to it (the booking wizard shows the active ones among them).
+         */
         PublicServiceResponse: {
             /** Format: uuid */
             id: string;
@@ -3561,6 +3751,7 @@ export interface components {
             /** Format: int32 */
             durationMinutes: number;
             onlineBookable: boolean;
+            professionalIds: string[];
         };
         /** @description Where a customer finds the shop: the confirmed point and the address, without who confirmed it. */
         PublicShopLocationResponse: {
@@ -3669,6 +3860,36 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        RescheduleDateResponse: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            slotCount: number;
+        };
+        /**
+         * @description Dates the customer can move their booking to (same professional and duration), with the number of free starts on each.
+         *     `Bookable` is false with the reason while the shop takes no online bookings (reschedule is then refused, D-087).
+         */
+        RescheduleDatesResponse: {
+            bookable: boolean;
+            blockedReason: null | string;
+            timeZone: string;
+            dates: components["schemas"]["RescheduleDateResponse"][];
+        };
+        RescheduleSlotResponse: {
+            /** Format: date-time */
+            startsAt: string;
+            localTime: string;
+            period: string;
+        };
+        RescheduleSlotsResponse: {
+            bookable: boolean;
+            blockedReason: null | string;
+            timeZone: string;
+            /** Format: date */
+            date: string;
+            slots: components["schemas"]["RescheduleSlotResponse"][];
+        };
         ResetPasswordRequest: {
             /** Format: uuid */
             userId: string;
@@ -3682,6 +3903,11 @@ export interface components {
         RevealProfessionalWhatsAppRequest: {
             reason: string;
         };
+        /**
+         * @description What the customer liked (design c-rate "ما الذي أعجبك؟"): a fixed list, translated by the clients.
+         * @enum {unknown}
+         */
+        ReviewTag: "Punctuality" | "Quality" | "Cleanliness" | "Manners" | "Price";
         RevokedSessionsResponse: {
             /** Format: int32 */
             revoked: number;
@@ -3693,6 +3919,11 @@ export interface components {
             userType: string;
             managed: boolean;
             permissions: string[];
+        };
+        /** @description The professional's shop (a professional belongs to exactly one shop). */
+        SaveProfessionalFavoriteRequest: {
+            /** Format: uuid */
+            shopId: string;
         };
         /**
          * @description Whether a closure or time off is in force now or still ahead (past entries are not listed).
@@ -4037,6 +4268,13 @@ export interface components {
         StaffSignInRequest: {
             email: string;
             password: string;
+        };
+        /** @description Stars 1–5, optional tags from the fixed list, optional comment (≤ 1000 characters). */
+        SubmitReviewRequest: {
+            /** Format: int32 */
+            rating: number;
+            tags: null | components["schemas"]["ReviewTag"][];
+            comment: null | string;
         };
         /** @description Counts over every shop (a shop without a subscription counts as `None`). */
         SubscriptionCounts: {
@@ -5024,6 +5262,68 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SubmitReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9042,6 +9342,91 @@ export interface operations {
             };
         };
     };
+    GetMyBookingRescheduleDates: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescheduleDatesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMyBookingRescheduleSlots: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RescheduleSlotsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     GetMyBookingCalendar: {
         parameters: {
             query?: never;
@@ -9409,6 +9794,155 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
+            };
+        };
+    };
+    ListMyFavorites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoritesResponse"];
+                };
+            };
+        };
+    };
+    SaveShopFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveShopFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SaveProfessionalFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveProfessionalFavoriteRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveProfessionalFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

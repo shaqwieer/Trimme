@@ -12,7 +12,7 @@ using Trimme.Modules.Bookings.Domain;
 namespace Trimme.Modules.Bookings.Infrastructure.Seeding;
 
 /// <summary>
-/// Sample appointments (spec §20): completed (reviewed, <see cref="DemoVisits"/>), no-show and cancelled history, and upcoming bookings placed on real free
+/// Sample appointments (spec §20): completed (reviewed, <see cref="DemoVisits"/>; unreviewed, <see cref="DemoReviewableVisits"/>), no-show and cancelled history, and upcoming bookings placed on real free
 /// slots found by the availability rules, so they are valid. Faisal gets none (the schedule E2E asserts his exact slots).
 /// Idempotent by fixed ids; development only; no outbox rows, so seeding never sends messages.
 /// </summary>
@@ -98,6 +98,16 @@ internal sealed class DemoBookingsSeeder : IDevSeeder
             At(today.AddDays(4), 20), [BookingStatus.Confirmed, BookingStatus.CancelledByCustomer], "تغيّر موعد السفر");
         await UpcomingAsync(Guid.Parse("0199a0de-5a10-7000-8000-000000000a11"), DemoData.BarberHouse.Id, DemoCustomers.Noura, CutAndStyle, Omar, today.AddDays(1), 11);
         await UpcomingAsync(Guid.Parse("0199a0de-5a10-7000-8000-000000000a12"), DemoData.AlAsala.Id, DemoCustomers.Khalid, BeardTrim, Sultan, today.AddDays(2), 13);
+
+        // Sara's visits to review in the E2E (D-097), and one upcoming booking that cannot be reviewed.
+        var majed = new ProfessionalId(DemoReviewableVisits.ProfessionalId);
+        foreach (var (bookingId, daysAgo, hour) in DemoReviewableVisits.All)
+        {
+            await PastAsync(bookingId, DemoData.BarberHouse.Id, DemoCustomers.Sara, DemoReviewableVisits.ServiceId, majed,
+                At(today.AddDays(-daysAgo), hour), [BookingStatus.Confirmed, BookingStatus.Arrived, BookingStatus.Completed], null);
+        }
+
+        await UpcomingAsync(DemoReviewableVisits.UpcomingBookingId, DemoData.BarberHouse.Id, DemoCustomers.Sara, DemoReviewableVisits.ServiceId, majed, today.AddDays(3), 12);
 
         await db.SaveChangesAsync(cancellationToken);
     }

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { ShopDistance } from '@/components/shops/public/ShopDistance';
@@ -264,19 +265,24 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
             ]}
           />
           <header className="flex flex-col gap-2">
-            <h1 className="flex flex-wrap items-center gap-2 text-h1 font-bold text-navy-900">
-              {name}
-              {shop.isVerified && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-pill bg-brand-100 px-2.5 py-1 text-helper font-bold text-brand-700"
-                  title={t('verifiedHint')}
-                >
-                  <Icon name="shield" className="size-4" />
-                  {t('verified')}
-                  <span className="sr-only">{t('verifiedHint')}</span>
-                </span>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="flex flex-wrap items-center gap-2 text-h1 font-bold text-navy-900">
+                {name}
+                {shop.isVerified && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-pill bg-brand-100 px-2.5 py-1 text-helper font-bold text-brand-700"
+                    title={t('verifiedHint')}
+                  >
+                    <Icon name="shield" className="size-4" />
+                    {t('verified')}
+                    <span className="sr-only">{t('verifiedHint')}</span>
+                  </span>
+                )}
+              </h1>
+              {shop.listedInDiscovery && (
+                <FavoriteButton target={{ kind: 'shop', id: shop.id }} name={name} />
               )}
-            </h1>
+            </div>
             <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">
               {shop.rating.count > 0 ? (
                 <RatingStars value={shop.rating.average} count={shop.rating.count} />

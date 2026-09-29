@@ -48,6 +48,21 @@ public sealed class OpenApiContractTests(PostgresFixture postgres)
         response.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
     }
 
+    /// <summary>R-NEG-02: v1 takes no payments — no payment, checkout or card endpoint, and bookings are never "paid".</summary>
+    [Fact]
+    public async Task OpenApi_has_no_payment_surface()
+    {
+        var path = Path.Combine(RepositoryRoot(), "apps", "api", "openapi", "v1.json");
+        var document = JsonNode.Parse(await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken))!;
+
+        var paths = document["paths"]!.AsObject().Select(p => p.Key).ToList();
+        paths.ShouldNotContain(p => p.Contains("payment", StringComparison.OrdinalIgnoreCase)
+                                    || p.Contains("checkout", StringComparison.OrdinalIgnoreCase)
+                                    || p.Contains("card", StringComparison.OrdinalIgnoreCase));
+        var statuses = document["components"]!["schemas"]!["PaymentStatus"]!["enum"]!.AsArray().Select(v => v!.GetValue<string>());
+        statuses.ShouldBe(["NotApplicable"]);
+    }
+
     private static string Normalize(string json) =>
         JsonNode.Parse(json)!.ToJsonString(Indented).ReplaceLineEndings("\n");
 

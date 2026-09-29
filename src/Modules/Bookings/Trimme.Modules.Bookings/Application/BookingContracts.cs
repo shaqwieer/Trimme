@@ -38,9 +38,18 @@ public enum CustomerBookingAction
 {
     Cancel,
     Reschedule,
+
+    /// <summary>Completed, not yet reviewed, and within <c>ReviewWindowDays</c> of completion (D-017, D-097).</summary>
+    Review,
 }
 
-/// <summary>A booking as its customer sees it, with what they may still do (cancel/reschedule until the cutoff, D-015).</summary>
+/// <summary>What a customer response needs besides the booking: the clock, the policy and the customer's own ratings.</summary>
+internal sealed record CustomerBookingView(DateTimeOffset Now, int CutoffMinutes, int ReviewWindowDays, IReadOnlyDictionary<Guid, int> Ratings);
+
+/// <summary>
+/// A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
+/// completed visit until <c>ReviewDeadline</c>. <c>ReviewRating</c> is the stars they gave, once reviewed.
+/// </summary>
 public sealed record CustomerBookingResponse(
     Guid Id,
     string Reference,
@@ -57,6 +66,8 @@ public sealed record CustomerBookingResponse(
     decimal AmountDue,
     IReadOnlyList<CustomerBookingAction> AllowedActions,
     int CancellationCutoffMinutes,
+    int? ReviewRating,
+    DateTimeOffset? ReviewDeadline,
     uint Version);
 
 /// <summary>
@@ -139,11 +150,21 @@ internal static class BookingMapping
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
             b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, b.Version);
 
-    public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, DateTimeOffset now, int cutoffMinutes) =>
-        new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
-            b.CancellationReason, b.PaymentStatus, b.AmountDue,
-            b.CustomerCanChange(now, cutoffMinutes) ? [CustomerBookingAction.Cancel, CustomerBookingAction.Reschedule] : [],
-            cutoffMinutes, b.Version);
+    public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
+    {
+        var rating = view.Ratings.TryGetValue(b.Id.Value, out var stars) ? stars : (int?)null;
+        var deadline = b.CompletedAt?.AddDays(view.ReviewWindowDays);
+        List<CustomerBookingAction> actions = b.CustomerCanChange(view.Now, view.CutoffMinutes)
+            ? [CustomerBookingAction.Cancel, CustomerBookingAction.Reschedule]
+            : [];
+        if (rating is null && deadline is { } until && view.Now <= until && b.CustomerId is not null)
+        {
+            actions.Add(CustomerBookingAction.Review);
+        }
+
+        return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
+            b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, b.Version);
+    }
 
     public static BookedItem Snapshot(BookableOffer offer) =>
         new(offer.IsPackage ? null : offer.Id, offer.IsPackage ? offer.Id : null, offer.NameAr, offer.NameEn, offer.Price, offer.Currency,

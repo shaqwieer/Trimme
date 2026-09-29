@@ -38,8 +38,8 @@ internal sealed class DemoReviewsSeeder : IDevSeeder
             var writtenAt = completedAt.AddHours(2);
             var review = Review.Create(ReviewIdFor(visit.BookingId), RatingBook.ToReviewed(booking), visit.Rating, visit.Comment, writtenAt).Value;
             db.Add(review);
-            await RatingBook.ApplyAsync(db, review, +1, writtenAt, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
+            await RatingBook.ApplyAsync(db, review, +1, writtenAt, cancellationToken);
         }
     }
 
