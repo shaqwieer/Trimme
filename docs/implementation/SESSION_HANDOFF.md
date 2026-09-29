@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-09-29 (end of Session 6: Phase 11)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). Phase 10 is pushed and CI-green (run 36420287372). Phase 11 is **committed locally and not pushed**. Push only when the user asks; then record the CI run in the Phase 11 file.
-- **HEAD commit:** `feat: phase 11 public discovery and shop pages` (run `git log --oneline -3`).
+- **HEAD commit:** a `docs:` commit recording the hash, on top of `8832a12` (`feat: phase 11 public discovery and shop pages`). Run `git log --oneline -3`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: running.** It was recreated from an empty volume with the Phase 11 images (10 migrations, 10 seeders). Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325, started with `TRIMME_SITE_URL=http://localhost:3300`.
 - **Current phase:** 11 is complete. Phase 12 has not started.
@@ -36,7 +36,7 @@ Phase 11 (`phases/phase-11-public-discovery.md`):
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 257 web tests |
 | Fresh `down -v` + `up --build` + `pnpm e2e` | Runs 1–3: 54/55. The only failure was the new robots test's own regex, then fixed. Runs 4–6: **55/55 ×3**. 0 HTTP 429 |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` (and `git` after the commit) | PASS |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (39 commits) | PASS, no hits outside the exclusions, no leaks |
 
 ## Database and migrations
 - Created this session: `20260929065351_Reviews` (`reviews.reviews`, `reviews.rating_aggregates`, plus the same-shop review→booking FK by SQL).

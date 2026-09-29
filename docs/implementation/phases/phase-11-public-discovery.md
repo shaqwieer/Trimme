@@ -161,7 +161,7 @@ Session 6, 2026-09-29.
   - seeded visits record arrival and completion at the visit times.
 - **Message parity test.** It read English plural-branch text as argument names. It now counts real arguments only; the probe (removing `{km}`) fails.
 
-**Commit:** see `MASTER_PLAN.md` (Phase 11 row).
+**Commit:** `8832a12`. gitleaks `git` on the committed code: 39 commits, no leaks. Not pushed.
 
 ## Remaining risks → next phase
 - **Production configuration:**
