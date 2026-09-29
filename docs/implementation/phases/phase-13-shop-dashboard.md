@@ -65,8 +65,8 @@ The shop notifications inbox (Phase 15). "Resend confirmation" arrives with What
 - **API host:** SignalR registration and mapping, origin middleware. **Compose:** the web origin follows `TRIMME_WEB_PORT`.
 - **Web:**
   - `components/shop/live/OperationsLive` (provider, hook, refresh, indicator), `components/shop/board/*` (drawer, list, calendar, walk-in, booking row), `ShopBanners`, `ShopFrame` (providers, banners, parallel reads);
-  - `lib/shop/board.ts`; pages `/shop`, `/shop/calendar`, `/shop/appointments`, `/shop/walk-in`; `@microsoft/signalr`.
-- **Tests:** integration `ShopDashboardTests`, `RealtimeTests`, `OpenApi_has_no_export_surface`; unit `DayOf_…`; web `board.test.ts`, `board.test.tsx`; E2E `flows/shop-dashboard.spec.ts`.
+  - `lib/shop/board.ts`; `lib/api/client` (`refreshSessionOutcome`, follow-up); pages `/shop`, `/shop/calendar`, `/shop/appointments`, `/shop/walk-in`; `@microsoft/signalr`.
+- **Tests:** integration `ShopDashboardTests`, `RealtimeTests`, `OpenApi_has_no_export_surface`; unit `DayOf_…`; web `board.test.ts`, `board.test.tsx`, `OperationsLive.test.tsx`, `client.test.ts` (follow-ups); E2E `flows/shop-dashboard.spec.ts`.
 
 ## Data model and migration impact
 None. The `(shop_id, starts_at)` booking index already serves the dashboard queries (Phase 10).
@@ -135,9 +135,9 @@ Long polling first failed at connect: the hub read the request's tenant flags, a
 - **Drawer date line:** it failed axe colour contrast (secondary text on the subtle background); the stronger text colour is used.
 - **E2E specifics:** Majed is on seeded time off, so E2 uses Omar two days ahead. Hidden radio inputs are clicked through their labels. Each run uses a unique customer name, because failed attempts could leave walk-ins behind.
 
-**Review follow-up (after commit `6448b1c`, fixed in `77dcc1c`)**
+**Review follow-up (after commit `6448b1c`, fixed in `77dcc1c` and `031aebc`)**
 - **Live reconnect spun (bug).** Every close restarted the backoff at attempt 0. A connection the server drops right after the handshake (a suspended shop, a removed permission) therefore reconnected about once a second, and each attempt refreshed the session first, rotating the refresh token (the auth rate limit is 10 a minute in production).
-  - Fix: failures count across closes and failed starts (1 s, 2 s … 30 s). The count resets only after a connection stayed up 30 s. The provider stops (the indicator stays on «إعادة الاتصال…») when the session cannot be refreshed; the page's own requests then lead to sign-in.
+  - Fix: failures count across closes and failed starts (1 s, 2 s … 30 s). The count resets only after a connection stayed up 30 s. The provider stops (the indicator stays on «إعادة الاتصال…») only when the server refuses the refresh (401/403); the page's own requests then lead to sign-in.
   - Web test `OperationsLive.test.tsx` (mocked SignalR client, fake timers), 5 cases: immediate closes back off 1→2→4→8→16→30→30 s with one refresh per attempt; a stable connection resets to 1 s; failed starts back off; a failed refresh stops; unmount stops. With the old behaviour restored (probe), 3 of the 5 fail.
 - **E2 ran as the owner only.** The owner has every shop permission, so the staff role's permissions for the walk-in, the drawer note and the cancel were not exercised in the browser. E2 now performs them as `staff@barber-house`; the owner is the live watcher.
 - **Verification.**
@@ -145,6 +145,9 @@ Long polling first failed at connect: the hub read the request's tenant flags, a
   - Web image rebuilt; `pnpm e2e` on the running stack (previously used this hour): run 1 61/62 (the Phase 03 sign-up did not reach its URL within 5 s just after the restart; `auth.spec.ts` then 6/6 alone), run 2 59/62 (three customer sign-ins answered 429: the demo customers' hourly OTP limit, see Phase 12).
   - Fresh `down -v` + `up --build`, then `pnpm e2e`: **62/62, 62/62**. API log: 0 `responded 429`; the only 5xx lines are the two settings validation lines described in the correction below.
   - gitleaks v8.30.1 (Docker): `git` 45 commits, no leaks; `dir` on the repository, no leaks.
+- **A refused refresh and an outage looked the same (`031aebc`).** `refreshSession()` answers false for a network error, 429 or 5xx too, so the first version of the stop rule would have ended live updates for good after a brief API restart. `refreshSessionOutcome()` now separates `expired` (401/403) from `unavailable`; the provider stops only on `expired` and backs off otherwise. `refreshSession()` keeps its boolean result for the other callers.
+  - Tests: `lib/api/client.test.ts` (outcome per status and on a network failure, 8 cases); provider "keeps retrying with backoff while the API cannot be reached" (fails when `unavailable` stops the provider, probe).
+  - Web gates PASS: `lint`, `typecheck`, `format:check`, `openapi:check`, `test` (**313**), `build`. E2E not rerun: the change is client-only and limited to the live provider's failure branch, which the browser runs do not reach; `refreshSession()` answers exactly as before.
 
 **Correction (Phase 13 follow-up).** The "0 HTTP 5xx" counts in this file were taken with a pattern for JSON logs (`"StatusCode":5xx`), which the plain-text API log never contains, so they were always 0; the 429 counts used the right pattern. Re-counted with `responded 5xx` on the Phase 13 stack, the only 5xx lines are `PUT /api/v1/admin/settings responded 500`, one per full run: the known carry-over where Serilog's request log records a validation failure as 500 while the client receives the 400 (the settings E2E sees "This value is out of range"). Fix planned for Phase 17.
 

@@ -3,8 +3,8 @@
 - **Updated:** 2026-09-29 (end of Session 8: Phase 13)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Phase 11 is pushed and CI-green (run 36543760813).
-  - Phases 12 (`f8fa5be`, `11d76ef`, `c8a2c00`) and 13 (`6448b1c`, `77dcc1c`) are **committed locally and not pushed**. Push only when the user asks, then record the CI run in the phase files.
-- **HEAD commit:** a `docs:` commit recording the Phase 13 hashes, on top of `77dcc1c` (review follow-up) and `6448b1c` (Phase 13). Run `git log --oneline -6`.
+  - Phases 12 (`f8fa5be`, `11d76ef`, `c8a2c00`) and 13 (`6448b1c`, `77dcc1c`, `031aebc`) are **committed locally and not pushed**. Push only when the user asks, then record the CI run in the phase files.
+- **HEAD commit:** a `docs:` commit recording the Phase 13 hashes, on top of `031aebc` and `77dcc1c` (review follow-ups) and `6448b1c` (Phase 13). Run `git log --oneline -6`.
 - **Working tree:** clean after the commit.
 - **Local Docker stack: stopped** (containers kept; `docker compose -f infra/docker-compose.yml start` brings it back). It was recreated from an empty volume with the final Phase 13 images and E2E ran twice on it.
   - Each demo customer has used 2 of its 5 OTP codes this hour; Sara has two fewer reviewable visits than seeded.
@@ -18,7 +18,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 - **Live updates** (D-099):
   - The hub is `/hubs/operations`: cookie auth; the server picks the group (`shop:{id}` or `admins`); no client methods; closes with the session; allowed origins only.
   - Events come after commit from the booking outbox via an EF interceptor, and carry ids, times and status only.
-  - The web provider reconnects after a session refresh, backing off across closes (reset after 30 s connected) and stopping if the refresh fails; there is a live indicator.
+  - The web provider reconnects after a session refresh, backing off across closes (reset after 30 s connected) and stopping only when the server refuses the refresh (401/403); there is a live indicator.
   - Verified end to end through the Next.js rewrite on all three transports.
 - **Board API** (D-100):
   - the business-day plan (`IShopDayPlanReader`, engine `DayOf`);
@@ -34,7 +34,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 - **Tests:**
   - integration `ShopDashboardTests`, `RealtimeTests`, `OpenApi_has_no_export_surface`;
   - unit `DayOf_…`;
-  - web `lib/shop/board.test.ts`, `components/shop/board/board.test.tsx`, `components/shop/live/OperationsLive.test.tsx`;
+  - web `lib/shop/board.test.ts`, `components/shop/board/board.test.tsx`, `components/shop/live/OperationsLive.test.tsx`, `lib/api/client.test.ts`;
   - E2E `flows/shop-dashboard.spec.ts` (E2 run by staff with the owner watching, plus layouts).
 
 ## Verification evidence
@@ -43,7 +43,7 @@ Phase 13 (`phases/phase-13-shop-dashboard.md`):
 | `dotnet build -c Release` | PASS, 0 warnings |
 | Unit / architecture / integration | PASS, 378 / 63 / 152 (the full integration suite ran alone) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes (no migration this phase) |
-| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 299 web tests at `6448b1c`, 304 after the follow-up |
+| Web gates (`lint`, `typecheck`, `format:check`, `openapi:check`, `test`, `build`) | PASS, 299 web tests at `6448b1c`, 313 after the follow-ups |
 | Fresh `down -v` + `up --build` + `pnpm e2e` | After fixing a duplicated subscription warning and lightening load: run 1 61/62 (a Phase 04 admin invitation navigation timed out on the cold stack), **runs 2–4 62/62 ×3**. After the follow-up, on a new empty volume: **62/62 ×2**. 0 HTTP 429. The only 5xx log lines are the settings validation 400s logged as 500 (the earlier "0 5xx" used a pattern that never matched; see the Phase 13 correction) |
 | No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS, no hits, no leaks |
 

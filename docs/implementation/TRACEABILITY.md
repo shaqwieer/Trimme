@@ -149,14 +149,14 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 |---|---|---|---|---|---|---|
 | R-SD-01 | Operational overview + today's appointments | §13 | s-overview | 13 | I `Overview_CountsTheBusinessDay_WithEachProfessionalsLoad_AndTheLastWeekByHour` ✔; W board helpers (load, hours) ✔; E E2 overview + axe ✔ | [x] |
 | R-SD-02 | Day/week calendar | §13 | s-calendar | 13 | I `Calendar_ShowsLanes_Bookings_AndKeepsTheHoursAfterMidnightInTheirBusinessDay` ✔; U `DayOf_GivesTheBusinessDaysWorkingTime…` ✔; W positioning, lanes, axis past 24:00, density ✔; E E2 day + week + axe ✔ | [x] |
-| R-SD-03 | Appointment list/details, valid status changes | §13 | s-appointments | 13 | I `AppointmentsList_TakesAnyOfSeveralStatuses_AndCountsEveryChip…` ✔; W drawer (allowed transitions only, optimistic, rollback on 409, cancel reason) ✔; E E2 drawer note + cancel ✔ | [x] |
-| R-SD-04 | Walk-in creation | §13 | s-walkin | 13 | I `WalkInOptions_ListTheActiveAssignedProfessionals…` ✔; W walk-in (no phone field, start now, conflict refresh) ✔; E E2 walk-in ✔ | [x] |
+| R-SD-03 | Appointment list/details, valid status changes | §13 | s-appointments | 13 | I `AppointmentsList_TakesAnyOfSeveralStatuses_AndCountsEveryChip…` ✔; W drawer (allowed transitions only, optimistic, rollback on 409, cancel reason) ✔; E E2 drawer note + cancel, as staff ✔ | [x] |
+| R-SD-04 | Walk-in creation | §13 | s-walkin | 13 | I `WalkInOptions_ListTheActiveAssignedProfessionals…` ✔; W walk-in (no phone field, start now, conflict refresh) ✔; E E2 walk-in, as staff ✔ | [x] |
 | R-SD-05 | Hours, professional schedule visibility, breaks, vacations, time off, pause/resume | §13 | s-hours | 9 | E | [ ] |
 | R-SD-06 | Own services CRUD + archive | §13 | s-services (corrected) | 7 | E `services.spec.ts` shop flow ✔ | [x] |
 | R-SD-07 | Subscription status + expiry visibility | §13 | s-services | 8 | Phase 08 E5 shop warning ✔; Phase 13 dashboard-wide banners (W `ShopBanners`) ✔ | [x] |
 | R-SD-08 | Notifications | §13 | (absent) | 15 | E | [ ] |
 | R-SD-09 | Profile editing within admin policy; location edit via pin | §13 | s-settings | 6 | W `ShopProfileEditor` locks ✔; E `shop owner edits only the fields the admin policy opens` ✔ (locked fields disabled with shield; location read-only; API 403) | [x] |
-| R-SD-10 | Scoped SignalR live updates | §17 | — | 13 | I `EachShop_ReceivesOnlyItsOwnBookings_AdminsReceiveAll_AndMessagesCarryNoCustomerData` (non-vacuous: B's first message is its own), `Customers_AndAnonymousCallers_CannotConnect`, `HubRequests_FromAnotherOrigin_AreRefused`, `WebSockets_AreAcceptedOnlyFromTheWebAppsOrigin` ✔; E E2 live update on a second staff screen ✔ | [x] |
+| R-SD-10 | Scoped SignalR live updates | §17 | — | 13 | I `EachShop_ReceivesOnlyItsOwnBookings_AdminsReceiveAll_AndMessagesCarryNoCustomerData` (non-vacuous: B's first message is its own), `Customers_AndAnonymousCallers_CannotConnect`, `HubRequests_FromAnotherOrigin_AreRefused`, `WebSockets_AreAcceptedOnlyFromTheWebAppsOrigin` ✔; W `OperationsLive.test.tsx` (reconnect backoff across closes, stops only on a refused refresh) ✔; E E2 live update on the owner's screen for a staff walk-in ✔ | [x] |
 
 ## 10. Admin dashboard
 
