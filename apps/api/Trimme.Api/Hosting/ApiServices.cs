@@ -7,6 +7,7 @@ using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.BuildingBlocks.Web.Errors;
+using Trimme.BuildingBlocks.Web.Jobs;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
 using Trimme.BuildingBlocks.Web.Realtime;
@@ -55,6 +56,7 @@ internal static class ApiServices
         services.AddTrimmePersistence();
         services.AddTrimmeMedia();
         services.AddTrimmeSecurity(configuration, builder.Environment);
+        services.AddTrimmeJobs(configuration, builder.Environment);
         foreach (var module in modules)
         {
             services.AddSingleton<IModelContributor>(module);

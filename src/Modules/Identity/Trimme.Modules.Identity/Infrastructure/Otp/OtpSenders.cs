@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Trimme.BuildingBlocks.Application.Notifications;
 using Trimme.Modules.Identity.Application;
 
 namespace Trimme.Modules.Identity.Infrastructure.Otp;
@@ -8,11 +9,14 @@ namespace Trimme.Modules.Identity.Infrastructure.Otp;
 /// <summary>Which OTP sender is active. Bound from <c>Identity:Otp:Sender</c>.</summary>
 internal enum OtpSenderKind
 {
-    /// <summary>No delivery channel: codes cannot be sent (production until the WhatsApp adapter lands in Phase 15).</summary>
+    /// <summary>No delivery channel: codes cannot be sent.</summary>
     None,
 
     /// <summary>Development and Testing only: codes go to an in-memory inbox read through a dev-only endpoint.</summary>
     DevInbox,
+
+    /// <summary>The WhatsApp authentication template through the configured WhatsApp provider (Phase 15, D-110).</summary>
+    WhatsApp,
 }
 
 /// <summary>OTP delivery settings. Bound from <c>Identity:Otp</c>.</summary>
@@ -77,4 +81,26 @@ internal sealed partial class UnavailableOtpSender(ILogger<UnavailableOtpSender>
 
     [LoggerMessage(Level = LogLevel.Error, Message = "A sign-in code was requested but no OTP delivery channel is configured (Identity:Otp:Sender)")]
     private static partial void LogUnavailable(ILogger logger);
+}
+
+/// <summary>
+/// Sends the sign-in code through the WhatsApp authentication template (D-005, D-110). The code goes to the provider
+/// only: it is never logged or stored in clear (the challenge keeps a keyed hash).
+/// </summary>
+internal sealed partial class WhatsAppOtpSender(IWhatsAppAuthenticationSender whatsApp, ILogger<WhatsAppOtpSender> logger) : IOtpSender
+{
+    public async Task<bool> TrySendAsync(OtpMessage message, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        var sent = await whatsApp.TrySendCodeAsync(message.PhoneE164, message.Code, message.Locale, cancellationToken);
+        if (!sent)
+        {
+            LogNotSent(logger);
+        }
+
+        return sent;
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The WhatsApp provider did not accept a sign-in code")]
+    private static partial void LogNotSent(ILogger logger);
 }

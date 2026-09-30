@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import { BookingIntervention } from '@/components/admin/ops/BookingIntervention';
-import { StatusBadge } from '@/components/ui/Badge';
+import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/cards';
 import { Breadcrumb, Timeline, type TimelineItem } from '@/components/ui/data';
 import { ErrorState } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
+import { dispatchTone } from '@/lib/admin/whatsapp';
 import { getServerApi } from '@/lib/api/server';
 import { formatDate, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { todayLocal } from '@/lib/i18n/localDate';
@@ -29,6 +30,7 @@ export default async function AdminBookingPage({
   const t = await getTranslations({ locale: lang, namespace: 'adminBookings' });
   const tDrawer = await getTranslations({ locale: lang, namespace: 'shopBoard.drawer' });
   const tStatus = await getTranslations({ locale: lang, namespace: 'status.booking' });
+  const tWhatsApp = await getTranslations({ locale: lang, namespace: 'adminWhatsApp' });
 
   return (
     <AdminFrame
@@ -46,6 +48,13 @@ export default async function AdminBookingPage({
         const { booking: detail, notes } = data;
         const { booking, shop } = detail;
         const canIntervene = me.permissions.includes('Admin.Bookings.Intervene');
+        const whatsapp = me.permissions.includes('Admin.WhatsApp.View')
+          ? (
+              await api.GET('/api/v1/admin/whatsapp/bookings/{bookingId}', {
+                params: { path: { bookingId } },
+              })
+            ).data
+          : undefined;
         const history: TimelineItem[] = detail.history.map((h, index) => ({
           id: `${index}`,
           tone:
@@ -156,6 +165,89 @@ export default async function AdminBookingPage({
                   <h2 className="text-h3 font-bold text-navy-900">{tDrawer('history.title')}</h2>
                   <Timeline items={history} />
                 </Card>
+                {whatsapp && (
+                  <Card as="section" className="flex flex-col gap-3 p-5" data-testid="booking-whatsapp">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="text-h3 font-bold text-navy-900">{tWhatsApp('booking.heading')}</h2>
+                      <Link
+                        href={`/admin/whatsapp/dispatches?bookingId=${bookingId}`}
+                        className="text-label font-bold text-brand-700 underline-offset-4 hover:underline"
+                      >
+                        {tWhatsApp('booking.openLog')}
+                      </Link>
+                    </div>
+                    {whatsapp.dispatches.length === 0 ? (
+                      <p className="text-caption text-text-secondary">{tWhatsApp('booking.none')}</p>
+                    ) : (
+                      <ul className="flex flex-col gap-2">
+                        {whatsapp.dispatches.map((dispatch) => (
+                          <li
+                            key={dispatch.id}
+                            data-audience={dispatch.audience}
+                            data-event={dispatch.event}
+                            className="flex flex-wrap items-center gap-2 rounded-button bg-bg-subtle p-3 text-caption"
+                          >
+                            <Link
+                              href={`/admin/whatsapp/dispatches/${dispatch.id}`}
+                              className="font-bold text-brand-700 underline-offset-4 hover:underline"
+                            >
+                              {tWhatsApp(`event.${dispatch.event}`)}
+                            </Link>
+                            <span className="text-text-secondary">
+                              · {tWhatsApp(`audience.${dispatch.audience}`)}
+                            </span>
+                            <span className="text-text-secondary">
+                              {tWhatsApp('dispatches.versionShort', {
+                                number: dispatch.templateVersionNumber,
+                              })}
+                            </span>
+                            <Badge size="sm" tone={dispatchTone(dispatch.status)} className="ms-auto">
+                              {tWhatsApp(`dispatches.status.${dispatch.status}`)}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <h3 className="text-label font-bold text-text-primary">
+                      {tWhatsApp('booking.reminders')}
+                    </h3>
+                    {whatsapp.reminders.length === 0 ? (
+                      <p className="text-caption text-text-secondary">{tWhatsApp('booking.noReminders')}</p>
+                    ) : (
+                      <ul className="flex flex-col gap-2" data-testid="booking-reminders">
+                        {whatsapp.reminders.map((reminder) => (
+                          <li
+                            key={reminder.id}
+                            data-audience={reminder.audience}
+                            data-status={reminder.status}
+                            className="flex flex-wrap items-center gap-2 rounded-button bg-bg-subtle p-3 text-caption"
+                          >
+                            <span className="text-text-strong">
+                              {tWhatsApp('booking.due', {
+                                audience: tWhatsApp(`audience.${reminder.audience}`),
+                                date: formatDate(reminder.dueAt, lang, { withWeekday: false }),
+                                time: formatTime(reminder.dueAt, lang),
+                              })}
+                            </span>
+                            <Badge
+                              size="sm"
+                              tone={
+                                reminder.status === 'Scheduled'
+                                  ? 'info'
+                                  : reminder.status === 'Sent'
+                                    ? 'success'
+                                    : 'neutral'
+                              }
+                              className="ms-auto"
+                            >
+                              {tWhatsApp(`booking.reminderStatus.${reminder.status}`)}
+                            </Badge>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </Card>
+                )}
                 <Card as="section" className="flex flex-col gap-3 p-5">
                   <h2 className="text-h3 font-bold text-navy-900">{tDrawer('notes.title')}</h2>
                   {notes.length === 0 ? (

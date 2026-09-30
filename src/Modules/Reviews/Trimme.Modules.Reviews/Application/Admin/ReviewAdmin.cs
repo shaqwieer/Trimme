@@ -215,3 +215,52 @@ internal sealed class ModerateReviewHandler(
         return response;
     }
 }
+
+internal sealed record ContactShopAboutReviewCommand(Guid ReviewId, string? Message) : ICommand<Result>;
+
+/// <summary>
+/// «تواصل مع المحل» (a-reviews, D-102, D-112): a moderator sends the review's shop an in-app message about it. The shop
+/// sees the text in its notifications; the audit entry records that a message was sent, not its text. The customer's
+/// identity and contact data are never part of it.
+/// </summary>
+internal sealed class ContactShopAboutReviewHandler(
+    TrimmeDbContext db, IAdminDataScope scope, IAuditLog audit, BuildingBlocks.Application.Notifications.INotificationCenter notifications, TimeProvider clock)
+    : ICommandHandler<ContactShopAboutReviewCommand, Result>
+{
+    public const int MinLength = 5;
+    public const int MaxLength = 500;
+
+    public async Task<Result> Handle(ContactShopAboutReviewCommand command, CancellationToken cancellationToken)
+    {
+        var message = command.Message?.Trim() ?? string.Empty;
+        if (message.Length is < MinLength or > MaxLength)
+        {
+            return Error.Validation("validation.failed", "Write a message of 5 to 500 characters.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["message"] = ["validation.message_length"] });
+        }
+
+        using (scope.Begin())
+        {
+            var id = new ReviewId(command.ReviewId);
+            if (await db.Set<Review>().AsNoTracking().SingleOrDefaultAsync(r => r.Id == id, cancellationToken) is not { } review)
+            {
+                return ReviewErrors.NotFound();
+            }
+
+            await notifications.NotifyShopAsync(
+                review.ShopId,
+                new BuildingBlocks.Application.Notifications.InAppNotice(
+                    "admin.message",
+                    $"review:{review.Id.Value:N}:{Guid.CreateVersion7(clock.GetUtcNow()):N}",
+                    new Dictionary<string, string>(StringComparer.Ordinal) { ["message"] = message, ["reviewId"] = review.Id.Value.ToString() }),
+                cancellationToken);
+            audit.Record(new AuditRecord(
+                "review.shop_contacted", nameof(Review), review.Id.ToString(), review.ShopId,
+                $"Message to the shop about the {review.Rating}★ review of booking {review.BookingId} ({message.Length} characters)"));
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        await notifications.PushPendingAsync(cancellationToken);
+        return Result.Success();
+    }
+}

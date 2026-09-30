@@ -1376,6 +1376,225 @@
         }
       }
     },
+    "/api/v1/me/notifications": {
+      "get": {
+        "tags": [
+          "Me: notifications"
+        ],
+        "summary": "The signed-in account\u0027s own in-app notifications (customers: their bookings; admins: operational alerts), newest first.",
+        "operationId": "ListMyNotifications",
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Me: notifications"
+        ],
+        "summary": "How many of the account\u0027s notifications are unread.",
+        "operationId": "CountMyUnreadNotifications",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications/{notificationId}/read": {
+      "post": {
+        "tags": [
+          "Me: notifications"
+        ],
+        "summary": "Marks one of the account\u0027s notifications read.",
+        "operationId": "MarkMyNotificationRead",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Me: notifications"
+        ],
+        "summary": "Marks every notification of the account read.",
+        "operationId": "MarkAllMyNotificationsRead",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/whatsapp": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Meta\u0027s subscription check: echoes hub.challenge when hub.verify_token matches the configured token.",
+        "operationId": "VerifyWhatsAppWebhook",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Message status updates from Meta (sent, delivered, read, failed); the signature is verified before the body is read.",
+        "operationId": "ReceiveWhatsAppWebhook",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/dashboard/overview": {
       "get": {
         "tags": [
@@ -8704,6 +8923,61 @@
         }
       }
     },
+    "/api/v1/admin/reviews/{reviewId}/contact-shop": {
+      "post": {
+        "tags": [
+          "Admin: reviews"
+        ],
+        "summary": "Sends the review\u0027s shop an in-app message about it (audited without the text).",
+        "operationId": "AdminContactShopAboutReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactShopRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/favorites": {
       "get": {
         "tags": [
@@ -9712,6 +9986,772 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Every template slot (event \u00D7 audience \u00D7 locale) with its active version number and text, and whether it has a draft.",
+        "operationId": "AdminListWhatsAppTemplates",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "A template slot with its version history (newest first) and the placeholders its audience may use.",
+        "operationId": "AdminGetWhatsAppTemplate",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}/draft": {
+      "put": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Creates the draft or replaces its text; validated against the placeholder whitelist. Active and archived versions never change.",
+        "operationId": "AdminSaveWhatsAppTemplateDraft",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTemplateDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}/versions/{versionId}/restore": {
+      "post": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Copies an earlier version\u0027s text into the draft (it still needs activation).",
+        "operationId": "AdminRestoreWhatsAppTemplateVersion",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateVersionActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}/versions/{versionId}/activate": {
+      "post": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Makes the draft the active version (the previous one is archived). Only future messages use it; audited.",
+        "operationId": "AdminActivateWhatsAppTemplateVersion",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateVersionActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}/preview": {
+      "post": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Validates text and renders it with fixed sample data (no real booking or customer). Nothing is saved.",
+        "operationId": "AdminPreviewWhatsAppTemplate",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplatePreviewResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/templates/{templateId}/test-send": {
+      "post": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Sends a version rendered with sample data to a number the admin typed and confirmed; a registered customer\u0027s number is refused. Audited without the number.",
+        "operationId": "AdminTestSendWhatsAppTemplate",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSendRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/dispatches": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "The WhatsApp dispatch log, newest first: masked recipient, template version, status, attempts and error; counts per status and the last 24 hours\u0027 delivery rate.",
+        "operationId": "AdminListWhatsAppDispatches",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DispatchStatus"
+            }
+          },
+          {
+            "name": "audience",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MessageAudience"
+            }
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/MessageEvent"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DispatchKind"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "bookingId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/dispatches/{dispatchId}": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "A dispatch with its rendered text (until the retention period ends), its content hash and the template version that rendered it.",
+        "operationId": "AdminGetWhatsAppDispatch",
+        "parameters": [
+          {
+            "name": "dispatchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/dispatches/{dispatchId}/retry": {
+      "post": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Queues a failed dispatch for one more attempt (audited).",
+        "operationId": "AdminRetryWhatsAppDispatch",
+        "parameters": [
+          {
+            "name": "dispatchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/whatsapp/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "A booking\u0027s WhatsApp dispatches and its reminder jobs (audience, due time, status).",
+        "operationId": "AdminGetBookingNotifications",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingNotificationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/notifications": {
+      "get": {
+        "tags": [
+          "Shop: notifications"
+        ],
+        "summary": "The shop\u0027s in-app notifications, newest first (names, items and times; never a customer phone number).",
+        "operationId": "ListShopNotifications",
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Shop: notifications"
+        ],
+        "summary": "How many of the shop\u0027s notifications are unread.",
+        "operationId": "CountShopUnreadNotifications",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/notifications/{notificationId}/read": {
+      "post": {
+        "tags": [
+          "Shop: notifications"
+        ],
+        "summary": "Marks one of the shop\u0027s notifications read.",
+        "operationId": "MarkShopNotificationRead",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/notifications/read-all": {
+      "post": {
+        "tags": [
+          "Shop: notifications"
+        ],
+        "summary": "Marks every notification of the shop read.",
+        "operationId": "MarkAllShopNotificationsRead",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12054,6 +13094,27 @@
           }
         }
       },
+      "BookingNotificationsResponse": {
+        "required": [
+          "dispatches",
+          "reminders"
+        ],
+        "type": "object",
+        "properties": {
+          "dispatches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchResponse"
+            }
+          },
+          "reminders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReminderResponse"
+            }
+          }
+        }
+      },
       "BookingProfessionalResponse": {
         "required": [
           "id",
@@ -12586,6 +13647,21 @@
           }
         },
         "description": "Bookings the change would overlap. Nothing is cancelled or messaged automatically (DV-S22): the shop sees them and\ndecides."
+      },
+      "ContactShopRequest": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A message to the review\u0027s shop (5\u2013500 characters), shown in its notifications."
       },
       "CreateBookingRequest": {
         "required": [
@@ -13220,6 +14296,268 @@
         },
         "description": "Real platform totals for the landing page; the web hides any that is zero (no fabricated figures)."
       },
+      "DispatchCounts": {
+        "required": [
+          "all",
+          "queued",
+          "sent",
+          "delivered",
+          "read",
+          "failed"
+        ],
+        "type": "object",
+        "properties": {
+          "all": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "queued": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "delivered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "read": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DispatchDetailResponse": {
+        "required": [
+          "dispatch",
+          "body",
+          "buttons",
+          "contentHash",
+          "contentPurgedAt",
+          "templateVersionId",
+          "providerMessageId"
+        ],
+        "type": "object",
+        "properties": {
+          "dispatch": {
+            "$ref": "#/components/schemas/DispatchResponse"
+          },
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RenderedButton"
+            }
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "contentPurgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "templateVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "providerMessageId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A dispatch with the rendered text (until the retention period ends) and its hash."
+      },
+      "DispatchKind": {
+        "enum": [
+          "Lifecycle",
+          "Reminder",
+          "Test"
+        ]
+      },
+      "DispatchListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "counts",
+          "stats"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DispatchResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/DispatchCounts"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/DispatchStats"
+          }
+        }
+      },
+      "DispatchResponse": {
+        "required": [
+          "id",
+          "kind",
+          "bookingId",
+          "shopId",
+          "event",
+          "audience",
+          "locale",
+          "templateId",
+          "templateVersionNumber",
+          "recipientMasked",
+          "status",
+          "attempts",
+          "lastError",
+          "createdAt",
+          "sentAt",
+          "deliveredAt",
+          "failedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DispatchKind"
+          },
+          "bookingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "shopId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "event": {
+            "$ref": "#/components/schemas/MessageEvent"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "templateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "templateVersionNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recipientMasked": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DispatchStatus"
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "deliveredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A dispatch as the log lists it: masked recipient only, never the number."
+      },
+      "DispatchStats": {
+        "required": [
+          "last24Hours",
+          "deliveryRate"
+        ],
+        "type": "object",
+        "properties": {
+          "last24Hours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deliveryRate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "description": "Messages recorded in the last 24 hours and the share delivered or read, in percent (one decimal)."
+      },
+      "DispatchStatus": {
+        "enum": [
+          "Queued",
+          "Sent",
+          "Delivered",
+          "Read",
+          "Failed"
+        ]
+      },
       "EditablePolicyRequest": {
         "required": [
           "editableFields"
@@ -13703,6 +15041,23 @@
         },
         "description": "The signed-in user (\u0060GET /api/v1/me\u0060). \u0060UserType\u0060 is \u0060Customer\u0060, \u0060ShopUser\u0060 or\n\u0060PlatformAdmin\u0060. A customer sees only their own number, masked. \u0060ShopId\u0060 is set for shop users from\nPhase 05. \u0060ProfileComplete\u0060 is false until a customer has given a name and accepted the terms."
       },
+      "MessageAudience": {
+        "enum": [
+          "Customer",
+          "Professional"
+        ],
+        "description": "Who a message is for (spec \u00A716): customers and professionals have independent templates."
+      },
+      "MessageEvent": {
+        "enum": [
+          "BookingConfirmed",
+          "BookingPending",
+          "BookingRescheduled",
+          "BookingCancelled",
+          "BookingReminder"
+        ],
+        "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109). Customers get all five; professionals get\nconfirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request."
+      },
       "ModerateReviewRequest": {
         "required": [
           "reason",
@@ -13813,6 +15168,85 @@
           }
         },
         "description": "A bookable start: the instant and its local time (\u0060HH:mm\u0060, shop time zone)."
+      },
+      "NotificationListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "unread"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unread": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "NotificationResponse": {
+        "required": [
+          "id",
+          "kind",
+          "parameters",
+          "bookingId",
+          "createdAt",
+          "readAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "bookingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A notification as the web app renders it: the kind and its parameters (names, ISO times, counts), never a phone number."
       },
       "OnlineBookingStateResponse": {
         "required": [
@@ -14845,6 +16279,31 @@
           }
         },
         "description": "A platform category offered nearby, with the lowest price among those shops (DV-S11, D-025: never a global price)."
+      },
+      "PreviewTemplateRequest": {
+        "required": [
+          "body",
+          "buttons"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buttons": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TemplateButton"
+            }
+          }
+        },
+        "description": "Text and buttons to validate and render with sample data (nothing is saved)."
       },
       "PriceRangeResponse": {
         "required": [
@@ -15892,6 +17351,60 @@
           }
         }
       },
+      "ReminderResponse": {
+        "required": [
+          "id",
+          "audience",
+          "startsAt",
+          "dueAt",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReminderStatus"
+          }
+        }
+      },
+      "ReminderStatus": {
+        "enum": [
+          "Scheduled",
+          "Cancelled",
+          "Sent",
+          "Skipped"
+        ]
+      },
+      "RenderedButton": {
+        "required": [
+          "label",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "description": "A button as rendered into a dispatch: its label and the URL the platform built."
+      },
       "RenewSubscriptionRequest": {
         "required": [
           "planId",
@@ -16290,6 +17803,43 @@
           }
         },
         "description": "The professional\u0027s shop (a professional belongs to exactly one shop)."
+      },
+      "SaveTemplateDraftRequest": {
+        "required": [
+          "body",
+          "buttons",
+          "providerTemplateName",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "buttons": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TemplateButton"
+            }
+          },
+          "providerTemplateName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The draft\u0027s text, buttons and optional Meta template name; send the template version read."
       },
       "ScheduleEntryState": {
         "enum": [
@@ -18049,6 +19599,317 @@
           }
         }
       },
+      "TemplateButton": {
+        "required": [
+          "label",
+          "target"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/TemplateButtonTarget"
+          }
+        }
+      },
+      "TemplateButtonTarget": {
+        "enum": [
+          "ManageBooking",
+          "ShopPage"
+        ],
+        "description": "What a template button opens (the URL is built by the platform, never typed by the admin)."
+      },
+      "TemplateDetailResponse": {
+        "required": [
+          "id",
+          "event",
+          "audience",
+          "locale",
+          "allowedPlaceholders",
+          "activeVersionId",
+          "versions",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "$ref": "#/components/schemas/MessageEvent"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "allowedPlaceholders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "activeVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateVersionResponse"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A template slot with its whole version history (newest first) and the placeholders its audience may use."
+      },
+      "TemplateIssueResponse": {
+        "required": [
+          "field",
+          "code",
+          "placeholder"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "placeholder": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TemplateListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateSummaryResponse"
+            }
+          }
+        }
+      },
+      "TemplatePreviewResponse": {
+        "required": [
+          "valid",
+          "issues",
+          "body",
+          "buttons",
+          "usedPlaceholders"
+        ],
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateIssueResponse"
+            }
+          },
+          "body": {
+            "type": "string"
+          },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RenderedButton"
+            }
+          },
+          "usedPlaceholders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The rendered sample (no real booking or customer), the issues found, and the placeholders the text uses."
+      },
+      "TemplateSummaryResponse": {
+        "required": [
+          "id",
+          "event",
+          "audience",
+          "locale",
+          "activeVersionNumber",
+          "activeBody",
+          "hasDraft",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "$ref": "#/components/schemas/MessageEvent"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "activeVersionNumber": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "activeBody": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hasDraft": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "TemplateVersionActionRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Send the template version read (optimistic concurrency)."
+      },
+      "TemplateVersionResponse": {
+        "required": [
+          "id",
+          "number",
+          "body",
+          "buttons",
+          "providerTemplateName",
+          "status",
+          "createdAt",
+          "createdByName",
+          "activatedAt",
+          "activatedByName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "body": {
+            "type": "string"
+          },
+          "buttons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TemplateButton"
+            }
+          },
+          "providerTemplateName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TemplateVersionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "activatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "activatedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TemplateVersionStatus": {
+        "enum": [
+          "Draft",
+          "Active",
+          "Archived"
+        ]
+      },
+      "TestSendRequest": {
+        "required": [
+          "versionId",
+          "recipient",
+          "confirmTestRecipient"
+        ],
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "recipient": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "confirmTestRecipient": {
+            "type": "boolean"
+          }
+        },
+        "description": "A test send: the version (default the draft, else the active one), a mobile number typed by the admin (never prefilled)\nand the explicit confirmation that it is a test recipient."
+      },
       "TimeOffKind": {
         "enum": [
           "Vacation",
@@ -18276,6 +20137,18 @@
           }
         },
         "description": "A highly rated professional of a listed shop (only stored ratings; no contact data)."
+      },
+      "UnreadCountResponse": {
+        "required": [
+          "unread"
+        ],
+        "type": "object",
+        "properties": {
+          "unread": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "UpdateOwnShopProfileRequest": {
         "required": [
@@ -18941,6 +20814,12 @@
       "name": "Shop: subscription"
     },
     {
+      "name": "Me: notifications"
+    },
+    {
+      "name": "Webhooks"
+    },
+    {
       "name": "Admin: overview"
     },
     {
@@ -18969,6 +20848,12 @@
     },
     {
       "name": "Customer: favorites"
+    },
+    {
+      "name": "Admin: WhatsApp"
+    },
+    {
+      "name": "Shop: notifications"
     },
     {
       "name": "Admin: settings"

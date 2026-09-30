@@ -95,6 +95,7 @@ function Shell({
       title={title}
       titleAddon={addon}
       permissions={permissions}
+      notifications={permissions.includes('Shop.Bookings.Read')}
       sidebarFooter={
         <div className="flex flex-col gap-3 rounded-card bg-on-navy-subtle p-3">
           <p className="truncate text-label font-bold text-on-navy">{name}</p>

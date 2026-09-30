@@ -30,6 +30,7 @@ export async function AdminFrame({ locale, path, title, permission, children }: 
       variant="admin"
       title={title}
       permissions={me.permissions}
+      notifications
       sidebarFooter={
         <div className="flex flex-col gap-3 rounded-card bg-on-navy-subtle p-3">
           <p className="truncate text-label font-bold text-on-navy">{me.displayName}</p>

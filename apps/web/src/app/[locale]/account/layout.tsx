@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SessionExpiryRedirect } from '@/components/auth/SessionClient';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { CustomerShell } from '@/components/shell/CustomerShell';
 
@@ -10,7 +11,9 @@ export default function AccountLayout({ children }: LayoutProps<'/[locale]/accou
   return (
     <QueryProvider>
       <SessionExpiryRedirect />
-      <CustomerShell>{children}</CustomerShell>
+      <CustomerShell bell={<NotificationBell scope="me" href="/account/notifications" />}>
+        {children}
+      </CustomerShell>
     </QueryProvider>
   );
 }

@@ -33,6 +33,8 @@ public sealed partial class TenancyRules
             "Pause state keyed by the shop id, read for any shop by the bookability gate and discovery; written only by the shop's own pause command, tenant from claims (D-083).",
         [typeof(Trimme.Modules.Reviews.Domain.RatingAggregate)] =
             "Platform read model of rating totals (counts per star, no personal data) that discovery sorts and filters for any shop; written only with a review in the same unit of work (D-092).",
+        [typeof(Trimme.Modules.Notifications.Domain.WhatsAppDispatch)] =
+            "Platform WhatsApp dispatch log; the shop id is a filter for admins only, shops never read it (D-110).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

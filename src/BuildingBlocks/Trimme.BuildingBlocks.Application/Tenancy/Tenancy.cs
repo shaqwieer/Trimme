@@ -86,8 +86,17 @@ public interface IShopDirectory
 /// <param name="TimeZone">IANA time zone of the shop's opening hours and availability (D-030).</param>
 /// <param name="OnlineBookingPausedAt">When the shop paused online booking; <see langword="null"/> while it is live (D-013).</param>
 /// <param name="RequireManualConfirmation">Online bookings start Pending and the shop confirms them (D-006); otherwise Confirmed.</param>
+/// <param name="Address">The confirmed address of the shop's location (for messages), when it has one.</param>
 public sealed record ShopSummary(
-    ShopId Id, string Slug, string NameAr, string NameEn, ShopStatus Status, string TimeZone, DateTimeOffset? OnlineBookingPausedAt, bool RequireManualConfirmation)
+    ShopId Id,
+    string Slug,
+    string NameAr,
+    string NameEn,
+    ShopStatus Status,
+    string TimeZone,
+    DateTimeOffset? OnlineBookingPausedAt,
+    bool RequireManualConfirmation,
+    string? Address = null)
 {
     public bool OnlineBookingPaused => OnlineBookingPausedAt is not null;
 }

@@ -11,9 +11,10 @@ flowchart LR
     nginx -->|everything else| web["TRIMME Web<br/>Next.js 16 (SSR/RSC)"]
     web -->|"server-side fetch (forwarded cookies)"| api
     api --> db[("PostgreSQL 17 + PostGIS<br/>schema per module")]
-    api -.->|Phase 15| jobs["Hangfire (PostgreSQL storage)<br/>reminders, outbox"]
+    api --> jobs["Hangfire server + outbox processor<br/>(in the API process; schema hangfire)"]
     jobs --> db
-    jobs -.->|provider adapter| wa["WhatsApp Cloud API<br/>(fake provider locally)"]
+    jobs -->|provider adapter| wa["WhatsApp Cloud API<br/>(fake provider locally)"]
+    wa -.->|signed status webhook| api
     migrate["migrate (one-shot)<br/>Trimme.Api migrate"] --> db
 ```
 

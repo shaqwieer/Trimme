@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Notifications;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -77,5 +78,23 @@ internal sealed class BookingReviewSource(TrimmeDbContext db) : IBookingReviewSo
         return new ReviewableBooking(
             booking.Id.Value, booking.ShopId, booking.CustomerId, booking.CustomerName, booking.ProfessionalId,
             booking.ItemNameAr, booking.ItemNameEn, completedAt);
+    }
+}
+
+/// <summary>
+/// <see cref="IBookingNotificationSource"/>: the booking snapshot messages are rendered from (names, item, price, times,
+/// status). Reads through the caller's scope (the system scope in notification jobs). No contact data.
+/// </summary>
+internal sealed class BookingNotificationSource(TrimmeDbContext db) : IBookingNotificationSource
+{
+    public async Task<NotifiableBooking?> FindAsync(Guid bookingId, CancellationToken cancellationToken)
+    {
+        var id = new BookingId(bookingId);
+        var b = await db.Set<Booking>().AsNoTracking().SingleOrDefaultAsync(b => b.Id == id, cancellationToken);
+        return b is null
+            ? null
+            : new NotifiableBooking(
+                b.Id.Value, b.ShopId, b.CustomerId, b.CustomerName, b.Reference, b.ProfessionalId, b.ProfessionalNameAr, b.ProfessionalNameEn,
+                b.ItemNameAr, b.ItemNameEn, b.Price, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString());
     }
 }

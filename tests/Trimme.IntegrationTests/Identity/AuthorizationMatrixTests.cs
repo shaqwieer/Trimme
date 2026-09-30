@@ -63,6 +63,11 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "GET /api/v1/public/shops/{slug}/reviews",
         "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}",
         "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots",
+
+        // Phase 15: the Meta status webhook. Verification needs the configured token; every POST must carry a valid
+        // HMAC-SHA256 signature of the raw body with the app secret; both answer 404 when WhatsApp is not configured (D-110).
+        "GET /api/v1/webhooks/whatsapp",
+        "POST /api/v1/webhooks/whatsapp",
     ];
 
     /// <summary>Endpoints any signed-in user may call about themselves (no permission needed).</summary>
@@ -72,6 +77,12 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "GET /api/v1/auth/sessions",
         "DELETE /api/v1/auth/sessions/{sessionId:guid}",
         "POST /api/v1/auth/sessions/revoke-all",
+
+        // Phase 15: the account's own in-app notifications (customers and admins; filtered by the caller's user id, D-112).
+        "GET /api/v1/me/notifications",
+        "GET /api/v1/me/notifications/unread-count",
+        "POST /api/v1/me/notifications/{notificationId:guid}/read",
+        "POST /api/v1/me/notifications/read-all",
     ];
 
     [Fact]

@@ -62,6 +62,7 @@ public static class Permissions
         public const string WhatsAppTemplatesActivate = "Admin.WhatsApp.Templates.Activate";
         public const string WhatsAppTestSend = "Admin.WhatsApp.TestSend";
         public const string WhatsAppDispatchesRetry = "Admin.WhatsApp.Dispatches.Retry";
+        public const string JobsView = "Admin.Jobs.View";
         public const string RolesView = "Admin.Roles.View";
         public const string RolesManage = "Admin.Roles.Manage";
         public const string StaffManage = "Admin.Staff.Manage";

@@ -1,8 +1,7 @@
 # TRIMME — Domain model
 
-The model as built so far (Phases 04–08), with the invariants each part enforces. Later phases extend this file:
-schedules (09), bookings (10), reviews, notifications and
-QR (11–16). The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
+The model as built so far (Phases 04–15), with the invariants each part enforces. QR codes and attribution (Phase 16)
+extend it next. The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
 
 One PostgreSQL database with one schema per module. Identifiers are UUIDv7 wrapped in typed ids. Instants are UTC
 `timestamptz`, and optimistic concurrency uses PostgreSQL `xmin`.
@@ -164,7 +163,7 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 - **BookingNote**: the shop's internal notes.
 - The exclusion constraint refuses two overlapping active bookings (Pending, Confirmed, Arrived) of one professional.
 
-**Outbox and idempotency** (`infra`): `outbox_messages` (events written in the booking's transaction, ids only) and `idempotency_records` (user + operation + key → the booking produced, 24 h).
+**Outbox and idempotency** (`infra`): `outbox_messages` (events written in the booking's transaction, ids only; since Phase 15 with attempts, the next attempt time and a dead-letter time, D-108), `processed_messages` (one row per message and consumer that succeeded) and `idempotency_records` (user + operation + key → the booking produced, 24 h).
 
 ## Reviews (`reviews`)
 
@@ -173,6 +172,15 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 - Customers write reviews from Phase 12; Phase 11 has the read side and the demo reviews.
 
 **RatingAggregate** is a platform read model per shop and per professional: count, sum and per-star counts, no personal data. It is updated in the same unit of work as the review, and discovery reads it for any shop.
+
+## Notifications (`notifications`)
+
+Phase 15 (D-108 … D-113); the full flow is in `docs/whatsapp-integration.md`.
+- **WhatsAppTemplate**: one per event × audience × locale (unique), with an `xmin` version. Its **WhatsAppTemplateVersion** rows hold the body, up to two buttons (JSON), the Meta template name and the status Draft/Active/Archived; at most one draft and one active version (kept by the aggregate), and a version never changes once it leaves the draft.
+- **WhatsAppDispatch**: one message to one recipient. It stores the kind (lifecycle, reminder, test), a unique dedupe key, the booking and shop ids (admin filters; not tenant-scoped, shops never read it), the template and version that rendered it, the recipient encrypted and masked, the recipient's id, the rendered text, buttons and parameters (cleared after the retention period), the content hash, the status Queued/Sent/Delivered/Read/Failed, attempts, the last error and the provider's message id.
+- **ReminderSchedule**: a reminder job of one booking and audience with the start it was scheduled for, the due time and the Hangfire job id; at most one Scheduled per booking and audience (partial unique index).
+- **ShopNotification** (shop-owned, tenant-filtered) and **UserNotification** (one account's): a kind, a dedupe key (unique per recipient), parameters as JSON (names, ISO times, counts; never a phone number), the booking id and the read time.
+- Hangfire keeps its own tables in schema `hangfire`, installed by `migrate`.
 
 ## Discovery (read side, no tables of its own)
 
@@ -207,3 +215,4 @@ Users of three types — Customer, ShopUser, PlatformAdmin (D-050) — sit on on
   - `professional.created`, `.updated`, `.enabled`, `.disabled`, `.avatar_changed`;
   - `professional.whatsapp_changed`, `.whatsapp_revealed`.
 - Phase 07 and 08 actions add `service.*`/`package.*` moderation and override, then `plan.created|updated|published|deactivated|archived|reordered|price_added`, `subscription.assigned|renewed|overridden|suspended|reinstated` and `platform_settings.updated`.
+- Phase 15 actions add `whatsapp_template.activated`, `whatsapp_template.test_sent` (never the number), `whatsapp_dispatch.retried` and `review.shop_contacted` (never the message text).

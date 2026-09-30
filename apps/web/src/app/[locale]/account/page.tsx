@@ -53,7 +53,12 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
           value: me.preferredLocale === 'en' ? t('profile.english') : t('profile.arabic'),
           href: '/account/profile',
         },
-        { icon: 'bell', label: t('rows.notifications'), value: t('rows.notificationsSoon') },
+        {
+          icon: 'bell',
+          label: t('rows.notifications'),
+          value: t('rows.notificationsValue'),
+          href: '/account/notifications',
+        },
       ],
     },
     {

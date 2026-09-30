@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
+import { ContactShopButton } from '@/components/admin/ops/ContactShopButton';
 import { ReviewActions } from '@/components/admin/ops/ReviewActions';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/cards';
@@ -202,6 +203,7 @@ export default async function AdminReviewsPage({
                         canFlag={canFlag}
                         canModerate={canModerate}
                       />
+                      {canModerate && <ContactShopButton reviewId={review.id} />}
                     </article>
                   </Card>
                 ))}

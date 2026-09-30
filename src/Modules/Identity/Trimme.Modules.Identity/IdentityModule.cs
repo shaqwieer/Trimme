@@ -60,6 +60,9 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<Application.Admin.CallerRights>();
         services.AddScoped<IPermissionResolver, PermissionResolver>();
         services.AddScoped<ICustomerDirectory, CustomerDirectory>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.ICustomerContactReader, CustomerContactReader>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.ICustomerNumberCheck, CustomerNumberCheck>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IStaffDirectory, StaffDirectory>();
         services.AddScoped<BuildingBlocks.Application.Reporting.ICustomerStatistics, CustomerStatistics>();
         services.AddScoped<IUserNameLookup, UserNameLookup>();
         services.AddScoped<SessionValidator>();
@@ -180,6 +183,7 @@ public sealed class IdentityModule : ModuleBase
             sp.GetRequiredService<IOptions<OtpDeliveryOptions>>().Value.ResolveSender(sp.GetRequiredService<IHostEnvironment>()) switch
             {
                 OtpSenderKind.DevInbox => ActivatorUtilities.CreateInstance<DevInboxOtpSender>(sp),
+                OtpSenderKind.WhatsApp => ActivatorUtilities.CreateInstance<WhatsAppOtpSender>(sp),
                 _ => ActivatorUtilities.CreateInstance<UnavailableOtpSender>(sp),
             });
 

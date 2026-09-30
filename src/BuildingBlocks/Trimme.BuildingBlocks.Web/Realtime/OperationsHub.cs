@@ -101,6 +101,9 @@ internal sealed record HubOrigins(IReadOnlyList<string> Allowed);
 
 public static class RealtimeSetup
 {
+    /// <summary>Every hub lives under this prefix; the origin guard covers all of them.</summary>
+    public const string HubsPrefix = "/hubs";
+
     /// <summary>
     /// SignalR and the operations publisher. Hub requests are accepted only from the web app's origins (the configured
     /// CORS origins and the public web address; see <see cref="UseOperationsHubOrigins"/>).
@@ -109,6 +112,7 @@ public static class RealtimeSetup
     {
         services.AddSignalR(options => options.EnableDetailedErrors = false);
         services.AddSingleton<IOperationsPublisher, HubOperationsPublisher>();
+        services.AddSingleton<Application.Notifications.INotificationsPush, HubNotificationsPush>();
 
         services.AddSingleton(new HubOrigins(
             [.. (configuration.GetSection(CorsSetup.AllowedOriginsKey).Get<string[]>() ?? [])
@@ -126,7 +130,7 @@ public static class RealtimeSetup
     /// </summary>
     public static IApplicationBuilder UseOperationsHubOrigins(this IApplicationBuilder app) =>
         app.UseWhen(
-            context => context.Request.Path.StartsWithSegments(OperationsHub.Path),
+            context => context.Request.Path.StartsWithSegments(HubsPrefix),
             branch => branch.Use(async (context, next) =>
             {
                 var origins = context.RequestServices.GetRequiredService<HubOrigins>();
@@ -142,5 +146,9 @@ public static class RealtimeSetup
 
     public static IEndpointConventionBuilder MapOperationsHub(this IEndpointRouteBuilder endpoints) =>
         endpoints.MapHub<OperationsHub>(OperationsHub.Path, options => options.CloseOnAuthenticationExpiration = true)
+            .RequireAuthorization();
+
+    public static IEndpointConventionBuilder MapNotificationsHub(this IEndpointRouteBuilder endpoints) =>
+        endpoints.MapHub<NotificationsHub>(NotificationsHub.Path, options => options.CloseOnAuthenticationExpiration = true)
             .RequireAuthorization();
 }

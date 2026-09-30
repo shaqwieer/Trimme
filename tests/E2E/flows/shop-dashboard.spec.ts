@@ -108,9 +108,11 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
     await page.getByLabel('اليوم', { exact: true }).fill(date);
     await page.locator('label').filter({ hasText: 'عمر السالم' }).click();
-    const time = page.getByTestId('walk-in-times').getByRole('radio').first();
+    // The day's last free time: the first ones can belong to the previous business day when its opening window runs
+    // past midnight (D-100), and the calendar below shows the business day.
+    const time = page.getByTestId('walk-in-times').getByRole('radio').last();
     await expect(time).toBeAttached();
-    await page.locator('[data-testid="walk-in-times"] label').first().click();
+    await page.locator('[data-testid="walk-in-times"] label').last().click();
     await page.getByLabel('اسم العميل').fill(customer);
     await expectNoSeriousAxe(page, 'walk-in');
     await page.getByRole('button', { name: 'تسجيل الحجز' }).click();

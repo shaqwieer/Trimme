@@ -23,6 +23,9 @@ public sealed record ModerateReviewRequest(string? Reason, uint Version);
 /// <summary>Publishing needs only the version read.</summary>
 public sealed record PublishReviewRequest(uint Version);
 
+/// <summary>A message to the review's shop (5–500 characters), shown in its notifications.</summary>
+public sealed record ContactShopRequest(string? Message);
+
 internal static class ReviewEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -72,6 +75,12 @@ internal static class ReviewEndpoints
             .RequirePermission(AdminModerate)
             .WithName("AdminPublishReview").WithSummary("Publishes a hidden review again, or clears a report on a published one (audited).")
             .Produces<AdminReviewResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        group.MapPost("/{reviewId:guid}/contact-shop", async (Guid reviewId, ContactShopRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ContactShopAboutReviewCommand(reviewId, r.Message), ct)).ToHttpResult())
+            .RequirePermission(AdminModerate)
+            .WithName("AdminContactShopAboutReview")
+            .WithSummary("Sends the review's shop an in-app message about it (audited without the text).")
+            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> Submit(Guid bookingId, SubmitReviewRequest request, IDispatcher dispatcher, CancellationToken cancellationToken) =>

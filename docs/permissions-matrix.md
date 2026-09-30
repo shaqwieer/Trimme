@@ -51,6 +51,7 @@
 | `Admin.WhatsApp.Templates.Activate` | ✓ | ✓ | — |
 | `Admin.WhatsApp.TestSend` | ✓ | ✓ | — |
 | `Admin.WhatsApp.Dispatches.Retry` | ✓ | ✓ | — |
+| `Admin.Jobs.View` | ✓ | ✓ | — |
 | `Admin.Roles.View` | ✓ | ✓ | — |
 | `Admin.Roles.Manage` | ✓ | — | — |
 | `Admin.Staff.Manage` | ✓ | — | — |

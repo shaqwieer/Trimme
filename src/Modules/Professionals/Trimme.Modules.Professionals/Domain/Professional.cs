@@ -219,6 +219,18 @@ public sealed class ProfessionalContact : IShopOwned
 
     public static ProfessionalContact For(Professional professional) => new(professional.Id, professional.ShopId);
 
+    /// <summary>What the WhatsApp provider reported for the number (Phase 15): delivered verifies it, a failure marks it failed.</summary>
+    public void RecordDelivery(bool delivered, DateTimeOffset now)
+    {
+        if (!HasNumber)
+        {
+            return;
+        }
+
+        Verification = delivered ? WhatsAppVerification.Verified : WhatsAppVerification.Failed;
+        UpdatedAt = now;
+    }
+
     /// <summary>Turns notifications on or off for the current number (none set: they can only be off).</summary>
     public Result SetNotifications(bool enabled, DateTimeOffset now)
     {

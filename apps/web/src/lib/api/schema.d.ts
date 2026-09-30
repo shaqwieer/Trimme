@@ -480,6 +480,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in account's own in-app notifications (customers: their bookings; admins: operational alerts), newest first. */
+        get: operations["ListMyNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many of the account's notifications are unread. */
+        get: operations["CountMyUnreadNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks one of the account's notifications read. */
+        post: operations["MarkMyNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks every notification of the account read. */
+        post: operations["MarkAllMyNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Meta's subscription check: echoes hub.challenge when hub.verify_token matches the configured token. */
+        get: operations["VerifyWhatsAppWebhook"];
+        put?: never;
+        /** Message status updates from Meta (sent, delivered, read, failed); the signature is verified before the body is read. */
+        post: operations["ReceiveWhatsAppWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/dashboard/overview": {
         parameters: {
             query?: never;
@@ -2457,6 +2543,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/reviews/{reviewId}/contact-shop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sends the review's shop an in-app message about it (audited without the text). */
+        post: operations["AdminContactShopAboutReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/favorites": {
         parameters: {
             query?: never;
@@ -2728,6 +2831,261 @@ export interface paths {
         put?: never;
         /** Lifts a suspension. */
         post: operations["ReinstateShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every template slot (event × audience × locale) with its active version number and text, and whether it has a draft. */
+        get: operations["AdminListWhatsAppTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A template slot with its version history (newest first) and the placeholders its audience may use. */
+        get: operations["AdminGetWhatsAppTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Creates the draft or replaces its text; validated against the placeholder whitelist. Active and archived versions never change. */
+        put: operations["AdminSaveWhatsAppTemplateDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}/versions/{versionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copies an earlier version's text into the draft (it still needs activation). */
+        post: operations["AdminRestoreWhatsAppTemplateVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}/versions/{versionId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Makes the draft the active version (the previous one is archived). Only future messages use it; audited. */
+        post: operations["AdminActivateWhatsAppTemplateVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validates text and renders it with fixed sample data (no real booking or customer). Nothing is saved. */
+        post: operations["AdminPreviewWhatsAppTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/templates/{templateId}/test-send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sends a version rendered with sample data to a number the admin typed and confirmed; a registered customer's number is refused. Audited without the number. */
+        post: operations["AdminTestSendWhatsAppTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/dispatches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The WhatsApp dispatch log, newest first: masked recipient, template version, status, attempts and error; counts per status and the last 24 hours' delivery rate. */
+        get: operations["AdminListWhatsAppDispatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/dispatches/{dispatchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A dispatch with its rendered text (until the retention period ends), its content hash and the template version that rendered it. */
+        get: operations["AdminGetWhatsAppDispatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/dispatches/{dispatchId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queues a failed dispatch for one more attempt (audited). */
+        post: operations["AdminRetryWhatsAppDispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/whatsapp/bookings/{bookingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A booking's WhatsApp dispatches and its reminder jobs (audience, due time, status). */
+        get: operations["AdminGetBookingNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's in-app notifications, newest first (names, items and times; never a customer phone number). */
+        get: operations["ListShopNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many of the shop's notifications are unread. */
+        get: operations["CountShopUnreadNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks one of the shop's notifications read. */
+        post: operations["MarkShopNotificationRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks every notification of the shop read. */
+        post: operations["MarkAllShopNotificationsRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3410,6 +3768,10 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        BookingNotificationsResponse: {
+            dispatches: components["schemas"]["DispatchResponse"][];
+            reminders: components["schemas"]["ReminderResponse"][];
+        };
         BookingProfessionalResponse: {
             /** Format: uuid */
             id: string;
@@ -3565,6 +3927,10 @@ export interface components {
          */
         ConflictPreviewResponse: {
             affectedBookings: components["schemas"]["AffectedBookingResponse"][];
+        };
+        /** @description A message to the review's shop (5–500 characters), shown in its notifications. */
+        ContactShopRequest: {
+            message: null | string;
         };
         /**
          * @description A customer's online booking of a published service or package (exactly one of the two). Without a professional the
@@ -3745,6 +4111,84 @@ export interface components {
             /** Format: int32 */
             reviewCount: number;
         };
+        DispatchCounts: {
+            /** Format: int32 */
+            all: number;
+            /** Format: int32 */
+            queued: number;
+            /** Format: int32 */
+            sent: number;
+            /** Format: int32 */
+            delivered: number;
+            /** Format: int32 */
+            read: number;
+            /** Format: int32 */
+            failed: number;
+        };
+        /** @description A dispatch with the rendered text (until the retention period ends) and its hash. */
+        DispatchDetailResponse: {
+            dispatch: components["schemas"]["DispatchResponse"];
+            body: null | string;
+            buttons: components["schemas"]["RenderedButton"][];
+            contentHash: string;
+            /** Format: date-time */
+            contentPurgedAt: null | string;
+            /** Format: uuid */
+            templateVersionId: string;
+            providerMessageId: null | string;
+        };
+        /** @enum {unknown} */
+        DispatchKind: "Lifecycle" | "Reminder" | "Test";
+        DispatchListResponse: {
+            items: components["schemas"]["DispatchResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            counts: components["schemas"]["DispatchCounts"];
+            stats: components["schemas"]["DispatchStats"];
+        };
+        /** @description A dispatch as the log lists it: masked recipient only, never the number. */
+        DispatchResponse: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["DispatchKind"];
+            /** Format: uuid */
+            bookingId: null | string;
+            /** Format: uuid */
+            shopId: null | string;
+            event: components["schemas"]["MessageEvent"];
+            audience: components["schemas"]["MessageAudience"];
+            locale: string;
+            /** Format: uuid */
+            templateId: string;
+            /** Format: int32 */
+            templateVersionNumber: number;
+            recipientMasked: string;
+            status: components["schemas"]["DispatchStatus"];
+            /** Format: int32 */
+            attempts: number;
+            lastError: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            sentAt: null | string;
+            /** Format: date-time */
+            deliveredAt: null | string;
+            /** Format: date-time */
+            failedAt: null | string;
+        };
+        /** @description Messages recorded in the last 24 hours and the share delivered or read, in percent (one decimal). */
+        DispatchStats: {
+            /** Format: int32 */
+            last24Hours: number;
+            /** Format: double */
+            deliveryRate: number;
+        };
+        /** @enum {unknown} */
+        DispatchStatus: "Queued" | "Sent" | "Delivered" | "Read" | "Failed";
         EditablePolicyRequest: {
             editableFields: components["schemas"]["ShopProfileField"][];
         };
@@ -3883,6 +4327,17 @@ export interface components {
             shopId: null | string;
             profileComplete: boolean;
         };
+        /**
+         * @description Who a message is for (spec §16): customers and professionals have independent templates.
+         * @enum {unknown}
+         */
+        MessageAudience: "Customer" | "Professional";
+        /**
+         * @description The booking lifecycle events that send a WhatsApp message (spec §16, D-109). Customers get all five; professionals get
+         *     confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request.
+         * @enum {unknown}
+         */
+        MessageEvent: "BookingConfirmed" | "BookingPending" | "BookingRescheduled" | "BookingCancelled" | "BookingReminder";
         /** @description A reason (5–300 characters) for a report or a hide; send the version read. */
         ModerateReviewRequest: {
             reason: null | string;
@@ -3919,6 +4374,32 @@ export interface components {
             /** Format: date-time */
             startsAt: string;
             localTime: string;
+        };
+        NotificationListResponse: {
+            items: components["schemas"]["NotificationResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: int32 */
+            unread: number;
+        };
+        /** @description A notification as the web app renders it: the kind and its parameters (names, ISO times, counts), never a phone number. */
+        NotificationResponse: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            parameters: {
+                [key: string]: string;
+            };
+            /** Format: uuid */
+            bookingId: null | string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: null | string;
         };
         /**
          * @description Whether the shop takes online bookings right now (s-hours pause card, D-013). While paused the shop gets no new
@@ -4255,6 +4736,11 @@ export interface components {
             /** Format: int32 */
             shopCount: number;
         };
+        /** @description Text and buttons to validate and render with sample data (nothing is saved). */
+        PreviewTemplateRequest: {
+            body: null | string;
+            buttons: null | components["schemas"]["TemplateButton"][];
+        };
         /** @description The lowest and highest pin price of the results before the price filter (the price slider's range). */
         PriceRangeResponse: {
             /** Format: double */
@@ -4572,6 +5058,23 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        ReminderResponse: {
+            /** Format: uuid */
+            id: string;
+            audience: components["schemas"]["MessageAudience"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            dueAt: string;
+            status: components["schemas"]["ReminderStatus"];
+        };
+        /** @enum {unknown} */
+        ReminderStatus: "Scheduled" | "Cancelled" | "Sent" | "Skipped";
+        /** @description A button as rendered into a dispatch: its label and the URL the platform built. */
+        RenderedButton: {
+            label: string;
+            url: string;
+        };
         /**
          * @description Records a renewal; the plan defaults to the current one and the start to the day after the current end (or today
          *     after a lapse). Custom durations, past starts and explicit prices follow the same SuperAdmin rule as activation.
@@ -4690,6 +5193,14 @@ export interface components {
         SaveProfessionalFavoriteRequest: {
             /** Format: uuid */
             shopId: string;
+        };
+        /** @description The draft's text, buttons and optional Meta template name; send the template version read. */
+        SaveTemplateDraftRequest: {
+            body: null | string;
+            buttons: null | components["schemas"]["TemplateButton"][];
+            providerTemplateName: null | string;
+            /** Format: uint32 */
+            version: number;
         };
         /**
          * @description Whether a closure or time off is in force now or still ahead (past entries are not listed).
@@ -5237,6 +5748,91 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        TemplateButton: {
+            label: string;
+            target: components["schemas"]["TemplateButtonTarget"];
+        };
+        /**
+         * @description What a template button opens (the URL is built by the platform, never typed by the admin).
+         * @enum {unknown}
+         */
+        TemplateButtonTarget: "ManageBooking" | "ShopPage";
+        /** @description A template slot with its whole version history (newest first) and the placeholders its audience may use. */
+        TemplateDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            event: components["schemas"]["MessageEvent"];
+            audience: components["schemas"]["MessageAudience"];
+            locale: string;
+            allowedPlaceholders: string[];
+            /** Format: uuid */
+            activeVersionId: null | string;
+            versions: components["schemas"]["TemplateVersionResponse"][];
+            /** Format: uint32 */
+            version: number;
+        };
+        TemplateIssueResponse: {
+            field: string;
+            code: string;
+            placeholder: null | string;
+        };
+        TemplateListResponse: {
+            items: components["schemas"]["TemplateSummaryResponse"][];
+        };
+        /** @description The rendered sample (no real booking or customer), the issues found, and the placeholders the text uses. */
+        TemplatePreviewResponse: {
+            valid: boolean;
+            issues: components["schemas"]["TemplateIssueResponse"][];
+            body: string;
+            buttons: components["schemas"]["RenderedButton"][];
+            usedPlaceholders: string[];
+        };
+        TemplateSummaryResponse: {
+            /** Format: uuid */
+            id: string;
+            event: components["schemas"]["MessageEvent"];
+            audience: components["schemas"]["MessageAudience"];
+            locale: string;
+            /** Format: int32 */
+            activeVersionNumber: null | number;
+            activeBody: null | string;
+            hasDraft: boolean;
+            /** Format: date-time */
+            updatedAt: null | string;
+        };
+        /** @description Send the template version read (optimistic concurrency). */
+        TemplateVersionActionRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
+        TemplateVersionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            number: number;
+            body: string;
+            buttons: components["schemas"]["TemplateButton"][];
+            providerTemplateName: null | string;
+            status: components["schemas"]["TemplateVersionStatus"];
+            /** Format: date-time */
+            createdAt: string;
+            createdByName: null | string;
+            /** Format: date-time */
+            activatedAt: null | string;
+            activatedByName: null | string;
+        };
+        /** @enum {unknown} */
+        TemplateVersionStatus: "Draft" | "Active" | "Archived";
+        /**
+         * @description A test send: the version (default the draft, else the active one), a mobile number typed by the admin (never prefilled)
+         *     and the explicit confirmation that it is a test recipient.
+         */
+        TestSendRequest: {
+            /** Format: uuid */
+            versionId: null | string;
+            recipient: null | string;
+            confirmTestRecipient: boolean;
+        };
         /** @enum {unknown} */
         TimeOffKind: "Vacation" | "Sick" | "Other";
         /**
@@ -5310,6 +5906,10 @@ export interface components {
             rating: number;
             /** Format: int32 */
             reviewCount: number;
+        };
+        UnreadCountResponse: {
+            /** Format: int32 */
+            unread: number;
         };
         /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
         UpdateOwnShopProfileRequest: {
@@ -6410,6 +7010,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopSubscriptionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyNotifications: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CountMyUnreadNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkMyNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkAllMyNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    VerifyWhatsAppWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReceiveWhatsAppWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -11702,6 +12494,48 @@ export interface operations {
             };
         };
     };
+    AdminContactShopAboutReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactShopRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListMyFavorites: {
         parameters: {
             query?: never;
@@ -12467,6 +13301,537 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListWhatsAppTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateListResponse"];
+                };
+            };
+        };
+    };
+    AdminGetWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSaveWhatsAppTemplateDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveTemplateDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRestoreWhatsAppTemplateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateVersionActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminActivateWhatsAppTemplateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateVersionActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminPreviewWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplatePreviewResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminTestSendWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestSendRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListWhatsAppDispatches: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["DispatchStatus"];
+                audience?: components["schemas"]["MessageAudience"];
+                event?: components["schemas"]["MessageEvent"];
+                kind?: components["schemas"]["DispatchKind"];
+                shopId?: string;
+                bookingId?: string;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchListResponse"];
+                };
+            };
+        };
+    };
+    AdminGetWhatsAppDispatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispatchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRetryWhatsAppDispatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dispatchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispatchResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetBookingNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingNotificationsResponse"];
+                };
+            };
+        };
+    };
+    ListShopNotifications: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CountShopUnreadNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkShopNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkAllShopNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

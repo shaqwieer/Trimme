@@ -363,7 +363,7 @@
     "rows": {
       "language": "اللغة",
       "notifications": "إشعارات واتساب",
-      "notificationsSoon": "تُدار قريباً من هنا",
+      "notificationsValue": "واتساب وداخل التطبيق",
       "personal": "البيانات الشخصية",
       "bookings": "مواعيدي",
       "favorites": "المفضلة",
@@ -471,7 +471,16 @@
     "role_superadmin_only": "لا يمنح دور المدير العام أو يسحبه إلا مدير عام.",
     "role_last_superadmin": "يجب أن يبقى للمنصة مدير عام نشط واحد على الأقل.",
     "role_not_assignable": "لا يمكن إسناد هذه الأدوار لفريق المنصة.",
-    "staff_self": "لا يمكنك تغيير أدوارك أو تعطيل حسابك بنفسك."
+    "staff_self": "لا يمكنك تغيير أدوارك أو تعطيل حسابك بنفسك.",
+    "template_not_found": "القالب غير موجود.",
+    "template_version_not_found": "نسخة القالب غير موجودة.",
+    "template_not_a_draft": "يمكن تفعيل المسودة فقط.",
+    "template_no_active_version": "لا توجد نسخة فعّالة لهذا القالب.",
+    "dispatch_not_found": "الرسالة غير موجودة.",
+    "dispatch_not_retryable": "يمكن إعادة محاولة الرسائل الفاشلة فقط.",
+    "dispatch_content_purged": "حُذف نص الرسالة بعد انتهاء مدة الاحتفاظ ولا يمكن إرسالها مجدداً.",
+    "whatsapp_test_recipient_is_customer": "هذا الرقم لعميل مسجّل. استخدم رقم اختبار مخصصاً.",
+    "notification_not_found": "الإشعار غير موجود."
   },
   "shopStatus": {
     "Draft": "مسودة",
@@ -2444,6 +2453,16 @@
       "publishTitle": "نشر هذا التقييم؟",
       "publishBody": "يعود إلى صفحة المحل ويُحتسب في تقييمه من جديد.",
       "clearBody": "يبقى منشوراً ويخرج من قائمة المراجعة، ويُلغى البلاغ."
+    },
+    "contact": {
+      "open": "تواصل مع المحل",
+      "title": "رسالة إلى المحل",
+      "body": "تظهر الرسالة في إشعارات المحل. لا تضف بيانات تواصل العميل.",
+      "message": "الرسالة",
+      "send": "إرسال",
+      "sent": "أُرسلت الرسالة إلى المحل.",
+      "length": "اكتب رسالة من ٥ إلى ٥٠٠ حرف.",
+      "failed": "تعذّر إرسال الرسالة."
     }
   },
   "permissions": {
@@ -2690,6 +2709,221 @@
       "staff_roles_changed": "تغيير أدوار عضو فريق",
       "staff_disabled": "تعطيل عضو فريق",
       "staff_enabled": "تفعيل عضو فريق"
+    }
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "bell": "الإشعارات",
+    "bellUnread": "الإشعارات، {count, plural, one {إشعار واحد غير مقروء} two {إشعاران غير مقروءين} few {# إشعارات غير مقروءة} many {# إشعاراً غير مقروء} other {# إشعار غير مقروء}}",
+    "unreadCount": "{count, plural, =0 {لا إشعارات غير مقروءة} one {إشعار واحد غير مقروء} two {إشعاران غير مقروءين} few {# إشعارات غير مقروءة} many {# إشعاراً غير مقروء} other {# إشعار غير مقروء}}",
+    "unread": "جديد",
+    "markRead": "تعليم كمقروء",
+    "markAllRead": "تعليم الكل كمقروء",
+    "open": "عرض التفاصيل",
+    "loading": "جارٍ التحميل…",
+    "failed": "تعذّر حفظ التغيير. حاول مرة أخرى.",
+    "adminEmpty": "لا تنبيهات جديدة",
+    "empty": {
+      "title": "لا إشعارات بعد",
+      "body": "ستظهر هنا تحديثات الحجوزات والتنبيهات المهمة."
+    },
+    "kinds": {
+      "generic": "تحديث جديد",
+      "shop": {
+        "booking_created": "حجز جديد من {customer}: {item} مع {professional} يوم {date} الساعة {time}",
+        "booking_pending": "طلب حجز بانتظار تأكيدك من {customer}: {item} يوم {date} الساعة {time}",
+        "booking_confirmed": "تم تأكيد حجز {customer}: {item} يوم {date} الساعة {time}",
+        "booking_rescheduled": "عدّل {customer} موعده إلى {date} الساعة {time} ({item} مع {professional})",
+        "booking_cancelled": "ألغى {customer} حجزه يوم {date} الساعة {time} ({item})",
+        "subscription_expiring": "ينتهي اشتراك المحل بعد {days, plural, one {يوم واحد} two {يومين} few {# أيام} many {# يوماً} other {# يوم}} في {endDate}",
+        "subscription_expired": "انتهى اشتراك المحل في {endDate}. تواصل مع فريق تريمي للتجديد",
+        "admin_message": "رسالة من فريق تريمي: {message}"
+      },
+      "customer": {
+        "booking_confirmed": "أكّد {shop} حجزك: {item} يوم {date} الساعة {time}",
+        "booking_rescheduled": "تم تعديل موعدك في {shop} إلى {date} الساعة {time}",
+        "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}"
+      },
+      "admin": {
+        "whatsapp_dispatch_failed": "تعذّر إرسال رسالة واتساب ({event})",
+        "subscription_expiring": "ينتهي اشتراك {shop} بعد {days, plural, one {يوم واحد} two {يومين} few {# أيام} many {# يوماً} other {# يوم}} في {endDate}",
+        "subscription_expired": "انتهى اشتراك {shop} في {endDate}",
+        "outbox_dead_lettered": "توقفت معالجة رسالة في صندوق الإرسال بعد عدة محاولات"
+      }
+    }
+  },
+  "adminWhatsApp": {
+    "title": "رسائل واتساب",
+    "tabs": {
+      "label": "أقسام واتساب",
+      "templates": "القوالب",
+      "dispatches": "سجل الرسائل"
+    },
+    "event": {
+      "BookingConfirmed": "تأكيد الحجز",
+      "BookingPending": "طلب بانتظار التأكيد",
+      "BookingRescheduled": "تعديل الموعد",
+      "BookingCancelled": "إلغاء الحجز",
+      "BookingReminder": "التذكير قبل الموعد"
+    },
+    "audience": {
+      "Customer": "العميل",
+      "Professional": "الحلاق"
+    },
+    "locale": {
+      "ar": "العربية",
+      "en": "الإنجليزية"
+    },
+    "templates": {
+      "intro": "لكل حدث قالب مستقل للعميل وآخر للحلاق، بالعربية والإنجليزية. التعديل يطبّق على الرسائل القادمة فقط.",
+      "list": "قوالب الرسائل",
+      "slot": "{audience} · {locale}",
+      "active": "النسخة {number} فعّالة",
+      "noActive": "لا نسخة فعّالة",
+      "hasDraft": "مسودة",
+      "edit": "تعديل",
+      "editorTitle": "قالب: {event}",
+      "breadcrumb": "القوالب"
+    },
+    "editor": {
+      "text": "نص الرسالة",
+      "draftBadge": "مسودة · النسخة {number}",
+      "activeBadge": "فعّالة · النسخة {number}",
+      "body": "النص",
+      "length": "{used} من {max} حرفاً",
+      "insert": "إدراج متغيّر",
+      "buttons": "الأزرار (حتى زرّين)",
+      "buttonLabel": "نص الزر",
+      "buttonTarget": "يفتح",
+      "target": {
+        "ManageBooking": "صفحة إدارة الموعد",
+        "ShopPage": "صفحة المحل والاتجاهات"
+      },
+      "removeButton": "حذف الزر",
+      "addButton": "إضافة زر",
+      "providerName": "اسم القالب المعتمد في Meta",
+      "providerNameHelp": "أحرف إنجليزية صغيرة وأرقام وشرطة سفلية. يجب أن يطابق نصاً معتمداً في Meta قبل الإرسال الفعلي.",
+      "preview": "المعاينة",
+      "previewHelp": "بيانات تجريبية ثابتة فقط، ولا تُستخدم بيانات أي عميل حقيقي.",
+      "saveDraft": "حفظ المسودة",
+      "activate": "تفعيل",
+      "activateTitle": "تفعيل هذه النسخة؟",
+      "activateBody": "ستُستخدم في الرسائل القادمة فقط، وتبقى الرسائل المرسلة سابقاً بنسختها الأصلية. يُسجَّل التفعيل.",
+      "saved": "حُفظت المسودة.",
+      "activated": "أصبحت النسخة {number} فعّالة.",
+      "restored": "نُسخ النص إلى المسودة. فعّلها لتصبح نافذة.",
+      "failed": "تعذّر إكمال العملية.",
+      "history": "سجل النسخ",
+      "versionNumber": "النسخة {number}",
+      "status": {
+        "Draft": "مسودة",
+        "Active": "فعّالة",
+        "Archived": "مؤرشفة"
+      },
+      "activatedBy": "فعّلها {name} · {date}",
+      "editedBy": "حرّرها {name} · {date}",
+      "system": "النظام",
+      "restore": "استعادة إلى المسودة"
+    },
+    "issues": {
+      "template_body_required": "اكتب نص الرسالة.",
+      "template_body_too_long": "النص أطول من الحد المسموح (١٠٢٤ حرفاً).",
+      "template_unknown_placeholder": "المتغيّر ‎{name}‎ غير معروف.",
+      "template_placeholder_not_allowed": "المتغيّر ‎{name}‎ غير متاح لهذا الجمهور.",
+      "template_malformed_placeholder": "تحقق من الأقواس: اكتب المتغيّر هكذا '{{customer_name}}'.",
+      "template_too_many_buttons": "زرّان كحد أقصى.",
+      "template_button_label_invalid": "نص الزر مطلوب (٢٥ حرفاً كحد أقصى).",
+      "template_button_not_allowed": "زر إدارة الموعد متاح لرسائل العميل فقط.",
+      "template_duplicate_button": "لا تكرّر الوجهة نفسها لزرّين.",
+      "template_provider_name_invalid": "اسم القالب غير صالح."
+    },
+    "placeholders": {
+      "customer_name": "اسم العميل",
+      "professional_name": "اسم الحلاق",
+      "shop_name": "اسم المحل",
+      "service_name": "الخدمة",
+      "booking_date": "التاريخ",
+      "booking_time": "الوقت",
+      "time_remaining": "المتبقي على الموعد",
+      "duration": "المدة",
+      "amount": "المبلغ",
+      "address": "العنوان",
+      "booking_reference": "رقم الحجز",
+      "manage_url": "رابط إدارة الموعد"
+    },
+    "testSend": {
+      "open": "إرسال تجريبي",
+      "title": "إرسال تجريبي",
+      "body": "أدخل رقم اختبار مخصصاً. تُرسل الرسالة ببيانات تجريبية، ويُرفض رقم أي عميل مسجّل.",
+      "recipient": "رقم الاختبار",
+      "confirm": "أؤكد أن هذا رقم اختبار وليس رقم عميل.",
+      "send": "إرسال",
+      "sent": "أُرسلت الرسالة التجريبية إلى {recipient}.",
+      "failedSend": "لم تُرسل: {error}",
+      "failed": "تعذّر الإرسال."
+    },
+    "dispatches": {
+      "stats": "آخر ٢٤ ساعة: {count, plural, =0 {لا رسائل} one {رسالة واحدة} two {رسالتان} few {# رسائل} many {# رسالة} other {# رسالة}} · نسبة التسليم {rate}",
+      "filters": "تصفية السجل",
+      "status": {
+        "all": "الكل",
+        "Queued": "بانتظار الإرسال",
+        "Sent": "أُرسلت",
+        "Delivered": "سُلِّمت",
+        "Read": "قُرئت",
+        "Failed": "فشلت"
+      },
+      "anyAudience": "كل الجماهير",
+      "anyEvent": "كل الأحداث",
+      "apply": "تطبيق",
+      "list": "الرسائل",
+      "columns": {
+        "time": "الوقت",
+        "event": "الحدث",
+        "audience": "إلى",
+        "recipient": "الرقم",
+        "version": "نسخة القالب",
+        "status": "الحالة",
+        "attempts": "المحاولات"
+      },
+      "kind": {
+        "Lifecycle": "حدث حجز",
+        "Reminder": "تذكير",
+        "Test": "تجريبية"
+      },
+      "versionShort": "ن{number}",
+      "empty": {
+        "title": "لا رسائل هنا",
+        "body": "غيّر التصفية أو انتظر أول حجز."
+      },
+      "detailTitle": "تفاصيل الرسالة",
+      "content": "النص المُرسل",
+      "contentPurged": "حُذف النص بعد انتهاء مدة الاحتفاظ؛ بقيت البصمة ونسخة القالب.",
+      "hash": "بصمة المحتوى",
+      "error": "آخر خطأ",
+      "attempts": "{count, plural, one {محاولة واحدة} two {محاولتان} few {# محاولات} many {# محاولة} other {# محاولة}}",
+      "template": "القالب: {event} · {audience} · النسخة {number}",
+      "providerId": "معرّف المزوّد",
+      "retry": "إعادة المحاولة",
+      "retryTitle": "إعادة إرسال هذه الرسالة؟",
+      "retryBody": "تُرسل الرسالة نفسها بنصها المسجّل مرة أخرى. تُسجَّل العملية.",
+      "retried": "أُعيدت الرسالة إلى قائمة الإرسال.",
+      "booking": "عرض الموعد",
+      "back": "سجل الرسائل"
+    },
+    "booking": {
+      "heading": "رسائل واتساب",
+      "none": "لا رسائل لهذا الموعد بعد.",
+      "reminders": "التذكيرات المجدولة",
+      "noReminders": "لا تذكيرات.",
+      "reminderStatus": {
+        "Scheduled": "مجدول",
+        "Cancelled": "أُلغي",
+        "Sent": "أُرسل",
+        "Skipped": "لم يُرسل"
+      },
+      "due": "{audience} · {date} الساعة {time}",
+      "openLog": "فتح السجل"
     }
   }
 }

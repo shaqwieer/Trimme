@@ -26,6 +26,7 @@ public sealed class ProfessionalsModule : ModuleBase
         base.AddServices(services, configuration);
         services.AddScoped<ProfessionalAdminSupport>();
         services.AddScoped<IProfessionalDirectory, ProfessionalDirectory>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IProfessionalContactReader, ProfessionalContactReader>();
         services.AddScoped<BuildingBlocks.Application.Reporting.IProfessionalStatistics, ProfessionalStatistics>();
         services.AddSingleton<IDevSeeder, DemoProfessionalsSeeder>();
     }

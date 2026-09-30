@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { BookingIntervention } from './BookingIntervention';
+import { ContactShopButton } from './ContactShopButton';
 import { CustomerContact } from './CustomerContact';
 import { ReviewActions } from './ReviewActions';
 import { RoleEditor } from './RoleEditor';
@@ -259,5 +260,28 @@ describe('StaffActions', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save roles' }));
     expect(await screen.findByText('You can only grant permissions you hold yourself.')).toBeInTheDocument();
     expect(api.PUT.mock.calls[0]?.[1].body).toEqual({ roles: ['Support', 'Auditors'] });
+  });
+});
+
+describe('ContactShopButton', () => {
+  it('asks for a 5–500 character message, then sends it to the shop of the review', async () => {
+    api.POST.mockResolvedValue({ data: undefined, response: new Response(null, { status: 204 }) });
+    renderWithIntl(<ContactShopButton reviewId="r1" />, { locale: 'en' });
+    await userEvent.click(screen.getByRole('button', { name: 'Contact the shop' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Message'), 'hi');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    expect(within(dialog).getByText('Write a message of 5 to 500 characters.')).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+
+    await userEvent.type(within(dialog).getByLabelText('Message'), ' — please call the customer back');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/admin/reviews/{reviewId}/contact-shop', {
+        params: { path: { reviewId: 'r1' } },
+        body: { message: 'hi — please call the customer back' },
+      }),
+    );
+    expect(await screen.findByText('The message was sent to the shop.')).toBeInTheDocument();
   });
 });

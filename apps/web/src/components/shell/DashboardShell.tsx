@@ -7,6 +7,7 @@ import { IconButton } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/overlays';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
+import { AdminNotificationBell, NotificationBell } from '@/components/notifications/NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { activeHref, adminNav, shopNav, visibleItems } from './navigation';
 
@@ -20,6 +21,8 @@ type DashboardShellProps = {
   sidebarFooter?: ReactNode;
   /** Shown next to the page title (e.g. the live-updates indicator). */
   titleAddon?: ReactNode;
+  /** A signed-in dashboard gets the live notification bell (D-112); previews without a session keep a plain icon. */
+  notifications?: boolean;
 };
 
 /**
@@ -35,6 +38,7 @@ export function DashboardShell({
   permissions,
   sidebarFooter,
   titleAddon,
+  notifications = false,
 }: DashboardShellProps) {
   const t = useTranslations();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -77,7 +81,13 @@ export function DashboardShell({
           {titleAddon}
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <IconButton icon="bell" label={t('shell.notifications')} />
+            {!notifications ? (
+              <IconButton icon="bell" label={t('shell.notifications')} />
+            ) : variant === 'shop' ? (
+              <NotificationBell scope="shop" href="/shop/notifications" />
+            ) : (
+              <AdminNotificationBell />
+            )}
           </div>
         </div>
       </header>

@@ -44,6 +44,7 @@ public sealed class BookingsModule : ModuleBase
         services.Replace(ServiceDescriptor.Scoped<IBookedTimeReader, BookedTimeReader>());
         services.AddScoped<IShopServiceUsage, BookingServiceUsage>();
         services.AddScoped<IBookingReviewSource, BookingReviewSource>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IBookingNotificationSource, BookingNotificationSource>();
         services.AddScoped<IBookingStatistics, BookingStatistics>();
         services.AddSingleton<IDevSeeder, DemoBookingsSeeder>();
     }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Serilog;
 using Trimme.BuildingBlocks.Web.Errors;
+using Trimme.BuildingBlocks.Web.Jobs;
 using Trimme.BuildingBlocks.Web.Media;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.BuildingBlocks.Web.Observability;
@@ -22,8 +23,12 @@ internal static class ApiPipeline
         app.UseForwardedHeaders();
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<SecurityHeadersMiddleware>();
-        app.UseTrimmeProblemDetails();
+
+        // Request logging wraps the exception handler, so it records the final status: a request the client aborted is
+        // 499 and an exception mapped to 4xx keeps its status, instead of the 500 an in-flight exception would show.
+        // Real 500s are still logged with their exception by the handler.
         app.UseSerilogRequestLogging();
+        app.UseTrimmeProblemDetails();
         app.UseMiddleware<RequestSizeLimitMiddleware>();
 
         if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment(TestingEnvironment))
@@ -39,10 +44,15 @@ internal static class ApiPipeline
         app.UseRateLimiter();
         app.UseOutputCache();
 
+        // Operations dashboard (D-108): read-only, platform admins with Admin.Jobs.View, under /api so Nginx reaches it.
+        app.UseTrimmeJobsDashboard();
+
         MapPlatformEndpoints(app);
 
-        // Live operations updates (D-099): outside /api/v1, cookie-authenticated; the hub picks the group itself.
+        // Live operations updates (D-099) and the in-app notification signal (D-112): outside /api/v1,
+        // cookie-authenticated; each hub picks its groups itself.
         app.MapOperationsHub();
+        app.MapNotificationsHub();
 
         // Default deny (R-AUTH-09): every feature endpoint requires a signed-in user unless it explicitly allows
         // anonymous access, and every unsafe method requires the CSRF header.

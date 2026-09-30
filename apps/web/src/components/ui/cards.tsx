@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
@@ -10,18 +10,24 @@ import { Icon } from './icons';
 import { RatingStars } from './Rating';
 import { RadioCard, TagChip } from './selection';
 
-/** White surface card (radius 14, 1px border, E1) — the base of every card in the design. */
+/**
+ * White surface card (radius 14, 1px border, E1) — the base of every card in the design. Other HTML attributes (ids,
+ * `aria-labelledby`, `data-testid`) are passed through to the element.
+ */
 export function Card({
   children,
   className,
   as: Tag = 'div',
-}: {
+  ...rest
+}: Omit<HTMLAttributes<HTMLElement>, 'className' | 'children'> & {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'article' | 'section' | 'li';
 }) {
   return (
-    <Tag className={cn('rounded-card border border-border bg-surface shadow-e1', className)}>{children}</Tag>
+    <Tag {...rest} className={cn('rounded-card border border-border bg-surface shadow-e1', className)}>
+      {children}
+    </Tag>
   );
 }
 

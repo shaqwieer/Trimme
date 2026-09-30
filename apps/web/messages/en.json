@@ -363,7 +363,7 @@
     "rows": {
       "language": "Language",
       "notifications": "WhatsApp notifications",
-      "notificationsSoon": "Managed here soon",
+      "notificationsValue": "WhatsApp and in the app",
       "personal": "Personal info",
       "bookings": "My appointments",
       "favorites": "Favourites",
@@ -471,7 +471,16 @@
     "role_superadmin_only": "Only a general manager can give or take the general manager role.",
     "role_last_superadmin": "The platform must keep at least one active general manager.",
     "role_not_assignable": "These roles cannot be given to platform staff.",
-    "staff_self": "You cannot change your own roles or disable your own account."
+    "staff_self": "You cannot change your own roles or disable your own account.",
+    "template_not_found": "The template was not found.",
+    "template_version_not_found": "The template version was not found.",
+    "template_not_a_draft": "Only a draft can be activated.",
+    "template_no_active_version": "This template has no active version.",
+    "dispatch_not_found": "The message was not found.",
+    "dispatch_not_retryable": "Only failed messages can be retried.",
+    "dispatch_content_purged": "The message text was removed after the retention period; it cannot be sent again.",
+    "whatsapp_test_recipient_is_customer": "This number belongs to a registered customer. Use a dedicated test number.",
+    "notification_not_found": "The notification was not found."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -2444,6 +2453,16 @@
       "publishTitle": "Publish this review?",
       "publishBody": "It returns to the shop's page and counts in its rating again.",
       "clearBody": "It stays published and leaves the moderation queue; the report is cleared."
+    },
+    "contact": {
+      "open": "Contact the shop",
+      "title": "Message to the shop",
+      "body": "The message appears in the shop's notifications. Do not add the customer's contact details.",
+      "message": "Message",
+      "send": "Send",
+      "sent": "The message was sent to the shop.",
+      "length": "Write a message of 5 to 500 characters.",
+      "failed": "The message could not be sent."
     }
   },
   "permissions": {
@@ -2690,6 +2709,221 @@
       "staff_roles_changed": "Staff roles changed",
       "staff_disabled": "Staff member disabled",
       "staff_enabled": "Staff member enabled"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "Notifications",
+    "bellUnread": "Notifications, {count, plural, one {# unread} other {# unread}}",
+    "unreadCount": "{count, plural, =0 {No unread notifications} one {# unread notification} other {# unread notifications}}",
+    "unread": "New",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "open": "View details",
+    "loading": "Loading…",
+    "failed": "The change could not be saved. Try again.",
+    "adminEmpty": "No new alerts",
+    "empty": {
+      "title": "No notifications yet",
+      "body": "Booking updates and important alerts will appear here."
+    },
+    "kinds": {
+      "generic": "New update",
+      "shop": {
+        "booking_created": "New booking from {customer}: {item} with {professional} on {date} at {time}",
+        "booking_pending": "Booking request awaiting your confirmation from {customer}: {item} on {date} at {time}",
+        "booking_confirmed": "{customer}'s booking is confirmed: {item} on {date} at {time}",
+        "booking_rescheduled": "{customer} moved their booking to {date} at {time} ({item} with {professional})",
+        "booking_cancelled": "{customer} cancelled their booking on {date} at {time} ({item})",
+        "subscription_expiring": "The shop's subscription ends in {days, plural, one {# day} other {# days}}, on {endDate}",
+        "subscription_expired": "The shop's subscription ended on {endDate}. Contact the TRIMME team to renew",
+        "admin_message": "Message from the TRIMME team: {message}"
+      },
+      "customer": {
+        "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
+        "booking_rescheduled": "Your booking at {shop} was moved to {date} at {time}",
+        "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled"
+      },
+      "admin": {
+        "whatsapp_dispatch_failed": "A WhatsApp message could not be sent ({event})",
+        "subscription_expiring": "{shop}'s subscription ends in {days, plural, one {# day} other {# days}}, on {endDate}",
+        "subscription_expired": "{shop}'s subscription ended on {endDate}",
+        "outbox_dead_lettered": "An outbox message stopped after repeated failures"
+      }
+    }
+  },
+  "adminWhatsApp": {
+    "title": "WhatsApp messages",
+    "tabs": {
+      "label": "WhatsApp sections",
+      "templates": "Templates",
+      "dispatches": "Message log"
+    },
+    "event": {
+      "BookingConfirmed": "Booking confirmed",
+      "BookingPending": "Request awaiting confirmation",
+      "BookingRescheduled": "Booking moved",
+      "BookingCancelled": "Booking cancelled",
+      "BookingReminder": "Reminder before the appointment"
+    },
+    "audience": {
+      "Customer": "Customer",
+      "Professional": "Professional"
+    },
+    "locale": {
+      "ar": "Arabic",
+      "en": "English"
+    },
+    "templates": {
+      "intro": "Each event has its own template for the customer and for the professional, in Arabic and English. Edits apply to future messages only.",
+      "list": "Message templates",
+      "slot": "{audience} · {locale}",
+      "active": "Version {number} active",
+      "noActive": "No active version",
+      "hasDraft": "Draft",
+      "edit": "Edit",
+      "editorTitle": "Template: {event}",
+      "breadcrumb": "Templates"
+    },
+    "editor": {
+      "text": "Message text",
+      "draftBadge": "Draft · version {number}",
+      "activeBadge": "Active · version {number}",
+      "body": "Text",
+      "length": "{used} of {max} characters",
+      "insert": "Insert a placeholder",
+      "buttons": "Buttons (up to two)",
+      "buttonLabel": "Button text",
+      "buttonTarget": "Opens",
+      "target": {
+        "ManageBooking": "Manage-booking page",
+        "ShopPage": "Shop page and directions"
+      },
+      "removeButton": "Remove button",
+      "addButton": "Add a button",
+      "providerName": "Approved Meta template name",
+      "providerNameHelp": "Lowercase letters, digits and underscores. It must match text approved by Meta before real sending.",
+      "preview": "Preview",
+      "previewHelp": "Fixed sample data only; no real customer's data is used.",
+      "saveDraft": "Save draft",
+      "activate": "Activate",
+      "activateTitle": "Activate this version?",
+      "activateBody": "Future messages use it; messages already sent keep their original version. The activation is recorded.",
+      "saved": "Draft saved.",
+      "activated": "Version {number} is now active.",
+      "restored": "The text was copied into the draft. Activate it to make it live.",
+      "failed": "The action could not be completed.",
+      "history": "Version history",
+      "versionNumber": "Version {number}",
+      "status": {
+        "Draft": "Draft",
+        "Active": "Active",
+        "Archived": "Archived"
+      },
+      "activatedBy": "Activated by {name} · {date}",
+      "editedBy": "Edited by {name} · {date}",
+      "system": "System",
+      "restore": "Restore to draft"
+    },
+    "issues": {
+      "template_body_required": "Write the message text.",
+      "template_body_too_long": "The text is longer than allowed (1024 characters).",
+      "template_unknown_placeholder": "The placeholder {name} is not known.",
+      "template_placeholder_not_allowed": "The placeholder {name} is not available for this audience.",
+      "template_malformed_placeholder": "Check the braces: write placeholders like '{{customer_name}}'.",
+      "template_too_many_buttons": "Two buttons at most.",
+      "template_button_label_invalid": "Button text is required (25 characters at most).",
+      "template_button_not_allowed": "The manage-booking button is for customer messages only.",
+      "template_duplicate_button": "Do not use the same destination for two buttons.",
+      "template_provider_name_invalid": "The template name is not valid."
+    },
+    "placeholders": {
+      "customer_name": "Customer name",
+      "professional_name": "Professional name",
+      "shop_name": "Shop name",
+      "service_name": "Service",
+      "booking_date": "Date",
+      "booking_time": "Time",
+      "time_remaining": "Time remaining",
+      "duration": "Duration",
+      "amount": "Amount",
+      "address": "Address",
+      "booking_reference": "Booking reference",
+      "manage_url": "Manage-booking link"
+    },
+    "testSend": {
+      "open": "Test send",
+      "title": "Test send",
+      "body": "Enter a dedicated test number. The message uses sample data, and a registered customer's number is refused.",
+      "recipient": "Test number",
+      "confirm": "I confirm this is a test number, not a customer's.",
+      "send": "Send",
+      "sent": "The test message was sent to {recipient}.",
+      "failedSend": "Not sent: {error}",
+      "failed": "The message could not be sent."
+    },
+    "dispatches": {
+      "stats": "Last 24 hours: {count, plural, =0 {no messages} one {# message} other {# messages}} · delivery rate {rate}",
+      "filters": "Filter the log",
+      "status": {
+        "all": "All",
+        "Queued": "Queued",
+        "Sent": "Sent",
+        "Delivered": "Delivered",
+        "Read": "Read",
+        "Failed": "Failed"
+      },
+      "anyAudience": "Any audience",
+      "anyEvent": "Any event",
+      "apply": "Apply",
+      "list": "Messages",
+      "columns": {
+        "time": "Time",
+        "event": "Event",
+        "audience": "To",
+        "recipient": "Number",
+        "version": "Template version",
+        "status": "Status",
+        "attempts": "Attempts"
+      },
+      "kind": {
+        "Lifecycle": "Booking event",
+        "Reminder": "Reminder",
+        "Test": "Test"
+      },
+      "versionShort": "v{number}",
+      "empty": {
+        "title": "No messages here",
+        "body": "Change the filter or wait for the first booking."
+      },
+      "detailTitle": "Message details",
+      "content": "Text sent",
+      "contentPurged": "The text was removed after the retention period; the hash and the template version remain.",
+      "hash": "Content hash",
+      "error": "Last error",
+      "attempts": "{count, plural, one {# attempt} other {# attempts}}",
+      "template": "Template: {event} · {audience} · version {number}",
+      "providerId": "Provider id",
+      "retry": "Retry",
+      "retryTitle": "Send this message again?",
+      "retryBody": "The same recorded text is sent again. The action is recorded.",
+      "retried": "The message is queued again.",
+      "booking": "View the booking",
+      "back": "Message log"
+    },
+    "booking": {
+      "heading": "WhatsApp messages",
+      "none": "No messages for this booking yet.",
+      "reminders": "Scheduled reminders",
+      "noReminders": "No reminders.",
+      "reminderStatus": {
+        "Scheduled": "Scheduled",
+        "Cancelled": "Cancelled",
+        "Sent": "Sent",
+        "Skipped": "Not sent"
+      },
+      "due": "{audience} · {date} at {time}",
+      "openLog": "Open the log"
     }
   }
 }

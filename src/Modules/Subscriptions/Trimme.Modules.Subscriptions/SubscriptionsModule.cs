@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Web.Hosting;
+using Trimme.BuildingBlocks.Web.Jobs;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.Modules.Subscriptions.Api;
 using Trimme.Modules.Subscriptions.Application.Admin;
 using Trimme.Modules.Subscriptions.Infrastructure;
 using Trimme.Modules.Subscriptions.Infrastructure.Seeding;
+using Trimme.Modules.Subscriptions.Jobs;
 
 namespace Trimme.Modules.Subscriptions;
 
@@ -27,6 +29,9 @@ public sealed class SubscriptionsModule : ModuleBase
         services.AddScoped<SubscriptionSuspension>();
         services.AddScoped<IShopBookability, ShopBookabilityService>();
         services.AddSingleton<IDevSeeder, DemoSubscriptionsSeeder>();
+
+        // Expiry warnings to the shop and the admins (Phase 15, D-113), every morning on the platform calendar.
+        services.AddRecurringJob<SubscriptionExpiryJob>("subscription-expiry", "0 8 * * *");
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder api) => SubscriptionEndpoints.Map(api);

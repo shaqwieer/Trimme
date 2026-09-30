@@ -879,3 +879,112 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - A sticky save bar tracks unsaved changes and offers discard.
   - Admins with `Admin.Audit.View` see the last five changes with who made them.
 - **DV-S14.** The remaining design constants are now settings-driven, or not rules at all: cancellation cutoff, review window, horizon, expiring threshold and reminder offset come from these settings. The design's "late more than 15 minutes" is not a rule (Phase 11). The 30/15/7-day expiry reminders are Phase 15 notifications and use the expiring-soon threshold.
+
+## D-108 — Background work: Hangfire and the outbox processor — Accepted (Phase 15; R-NTF-05)
+- **Hangfire 1.8.25 with Hangfire.PostgreSql 1.21.1** runs in the API process, in PostgreSQL schema `hangfire`.
+  - `migrate` installs the schema (`HangfireSchemaSynchronizer`); the storage runs with `PrepareSchemaIfNecessary=false`, so the API never installs it at startup (D-038).
+  - The storage is a lazy DI singleton, passed explicitly to the client, the server and the dashboard. Hangfire's static `JobStorage.Current` is never set, so parallel test hosts on different databases stay apart, and building the host opens no connection (EF tooling).
+  - Newtonsoft.Json is pinned to 13.0.4, because Hangfire.Core asks for ≥ 11.0.1, which has a high-severity advisory.
+- **Port.** Modules schedule through `IJobScheduler` (building-block application layer) and never reference Hangfire.
+  - Job arguments are ids, enums and times only; they are visible on the dashboard.
+  - Recurring jobs implement `IRecurringJob` and are registered with `AddRecurringJob<T>(id, cron)`; a hosted service writes them to storage at startup, on the platform time zone.
+- **Outbox processor** (`OutboxProcessor`, `Trimme.BuildingBlocks.Web.Jobs`).
+  - A hosted loop every 2 s on one instance at a time: a session advisory lock held on a dedicated Npgsql connection, never a pooled EF connection.
+  - Each `IOutboxConsumer` runs in its own scope and transaction, in the system data scope, and writes its `(message, consumer)` row in `infra.processed_messages` in the same transaction. A consumer that succeeded never runs again for that message.
+  - After-commit actions (enqueue, delete or schedule jobs, live push) run after the commit; if one is lost, the notification sweep repairs it.
+  - A failure is recorded redacted and backs off exponentially (30 s … 1 h). After 8 attempts the message is dead-lettered: kept, logged as an error, and skipped.
+- **Maintenance.** `outbox-maintenance` runs daily and removes processed messages and delivery records older than 30 days, and expired idempotency keys.
+- **Dashboard.** `/api/ops/jobs` is read-only and needs the new permission `Admin.Jobs.View` (SuperAdmin; OperationsManager by default).
+  - It has an async authorization filter over the cookie user's permissions and its own same-origin CSP (the strict API CSP would blank it). It never shows the connection string.
+  - It is reachable through the web origin's `/api` rewrite, as in production through Nginx.
+- **Switch.** `Jobs__Enabled` (default on; off in Testing, where tests call the processor and the jobs themselves) is also the rollback switch.
+
+## D-109 — WhatsApp templates — Accepted (Phase 15; R-NTF-02, R-NEG-09, DV-A12)
+- **Slots.** One template per event × audience × locale. Customers have `BookingConfirmed`, `BookingPending`, `BookingRescheduled`, `BookingCancelled` and `BookingReminder`; professionals have the same without `BookingPending`. Arabic and English: 18 slots.
+- **Versions.**
+  - An admin edits one draft (created or replaced in place), then activates it: the previous active version is archived.
+  - Active and archived versions never change; "restore to draft" copies an old wording into the draft.
+  - Every draft save and activation changes the template row, so its `xmin` makes concurrent edits 409.
+  - Activation is audited (`whatsapp_template.activated`, "v1 → v2").
+  - Buttons are owned JSON values, copied per version, so versions never share rows.
+- **Whitelist.** `customer_name`, `professional_name`, `shop_name`, `service_name`, `booking_date`, `booking_time`, `time_remaining`, `duration`, `amount`, `address`, `booking_reference`, and `manage_url` (customers only). There is no phone placeholder.
+- **Validation** (domain, one rule set for the API and the editor):
+  - a body of 1–1024 characters;
+  - known placeholders, allowed for the audience;
+  - no stray braces;
+  - at most two buttons with distinct targets (`ManageBooking` customers only, `ShopPage`), labels of 1–25 characters;
+  - a Meta name of lowercase letters, digits and underscores.
+- **Rendering.** Formatting is explicit, identical to `format.ts` (D-040): Arabic-Indic clock digits on a 12-hour clock, the Gregorian calendar, Latin amounts. The tables are in code, so the output never depends on the server's ICU. Unit tests pin the exact strings. Names use the reader's language, with Arabic as the fallback. Preview and test send use fixed sample data (`SampleMessage`).
+- **Defaults.** `migrate` creates any missing slot with a default wording as active version 1 (the customer confirmation follows the design mock). It never overwrites an existing slot.
+  - This is the only message text in code (a `Seeding` namespace).
+  - The architecture rule `Notifications_Handlers_DoNotContainMessageLiterals` (IL scan, probe-verified) refuses Arabic text or template syntax in the module's `Application` and `Jobs` namespaces.
+- **Meta.** Production needs matching approved templates. Parameters go in order of first appearance; the Meta name is stored per version (docs/whatsapp-integration.md).
+
+## D-110 — Dispatches, providers, retries and the webhook — Accepted (Phase 15; R-NTF-01/07/08, DV-A13)
+- **WhatsAppDispatch** (`notifications.whatsapp_dispatches`) holds:
+  - the kind (Lifecycle, Reminder, Test) and a unique dedupe key;
+  - the booking and shop ids for admin filters (not tenant-scoped; on the tenancy allow-list, since shops never read it);
+  - the template and the version id and number that rendered it;
+  - the recipient encrypted (purpose `trimme.whatsapp-recipient`) and masked, and the recipient's id;
+  - the rendered body, buttons and ordered parameters, and a SHA-256 content hash;
+  - the status Queued/Sent/Delivered/Read/Failed, attempts, the last error (redacted, ≤ 300), the provider's message id and the latest job id.
+- **Retention.** The text, buttons and parameters are cleared after `Notifications:ContentRetentionDays` (default 90) by `notifications-retention`; the hash and the version stay. A later template edit never changes a dispatch.
+- **Sending.** `SendDispatchJob` makes one attempt.
+  - A transient failure schedules the next attempt with backoff (30 s, 2 min, 10 min, 30 min).
+  - A permanent failure, or the 5th attempt, marks the dispatch Failed and notifies the admins with `Admin.WhatsApp.View`.
+  - An admin retry (`Admin.WhatsApp.Dispatches.Retry`, audited) queues a Failed dispatch again, unless its text was purged.
+  - A professional's delivery or failure sets their number's verification state (D-067).
+  - `notifications-sweep` (every 5 minutes) re-queues dispatches and reminders whose job was lost after a commit.
+- **Providers** (`WhatsApp:Provider`).
+  - `Fake` is the default in Development and Testing and refused elsewhere at startup. It keeps an in-memory inbox with masked numbers, never a code, and reports messages delivered. Numbers ending in 0000 fail transiently and 9999 permanently.
+  - `Meta` is the Graph API: a template by name, body parameters and URL-button suffixes. 429 and 5xx are transient, other 4xx permanent. It never logs the token, the number or the text. Its contract is tested against a mocked handler.
+  - `None` is the default elsewhere: every message fails with `whatsapp.not_configured`, visibly.
+  - Delivery to a customer or a professional never happens in a request: only jobs read contact data. The architecture rule `ContactReaders_AreUsedOnlyByNotificationJobs` (probe-verified) enforces it.
+- **Test send.**
+  - The admin types a number (never prefilled) and must confirm it is a test recipient.
+  - A registered customer's number is refused with 409 `whatsapp.test_recipient_is_customer`, through the keyed lookup hash (`ICustomerNumberCheck`, a yes/no port).
+  - Sample data only. The kind is Test (no booking); it is sent once and audited without the number.
+- **Webhook** `/api/v1/webhooks/whatsapp`: anonymous and exempt from CSRF, on the reviewed allow-list.
+  - GET echoes `hub.challenge` for the configured verify token.
+  - POST verifies `X-Hub-Signature-256` (HMAC-SHA256 of the raw body, constant time) before parsing, then moves dispatch statuses forward only.
+  - Both answer 404 without an app secret.
+- **OTP.** `Identity:Otp:Sender=WhatsApp` sends sign-in codes through the authentication template, through `IWhatsAppAuthenticationSender`. The code is never stored or logged, and no dispatch row is written.
+
+## D-111 — Lifecycle messages and reminders — Accepted (Phase 15; R-NTF-03/04/06/09, DV-S06)
+- **Plan** (from the event and the status it produced):
+  - created Pending → customer `BookingPending`;
+  - created Confirmed or Arrived, or Pending → Confirmed → both `BookingConfirmed`;
+  - rescheduled → customer, and the professional when the booking is confirmed;
+  - cancelled → customer, and the professional only if a confirmation or reschedule was sent to them;
+  - Arrived, Completed and NoShow → nothing.
+- **Recipients.**
+  - A customer needs an account with a mobile (walk-ins have none) and gets their preferred locale.
+  - A professional must be active with a number and notifications on (spec §16), and gets the platform's default locale.
+- **Freshness.** An event older than 24 hours sends no message (a backlog after an outage), but reminders are still reconciled. Nothing exists for a rolled-back change or the seed, which write no outbox.
+- **Reminders follow the booking's current state.**
+  - A confirmed booking has one Scheduled reminder per audience at start − `ReminderOffsetMinutes`, recorded in `reminder_schedules` with the Hangfire job id.
+  - A move or cancellation marks the old ones Cancelled and deletes their jobs after the commit. Replacements are added after the cancellations are saved, because of the partial unique index.
+  - A reminder whose time already passed is not scheduled.
+  - A kept reminder keeps its time when the offset setting changes.
+  - The job re-reads the booking and sends only if it is still confirmed, at the start it was scheduled for, and not started; otherwise it records Skipped. The dedupe key is the reminder id.
+- **Deviation.** The phase plan said "job ids stored on the booking"; they live on the notifications side (`reminder_schedules`), so Bookings knows nothing about notifications.
+
+## D-112 — In-app notifications — Accepted (Phase 15; R-NTF-10, R-CUS-11, R-SD-08, DV-A05)
+- **Two tables.**
+  - `shop_notifications` is shop-owned (tenant filter, stamping, FK) and shared by the shop's users, including the read state.
+  - `user_notifications` belongs to one account (customers; admins through fan-out to every enabled admin who holds the permission).
+  - The phase plan's single table with an optional shop id would have needed a tenancy exemption for shop data.
+- **Content.** A kind and parameters (names, ISO times, counts), unique per recipient by dedupe key. The web app renders them in the reader's language (`notifications.kinds.*`). Never a phone number.
+- **Who hears what.** The shop hears about what customers and admins did (not its own actions or walk-ins). The customer hears about what the shop or the platform did. Admins hear about failed messages and expiring subscriptions.
+- **API.** `/shop/notifications` (`Shop.Bookings.Read`) and `/me/notifications` (self-service allow-list, mapped without a group so routes carry no trailing slash): list, unread count, mark one, mark all.
+- **Live.** `/hubs/notifications` pushes an empty `notificationsChanged` signal to `user:{id}`, and to `shop:{id}` for shop users of an operable shop; clients refetch. The hub origin guard now covers all of `/hubs`. Bells: the shop and customer bells link to their page; the admin bell is a menu of the latest alerts with mark-all.
+- **Contact the shop** (D-102 follow-up). `POST /admin/reviews/{id}/contact-shop` (`Admin.Reviews.Moderate`, 5–500 characters) sends the review's shop an `admin.message` notice. It is audited without the text.
+- **Not offered.** Shops get no "resend confirmation" (the permission `Shop.Bookings.ResendNotification` stays unused): a shop could message a customer repeatedly. Admins retry failed messages instead (DV-C10).
+
+## D-113 — Subscription expiry notices — Accepted (Phase 15; R-SUB-04/05, D-107)
+- **No stored status.** Statuses are computed from the stored end date (D-077), so no job flips them.
+- **The job.** `subscription-expiry` runs daily at 08:00 on the platform calendar. It warns the shop and the admins with `Admin.Subscriptions.View` once per milestone:
+  - the expiring-soon threshold, then 7, 3 and 1 day(s) left (those within the threshold);
+  - the first day after the end, only within a week of it.
+- **Catch-up.** A missed run sends the smallest milestone not below the days left. Notices are deduplicated per period end and milestone.
+- **Scope.** Suspended shops are skipped, and bookings are never touched (D-014).

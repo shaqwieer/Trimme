@@ -7,13 +7,18 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Trimme.BuildingBlocks.Infrastructure.Persistence;
 
 /// <summary>
-/// A message written in the same transaction as the change it describes (R-BKG-08, D-089). A background processor
-/// (Phase 15) dispatches it and sets <see cref="ProcessedAt"/>; until then the rows only accumulate. The payload holds
-/// identifiers and times, never phone numbers or other contact data.
+/// A message written in the same transaction as the change it describes (R-BKG-08, D-089). The outbox processor (D-108)
+/// hands it to every consumer and sets <see cref="ProcessedAt"/>; a failure is retried with backoff and, after
+/// <see cref="MaxAttempts"/>, the message is dead-lettered. The payload holds identifiers and times, never phone numbers
+/// or other contact data.
 /// </summary>
 public sealed class OutboxMessage
 {
     public const int MaxTypeLength = 100;
+    public const int MaxErrorLength = 2000;
+
+    /// <summary>Failed deliveries before the message is dead-lettered (then only an operator can replay it).</summary>
+    public const int MaxAttempts = 8;
 
     private OutboxMessage(Guid id, string type, string payload, DateTimeOffset occurredAt)
     {
@@ -43,6 +48,40 @@ public sealed class OutboxMessage
     public int Attempts { get; private set; }
 
     public string? LastError { get; private set; }
+
+    /// <summary>Not before this instant (the backoff after a failure); null means now.</summary>
+    public DateTimeOffset? NextAttemptAt { get; private set; }
+
+    /// <summary>Set when the retries ran out; the processor skips it from then on.</summary>
+    public DateTimeOffset? DeadLetteredAt { get; private set; }
+
+    public void MarkProcessed(DateTimeOffset now)
+    {
+        ProcessedAt = now;
+        NextAttemptAt = null;
+    }
+
+    /// <summary>
+    /// Records a failed delivery: exponential backoff (30 s, 1 min, 2 min … capped at 1 h), dead-lettered after
+    /// <see cref="MaxAttempts"/>. Returns true when the message is now dead-lettered.
+    /// </summary>
+    public bool RecordFailure(string error, DateTimeOffset now)
+    {
+        Attempts++;
+        LastError = error.Length > MaxErrorLength ? error[..MaxErrorLength] : error;
+        if (Attempts >= MaxAttempts)
+        {
+            DeadLetteredAt = now;
+            NextAttemptAt = null;
+            return true;
+        }
+
+        NextAttemptAt = now + Backoff(Attempts);
+        return false;
+    }
+
+    public static TimeSpan Backoff(int attempts) =>
+        TimeSpan.FromSeconds(Math.Min(3600, 30 * Math.Pow(2, Math.Max(0, attempts - 1))));
 
     public static OutboxMessage Create(string type, object payload, DateTimeOffset occurredAt) =>
         new(Guid.CreateVersion7(occurredAt), type, JsonSerializer.Serialize(payload, payload.GetType(), JsonSerializerOptions.Web), occurredAt);
@@ -97,12 +136,44 @@ public sealed class IdempotencyRecord
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, request.GetType(), JsonSerializerOptions.Web))));
 }
 
+/// <summary>
+/// One consumer's completed delivery of one outbox message (D-108): written in the consumer's transaction, so a consumer
+/// that succeeded is never run again for that message.
+/// </summary>
+public sealed class ProcessedMessage
+{
+    public ProcessedMessage(Guid messageId, string consumer, DateTimeOffset processedAt)
+    {
+        MessageId = messageId;
+        Consumer = consumer;
+        ProcessedAt = processedAt;
+    }
+
+    private ProcessedMessage()
+    {
+        Consumer = string.Empty;
+    }
+
+    public Guid MessageId { get; private set; }
+
+    public string Consumer { get; private set; }
+
+    public DateTimeOffset ProcessedAt { get; private set; }
+}
+
 internal static class ReliabilityModel
 {
     public static void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<OutboxMessage>(ConfigureOutbox);
         modelBuilder.Entity<IdempotencyRecord>(ConfigureIdempotency);
+        modelBuilder.Entity<ProcessedMessage>(builder =>
+        {
+            builder.ToTable("processed_messages", TrimmeDbContext.InfrastructureSchema);
+            builder.HasKey(m => new { m.MessageId, m.Consumer });
+            builder.Property(m => m.Consumer).HasMaxLength(100);
+            builder.HasIndex(m => m.ProcessedAt);
+        });
     }
 
     private static void ConfigureOutbox(EntityTypeBuilder<OutboxMessage> builder)
@@ -111,8 +182,10 @@ internal static class ReliabilityModel
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Type).HasMaxLength(OutboxMessage.MaxTypeLength);
         builder.Property(m => m.Payload).HasColumnType("jsonb");
-        builder.Property(m => m.LastError).HasMaxLength(2000);
+        builder.Property(m => m.LastError).HasMaxLength(OutboxMessage.MaxErrorLength);
         builder.HasIndex(m => m.OccurredAt).HasFilter("processed_at IS NULL");
+        builder.HasIndex(m => m.NextAttemptAt).HasFilter("processed_at IS NULL AND dead_lettered_at IS NULL");
+        builder.HasIndex(m => m.ProcessedAt).HasFilter("processed_at IS NOT NULL");
     }
 
     private static void ConfigureIdempotency(EntityTypeBuilder<IdempotencyRecord> builder)

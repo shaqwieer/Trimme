@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/brand/Logo';
-import { IconButton } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import { CustomerNav } from './CustomerNav';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
- * Customer app shell (mobile-first). Below 1200px the five primary destinations live in a bottom bar
+ * Customer app shell (mobile-first). The bell opens the notifications page; the signed-in account area passes a bell
+ * with the live unread count. Below 1200px the five primary destinations live in a bottom bar
  * (design: 5 items, min 44×44, active = colour + bold); from 1200px they move into the header.
  */
-export function CustomerShell({ children }: { children: ReactNode }) {
+export function CustomerShell({ children, bell }: { children: ReactNode; bell?: ReactNode }) {
   const t = useTranslations();
 
   return (
@@ -26,7 +27,15 @@ export function CustomerShell({ children }: { children: ReactNode }) {
           <CustomerNav placement="header" />
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <IconButton icon="bell" label={t('shell.notifications')} />
+            {bell ?? (
+              <Link
+                href="/account/notifications"
+                aria-label={t('shell.notifications')}
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-button text-text-strong transition-colors hover:bg-brand-100"
+              >
+                <Icon name="bell" className="size-[19px]" />
+              </Link>
+            )}
           </div>
         </div>
       </header>

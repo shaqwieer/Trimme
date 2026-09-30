@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Media;
+using Trimme.BuildingBlocks.Application.Notifications;
+using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Media;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -101,5 +103,42 @@ internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalD
             .. professionals.Select(p => new PublicProfessionalCard(
                 p.Id, p.ShopId, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, MediaRules.Url(p.AvatarMediaId))),
         ];
+    }
+}
+
+/// <summary>
+/// <see cref="IProfessionalContactReader"/>: the professional's WhatsApp number, decrypted only when notifications are on
+/// (spec §16), for the notification jobs (architecture rule). Reads through the caller's scope (the system scope in jobs).
+/// </summary>
+internal sealed class ProfessionalContactReader(TrimmeDbContext db, IPersonalDataProtector protector, TimeProvider clock) : IProfessionalContactReader
+{
+    public async Task<ProfessionalContactCard?> FindAsync(ProfessionalId professionalId, CancellationToken cancellationToken)
+    {
+        var row = await (from professional in db.Set<Professional>().AsNoTracking()
+                         join contact in db.Set<ProfessionalContact>().AsNoTracking() on professional.Id equals contact.ProfessionalId into contacts
+                         from contact in contacts.DefaultIfEmpty()
+                         where professional.Id == professionalId
+                         select new
+                         {
+                             professional.Id,
+                             professional.ShopId,
+                             professional.NameAr,
+                             professional.NameEn,
+                             professional.Status,
+                             Protected = contact != null && contact.NotificationsEnabled ? contact.ProtectedWhatsApp : null,
+                         }).SingleOrDefaultAsync(cancellationToken);
+        return row is null
+            ? null
+            : new ProfessionalContactCard(
+                row.Id, row.ShopId, row.NameAr, row.NameEn, row.Status == ProfessionalStatus.Active,
+                row.Protected is null ? null : protector.Unprotect(row.Protected, PersonalDataPurposes.ProfessionalWhatsApp));
+    }
+
+    public async Task RecordDeliveryAsync(ProfessionalId professionalId, bool delivered, CancellationToken cancellationToken)
+    {
+        if (await db.Set<ProfessionalContact>().SingleOrDefaultAsync(c => c.ProfessionalId == professionalId, cancellationToken) is { } contact)
+        {
+            contact.RecordDelivery(delivered, clock.GetUtcNow());
+        }
     }
 }

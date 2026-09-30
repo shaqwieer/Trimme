@@ -1,8 +1,16 @@
 # TRIMME — Status
 
-- **Updated:** 2026-09-29 (Session 10)
-- **Current phase:** 14 is complete and verified (Session 10): admin overview, bookings intervention, customers directory with the audited reveal, reviews moderation, roles and staff, audit log, settings screen. It is committed locally and not pushed. Next: Phase 15, WhatsApp, outbox, Hangfire and notifications.
-- **Platform progress:** 1500 / 1900 points (Phases 00–14)
+- **Updated:** 2026-09-30 (Session 11)
+- **Current phase:** 15 is complete and verified (Session 11). It delivers:
+  - Hangfire and the outbox processor;
+  - versioned WhatsApp templates with the editor;
+  - dispatches through the fake provider, the Meta adapter and the signed webhook;
+  - reminders for both audiences;
+  - in-app notifications for shops, customers and admins;
+  - subscription expiry notices.
+
+  It is committed locally and not pushed. Phases 14 and 15 are unpushed. Next: Phase 16, QR codes and attribution.
+- **Platform progress:** 1600 / 1900 points (Phases 00–15)
 
 | Phase | Status | Points |
 |---|---|---|
@@ -21,7 +29,7 @@
 | 12 Customer booking & account | [x] | 100/100 |
 | 13 Shop dashboard | [x] | 100/100 |
 | 14 Admin dashboard | [x] | 100/100 |
-| 15 WhatsApp & notifications | [ ] | 0/100 |
+| 15 WhatsApp & notifications | [x] | 100/100 |
 | 16 QR & attribution | [ ] | 0/100 |
 | 17 Hardening | [ ] | 0/100 |
 | 18 Regression & handover | [ ] | 0/100 |
@@ -43,7 +51,7 @@
 | D-081 | Custom durations and back-dated starts need a SuperAdmin override with an explicit total price and a reason, fully audited (Session 4) |
 
 ## Open decisions
-None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095, Phase 12 D-096…D-098, Phase 13 D-099…D-100 and Phase 14 D-101…D-107 as their own design decisions (D-096 supersedes the inline part of D-033; D-100 refines D-034); D-012 and D-015 are now Accepted; D-017 (reviews) is completed by D-102. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
+None are blocking. Phase 09 recorded D-082…D-084, Phase 10 D-085…D-089, Phase 11 D-090…D-095, Phase 12 D-096…D-098, Phase 13 D-099…D-100 and Phase 14 D-101…D-107 and Phase 15 D-108…D-113 as their own design decisions (D-096 supersedes the inline part of D-033; D-100 refines D-034); D-012 and D-015 are now Accepted; D-017 (reviews) is completed by D-102. The product assumptions D-012…D-035 remain overridable defaults. Phase 08 accepted D-013/D-014 as settings (D-076, D-078); the user confirmed D-078 and decided D-081.
 
 ## Blockers
 None.

@@ -1,110 +1,116 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-09-29 (Session 10: Phase 14)
-- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git). The Phase 14 commit and its `docs:` follow-up are **local, not pushed**; everything up to `26114ee` was pushed (CI run #19 green).
-- **HEAD commit:** the follow-up `docs:` commit on top of `714661c` (fix: phase 14 review follow-up), `212da66` (docs) and `e9231a5` (feat: phase 14 admin operations dashboard). Run `git log --oneline -5`.
-- **Working tree:** clean after the commits. `next dev` re-creates untracked `apps/web/AGENTS.md` and `apps/web/CLAUDE.md` when it starts; delete them or leave them untracked (the user's call).
-- **Local stack: running, all in compose.** It runs on a fresh volume from this session's `down -v` + `up --build`: `postgres`, `migrate`/`seed` (done, 12 migrations), `api`, `web` (production build of this session's code) and `mailpit`.
-  - Ports: web 3300, API 8080, DB 5434, Mailpit UI 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
-  - The Session 9 `next dev` server had crashed (a "Jest worker" runtime error) and was stopped.
-  - The final fresh volume (created after the review follow-up) has had two full E2E runs this hour (at most five per hour, OTP).
-- **Current phase:** 14 is complete. Phase 15 has not started.
-- **Phase score:** 100 / 100 (Phase 14).
-- **Last fully completed phase:** 14, admin operations dashboard.
+- **Updated:** 2026-09-30 (Session 11: Phase 15)
+- **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
+  - Pushed: everything up to `26114ee`.
+  - Local only: the Phase 14 commits (`e9231a5`, `212da66`, `714661c`, `26036bd`) and the Phase 15 commit.
+- **HEAD commit:** the Phase 15 commit, `feat: phase 15 whatsapp, outbox, hangfire and notifications`. Run `git log --oneline -6`.
+- **Working tree:** clean after the commit.
+- **Local stack: running, all in compose,** on a fresh volume from this session's last `down -v` + `up --build`, which built this session's code.
+  - The web container predates a Prettier-only reformat of two files; there is no behaviour difference.
+  - Services: `postgres`, `migrate` and `seed` (done, 13 migrations, Hangfire schema, 18 templates), `api` (Hangfire server and outbox processor running), `web`, `mailpit`.
+  - Ports: web 3300, API 8080, DB 5434, Mailpit 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
+  - This volume has had two full E2E runs this hour. The OTP budget allows at most five per stack per hour.
+- **Current phase:** 15 is complete. Phase 16 has not started.
+- **Phase score:** 100 / 100 (Phase 15).
+- **Last fully completed phase:** 15, WhatsApp, outbox, Hangfire and notifications.
 
-## Completed this session (Session 10)
-Phase 14 (`phases/phase-14-admin-dashboard.md`):
-- **Overview** `/admin` (D-101). `GET /admin/dashboard/overview?days=1|7|30`, read inside one admin scope from building-block ports (`IBookingStatistics`, `IShopStatistics`, `IProfessionalStatistics`, `ICustomerStatistics`, `IServiceCategoryLookup`), all SQL aggregates on the Riyadh platform calendar. The page shows:
-  - eight KPIs with deltas;
-  - a 14-day stacked trend with a data table;
-  - popular categories;
-  - top shops;
-  - subscriptions to follow up.
-- **Bookings** `/admin/bookings` and `/[id]` (D-103):
-  - filters, chip counts, history, read-only notes;
-  - transitions with a reason (5–300);
-  - reschedule with collision rules, an idempotency key, the same transaction and 409 path, and an options endpoint for date and professional;
-  - audited, with outbox events.
-- **Customers** `/admin/customers` and `/[id]` (D-105): name search only, booking figures, the masked mobile, and «إظهار الرقم» (`Admin.Customers.ViewContact`, reason, audited without the number, `no-store`).
-- **Reviews** `/admin/reviews` (D-102):
-  - the queue with Reported, LowRating and ContainsPhone flags (one regex in .NET and PostgreSQL);
-  - flag (Support), hide and publish (moderators);
-  - an `xmin` version, with the totals moved in the same transaction (subtracting is a plain `UPDATE`).
-- **Roles and staff** `/admin/roles`, `/[roleId]`, `/roles/staff` (D-106): the matrix, role create, rename and delete, permission editing, staff role assignment, disable and enable, and invitations. Guards:
-  - managed and seed roles are protected;
-  - no `SuperAdmin.*` on another role;
-  - grant only what you hold;
-  - not yourself;
-  - SuperAdmin only by a SuperAdmin;
-  - never the last SuperAdmin.
-- **Audit** `/admin/audit` (D-104): filters, entity links, actor names, and a keyset cursor on the new `sequence` identity.
-- **Settings** `/admin/settings` (D-107): section descriptions, ranges, a sticky save bar with discard, and recent changes.
-- **Migration** `AdminOperations`: review moderation columns and the audit `sequence`, backfilled in time order.
-- **Tests:**
-  - integration `Administration/AdminOperationsTests.cs` (6);
-  - web `lib/admin/admin.test.ts`, `components/admin/ops/ops.test.tsx` (19);
-  - E2E `flows/admin-operations.spec.ts` (6, staff sign-in only, no shared state left changed).
+## Completed this session (Session 11)
+Phase 15 (`phases/phase-15-notifications-whatsapp.md`):
+- **Background work** (D-108):
+  - Hangfire 1.8.25 on PostgreSQL (schema `hangfire`, installed by `migrate`), with explicit lazy storage.
+  - `IJobScheduler` port and recurring jobs: `outbox-maintenance`, `notifications-sweep`, `notifications-retention`, `subscription-expiry`.
+  - The outbox processor: a hosted loop with a leader advisory lock, per-consumer transactions, `infra.processed_messages`, backoff, and a dead letter after 8 attempts.
+  - The read-only dashboard `/api/ops/jobs`, gated by the new `Admin.Jobs.View`.
+  - `Jobs__Enabled` is the switch, off in Testing.
+- **Templates** (D-109):
+  - 18 slots (event × audience × locale) with versions: draft, activate (audited), restore.
+  - The placeholder whitelist, with no phone and `manage_url` for customers only.
+  - Validation, and rendering identical to `format.ts`.
+  - Default wording created by `migrate`.
+- **Dispatches and providers** (D-110):
+  - Encrypted and masked recipients, the template version, hash and retention.
+  - A send job with backoff; Failed notifies the admins; an audited admin retry.
+  - Providers: Fake (dev and test), Meta (Graph API, contract-tested) and None.
+  - The signed webhook `/api/v1/webhooks/whatsapp`.
+  - The safe test send, which refuses customer numbers.
+  - OTP over WhatsApp (`Identity__Otp__Sender=WhatsApp`).
+- **Lifecycle and reminders** (D-111):
+  - Confirmed, pending, rescheduled and cancelled messages for customers and professionals.
+  - Reminders at start − `ReminderOffsetMinutes` in `reminder_schedules` with Hangfire job ids, replaced on reschedule and cancelled on cancel.
+  - Events older than 24 hours send no message.
+- **In-app notifications** (D-112):
+  - `shop_notifications` (tenant-scoped) and `user_notifications`.
+  - `/hubs/notifications`; the hub origin guard now covers all of `/hubs`.
+  - Pages `/shop/notifications` and `/account/notifications`, and bells (the admin bell is a menu).
+  - «تواصل مع المحل» from the reviews page (the Phase 14 carry-over).
+- **Subscription expiry notices** (D-113): the threshold, then 7, 3 and 1 day(s), then the first day after the end, for the shop and the admins.
+- **Admin UI:**
+  - `/admin/whatsapp/templates` and the editor (placeholder chips, neutral bubble preview, validation, history, test send);
+  - `/admin/whatsapp/dispatches` and the dispatch detail (retry);
+  - the WhatsApp section on the admin booking page (messages and reminders).
+- **Cross-module ports** (building blocks): `IBookingNotificationSource` (Bookings), `ICustomerContactReader`, `ICustomerNumberCheck` and `IStaffDirectory` (Identity), `IProfessionalContactReader` (Professionals), `INotificationCenter` (Notifications), `IWhatsAppAuthenticationSender`. `ShopSummary` gains the address.
+- **Other fixes:**
+  - `Card` now passes HTML attributes through.
+  - Serilog request logging wraps the exception handler, so aborted requests log 499, not 500.
+  - The E2 walk-in takes the day's last free time (a date-dependent flaw).
+- **Docs:**
+  - `docs/whatsapp-integration.md` (Meta setup, template approval, webhook, lifecycle Mermaid);
+  - domain model, architecture diagram, README, permissions matrix;
+  - design deviations: DV-S06, A05, A12, A13 and T06 applied; new DV-C10.
 
 ## Verification evidence
 | Command | Result |
 |---|---|
-| Re-validation of Phase 13 | `RealtimeTests` 4/4; `shop-dashboard.spec.ts` 2/2 on the compose web (it failed first because of the crashed `next dev`) |
+| Re-validation of Phase 14 | `AdminOperationsTests` 6/6, `admin-operations.spec.ts` 6/6 |
 | `dotnet build Trimme.slnx -c Release` | PASS, 0 warnings |
-| Unit / architecture / integration | PASS: 378 / 63 / 158 |
+| Unit / architecture / integration | PASS: 395 / 65 / 172 (incl. `NotificationsHubTests` and the retention/maintenance job test) |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
-| OpenAPI contract test (regenerated) and `pnpm openapi:check` | PASS |
-| Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 337 web tests |
-| E2E `typecheck`, `format:check` | PASS |
-| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **68/68 ×2** at `e9231a5`, then **68/68 ×2** again on a new volume after the review follow-up; no retries; API log: no 5xx, no 429 |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (55 commits, after `714661c`) | PASS: no hits, no leaks |
+| OpenAPI contract test (regenerated) and `pnpm openapi:check` | PASS (22 operations added, none removed) |
+| Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 357 web tests |
+| E2E `tsc`, `prettier --check` | PASS |
+| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **69/69 ×2** on the final code, no retries; API log 0 × 5xx, 0 × 429, no warnings; outbox 0 pending, 0 dead-lettered. An earlier rebuild's run 1 was 66/69: three issues, all fixed (phase file §Evidence). |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` (and `git` after the commit, recorded in the follow-up `docs:` commit) | PASS: no hits outside tests, seeders and the excluded geocoder; no leaks |
 
 ## Database and migrations
-- Created and applied locally: `20260929164439_AdminOperations`, applied on the compose volume and from empty in the integration tests. No production migration was run.
+- Created and applied locally: `20260930065901_Notifications`, on the compose volume and from empty in the integration tests. It adds the `notifications` schema and the outbox retry columns and `infra.processed_messages`.
+- `migrate` also installs the Hangfire schema and the default templates.
+- No production migration was run.
 
 ## Decisions added
-- D-101: overview KPI definitions and read ports.
-- D-102: reviews moderation (flags, hide and publish, totals once, the plain `UPDATE` for subtraction).
-- D-103: admin booking intervention (reason ≥ 5, collision rules, idempotency, options).
-- D-104: the audit log read side and keyset `sequence`.
-- D-105: the customers directory and the audited reveal (no phone search).
-- D-106: roles and staff management with escalation guards.
-- D-107: the settings screen; the remaining DV-S14 values are settled.
-- Design deviations: DV-S14 and DV-S17 are applied; DV-A08, A09, A15, A16 and A17 are applied; new DV-C09 (overview, bookings, reviews and roles choices).
-
-## Review follow-up (same session)
-- **Staff invitations now apply the escalation guards.** SuperAdmin only from a SuperAdmin; no role with permissions the inviter lacks. Before this, an admin with `Admin.Staff.Manage` from a custom role could invite themselves as SuperAdmin. The invite form offers only grantable roles (D-106 addendum).
-- **The review list's N+1 is removed** (`IProfessionalDirectory.FindManyAsync`).
-- **Coverage and navigation:** axe now also runs on the bookings list, and the shop page links to that shop's bookings.
-- **E2E fixes:** the Phase 13 walk-in count waits for the list; the customers E2E searches by name.
+- D-108: Hangfire and the outbox processor (storage, port, leader lock, processed messages, backoff and dead letter, dashboard and `Admin.Jobs.View`, switch).
+- D-109: WhatsApp templates (slots, versions, whitelist, validation, rendering, defaults, Meta mapping).
+- D-110: dispatches, providers, retries, webhook, test send, OTP over WhatsApp.
+- D-111: lifecycle messages and reminders (plan, recipients, freshness, reconciliation, the job ids' deviation).
+- D-112: in-app notifications (two tables, hub, pages and bells, contact the shop, no shop resend).
+- D-113: subscription expiry notices.
+- Design deviations: DV-C10.
 
 ## Known issues or blockers
-- **Guards and presentation:**
-  - The last-SuperAdmin guard cannot be reached through the API (other guards come first); it is defence in depth.
-  - Audit summaries are English technical text (PII-free, D-063); action and entity names are translated.
-  - The overview groups days on the platform time zone (all shops are in Riyadh).
-- **Deferred to Phase 15:** the review action «تواصل مع المحل» (contact the shop), shop notifications, WhatsApp dispatch links on the booking detail, and the booking outbox processor.
+- **Meta.** Production WhatsApp needs a Meta account, approved templates matching each active version (by name, parameters in order), an authentication template and the webhook. None of it is exercised without credentials (`docs/whatsapp-integration.md`).
+- **Operations gaps:**
+  - dead-lettered outbox messages are only logged (no replay screen);
+  - the in-app hub needs a backplane for more than one API instance (Phase 17, with `/hubs/operations`);
+  - shops have no "resend confirmation" (DV-C10).
 - **Carried over:**
-  - click-then-navigate E2E timings on a cold stack (none seen this session);
-  - production Nginx for `/hubs` and the SignalR backplane (Phase 17);
-  - revocation lag for live events;
+  - production Nginx for `/hubs` and client IP forwarding (Phase 17);
   - at most five E2E runs per stack per hour (OTP);
   - "any professional" does not retry;
   - packages across professionals (D-020);
   - grace days and limits (D-077);
-  - Serilog 400/409-as-500 (none logged in this session's runs);
   - oversized uploads through the rewrite (Phase 17).
+- **Resolved this session:** "Serilog 400/409-as-500".
 
 ## Exact next action
-1. Push when the user asks: `git push origin main` (CI will run the 68-test E2E suite).
-2. Start Phase 15 (`phases/phase-15-notifications-whatsapp.md`). Re-validate first:
-   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*AdminOperationsTests"`
-   - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 npx playwright test flows/admin-operations.spec.ts`
-3. Phase 15 can reuse:
-   - the booking outbox rows (D-089);
-   - the platform `ReminderOffsetMinutes` setting;
-   - the admin audit log for template activation;
-   - the booking detail page (add the dispatches section);
-   - the reviews «contact the shop» slot.
+1. Push when the user asks: `git push origin main`. CI runs the 69-test E2E suite; its compose stack starts the Hangfire server and the outbox processor.
+2. Start Phase 16 (`phases/phase-16-qr-analytics.md`). Re-validate first:
+   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*NotificationsTests"`
+   - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 npx playwright test flows/whatsapp-notifications.spec.ts`
+3. Phase 16 can reuse:
+   - the outbox consumers (`IOutboxConsumer`) to attribute bookings;
+   - `IRecurringJob` for aggregation;
+   - the in-app notifications, for example weekly QR summaries if wanted;
+   - the admin page patterns of `/admin/whatsapp`.
 
 ## Files intentionally left modified
 - None.
