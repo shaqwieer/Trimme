@@ -153,8 +153,19 @@ describe('QR components', () => {
     });
   });
 
-  it('creates a barber code only after the shop and an active barber of it are chosen', async () => {
+  it('creates a barber code only after the shop and one of its active barbers (loaded for that shop) are chosen', async () => {
     const user = userEvent.setup();
+    api.GET.mockImplementation(
+      (_path: string, init: { params: { query: { shopId: string; status: string } } }) =>
+        Promise.resolve(
+          ok({
+            items:
+              init.params.query.shopId === 's1' && init.params.query.status === 'Active'
+                ? [{ id: 'p1', nameAr: 'سلطان الحربي', nameEn: 'Sultan Al-Harbi' }]
+                : [],
+          }),
+        ),
+    );
     api.POST.mockResolvedValue(ok({ ...code(), code: 'bhwm6twy' }, 201));
     renderWithIntl(
       <CreateQrCodeDialog
@@ -162,7 +173,6 @@ describe('QR components', () => {
           { id: 's1', name: 'صالون الأصالة' },
           { id: 's2', name: 'باربر هاوس' },
         ]}
-        professionals={{ s1: [{ id: 'p1', name: 'سلطان الحربي' }] }}
       />,
     );
     await user.click(screen.getByRole('button', { name: 'رمز جديد' }));
@@ -171,9 +181,10 @@ describe('QR components', () => {
     expect(screen.getByText('اختر المحل والحلاق.')).toBeInTheDocument();
     expect(api.POST).not.toHaveBeenCalled();
 
-    await user.selectOptions(screen.getByLabelText('المحل'), 's2');
-    expect(screen.getByText('لا يوجد حلاقون نشطون في هذا المحل.')).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText('المحل'), 's1');
+    await user.selectOptions(screen.getByLabelText('المحل', { exact: true }), 's2');
+    expect(await screen.findByText('لا يوجد حلاقون نشطون في هذا المحل.')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('المحل', { exact: true }), 's1');
+    await waitFor(() => expect(screen.getByLabelText('الحلاق')).toBeEnabled());
     await user.selectOptions(screen.getByLabelText('الحلاق'), 'p1');
     await user.type(screen.getByLabelText(/مكان الاستخدام/), 'مرآة سلطان');
     await user.click(screen.getByRole('button', { name: 'إنشاء الرمز' }));
@@ -183,6 +194,9 @@ describe('QR components', () => {
         body: { shopId: 's1', professionalId: 'p1', label: 'مرآة سلطان' },
       }),
     );
+    expect(api.GET).toHaveBeenCalledWith('/api/v1/admin/professionals', {
+      params: { query: { shopId: 's1', status: 'Active', page: 1, pageSize: 100 } },
+    });
     expect(await screen.findByText('تم إنشاء الرمز bhwm6twy.')).toBeInTheDocument();
     expect(router.refresh).toHaveBeenCalled();
   });

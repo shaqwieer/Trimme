@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { SelectField, TextField } from '@/components/ui/inputs';
 import { ConfirmDialog, Dialog } from '@/components/ui/overlays';
@@ -11,6 +11,8 @@ import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
+import { type AppLocale } from '@/lib/i18n/format';
+import { localizedName } from '@/lib/i18n/localized';
 
 type Option = { id: string; name: string };
 
@@ -21,15 +23,9 @@ const MAX_LABEL = 80;
  * «رمز جديد» (DV-A14, D-114): a code for a shop, or for one of its active barbers «for the chair mirror», with an optional
  * label for where it is used. The API checks the barber belongs to the shop and makes the code unique.
  */
-export function CreateQrCodeDialog({
-  shops,
-  professionals,
-}: {
-  shops: Option[];
-  /** Active professionals per shop id. */
-  professionals: Record<string, Option[]>;
-}) {
+export function CreateQrCodeDialog({ shops }: { shops: Option[] }) {
   const t = useTranslations('adminQr.create');
+  const locale = useLocale() as AppLocale;
   const router = useRouter();
   const apiMessage = useApiErrorMessage();
   const [open, setOpen] = useState(false);
@@ -41,7 +37,25 @@ export function CreateQrCodeDialog({
   const [failure, setFailure] = useState<string>();
   const [created, setCreated] = useState<string>();
 
-  const barbers = shopId ? (professionals[shopId] ?? []) : [];
+  // The chosen shop's active barbers, loaded when the shop changes (a platform-wide list would be cut at one page).
+  const [loaded, setLoaded] = useState<{ shopId: string; items: Option[] } | null>(null);
+  const barbers = shopId && loaded?.shopId === shopId ? loaded.items : null;
+  useEffect(() => {
+    if (!shopId) return;
+    let current = true;
+    const keep = (items: Option[]) => current && setLoaded({ shopId, items });
+    void browserApi
+      .GET('/api/v1/admin/professionals', {
+        params: { query: { shopId, status: 'Active', page: 1, pageSize: 100 } },
+      })
+      .then(({ data }) =>
+        keep((data?.items ?? []).map((p) => ({ id: p.id, name: localizedName(locale, p.nameAr, p.nameEn) }))),
+      )
+      .catch(() => keep([]));
+    return () => {
+      current = false;
+    };
+  }, [shopId, locale]);
   const reset = () => {
     setShopId('');
     setTarget('Shop');
@@ -133,17 +147,17 @@ export function CreateQrCodeDialog({
             ]}
           />
           {target === 'Professional' &&
-            (shopId && barbers.length === 0 ? (
+            (shopId && barbers?.length === 0 ? (
               <InlineAlert tone="warning" title={t('noProfessionals')} />
             ) : (
               <SelectField
                 label={t('professional')}
                 value={professionalId}
-                disabled={!shopId}
+                disabled={!shopId || barbers === null}
                 onChange={(event) => setProfessionalId(event.target.value)}
               >
                 <option value="">{t('choose')}</option>
-                {barbers.map((barber) => (
+                {(barbers ?? []).map((barber) => (
                   <option key={barber.id} value={barber.id}>
                     {barber.name}
                   </option>

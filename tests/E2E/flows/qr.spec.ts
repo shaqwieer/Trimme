@@ -3,7 +3,7 @@ import { type APIRequestContext, expect, type Page, test } from '@playwright/tes
 
 /**
  * Phase 16 (R-QR-01/02, R-CUS-13, R-AD-09, D-114): an admin creates a shop code; a visitor scans it (the locale-less
- * printed URL), signs up, books from the landing page, and the booking is credited to the code in the admin and shop
+ * printed URL) as a guest, signs up, books in the wizard, and the booking is credited to the code in the admin and shop
  * views; a barber code opens the barber's landing; a switched-off code is not found; reloads count once; the admin and
  * shop QR pages, files and A5 poster. Sign-up uses a fresh number (the OTP budget is per number). The booking is
  * cancelled at the end, so the suite can run again on the same stack.
@@ -109,24 +109,28 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     const code = /تم إنشاء الرمز ([a-z2-9]{8})\./.exec((await created.textContent()) ?? '')![1]!;
     expect(await codeFigures(page, code)).toMatchObject({ visits: 0, bookings: 0 });
 
-    // A visitor signs up, then scans the printed URL: no locale, so the web app picks one; the scan sets an HttpOnly cookie.
+    // A guest scans the printed URL: no locale, so the web app picks one; the scan sets an HttpOnly cookie.
     const visitor = await browser.newContext({ locale: 'ar-SA' });
     const scan = await visitor.newPage();
-    await signUp(scan, 'ريم الشهري');
     await waitForScan(scan, `/q/${code}`);
     await expect(scan).toHaveURL(new RegExp(`/ar/q/${code}$`));
     await expect(scan.getByText('دخلت عبر رمز المحل')).toBeVisible();
     await expect(scan.getByRole('heading', { level: 1 })).toContainText('باربر هاوس');
     await expect(scan.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(scan.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/ar\/shops\/barber-house$/);
-    const cookie = (await visitor.cookies()).find((c) => c.name === 'trimme-qr');
+    await expect(scan.getByRole('link', { name: 'احجز الآن' })).toHaveAttribute(
+      'href',
+      '/ar/shops/barber-house/book',
+    );
+    const qrCookie = async () => (await visitor.cookies()).find((c) => c.name === 'trimme-qr');
+    const cookie = await qrCookie();
     expect(cookie?.httpOnly).toBe(true);
     expect(cookie?.path).toBe('/api/v1');
     await expectNoSeriousAxe(scan, 'qr landing');
 
-    // «احجز الآن» → the wizard: service, any barber, a day, a time, review, confirm.
-    await scan.getByRole('link', { name: 'احجز الآن' }).click();
-    await expect(scan).toHaveURL(/\/ar\/shops\/barber-house\/book/);
+    // The guest then signs up (the cookie survives the sign-up) and books in the wizard, without scanning again.
+    await signUp(scan, 'ريم الشهري');
+    await scan.goto('/ar/shops/barber-house/book');
     await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الخدمة');
     await scan.getByText('قص وتصفيف').first().click();
     await scan.getByRole('button', { name: 'التالي' }).click();
@@ -140,6 +144,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await expect(slot).toBeAttached();
     await scan.locator(`label:has(input[name="time"][value="${await slot.getAttribute('value')}"])`).click();
     await scan.getByRole('button', { name: 'التالي' }).click();
+    expect((await qrCookie())?.value).toBe(cookie?.value);
     await scan.getByRole('button', { name: 'تأكيد الحجز' }).click();
     await expect(scan).toHaveURL(/\/ar\/account\/bookings\/[0-9a-f-]{36}\?created=1$/);
     const bookingId = /bookings\/([0-9a-f-]{36})/.exec(scan.url())![1]!;

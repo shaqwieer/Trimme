@@ -16,7 +16,7 @@ export async function LegalPage({ kind, locale }: { kind: 'terms' | 'privacy'; l
           title: t(`terms.sections.${key}.title`),
           body: t(`terms.sections.${key}.body`),
         }))
-      : (['data', 'location', 'messages', 'rights'] as const).map((key) => ({
+      : (['data', 'location', 'messages', 'cookies', 'rights'] as const).map((key) => ({
           key,
           title: t(`privacy.sections.${key}.title`),
           body: t(`privacy.sections.${key}.body`),

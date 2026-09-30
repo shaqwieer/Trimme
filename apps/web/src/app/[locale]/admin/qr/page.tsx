@@ -50,7 +50,7 @@ export default async function AdminQrPage({ params, searchParams }: PageProps<'/
       {async (me) => {
         const api = await getServerApi();
         const canManage = me.permissions.includes('Admin.Qr.Manage');
-        const [analytics, codes, shops, professionals] = await Promise.all([
+        const [analytics, codes, shops] = await Promise.all([
           api.GET('/api/v1/admin/qr/analytics', { params: { query: { days } } }),
           api.GET('/api/v1/admin/qr/codes', {
             params: {
@@ -65,11 +65,6 @@ export default async function AdminQrPage({ params, searchParams }: PageProps<'/
           canManage
             ? api.GET('/api/v1/admin/shops', { params: { query: { page: 1, pageSize: 100 } } })
             : Promise.resolve(undefined),
-          canManage
-            ? api.GET('/api/v1/admin/professionals', {
-                params: { query: { page: 1, pageSize: 100, status: 'Active' } },
-              })
-            : Promise.resolve(undefined),
         ]);
         if (!analytics.data || !codes.data) return <ErrorState />;
         const { totals, byShop } = analytics.data;
@@ -83,10 +78,6 @@ export default async function AdminQrPage({ params, searchParams }: PageProps<'/
                 name: localizedName(lang, code.professionalNameAr ?? '', code.professionalNameEn),
               })
             : t('target.Shop');
-        const barbersByShop: Record<string, { id: string; name: string }[]> = {};
-        for (const p of professionals?.data?.items ?? []) {
-          (barbersByShop[p.shopId] ??= []).push({ id: p.id, name: localizedName(lang, p.nameAr, p.nameEn) });
-        }
 
         return (
           <div className="flex flex-col gap-5">
@@ -110,7 +101,6 @@ export default async function AdminQrPage({ params, searchParams }: PageProps<'/
                     id: s.id,
                     name: localizedName(lang, s.nameAr, s.nameEn),
                   }))}
-                  professionals={barbersByShop}
                 />
               )}
             </div>

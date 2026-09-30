@@ -1778,6 +1778,10 @@
           "title": "Messages",
           "body": "We send verification codes, booking confirmations and reminders on WhatsApp to your number only."
         },
+        "cookies": {
+          "title": "Cookies",
+          "body": "We use TRIMME's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a shop's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
+        },
         "rights": {
           "title": "Your rights",
           "body": "You can edit your details and end your sessions from your account page, and ask support to delete your account."
@@ -2983,7 +2987,7 @@
       "poster": "A5 poster"
     },
     "imageAlt": "QR code that opens {name}",
-    "privacy": "We keep no IP address and do not track visitors: only the time of the scan, the kind of device and the page language.",
+    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a TRIMME-only cookie that credits a booking made within 7 days of the scan.",
     "materials": {
       "title": "Print materials",
       "Shop": "One code per shop",
@@ -3071,7 +3075,7 @@
       "poster": "A5 poster"
     },
     "imageAlt": "QR code that opens {name}",
-    "privacy": "We keep no IP address and do not track visitors: only the time of the scan, the kind of device and the page language.",
+    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a TRIMME-only cookie that credits a booking made within 7 days of the scan.",
     "materials": {
       "title": "Print materials",
       "Shop": "One code per shop",
