@@ -141,10 +141,10 @@ Session 12 (2026-09-30).
 | OpenAPI (regenerated) and `pnpm openapi:check` | PASS; 12 operations added, none removed |
 | Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS; 366 tests (357 → 366); `next build` includes the five new routes |
 | E2E `tsc`, `prettier --check` | PASS |
-| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2 --retries=0` | **72/72 ×2** on the final code. API log: 0 × 5xx, 0 × 429. The only ERR is E6's expected exclusion-constraint loss (the database decides the race). Two EF warnings come from Phase 15's notification sweep job and Phase 08's admin subscription read, not from Phase 16 code. |
+| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2 --retries=0` | **72/72 ×2** on `c7f266c` (and 72/72 once more after the review follow-up). API log: 0 × 5xx, 0 × 429. The only ERR is E6's expected exclusion-constraint loss (the database decides the race). Two EF warnings come from Phase 15's notification sweep job and Phase 08's admin subscription read, not from Phase 16 code. |
 | Linux Chromium (`mcr.microsoft.com/playwright:v1.63.0-noble`) against the stack | `qr`, `admin-operations`, `shop-dashboard`, `public-discovery`: **19/19**, including the 390 px overflow tests with `/ar/admin/qr` and `/ar/shop/qr` |
 | No-transfer and R-NEG-08 grep gates | PASS: hits only in the test files that assert absence, seeders and the excluded geocoder |
-| gitleaks v8.30.1 `dir` (and `git` after the commit) | PASS: no leaks (see the commit note below) |
+| gitleaks v8.30.1 `dir` and `git` | PASS: no leaks (`git`: 62 commits, after the phase commit `c7f266c`) |
 | Visual check (screenshots at 390 and 1440) | Landing (ar, barber in en), admin QR (desktop and phone cards), poster (screen and print emulation), shop QR. This led to three fixes: the poster's squeezed code box (children no longer shrink; the code takes 72 % of the card), start-aligned LTR URLs, and no mid-code URL wrap in the admin table |
 
 **Found and fixed during the phase:**
@@ -152,6 +152,13 @@ Session 12 (2026-09-30).
 - **Composite key types.** The booking → code key needed the same id type on both sides, so `QrCodeLinkId` moved to the shared domain.
 - **E2E run 2 (first fresh stack): 71/72.** The QR test found the shop card and admin row by label, and a second run on one stack created a second code with that label. It now matches by the generated code.
 - **E2E run 2 (second fresh stack): 71/72.** A Phase 14 test failed: it force-checked the first reschedule slot while today's slots were being replaced by the new day's. It now waits for the new day's options and clicks the visible label (3/3 alone, and 72/72 ×2 after).
+
+**Review follow-up (after `c7f266c`).**
+- **The create dialog.** It loads the chosen shop's active barbers when the shop changes. A platform-wide page of 100 professionals would show «no active barbers» for shops beyond it.
+- **Privacy wording.** The QR privacy line says "no IP address and no fingerprint" plus the first-party cookie, instead of "no tracking". The privacy page gains a cookies section naming the session, language and QR attribution cookies.
+- **The scan-to-book E2E follows the designed path.** It scans as a guest, then signs up, then opens the wizard directly (no second scan). It asserts the cookie survives the sign-up, then that the booking is credited.
+- **Evidence:** web 366/366, lint, typecheck and format; `qr.spec.ts` 3/3 ×2; a fresh-stack full run 72/72 (no 5xx or 429); Linux Chromium 19/19.
+- **Documented:** D-114 records "the most recent scan wins" and what customers are told; D-115 records the middleware's `Set-Cookie` side effect for Phase 17.
 
 **Database.**
 - Migration `20260930111559_Qr` was applied on fresh compose volumes and from empty in the integration tests.

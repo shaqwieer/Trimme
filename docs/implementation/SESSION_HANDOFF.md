@@ -3,8 +3,8 @@
 - **Updated:** 2026-09-30 (Session 12: CI fix, then Phase 16)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Pushed: everything up to `786d8c8` (the Phase 14 and 15 commits and the 390 px CI fix). The user confirmed CI is green.
-  - Local only: the Phase 16 commit and its `docs:` follow-up (run `git log --oneline -4`).
-- **HEAD commit:** the Phase 16 commit (feat: phase 16 qr codes and attribution), or its `docs:` follow-up recording the hash and the gitleaks `git` result.
+  - Local only: the Phase 16 commit `c7f266c`, its review follow-up and the `docs:` commit (run `git log --oneline -4`).
+- **HEAD commit:** the `docs:` commit recording the Phase 16 hashes and the gitleaks `git` result, on top of the review follow-up and `c7f266c` (feat: phase 16 qr codes and attribution).
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose,** on a fresh volume from this session's last `down -v` + `up --build`, which built this session's final product code.
   - Ports: web 3300, API 8080, DB 5434, Mailpit 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
@@ -37,6 +37,10 @@
   - **D-115.** The web proxy's matcher was broken, and unprefixed paths answered 404. `/q/{code}` and any old unprefixed link now redirect to a locale.
   - **Seed:** `DemoQr` holds 6 codes (1 switched off) and 27 days of deterministic scans. Three demo bookings are credited (`a01`, `a24`, `a11`).
   - **Tests:** U `QrDomainTests` 25; I `QrTests` 3; W `qr.test.tsx` 9; E `qr.spec.ts` 3. The QR pages were added to the admin and shop viewport tests.
+  - **Review follow-up (after `c7f266c`):**
+    - the create dialog loads the chosen shop's active barbers (a platform-wide page of 100 would miss shops);
+    - the privacy page gains a cookies section, and the QR privacy line no longer claims "no tracking";
+    - the scan-to-book E2E now scans as a guest, then signs up, then books in the wizard without scanning again, and checks the cookie survives.
   - **Also:**
     - the integration fixture's connect timeout is 60 s (rare connection-open timeouts under parallel load);
     - the Phase 14 reschedule E2E race is fixed;
@@ -51,9 +55,9 @@
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | OpenAPI regenerated, `pnpm openapi:check` | PASS (12 operations added, none removed) |
 | Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 366 web tests |
-| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2 --retries=0` | **72/72 ×2** on the final code; API log 0 × 5xx, 0 × 429 |
-| Linux Chromium container (`qr`, `admin-operations`, `shop-dashboard`, `public-discovery`) | 19/19 |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` | PASS |
+| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2 --retries=0` | **72/72 ×2** on `c7f266c`; after the review follow-up, `qr.spec.ts` 3/3 ×2 and a fresh-stack full run 72/72; API log 0 × 5xx, 0 × 429 |
+| Linux Chromium container (`qr`, `admin-operations`, `shop-dashboard`, `public-discovery`) | 19/19, before and after the review follow-up |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS (`git`: 62 commits after `c7f266c`, no leaks) |
 
 ## Database and migrations
 - Created and applied locally: `20260930111559_Qr`, on the compose volume and from empty in the integration tests.
@@ -90,7 +94,8 @@
 3. Phase 17 should include:
    - the Nginx example forwarding the client address (QR visitor hashes, rate limits);
    - cache headers for QR images;
-   - the two EF warnings above.
+   - the two EF warnings above;
+   - D-115's side effect: page responses now carry `Set-Cookie: NEXT_LOCALE`, which blocks shared caching of public HTML.
 
 ## Files intentionally left modified
 - None.
