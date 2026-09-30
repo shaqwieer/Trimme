@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { safeReturnTo, withReturnTo } from '@/lib/auth/paths';
-import { changeDeadline, cutoffParts, endOf, timeUntil } from './format';
+import { calendarDaysUntil, changeDeadline, cutoffParts, endOf, timeUntil } from './format';
 import {
   ANY_PROFESSIONAL,
   currentStep,
@@ -164,5 +164,19 @@ describe('booking display helpers', () => {
     const now = new Date('2026-10-01T07:00:00Z');
     expect(timeUntil('2026-10-03T10:05:00Z', now)).toEqual({ days: 2, hours: 3, minutes: 5 });
     expect(timeUntil('2026-09-30T07:00:00Z', now)).toEqual({ days: 0, hours: 0, minutes: 0 });
+  });
+
+  it('counts countdown days by the calendar in the shop time zone, not in 24-hour blocks', () => {
+    // Wednesday 30 September, 8:30 PM in Riyadh.
+    const now = new Date('2026-09-30T17:30:00Z');
+    // Friday 5:00 PM is 44½ hours away: two calendar days, where the 24-hour count said one ("tomorrow").
+    expect(timeUntil('2026-10-02T14:00:00Z', now).days).toBe(1);
+    expect(calendarDaysUntil('2026-10-02T14:00:00Z', 'Asia/Riyadh', now)).toBe(2);
+    // Thursday 11:59 PM is tomorrow; Friday 12:00 AM (Thursday 21:00 UTC) is already the day after.
+    expect(calendarDaysUntil('2026-10-01T20:59:00Z', 'Asia/Riyadh', now)).toBe(1);
+    expect(calendarDaysUntil('2026-10-01T21:00:00Z', 'Asia/Riyadh', now)).toBe(2);
+    // The same instant is the same day in UTC but not in Riyadh.
+    expect(calendarDaysUntil('2026-10-01T21:30:00Z', 'UTC', now)).toBe(1);
+    expect(calendarDaysUntil('2026-09-29T10:00:00Z', 'Asia/Riyadh', now)).toBe(0);
   });
 });

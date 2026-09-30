@@ -10,14 +10,15 @@ import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
-import { timeUntil } from '@/lib/booking/format';
+import { calendarDaysUntil, timeUntil } from '@/lib/booking/format';
 import type { AppLocale } from '@/lib/i18n/format';
 
 /**
  * "In 2 days" / "بعد يومين" until the appointment (c-appointments 1760: the countdown reduces forgetting). Computed in
- * the browser after mount, so the server and client renders never disagree, and refreshed every minute.
+ * the browser after mount, so the server and client renders never disagree, and refreshed every minute. From a day
+ * away it counts calendar days in the shop's time zone, so "tomorrow" always means the next date.
  */
-export function Countdown({ startsAt }: { startsAt: string }) {
+export function Countdown({ startsAt, timeZone }: { startsAt: string; timeZone?: string }) {
   const locale = useLocale() as AppLocale;
   const [text, setText] = useState<string>();
 
@@ -33,7 +34,7 @@ export function Countdown({ startsAt }: { startsAt: string }) {
       const { days, hours, minutes } = timeUntil(startsAt);
       setText(
         days > 0
-          ? format.format(days, 'day')
+          ? format.format(calendarDaysUntil(startsAt, timeZone), 'day')
           : hours > 0
             ? format.format(hours, 'hour')
             : format.format(Math.max(minutes, 1), 'minute'),
@@ -42,7 +43,7 @@ export function Countdown({ startsAt }: { startsAt: string }) {
     update();
     const timer = setInterval(update, 60_000);
     return () => clearInterval(timer);
-  }, [locale, startsAt]);
+  }, [locale, startsAt, timeZone]);
 
   return (
     <p className="min-h-6 text-label font-bold text-brand-700" data-testid="booking-countdown">

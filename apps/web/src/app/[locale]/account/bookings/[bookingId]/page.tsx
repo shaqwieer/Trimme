@@ -100,7 +100,7 @@ export default async function BookingDetailPage({
         <h1 id="booking-when" className="text-[1.75rem] leading-tight font-extrabold text-navy-900">
           {formatTime(booking.startsAt, locale, timeZone)} — {formatTime(booking.endsAt, locale, timeZone)}
         </h1>
-        {active && <Countdown startsAt={booking.startsAt} />}
+        {active && <Countdown startsAt={booking.startsAt} timeZone={timeZone} />}
         {active && (
           <div className="flex flex-wrap gap-2">
             <a
