@@ -152,7 +152,7 @@ After reverting, an **unused** cross-module `ProjectReference` still passed, bec
 - **`dotnet ef` flag:** `-c` means `--context` for `dotnet ef`, so CI uses `--configuration Release`.
 - **Per-endpoint body limit:** `RequestSizeLimitMiddleware` now honours `IRequestSizeLimitMetadata`, so uploads can opt into a larger limit. A declared "unlimited" is not honoured. `RequestSizeLimitTests` (3 tests) show that a default endpoint rejects 2 MB, an endpoint set to 3 MB accepts 2 MB, and the same endpoint still rejects 5 MB.
 - **CI workflow checks:** `actionlint` passed with exit 0. The gitleaks CI step runs as the runner user (`--user $(id -u):$(id -g)`) to avoid git's "dubious ownership" error on Linux runners.
-- **Planned follow-up:** Phase 18 now includes configuring `ReverseProxy:KnownProxies` and verifying per-client rate-limit partitions behind Nginx.
+- **Planned follow-up:** Phase 18 now includes configuring `ReverseProxy:KnownProxies` and verifying per-client rate-limit partitions behind Nginx. *(Session 12: Phase 18 was removed at the user's request, so this is no longer planned; see D-116.)*
 
 **Clean-clone Linux verification (Session 2, after Phase 02):**
 - `git clone` of `a8413e4`, then in `mcr.microsoft.com/dotnet/sdk:10.0`: SDK 10.0.401 via roll-forward, `dotnet build -c Release` with 0 warnings, and 73/73 unit, 56/56 architecture and 27/27 integration tests. The integration tests ran Testcontainers through the host Docker socket.

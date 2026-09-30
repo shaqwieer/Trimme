@@ -97,4 +97,4 @@ Revert the commit(s).
 _(fill)_
 
 ## Remaining risks → next phase
-Next: Phase 18 — Regression and handover.
+Phase 17 is the last phase: Phase 18 (regression and handover) was removed at the user's request (D-116).

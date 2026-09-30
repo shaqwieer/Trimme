@@ -10,6 +10,9 @@
   - Ports: web 3300, API 8080, DB 5434, Mailpit 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
   - This volume has had two full E2E runs and the Linux Chromium run of four specs.
 - **Current phase:** 16 is complete. Phase 17 has not started.
+- **After Phase 16 (same session):**
+  - `160a423` fixed the booking countdown (calendar days in the shop time zone, so a visit two dates away no longer reads «غداً»). It is pushed, with everything before it.
+  - **Plan change (D-116):** Phase 18 was removed at the user's request. Phase 17 is the last phase; the platform total is 1,800 points.
 - **Phase score:** 100 / 100 (Phase 16).
 - **Last fully completed phase:** 16, QR codes and attribution analytics.
 

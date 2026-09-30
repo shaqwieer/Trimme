@@ -115,13 +115,13 @@ Explicitly **never** in the catalogue: any transfer permission, customer export,
 
 ## 7. Phase sequence
 
-The spec suggested 11 phases (0–10). This plan uses **19 phases (0–18)** because several suggested phases could not be implemented, tested, documented and handed off within one session:
+The spec suggested 11 phases (0–10). This plan uses **18 phases (0–17)** because several suggested phases could not be implemented, tested, documented and handed off within one session:
 - spec phase 1 → **1** backend/infra foundation, **2** web foundation, **3** design-system component library;
 - spec phase 2 → **4** identity/sessions and **5** tenancy/privacy/audit core (tenancy needs real shop-owned entities, so Phase 5 introduces `Shop`/`ShopUser`);
 - spec phase 3 → **6** shops/locations/professionals, **7** services/packages, **8** subscriptions foundation (+ platform settings core);
 - spec phase 4 → **9** schedules + availability engine, **10** booking core (state machine, exclusion constraint, idempotency, **outbox records written in the booking transaction**);
 - spec phase 8 → **15** WhatsApp/outbox/Hangfire/notifications and **16** QR/attribution;
-- spec phases 5, 6, 7, 9, 10 → **11/12**, **13**, **14**, **17**, **18**.
+- spec phases 5, 6, 7, 9, 10 → **11/12**, **13**, **14**, **17** (spec phase 10, regression and handover, was planned as Phase 18 and removed at the user's request, D-116).
 
 Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): dev-only seed command (extended every phase), CI workflow, `docker compose up --build`, i18n key-parity test, Playwright harness, OpenAPI client drift check, architecture tests.
 
@@ -147,9 +147,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 15 | WhatsApp, outbox, Hangfire & notifications | [x] | 100/100 | 14 | `phases/phase-15-notifications-whatsapp.md` §Evidence (build 0 warnings; 395 unit / 65 architecture / 172 integration; migration `Notifications`; web 357; E4 green; fresh `down -v` stack E2E 69/69 ×2, no retries, no 5xx or 429; no-transfer and R-NEG-08 gates and gitleaks clean) | `4c2744e` (+ CI fix `1e457e1`) | CI green after the push (Session 12) |
 | 16 | QR codes & attribution analytics | [x] | 100/100 | 15 | `phases/phase-16-qr-analytics.md` §Evidence (build 0 warnings; 420 unit / 65 architecture / 175 integration ×3; migration `Qr`; web 366; fresh `down -v` stack E2E 72/72 ×2, no retries, no 5xx or 429; Linux Chromium 19/19 on the affected specs; grep gates and gitleaks clean) | `c7f266c` (+ review follow-up) | Push when the user asks; Phase 17 next |
 | 17 | Localization, SEO, a11y, security, observability, performance | [ ] | 0/100 | 16 | — | — | — |
-| 18 | Full regression, deployment docs, handover | [ ] | 0/100 | 17 | — | — | — |
 
-**Platform total: 1700 / 1900 points.**
+**Platform total: 1700 / 1800 points.** Phase 18 (full regression, deployment docs, handover) was removed at the user's request (D-116); Phase 17 is the last phase.
 
 ## 9. Risks and external dependencies
 
@@ -176,7 +175,7 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | D-004 | Dispatcher | **In-house dispatcher** (no MediatR) — D-037 | Phase 1 |
 | D-005 | Customer authentication | **Passwordless mobile + OTP** for customers; email + password for staff — D-037 | Phase 4 |
 | D-006 | Initial booking status | **Per-shop `RequireManualConfirmation`, default auto-confirm** — D-037 | Phase 10 |
-| D-007 | Maps/geocoding | **OpenStreetMap** (MapLibre + OSM tiles, Nominatim-compatible geocoder; self-hosted or OSM-based host in production, per the usage policies) — D-037 | Phase 6 (host choice is config, Phase 17/18) |
+| D-007 | Maps/geocoding | **OpenStreetMap** (MapLibre + OSM tiles, Nominatim-compatible geocoder; self-hosted or OSM-based host in production, per the usage policies) — D-037 | Phase 6 (host choice is config, Phase 17) |
 
 Other product assumptions (D-012 … D-035) are recorded in `DECISIONS.md` with overridable defaults.
 
@@ -196,4 +195,4 @@ Mirrors spec §23 — all must hold with evidence recorded in phase files:
 - No v1 payment UI or charge flow; payment seam documented.
 - Migrations, seed, tests, lint, type check, production builds and `docker compose up --build` pass.
 - No real credentials, no production PII, no known critical/high security issue.
-- Final implementation report delivered (spec §23 list).
+- ~~Final implementation report delivered (spec §23 list).~~ Removed with Phase 18 at the user's request (D-116).

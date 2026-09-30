@@ -9,7 +9,7 @@
   - `/shop/qr`, read-only for the owner.
 
   It is committed locally and not pushed. Next: Phase 17, hardening.
-- **Platform progress:** 1700 / 1900 points (Phases 00–16)
+- **Platform progress:** 1700 / 1800 points (Phases 00–16). Phase 18 was removed at the user's request (D-116), so Phase 17 is the last phase.
 
 | Phase | Status | Points |
 |---|---|---|
@@ -31,7 +31,6 @@
 | 15 WhatsApp & notifications | [x] | 100/100 |
 | 16 QR & attribution | [x] | 100/100 |
 | 17 Hardening | [ ] | 0/100 |
-| 18 Regression & handover | [ ] | 0/100 |
 
 ## Decisions resolved with the user (D-037)
 

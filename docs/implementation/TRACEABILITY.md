@@ -9,7 +9,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
 | R-NEG-01 | No barber transfer: `Professional.ShopId` immutable; no update DTO carries `shopId`; no transfer route/permission/UI | §7, §14, §23 | 6 | U `Professional_ShopId_HasNoPublicSetter` ✔, `NoProfessionalUpdateContract_ContainsShopId` ✔ (unit, on the API contracts); I `OpenApi_HasNoTransferOperation` ✔, `Professional_ShopId_IsImmutable_AndTheUpdateContractCannotCarryIt` ✔ (EF refuses to modify the key; extra `shopId` in the body ignored); I `PermissionCatalogue_HasNoTransferPermission` ✔ Phase 04; W `no barber transfer anywhere in the UI copy` ✔; E admin professional page has no transfer/move action ✔ (`shops-professionals.spec.ts`); C grep gate (test files excluded, D-069) ✔ Phase 06 | [x] |
-| R-NEG-02 | No payment/checkout UI or charge flow | §2, §12, §23 | 12, 18 | E `customer-booking.spec.ts` E1 review step: no card/payment input or copy ✔; W wizard review "no payment step" ✔; I `OpenApi_has_no_payment_surface` (no payment/checkout/card path; `PaymentStatus` = NotApplicable only) ✔; `/account` payment row read-only "في المحل" (DV-S20) ✔ | [x] |
+| R-NEG-02 | No payment/checkout UI or charge flow | §2, §12, §23 | 12 | E `customer-booking.spec.ts` E1 review step: no card/payment input or copy ✔; W wizard review "no payment step" ✔; I `OpenApi_has_no_payment_surface` (no payment/checkout/card path; `PaymentStatus` = NotApplicable only) ✔; `/account` payment row read-only "في المحل" (DV-S20) ✔ | [x] |
 | R-NEG-03 | No customer export for shops | §7, §13 | 13 | I `OpenApi_has_no_export_surface` (no export, CSV, download or xlsx path) ✔; E E2 no «تصدير»/Export/CSV on the overview, appointments and calendar ✔ | [x] |
 | R-NEG-04 | Customer phone never in shop DTOs/SignalR/HTML/logs | §7, §13 | 5, 13, 15 | I `ShopFacingContracts_DoNotContainCustomerPhone` ✔ Phase 05 (every shop-facing endpoint found from metadata; fails closed without typed responses — probe-verified; recursive member scan + live JSON scan; non-vacuity test `PhoneScanner_FindsPhoneMembers_InNestedTypes`); U `SensitiveDataRedactorTests` (logs) ✔; I `ShopHub_Messages_DoNotContainPhone` (13); E `shop_pages_payload_has_no_customer_phone` (13); Phase 13: hub messages carry ids, times and status only (I raw JSON has no customer/phone/mobile/+966) ✔; E E2 network scan of dashboard API responses and live frames for the seeded customer numbers and phone keys ✔; Phase 15 ✔: professional messages and shop notifications carry no customer phone (I `CustomerAndProfessionalDispatches_ForLifecycle…` checks the professional body and the shop inbox JSON; no phone placeholder exists, U `TemplatePlaceholders_Validated`); E E4 admin pages, dispatch bubbles and shop notifications contain no customer number | [x] |
 | R-NEG-05 | No shared professional across shops | §7 | 6 | I `Professional_BelongsToExactlyOneShop` ✔ (NOT NULL shop, composite contact FK rejects a cross-shop pair, the same WhatsApp number cannot be a professional in a second shop) | [x] |
@@ -117,7 +117,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-BKG-01 | Booking aggregate with service/price/duration snapshot | §10 | 10 | I `OnlineBooking_IsIdempotent_KeepsItsSnapshot_…` (price, name and duration kept after the service edit); U `Reschedule_KeepsTheSnapshot…` | [x] |
 | R-BKG-02 | State machine; invalid transitions rejected; history with actor/timestamp | §11 | 10 | U `StateMachine_AllowsExactlyTheDesignedTransitions` + `ShopTransitions_FollowTheStateMachine_AndRecordHistory` (49 pairs each), time rules; I `WalkIns_…Transitions…` (409 invalid, 422 too early, reason required, history) | [x] |
 | R-BKG-03 | Transactional recheck + PostgreSQL exclusion constraint | §11 | 10 | Migration `Bookings` exclusion constraint; I `TheDatabase_RefusesOverlappingActiveBookings_EvenWithoutTheApplication`; recheck in the transaction (D-089) | [x] |
-| R-BKG-04 | Concurrency: exactly one winner | §11, §19 | 10, 18 | I `BookingConcurrencyTests` (8-way race, partial overlaps, reschedule race) ✔ Phase 10; E E6 two browser contexts confirm the same time at once: exactly one booking, the other sees "just taken" ✔ (×3 runs) | [x] |
+| R-BKG-04 | Concurrency: exactly one winner | §11, §19 | 10 | I `BookingConcurrencyTests` (8-way race, partial overlaps, reschedule race) ✔ Phase 10; E E6 two browser contexts confirm the same time at once: exactly one booking, the other sees "just taken" ✔ (×3 runs) | [x] |
 | R-BKG-05 | Idempotent create/reschedule (idempotency keys) | §11, §18 | 10 | I `OnlineBooking_IsIdempotent_…` (required, replay, reuse 422), `TheSameIdempotencyKey_InParallel_CreatesOneBooking…`, reschedule replay | [x] |
 | R-BKG-06 | Typed conflict response | §11 | 10, 12 | I every conflict asserts `booking.slot_unavailable` ✔; W wizard 409 → time step with the conflict notice and refetched slots ✔; E E6 ✔ | [x] |
 | R-BKG-07 | Walk-ins use the same collision checks | §11 | 10, 13 | I `WalkIns_UseTheSameCollisionChecks_…` (overlap 409, outside hours 409, off-grid allowed); U `WalkInRule_AllowsAnyMinute_ButNotACollision` | [x] |
@@ -198,12 +198,12 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 
 | ID | Requirement | Spec | Phase | Verification | Status |
 |---|---|---|---|---|---|
-| R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 18 | M — initial README (Phase 01) | [~] |
+| R-DOC-01 | README (architecture, prerequisites, setup, migrations, seed, run, test, deploy) | §22 | 1 → 17 | M — README kept current each phase; the final deployment section planned for Phase 18 was removed (D-116) | [~] |
 | R-DOC-02 | architecture, domain-model, permissions-matrix, availability-and-booking, whatsapp-integration, deployment, backup-restore, design-deviations docs | §22 | per phase | M; whatsapp-integration Phase 15 | [~] |
 | R-DOC-03 | Mermaid: deployed topology + booking/reminder lifecycle | §22 | 1, 15 | M — topology + backend structure in `docs/architecture.md` (Phase 01, jobs updated Phase 15); booking/reminder lifecycle in `docs/whatsapp-integration.md` (Phase 15) | [x] |
-| R-DOC-04 | Nginx example, HTTPS-ready config, backup/restore instructions | §3 | 18 | M | [ ] |
+| R-DOC-04 | Nginx example, HTTPS-ready config, backup/restore instructions | §3 | 18 (removed) | M — not delivered: Phase 18 was removed at the user's request (D-116) | [-] |
 | R-DOC-05 | Demo credentials in local-only file excluded from builds | §20 | 4 | C `docs/local/DEMO_CREDENTIALS.local.md` is git-ignored (`git check-ignore` ✔) and `docs/` is excluded from every Docker build context (`.dockerignore`) ✔ | [x] |
-| R-DOC-06 | Final implementation report | §23 | 18 | M | [ ] |
+| R-DOC-06 | Final implementation report | §23 | 18 (removed) | M — not delivered: Phase 18 was removed at the user's request (D-116) | [-] |
 
 ## 13. Playwright flows (spec §19)
 
@@ -217,7 +217,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | E6 | Two concurrent customers, same slot, exactly one succeeds | 10 (API), 12 (UI) | 12 ✔ (`customer-booking.spec.ts`) |
 | E7 | Completed booking allows one review; incomplete/foreign does not | 12 | 12 ✔ (`customer-booking.spec.ts`) |
 
-All seven are re-run as the Phase 18 regression gate.
+Each flow is verified in its own phase. The final regression run planned for Phase 18 was removed with that phase (D-116).
 
 ## 14. Data model inventory (spec §8)
 
@@ -262,7 +262,7 @@ All seven are re-run as the Phase 18 regression gate.
 | OTP delivery | `IOtpSender` | Fake: dev inbox or log, development only | WhatsApp authentication template; optional SMS provider | 4 (fake), 15 (WhatsApp) |
 | Email (staff invitations and password resets) | `IEmailSender` | Mailpit container | SMTP host, port, credentials, sender | 4 |
 | Maps and geocoding | `IMapProvider` (web), `IGeocoder` (API) | MapLibre GL plus an OSM-compatible tile source and geocoder, within their usage policy | Provider keys (D-007) | 6, 11, 17 |
-| File storage (shop cover and gallery) | `IMediaStore` | PostgreSQL (D-064); QR files are generated on request, not stored (D-114) | Object storage or a mounted volume, decided in Phase 18 deployment | 6, 16 |
+| File storage (shop cover and gallery) | `IMediaStore` | PostgreSQL (D-064); QR files are generated on request, not stored (D-114) | Object storage or a mounted volume, decided at deployment (not planned; D-116) | 6, 16 |
 | Future payment gateway | `IPaymentGateway` (documented seam only) | — | Not in v1 | 10 (docs) |
 
 ## 16. API endpoint inventory

@@ -1027,3 +1027,13 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
 
 ## D-115 — Locale negotiation on every page path — Accepted (Phase 16)
 The web proxy's matcher was written `'.*\..*'`. Inside a JavaScript string that reaches the regex as `.*..*`, which excluded every path longer than one character. Only `/` was redirected to a locale; any other unprefixed path answered 404. The matcher now escapes the dot (`\.`), so unprefixed paths (the printed `/q/{code}`, old links) redirect to `/ar/…` or `/en/…` from `Accept-Language`. Files with an extension, `/api`, `/hubs` and Next internals are still skipped. Side effect: the next-intl middleware now runs on every page. Page responses may therefore carry `Set-Cookie: NEXT_LOCALE` and hreflang `Link` headers, private pages included. Nothing broke (72/72 E2E), but a `Set-Cookie` on public HTML defeats shared caching, which is a Phase 17 caching item.
+
+## D-116 — Phase 18 removed from the plan — Accepted (user decision, Session 12)
+The user asked to remove Phase 18 (full regression, deployment documentation and handover). Phase 17 (hardening) is now the last phase, and the platform total is 1,800 points.
+- **No longer planned** (these were Phase 18 items):
+  - the final full regression (E1–E7 in both locales at mobile and desktop sizes, concurrency ×20, a clean-clone `docker compose up --build`);
+  - `docs/deployment.md`, the Nginx example (`infra/nginx/trimme.conf`) and a production compose example (R-DOC-04);
+  - `docs/backup-restore.md` and a local restore drill;
+  - the definition-of-done and traceability audit, the production-readiness checklist and the final implementation report (R-DOC-06).
+- **Risk to note for any future production setup:** `ReverseProxy:KnownProxies` is not configured. Behind a reverse proxy, the `auth` and `otp` rate limits would count every client as one address until it is set (see Phase 01 evidence and D-094).
+- The phase file `phases/phase-18-regression-handover.md` is deleted; git history keeps it.

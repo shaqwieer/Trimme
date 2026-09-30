@@ -145,4 +145,4 @@ CI (`.github/workflows/ci.yml`) runs four jobs:
 
 ## Deployment
 
-The production topology is a single domain behind Nginx, with the API under `/api` and `/hubs` and the web app for everything else. Migrations run as an explicit release step. The deployment and backup guides are completed in Phase 18 (`docs/deployment.md`, `docs/backup-restore.md`).
+The production topology is a single domain behind Nginx, with the API under `/api` and `/hubs` and the web app for everything else. Migrations run as an explicit release step. Dedicated deployment and backup guides (`docs/deployment.md`, `docs/backup-restore.md`) are not part of the current plan (D-116).
