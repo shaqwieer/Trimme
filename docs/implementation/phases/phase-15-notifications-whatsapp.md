@@ -127,7 +127,7 @@ Session 11 (2026-09-30).
 | E4 alone on the stack | PASS (24–26 s): both Arabic templates edited and activated, a new customer's booking, both dispatches delivered with the new wording, both reminders at start − 30 min, masked numbers only, the shop's notification, cancel → both reminders cancelled, templates restored, jobs dashboard through the web origin, an anonymous visitor refused |
 | Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **69/69 ×2** (runs 1 and 2 on the final code), no retries. API log after both runs: 0 × 5xx, 0 × 429, no warnings or errors. Outbox: 0 pending, 0 dead-lettered. |
 | No-transfer grep gate (D-069) and R-NEG-08 gate (the Phase 08 command) | PASS: no-transfer hits only in the two test files that assert absence; R-NEG-08 hits only in seeders, tests and the excluded geocoder |
-| gitleaks v8.30.1 `dir` | PASS: no leaks (`git` history scan after the commit is recorded in the follow-up docs commit) |
+| gitleaks v8.30.1 `dir` and `git` | PASS: no leaks (`git`: 58 commits, after the phase commit `4c2744e`) |
 
 **Found and fixed during the gates** (the two final full E2E runs used the final product code; the hub, retention and maintenance integration tests were added afterwards and changed no product code):
 - **Customer confirmations had lost their buttons.** The default templates shared static button records, and EF's owned JSON entities cannot be shared between owners. Each version now copies its buttons; restoring a version had the same flaw.

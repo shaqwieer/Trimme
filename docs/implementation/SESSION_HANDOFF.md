@@ -3,8 +3,8 @@
 - **Updated:** 2026-09-30 (Session 11: Phase 15)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Pushed: everything up to `26114ee`.
-  - Local only: the Phase 14 commits (`e9231a5`, `212da66`, `714661c`, `26036bd`) and the Phase 15 commit.
-- **HEAD commit:** the Phase 15 commit, `feat: phase 15 whatsapp, outbox, hangfire and notifications`. Run `git log --oneline -6`.
+  - Local only: the Phase 14 commits (`e9231a5`, `212da66`, `714661c`, `26036bd`), the Phase 15 commit `4c2744e` and its `docs:` follow-up.
+- **HEAD commit:** the `docs:` commit recording the Phase 15 commit hash and the gitleaks result, on top of `4c2744e` (feat: phase 15 whatsapp, outbox, hangfire and notifications). Run `git log --oneline -6`.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose,** on a fresh volume from this session's last `down -v` + `up --build`, which built this session's code.
   - The web container predates a Prettier-only reformat of two files; there is no behaviour difference.
@@ -70,7 +70,7 @@ Phase 15 (`phases/phase-15-notifications-whatsapp.md`):
 | Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 357 web tests |
 | E2E `tsc`, `prettier --check` | PASS |
 | Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2` | **69/69 ×2** on the final code, no retries; API log 0 × 5xx, 0 × 429, no warnings; outbox 0 pending, 0 dead-lettered. An earlier rebuild's run 1 was 66/69: three issues, all fixed (phase file §Evidence). |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` (and `git` after the commit, recorded in the follow-up `docs:` commit) | PASS: no hits outside tests, seeders and the excluded geocoder; no leaks |
+| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` (58 commits, after `4c2744e`) | PASS: no hits outside tests, seeders and the excluded geocoder; no leaks |
 
 ## Database and migrations
 - Created and applied locally: `20260930065901_Notifications`, on the compose volume and from empty in the integration tests. It adds the `notifications` schema and the outbox retry columns and `infra.processed_messages`.

@@ -9,7 +9,7 @@
   - in-app notifications for shops, customers and admins;
   - subscription expiry notices.
 
-  It is committed locally and not pushed. Phases 14 and 15 are unpushed. Next: Phase 16, QR codes and attribution.
+  It is committed locally as `4c2744e` (plus a `docs:` follow-up) and not pushed. Phases 14 and 15 are unpushed. Next: Phase 16, QR codes and attribution.
 - **Platform progress:** 1600 / 1900 points (Phases 00–15)
 
 | Phase | Status | Points |
