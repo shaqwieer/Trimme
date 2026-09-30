@@ -24,6 +24,7 @@ import { localizedName } from '@/lib/i18n/localized';
 import { chipOf, STATUS_CHIPS, type StatusChip, statusesOf } from '@/lib/shop/board';
 import { useOperationsEvents } from '../live/OperationsLive';
 import { AppointmentDrawer, BOARD_KEY } from './AppointmentDrawer';
+import { bookingSource } from '@/lib/booking/format';
 
 type Counts = components['schemas']['ShopBookingCounts'];
 
@@ -217,7 +218,7 @@ export function AppointmentsBoard({
                     <StatusBadge kind="booking" status={b.status} size="sm" />
                   </td>
                   <td className="border-t border-border-row px-4 py-3 text-text-secondary">
-                    {tDrawer(`channel.${b.channel}`)}
+                    {tDrawer(`channel.${bookingSource(b)}`)}
                   </td>
                   <td className="border-t border-border-row px-4 py-3 text-end">
                     <Button

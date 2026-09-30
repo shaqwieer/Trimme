@@ -72,7 +72,8 @@ public sealed record CustomerBookingResponse(
 
 /// <summary>
 /// A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). <c>AllowedTransitions</c> is
-/// what the UI may offer (DV-S08); <c>OutsideSchedule</c> flags an active booking that no longer fits the professional's
+/// what the UI may offer (DV-S08); <c>ViaQr</c> marks an online booking credited to a QR scan (the design's «رمز QR» source);
+/// <c>OutsideSchedule</c> flags an active booking that no longer fits the professional's
 /// hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically.
 /// </summary>
 public sealed record ShopBookingResponse(
@@ -80,6 +81,7 @@ public sealed record ShopBookingResponse(
     string Reference,
     string CustomerName,
     BookingChannel Channel,
+    bool ViaQr,
     BookingProfessionalResponse Professional,
     BookingItemResponse Item,
     DateTimeOffset StartsAt,
@@ -153,7 +155,7 @@ internal static class BookingMapping
     ];
 
     public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule) =>
-        new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
+        new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
             b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, b.Version);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)

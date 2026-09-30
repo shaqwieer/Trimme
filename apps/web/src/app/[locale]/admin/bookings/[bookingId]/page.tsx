@@ -14,6 +14,7 @@ import { getServerApi } from '@/lib/api/server';
 import { formatDate, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
+import { bookingSource } from '@/lib/booking/format';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -136,7 +137,7 @@ export default async function AdminBookingPage({
                       price: formatPrice(booking.item.price, lang, booking.item.currency),
                     })}
                   </Row>
-                  <Row label={tDrawer('rows.source')}>{tDrawer(`channel.${booking.channel}`)}</Row>
+                  <Row label={tDrawer('rows.source')}>{tDrawer(`channel.${bookingSource(booking)}`)}</Row>
                   {booking.note && <Row label={tDrawer('rows.note')}>{booking.note}</Row>}
                   {booking.cancellationReason && (
                     <Row label={tDrawer('rows.cancellationReason')}>{booking.cancellationReason}</Row>

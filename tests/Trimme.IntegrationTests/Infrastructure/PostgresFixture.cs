@@ -23,7 +23,11 @@ public sealed class PostgresFixture : IAsyncLifetime
         .WithCommand("-c", "max_connections=400")
         .Build();
 
-    public string ConnectionString => _container.GetConnectionString();
+    /// <summary>
+    /// Opening a connection through Docker Desktop's port forwarding can take longer than Npgsql's default 15 s while
+    /// every test class opens pools at once (seen as rare "The operation has timed out" in Phase 16), so allow 60 s.
+    /// </summary>
+    public string ConnectionString => new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Timeout = 60 }.ConnectionString;
 
     public async ValueTask InitializeAsync() => await _container.StartAsync();
 

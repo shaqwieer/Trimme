@@ -6,6 +6,7 @@ using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Application.Platform;
+using Trimme.BuildingBlocks.Application.Qr;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
@@ -25,8 +26,10 @@ public enum BookingsTab
     Past,
 }
 
+/// <summary><c>QrVisitId</c> is the scan in the browser's attribution cookie, if any (R-QR-02); it never makes the booking fail.</summary>
 internal sealed record CreateOnlineBookingCommand(
-    string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, string IdempotencyKey)
+    string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, string IdempotencyKey,
+    Guid? QrVisitId = null)
     : ICommand<Result<CustomerBookingResult>>;
 
 internal sealed record RescheduleMyBookingCommand(Guid BookingId, DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version, string IdempotencyKey)
@@ -129,7 +132,8 @@ internal sealed class CreateOnlineBookingHandler(
     IBookableOfferCatalog catalog,
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
-    ProfessionalPicker picker)
+    ProfessionalPicker picker,
+    IQrAttributionResolver qr)
     : ICommandHandler<CreateOnlineBookingCommand, Result<CustomerBookingResult>>
 {
     private const string Scope = "bookings.create";
@@ -146,7 +150,8 @@ internal sealed class CreateOnlineBookingHandler(
             return tooLong;
         }
 
-        var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty });
+        // The attribution cookie is not part of the request's identity: a retry whose cookie changed still replays.
+        var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty, QrVisitId = null });
         if (await ReplayAsync(customerId, command.IdempotencyKey, hash, cancellationToken) is { } replayed)
         {
             return replayed;
@@ -161,6 +166,9 @@ internal sealed class CreateOnlineBookingHandler(
         {
             return Error.NotFound("shop.not_found", "The shop was not found.");
         }
+
+        // A scan of this shop's code within the attribution window credits the booking; anything else is an ordinary booking.
+        var scan = command.QrVisitId is { } visitId ? await qr.ResolveAsync(visitId, shop.Id, cancellationToken) : null;
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var (claimed, record) = await idempotency.ClaimAsync(customerId, Scope, command.IdempotencyKey, hash, cancellationToken);
@@ -225,7 +233,7 @@ internal sealed class CreateOnlineBookingHandler(
         var now = support.Now;
         var booking = Booking.CreateOnline(
             EntityId.New<BookingId>(), shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer), command.StartsAt,
-            shop.RequireManualConfirmation, command.Note, now);
+            shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId));
         db.Add(booking);
         record!.Complete(booking.Id.Value);
         BookingEvents.Add(db, BookingEvents.Created, booking, now);

@@ -11,6 +11,9 @@ internal static class BookingModel
     /// <summary>The Professionals module's entity, referenced by name only (modules talk through contracts).</summary>
     public const string ProfessionalEntityType = "Trimme.Modules.Professionals.Domain.Professional";
 
+    /// <summary>The QrAnalytics module's code entity, referenced by name only (D-114).</summary>
+    public const string QrCodeEntityType = "Trimme.Modules.QrAnalytics.Domain.QrCodeLink";
+
     /// <summary>
     /// The generated <c>during</c> range and the exclusion constraint over it (R-BKG-03). The constraint and the same-shop
     /// service/package keys are added by SQL in the <c>Bookings</c> migration: EF cannot express an exclusion constraint,
@@ -33,6 +36,10 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasKey(b => b.Id);
         builder.HasShopScopedKey();
         builder.HasShopScopedReference(BookingModel.ProfessionalEntityType, nameof(Booking.ProfessionalId));
+
+        // A booking can be credited only to a code of its own shop (R-TEN-04); the key is unchecked while qr_link_id is null.
+        builder.HasShopScopedReference(BookingModel.QrCodeEntityType, nameof(Booking.QrLinkId));
+        builder.HasIndex(b => new { b.QrLinkId, b.CreatedAt }).HasFilter("qr_link_id IS NOT NULL");
 
         builder.Property(b => b.CustomerName).HasMaxLength(BookingRules.MaxNameLength);
         builder.Property(b => b.Reference).HasMaxLength(BookingRules.ReferenceLength).IsFixedLength();

@@ -27,6 +27,7 @@
   <ItemGroup Label="Jobs">
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.25" />
     <PackageVersion Include="Hangfire.Core" Version="1.8.25" />
+    <PackageVersion Include="QRCoder" Version="1.6.0" />
     <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
     <!-- Transitive pin: Hangfire.Core asks for Newtonsoft.Json >= 11.0.1, which has a known high-severity advisory. -->
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />

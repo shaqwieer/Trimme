@@ -63,6 +63,8 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "GET /api/v1/public/shops/{slug}/reviews",
         "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}",
         "GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots",
+        "GET /api/v1/public/qr/{code}",
+        "POST /api/v1/public/qr/{code}/visits",
 
         // Phase 15: the Meta status webhook. Verification needs the configured token; every POST must carry a valid
         // HMAC-SHA256 signature of the raw body with the app secret; both answer 404 when WhatsApp is not configured (D-110).

@@ -26,7 +26,11 @@ internal sealed class DemoBookingsSeeder : IDevSeeder
     private static readonly Guid CutAndStyle = Guid.Parse("0199a0de-5a10-7000-8000-000000000411");
     private static readonly Guid KidsCut = Guid.Parse("0199a0de-5a10-7000-8000-000000000413");
 
-    /// <summary>After customers (220), schedules (320) and subscriptions (350).</summary>
+    /// <summary>The demo scan a booking is credited to (<see cref="DemoQr.Bookings"/>; the QR seeder runs first, at 380).</summary>
+    private static (QrCodeLinkId LinkId, Guid VisitId)? QrScan(Guid bookingId) =>
+        DemoQr.Bookings.FirstOrDefault(b => b.BookingId == bookingId) is { } credited ? (new QrCodeLinkId(credited.CodeId), credited.VisitId) : null;
+
+    /// <summary>After customers (220), schedules (320), subscriptions (350) and QR codes (380).</summary>
     public int Order => 400;
 
     public string Name => "bookings-demo";
@@ -57,7 +61,7 @@ internal sealed class DemoBookingsSeeder : IDevSeeder
                 return;
             }
 
-            db.Add(Booking.Seeded(new BookingId(id), shop, customer.Id, customer.Name, parts.Professional, parts.Item, start, BookingChannel.Online, path, reason, start.AddDays(-2)));
+            db.Add(Booking.Seeded(new BookingId(id), shop, customer.Id, customer.Name, parts.Professional, parts.Item, start, BookingChannel.Online, path, reason, start.AddDays(-2), QrScan(id)));
         }
 
         async Task UpcomingAsync(Guid id, ShopId shop, DemoCustomer customer, Guid service, ProfessionalId professional, DateOnly firstDay, int fromHour)
@@ -78,7 +82,7 @@ internal sealed class DemoBookingsSeeder : IDevSeeder
                     {
                         db.Add(Booking.Seeded(
                             new BookingId(id), shop, customer.Id, customer.Name, parts.Professional, parts.Item, start, BookingChannel.Online,
-                            [BookingStatus.Confirmed], null, now));
+                            [BookingStatus.Confirmed], null, now, QrScan(id)));
                         return;
                     }
                 }

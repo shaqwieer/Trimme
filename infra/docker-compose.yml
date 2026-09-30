@@ -21,6 +21,8 @@ x-api-environment: &api-environment
   # worker shares one address (D-094); production counts real clients through Nginx.
   RateLimiting__search__PermitLimit: ${TRIMME_SEARCH_RATE_LIMIT:-1000}
   RateLimiting__availability__PermitLimit: ${TRIMME_AVAILABILITY_RATE_LIMIT:-1000}
+  # QR scans (landing resolve + visit) share that address too (D-114).
+  RateLimiting__qr__PermitLimit: ${TRIMME_QR_RATE_LIMIT:-1000}
   # Location picker geocoding (D-007): the built-in Riyadh gazetteer by default, so no automated run calls a third
   # party. Set TRIMME_GEOCODER=Nominatim for real OpenStreetMap lookups (light development use only, 1 request/s).
   Geocoding__Provider: ${TRIMME_GEOCODER:-Fake}

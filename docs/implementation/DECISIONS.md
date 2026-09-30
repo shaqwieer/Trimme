@@ -988,3 +988,40 @@ The global exception handler maps a PostgreSQL unique violation (`23505`) raised
   - the first day after the end, only within a week of it.
 - **Catch-up.** A missed run sends the smallest milestone not below the days left. Notices are deduplicated per period end and milestone.
 - **Scope.** Suspended shops are skipped, and bookings are never touched (D-014).
+
+## D-114 — QR codes, scans and booking attribution — Accepted (Phase 16; R-QR-01/02, R-CUS-13, R-AD-09, DV-A14; answers open question 8)
+- **Codes.** `qr.qr_code_links` is shop-owned (tenant filter, stamping, FK to the shop). It holds:
+  - a random 8-character code (lowercase, no look-alikes) with a platform-wide unique index;
+  - the target: the shop, or one active professional of the same shop, enforced by a composite `(shop_id, professional_id)` key;
+  - an optional label, the active flag and the creator.
+  - Codes are never deleted, so their scans and bookings keep their meaning. Admins switch them off and on (version-checked, audited: `qr.created|deactivated|activated`).
+  - A barber code whose barber is no longer active opens the shop instead.
+- **Resolving an anonymous scan.** The public data scope only shows shop-owned rows of a known shop. `qr.qr_code_routes` (code → shop, link; ids only) finds the shop first; the code is then read inside that shop's public scope. It is on the tenancy allow-list and written with the code in one unit of work.
+- **Scans (no invasive tracking).** `qr.qr_visits` keeps:
+  - the code and the shop;
+  - the time, the device class (mobile, tablet, desktop, bot or other) and the page language;
+  - `visitor_hash`, 32 hex characters of the platform's keyed lookup HMAC (purpose `trimme.qr-visitor`) over the UTC day and the IP address, so visitors cannot be linked across days.
+  - It keeps no IP address, no user agent and no third-party tracking.
+  - It is a platform log on the tenancy allow-list. Shops read it only through their own codes' ids.
+  - A reload within 30 minutes that carries the same code's visit in the cookie reuses it.
+- **Attribution.**
+  - **Where the visit is recorded.** The landing page records the visit from the browser (`POST /public/qr/{code}/visits`, through the same-origin `/api` path, CSRF-checked, rate-limited under `qr`). The API itself then sets the first-party cookie `trimme-qr`: the visit id, `HttpOnly; Secure; SameSite=Lax; Path=/api/v1`, lasting `QrAnalytics:AttributionDays` (default 7). A Server Component cannot pass an API `Set-Cookie` to the browser.
+  - **Where it is read.** Only `POST /bookings` (the customer's online booking) reads the cookie. Walk-ins, staff and admin bookings, and reschedules never do.
+  - **Validation.** The port `IQrAttributionResolver` credits a booking only when the visit exists, scanned a code of the booked shop, and is inside the window. Anything else is an ordinary booking, never an error.
+  - **Idempotency.** The visit is excluded from the idempotency hash, so a retry replays.
+  - **Storage.** The booking stores `qr_link_id` (composite FK `(shop_id, qr_link_id)` → the shop's own code) and `qr_visit_id`.
+  - **Display.** Shop and admin views show the source «رمز QR» (`viaQr`). `BookingChannel` is unchanged, because `Online` drives the availability rules.
+- **Analytics.** For a period of platform days (`from`/`to`, or the last `days`, at most 366):
+  - scans in the period;
+  - bookings credited and made in the period;
+  - conversion = scans of the period that led to at least one booking (any booking made up to the window after the period) ÷ scans, so it never passes 100 %;
+  - figures per shop and per code.
+  - Bookings come through the Bookings port `IQrBookingReader`, as far as the caller may see.
+- **Files.** QRCoder 1.6.0 (MIT) supplies the module matrix (error correction Q, quiet zone included). PNG uses its managed writer. SVG and a one-page vector PDF (70 mm) are drawn here from the same matrix, with no revenue-licensed PDF library.
+  - The A5 poster is a print page (`@page A5`, RTL), so the browser shapes the Arabic text; "Save as PDF" gives the file.
+  - The printed URL is `{Web:PublicBaseUrl}/q/{code}`, without a locale; the web app picks one from `Accept-Language`.
+- **Shops (open question 8).** `Shop.Qr.View` (owner only, a managed-role grant) gives read-only access to the shop's own codes: their files, the poster, and their own scans and bookings. Shops never create or switch codes.
+- **Local compose.** The `/api` rewrite means every local visitor shares one client address, so local visitor hashes collide. Production gets the real address through Nginx (D-094). The local `qr` rate limit is raised like the others.
+
+## D-115 — Locale negotiation on every page path — Accepted (Phase 16)
+The web proxy's matcher was written `'.*\..*'`. Inside a JavaScript string that reaches the regex as `.*..*`, which excluded every path longer than one character. Only `/` was redirected to a locale; any other unprefixed path answered 404. The matcher now escapes the dot (`\.`), so unprefixed paths (the printed `/q/{code}`, old links) redirect to `/ar/…` or `/en/…` from `Accept-Language`. Files with an extension, `/api`, `/hubs` and Next internals are still skipped.

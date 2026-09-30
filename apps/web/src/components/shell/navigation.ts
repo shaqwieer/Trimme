@@ -53,6 +53,7 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Schedule.Read' },
   { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
   { key: 'subscription', href: '/shop/subscription', icon: CreditCard, permission: 'Shop.Subscription.Read' },
+  { key: 'qr', href: '/shop/qr', icon: QrCode, permission: 'Shop.Qr.View' },
   { key: 'notifications', href: '/shop/notifications', icon: Bell },
   { key: 'settings', href: '/shop/settings', icon: Settings, permission: 'Shop.Profile.Edit' },
 ];

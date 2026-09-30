@@ -22,6 +22,7 @@ import {
   formatTime,
 } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
+import { bookingSource } from '@/lib/booking/format';
 
 type Detail = components['schemas']['ShopBookingDetailResponse'];
 type Status = components['schemas']['BookingStatus'];
@@ -198,7 +199,7 @@ export function AppointmentDrawer({
                   t('rows.professional'),
                   localizedName(locale, booking.professional.nameAr, booking.professional.nameEn),
                 ],
-                [t('rows.source'), t(`channel.${booking.channel}`)],
+                [t('rows.source'), t(`channel.${bookingSource(booking)}`)],
                 [
                   t('rows.amount'),
                   t('amount', { price: formatPrice(booking.item.price, locale, booking.item.currency) }),

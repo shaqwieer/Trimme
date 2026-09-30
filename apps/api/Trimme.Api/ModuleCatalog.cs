@@ -27,12 +27,14 @@ public static class ModuleCatalog
         new ProfessionalsModule(),
         new ServicesModule(),
         new AvailabilityModule(),
+
+        // Before Bookings: a booking references the QR code it is credited to (D-114).
+        new QrAnalyticsModule(),
         new BookingsModule(),
         new ReviewsModule(),
         new CustomersModule(),
         new SubscriptionsModule(),
         new NotificationsModule(),
-        new QrAnalyticsModule(),
         new AdministrationModule(),
     ];
 }

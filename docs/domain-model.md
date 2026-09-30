@@ -1,7 +1,6 @@
 # TRIMME — Domain model
 
-The model as built so far (Phases 04–15), with the invariants each part enforces. QR codes and attribution (Phase 16)
-extend it next. The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
+The model as built so far (Phases 04–16), with the invariants each part enforces. The spec's target model is in spec §8. Decisions are referenced as D-xxx (`docs/implementation/DECISIONS.md`).
 
 One PostgreSQL database with one schema per module. Identifiers are UUIDv7 wrapped in typed ids. Instants are UTC
 `timestamptz`, and optimistic concurrency uses PostgreSQL `xmin`.
@@ -30,6 +29,11 @@ erDiagram
     SHOP_SUBSCRIPTION ||--o{ SUBSCRIPTION_OVERRIDE : "(shop_id, subscription_id)"
     PLAN_PRICE ||--o{ SUBSCRIPTION_PERIOD : "price snapshot"
     SHOP ||--o| SUBSCRIPTION_COVERAGE : "read model"
+    SHOP ||--o{ QR_CODE_LINK : "printed codes"
+    PROFESSIONAL |o--o{ QR_CODE_LINK : "(shop_id, professional_id)"
+    QR_CODE_LINK ||--|| QR_CODE_ROUTE : "code -> shop"
+    QR_CODE_LINK ||--o{ QR_VISIT : "scans"
+    QR_CODE_LINK |o--o{ BOOKING : "(shop_id, qr_link_id) credit"
     ROLE ||--o{ ROLE_PERMISSION : grants
     PERMISSION ||--o{ ROLE_PERMISSION : ""
 
@@ -158,7 +162,7 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 
 **Booking** (D-085 … D-089) is shop-owned and customer-owned: the shop and the booking's own customer can read it; nobody else.
 - One concrete professional, and a service or a package with a snapshot: names, price, currency, duration, package items, and the professional's and customer's names.
-- Start and end (UTC), a generated `during` range, status (D-016), channel (Online/WalkIn), the customer's note, the cancellation reason, `PaymentStatus = NotApplicable` and `AmountDue` (payment seam), an 8-character reference, `xmin`.
+- Start and end (UTC), a generated `during` range, status (D-016), channel (Online/WalkIn), the QR code and scan an online booking is credited to (`qr_link_id` with a same-shop composite key, `qr_visit_id`; D-114), the customer's note, the cancellation reason, `PaymentStatus = NotApplicable` and `AmountDue` (payment seam), an 8-character reference, `xmin`.
 - **History** (owned, `booking_history`): every creation, status change and reschedule, with actor and time.
 - **BookingNote**: the shop's internal notes.
 - The exclusion constraint refuses two overlapping active bookings (Pending, Confirmed, Arrived) of one professional.
@@ -181,6 +185,14 @@ Phase 15 (D-108 … D-113); the full flow is in `docs/whatsapp-integration.md`.
 - **ReminderSchedule**: a reminder job of one booking and audience with the start it was scheduled for, the due time and the Hangfire job id; at most one Scheduled per booking and audience (partial unique index).
 - **ShopNotification** (shop-owned, tenant-filtered) and **UserNotification** (one account's): a kind, a dedupe key (unique per recipient), parameters as JSON (names, ISO times, counts; never a phone number), the booking id and the read time.
 - Hangfire keeps its own tables in schema `hangfire`, installed by `migrate`.
+
+## QR analytics (`qr`)
+
+Phase 16 (D-114).
+- **QrCodeLink** is shop-owned: a unique 8-character code, the target (the shop, or one professional of the same shop through a composite key), an optional label, active or switched off, the creator and `xmin`. Codes are never deleted.
+- **QrCodeRoute** maps a code to its shop and link (ids only). An anonymous scan finds the shop with it before any shop-owned row is read. It is on the tenancy allow-list.
+- **QrVisit** is one scan: code, shop, time, device class, page language and a 32-character visitor hash (keyed HMAC of the UTC day and the IP address). No IP address and no user agent are kept. It is a platform log on the tenancy allow-list; shops read it only through their own codes.
+- A booking credited to a scan keeps the code and the visit (see Bookings); conversion counts scans that led to a booking.
 
 ## Discovery (read side, no tables of its own)
 

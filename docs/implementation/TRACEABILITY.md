@@ -141,7 +141,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-CUS-10 | Favorites (shops, professionals) — present in design | §12 | c-profile | 12 | I `Favorites_AreTheCustomersOwn_Idempotent_AndOnlyForListedShopsAndActiveProfessionals` (other customer cannot see or remove; data layer refuses; disabled professional and suspended shop leave the list) ✔; W `FavoriteButton` (signed-out link, optimistic with rollback, asks again after a client-side sign-in) ✔; E favorites test (guest heart → sign-in/sign-up → back with a working heart) ✔ | [x] |
 | R-CUS-11 | Notifications center | §12 | c-profile | 15 | I `/me/notifications` list, unread and mark-read (lifecycle test; customer hears the shop's cancellation) ✔; W `NotificationsPanel` (reader-language text, optimistic mark-read with rollback, mark-all, empty state) and the bell ✔; `/account/notifications` linked from the account page and the header bell | [x] |
 | R-CUS-12 | Profile, language, security/session settings | §12 | c-profile | 4, 12 | E account page + security/session list ✔ Phase 04; E profile name edit, language row, payment row ✔ Phase 12 | [x] |
-| R-CUS-13 | QR destination with attribution (shop and professional) | §12, §17 | c-qr | 16 | I `QrVisit_Recorded`, `Booking_AttributedToQr`; E | [ ] |
+| R-CUS-13 | QR destination with attribution (shop and professional) | §12, §17 | c-qr | 16 | I `Scans_KeepNoIpAddress_ReloadsCountOnce_AndCreditOnlySameShopBookingsWithinTheWindow` ✔; E `qr.spec.ts` scan → book → credited, barber landing (ar/en) ✔; `/q/{code}` noindex with canonical, locale-less URL redirected (D-115) | [x] |
 
 ## 9. Shop dashboard
 
@@ -170,7 +170,7 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-AD-06 | Customers list/profile with protected contact | §14 | a-appointments | 14 | I `PhoneReveal_RequiresPermission_AndAudits` ✔ (no number in list or detail, mask, reason ≥ 5, `no-store`, audit without the number, shop 403; Support loses the reveal when the grant is removed through the roles API and regains it); figures in the overview test ✔; W `CustomerContact` ✔; E directory → profile → reveal → audit ✔ (D-105) | [x] |
 | R-AD-07 | Reviews moderation | §14 | a-reviews | 14 | I `Reviews_Moderation_FlagHidePublish_MovesTheRatingsOnce_AndIsAudited` ✔ (queue flags incl. Arabic-Indic phone digits filtered in SQL, Support reports but cannot hide, two parallel hides → one 200 + one 409 and the totals move once, publish restores, audit); W `ReviewActions` ✔; E report then clear on a seeded review (public totals untouched) ✔ (D-102) | [x] |
 | R-AD-08 | Subscription plans (SuperAdmin), assignment, renewal, overrides, history | §14 | a-subs | 8 | E flow 5 ✔ Phase 08 (`subscriptions.spec.ts`); I R-SUB-01..03 ✔ | [x] |
-| R-AD-09 | QR generation + analytics | §14 | a-reviews | 16 | E | [ ] |
+| R-AD-09 | QR generation + analytics | §14 | a-reviews | 16 | I `Codes_AreUniqueAndResolveToTheirTarget_AdminsSwitchThemOffAndOn_Audited_AndDownloadThem` ✔, `DemoSeed_CodesResolve_AndTheAnalyticsMatchTheSeededScansAndBookings` ✔; U `QrDomainTests` (matrix, SVG/PDF) ✔; W `qr.test.tsx` ✔; E `qr.spec.ts` admin page, files, A5 poster, shop view ✔ | [x] |
 | R-AD-10 | WhatsApp templates, dispatch log, retries, failures | §14 | a-reviews | 15 | I template edit/activate/restore, preview, retry (Support 403), failed dispatch → admin notice ✔; W `TemplateEditor` (chips, API issues block save, draft save, professional without manage link, test send never prefilled) ✔; E E4 editor, dispatch log, dispatch detail, booking section + axe ✔ (D-109, D-110) | [x] |
 | R-AD-11 | Roles & permissions management | §14 | a-roles | 14 | I `Roles_AndStaff_CannotEscalate_ManagedRolesAreProtected_AndEveryChangeIsAudited` ✔ (Ops cannot manage; names; SuperAdmin/shop permissions not grantable; managed and seed roles protected; grant-only-what-you-hold; staff guards: self, SuperAdmin-only, role escalation, not-assignable, and the same guards on staff invitations; delete in use 409; disable ends access on the next request; audit trail); W `RoleEditor`, `StaffActions` ✔; E create role → grant → matrix → delete; staff tab ✔ (D-106) | [x] |
 | R-AD-12 | Audit activity | §14 | a-roles | 14 | I `Audit_ListsNewestFirst_WithFilters_ActorNames_AndAKeysetCursor` ✔ (newest first, cursor pages, entity and time filters, actor names, facets, Support 403); E booking and customer trails ✔ (D-104) | [x] |
@@ -190,8 +190,8 @@ Test layers: **U** backend unit · **I** backend integration (Testcontainers Pos
 | R-NTF-08 | Safe test-send to explicit test recipient only | §16 | 15 | I `TestSend_RequiresExplicitTestRecipient` (confirmation required, invalid number, a registered customer's number 409, Support 403, audit without the number) ✔; W never prefilled ✔ | [x] |
 | R-NTF-09 | No messages for rolled-back transactions or seed data | §16 | 15 | I `Rollback_NoDispatch_AndSeed_DoesNotDispatch` ✔ | [x] |
 | R-NTF-10 | In-app notifications + mark read; SignalR scoped | §17 | 15 | I shop/customer/admin notices, mark read, another shop 404 ✔; I `EachShop_HearsOnlyItsOwnNotices_TheCustomerHearsTheShop_AndNobodyChoosesAGroup` and `AnonymousCallers_AndForeignOrigins_AreRefused` on `/hubs/notifications` ✔; W bells ✔; E E4 ✔ (D-112) | [x] |
-| R-QR-01 | Unique QR destinations for shops and professionals | §17 | 16 | I `QrCode_Unique` | [ ] |
-| R-QR-02 | Visit tracking + booking attribution without invasive tracking | §17 | 16 | I attribution tests | [ ] |
+| R-QR-01 | Unique QR destinations for shops and professionals | §17 | 16 | I `Codes_AreUniqueAndResolveToTheirTarget_…` (22 distinct codes, database unique index refuses a duplicate, barber of another shop refused) ✔; U `NewCodes_AreEightCharactersOfTheUnambiguousAlphabet_AndRarelyRepeat` ✔ | [x] |
+| R-QR-02 | Visit tracking + booking attribution without invasive tracking | §17 | 16 | I `Scans_KeepNoIpAddress_…` (no IP column, day-scoped hash, HttpOnly cookie on `/api/v1`, same shop only, not after 7 days, never for walk-ins, excluded from idempotency) ✔; E cookie HttpOnly, reload counts once ✔ | [x] |
 | R-RVW-01 | Rating aggregates maintained transactionally or via reliable projection | §17 | 11, 12 | Phase 11 `RatingBook` in the review unit of work ✔; Phase 12: atomic SQL upsert, I six parallel reviews give exact count/sum/histogram for shop and professional, double submit one 201 + one 409 ✔; U aggregate maths ✔ | [x] |
 
 ## 12. Documentation and delivery
@@ -252,7 +252,7 @@ All seven are re-run as the Phase 18 regression gate.
 | WhatsAppTemplate, WhatsAppTemplateVersion, WhatsAppDispatch, ReminderSchedule | Notifications (`notifications`) | — (dispatch shop id is an admin filter, allow-listed) | 15 | `Notifications` ✔ | Dispatch records the template version (D-109…D-111) |
 | ShopNotification, UserNotification (in-app); ProcessedMessage | Notifications; `infra` | ShopNotification ✓; UserNotification per account | 15 | `Notifications` ✔ | Two tables instead of one with an optional shop id (D-112) |
 | Hangfire tables | `hangfire` | — | 15 | Installed by `migrate` ✔ | D-108 |
-| QrCodeLink, QrVisit | QrAnalytics (`qr`) | ✓ | 16 | 0013_Qr | IP addresses are stored only as hashes |
+| QrCodeLink, QrCodeRoute, QrVisit | QrAnalytics (`qr`) | ✓ | 16 | `20260930111559_Qr` | No IP address stored: a per-day keyed visitor hash only; bookings gain `qr_link_id` (composite FK to the shop's code) and `qr_visit_id` (D-114) |
 
 ## 15. External integrations inventory
 
@@ -262,7 +262,7 @@ All seven are re-run as the Phase 18 regression gate.
 | OTP delivery | `IOtpSender` | Fake: dev inbox or log, development only | WhatsApp authentication template; optional SMS provider | 4 (fake), 15 (WhatsApp) |
 | Email (staff invitations and password resets) | `IEmailSender` | Mailpit container | SMTP host, port, credentials, sender | 4 |
 | Maps and geocoding | `IMapProvider` (web), `IGeocoder` (API) | MapLibre GL plus an OSM-compatible tile source and geocoder, within their usage policy | Provider keys (D-007) | 6, 11, 17 |
-| File storage (shop cover and gallery, QR posters) | `IFileStorage` | Local disk in `.data/uploads` | Object storage or a mounted volume, decided in Phase 18 deployment | 6, 16 |
+| File storage (shop cover and gallery) | `IMediaStore` | PostgreSQL (D-064); QR files are generated on request, not stored (D-114) | Object storage or a mounted volume, decided in Phase 18 deployment | 6, 16 |
 | Future payment gateway | `IPaymentGateway` (documented seam only) | — | Not in v1 | 10 (docs) |
 
 ## 16. API endpoint inventory

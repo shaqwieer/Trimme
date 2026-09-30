@@ -44,7 +44,8 @@
       "services": "Services",
       "subscription": "Subscription",
       "notifications": "Notifications",
-      "settings": "Shop settings"
+      "settings": "Shop settings",
+      "qr": "QR codes"
     },
     "admin": {
       "overview": "Overview",
@@ -480,7 +481,10 @@
     "dispatch_not_retryable": "Only failed messages can be retried.",
     "dispatch_content_purged": "The message text was removed after the retention period; it cannot be sent again.",
     "whatsapp_test_recipient_is_customer": "This number belongs to a registered customer. Use a dedicated test number.",
-    "notification_not_found": "The notification was not found."
+    "notification_not_found": "The notification was not found.",
+    "qr_not_found": "The QR code was not found.",
+    "qr_already_active": "The code is already active.",
+    "qr_already_inactive": "The code is already switched off."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -2087,7 +2091,8 @@
       "amount": "{price} — paid at the shop",
       "channel": {
         "Online": "Customer app",
-        "WalkIn": "Walk-in"
+        "WalkIn": "Walk-in",
+        "Qr": "QR code"
       },
       "noPhone": {
         "title": "The customer's number isn't available",
@@ -2925,5 +2930,169 @@
       "due": "{audience} · {date} at {time}",
       "openLog": "Open the log"
     }
+  },
+  "qrLanding": {
+    "meta": {
+      "title": "{name} — book from the QR code"
+    },
+    "badge": {
+      "Shop": "You came in with the shop's code",
+      "Professional": "You came in with the barber's code"
+    },
+    "intro": {
+      "Shop": "You're on this shop's page directly. Choose your service, then enter your mobile number to complete the booking.",
+      "Professional": "You're on {name}'s page directly. Choose your service, then enter your mobile number to complete the booking."
+    },
+    "times": {
+      "today": "Earliest times today",
+      "on": "Earliest times on {day}",
+      "none": "No free times in the coming week.",
+      "slot": "Book at {time}"
+    },
+    "services": {
+      "title": "Services",
+      "empty": "No services can be booked right now."
+    },
+    "cta": {
+      "book": "Book now",
+      "caption": "Your mobile number is only asked for at confirmation",
+      "unavailable": "Online booking is not available at this shop right now."
+    },
+    "worksAt": "at {shop}",
+    "fullPage": "Full page"
+  },
+  "adminQr": {
+    "kpi": {
+      "visits": "Scans",
+      "bookings": "Bookings from codes",
+      "conversion": "Scan-to-booking conversion",
+      "window": "A booking counts when it is made within {days} days of the scan."
+    },
+    "target": {
+      "Shop": "Shop page",
+      "Professional": "{name}'s page"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Switched off"
+    },
+    "figures": "{visits} scans · {bookings} bookings",
+    "download": {
+      "label": "Download",
+      "format": "Download code {code} as {format}",
+      "poster": "A5 poster"
+    },
+    "imageAlt": "QR code that opens {name}",
+    "privacy": "We keep no IP address and do not track visitors: only the time of the scan, the kind of device and the page language.",
+    "materials": {
+      "title": "Print materials",
+      "Shop": "One code per shop",
+      "ShopBody": "Opens the shop's page with its services and free times.",
+      "Professional": "One code per barber",
+      "ProfessionalBody": "Opens the barber's page directly — made for the chair mirror.",
+      "counted": "Every scan counts",
+      "countedBody": "Scan-to-booking conversion is measured here."
+    },
+    "title": "QR codes",
+    "subtitle": "From {from} to {to}",
+    "period": {
+      "label": "Period",
+      "d7": "Last 7 days",
+      "d30": "Last 30 days",
+      "d90": "Last 90 days"
+    },
+    "byShop": {
+      "title": "Scans by shop",
+      "empty": "No scans in this period.",
+      "label": "Scans per shop"
+    },
+    "filter": {
+      "label": "Code status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Switched off"
+    },
+    "codes": {
+      "title": "Codes",
+      "caption": "QR codes with their scans and bookings in the period",
+      "empty": "No codes yet.",
+      "code": "Code",
+      "shop": "Shop",
+      "visits": "Scans",
+      "bookings": "Bookings",
+      "status": "Status",
+      "files": "Files"
+    },
+    "toggle": {
+      "deactivate": "Switch off",
+      "activate": "Switch on",
+      "deactivateTitle": "Switch off code {code}?",
+      "deactivateBody": "The printed code will no longer open any page. Its past scans and bookings stay in the analytics.",
+      "activateTitle": "Switch on code {code}?",
+      "activateBody": "The printed code will open its page again.",
+      "cancel": "Go back"
+    },
+    "create": {
+      "open": "New code",
+      "title": "Create a QR code",
+      "shop": "Shop",
+      "target": "The code opens",
+      "Shop": "The shop page",
+      "Professional": "A barber's page",
+      "professional": "Barber",
+      "choose": "Choose",
+      "noProfessionals": "This shop has no active barbers.",
+      "label": "Where it is used (optional)",
+      "labelHelper": "For example: shop front, chair mirror 2",
+      "submit": "Create code",
+      "created": "Code {code} was created.",
+      "required": "Choose the shop and the barber."
+    }
+  },
+  "shopQr": {
+    "kpi": {
+      "visits": "Scans",
+      "bookings": "Bookings from codes",
+      "conversion": "Scan-to-booking conversion",
+      "window": "A booking counts when it is made within {days} days of the scan."
+    },
+    "target": {
+      "Shop": "Shop page",
+      "Professional": "{name}'s page"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Switched off"
+    },
+    "figures": "{visits} scans · {bookings} bookings",
+    "download": {
+      "label": "Download",
+      "format": "Download code {code} as {format}",
+      "poster": "A5 poster"
+    },
+    "imageAlt": "QR code that opens {name}",
+    "privacy": "We keep no IP address and do not track visitors: only the time of the scan, the kind of device and the page language.",
+    "materials": {
+      "title": "Print materials",
+      "Shop": "One code per shop",
+      "ShopBody": "Opens the shop's page with its services and free times.",
+      "Professional": "One code per barber",
+      "ProfessionalBody": "Opens the barber's page directly — made for the chair mirror.",
+      "counted": "Every scan counts",
+      "countedBody": "Scan-to-booking conversion is measured here."
+    },
+    "title": "QR codes",
+    "intro": "Your shop's and barbers' codes, ready to print. The TRIMME team creates them; you can download and print them.",
+    "period": "Last 30 days ({from} – {to})",
+    "empty": "Your shop has no codes yet. Contact the TRIMME team to create them.",
+    "list": "The shop's codes"
+  },
+  "qrPoster": {
+    "title": "A5 poster",
+    "scan": "Scan the code and book your turn",
+    "print": "Print",
+    "hint": "Print on A5 paper without margins, or choose \"Save as PDF\" in the print window.",
+    "back": "Back to the codes",
+    "qrAlt": "QR code for {name}"
   }
 }

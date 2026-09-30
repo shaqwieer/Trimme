@@ -123,6 +123,47 @@ public static class DemoReviewableVisits
     ];
 }
 
+/// <summary>
+/// Demo QR codes (spec §20, D-114): a shop code and barber codes for both demo shops, and one switched-off code. The QR
+/// seeder adds their scans over the 27 days before seeding; three demo bookings are credited to a scan (the Bookings
+/// seeder sets the credit, the QR seeder the scan it came from). Faisal has no code (his slots are asserted exactly).
+/// </summary>
+public static class DemoQr
+{
+    public static readonly DemoQrCode AlAsalaShop = new(Guid.Parse("0199a0de-5a10-7000-8000-00000000c001"), DemoData.AlAsala.Id, "aswn7qkd", null, "واجهة المحل", true);
+
+    public static readonly DemoQrCode AlAsalaSultan = new(
+        Guid.Parse("0199a0de-5a10-7000-8000-00000000c002"), DemoData.AlAsala.Id, "assu2tnm", Guid.Parse("0199a0de-5a10-7000-8000-000000000102"), "مرآة سلطان", true);
+
+    public static readonly DemoQrCode AlAsalaRakan = new(
+        Guid.Parse("0199a0de-5a10-7000-8000-00000000c003"), DemoData.AlAsala.Id, "asrk4npx", Guid.Parse("0199a0de-5a10-7000-8000-000000000103"), "مرآة راكان", true);
+
+    public static readonly DemoQrCode BarberHouseShop = new(Guid.Parse("0199a0de-5a10-7000-8000-00000000c004"), DemoData.BarberHouse.Id, "bhsh5mzc", null, "الكاونتر", true);
+
+    public static readonly DemoQrCode BarberHouseOmar = new(
+        Guid.Parse("0199a0de-5a10-7000-8000-00000000c005"), DemoData.BarberHouse.Id, "bhwm6twy", Guid.Parse("0199a0de-5a10-7000-8000-000000000201"), "مرآة عمر", true);
+
+    /// <summary>A retired window sticker: it no longer resolves, and its old scans still count in the analytics.</summary>
+    public static readonly DemoQrCode BarberHouseRetired = new(Guid.Parse("0199a0de-5a10-7000-8000-00000000c006"), DemoData.BarberHouse.Id, "bhxx8dfg", null, "ملصق قديم", false);
+
+    public static IReadOnlyList<DemoQrCode> Codes { get; } = [AlAsalaShop, AlAsalaSultan, AlAsalaRakan, BarberHouseShop, BarberHouseOmar, BarberHouseRetired];
+
+    /// <summary>
+    /// Demo bookings credited to a scan: the booking, the code, the scan's id and when the scan happened (local day before
+    /// seeding and hour), always before the booking was made and within the attribution window.
+    /// </summary>
+    public static IReadOnlyList<DemoQrBooking> Bookings { get; } =
+    [
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a01"), AlAsalaRakan.Id, Guid.Parse("0199a0de-5a10-7000-8000-00000000cf01"), 9, 14),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a24"), BarberHouseShop.Id, Guid.Parse("0199a0de-5a10-7000-8000-00000000cf02"), 11, 16),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000a11"), BarberHouseOmar.Id, Guid.Parse("0199a0de-5a10-7000-8000-00000000cf03"), 1, 18),
+    ];
+}
+
+public sealed record DemoQrCode(Guid Id, ShopId ShopId, string Code, Guid? ProfessionalId, string Label, bool IsActive);
+
+public sealed record DemoQrBooking(Guid BookingId, Guid CodeId, Guid VisitId, int VisitDaysAgo, int VisitHour);
+
 /// <summary>A completed booking <c>DaysAgo</c> local days before seeding, and its review's stars (1–5) and comment.</summary>
 public sealed record DemoVisit(
     Guid BookingId,

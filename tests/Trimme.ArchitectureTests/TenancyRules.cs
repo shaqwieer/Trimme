@@ -35,6 +35,10 @@ public sealed partial class TenancyRules
             "Platform read model of rating totals (counts per star, no personal data) that discovery sorts and filters for any shop; written only with a review in the same unit of work (D-092).",
         [typeof(Trimme.Modules.Notifications.Domain.WhatsAppDispatch)] =
             "Platform WhatsApp dispatch log; the shop id is a filter for admins only, shops never read it (D-110).",
+        [typeof(Trimme.Modules.QrAnalytics.Domain.QrCodeRoute)] =
+            "Code → shop map (ids only) so an anonymous scan finds the shop before any shop-owned row is read; written with the code in one unit of work (D-114).",
+        [typeof(Trimme.Modules.QrAnalytics.Domain.QrVisit)] =
+            "Platform scan log (no personal data; the visitor is a per-day keyed hash) written by the anonymous visit endpoint; shops read it only through their own codes' ids, resolved under their tenant (D-114).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

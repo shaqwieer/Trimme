@@ -22,6 +22,9 @@ public static class Permissions
         public const string LocationEdit = "Shop.Location.Edit";
         public const string SubscriptionRead = "Shop.Subscription.Read";
         public const string NotificationsManage = "Shop.Notifications.Manage";
+
+        /// <summary>The shop's own QR codes: download and poster, and their scans and bookings (read-only, D-114).</summary>
+        public const string QrView = "Shop.Qr.View";
     }
 
     public static class Admin

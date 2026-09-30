@@ -2169,6 +2169,194 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/qr/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a scanned code opens: an active shop, or one of its active professionals. Unknown or switched-off codes are 404. */
+        get: operations["ResolveQrCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/qr/{code}/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Counts a scan (no IP address, no tracking; a reload reuses the visit) and sets the first-party attribution cookie for later bookings. */
+        post: operations["RecordQrVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every shop's QR codes (active first, newest first) with each code's scans and credited bookings over the period: from–to, or the last `days` days (default 30). */
+        get: operations["AdminListQrCodes"];
+        put?: never;
+        /** Creates a unique code for a shop, or for one of its active professionals (audited). */
+        post: operations["AdminCreateQrCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/codes/{codeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One code with its target, printed URL and the last 30 days' figures. */
+        get: operations["AdminGetQrCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/codes/{codeId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switches a code off: scanning it shows «not found»; its scans and bookings are kept (audited). */
+        post: operations["AdminDeactivateQrCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/codes/{codeId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switches a code back on (audited). */
+        post: operations["AdminActivateQrCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/codes/{codeId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The code as PNG (size = pixels per module, 4–40), SVG or PDF (70 mm, vector). */
+        get: operations["AdminDownloadQrCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/qr/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scans, credited bookings and scan-to-booking conversion over a period of days: from–to, or the last `days` days (default 30; at most 366), per shop. */
+        get: operations["AdminQrAnalytics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/qr/codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own QR codes with their scans and bookings over the period (default: the last 30 days). */
+        get: operations["ShopListQrCodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/qr/codes/{codeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's own codes; another shop's id is 404. */
+        get: operations["ShopGetQrCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/qr/codes/{codeId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's own codes as PNG, SVG or PDF. */
+        get: operations["ShopDownloadQrCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/bookings": {
         parameters: {
             query?: never;
@@ -3984,6 +4172,14 @@ export interface components {
             whatsAppNumber: null | string;
             notificationsEnabled: boolean;
         };
+        /** @description A shop code (no professional) or a code for one of the shop's active professionals, with an optional label. */
+        CreateQrCodeRequest: {
+            /** Format: uuid */
+            shopId: string;
+            /** Format: uuid */
+            professionalId: null | string;
+            label: null | string;
+        };
         /** @description A package of 2–10 of the shop's own services, with its own price and total duration. */
         CreateShopPackageRequest: {
             nameAr: string;
@@ -5046,6 +5242,102 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /**
+         * @description The analytics of a period of local days [`From`, `To`] (platform time zone). Bookings count when they were
+         *     made in the period; a scan counts as converted when any booking was credited to it.
+         */
+        QrAnalyticsResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: int32 */
+            attributionDays: number;
+            totals: components["schemas"]["QrFigures"];
+            byShop: components["schemas"]["QrShopFigures"][];
+        };
+        QrCodeListResponse: {
+            items: components["schemas"]["QrCodeResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+        };
+        /** @description A code with its target's names, the printed URL and its figures over the chosen period. */
+        QrCodeResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            url: string;
+            /** Format: uuid */
+            shopId: string;
+            shopSlug: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            targetType: components["schemas"]["QrTargetType"];
+            /** Format: uuid */
+            professionalId: null | string;
+            professionalNameAr: null | string;
+            professionalNameEn: null | string;
+            label: null | string;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            deactivatedAt: null | string;
+            /** Format: int32 */
+            visits: number;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description Scans, the bookings they brought, and the share of scans that led to a booking (percent, one decimal, ≤ 100). */
+        QrFigures: {
+            /** Format: int32 */
+            visits: number;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: int32 */
+            convertedVisits: number;
+            /** Format: double */
+            conversionRate: number;
+        };
+        QrShopFigures: {
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: int32 */
+            visits: number;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: double */
+            conversionRate: number;
+        };
+        /**
+         * @description What a scanned code opens. A professional code whose professional is no longer active opens the shop instead, so a
+         *     sticker on a mirror never leads to a dead page.
+         */
+        QrTargetResponse: {
+            code: string;
+            targetType: components["schemas"]["QrTargetType"];
+            shopSlug: string;
+            /** Format: uuid */
+            professionalId: null | string;
+            professionalSlug: null | string;
+        };
+        /**
+         * @description What a code opens (c-qr print notes): the shop page, or one professional's page «for the chair mirror».
+         * @enum {unknown}
+         */
+        QrTargetType: "Shop" | "Professional";
         /** @description Average and count, and the number of reviews per star (index 0 = one star … 4 = five stars). */
         RatingSummaryResponse: {
             /** Format: double */
@@ -5053,6 +5345,10 @@ export interface components {
             /** Format: int32 */
             count: number;
             histogram: number[];
+        };
+        /** @description The landing page's language, so the scan log can say which language visitors read. */
+        RecordQrVisitRequest: {
+            locale: null | string;
         };
         ReinstateSubscriptionRequest: {
             /** Format: uint32 */
@@ -5237,6 +5533,11 @@ export interface components {
             /** @default false */
             keepCurrentNumber: boolean;
         };
+        /** @description Send the version read. */
+        SetQrCodeActiveRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
         /** @description How many bookings each status chip would list (every filter but the status applied). */
@@ -5274,7 +5575,8 @@ export interface components {
         };
         /**
          * @description A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). `AllowedTransitions` is
-         *     what the UI may offer (DV-S08); `OutsideSchedule` flags an active booking that no longer fits the professional's
+         *     what the UI may offer (DV-S08); `ViaQr` marks an online booking credited to a QR scan (the design's «رمز QR» source);
+         *     `OutsideSchedule` flags an active booking that no longer fits the professional's
          *     hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically.
          */
         ShopBookingResponse: {
@@ -5283,6 +5585,7 @@ export interface components {
             reference: string;
             customerName: string;
             channel: components["schemas"]["BookingChannel"];
+            viaQr: boolean;
             professional: components["schemas"]["BookingProfessionalResponse"];
             item: components["schemas"]["BookingItemResponse"];
             /** Format: date-time */
@@ -5486,6 +5789,17 @@ export interface components {
             nameEn: string;
             status: string;
             timeZone: string;
+        };
+        /** @description The shop's codes with the period's figures (the last 30 days by default). */
+        ShopQrCodesResponse: {
+            items: components["schemas"]["QrCodeResponse"][];
+            totals: components["schemas"]["QrFigures"];
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: int32 */
+            attributionDays: number;
         };
         /** @description The shop's published rating (from stored reviews only; zero reviews means no rating to show). */
         ShopRatingResponse: {
@@ -11489,6 +11803,457 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResolveQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrTargetResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RecordQrVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["RecordQrVisitRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListQrCodes: {
+        parameters: {
+            query?: {
+                shopId?: string;
+                targetType?: components["schemas"]["QrTargetType"];
+                active?: boolean;
+                search?: string;
+                from?: string;
+                to?: string;
+                days?: number;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeListResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminCreateQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateQrCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminDeactivateQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetQrCodeActiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminActivateQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetQrCodeActiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminDownloadQrCode: {
+        parameters: {
+            query?: {
+                format?: string;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/svg+xml": string;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminQrAnalytics: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                days?: number;
+                shopId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrAnalyticsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopListQrCodes: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopQrCodesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopGetQrCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrCodeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopDownloadQrCode: {
+        parameters: {
+            query?: {
+                format?: string;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                codeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/svg+xml": string;
+                    "application/pdf": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

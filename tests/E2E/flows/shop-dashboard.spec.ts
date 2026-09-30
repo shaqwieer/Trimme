@@ -173,7 +173,13 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await staffSignIn(page, OWNER);
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      for (const path of ['/ar/shop', '/ar/shop/calendar', '/ar/shop/appointments', '/ar/shop/walk-in']) {
+      for (const path of [
+        '/ar/shop',
+        '/ar/shop/calendar',
+        '/ar/shop/appointments',
+        '/ar/shop/walk-in',
+        '/ar/shop/qr',
+      ]) {
         await page.goto(path, { waitUntil: 'load' });
         await page.evaluate(() => document.fonts.ready);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

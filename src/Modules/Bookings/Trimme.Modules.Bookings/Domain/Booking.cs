@@ -267,6 +267,15 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>
+    /// The QR code whose scan led to this online booking (R-QR-02, D-114), when the visitor booked within the attribution
+    /// window; a code of the same shop (composite key). Set once, when the booking is made; never for walk-ins.
+    /// </summary>
+    public QrCodeLinkId? QrLinkId { get; private set; }
+
+    /// <summary>The scan (QR visit) the booking is credited to; it counts that scan as converted.</summary>
+    public Guid? QrVisitId { get; private set; }
+
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public uint Version { get; private set; }
@@ -275,10 +284,12 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public static Booking CreateOnline(
         BookingId id, ShopId shopId, Guid customerId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now)
+        DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null)
     {
         var status = requireManualConfirmation ? BookingStatus.Pending : BookingStatus.Confirmed;
         var booking = new Booking(id, shopId, customerId, customerName.Trim(), professional, item, startsAt, status, BookingChannel.Online, Clean(customerNote), now);
+        booking.QrLinkId = qrScan?.LinkId;
+        booking.QrVisitId = qrScan?.VisitId;
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, new BookingActor(customerId, ActorType.Customer), null, now));
         return booking;
     }
@@ -300,9 +311,12 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// </summary>
     public static Booking Seeded(
         BookingId id, ShopId shopId, Guid? customerId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, BookingChannel channel, IReadOnlyList<BookingStatus> path, string? reason, DateTimeOffset createdAt)
+        DateTimeOffset startsAt, BookingChannel channel, IReadOnlyList<BookingStatus> path, string? reason, DateTimeOffset createdAt,
+        (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null)
     {
         var booking = new Booking(id, shopId, customerId, customerName, professional, item, startsAt, path[0], channel, null, createdAt);
+        booking.QrLinkId = qrScan?.LinkId;
+        booking.QrVisitId = qrScan?.VisitId;
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, path[0], null, BookingActor.System, null, createdAt));
         foreach (var next in path.Skip(1))
         {

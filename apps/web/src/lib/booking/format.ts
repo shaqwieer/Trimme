@@ -25,3 +25,14 @@ export function timeUntil(
   const total = Math.max(0, Math.floor((new Date(target).getTime() - now.getTime()) / 60_000));
   return { days: Math.floor(total / 1440), hours: Math.floor((total % 1440) / 60), minutes: total % 60 };
 }
+
+/**
+ * Where a booking came from, as the shop and admin lists label it (design «التطبيق / رمز QR / حضوري»): an online booking
+ * credited to a QR scan shows «رمز QR» (D-114).
+ */
+export function bookingSource(booking: {
+  channel: 'Online' | 'WalkIn';
+  viaQr: boolean;
+}): 'Online' | 'WalkIn' | 'Qr' {
+  return booking.channel === 'Online' && booking.viaQr ? 'Qr' : booking.channel;
+}

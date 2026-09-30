@@ -918,6 +918,14 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("professional_name_en");
 
+                    b.Property<Guid?>("QrLinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qr_link_id");
+
+                    b.Property<Guid?>("QrVisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("qr_visit_id");
+
                     b.Property<string>("Reference")
                         .IsRequired()
                         .HasMaxLength(8)
@@ -969,8 +977,15 @@ namespace Trimme.Migrations.Migrations
                     b.HasIndex("ProfessionalId", "StartsAt")
                         .HasDatabaseName("ix_bookings_professional_id_starts_at");
 
+                    b.HasIndex("QrLinkId", "CreatedAt")
+                        .HasDatabaseName("ix_bookings_qr_link_id_created_at")
+                        .HasFilter("qr_link_id IS NOT NULL");
+
                     b.HasIndex("ShopId", "ProfessionalId")
                         .HasDatabaseName("ix_bookings_shop_id_professional_id");
+
+                    b.HasIndex("ShopId", "QrLinkId")
+                        .HasDatabaseName("ix_bookings_shop_id_qr_link_id");
 
                     b.HasIndex("ShopId", "StartsAt")
                         .HasDatabaseName("ix_bookings_shop_id_starts_at");
@@ -2139,6 +2154,161 @@ namespace Trimme.Migrations.Migrations
                         .HasDatabaseName("ix_professional_contacts_shop_id_professional_id");
 
                     b.ToTable("professional_contacts", "professionals");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrCodeLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character(8)")
+                        .HasColumnName("code")
+                        .IsFixedLength();
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("label");
+
+                    b.Property<Guid?>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("target_type");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_qr_code_links");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_qr_code_links_shop_id_id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_qr_code_links_code");
+
+                    b.HasIndex("ShopId", "CreatedAt")
+                        .HasDatabaseName("ix_qr_code_links_shop_id_created_at");
+
+                    b.HasIndex("ShopId", "ProfessionalId")
+                        .HasDatabaseName("ix_qr_code_links_shop_id_professional_id");
+
+                    b.ToTable("qr_code_links", "qr", t =>
+                        {
+                            t.HasCheckConstraint("ck_qr_code_links_target", "(target_type = 'Professional') = (professional_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrCodeRoute", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(8)
+                        .HasColumnType("character(8)")
+                        .HasColumnName("code")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("LinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("link_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("Code")
+                        .HasName("pk_qr_code_routes");
+
+                    b.HasIndex("LinkId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_qr_code_routes_link_id");
+
+                    b.ToTable("qr_code_routes", "qr");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrVisit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Device")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("device");
+
+                    b.Property<Guid>("LinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("link_id");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character(2)")
+                        .HasColumnName("locale")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("VisitedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("visited_at");
+
+                    b.Property<string>("VisitorHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character(32)")
+                        .HasColumnName("visitor_hash")
+                        .IsFixedLength();
+
+                    b.HasKey("Id")
+                        .HasName("pk_qr_visits");
+
+                    b.HasIndex("VisitedAt")
+                        .HasDatabaseName("ix_qr_visits_visited_at");
+
+                    b.HasIndex("LinkId", "VisitedAt")
+                        .HasDatabaseName("ix_qr_visits_link_id_visited_at");
+
+                    b.HasIndex("ShopId", "VisitedAt")
+                        .HasDatabaseName("ix_qr_visits_shop_id_visited_at");
+
+                    b.ToTable("qr_visits", "qr");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Reviews.Domain.RatingAggregate", b =>
@@ -3406,6 +3576,13 @@ namespace Trimme.Migrations.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_bookings_professionals_shop_id_professional_id");
 
+                    b.HasOne("Trimme.Modules.QrAnalytics.Domain.QrCodeLink", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "QrLinkId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_bookings_qr_code_links_shop_id_qr_link_id");
+
                     b.OwnsMany("Trimme.Modules.Bookings.Domain.BookedPackageItem", "PackageItems", b1 =>
                         {
                             b1.Property<Guid>("BookingId");
@@ -3726,6 +3903,43 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_professional_contacts_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrCodeLink", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_qr_code_links_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Professionals.Domain.Professional", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "ProfessionalId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_qr_code_links_professionals_shop_id_professional_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrCodeRoute", b =>
+                {
+                    b.HasOne("Trimme.Modules.QrAnalytics.Domain.QrCodeLink", null)
+                        .WithOne()
+                        .HasForeignKey("Trimme.Modules.QrAnalytics.Domain.QrCodeRoute", "LinkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_qr_code_routes_qr_code_links_link_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.QrAnalytics.Domain.QrVisit", b =>
+                {
+                    b.HasOne("Trimme.Modules.QrAnalytics.Domain.QrCodeLink", null)
+                        .WithMany()
+                        .HasForeignKey("LinkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_qr_visits_qr_code_links_link_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Reviews.Domain.Review", b =>

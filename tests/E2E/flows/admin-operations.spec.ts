@@ -108,8 +108,14 @@ test.describe('admin operations (Phase 14)', () => {
     const panel = page.getByTestId('booking-intervention');
     await panel.getByRole('button', { name: 'Reschedule' }).click();
     const dialog = page.getByRole('dialog');
+    // Wait for the new day's times: today's list is replaced when they arrive, which could detach a radio mid-click.
+    const nextDayOptions = page.waitForResponse(
+      (r) => r.url().includes('/reschedule/options') && r.url().includes(`date=${riyadhDay(5)}`),
+    );
     await dialog.getByLabel('Date').fill(riyadhDay(5));
-    await dialog.getByTestId('reschedule-slots').getByRole('radio').first().check({ force: true });
+    await nextDayOptions;
+    await dialog.getByTestId('reschedule-slots').locator('label').first().click();
+    await expect(dialog.getByTestId('reschedule-slots').getByRole('radio').first()).toBeChecked();
     await dialog.getByLabel('Reason').fill('Customer asked by phone');
     await dialog.getByRole('button', { name: 'Confirm the new time' }).click();
     await expect(page.getByText('The booking was rescheduled.')).toBeVisible();
@@ -253,6 +259,7 @@ test.describe('admin operations (Phase 14)', () => {
       '/ar/admin/roles/staff',
       '/ar/admin/audit',
       '/ar/admin/settings',
+      '/ar/admin/qr',
     ];
     for (const width of [390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });

@@ -7392,6 +7392,730 @@
         }
       }
     },
+    "/api/v1/public/qr/{code}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "What a scanned code opens: an active shop, or one of its active professionals. Unknown or switched-off codes are 404.",
+        "operationId": "ResolveQrCode",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrTargetResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/qr/{code}/visits": {
+      "post": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Counts a scan (no IP address, no tracking; a reload reuses the visit) and sets the first-party attribution cookie for later bookings.",
+        "operationId": "RecordQrVisit",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RecordQrVisitRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/codes": {
+      "get": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "Every shop\u0027s QR codes (active first, newest first) with each code\u0027s scans and credited bookings over the period: from\u2013to, or the last \u0060days\u0060 days (default 30).",
+        "operationId": "AdminListQrCodes",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "targetType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QrTargetType"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "Creates a unique code for a shop, or for one of its active professionals (audited).",
+        "operationId": "AdminCreateQrCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQrCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/codes/{codeId}": {
+      "get": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "One code with its target, printed URL and the last 30 days\u0027 figures.",
+        "operationId": "AdminGetQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/codes/{codeId}/deactivate": {
+      "post": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "Switches a code off: scanning it shows \u00ABnot found\u00BB; its scans and bookings are kept (audited).",
+        "operationId": "AdminDeactivateQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetQrCodeActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/codes/{codeId}/activate": {
+      "post": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "Switches a code back on (audited).",
+        "operationId": "AdminActivateQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetQrCodeActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/codes/{codeId}/image": {
+      "get": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "The code as PNG (size = pixels per module, 4\u201340), SVG or PDF (70 mm, vector).",
+        "operationId": "AdminDownloadQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/svg\u002Bxml": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/qr/analytics": {
+      "get": {
+        "tags": [
+          "Admin: QR"
+        ],
+        "summary": "Scans, credited bookings and scan-to-booking conversion over a period of days: from\u2013to, or the last \u0060days\u0060 days (default 30; at most 366), per shop.",
+        "operationId": "AdminQrAnalytics",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "shopId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/qr/codes": {
+      "get": {
+        "tags": [
+          "Shop: QR"
+        ],
+        "summary": "The shop\u0027s own QR codes with their scans and bookings over the period (default: the last 30 days).",
+        "operationId": "ShopListQrCodes",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopQrCodesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/qr/codes/{codeId}": {
+      "get": {
+        "tags": [
+          "Shop: QR"
+        ],
+        "summary": "One of the shop\u0027s own codes; another shop\u0027s id is 404.",
+        "operationId": "ShopGetQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/qr/codes/{codeId}/image": {
+      "get": {
+        "tags": [
+          "Shop: QR"
+        ],
+        "summary": "One of the shop\u0027s own codes as PNG, SVG or PDF.",
+        "operationId": "ShopDownloadQrCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/svg\u002Bxml": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/bookings": {
       "get": {
         "tags": [
@@ -13871,6 +14595,34 @@
         },
         "description": "The one shop is chosen here, at creation, and can never be changed afterwards (D-011)."
       },
+      "CreateQrCodeRequest": {
+        "required": [
+          "shopId",
+          "professionalId",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A shop code (no professional) or a code for one of the shop\u0027s active professionals, with an optional label."
+      },
       "CreateShopPackageRequest": {
         "required": [
           "nameAr",
@@ -17313,6 +18065,287 @@
         },
         "description": "Publishing needs only the version read."
       },
+      "QrAnalyticsResponse": {
+        "required": [
+          "from",
+          "to",
+          "attributionDays",
+          "totals",
+          "byShop"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "attributionDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/QrFigures"
+          },
+          "byShop": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrShopFigures"
+            }
+          }
+        },
+        "description": "The analytics of a period of local days [\u0060From\u0060, \u0060To\u0060] (platform time zone). Bookings count when they were\nmade in the period; a scan counts as converted when any booking was credited to it."
+      },
+      "QrCodeListResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCodeResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "QrCodeResponse": {
+        "required": [
+          "id",
+          "code",
+          "url",
+          "shopId",
+          "shopSlug",
+          "shopNameAr",
+          "shopNameEn",
+          "targetType",
+          "professionalId",
+          "professionalNameAr",
+          "professionalNameEn",
+          "label",
+          "isActive",
+          "createdAt",
+          "deactivatedAt",
+          "visits",
+          "bookings",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "targetType": {
+            "$ref": "#/components/schemas/QrTargetType"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "professionalNameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "professionalNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deactivatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "visits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A code with its target\u0027s names, the printed URL and its figures over the chosen period."
+      },
+      "QrFigures": {
+        "required": [
+          "visits",
+          "bookings",
+          "convertedVisits",
+          "conversionRate"
+        ],
+        "type": "object",
+        "properties": {
+          "visits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "convertedVisits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conversionRate": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "description": "Scans, the bookings they brought, and the share of scans that led to a booking (percent, one decimal, \u2264 100)."
+      },
+      "QrShopFigures": {
+        "required": [
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "visits",
+          "bookings",
+          "conversionRate"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "visits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "conversionRate": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "QrTargetResponse": {
+        "required": [
+          "code",
+          "targetType",
+          "shopSlug",
+          "professionalId",
+          "professionalSlug"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "targetType": {
+            "$ref": "#/components/schemas/QrTargetType"
+          },
+          "shopSlug": {
+            "type": "string"
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "professionalSlug": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "What a scanned code opens. A professional code whose professional is no longer active opens the shop instead, so a\nsticker on a mirror never leads to a dead page."
+      },
+      "QrTargetType": {
+        "enum": [
+          "Shop",
+          "Professional"
+        ],
+        "description": "What a code opens (c-qr print notes): the shop page, or one professional\u0027s page \u00ABfor the chair mirror\u00BB."
+      },
       "RatingSummaryResponse": {
         "required": [
           "average",
@@ -17338,6 +18371,21 @@
           }
         },
         "description": "Average and count, and the number of reviews per star (index 0 = one star \u2026 4 = five stars)."
+      },
+      "RecordQrVisitRequest": {
+        "required": [
+          "locale"
+        ],
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The landing page\u0027s language, so the scan log can say which language visitors read."
       },
       "ReinstateSubscriptionRequest": {
         "required": [
@@ -17934,6 +18982,19 @@
         },
         "description": "Sets, corrects or removes (null) the WhatsApp number (E.164 or a Saudi national format), and the notification\ntoggle. With \u0060KeepCurrentNumber\u0060 only the toggle changes, so an admin never needs to see the number to do that."
       },
+      "SetQrCodeActiveRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "Send the version read."
+      },
       "ShopAmenity": {
         "enum": [
           "Parking",
@@ -18052,6 +19113,7 @@
           "reference",
           "customerName",
           "channel",
+          "viaQr",
           "professional",
           "item",
           "startsAt",
@@ -18077,6 +19139,9 @@
           },
           "channel": {
             "$ref": "#/components/schemas/BookingChannel"
+          },
+          "viaQr": {
+            "type": "boolean"
           },
           "professional": {
             "$ref": "#/components/schemas/BookingProfessionalResponse"
@@ -18121,7 +19186,7 @@
             "format": "uint32"
           }
         },
-        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically."
+        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n\u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically."
       },
       "ShopCalendarResponse": {
         "required": [
@@ -18707,6 +19772,40 @@
           }
         },
         "description": "The signed-in shop user\u0027s own shop (\u0060GET /api/v1/shop/me\u0060). Shop-facing contract: it must never carry customer\ncontact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it."
+      },
+      "ShopQrCodesResponse": {
+        "required": [
+          "items",
+          "totals",
+          "from",
+          "to",
+          "attributionDays"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCodeResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/QrFigures"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "attributionDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The shop\u0027s codes with the period\u0027s figures (the last 30 days by default)."
       },
       "ShopRatingResponse": {
         "required": [
@@ -20839,6 +21938,12 @@
     },
     {
       "name": "Admin: services"
+    },
+    {
+      "name": "Admin: QR"
+    },
+    {
+      "name": "Shop: QR"
     },
     {
       "name": "Admin: bookings"

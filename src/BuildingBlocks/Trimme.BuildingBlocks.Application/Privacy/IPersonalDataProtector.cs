@@ -24,4 +24,7 @@ public static class PersonalDataPurposes
     public const string ProfessionalWhatsApp = "trimme.professional-whatsapp";
     public const string IpAddress = "trimme.ip-address";
     public const string OtpCode = "trimme.otp-code";
+
+    /// <summary>A QR scan's visitor: the day and the IP address, hashed together so visits cannot be linked across days (D-114).</summary>
+    public const string QrVisitor = "trimme.qr-visitor";
 }

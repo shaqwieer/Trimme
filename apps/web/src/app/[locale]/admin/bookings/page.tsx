@@ -14,6 +14,7 @@ import { formatDate, formatNumber, formatTime } from '@/lib/i18n/format';
 import { addDays } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 import { chipOf, STATUS_CHIPS, statusesOf } from '@/lib/shop/board';
+import { bookingSource } from '@/lib/booking/format';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -244,7 +245,11 @@ export default async function AdminBookingsPage({
                   header: t('columns.status'),
                   cell: (b) => <StatusBadge kind="booking" status={b.booking.status} size="sm" />,
                 },
-                { key: 'source', header: t('columns.source'), cell: (b) => tChannel(b.booking.channel) },
+                {
+                  key: 'source',
+                  header: t('columns.source'),
+                  cell: (b) => tChannel(bookingSource(b.booking)),
+                },
                 {
                   key: 'reference',
                   header: t('columns.reference'),

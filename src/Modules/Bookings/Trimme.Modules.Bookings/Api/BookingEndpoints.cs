@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
+using Trimme.BuildingBlocks.Application.Qr;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Errors;
@@ -62,12 +63,16 @@ internal static class BookingEndpoints
         MapAdmin(api.MapGroup("/admin/bookings").WithTags("Admin: bookings"));
     }
 
+    /// <summary>The scan in the first-party attribution cookie (R-QR-02); read here only, never for walk-ins or staff bookings.</summary>
+    private static Guid? QrScan(HttpContext http) =>
+        Guid.TryParse(http.Request.Cookies[QrAttributionCookie.Name], out var visit) && visit != Guid.Empty ? visit : null;
+
     private static void MapCustomer(IEndpointRouteBuilder api)
     {
         api.MapPost("/bookings", async ([FromHeader(Name = IdempotencyHeader)] string? key, CreateBookingRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
                 KeyError(key) is { } missing
                     ? missing.ToProblem()
-                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!), ct)))
+                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http)), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking).WithTags("Customer: bookings")
             .WithName("CreateBooking")
             .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken.")

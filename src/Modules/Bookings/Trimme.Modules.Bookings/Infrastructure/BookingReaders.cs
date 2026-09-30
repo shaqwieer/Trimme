@@ -98,3 +98,25 @@ internal sealed class BookingNotificationSource(TrimmeDbContext db) : IBookingNo
                 b.ItemNameAr, b.ItemNameEn, b.Price, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString());
     }
 }
+
+/// <summary>
+/// <see cref="BuildingBlocks.Application.Qr.IQrBookingReader"/> (D-114): bookings credited to a QR scan, through the caller's scope (the shop's own for a
+/// shop user; every shop's inside an admin data scope). Ids and the creation time only.
+/// </summary>
+internal sealed class QrBookingReader(TrimmeDbContext db) : BuildingBlocks.Application.Qr.IQrBookingReader
+{
+    public async Task<IReadOnlyList<BuildingBlocks.Application.Qr.QrAttributedBooking>> ListAsync(
+        DateTimeOffset from, DateTimeOffset to, IReadOnlyCollection<Guid>? linkIds, CancellationToken cancellationToken)
+    {
+        var bookings = db.Set<Booking>().AsNoTracking().Where(b => b.QrLinkId != null && b.CreatedAt >= from && b.CreatedAt < to);
+        if (linkIds is not null)
+        {
+            var ids = linkIds.Select(id => (QrCodeLinkId?)new QrCodeLinkId(id)).ToArray();
+            bookings = bookings.Where(b => ids.Contains(b.QrLinkId));
+        }
+
+        return await bookings
+            .Select(b => new BuildingBlocks.Application.Qr.QrAttributedBooking(b.Id.Value, b.ShopId, b.QrLinkId!.Value.Value, b.QrVisitId, b.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+}
