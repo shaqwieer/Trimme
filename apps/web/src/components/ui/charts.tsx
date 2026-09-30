@@ -132,28 +132,31 @@ export function BarChart({
           </span>
         ))}
       </div>
-      <table className="sr-only">
-        <caption>
-          {t('table')}: {title}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{labelHeader}</th>
-            <th scope="col">{valueHeader}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.label}>
-              <th scope="row">{d.label}</th>
-              <td>
-                {formatNumber(d.value, locale)}
-                {d === peak ? ` (${t('peak')})` : ''}
-              </td>
+      {/* sr-only on a wrapper: a table never shrinks to the 1px box, so on its own it can overflow the page (RTL). */}
+      <div className="sr-only">
+        <table>
+          <caption>
+            {t('table')}: {title}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{labelHeader}</th>
+              <th scope="col">{valueHeader}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.label}>
+                <th scope="row">{d.label}</th>
+                <td>
+                  {formatNumber(d.value, locale)}
+                  {d === peak ? ` (${t('peak')})` : ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

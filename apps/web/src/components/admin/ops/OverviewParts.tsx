@@ -73,29 +73,32 @@ export function BookingTrend({ days }: { days: TrendDay[] }) {
           </span>
         ))}
       </div>
-      <table className="sr-only">
-        <caption>{t('table')}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('date')}</th>
-            {series.map((s) => (
-              <th key={s.key} scope="col">
-                {s.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {days.map((day) => (
-            <tr key={day.date}>
-              <th scope="row">{day.date}</th>
+      {/* sr-only on a wrapper: a table never shrinks to the 1px box, so on its own it can overflow the page (RTL). */}
+      <div className="sr-only">
+        <table>
+          <caption>{t('table')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t('date')}</th>
               {series.map((s) => (
-                <td key={s.key}>{formatNumber(day[s.key], locale)}</td>
+                <th key={s.key} scope="col">
+                  {s.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day.date}>
+                <th scope="row">{day.date}</th>
+                {series.map((s) => (
+                  <td key={s.key}>{formatNumber(day[s.key], locale)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

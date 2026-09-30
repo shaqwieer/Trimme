@@ -146,6 +146,11 @@ Session 11 (2026-09-30).
 
 It was applied on fresh compose volumes and from empty in the integration tests. `migrate` installs the Hangfire schema and the 18 default templates. No production migration was run.
 
+**CI follow-up (Session 12).** GitHub Actions runs #20 (Phase 14) and #21 (Phase 15) failed in one test only: `admin pages fit phone, tablet and desktop widths`. `/ar/admin` was 9 px wider than a 390 px viewport on Linux Chromium; locally it fit.
+- **Cause.** The overview trend's screen-reader data table carried `sr-only` on the `<table>` itself. A table never shrinks to the 1 px box, so it stayed about 357 px wide, and in RTL it spilled past the page's left edge. Linux font metrics tipped it over.
+- **Fix.** `sr-only` now sits on a wrapper `div`, in the overview trend and in the shared `BarChart`.
+- **Evidence.** A local probe with text widened by 0.06em went from 3 px of overflow to 0; it stays 0 at 0.1em. `admin-operations.spec.ts` and `smoke/gallery.spec.ts` pass 16/16.
+
 ## Remaining risks → next phase
 - **Meta.** Template approval lead time. Every wording change needs Meta approval before activation, because Meta renders its approved text. The authentication template category has stricter formatting.
 - **Delivery in production.** Real WhatsApp delivery is untested without credentials; the adapter is contract-tested only.
