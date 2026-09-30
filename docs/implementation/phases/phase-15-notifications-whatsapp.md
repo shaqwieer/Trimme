@@ -150,6 +150,7 @@ It was applied on fresh compose volumes and from empty in the integration tests.
 - **Cause.** The overview trend's screen-reader data table carried `sr-only` on the `<table>` itself. A table never shrinks to the 1 px box, so it stayed about 357 px wide, and in RTL it spilled past the page's left edge. Linux font metrics tipped it over.
 - **Fix.** `sr-only` now sits on a wrapper `div`, in the overview trend and in the shared `BarChart`.
 - **Evidence.** A local probe with text widened by 0.06em went from 3 px of overflow to 0; it stays 0 at 0.1em. `admin-operations.spec.ts` and `smoke/gallery.spec.ts` pass 16/16.
+- **Linux evidence.** The CI browser (`mcr.microsoft.com/playwright:v1.63.0-noble`) was run against the local compose stack. On `/ar/admin` at 390 px, the overflow was 0 px with the fix. Moving `sr-only` back onto the `<table>` in the page gave 9 px, which reproduces CI exactly. `admin-operations`, `shop-dashboard` and `smoke/gallery` pass 18/18 in that container.
 
 ## Remaining risks → next phase
 - **Meta.** Template approval lead time. Every wording change needs Meta approval before activation, because Meta renders its approved text. The authentication template category has stricter formatting.
