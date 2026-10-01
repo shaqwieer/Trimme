@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -238,6 +239,58 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
             grants.ShouldNotContain(g => g.RoleId == roles[SystemRoles.OperationsManager].Id && g.PermissionCode == Permissions.Shop.ServicesManage);
             (await db.Set<Permission>().CountAsync(ct)).ShouldBe(Permissions.All.Count);
         }
+    }
+
+    /// <summary>
+    /// Spec §18 (Phase 17): the reviewed set of endpoints behind each named rate-limit policy. A policy that quietly
+    /// detaches from an endpoint, or a new abusable endpoint without one, fails here.
+    /// </summary>
+    private static readonly Dictionary<string, string> RateLimitedEndpoints = new(StringComparer.Ordinal)
+    {
+        ["DELETE /api/v1/me/favorites/professionals/{professionalId:guid}"] = RateLimitPolicies.Favorites,
+        ["DELETE /api/v1/me/favorites/shops/{shopId:guid}"] = RateLimitPolicies.Favorites,
+        ["GET /api/v1/admin/geo/reverse"] = RateLimitPolicies.Geocode,
+        ["GET /api/v1/admin/geo/search"] = RateLimitPolicies.Geocode,
+        ["GET /api/v1/me/bookings/{bookingId:guid}/reschedule/dates"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/me/bookings/{bookingId:guid}/reschedule/slots"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/public/categories/popular"] = RateLimitPolicies.Search,
+        ["GET /api/v1/public/professionals/top"] = RateLimitPolicies.Search,
+        ["GET /api/v1/public/qr/{code}"] = RateLimitPolicies.Qr,
+        ["GET /api/v1/public/shops/search"] = RateLimitPolicies.Search,
+        ["GET /api/v1/public/shops/{slug}/availability/dates"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/public/shops/{slug}/availability/slots"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/public/shops/{slug}/status"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/shop/geo/reverse"] = RateLimitPolicies.Geocode,
+        ["GET /api/v1/shop/geo/search"] = RateLimitPolicies.Geocode,
+        ["POST /api/v1/auth/invitations/accept"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/auth/otp/request"] = RateLimitPolicies.Otp,
+        ["POST /api/v1/auth/otp/verify"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/auth/password/forgot"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/auth/password/reset"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/auth/refresh"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/auth/staff/sign-in"] = RateLimitPolicies.Auth,
+        ["POST /api/v1/bookings"] = RateLimitPolicies.Booking,
+        ["POST /api/v1/me/bookings/{bookingId:guid}/reschedule"] = RateLimitPolicies.Booking,
+        ["POST /api/v1/me/bookings/{bookingId:guid}/review"] = RateLimitPolicies.Review,
+        ["POST /api/v1/public/qr/{code}/visits"] = RateLimitPolicies.Qr,
+        ["PUT /api/v1/me/favorites/professionals/{professionalId:guid}"] = RateLimitPolicies.Favorites,
+        ["PUT /api/v1/me/favorites/shops/{shopId:guid}"] = RateLimitPolicies.Favorites,
+    };
+
+    [Fact]
+    public async Task RateLimitPolicies_AreAttachedToExactlyTheReviewedEndpoints()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "authz_ratelimits", ct);
+
+        var actual = ApiEndpoints(factory)
+            .Select(e => (e.Key, Policy: e.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName))
+            .Where(e => e.Policy is not null)
+            .ToDictionary(e => e.Key, e => e.Policy!, StringComparer.Ordinal);
+
+        actual.OrderBy(e => e.Key, StringComparer.Ordinal).ShouldBe(RateLimitedEndpoints.OrderBy(e => e.Key, StringComparer.Ordinal));
+        RateLimitedEndpoints.Values.Distinct().ShouldBe(RateLimitPolicies.Defaults.Keys, ignoreOrder: true, "every named policy is in use");
     }
 
     private static List<ApiEndpoint> ApiEndpoints(TrimmeApiFactory factory) =>

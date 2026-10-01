@@ -419,6 +419,10 @@ public sealed class ScheduleTests(PostgresFixture postgres)
                     .Select(a => new BusyTime(a.BookingId, a.ProfessionalId, a.StartsAt, a.EndsAt)),
             ]);
 
+        public Task<IReadOnlyList<BusyTime>> GetBusyAsync(
+            IReadOnlyCollection<ShopId> shopIds, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
+            GetBusyAsync(shopIds.First(), professionalIds, from, to, cancellationToken);
+
         public Task<IReadOnlyList<BookedAppointment>> GetAppointmentsAsync(
             ShopId shopId, ProfessionalId? professionalId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<BookedAppointment>>(

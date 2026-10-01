@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { SelectField, Switch } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
@@ -139,7 +139,13 @@ export function ServiceForm({
   });
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5" data-testid="service-form">
+    <form
+      method="post"
+      noValidate
+      onSubmit={onSubmit}
+      className="flex flex-col gap-5"
+      data-testid="service-form"
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <FormTextField control={form.control} name="nameAr" label={t('nameAr')} dir="rtl" />
         <FormTextField

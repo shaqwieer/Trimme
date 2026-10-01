@@ -26,6 +26,18 @@ public sealed class NotificationsHub(IPermissionResolver permissions, IShopDirec
 
     public override async Task OnConnectedAsync()
     {
+        try
+        {
+            await JoinAsync();
+        }
+        catch (OperationCanceledException) when (Context.ConnectionAborted.IsCancellationRequested)
+        {
+            // The client left during the handshake (a page navigated away): nothing to join, nothing to report.
+        }
+    }
+
+    private async Task JoinAsync()
+    {
         var user = Context.User;
         if (user is not { Identity.IsAuthenticated: true } || !Guid.TryParse(user.FindFirst(TrimmeClaims.Subject)?.Value, out var userId))
         {

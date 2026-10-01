@@ -24,9 +24,10 @@ import {
   formatPrice,
   formatTime,
 } from '@/lib/i18n/format';
-import { localizedName } from '@/lib/i18n/localized';
+import { mayBeSignedIn } from '@/lib/auth/session.server';
+import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 import { breadcrumbLd } from '@/lib/seo/jsonld';
-import { absoluteUrl, localizedAlternates, NO_INDEX, OG_LOCALE } from '@/lib/seo/site';
+import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 export async function generateMetadata({
   params,
@@ -52,7 +53,7 @@ export async function generateMetadata({
       description,
       locale: OG_LOCALE[locale],
       url: `/${locale}/shops/${pro.shopSlug}/professionals/${pro.slug}`,
-      images: [{ url: pro.avatarUrl ?? shop.coverUrl ?? '/brand/trimme-logo.png' }],
+      images: [{ url: pro.avatarUrl ?? shop.coverUrl ?? OG_IMAGE.url }],
     },
   };
 }
@@ -154,7 +155,8 @@ export default async function ProfessionalPage({
   const shopName = localizedName(locale, pro.shopNameAr, pro.shopNameEn);
   const specialty =
     pro.specialtyAr || pro.specialtyEn ? localizedName(locale, pro.specialtyAr ?? '', pro.specialtyEn) : null;
-  const bio = locale === 'en' ? (pro.bioEn ?? pro.bioAr) : (pro.bioAr ?? pro.bioEn);
+  const bio = localizedText(locale, pro.bioAr, pro.bioEn);
+  const signedIn = await mayBeSignedIn();
   const shopUrl = absoluteUrl(`/${locale}/shops/${pro.shopSlug}`);
   const url = `${shopUrl}/professionals/${pro.slug}`;
   const district = shop.location?.district;
@@ -197,6 +199,7 @@ export default async function ProfessionalPage({
             <FavoriteButton
               target={{ kind: 'professional', id: pro.id, shopId: shop.id }}
               name={name}
+              mayBeSignedIn={signedIn}
               className="absolute end-4 top-4"
             />
           )}
@@ -204,7 +207,11 @@ export default async function ProfessionalPage({
           <h1 className="text-h1 font-bold text-navy-900">{name}</h1>
           {specialty && <p className="text-body text-text-secondary">{specialty}</p>}
           {pro.reviewCount > 0 && <RatingStars value={pro.rating} count={pro.reviewCount} size="md" />}
-          {bio && <p className="max-w-[52ch] text-body text-text-strong">{bio}</p>}
+          {bio && (
+            <p lang={langIfOther(bio, locale)} className="max-w-[52ch] text-body text-text-strong">
+              {bio.text}
+            </p>
+          )}
           <Link
             href={`/shops/${pro.shopSlug}`}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-field bg-brand-100 px-4 text-label font-bold text-brand-700 hover:bg-brand-150"

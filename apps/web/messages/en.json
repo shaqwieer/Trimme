@@ -101,7 +101,7 @@
     },
     "rating": {
       "value": "Rated {value} out of 5",
-      "count": "({count} reviews)",
+      "count": "({count, plural, one {{count} review} other {{count} reviews}})",
       "input": "Choose your rating",
       "stars": "{value} out of 5"
     },
@@ -181,7 +181,7 @@
     },
     "ratingDistribution": {
       "label": "Rating distribution",
-      "row": "{stars} stars: {count} reviews"
+      "row": "{stars} stars: {count, plural, one {{count} review} other {{count} reviews}}"
     }
   },
   "status": {
@@ -484,7 +484,8 @@
     "notification_not_found": "The notification was not found.",
     "qr_not_found": "The QR code was not found.",
     "qr_already_active": "The code is already active.",
-    "qr_already_inactive": "The code is already switched off."
+    "qr_already_inactive": "The code is already switched off.",
+    "invitation_role_invalid": "That role does not fit the kind of account being invited."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -671,7 +672,10 @@
     "confirmedAt": "Last confirmed",
     "readOnlyTitle": "Location locked",
     "readOnlyBody": "The platform admin sets the shop location. Contact the admin to change it.",
-    "attribution": "Map data © OpenStreetMap contributors"
+    "attribution": "Map data © OpenStreetMap contributors",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "toggleAttribution": "Show map credits"
   },
   "adminProfessionals": {
     "title": "Professionals & their services",
@@ -2492,7 +2496,8 @@
       "Staff": "Platform staff",
       "Audit": "Activity log",
       "Settings": "Platform settings",
-      "SuperAdmin": "SuperAdmin only"
+      "SuperAdmin": "SuperAdmin only",
+      "Jobs": "Background jobs"
     },
     "codes": {
       "Admin_Dashboard_View": "View the platform overview",
@@ -2538,7 +2543,8 @@
       "Admin_Settings_View": "View platform settings",
       "Admin_Settings_Edit": "Edit platform settings",
       "SuperAdmin_SubscriptionPlans_Manage": "Manage subscription plans and prices",
-      "SuperAdmin_Subscriptions_Override": "Override a shop's subscription"
+      "SuperAdmin_Subscriptions_Override": "Override a shop's subscription",
+      "Admin_Jobs_View": "View the background jobs dashboard"
     }
   },
   "adminRoles": {
@@ -2659,7 +2665,10 @@
       "ServiceCategory": "category",
       "SubscriptionPlan": "plan",
       "ShopSubscription": "subscription",
-      "PlatformSettings": "settings"
+      "PlatformSettings": "settings",
+      "QrCodeLink": "QR code",
+      "WhatsAppTemplate": "WhatsApp template",
+      "WhatsAppDispatch": "WhatsApp message"
     },
     "actions": {
       "shop_created": "Shop created",
@@ -2717,7 +2726,14 @@
       "staff_invited": "Staff member invited",
       "staff_roles_changed": "Staff roles changed",
       "staff_disabled": "Staff member disabled",
-      "staff_enabled": "Staff member enabled"
+      "staff_enabled": "Staff member enabled",
+      "qr_created": "QR code created",
+      "qr_activated": "QR code switched on",
+      "qr_deactivated": "QR code switched off",
+      "review_shop_contacted": "Shop contacted about a review",
+      "whatsapp_dispatch_retried": "WhatsApp message retried",
+      "whatsapp_template_activated": "WhatsApp template version activated",
+      "whatsapp_template_test_sent": "WhatsApp template test sent"
     }
   },
   "notifications": {

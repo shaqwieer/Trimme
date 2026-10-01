@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Serilog;
 using Serilog.Formatting.Compact;
 using Trimme.BuildingBlocks.Application;
@@ -54,6 +55,15 @@ internal static class ApiServices
 
         services.AddTrimmeApplication();
         services.AddTrimmePersistence();
+        if (builder.Environment.IsEnvironment(ApiPipeline.TestingEnvironment))
+        {
+            // Phase 17: query shapes EF Core only warns about fail the integration tests instead: a cartesian product of
+            // collection includes, and a page or first row taken without a defined order.
+            services.ConfigureDbContext<TrimmeDbContext>(options => options.ConfigureWarnings(warnings => warnings.Throw(
+                RelationalEventId.MultipleCollectionIncludeWarning,
+                CoreEventId.RowLimitingOperationWithoutOrderByWarning,
+                CoreEventId.FirstWithoutOrderByAndFilterWarning)));
+        }
         services.AddTrimmeMedia();
         services.AddTrimmeSecurity(configuration, builder.Environment);
         services.AddTrimmeJobs(configuration, builder.Environment);
@@ -63,8 +73,11 @@ internal static class ApiServices
             module.AddServices(services, configuration);
         }
 
+        services.AddTrimmeTelemetry(configuration, builder.Environment);
+
         services.AddHealthChecks()
-            .AddDbContextCheck<TrimmeDbContext>("database", tags: [ReadyHealthTag]);
+            .AddDbContextCheck<TrimmeDbContext>("database", tags: [ReadyHealthTag])
+            .AddTrimmeJobsHealthChecks(configuration, ReadyHealthTag);
 
         services.AddOpenApi("v1", options =>
         {

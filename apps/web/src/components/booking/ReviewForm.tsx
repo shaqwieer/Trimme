@@ -71,6 +71,7 @@ export function ReviewForm({ bookingId }: { bookingId: string }) {
 
   return (
     <form
+      method="post"
       noValidate
       className="flex flex-col gap-5"
       onSubmit={(event) => {

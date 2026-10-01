@@ -101,7 +101,7 @@
     },
     "rating": {
       "value": "التقييم {value} من 5",
-      "count": "({count} تقييم)",
+      "count": "({count, plural, one {تقييم واحد} two {تقييمان} few {{count} تقييمات} many {{count} تقييماً} other {{count} تقييم}})",
       "input": "اختر تقييمك",
       "stars": "{value} من 5"
     },
@@ -181,7 +181,7 @@
     },
     "ratingDistribution": {
       "label": "توزيع التقييمات",
-      "row": "{stars} نجوم: {count} تقييم"
+      "row": "{stars} نجوم: {count, plural, one {تقييم واحد} two {تقييمان} few {{count} تقييمات} many {{count} تقييماً} other {{count} تقييم}}"
     }
   },
   "status": {
@@ -484,7 +484,8 @@
     "notification_not_found": "الإشعار غير موجود.",
     "qr_not_found": "لم يُعثر على رمز QR.",
     "qr_already_active": "الرمز فعّال بالفعل.",
-    "qr_already_inactive": "الرمز موقوف بالفعل."
+    "qr_already_inactive": "الرمز موقوف بالفعل.",
+    "invitation_role_invalid": "هذا الدور لا يناسب نوع الحساب المدعو."
   },
   "shopStatus": {
     "Draft": "مسودة",
@@ -671,7 +672,10 @@
     "confirmedAt": "آخر تأكيد",
     "readOnlyTitle": "الموقع مقفل",
     "readOnlyBody": "تحدد إدارة المنصة موقع المحل. لتعديله تواصل مع الإدارة.",
-    "attribution": "بيانات الخريطة © مساهمو OpenStreetMap"
+    "attribution": "بيانات الخريطة © مساهمو OpenStreetMap",
+    "zoomIn": "تكبير الخريطة",
+    "zoomOut": "تصغير الخريطة",
+    "toggleAttribution": "إظهار مصادر الخريطة"
   },
   "adminProfessionals": {
     "title": "الحلاقون وخدماتهم",
@@ -2492,7 +2496,8 @@
       "Staff": "فريق المنصة",
       "Audit": "سجل النشاط",
       "Settings": "إعدادات المنصة",
-      "SuperAdmin": "للمدير العام فقط"
+      "SuperAdmin": "للمدير العام فقط",
+      "Jobs": "المهام الخلفية"
     },
     "codes": {
       "Admin_Dashboard_View": "عرض النظرة العامة على المنصة",
@@ -2538,7 +2543,8 @@
       "Admin_Settings_View": "عرض إعدادات المنصة",
       "Admin_Settings_Edit": "تعديل إعدادات المنصة",
       "SuperAdmin_SubscriptionPlans_Manage": "إدارة باقات الاشتراك وأسعارها",
-      "SuperAdmin_Subscriptions_Override": "تعديل استثنائي لاشتراك محل"
+      "SuperAdmin_Subscriptions_Override": "تعديل استثنائي لاشتراك محل",
+      "Admin_Jobs_View": "عرض لوحة المهام الخلفية"
     }
   },
   "adminRoles": {
@@ -2659,7 +2665,10 @@
       "ServiceCategory": "التصنيف",
       "SubscriptionPlan": "باقة الاشتراك",
       "ShopSubscription": "الاشتراك",
-      "PlatformSettings": "الإعدادات"
+      "PlatformSettings": "الإعدادات",
+      "QrCodeLink": "رمز QR",
+      "WhatsAppTemplate": "قالب واتساب",
+      "WhatsAppDispatch": "رسالة واتساب"
     },
     "actions": {
       "shop_created": "إنشاء محل",
@@ -2717,7 +2726,14 @@
       "staff_invited": "دعوة عضو فريق",
       "staff_roles_changed": "تغيير أدوار عضو فريق",
       "staff_disabled": "تعطيل عضو فريق",
-      "staff_enabled": "تفعيل عضو فريق"
+      "staff_enabled": "تفعيل عضو فريق",
+      "qr_created": "إنشاء رمز QR",
+      "qr_activated": "تفعيل رمز QR",
+      "qr_deactivated": "إيقاف رمز QR",
+      "review_shop_contacted": "مراسلة المحل بشأن تقييم",
+      "whatsapp_dispatch_retried": "إعادة إرسال رسالة واتساب",
+      "whatsapp_template_activated": "تفعيل نسخة قالب واتساب",
+      "whatsapp_template_test_sent": "إرسال تجربة قالب واتساب"
     }
   },
   "notifications": {

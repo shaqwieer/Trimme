@@ -4,7 +4,7 @@ import { Badge, type BadgeTone } from '@/components/ui/Badge';
 export const SHOP_STATUSES = ['Draft', 'Active', 'Suspended'] as const;
 export type ShopStatus = (typeof SHOP_STATUSES)[number];
 
-const tones: Record<ShopStatus, BadgeTone> = { Draft: 'warning', Active: 'success', Suspended: 'danger' };
+const tones: Record<ShopStatus, BadgeTone> = { Draft: 'warning', Active: 'success', Suspended: 'neutral' };
 
 export function isShopStatus(value: string): value is ShopStatus {
   return (SHOP_STATUSES as readonly string[]).includes(value);

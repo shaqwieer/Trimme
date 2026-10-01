@@ -273,7 +273,9 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
             served.Headers.CacheControl!.ToString().ShouldContain("immutable");
             served.Headers.ETag.ShouldNotBeNull();
             var bytes = await served.Content.ReadAsByteArrayAsync(ct);
-            bytes.ShouldBe(TestImages.Png(256, 256), "stored without the text metadata chunk");
+            TestImages.Contains(bytes, Encoding.ASCII.GetBytes("GPSLatitude")).ShouldBeFalse("stored without the text metadata chunk");
+            using var decoded = SkiaSharp.SKBitmap.Decode(bytes);
+            (decoded.Width, decoded.Height).ShouldBe((256, 256), "re-encoded from its pixels (D-119)");
 
             using var conditional = new HttpRequestMessage(HttpMethod.Get, logoUrl);
             conditional.Headers.IfNoneMatch.Add(served.Headers.ETag!);
@@ -302,12 +304,28 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
             huge.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
         }
 
-        using (var jpeg = await admin.UploadAsync(HttpMethod.Put, $"/api/v1/admin/shops/{shopId}/cover", TestImages.Jpeg(1600, 900), ct, "cover.jpg", "image/jpeg"))
+        // A JPEG header with no real image behind it does not decode, so it is refused (D-119).
+        using (var hollow = await admin.UploadAsync(HttpMethod.Put, $"/api/v1/admin/shops/{shopId}/cover", TestImages.Jpeg(1600, 900), ct, "cover.jpg", "image/jpeg"))
         {
-            jpeg.StatusCode.ShouldBe(HttpStatusCode.OK);
+            (await hollow.JsonAsync(ct)).GetProperty("errors").GetProperty("file")[0].GetString().ShouldBe("validation.image_type");
+        }
+
+        // An image that is also a web page keeps only its pixels.
+        using (var polyglot = await admin.UploadAsync(HttpMethod.Put, $"/api/v1/admin/shops/{shopId}/cover", TestImages.PolyglotPng(800, 600), ct))
+        {
+            polyglot.StatusCode.ShouldBe(HttpStatusCode.OK);
+            var stored = await (await anonymous.GetAsync((await polyglot.JsonAsync(ct)).GetProperty("coverUrl").GetString()!, ct)).Content.ReadAsByteArrayAsync(ct);
+            TestImages.Contains(stored, TestImages.PolyglotPayload).ShouldBeFalse("nothing after the image survives re-encoding");
+        }
+
+        using (var jpeg = await admin.UploadAsync(HttpMethod.Put, $"/api/v1/admin/shops/{shopId}/cover", TestImages.EncodedJpeg(1600, 900, orientation: 6), ct, "cover.jpg", "image/jpeg"))
+        {
+            jpeg.StatusCode.ShouldBe(HttpStatusCode.OK, await jpeg.Content.ReadAsStringAsync(ct));
             var coverUrl = (await jpeg.JsonAsync(ct)).GetProperty("coverUrl").GetString()!;
             var stored = await (await anonymous.GetAsync(coverUrl, ct)).Content.ReadAsByteArrayAsync(ct);
             TestImages.Contains(stored, TestImages.ExifMarker).ShouldBeFalse("EXIF (with GPS) is stripped before storage");
+            using var decoded = SkiaSharp.SKBitmap.Decode(stored);
+            (decoded.Width, decoded.Height).ShouldBe((900, 1600), "the EXIF orientation is applied to the pixels");
         }
 
         // Replacing deletes the old image in the same transaction.

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 16 (R-QR-01/02, R-CUS-13, R-AD-09, D-114): an admin creates a shop code; a visitor scans it (the locale-less
@@ -19,6 +20,8 @@ const AL_ASALA_CODE = 'aswn7qkd';
 const newPhone = () => `5${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
 
 async function expectNoSeriousAxe(page: Page, label: string) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(blocking.map((v) => `${label} ${v.id}: ${v.help}`)).toEqual([]);

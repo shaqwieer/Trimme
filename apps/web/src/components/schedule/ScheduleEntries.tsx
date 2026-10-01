@@ -336,6 +336,7 @@ function BreakDialog({
       size="lg"
     >
       <form
+        method="post"
         noValidate
         onSubmit={(e) => void submit(e)}
         className="flex flex-col gap-4"
@@ -721,6 +722,7 @@ function TimeOffDialog({
       size="lg"
     >
       <form
+        method="post"
         noValidate
         onSubmit={(e) => void submit(e)}
         className="flex flex-col gap-4"
@@ -865,6 +867,7 @@ function ClosureDialog({
       description={t('closures.body')}
     >
       <form
+        method="post"
         noValidate
         onSubmit={(e) => void submit(e)}
         className="flex flex-col gap-4"

@@ -82,6 +82,9 @@ describe('booking controls', () => {
     renderWithIntl(<Stepper steps={['الخدمة', 'الحلاق', 'التاريخ', 'الوقت', 'المراجعة']} current={2} />);
     expect(screen.getByText('الخطوة 3 من 5')).toBeInTheDocument();
     expect(screen.getByText('التاريخ').closest('li')).toHaveAttribute('aria-current', 'step');
+    // Step 3 of 5 fills three fifths (step 1 used to show an empty bar, Phase 17 visual review).
+    const fill = screen.getByText('الخطوة 3 من 5').nextElementSibling?.firstElementChild as HTMLElement;
+    expect(fill.style.width).toBe('60%');
   });
 
   it('CalendarMonth starts weeks on Sunday, disables unavailable days and labels navigation', async () => {
@@ -161,6 +164,27 @@ describe('overlays', () => {
     expect(screen.getByRole('dialog', { name: 'تفاصيل الموعد' })).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it('a dialog opened by a button of its own returns focus to that button on Escape (Phase 17)', async () => {
+    function Controlled() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <Button onClick={() => setOpen(true)}>رمز جديد</Button>
+          <Dialog open={open} onOpenChange={setOpen} title="رمز جديد">
+            <p>المحتوى</p>
+          </Dialog>
+        </>
+      );
+    }
+    renderWithIntl(<Controlled />);
+    const opener = screen.getByRole('button', { name: 'رمز جديد' });
+    opener.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('dialog', { name: 'رمز جديد' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 
   it('ConfirmDialog is an alertdialog that focuses the safe choice first', async () => {

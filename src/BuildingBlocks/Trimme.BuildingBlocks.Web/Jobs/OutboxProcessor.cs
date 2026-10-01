@@ -9,6 +9,7 @@ using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Infrastructure.Privacy;
+using Trimme.BuildingBlocks.Web.Observability;
 
 namespace Trimme.BuildingBlocks.Web.Jobs;
 
@@ -53,6 +54,9 @@ public sealed partial class OutboxProcessor(
 
     private async Task ProcessAsync(OutboxEnvelope message, CancellationToken cancellationToken)
     {
+        // One span per message (D-118), so its consumers' database commands and provider calls share a trace.
+        using var activity = TrimmeTelemetry.Source.StartActivity($"outbox {message.Type}");
+        activity?.SetTag("message.type", message.Type);
         string[] names;
         HashSet<string> done;
         await using (var scope = scopes.CreateAsyncScope())
@@ -68,6 +72,8 @@ public sealed partial class OutboxProcessor(
             var failure = await DeliverAsync(message, name, cancellationToken);
             if (failure is not null)
             {
+                TrimmeTelemetry.OutboxFailures.Add(
+                    1, new KeyValuePair<string, object?>("message.type", message.Type), new KeyValuePair<string, object?>("consumer", name));
                 await RecordFailureAsync(message, name, failure, cancellationToken);
                 return;
             }
@@ -76,8 +82,13 @@ public sealed partial class OutboxProcessor(
         await using var finish = scopes.CreateAsyncScope();
         var context = finish.ServiceProvider.GetRequiredService<TrimmeDbContext>();
         var row = await context.Set<OutboxMessage>().SingleAsync(m => m.Id == message.Id, cancellationToken);
-        row.MarkProcessed(clock.GetUtcNow());
+        var processedAt = clock.GetUtcNow();
+        row.MarkProcessed(processedAt);
         await context.SaveChangesAsync(cancellationToken);
+
+        var type = new KeyValuePair<string, object?>("message.type", message.Type);
+        TrimmeTelemetry.OutboxProcessed.Add(1, type);
+        TrimmeTelemetry.OutboxDeliveryLag.Record(Math.Max(0, (processedAt - message.OccurredAt).TotalSeconds), type);
     }
 
     /// <summary>Runs one consumer in its own scope and transaction; returns the (redacted) failure, or null.</summary>

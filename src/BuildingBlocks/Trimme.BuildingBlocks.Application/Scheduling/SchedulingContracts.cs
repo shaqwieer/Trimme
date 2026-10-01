@@ -51,6 +51,10 @@ public interface IBookedTimeReader
     Task<IReadOnlyList<BusyTime>> GetBusyAsync(
         ShopId shopId, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 
+    /// <summary>The same for several shops in one query (discovery's batched probe, Phase 17).</summary>
+    Task<IReadOnlyList<BusyTime>> GetBusyAsync(
+        IReadOnlyCollection<ShopId> shopIds, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
+
     /// <summary>
     /// Upcoming bookings of the shop overlapping [<paramref name="from"/>, <paramref name="to"/>), all professionals when
     /// <paramref name="professionalId"/> is <see langword="null"/>. Shown to the shop before it adds time off, a break or a closure.

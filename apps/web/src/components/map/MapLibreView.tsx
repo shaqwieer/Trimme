@@ -1,9 +1,10 @@
 'use client';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef } from 'react';
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
-import { DEFAULT_ZOOM, PIN_ZOOM, TILE_URL } from '@/lib/map/config';
+import { DEFAULT_ZOOM, mapLibreLocale, PIN_ZOOM, TILE_URL } from '@/lib/map/config';
 import type { MapViewProps } from './MapView';
 
 const PIN_SVG =
@@ -39,7 +40,8 @@ export function MapLibreView({
   const onPinChangeRef = useRef(onPinChange);
   // The latest pin: one chosen while MapLibre is still loading must be used when the map is created.
   const pinRef = useRef(pin);
-  const initial = useRef({ center, label, pinLabel, attribution, onUnavailable, onReady });
+  const tPicker = useTranslations('locationPicker');
+  const initial = useRef({ center, label, pinLabel, attribution, onUnavailable, onReady, tPicker });
 
   useEffect(() => {
     onPinChangeRef.current = onPinChange;
@@ -52,6 +54,8 @@ export function MapLibreView({
   useEffect(() => {
     const {
       center: start,
+      label: mapLabel,
+      tPicker: picker,
       pinLabel: markerLabel,
       attribution: credit,
       onUnavailable: fail,
@@ -80,11 +84,13 @@ export function MapLibreView({
           },
           center: [origin.lng, origin.lat],
           zoom: startPin ? PIN_ZOOM : DEFAULT_ZOOM,
+          locale: mapLibreLocale(picker, mapLabel),
           attributionControl: false,
           dragRotate: false,
           pitchWithRotate: false,
         });
-        map.addControl(new AttributionControl({ compact: false }), 'bottom-left');
+        // Top: the selected-shop card and the picker's hint sit at the bottom and must never hide the map credits.
+        map.addControl(new AttributionControl({ compact: false }), 'top-right');
         map.addControl(new NavigationControl({ showCompass: false }), 'top-left');
         map.touchZoomRotate.disableRotation();
 

@@ -101,7 +101,56 @@ internal static class TestImages
         return file;
     }
 
+    /// <summary>
+    /// A real, decodable JPEG: its left half red and its right half blue. It carries an EXIF segment with the given
+    /// orientation (1 = as stored, 6 = rotate 90° clockwise to view) and a comment holding <see cref="ExifMarker"/>.
+    /// </summary>
+    public static byte[] EncodedJpeg(int width, int height, ushort orientation = 1)
+    {
+        var encoded = Encode(width, height, SkiaSharp.SKEncodedImageFormat.Jpeg);
+        using var output = new MemoryStream();
+        output.Write(encoded.AsSpan(0, 2)); // SOI
+
+        // APP1 Exif: big-endian TIFF header, one IFD with one entry (0x0112 Orientation, SHORT, count 1).
+        var exif = new byte[6 + 8 + 2 + 12 + 4];
+        "Exif\0\0"u8.CopyTo(exif);
+        "MM\0*"u8.CopyTo(exif.AsSpan(6));
+        BinaryPrimitives.WriteUInt32BigEndian(exif.AsSpan(10), 8);
+        BinaryPrimitives.WriteUInt16BigEndian(exif.AsSpan(14), 1);
+        BinaryPrimitives.WriteUInt16BigEndian(exif.AsSpan(16), 0x0112);
+        BinaryPrimitives.WriteUInt16BigEndian(exif.AsSpan(18), 3);
+        BinaryPrimitives.WriteUInt32BigEndian(exif.AsSpan(20), 1);
+        BinaryPrimitives.WriteUInt16BigEndian(exif.AsSpan(24), orientation);
+        WriteSegment(output, 0xE1, exif);
+        WriteSegment(output, 0xFE, ExifMarker);
+        output.Write(encoded.AsSpan(2));
+        return output.ToArray();
+    }
+
+    /// <summary>A real, decodable lossy WebP (left half red, right half blue).</summary>
+    public static byte[] EncodedWebP(int width, int height) => Encode(width, height, SkiaSharp.SKEncodedImageFormat.Webp);
+
+    /// <summary>A valid PNG followed by an HTML payload after its end chunk: an image and a page at once (a polyglot).</summary>
+    public static byte[] PolyglotPng(int width, int height) => [.. Png(width, height), .. PolyglotPayload];
+
+    public static readonly byte[] PolyglotPayload = Encoding.ASCII.GetBytes("<html><script>alert(document.cookie)</script></html>");
+
     public static bool Contains(byte[] haystack, byte[] needle) => haystack.AsSpan().IndexOf(needle) >= 0;
+
+    private static byte[] Encode(int width, int height, SkiaSharp.SKEncodedImageFormat format)
+    {
+        using var bitmap = new SkiaSharp.SKBitmap(width, height, SkiaSharp.SKColorType.Rgba8888, SkiaSharp.SKAlphaType.Opaque);
+        using (var canvas = new SkiaSharp.SKCanvas(bitmap))
+        {
+            canvas.Clear(new SkiaSharp.SKColor(0, 0, 255));
+            using var red = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(255, 0, 0) };
+            canvas.DrawRect(0, 0, width / 2f, height, red);
+        }
+
+        using var image = SkiaSharp.SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(format, 90);
+        return data.ToArray();
+    }
 
     private static void WriteChunk(Stream output, string type, byte[] data)
     {

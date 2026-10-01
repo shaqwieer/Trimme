@@ -166,6 +166,7 @@ export function RecordPeriodForm({
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={(e) => void submit(e)}
       className="flex flex-col gap-4"
@@ -432,6 +433,7 @@ export function OverrideForm({ subscription }: { subscription: Subscription }) {
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={(e) => void submit(e)}
       className="flex flex-col gap-3"

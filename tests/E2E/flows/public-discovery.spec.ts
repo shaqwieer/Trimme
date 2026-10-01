@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { png } from '../support/images';
 import { captureViewports } from '../support/viewports';
 
@@ -18,6 +19,8 @@ async function stubTiles(page: Page) {
 }
 
 async function expectNoSeriousAxe(page: Page, label: string) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(
@@ -247,11 +250,21 @@ test.describe('public discovery (Phase 11)', () => {
     expect(robots).toContain(`Sitemap: ${new URL('/sitemap.xml', baseURL).toString()}`);
     expect(robots).toContain('Disallow: /ar/shops/*/book');
 
-    const sitemap = await (await request.get('/sitemap.xml')).text();
+    // The sitemap is an index of one file per locale (Phase 17).
+    const index = await (await request.get('/sitemap.xml')).text();
+    expect(index).toContain('<sitemapindex');
+    const files = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]!).pathname);
+    expect(files).toEqual(['/sitemaps/ar.xml', '/sitemaps/en.xml']);
+
+    const sitemap = await (await request.get('/sitemaps/ar.xml')).text();
     expect(sitemap).toContain(`/ar/shops/${BARBER_HOUSE}</loc>`);
     expect(sitemap).toContain(`/ar/shops/${BARBER_HOUSE}/professionals/omar</loc>`);
     expect(sitemap).toMatch(new RegExp(`hreflang="en"[^>]*/en/shops/${BARBER_HOUSE}"`));
     expect(sitemap).not.toContain('lamsat-al-rajul');
+    const english = await (await request.get('/sitemaps/en.xml')).text();
+    expect(english).toContain(`/en/shops/${BARBER_HOUSE}</loc>`);
+    expect(english).toMatch(new RegExp(`hreflang="x-default"[^>]*/ar/shops/${BARBER_HOUSE}"`));
+    expect((await request.get('/sitemaps/fr.xml')).status()).toBe(404);
   });
 
   test('captures the public pages at 390 / 768 / 1440 in RTL and LTR, with no horizontal overflow', async ({

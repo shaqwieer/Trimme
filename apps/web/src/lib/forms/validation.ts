@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import ar from '../../../messages/ar.json';
+import * as z from 'zod';
+import type ar from '../../../messages/ar.json';
 import { digitsOnly, isValidSaudiMobile, normalizeSaudiMobile } from '@/components/ui/digits';
 
 /**
@@ -9,7 +9,60 @@ import { digitsOnly, isValidSaudiMobile, normalizeSaudiMobile } from '@/componen
  */
 export type ValidationKey = keyof typeof ar.validation;
 
-export const VALIDATION_KEYS: ReadonlySet<string> = new Set(Object.keys(ar.validation));
+/**
+ * The keys, listed here rather than read from the catalogue: importing the catalogue put all of it in every form
+ * page's bundle (about 100 KB gzip, Phase 17). `forms.test.tsx` keeps this list equal to the catalogue.
+ */
+export const VALIDATION_KEY_LIST = [
+  'required',
+  'invalid',
+  'generic',
+  'phoneIncomplete',
+  'phoneInvalid',
+  'otpIncomplete',
+  'tooLong',
+  'emailInvalid',
+  'form',
+  'termsRequired',
+  'passwordTooShort',
+  'passwordTooWeak',
+  'passwordMismatch',
+  'otpIncorrect',
+  'slugInvalid',
+  'slugTaken',
+  'coordinateInvalid',
+  'imageType',
+  'imageTooLarge',
+  'imageTooSmall',
+  'galleryFull',
+  'whatsappTaken',
+  'whatsappRequired',
+  'reasonRequired',
+  'tooShort',
+  'businessPhoneInvalid',
+  'priceInvalid',
+  'durationInvalid',
+  'packageItems',
+  'orderMismatch',
+  'dateInPast',
+  'dateInFuture',
+  'priceDateTaken',
+  'planNotOffered',
+  'planNoPrice',
+  'periodOverlap',
+  'periodGap',
+  'periodNotLatest',
+  'outOfRange',
+  'tooMany',
+  'hoursInvalid',
+  'hoursOverlap',
+  'rangeInvalid',
+  'breakDays',
+  'immutable',
+  'roleNameTaken',
+] as const satisfies readonly ValidationKey[];
+
+export const VALIDATION_KEYS: ReadonlySet<string> = new Set(VALIDATION_KEY_LIST);
 
 export function withParams(key: ValidationKey, params: Record<string, string | number>): string {
   return [key, ...Object.entries(params).map(([name, value]) => `${name}=${value}`)].join('|');

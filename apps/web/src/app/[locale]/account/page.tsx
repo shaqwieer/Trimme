@@ -9,15 +9,27 @@ import { asLocale } from '@/i18n/routing';
 import { firstParam } from '@/lib/auth/paths';
 import { requireCustomer } from '@/lib/auth/server';
 
-type SettingsRow = { icon: DesignIconName; label: string; value?: string; href?: string; tone?: 'muted' };
+type SettingsRow = {
+  icon: DesignIconName;
+  label: string;
+  value?: string;
+  /** The value's own language when it differs from the page's (a language's name in that language, WCAG 3.1.2). */
+  valueLang?: string;
+  href?: string;
+  tone?: 'muted';
+};
 
 function Row({ row }: { row: SettingsRow }) {
   const content = (
     <>
       <Icon name={row.icon} className="size-5 shrink-0 text-brand-700" />
       <span className="flex-1">{row.label}</span>
-      {row.value && <span className="text-helper font-medium text-text-secondary">{row.value}</span>}
-      {row.href && <Icon name="chevL" className="size-4 text-text-tertiary" />}
+      {row.value && (
+        <span lang={row.valueLang} className="text-helper font-medium text-text-secondary">
+          {row.value}
+        </span>
+      )}
+      {row.href && <Icon name="chevR" className="size-4 text-text-tertiary" />}
     </>
   );
   const className = 'flex min-h-14 items-center gap-3 px-4 text-label font-bold text-text-strong';
@@ -51,6 +63,7 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
           icon: 'msg',
           label: t('rows.language'),
           value: me.preferredLocale === 'en' ? t('profile.english') : t('profile.arabic'),
+          valueLang: me.preferredLocale === 'en' ? 'en' : 'ar',
           href: '/account/profile',
         },
         {

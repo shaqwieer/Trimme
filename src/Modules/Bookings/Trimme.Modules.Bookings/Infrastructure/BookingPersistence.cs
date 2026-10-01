@@ -61,6 +61,9 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 
         builder.HasIndex(b => new { b.ShopId, b.StartsAt });
         builder.HasIndex(b => new { b.CustomerId, b.StartsAt });
+
+        // Platform-wide reads by time (the admin bookings list, newest first, and the overview's date ranges, Phase 17).
+        builder.HasIndex(b => b.StartsAt);
         builder.HasIndex(b => new { b.ProfessionalId, b.StartsAt });
 
         builder.OwnsMany(b => b.PackageItems, i => i.ToJson());

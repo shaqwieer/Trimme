@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
@@ -82,14 +82,17 @@ export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string })
             </Link>
           </p>
           {mode === 'signIn' && (
-            <Link href="/auth/staff/sign-in" className="text-helper text-text-tertiary hover:underline">
+            <Link
+              href="/auth/staff/sign-in"
+              className="inline-flex min-h-11 items-center text-helper text-text-tertiary hover:underline"
+            >
               {t('signIn.staff')}
             </Link>
           )}
         </div>
       }
     >
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormPhoneField control={form.control} name="phone" label={t('phoneLabel')} autoFocus required />
         {mode === 'signUp' && (
           <div className="flex flex-col gap-1">

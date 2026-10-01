@@ -24,6 +24,9 @@ internal sealed class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.HasIndex(r => r.BookingId).IsUnique();
         builder.HasShopScopedReference(ReviewModel.ProfessionalEntityType, nameof(Review.ProfessionalId));
         builder.HasIndex(r => new { r.ShopId, r.Status, r.CreatedAt });
+
+        // The platform-wide moderation list by status, newest first (Phase 17).
+        builder.HasIndex(r => new { r.Status, r.CreatedAt });
         builder.HasIndex(r => new { r.ProfessionalId, r.Status, r.CreatedAt });
         builder.HasIndex(r => r.CustomerId);
 

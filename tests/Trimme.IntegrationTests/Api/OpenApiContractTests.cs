@@ -101,6 +101,10 @@ public sealed class OpenApiContractTests(PostgresFixture postgres)
             // Production refuses to start without these (see ProductionStartupTests).
             builder.UseSetting("PersonalData:LookupKey", Convert.ToBase64String(new byte[32]));
             builder.UseSetting("Email:Smtp:Host", "smtp.invalid");
+            builder.UseSetting("DataProtection:CertificatePath", KeyCertificate.Path);
+            builder.UseSetting("DataProtection:CertificatePassword", KeyCertificate.Password);
         }
+
+        private static readonly Identity.TestCertificates.File KeyCertificate = Identity.TestCertificates.Create("openapi");
     }
 }

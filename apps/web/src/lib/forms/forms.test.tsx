@@ -1,13 +1,21 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { toApiError } from '@/lib/api/problem';
 import { renderWithIntl } from '@/test/render';
 import { FormPhoneField, FormTextField, useValidationMessage, useZodForm } from './fields';
 import { applyProblemToForm, codeToMessageKey } from './problem';
-import { otpCode, parseValidationMessage, requiredText, saudiMobile, withParams } from './validation';
+import ar from '@messages/ar.json';
+import {
+  otpCode,
+  parseValidationMessage,
+  requiredText,
+  saudiMobile,
+  VALIDATION_KEY_LIST,
+  withParams,
+} from './validation';
 
 describe('validation schemas return message keys, never text', () => {
   it('requiredText', () => {
@@ -113,5 +121,11 @@ describe('form kit', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Could not save — review the highlighted fields and try again',
     );
+  });
+});
+
+describe('validation keys (Phase 17 bundle budget)', () => {
+  it('lists exactly the validation messages of the catalogue, which never ships with the forms', () => {
+    expect([...VALIDATION_KEY_LIST].sort()).toEqual(Object.keys(ar.validation).sort());
   });
 });

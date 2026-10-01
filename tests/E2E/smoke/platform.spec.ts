@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 test.describe('platform wiring', () => {
   test('the web origin proxies /api to the API (same-origin cookies)', async ({ request }) => {

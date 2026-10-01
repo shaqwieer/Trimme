@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { LegalPage } from '@/components/legal/LegalPage';
 import { asLocale } from '@/i18n/routing';
-import { localizedAlternates } from '@/lib/seo/site';
+import { localizedAlternates, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 /** Rendered per request so canonical URLs use the deployed origin (TRIMME_SITE_URL is runtime configuration). */
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,14 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/privacy'
     title: t('title'),
     description: t('description'),
     alternates: localizedAlternates('/privacy', locale),
+    openGraph: {
+      type: 'article',
+      title: t('title'),
+      description: t('description'),
+      locale: OG_LOCALE[locale],
+      url: `/${locale}/privacy`,
+      images: [OG_IMAGE],
+    },
   };
 }
 

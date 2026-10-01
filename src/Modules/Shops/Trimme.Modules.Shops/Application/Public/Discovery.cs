@@ -175,6 +175,7 @@ internal sealed class DiscoveryCatalog(
 
         var active = (await professionals.ListActiveProfilesAsync([.. shops.Select(s => s.Shop.Id)], cancellationToken))
             .Select(p => p.Id).ToHashSet();
+        var requests = new List<(ShopId Shop, SlotProbeRequest Request)>();
         foreach (var shop in shops)
         {
             result[shop.Shop.Id] = null;
@@ -184,15 +185,24 @@ internal sealed class DiscoveryCatalog(
             }
 
             var today = probe.Today(shop.Shop.TimeZone, Now);
-            foreach (var offer in shop.Offers.Probes)
+            requests.AddRange(shop.Offers.Probes.Select(offer => (shop.Shop.Id, new SlotProbeRequest(
+                shop.Shop.Id,
+                shop.Shop.TimeZone,
+                offer.Offer.DurationMinutes,
+                [.. offer.ProfessionalIds.Where(active.Contains)],
+                today,
+                today.AddDays(ProbeDays - 1),
+                1))));
+        }
+
+        // One batch for every shop and probe offer: a fixed number of queries, not a handful per shop (Phase 17).
+        var probed = await probe.ProbeManyAsync([.. requests.Select(r => r.Request)], cancellationToken);
+        for (var i = 0; i < requests.Count; i++)
+        {
+            var shopId = requests[i].Shop;
+            if (probed[i].Count > 0 && (result[shopId] is not { } best || probed[i][0].StartsAt < best))
             {
-                var eligible = offer.ProfessionalIds.Where(active.Contains).ToList();
-                var slots = await probe.ProbeAsync(
-                    shop.Shop.Id, shop.Shop.TimeZone, offer.Offer.DurationMinutes, eligible, today, today.AddDays(ProbeDays - 1), 1, cancellationToken);
-                if (slots.Count > 0 && (result[shop.Shop.Id] is not { } best || slots[0].StartsAt < best))
-                {
-                    result[shop.Shop.Id] = slots[0].StartsAt;
-                }
+                result[shopId] = probed[i][0].StartsAt;
             }
         }
 

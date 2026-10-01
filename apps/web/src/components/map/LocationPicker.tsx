@@ -208,7 +208,7 @@ export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibre
   return (
     <div className="flex flex-col gap-4" data-testid="location-picker">
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
-        <form role="search" onSubmit={onSearch} className="flex min-w-0 flex-1 items-end gap-2">
+        <form method="post" role="search" onSubmit={onSearch} className="flex min-w-0 flex-1 items-end gap-2">
           <TextField
             label={t('search')}
             hideLabel

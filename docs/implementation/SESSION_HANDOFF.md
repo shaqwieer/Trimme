@@ -1,104 +1,124 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-09-30 (Session 12: CI fix, then Phase 16)
+- **Updated:** 2026-10-01 (Session 13: Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Pushed: everything up to `786d8c8` (the Phase 14 and 15 commits and the 390 px CI fix). The user confirmed CI is green.
-  - Local only: the Phase 16 commit `c7f266c`, its review follow-up and the `docs:` commit (run `git log --oneline -4`).
-- **HEAD commit:** the `docs:` commit recording the Phase 16 hashes and the gitleaks `git` result, on top of the review follow-up and `c7f266c` (feat: phase 16 qr codes and attribution).
+  - Pushed: everything up to `3330ec0` (the D-116 plan change).
+  - Local only: the Phase 17 commit COMMIT and the `docs:` commit that records its hash (run `git log --oneline -3`).
+- **HEAD commit:** the `docs:` commit recording the Phase 17 hash and the gitleaks `git` result, on top of COMMIT (feat: phase 17 hardening).
 - **Working tree:** clean after the commit.
-- **Local stack: running, all in compose,** on a fresh volume from this session's last `down -v` + `up --build`, which built this session's final product code.
-  - Ports: web 3300, API 8080, DB 5434, Mailpit 8325. Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
-  - This volume has had two full E2E runs and the Linux Chromium run of four specs.
-- **Current phase:** 16 is complete. Phase 17 has not started.
-- **After Phase 16 (same session):**
-  - `160a423` fixed the booking countdown (calendar days in the shop time zone, so a visit two dates away no longer reads «غداً»). It is pushed, with everything before it.
-  - **Plan change (D-116):** Phase 18 was removed at the user's request. Phase 17 is the last phase; the platform total is 1,800 points.
-- **Phase score:** 100 / 100 (Phase 16).
-- **Last fully completed phase:** 16, QR codes and attribution analytics.
+- **Local stack: running, all in compose,** on the volume from this session's fresh `down -v` + `up --build`. After that, the API was rebuilt with the hub fix.
+  - Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
+  - Optional telemetry: `TRIMME_OTLP_ENDPOINT=http://host.docker.internal:4317` with a local collector (`docs/observability.md` §5).
+  - This volume has had five full E2E runs and the Linux Chromium run.
+- **Current phase:** 17 is complete; it is the last phase (D-116).
+- **Phase score:** 98 / 100 (Phase 17). 2 points are held back for the NVDA pass, which has not been run.
+- **Last fully completed phase:** 17, localization, SEO, accessibility, security, observability and performance.
 
-## Completed this session (Session 12)
-- **CI fix (before Phase 16).** Runs #20 and #21 failed only in `admin pages fit phone, tablet and desktop widths`. The fix `1e457e1` put `sr-only` on a wrapper instead of the chart `<table>`. It was confirmed in Linux Chromium: the old markup gives 9 px of overflow, the fix 0. It was pushed and CI is green.
-- **Phase 16** (`phases/phase-16-qr-analytics.md`, D-114, D-115):
-  - **Module `QrAnalytics`** (schema `qr`):
-    - `QrCodeLink` is shop-owned: an 8-character unique code, the shop or a same-shop barber as target (composite key), a label, active, never deleted.
-    - `QrCodeRoute` maps code → shop for anonymous scans.
-    - `QrVisit` holds the time, device class, language and a per-day keyed visitor hash; no IP address.
-  - **Public:**
-    - `GET /public/qr/{code}` resolves a code; a barber no longer active falls back to the shop.
-    - `POST /public/qr/{code}/visits` is called from the landing page. It sets the HttpOnly `trimme-qr` cookie (`Path=/api/v1`, 7 days), and a reload within 30 minutes reuses the visit.
-  - **Attribution.**
-    - Only the customer `POST /bookings` reads the cookie. `IQrAttributionResolver` checks the same shop and the 7-day window.
-    - The booking stores `qr_link_id` (composite FK to its shop's code) and `qr_visit_id`. The cookie is excluded from the idempotency hash.
-    - `ShopBookingResponse.ViaQr` makes shop and admin views show «رمز QR».
-  - **Admin:**
-    - `/admin/qr` has period tabs, KPIs, scans per shop, the print notes and privacy line, and the codes table: filter, PNG/SVG/PDF, A5 poster, switch off/on.
-    - The create dialog takes a shop or barber, and a label.
-    - Poster page `/admin/qr/[id]/poster`.
-    - Analytics: `/admin/qr/analytics?days|from&to`.
-  - **Shop:** `/shop/qr` and its poster page (`Shop.Qr.View`, owner, read-only).
-  - **Files:** QRCoder 1.6.0 (MIT) supplies the matrix. PNG uses its managed writer. SVG and a 70 mm vector PDF are drawn in-house. The A5 poster is a browser print page, so Arabic shaping is correct.
-  - **D-115.** The web proxy's matcher was broken, and unprefixed paths answered 404. `/q/{code}` and any old unprefixed link now redirect to a locale.
-  - **Seed:** `DemoQr` holds 6 codes (1 switched off) and 27 days of deterministic scans. Three demo bookings are credited (`a01`, `a24`, `a11`).
-  - **Tests:** U `QrDomainTests` 25; I `QrTests` 3; W `qr.test.tsx` 9; E `qr.spec.ts` 3. The QR pages were added to the admin and shop viewport tests.
-  - **Review follow-up (after `c7f266c`):**
-    - the create dialog loads the chosen shop's active barbers (a platform-wide page of 100 would miss shops);
-    - the privacy page gains a cookies section, and the QR privacy line no longer claims "no tracking";
-    - the scan-to-book E2E now scans as a guest, then signs up, then books in the wizard without scanning again, and checks the cookie survives.
-  - **Also:**
-    - the integration fixture's connect timeout is 60 s (rare connection-open timeouts under parallel load);
-    - the Phase 14 reschedule E2E race is fixed;
-    - `/admin/qr` is in the 390 px overflow test.
+## Completed this session
+Phase 17 (`phases/phase-17-hardening.md`, D-117 to D-123).
+
+**Security** (`docs/security.md`):
+- A per-request nonce CSP on every page (`proxy.ts`). Every page renders per request.
+  - Files and 404s get a script-less policy; COOP/CORP `same-origin`; HSTS for an HTTPS site.
+  - Every E2E test fails on a CSP violation. On its first run that guard found the API CSP blocking the Hangfire dashboard's inner pages, now fixed.
+- Uploads are re-encoded from their pixels with SkiaSharp (D-119): no metadata or appended payload survives, the EXIF orientation is applied, and the longer side is at most 2,560 px. Checked on Linux through compose.
+- The Data Protection key ring was stored unencrypted next to the numbers it protects. It is now wrapped with a mounted certificate, required outside Development and Testing, and certificate rotation is supported (D-120).
+- Rate limits: a 429 test for each of the nine policies, and a matrix test that pins which endpoints carry which policy.
+- Every JavaScript-handled form posts. ZAP had found credentials in the URL on a submit before hydration.
+- Scans: `pnpm audit` and the NuGet audit clean (both now in CI); gitleaks clean; ZAP 0 FAIL.
+- Phone-leak sweep: logs, spans, Hangfire, outbox and audit, all 0.
+
+**Observability** (`docs/observability.md`, D-118):
+- OpenTelemetry for ASP.NET Core, HttpClient, Npgsql/EF, runtime, Hangfire jobs (own filter) and outbox spans and metrics.
+- OTLP export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. A sampler drops parentless polling spans.
+- `/health/ready` reports `jobs` and `outbox`, Degraded at worst.
+
+**Localization, SEO, accessibility** (D-122, `docs/accessibility.md`):
+- `tests/E2E/audit` is the Playwright project `a11y`. The route audit covers 81 routes × 2 locales, each as the right role. Its first runs found:
+  - raw permission and audit keys;
+  - a hydration error on `/admin/qr`;
+  - missing `lang` on parts in the other language;
+  - MapLibre's English labels;
+  - three inverted chevrons.
+
+  All are fixed.
+- The keyboard pass found dialogs dropping focus on close, now fixed in the shared overlays, and touch targets under 44 px, which now grow under `pointer: coarse`.
+- SEO: sitemap index plus `/sitemaps/ar.xml` and `/sitemaps/en.xml`; a default Open Graph image; Open Graph on the legal pages; JSON-LD validated by the audit.
+- Plural review counts.
+
+**Performance** (`docs/performance.md`, D-123):
+- `QueryCountTests` found an N+1 in discovery's availability probe. It is batched (`ProbeManyAsync`, six queries for any number of shops).
+- Three indexes (migration `PerformanceIndexes`).
+- EF query-shape warnings throw in Testing.
+- Bundle budgets (`pnpm bundle:check`): form pages went from 412 to 320 KB gzip. The Zod import pulled every locale pack, and the validation module imported the whole catalogue.
+- The k6 smoke passes.
+- Lighthouse: a11y, best practices and SEO 100; LCP 3.5–3.8 s on simulated slow 4G (documented gap).
+- Public cache headers (D-121).
+
+**Visual review** of 25 screens against `design/reference`. Fixed:
+- the landing search bar collapsed at 390 px (`sm` is 390 px, D-041);
+- the booking back chevrons;
+- the step bar on step 1;
+- hidden map credits;
+- two admin button styles;
+- the suspended-shop badge colour;
+- pagination overflowing a phone once a list reaches six pages (found by audit run 4).
+
+The rest is recorded in DV-C11 and DV-T14.
+
+**Also:**
+- the SignalR hubs ignore a client abort during the handshake;
+- the axe helpers wait for the page title (a soft-refresh race);
+- CI runs the bundle budgets, the dependency audits and all Playwright projects.
 
 ## Verification evidence
 | Command | Result |
 |---|---|
-| Phase 15 re-validation | `NotificationsTests` 12/12 |
-| `dotnet build Trimme.slnx -c Release` | PASS, 0 warnings |
-| Unit / architecture / integration | PASS: 420 / 65 / 175 (integration ×3 consecutive runs after the timeout change) |
+| Phase 16 re-validation | `QrTests` 3/3, `qr.spec.ts` 3/3 |
+| `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
+| Unit / architecture / integration | PASS: 429 / 65 / 199 |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
-| OpenAPI regenerated, `pnpm openapi:check` | PASS (12 operations added, none removed) |
-| Web `format:check`, `lint`, `typecheck`, `test`, `build` | PASS: 366 web tests |
-| Fresh `down -v` + `up --build`, full suite `CI=1 --workers=2 --retries=0` | **72/72 ×2** on `c7f266c`; after the review follow-up, `qr.spec.ts` 3/3 ×2 and a fresh-stack full run 72/72; API log 0 × 5xx, 0 × 429 |
-| Linux Chromium container (`qr`, `admin-operations`, `shop-dashboard`, `public-discovery`) | 19/19, before and after the review follow-up |
-| No-transfer and R-NEG-08 grep gates; gitleaks `dir` and `git` | PASS (`git`: 62 commits after `c7f266c`, no leaks) |
+| Web `format:check`, `lint`, `typecheck`, `test`, `build`, `openapi:check`, `bundle:check` | PASS: 385 tests; 79 routes within budget |
+| Fresh `down -v` + `up --build`, `CI=1 --workers=2 --retries=0` | 85/85 ×2; 0 × 5xx, 0 × 429. After the hub fix: run 3 84/85 (axe `<title>` race, fixed); run 4 83/85 (pagination overflow at 390 px on a six-page list, fixed); run 5 **85/85** |
+| Linux Chromium: route audit, keyboard pass, `public-discovery`, `customer-booking` | 26/26 (`customer-booking` rerun after its seeded numbers' hourly OTP limit, which runs 4 and 5 had used) |
+| ZAP baseline; `pnpm audit`; NuGet audit; gitleaks `dir`/`git` | 0 FAIL; clean; clean; no leaks (GITLEAKS) |
+| Phone-leak sweep | 0 everywhere (logs, 50,601 spans, Hangfire, outbox, audit) |
+| k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
-- Created and applied locally: `20260930111559_Qr`, on the compose volume and from empty in the integration tests.
-  - It adds the `qr` schema: `qr_code_links`, `qr_code_routes`, `qr_visits`.
-  - It adds `bookings.qr_link_id` (composite FK) and `qr_visit_id`, with a filtered index.
+- Created and applied locally: `20261001082134_PerformanceIndexes` (index-only), on the compose volume and from empty in the integration tests.
 - No production migration was run.
 
 ## Decisions added
-- D-114: QR codes, scans and booking attribution (the model, route table, visits without IP, the cookie, attribution rules, analytics definitions, files and poster, shop read-only access, local compose caveat).
-- D-115: locale negotiation on every page path (the proxy matcher fix).
-- Design deviations: DV-A14 applied.
+- D-117: nonce CSP.
+- D-118: OpenTelemetry, health and logs.
+- D-119: upload re-encoding.
+- D-120: key ring encrypted at rest.
+- D-121: caching.
+- D-122: localization audit rules.
+- D-123: performance budgets and the batched probe.
+- Design deviations: DV-C11 and DV-T14 added; DV-S09 corrected to applied.
 
 ## Known issues or blockers
-- **Local visitor hashes collide.** In local compose, every browser shares the web container's address at the API. Production needs Nginx forwarding and `KnownNetworks` (Phase 17, D-094).
-- **EF warnings in the API log, not from Phase 16:**
-  - "Take without OrderBy" from Phase 15's notification sweep job;
-  - "multiple collection includes" from Phase 08's admin subscription read.
-  - Phase 17 can tidy both.
-- **Carried over:**
-  - production Nginx for `/hubs` and client IP forwarding;
-  - a backplane for the hubs;
-  - a dead-letter replay screen;
-  - at most five E2E runs per stack per hour for each demo number (OTP);
-  - "any professional" does not retry;
-  - packages across professionals (D-020);
-  - grace days and limits (D-077);
-  - oversized uploads through the rewrite.
+- **The NVDA pass is not run** (manual, `docs/accessibility.md` §3); 2 points are held back.
+- **LCP on simulated slow 4G is 3.5–3.8 s** (target 2.5 s; next steps in `docs/performance.md` §4).
+- **A contended booking race costs about 1 s** (deadlock path, D-089); a per-barber advisory lock is recommended (D-123).
+- **Native date and time inputs** follow the browser's language (DV-T14).
+- **Production setup is not in this repository** (D-116):
+  - Nginx with `X-Forwarded-For` overwrite, `KnownProxies`/`KnownNetworks` and `client_max_body_size 6m`;
+  - the certificate and the lookup key;
+  - SMTP, WhatsApp and map hosts;
+  - a shared rate-limit store before scaling out;
+  - staff MFA.
+
+  See `docs/security.md` §3 and §6.
+- **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-1. Push when the user asks: `git push origin main`. CI runs the 72-test E2E suite.
-2. Start Phase 17 (`phases/phase-17-hardening.md`). Re-validate first:
-   - `dotnet test --project tests/Trimme.IntegrationTests -c Release --filter-class "*QrTests"`
-   - `cd tests/E2E && E2E_BASE_URL=http://localhost:3300 E2E_MAILPIT_URL=http://localhost:8325 npx playwright test flows/qr.spec.ts`
-3. Phase 17 should include:
-   - the Nginx example forwarding the client address (QR visitor hashes, rate limits);
-   - cache headers for QR images;
-   - the two EF warnings above;
-   - D-115's side effect: page responses now carry `Set-Cookie: NEXT_LOCALE`, which blocks shared caching of public HTML.
+1. Push when the user asks: `git push origin main`. CI now runs about 85 Playwright tests, including the route audit, plus the bundle budgets and both audits; the stack job allows 45 minutes.
+2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
+3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.
 
 ## Files intentionally left modified
 - None.

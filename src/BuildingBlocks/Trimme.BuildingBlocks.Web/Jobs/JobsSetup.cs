@@ -5,6 +5,7 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -72,6 +73,12 @@ public static class JobsSetup
 
         if (options.ResolveEnabled(environment))
         {
+            // Hangfire's filters are process-wide; add the telemetry filter once (D-118).
+            if (!GlobalJobFilters.Filters.Any(filter => filter.Instance is JobTelemetryFilter))
+            {
+                GlobalJobFilters.Filters.Add(new JobTelemetryFilter());
+            }
+
             services.AddHangfireServer((serviceProvider, server) =>
             {
                 server.WorkerCount = Math.Clamp(options.WorkerCount, 1, 20);
@@ -82,6 +89,18 @@ public static class JobsSetup
         }
 
         return services;
+    }
+
+    /// <summary>
+    /// The Hangfire heartbeat and outbox lag checks (D-118). They report Degraded at worst, so they show up on the
+    /// readiness payload and in monitoring without ever taking the API out of rotation.
+    /// </summary>
+    public static IHealthChecksBuilder AddTrimmeJobsHealthChecks(this IHealthChecksBuilder builder, IConfiguration configuration, params string[] tags)
+    {
+        builder.Services.Configure<JobsHealthOptions>(configuration.GetSection(JobsHealthOptions.SectionName));
+        return builder
+            .AddCheck<HangfireHealthCheck>("jobs", HealthStatus.Degraded, tags)
+            .AddCheck<OutboxHealthCheck>("outbox", HealthStatus.Degraded, tags);
     }
 
     /// <summary>Registers <typeparamref name="TJob"/> to run on <paramref name="cron"/> (platform time zone).</summary>

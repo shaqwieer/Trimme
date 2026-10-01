@@ -28,7 +28,8 @@ const sizes: Record<ButtonSize, string> = {
   lg: 'min-h-[46px] px-5 rounded-button text-button',
   md: 'min-h-11 px-[18px] rounded-button text-[0.875rem]',
   sm: 'min-h-11 px-4 rounded-[11px] text-[0.84375rem]',
-  xs: 'min-h-9 px-3.5 rounded-field text-label',
+  // Compact for a mouse; at least 44px on touch screens (R-WEB-09, Phase 17).
+  xs: 'min-h-9 pointer-coarse:min-h-11 px-3.5 rounded-field text-label',
 };
 
 const iconSizes: Record<ButtonSize, string> = {
@@ -148,10 +149,10 @@ const iconButtonVariants = {
 const iconButtonSizes = {
   lg: 'size-[46px] rounded-button',
   md: 'size-11 rounded-button',
-  sm: 'size-9 rounded-field',
+  sm: 'size-9 pointer-coarse:size-11 rounded-field',
 } as const;
 
-/** Square icon-only button (46/44/36px). Always has an accessible label. */
+/** Square icon-only button (46/44/36px; 44px at least on touch screens). Always has an accessible label. */
 export function IconButton({
   icon,
   label,

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
@@ -57,7 +57,7 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
 
   return (
     <AuthCard title={t('title')} subtitle={t('subtitle')}>
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
           name="displayName"
@@ -69,10 +69,10 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
           <legend className="pb-2 text-label font-bold text-text-strong">{t('languageLabel')}</legend>
           <div className="grid grid-cols-2 gap-3">
             <RadioCard {...form.register('preferredLocale')} value="ar">
-              {t('arabic')}
+              <span lang="ar">{t('arabic')}</span>
             </RadioCard>
             <RadioCard {...form.register('preferredLocale')} value="en">
-              {t('english')}
+              <span lang="en">{t('english')}</span>
             </RadioCard>
           </div>
         </fieldset>

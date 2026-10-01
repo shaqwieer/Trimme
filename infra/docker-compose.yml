@@ -26,6 +26,9 @@ x-api-environment: &api-environment
   # Location picker geocoding (D-007): the built-in Riyadh gazetteer by default, so no automated run calls a third
   # party. Set TRIMME_GEOCODER=Nominatim for real OpenStreetMap lookups (light development use only, 1 request/s).
   Geocoding__Provider: ${TRIMME_GEOCODER:-Fake}
+  # OpenTelemetry (D-118): traces and metrics are exported only when an OTLP endpoint is set, for example
+  # TRIMME_OTLP_ENDPOINT=http://host.docker.internal:4317 with a local collector or Jaeger (docs/observability.md).
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${TRIMME_OTLP_ENDPOINT:-}
 
 services:
   postgres:

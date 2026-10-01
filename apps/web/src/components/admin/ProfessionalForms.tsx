@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { z } from 'zod';
+import * as z from 'zod';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/components/shops/ShopImagesEditor';
 import { Button } from '@/components/ui/Button';
 import { PhoneField, SelectField, Switch, TextareaField } from '@/components/ui/inputs';
@@ -185,6 +185,7 @@ export function CreateProfessionalForm({
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={onSubmit}
       className="flex max-w-[900px] flex-col gap-5 rounded-card border border-border bg-surface p-6 shadow-e1"
@@ -284,7 +285,13 @@ export function EditProfessionalForm({ professional }: { professional: Professio
   });
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5" data-testid="edit-professional-form">
+    <form
+      method="post"
+      noValidate
+      onSubmit={onSubmit}
+      className="flex flex-col gap-5"
+      data-testid="edit-professional-form"
+    >
       <ProfileFields control={form.control} />
       {saved && <InlineAlert tone="success" title={t('saved')} />}
       {failure && <InlineAlert tone="danger" title={failure} />}

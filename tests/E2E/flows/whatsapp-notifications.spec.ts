@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { type APIRequestContext, type BrowserContext, expect, type Page, test } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 15, flow E4 (R-NTF-02/03/04/06/07, R-AD-10, R-SD-08): an admin edits the separate Arabic customer and
@@ -25,6 +26,8 @@ async function staffSignIn(page: Page, email: string, password: string) {
 }
 
 async function expectNoSeriousAxeViolations(page: Page) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(

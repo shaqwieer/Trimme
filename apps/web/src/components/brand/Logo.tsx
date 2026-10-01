@@ -26,7 +26,8 @@ export function Logo({ height = 32, tone = 'default', priority = false, classNam
       alt={t('logoAlt')}
       width={width}
       height={height}
-      priority={priority}
+      loading={priority ? 'eager' : undefined}
+      fetchPriority={priority ? 'high' : undefined}
       data-tone={tone}
       className={cn(
         'block max-w-none select-none',

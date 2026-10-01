@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 
 namespace Trimme.BuildingBlocks.Web.Caching;
@@ -20,6 +22,12 @@ public static class PublicCache
 
     public static readonly TimeSpan Expiry = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// What browsers and shared caches may keep (Phase 17, D-121): short, because the eviction on save (D-093) cannot reach
+    /// them. Anonymous successful responses only; anything else keeps the API's <c>no-store</c>.
+    /// </summary>
+    public const string HttpCacheControl = "public, max-age=60, stale-while-revalidate=60";
+
     public static IServiceCollection AddTrimmePublicCache(this IServiceCollection services)
     {
         services.AddOutputCache(options => options.AddPolicy(
@@ -28,10 +36,32 @@ public static class PublicCache
         return services;
     }
 
-    /// <summary>Caches an anonymous public GET endpoint's successful responses (D-093).</summary>
+    /// <summary>
+    /// Caches an anonymous public GET endpoint's successful responses (D-093); browsers and shared caches may keep them
+    /// briefly (<see cref="HttpCacheControl"/>, set by the security headers middleware, also on a cache hit).
+    /// </summary>
     public static TBuilder CachePublicly<TBuilder>(this TBuilder builder)
         where TBuilder : IEndpointConventionBuilder =>
-        builder.CacheOutput(PolicyName);
+        builder.CacheOutput(PolicyName).WithMetadata(PublicReadMarker.Instance);
+
+    /// <summary>
+    /// True for an anonymous, successful answer of a <see cref="CachePublicly"/> endpoint that sets no cookie. Routing has
+    /// chosen the endpoint even when the output cache answers, so a replayed response is recognised too.
+    /// </summary>
+    public static bool MayBeKeptByHttpCaches(HttpContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.Response.StatusCode == StatusCodes.Status200OK
+            && context.User.Identity?.IsAuthenticated != true
+            && !context.Response.Headers.ContainsKey(HeaderNames.SetCookie)
+            && context.GetEndpoint()?.Metadata.GetMetadata<PublicReadMarker>() is not null;
+    }
+
+    /// <summary>Marks <see cref="CachePublicly"/> endpoints (the output cache's own metadata is not public).</summary>
+    private sealed class PublicReadMarker
+    {
+        public static readonly PublicReadMarker Instance = new();
+    }
 
     private sealed class OutputCacheEviction(IOutputCacheStore store) : IPublicContentChangeSink
     {
@@ -39,3 +69,4 @@ public static class PublicCache
             store.EvictByTagAsync(Tag, cancellationToken).AsTask();
     }
 }
+

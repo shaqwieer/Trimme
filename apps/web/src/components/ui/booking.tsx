@@ -181,7 +181,8 @@ export function SlotGrid({
 /** Booking progress (wizard): ordered list with the current step marked; mirrors in RTL naturally. */
 export function Stepper({ steps, current }: { steps: string[]; current: number }) {
   const t = useTranslations('ui.stepper');
-  const progress = steps.length > 1 ? (current / (steps.length - 1)) * 100 : 100;
+  // Step 1 of 5 fills a fifth; the last step fills the bar.
+  const progress = steps.length > 0 ? ((current + 1) / steps.length) * 100 : 100;
 
   return (
     <nav aria-label={t('label')} className="flex flex-col gap-3">

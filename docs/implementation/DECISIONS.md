@@ -282,7 +282,7 @@ Fix:
 - **Refresh cookie** `trimme-refresh`: an opaque 256-bit token (only its SHA-256 is stored), `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`, so it reaches only the refresh and sign-out endpoints. Session lifetime is absolute and a refresh never extends it: customers 30 days, staff 7 days.
 - Each session is one token family. A refresh consumes its token atomically (conditional update) and issues the successor. A consumed token presented again within **10 s** answers 409 `auth.refresh_race` (another tab refreshed, and cookies are shared) and revokes nothing. After that it is treated as theft and **revokes the family**.
 - Every authenticated request checks that its session is active and the account enabled (one indexed query in `OnValidatePrincipal`). Sign-out, revoke-one, revoke-others, password reset and reuse detection therefore take effect **immediately**.
-- Data Protection keys (cookie tickets, reset tokens, encrypted phones) live in `infra.data_protection_keys`, shared by every API container and surviving restarts. They are stored unencrypted at rest; wrapping them with a certificate is a Phase 17 item.
+- Data Protection keys (cookie tickets, reset tokens, encrypted phones) live in `infra.data_protection_keys`, shared by every API container and surviving restarts. Outside Development and Testing they are wrapped with a certificate since Phase 17 (D-120).
 - Web: Server Components cannot refresh, because the refresh cookie is never sent to page paths. `requireUser` therefore redirects to `/[locale]/auth/session?returnTo=…`, a client page that refreshes once, confirms with `/me` and returns, or else sends the user to the matching sign-in page. Client API calls refresh once on a 401 and retry. `returnTo` accepts only same-origin relative paths.
 
 ## D-053 — CSRF on every unsafe API request — Accepted (Phase 04)
@@ -1037,3 +1037,83 @@ The user asked to remove Phase 18 (full regression, deployment documentation and
   - the definition-of-done and traceability audit, the production-readiness checklist and the final implementation report (R-DOC-06).
 - **Risk to note for any future production setup:** `ReverseProxy:KnownProxies` is not configured. Behind a reverse proxy, the `auth` and `otp` rate limits would count every client as one address until it is set (see Phase 01 evidence and D-094).
 - The phase file `phases/phase-18-regression-handover.md` is deleted; git history keeps it.
+
+## D-117 — Content Security Policy with per-request nonces — Accepted (Phase 17; R-FND-14)
+- **Where.** `apps/web/src/proxy.ts` wraps the next-intl middleware. It creates a 128-bit nonce for each page request and sets the policy on the request (Next.js reads the nonce from it and stamps its own scripts) and on the response. The policy is built by `lib/security/csp.ts`.
+- **Policy.**
+  - `script-src 'self' 'nonce-…' 'strict-dynamic'`: no inline script without the nonce and no `eval` in production. `next dev` adds `'unsafe-eval'` and `ws:`.
+  - `style-src 'self' 'unsafe-inline'`. React renders `style` attributes, Radix's scroll lock injects a `<style>` element at runtime, and MapLibre styles its markers; none of these can carry a nonce. A style injection cannot run code.
+  - `img-src` and `connect-src` add the map tile origin, taken from the same `NEXT_PUBLIC_MAP_TILE_URL` the client uses (D-007); a `{s}` subdomain becomes `*`. `worker-src 'self' blob:` is for MapLibre's worker.
+  - `object-src 'none'`, `frame-src 'none'`, `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'`; `upgrade-insecure-requests` only when `TRIMME_SITE_URL` is HTTPS.
+  - JSON-LD blocks are data, not script, and need no nonce.
+- **Every page is rendered per request** (`await connection()` in the locale layout). A prerendered page would carry no nonce and its scripts would be blocked. Only `/forgot-password` was prerendered before. Public HTML therefore cannot be shared-cached; caching applies to the API's anonymous reads, media, QR files and static assets (D-121).
+- **Test.** Every E2E spec imports `test` from `tests/E2E/support/fixtures.ts`, which fails the test on any CSP violation in any page of any context. On its first run it found a real defect: the API's strict `default-src 'none'` reached the inner pages of the Hangfire dashboard (`/api/ops/jobs/recurring`). The dashboard's `Map` moves its prefix into `PathBase` before the response starts, so the path check in `OnStarting` no longer matched. The middleware now decides on the path as it arrives, and `JobsDashboard_IsOnlyForAdminsWithThePermission` checks the exact policy on an inner page.
+
+## D-118 — OpenTelemetry, background-work health and log conventions — Accepted (Phase 17)
+- **Packages.** Stable only: OpenTelemetry 1.19 (hosting, OTLP exporter, ASP.NET Core, HttpClient and runtime instrumentation) and `Npgsql.OpenTelemetry` 10.0.3. EF Core and Hangfire instrumentation exist only as prereleases. Database spans therefore come from Npgsql, which carries every EF Core command, and job spans from TRIMME's own Hangfire server filter (`JobTelemetryFilter`, added once to the process-wide filters).
+- **Spans of our own.** Source `Trimme`: `job <Type>.<Method>` per job run and `outbox <type>` per delivered message, so consumers' commands and provider calls share a trace. Meter `Trimme`: `trimme.jobs.executed`/`duration` and `trimme.outbox.processed`/`failures`/`delivery_lag`. Tags are names, types and outcomes, never job arguments, payloads or personal data.
+- **Export by configuration only.** The OTLP exporter is added only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (compose passes `TRIMME_OTLP_ENDPOINT`). The other standard variables work as usual.
+- **Sampling.** The sampler is parent-based. Roots are kept at `OTEL_TRACES_SAMPLER_ARG` (default 1), except root **client** spans, which are dropped. Those are background polling: the outbox loop every two seconds, and Hangfire's queue and heartbeat. In a local run with a collector they were about 6 in 7 spans. Npgsql sets its tags after sampling, so the sampler cannot test `db.system`.
+- **Privacy.** ASP.NET Core instrumentation redacts query string values (`?search=Redacted`); Npgsql records SQL with placeholders, never parameter values; exceptions are not recorded as span events. `Requests_AreTracedWithTheirDatabaseCommands_AndNoSpanCarriesAPhoneNumber` checks every span of an OTP sign-in and an admin search by phone. The local collector run (Phase 17 evidence) found no phone number in any attribute of 3,838 spans.
+- **Health.** `/health/ready` adds `jobs` (a Hangfire server heartbeat within 120 s) and `outbox` (the oldest due message at most 300 s old, and none dead-lettered). Both report **Degraded at worst**, which still answers 200: stalled background work raises an alert but never takes the API out of rotation or stops the compose web container from starting. Thresholds: `Jobs:Health:*`.
+- **Logs.** Field conventions are in `docs/observability.md`. Serilog now carries `@tr`/`@sp` from the current activity, so log lines join their traces.
+
+## D-119 — Uploads are re-encoded from their pixels — Accepted (Phase 17; R-FND-14, refines D-064)
+- **Order of checks** (`MediaStore.AddImage`):
+  1. size (5 MB);
+  2. type from magic bytes and pixel size from the headers (`ImageSanitizer`), with nothing decoded yet;
+  3. the decompression-bomb guard on those header numbers (8,000 px a side, 40 MP);
+  4. the minimum size per purpose;
+  5. **re-encoding** (`ImageReencoder`, SkiaSharp).
+- **Re-encoding.** The file is decoded and a fresh file is encoded from the pixels. Nothing else survives: metadata (EXIF and GPS, XMP, text chunks), anything appended or embedded (an image that is also an HTML page), and malformed structures aimed at viewers' decoders.
+  - A file that does not decode, decodes only partly, or whose codec disagrees with its header about format or size is refused as `validation.image_type`.
+  - The EXIF orientation is applied to the pixels, because the tag that carried it is gone. Before this, phone photos taken upright could be shown sideways.
+  - The longer side is capped at 2,560 px, which bounds what PostgreSQL stores. Large JPEGs are decoded at 1/2, 1/4 or 1/8 scale when that still covers 2,560 px, which also bounds memory.
+  - The format is kept: JPEG and WebP at quality 85, PNG lossless.
+- **Library.** SkiaSharp 4.153 (MIT). ImageSharp's split licence would need a commercial licence for this product. `SkiaSharp.NativeAssets.Linux.NoDependencies` runs on the Ubuntu 24.04 `aspnet:10.0` image with no system packages. This was proven by a real upload through compose: a 4000×3000 JPEG with orientation 6, GPS EXIF and an appended `<script>` was stored as 1920×2560, upright, with no EXIF, GPS or payload, and 30 KB instead of 190 KB.
+- **Existing images** are not rewritten. They were already stripped of metadata on upload (D-064).
+
+## D-120 — The Data Protection key ring is encrypted at rest — Accepted (Phase 17; completes D-026)
+- **Problem.** The key ring lives in `infra.data_protection_keys` (D-052), the same database as the numbers it encrypts. Until now the keys were stored in plain XML, so a database copy alone was enough to decrypt every customer and professional number.
+- **Decision.** Outside Development and Testing, the API refuses to start unless `DataProtection:CertificatePath` (a PKCS#12 file, mounted as a secret) is configured, with `DataProtection:CertificatePassword` if it has one. New keys are wrapped with that certificate's public key; unwrapping needs its private key, which never enters the database.
+- **Rotation.** Configure the new certificate as current and list the old one under `DataProtection:PreviousCertificates:N:Path|Password`. Existing keys stay readable; new keys use the new certificate. Remove the old certificate only once every key it wrapped has expired (90 days by default) and been replaced. `KeyEncryptionTests` proves that keys are wrapped in the database, that a rotated host reads old data, and that a host without the old certificate cannot. The full procedure, including the lookup HMAC key and the other secrets, is in `docs/security.md`.
+- **Development and Testing** keep unwrapped keys and need no certificate. Keys written before this change remain unwrapped until they expire, which is acceptable because production has no data yet.
+- The certificate files are read while services are registered, and only when a path is configured, so EF tooling (Development) still does no I/O when it builds the host.
+
+## D-121 — What is cached where — Accepted (Phase 17; spec §21, completes D-093 and D-115)
+- **Pages are not shared-cached.** Each page carries a per-request CSP nonce (D-117) and is rendered per request, so the `NEXT_LOCALE` cookie (D-115) changes nothing here. A CDN in front of the web app should pass pages through.
+- **Anonymous public API reads** (the `CachePublicly` endpoints of D-093) keep the in-memory output cache, and now answer `Cache-Control: public, max-age=60, stale-while-revalidate=60`. This applies to a 200 without a cookie for an anonymous caller, fresh or replayed from the output cache. The decision is made in `SecurityHeadersMiddleware` from an endpoint marker, because a cache hit skips the endpoint. The lifetime is short because the eviction on save cannot reach browsers or proxies. Signed-in callers and time-dependent endpoints (status, next times, search, availability) keep `no-store`. Test: `PublicResponses_AreCachedForAnonymousReaders_AndEvictedByAnyPublicContentSave`.
+- **Media** stays `public, max-age=31536000, immutable` with an ETag (D-064: a new upload gets a new id).
+- **Static files.** Next.js serves `/_next/static` as immutable. The `/brand/*` images get `public, max-age=86400, stale-while-revalidate=604800`.
+- **QR files** are admin- and owner-only (D-114), so they stay `no-store`.
+
+## D-122 — Localization audit rules — Accepted (Phase 17; R-WEB-05, R-WEB-09)
+- **The route audit is the gate.** `tests/E2E/audit` visits every page route (81) as the role that can open it, in both locales. It fails on: a raw message key; `MISSING_MESSAGE`; a UI string that exists only in the other locale's catalogue; Arabic-Indic digits in English; a wrong `lang`/`dir`; `noindex` wrongly present or missing; canonical, hreflang or `og:image` missing on indexable pages; any serious or critical axe finding (WCAG 2.0/2.1/2.2 A and AA); a page error; horizontal overflow at 390 px (measured on a page loaded at that width); and, through the fixture, any CSP violation.
+- **Language of parts (WCAG 3.1.2).** Text in the other language carries `lang`, and the audit skips it:
+  - language names (the switcher, the profile choice);
+  - an Arabic-only description shown in English, and the reverse (`localizedText` and `langIfOther`);
+  - WhatsApp template and message bodies (their own locale);
+  - audit summaries.
+
+  Short Arabic-only *names* (shops, services, people) are left unmarked. They are data in proper-noun position, and marking every name would add a wrapper around 112 call sites for little gain.
+- **Audit summaries are an English technical record** written when the action happens: field names, `Draft → Active`, versions. They are shown with `lang="en"` in an isolating `<bdi>` rather than translated. The localized part of an entry is its action label, which now exists for every recorded action, including QR and WhatsApp template and dispatch actions.
+- **Guard tests.**
+  - `permissions.test.ts`: every platform permission in `Permissions.cs` has a label and an area label in both catalogues. The `Admin.Jobs.View` label had been missing since Phase 15.
+  - `forms.test.tsx`: the validation key list equals the catalogue's.
+  - `forms.test.ts`: forms state their method; JavaScript forms post.
+- **Directional icons.** `chevR` means forward in the reading direction and `chevL` back; both mirror in RTL. Three uses were inverted and are fixed: the shop calendar's previous/next, the account rows, and the "new booking" card.
+- **Pagination on a phone.** Below `md`, `Pagination` shows only previous, the current page and next; the summary line gives the range and total. Run 4 of the route audit found the full window overflowing a 390 px phone by 20 px once the dispatch log on the long-lived volume grew to six pages. Seven numbered cells plus two arrows need about 440 px, so every paginated list was exposed.
+- **Exception list.** A reviewed data string that equals a catalogue string (the seeded owner's display name «مالك المحل» on the activity log) is listed in the audit spec with its reason.
+
+## D-123 — Performance budgets and the batched availability probe — Accepted (Phase 17; spec §21)
+- **N+1 is a test, not a review note.** `QueryCountTests` counts database commands per request with an EF Core interceptor on the demo data:
+  - every paged endpoint in the OpenAPI document must not need a command per extra row (a page of 1 against a page of 50);
+  - the hot reads have command budgets;
+  - the batched probe must cost the same for one shop as for many.
+  In the Testing environment, EF Core's cartesian-include and unordered `Take`/`First` warnings throw.
+- **`ISlotProbe.ProbeManyAsync`.** Discovery and the shop status page probe all their shops and offers in one batch. `ScheduleLoader` reads the batch in six queries (`IN` lists over the union of the windows), and the single-shop path goes through the same loader. `IBookedTimeReader` gained a multi-shop overload.
+- **Indexes** (migration `PerformanceIndexes`, index-only): `bookings (starts_at)`, `users (user_type, created_at)`, `reviews (status, created_at)`, for the platform-wide admin reads that had none.
+- **Bundle budgets** per route group, checked by `pnpm bundle:check` from the build manifests. Zod is imported as a namespace (`import * as z`), so unused parts such as the locale packs are dropped, and validation keys are listed instead of read from the catalogue.
+- **Lighthouse** is recorded, not gated: its scores vary between runs and need Chrome. Accessibility, best practices and SEO are 100 on the indexable pages. LCP on simulated slow 4G is 3.5–3.8 s, against a target of 2.5 s; `docs/performance.md` lists the remaining causes and next steps.
+- **k6 smoke** (`tests/load/smoke.js`, local and manual): availability p95 34 ms with 0 errors at a visitor's pace; an uncontended booking p95 29 ms.
+- **Contended bookings.** Overlapping bookings of one barber at the same moment are decided by the exclusion constraint, through a deadlock that PostgreSQL breaks after 1 s (D-089). A per-barber advisory lock would make the loser fail in milliseconds; it is documented, not implemented, for v1.

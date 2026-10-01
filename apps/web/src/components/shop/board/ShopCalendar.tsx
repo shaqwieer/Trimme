@@ -140,7 +140,7 @@ export function ShopCalendar({
         />
         <div className="flex items-center gap-1">
           <IconButton
-            icon="chevR"
+            icon="chevL"
             label={t('previous')}
             variant="outline"
             onClick={() => update({ date: addDays(date, -step) })}
@@ -153,7 +153,7 @@ export function ShopCalendar({
             {title}
           </h2>
           <IconButton
-            icon="chevL"
+            icon="chevR"
             label={t('next')}
             variant="outline"
             onClick={() => update({ date: addDays(date, step) })}

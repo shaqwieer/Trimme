@@ -35,6 +35,26 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), payment=(), geolocation=(self)' },
+          // Isolates the window from cross-origin openers. No COEP: it would block the map's cross-origin tiles.
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
+        ],
+      },
+      {
+        // Brand images (logo, share image, hero) are not content-hashed but change rarely (D-121).
+        source: '/brand/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        // Pages get a per-request nonce policy from the proxy (D-117); paths with a file extension skip the proxy, so
+        // files, and the 404 page for a missing file, get a fixed policy that runs no script.
+        source: '/:file((?!_next/).*\.[^/]*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value:
+              "default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          },
         ],
       },
     ];

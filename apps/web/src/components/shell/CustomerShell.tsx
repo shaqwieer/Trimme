@@ -21,7 +21,7 @@ export function CustomerShell({ children, bell }: { children: ReactNode; bell?: 
       </a>
       <header className="sticky top-0 z-20 border-b border-border-subtle bg-header-glass backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 md:px-6 xl:px-10">
-          <Link href="/" className="rounded-field">
+          <Link href="/" className="inline-flex min-h-11 items-center rounded-field">
             <Logo height={34} priority />
           </Link>
           <CustomerNav placement="header" />

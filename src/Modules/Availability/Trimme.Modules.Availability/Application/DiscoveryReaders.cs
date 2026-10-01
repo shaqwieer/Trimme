@@ -81,12 +81,42 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
         var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
         var (shop, calendars) = await loader.CalendarsAsync(shopId, zone, professionalIds, from, to, cancellationToken, ignoreBookingId);
         var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(from, to, durationMinutes, clock.GetUtcNow(), policy));
-        return
-        [
-            .. slots.Take(maxSlots).Select(s => new ProbedSlot(
-                s.StartsAt, s.Date, s.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture), s.Professionals, s.Period.ToString())),
-        ];
+        return [.. slots.Take(maxSlots).Select(Probed)];
+    }
+
+    public async Task<IReadOnlyList<IReadOnlyList<ProbedSlot>>> ProbeManyAsync(
+        IReadOnlyList<SlotProbeRequest> requests, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        var results = new IReadOnlyList<ProbedSlot>[requests.Count];
+        Array.Fill(results, []);
+        var runnable = requests.Select((request, index) => (Request: request, Index: index))
+            .Where(x => x.Request.ProfessionalIds.Count > 0 && x.Request.MaxSlots > 0 && x.Request.To >= x.Request.From)
+            .ToList();
+        if (runnable.Count == 0)
+        {
+            return results;
+        }
+
+        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
+        var loaded = await loader.CalendarsAsync(
+            [.. runnable.Select(x => new CalendarRequest(
+                x.Request.ShopId, ScheduleLoader.Zone(x.Request.TimeZone), x.Request.ProfessionalIds, x.Request.From, x.Request.To))],
+            cancellationToken);
+        var now = clock.GetUtcNow();
+        for (var i = 0; i < runnable.Count; i++)
+        {
+            var (request, index) = runnable[i];
+            var (shop, calendars) = loaded[i];
+            var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(request.From, request.To, request.DurationMinutes, now, policy));
+            results[index] = [.. slots.Take(request.MaxSlots).Select(Probed)];
+        }
+
+        return results;
     }
 
     public DateOnly Today(string timeZone, DateTimeOffset now) => new ShopClock(ScheduleLoader.Zone(timeZone)).Date(now);
+
+    private static ProbedSlot Probed(AvailableSlot slot) =>
+        new(slot.StartsAt, slot.Date, slot.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture), slot.Professionals, slot.Period.ToString());
 }

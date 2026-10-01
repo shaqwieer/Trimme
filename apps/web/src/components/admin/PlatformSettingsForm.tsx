@@ -176,6 +176,7 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={(e) => void submit(e)}
       className="flex flex-col gap-5"

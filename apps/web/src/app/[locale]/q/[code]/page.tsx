@@ -236,7 +236,8 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
               src={shop.coverUrl}
               alt=""
               fill
-              priority
+              loading="eager"
+              fetchPriority="high"
               sizes="(min-width: 720px) 720px, 100vw"
               className="object-cover"
             />

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { RadioCard } from '@/components/ui/selection';
 import { ConfirmDialog } from '@/components/ui/overlays';
@@ -63,6 +63,7 @@ export function CreateShopForm() {
 
   return (
     <form
+      method="post"
       noValidate
       onSubmit={onSubmit}
       className="flex max-w-[560px] flex-col gap-5 rounded-card border border-border bg-surface p-6 shadow-e1"
@@ -197,7 +198,7 @@ export function InviteShopUserForm({ shopId }: { shopId: string }) {
   });
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
       <FormTextField
         control={form.control}
         name="email"

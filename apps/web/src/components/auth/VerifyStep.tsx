@@ -133,6 +133,7 @@ export function VerifyStep({ returnTo }: { returnTo?: string }) {
       }
     >
       <form
+        method="post"
         noValidate
         className="flex flex-col gap-5"
         onSubmit={(event) => {

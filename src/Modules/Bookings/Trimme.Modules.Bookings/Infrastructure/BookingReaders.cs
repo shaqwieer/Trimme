@@ -26,6 +26,18 @@ internal sealed class BookedTimeReader(TrimmeDbContext db) : IBookedTimeReader
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<BusyTime>> GetBusyAsync(
+        IReadOnlyCollection<ShopId> shopIds, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    {
+        var shops = shopIds.ToArray();
+        var ids = professionalIds.ToArray();
+        var active = BookingRules.Active.ToArray();
+        return await db.Set<Booking>().AsNoTracking()
+            .Where(b => shops.Contains(b.ShopId) && active.Contains(b.Status) && ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.EndsAt > from)
+            .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<BookedAppointment>> GetAppointmentsAsync(
         ShopId shopId, ProfessionalId? professionalId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
         await Active(shopId)

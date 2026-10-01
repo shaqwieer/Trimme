@@ -24,12 +24,13 @@ import { RatingStars } from '@/components/ui/Rating';
 import { InlineAlert, Skeleton } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { getPublicApi } from '@/lib/api/public';
+import { mayBeSignedIn } from '@/lib/auth/session.server';
 import { optional } from '@/lib/api/safe';
 import { openingLabel } from '@/lib/discovery/opening';
 import { bookHref, directionsUrl, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatPrice, formatTime } from '@/lib/i18n/format';
 import { aggregateRatingLd, breadcrumbLd, openingHoursLd } from '@/lib/seo/jsonld';
-import { absoluteUrl, localizedAlternates, NO_INDEX, OG_LOCALE } from '@/lib/seo/site';
+import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 const TABS = ['services', 'professionals', 'reviews', 'about'] as const;
 
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/shops/[s
   const name = shopName(shop, locale);
   const where = area(shop, locale);
   const description = where ? t('description', { name, area: where }) : t('descriptionNoArea', { name });
-  const image = shop.coverUrl ?? shop.logoUrl ?? '/brand/trimme-logo.png';
+  const image = shop.coverUrl ?? shop.logoUrl ?? OG_IMAGE.url;
   return {
     title: name,
     description,
@@ -162,6 +163,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const reviewsPage = Math.max(1, Number(typeof query.reviewsPage === 'string' ? query.reviewsPage : 1) || 1);
   const t = await getTranslations({ locale, namespace: 'shopPage' });
   const api = await getPublicApi();
+  const signedIn = await mayBeSignedIn();
   const path = { params: { path: { slug: shop.slug } } };
   const [services, packages, professionals, reviews] = await Promise.all([
     optional(() => api.GET('/api/v1/public/shops/{slug}/services', path), 'services'),
@@ -232,7 +234,8 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
               src={shop.coverUrl}
               alt=""
               fill
-              priority
+              loading="eager"
+              fetchPriority="high"
               sizes="(min-width: 960px) 960px, 100vw"
               className="object-cover"
             />
@@ -280,7 +283,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
                 )}
               </h1>
               {shop.listedInDiscovery && (
-                <FavoriteButton target={{ kind: 'shop', id: shop.id }} name={name} />
+                <FavoriteButton target={{ kind: 'shop', id: shop.id }} name={name} mayBeSignedIn={signedIn} />
               )}
             </div>
             <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">

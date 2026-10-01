@@ -59,3 +59,28 @@ describe('public_pages_have_hreflang_and_canonical (R-WEB-10)', () => {
     expect(localizedAlternates('/', 'ar').canonical).toBe('/ar');
   });
 });
+
+describe('sitemaps (R-WEB-10, Phase 17)', () => {
+  it('the index lists one sitemap per locale, absolute', async () => {
+    const { sitemapFiles, sitemapIndexXml } = await import('./sitemap');
+    const index = sitemapIndexXml(sitemapFiles());
+    expect(index).toContain('<sitemapindex');
+    expect(index).toContain('/sitemaps/ar.xml</loc>');
+    expect(index).toContain('/sitemaps/en.xml</loc>');
+  });
+
+  it('a locale sitemap lists that locale with every alternate and the Arabic x-default, escaped', async () => {
+    const { localeSitemapXml } = await import('./sitemap');
+    const xml = localeSitemapXml('en', [
+      { path: '/' },
+      { path: '/shops/a&b', lastModified: '2026-09-30T10:00:00Z' },
+    ]);
+    expect(xml).toContain('<loc>http://localhost:3000/en</loc>');
+    expect(xml).toContain(
+      '<loc>http://localhost:3000/en/shops/a&amp;b</loc><lastmod>2026-09-30T10:00:00Z</lastmod>',
+    );
+    expect(xml).toContain('hreflang="ar" href="http://localhost:3000/ar/shops/a&amp;b"');
+    expect(xml).toContain('hreflang="x-default" href="http://localhost:3000/ar"');
+    expect(xml).not.toContain('a&b');
+  });
+});

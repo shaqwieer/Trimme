@@ -191,15 +191,16 @@ internal sealed class GetPublicShopStatusHandler(
                 .Where(x => x.Offer is not null)
                 .GroupBy(x => x.Offer!.Offer.Id);
             var today = probe.Today(shop.TimeZone, now);
-            foreach (var group in chosen)
+            var groups = chosen.Select(group => (Offer: group.First().Offer!, Who: group.Select(x => x.Id).ToList())).ToList();
+            var probed = await probe.ProbeManyAsync(
+                [.. groups.Select(g => new SlotProbeRequest(
+                    shop.Id, shop.TimeZone, g.Offer.Offer.DurationMinutes, g.Who, today, today.AddDays(DiscoveryCatalog.ProbeDays - 1), MaxProbeSlots))],
+                cancellationToken);
+            for (var i = 0; i < groups.Count; i++)
             {
-                var offer = group.First().Offer!;
-                var who = group.Select(x => x.Id).ToList();
-                var slots = await probe.ProbeAsync(
-                    shop.Id, shop.TimeZone, offer.Offer.DurationMinutes, who, today, today.AddDays(DiscoveryCatalog.ProbeDays - 1), MaxProbeSlots, cancellationToken);
-                foreach (var professional in who)
+                foreach (var professional in groups[i].Who)
                 {
-                    next[professional] = slots.FirstOrDefault(s => s.ProfessionalIds.Contains(professional))?.StartsAt;
+                    next[professional] = probed[i].FirstOrDefault(s => s.ProfessionalIds.Contains(professional))?.StartsAt;
                 }
             }
         }

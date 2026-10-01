@@ -18,7 +18,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-S06 | Reminder **3 hours** before (and a day-before reminder in notifications) | 1568, 1628, 3574, 4555, 4113 | §16 30 min | Setting `ReminderOffsetMinutes` (default 30) for customer and professional; copy reads the configured value. | 15 | **applied** (Phase 15): reminder jobs at start − `ReminderOffsetMinutes` for both audiences; the `time_remaining` placeholder renders the configured value (D-111) |
 | DV-S07 | Unavailable slots rendered disabled with reason toasts | 3928–3937, 4000 | §11 only bookable slots | API returns only bookable slots; UI groups by period and shows an empty-period message. | 9/12 | API **applied** (Phase 09: slots carry a period; D-082); UI in Phase 12 |
 | DV-S08 | Shop drawer offers all status actions for every booking; no "Confirm" action; filter chips omit Arrived/No-show | 4299–4305, 2371–2376, 2389, 4262 | §11 state machine | Render only API `allowedTransitions`; add Confirm; cancel with reason dialog; all status chips. | 13 | **applied** (Phase 10 API, Phase 13 UI): the drawer shows only `allowedTransitions` (Confirm included when pending), cancelling asks for a reason, every status has a chip with its count (cancellations together) |
-| DV-S09 | Single "ملغي" status | 3636, 4299 | §11 | `CancelledByCustomer` / `CancelledByShop` (shared badge colour, distinct sub-labels). | 10 | planned |
+| DV-S09 | Single "ملغي" status | 3636, 4299 | §11 | `CancelledByCustomer` / `CancelledByShop` (shared badge colour, distinct sub-labels). | 10, 13 | applied (shop board chips «ألغاه المحل» / «ألغاه العميل», Phase 13; status corrected in the Phase 17 visual review) |
 | DV-S10 | "Cancellation request" after cutoff reviewed by shop (copy only) | 1779, 3501 | §11 | No online cancel after cutoff (setting); show policy + shop contact (D-015). | 12 | API **applied** (Phase 10); UI **applied** (Phase 12): after the cutoff the booking page hides cancel/reschedule, says the online window has closed and shows the shop's phone (web test `BookingPolicy`) |
 | DV-S11 | Home "popular services" tiles show a price with no shop | 1040–1048, 3755 | §10 | Category shortcuts with "from X ر.س" aggregated from nearby shops. | 11 | **applied** (Phase 11): `/discover` tiles are platform categories with the lowest price among nearby listed shops and the shop count (`GET /public/categories/popular`, D-091) |
 | DV-S12 | Packages modelled as a single service row | 3505, 3844, 1398 | §10 | Packages with items, explicit price/duration, shown in a packages section on the shop page (D-020). | 7/11 | **applied** (Phase 07 dashboards; Phase 11 shop page: a "الباقات" section under the services with the items, price, duration and a booking link) |
@@ -85,6 +85,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-T11 | s-hours closed days drawn at 55% opacity, so their grey text drops below AA (axe colour-contrast) | Closed days keep full opacity; the switch and "مغلق" in secondary text carry the state | 9 — **applied** |
 | DV-T12 | Secondary text `#647484` on the grey note boxes (`bg-muted`, `bg-subtle`) is 4.35–4.38:1 | `text-secondary` → `#5F6F80` (D-039); `tokens.test.ts` checks the grey surfaces | 13 — **applied** |
 | DV-T13 | Landing "how it works" step numerals `01–03` in `brand-150` on the tile are 1.18:1 (axe checks them even when hidden from assistive tech) | `brand-600` (4.10:1; the numerals are 32 px bold, so 3:1 applies) | 13 CI follow-up — **applied** |
+| DV-T14 | Dates and times are drawn as Arabic text («٩:٠٠ ص», «١ أكتوبر») in the filters and schedule fields | The shop and admin date-range filters, the walk-in day and the schedule times are native `<input type="date|time">`. They are accessible and keyboard-operable everywhere, but the browser draws their value in its own UI language: an Arabic browser shows Arabic, an English one `10/01/2026`, `10:00 AM`. Every value the app itself prints follows DV-T03. Custom localized pickers are a later polish item | 17 | accepted (Phase 17 visual review) |
 
 ## DV-C — Copy/data inconsistencies not replicated
 
@@ -140,3 +141,29 @@ DV-C10 — WhatsApp and notifications (Phase 15):
 | DV-D01 | "طلب تواصل" contact mediation | D-023 deferred |
 | DV-D02 | Shop daily WhatsApp summary | D-024 deferred |
 | DV-D03 | Drag-and-drop reordering of shop services and packages | Deferred (D-071): keyboard move up/down buttons with an `aria-live` announcement cover reordering; drag can be added on the same `PUT …/order` endpoint |
+
+DV-C11 — Phase 17 visual review (all 25 product screens against `design/reference`, 390 and 1440):
+- **Fixed.**
+  - The landing search bar collapsed on a 390 px phone (the text field was 0 px wide), because `sm` is 390 px here (D-041). It now switches to a row at `md`.
+  - The booking wizard's back buttons pointed forward.
+  - The step bar was empty on step 1; step *n* of *m* now fills *n/m*.
+  - The map credits sat under the selected-shop card and the picker hint; they are at the top of the map now.
+  - Review counts use Arabic and English plural forms («٤ تقييمات», «268 تقييماً», «1 review»).
+  - Admin search buttons used two styles; there is now one outlined style.
+  - A suspended shop was red on the shops list but grey for subscriptions; it is grey (neutral) in both, as drawn.
+- **Accepted, as built since earlier phases.**
+  - **Shop and admin header.** The global header search is not built; search lives on the lists that have it (appointments, customers, shops, bookings). The sidebar keeps short labels («التقويم», «المواعيد»). The sidebar footer shows the shop or role and a sign-out button instead of the design's account card.
+  - **Customer screens.**
+    - Ratings show five stars with the count, rather than one star.
+    - The search map sits inside the page with a list/map switch, rather than full-bleed.
+    - The shop page stacks cover, identity and tabs, without the overlapping sheet.
+    - The bookings list uses underline tabs.
+    - The customer's own number is masked on the profile (privacy by default, the same as everywhere else).
+  - **Landing.** It uses a real photograph and its own copy (DV-C03 otherwise holds). The public header has section anchors on the landing page and Shops and Nearby elsewhere.
+  - **Shop schedule.** Days take several opening periods (the Phase 09 schedule editor, D-082), so the rows are taller than the design's one-line rows. Time off is drawn in amber on the calendar.
+  - **Admin.**
+    - The shops list shows name, link, status and creation date, with search, rather than the design's district, barber count and subscription columns; those live on each shop's page.
+    - The subscriptions KPI row shows counts per status without the revenue tile (no payments in v1).
+    - KPI icon tiles share one neutral tint.
+    - The roles matrix orders the role columns by permission scope and has no shop column; shop roles are fixed (D-051).
+- Test data left behind by E2E runs (`e2e-…` shops, «اختبار حمل» bookings) appears on the shared development stack only. A fresh `down -v` stack shows the seeded demo data alone.

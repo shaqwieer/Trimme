@@ -91,21 +91,28 @@ internal sealed class MediaStore(TrimmeDbContext db, TimeProvider clock, ICurren
             return MediaErrors.TooLarge();
         }
 
-        if (ImageSanitizer.TrySanitize(content) is not { } image)
+        // The type and size come from the file's own headers, before anything is decoded (D-119).
+        if (ImageSanitizer.TrySanitize(content) is not { } header)
         {
             return MediaErrors.UnsupportedType();
         }
 
-        if (image.Width > MediaRules.MaxDimension || image.Height > MediaRules.MaxDimension
-            || (long)image.Width * image.Height > MediaRules.MaxPixels)
+        if (header.Width > MediaRules.MaxDimension || header.Height > MediaRules.MaxDimension
+            || (long)header.Width * header.Height > MediaRules.MaxPixels)
         {
             return MediaErrors.TooLarge();
         }
 
         var minimum = MediaRules.MinDimension(purpose);
-        if (image.Width < minimum || image.Height < minimum)
+        if (header.Width < minimum || header.Height < minimum)
         {
             return MediaErrors.TooSmall();
+        }
+
+        // Only pixels are stored: a fresh file encoded from the decoded image.
+        if (ImageReencoder.TryReencode(content, header) is not { } image)
+        {
+            return MediaErrors.UnsupportedType();
         }
 
         var stored = new StoredMedia(

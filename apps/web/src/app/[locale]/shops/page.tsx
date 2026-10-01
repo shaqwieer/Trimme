@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn';
 import { dataOrNull, getPublicApi } from '@/lib/api/public';
 import { optional } from '@/lib/api/safe';
 import { breadcrumbLd } from '@/lib/seo/jsonld';
-import { absoluteUrl, localizedAlternates, OG_LOCALE } from '@/lib/seo/site';
+import { absoluteUrl, localizedAlternates, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 const PAGE_SIZE = 24;
 
@@ -47,6 +47,7 @@ export async function generateMetadata({
       description: t('description'),
       locale: OG_LOCALE[locale],
       url: `/${locale}${listingPath(city, page)}`,
+      images: [OG_IMAGE],
     },
   };
 }

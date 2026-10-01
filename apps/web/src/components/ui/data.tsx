@@ -106,7 +106,8 @@ export function ResponsiveTable<Row>({
             className="flex items-start gap-3 rounded-card border border-border bg-surface p-4 shadow-e1"
           >
             <div className="min-w-0 flex-1">
-              {primary && <p className="font-bold text-text-primary">{primary.cell(row)}</p>}
+              {/* A block, not a <p>: primary cells may hold their own blocks (a hydration error on /admin/qr, Phase 17). */}
+              {primary && <div className="font-bold text-text-primary">{primary.cell(row)}</div>}
               <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-helper">
                 {metas.map((column) => (
                   <div key={column.key} className="contents">
@@ -134,7 +135,10 @@ type PaginationProps = {
   hrefForPage: (page: number) => string;
 };
 
-/** Pagination (design 758–774): summary + previous / numbered / next; arrows mirror in RTL. */
+/**
+ * Pagination (design 758–774): summary + previous / numbered / next; arrows mirror in RTL. Below `md` only previous,
+ * the current page and next are shown: seven numbered cells and two arrows do not fit a 390 px phone (D-122).
+ */
 export function Pagination({ page, pageSize, total, hrefForPage }: PaginationProps) {
   const t = useTranslations('ui.pagination');
   const locale = useLocale() as AppLocale;
@@ -174,11 +178,11 @@ export function Pagination({ page, pageSize, total, hrefForPage }: PaginationPro
         </li>
         {pages.map((p, index) =>
           p === 'gap' ? (
-            <li key={`gap-${index}`} aria-hidden="true" className="px-1 text-text-tertiary">
+            <li key={`gap-${index}`} aria-hidden="true" className="px-1 text-text-tertiary max-md:hidden">
               …
             </li>
           ) : (
-            <li key={p}>
+            <li key={p} className={p === page ? undefined : 'max-md:hidden'}>
               <Link
                 href={hrefForPage(p)}
                 aria-label={t('page', { page: p })}
@@ -242,7 +246,10 @@ export function Breadcrumb({ items }: { items: Array<{ label: ReactNode; href?: 
           return (
             <li key={index} className="flex items-center gap-2">
               {item.href && !last ? (
-                <Link href={item.href} className="hover:text-text-primary hover:underline">
+                <Link
+                  href={item.href}
+                  className="inline-flex items-center hover:text-text-primary hover:underline pointer-coarse:min-h-11"
+                >
                   {item.label}
                 </Link>
               ) : (

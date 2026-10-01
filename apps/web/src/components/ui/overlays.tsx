@@ -1,13 +1,34 @@
 'use client';
 
 import { Dialog as RadixDialog, DropdownMenu as RadixMenu, Tooltip as RadixTooltip } from 'radix-ui';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 import { Button } from './Button';
 import { type DesignIconName, Icon } from './icons';
 
 /* ---------------------------------------------------------------- Dialog */
+
+/**
+ * Gives focus back to whatever had it when the overlay opened. Radix returns focus only to its own `Trigger`, and most
+ * overlays here are opened by a plain button elsewhere on the page, so focus fell to the page body on close (Phase 17
+ * keyboard pass).
+ */
+function useReturnFocus() {
+  const opener = useRef<HTMLElement | null>(null);
+  return {
+    onOpenAutoFocus: () => {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    },
+    onCloseAutoFocus: (event: Event) => {
+      const target = opener.current;
+      if (target?.isConnected && target !== document.body) {
+        event.preventDefault();
+        target.focus();
+      }
+    },
+  };
+}
 
 type DialogProps = {
   open?: boolean;
@@ -37,12 +58,14 @@ export function Dialog({
   size = 'md',
 }: DialogProps) {
   const t = useTranslations('ui');
+  const returnFocus = useReturnFocus();
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>}
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
         <RadixDialog.Content
+          {...returnFocus}
           className={cn(
             'fixed start-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-card border border-border bg-surface p-5 shadow-e3 ltr:-translate-x-1/2 rtl:translate-x-1/2',
             dialogSizes[size],
@@ -104,11 +127,13 @@ export function ConfirmDialog({
   loading = false,
 }: ConfirmDialogProps) {
   const t = useTranslations('ui');
+  const returnFocus = useReturnFocus();
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
         <RadixDialog.Content
+          {...returnFocus}
           role="alertdialog"
           className="fixed start-1/2 top-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-[400px] -translate-y-1/2 flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-e3 ltr:-translate-x-1/2 rtl:translate-x-1/2"
         >
@@ -190,12 +215,14 @@ export function Sheet({
   trigger,
 }: SheetProps) {
   const t = useTranslations('ui');
+  const returnFocus = useReturnFocus();
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <RadixDialog.Trigger asChild>{trigger}</RadixDialog.Trigger>}
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
         <RadixDialog.Content
+          {...returnFocus}
           id={id}
           aria-describedby={undefined}
           className={cn(

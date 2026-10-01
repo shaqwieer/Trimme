@@ -77,6 +77,7 @@ export default async function WhatsAppTemplatesPage({
                             <span
                               className="line-clamp-1 text-helper text-text-secondary"
                               dir={slot.locale === 'ar' ? 'rtl' : 'ltr'}
+                              lang={slot.locale}
                             >
                               {slot.activeBody}
                             </span>

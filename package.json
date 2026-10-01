@@ -15,6 +15,7 @@
     "format:check": "pnpm --filter @trimme/web format:check",
     "openapi:generate": "pnpm --filter @trimme/web openapi:generate",
     "openapi:check": "pnpm --filter @trimme/web openapi:check",
-    "e2e": "pnpm --filter @trimme/e2e test"
+    "e2e": "pnpm --filter @trimme/e2e test",
+    "bundle:check": "pnpm --filter @trimme/web bundle:check"
   }
 }

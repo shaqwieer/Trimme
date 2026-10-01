@@ -25,7 +25,7 @@ import { durationParts, minuteOfDay, relativeTime } from '@/lib/discovery/format
 import { isTomorrow } from '@/lib/discovery/opening';
 import { bookHref, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatDurationMinutes, formatPhone, formatPrice, formatRating, formatTime } from '@/lib/i18n/format';
-import { localizedName } from '@/lib/i18n/localized';
+import { langIfOther, type LocalizedText, localizedName, localizedText } from '@/lib/i18n/localized';
 import { ShopMiniMap } from './ShopMiniMap';
 
 const WEEK: OpeningInterval['day'][] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -46,11 +46,15 @@ export function ServicesPanel({
   const locale = useLocale() as AppLocale;
   if (services.length === 0 && packages.length === 0) return <EmptyState icon="scissors" title={t('empty')} />;
 
-  const row = (key: string, name: string, detail: string | null, price: number, currency: string, minutes: number, href: string | null) => (
+  const row = (key: string, name: string, detail: LocalizedText | null, price: number, currency: string, minutes: number, href: string | null) => (
     <li key={key} className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 shadow-e1">
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="text-label font-bold text-text-primary">{name}</h3>
-        {detail && <p className="text-helper text-text-secondary">{detail}</p>}
+        {detail && (
+          <p lang={langIfOther(detail, locale)} className="text-helper text-text-secondary">
+            {detail.text}
+          </p>
+        )}
         <p className="text-helper text-text-tertiary">{formatDurationMinutes(minutes, locale)}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -80,7 +84,7 @@ export function ServicesPanel({
               row(
                 s.id,
                 localizedName(locale, s.nameAr, s.nameEn),
-                locale === 'en' ? (s.descriptionEn ?? s.descriptionAr ?? null) : (s.descriptionAr ?? null),
+                localizedText(locale, s.descriptionAr, s.descriptionEn),
                 s.price,
                 s.currency,
                 s.durationMinutes,
@@ -100,7 +104,10 @@ export function ServicesPanel({
               row(
                 p.id,
                 localizedName(locale, p.nameAr, p.nameEn),
-                t('includes', { items: p.items.map((i) => localizedName(locale, i.nameAr, i.nameEn)).join(locale === 'ar' ? '، ' : ', ') }),
+                {
+                  text: t('includes', { items: p.items.map((i) => localizedName(locale, i.nameAr, i.nameEn)).join(locale === 'ar' ? '، ' : ', ') }),
+                  lang: locale,
+                },
                 p.price,
                 p.currency,
                 p.durationMinutes,
@@ -255,7 +262,7 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
   const tAmenity = useTranslations('amenity');
   const tCategory = useTranslations('shopCategory');
   const locale = useLocale() as AppLocale;
-  const description = locale === 'en' ? (shop.descriptionEn ?? shop.descriptionAr) : (shop.descriptionAr ?? shop.descriptionEn);
+  const description = localizedText(locale, shop.descriptionAr, shop.descriptionEn);
   const cancel = durationParts(shop.cancellationCutoffMinutes);
   const cancelText = tPage(`duration.${cancel.unit}`, { count: cancel.count });
 
@@ -266,7 +273,9 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
           <h2 id="about-description" className="text-h3 font-bold text-navy-900">
             {t('description')}
           </h2>
-          <p className="text-body whitespace-pre-line text-text-strong">{description}</p>
+          <p lang={langIfOther(description, locale)} className="text-body whitespace-pre-line text-text-strong">
+            {description.text}
+          </p>
         </section>
       )}
 

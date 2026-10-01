@@ -83,7 +83,7 @@ export default async function AdminProfessionalsPage({
                 </select>
                 <button
                   type="submit"
-                  className="h-11 rounded-button bg-navy-900 px-4 text-button font-bold text-on-navy focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
+                  className="min-h-11 rounded-button border-[1.5px] border-border-strong bg-surface px-4 text-label font-bold text-text-strong hover:bg-bg-subtle focus-visible:shadow-[var(--focus-ring)] focus-visible:outline-none"
                 >
                   {t('searchSubmit')}
                 </button>

@@ -45,6 +45,11 @@ jobs:
       - name: Integration tests
         run: dotnet test --project tests/Trimme.IntegrationTests --no-build -c Release
 
+      - name: Dependency audit (NuGet advisories, transitive included)
+        run: |
+          dotnet list Trimme.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          ! grep -q "has the following vulnerable packages" vulnerable.txt
+
       - name: Migration validation (no pending model changes)
         run: |
           dotnet tool restore
@@ -101,11 +106,17 @@ jobs:
       - name: Production build
         run: pnpm build
 
+      - name: Bundle budgets (first-load JavaScript per route, gzip)
+        run: pnpm bundle:check
+
+      - name: Dependency audit (npm advisories, high and critical)
+        run: pnpm audit --audit-level high
+
   stack:
-    name: Docker Compose stack + Playwright smoke
+    name: Docker Compose stack + Playwright (smoke, flows, route audit)
     runs-on: ubuntu-latest
     needs: [backend, web]
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 

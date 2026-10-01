@@ -156,7 +156,7 @@ internal sealed partial class NotificationSweepJob(TrimmeDbContext db, IJobSched
         var before = now - Grace;
         var reminders = await db.Set<ReminderSchedule>()
             .Where(r => r.Status == ReminderStatus.Scheduled && r.JobId == null && r.CreatedAt < before)
-            .Take(200).ToListAsync(cancellationToken);
+            .OrderBy(r => r.CreatedAt).Take(200).ToListAsync(cancellationToken);
         foreach (var reminder in reminders)
         {
             reminder.AssignJob(BookingReminderJob.Schedule(jobs, reminder.Id.Value, reminder.DueAt > now ? reminder.DueAt : now));
@@ -164,7 +164,7 @@ internal sealed partial class NotificationSweepJob(TrimmeDbContext db, IJobSched
 
         var dispatches = await db.Set<WhatsAppDispatch>()
             .Where(d => d.Status == DispatchStatus.Queued && d.JobId == null && d.LastAttemptAt == null && d.CreatedAt < before)
-            .Take(200).ToListAsync(cancellationToken);
+            .OrderBy(d => d.CreatedAt).Take(200).ToListAsync(cancellationToken);
         foreach (var dispatch in dispatches)
         {
             dispatch.AssignJob(SendDispatchJob.Enqueue(jobs, dispatch.Id.Value));

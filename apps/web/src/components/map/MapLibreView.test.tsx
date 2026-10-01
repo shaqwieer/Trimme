@@ -1,11 +1,20 @@
+import ar from '@messages/ar.json';
 import { render, waitFor } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MapLibreView } from './MapLibreView';
 
 /** A stand-in for MapLibre that records where markers are placed. */
-const placed = vi.hoisted(() => ({ markers: [] as Array<[number, number]> }));
+const placed = vi.hoisted(() => ({
+  markers: [] as Array<[number, number]>,
+  options: [] as Array<Record<string, unknown>>,
+}));
 vi.mock('maplibre-gl', () => {
   class Map {
+    constructor(options: Record<string, unknown>) {
+      placed.options.push(options);
+    }
     on() {}
     addControl() {}
     touchZoomRotate = { disableRotation() {} };
@@ -44,8 +53,15 @@ const common = {
   onUnavailable: () => {},
 };
 
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <NextIntlClientProvider locale="ar" messages={ar} timeZone="Asia/Riyadh">
+    {children}
+  </NextIntlClientProvider>
+);
+
 beforeEach(() => {
   placed.markers = [];
+  placed.options = [];
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as RenderingContext);
 });
 
@@ -53,14 +69,25 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('MapLibreView', () => {
   it('places a pin chosen while the map library is still loading (Phase 06 race)', async () => {
-    const { rerender } = render(<MapLibreView {...common} pin={null} />);
+    const { rerender } = render(<MapLibreView {...common} pin={null} />, { wrapper });
     // The search result arrives before the lazily imported library has created the map.
     rerender(<MapLibreView {...common} pin={{ lat: 24.8123, lng: 46.6011 }} />);
     await waitFor(() => expect(placed.markers).toContainEqual([46.6011, 24.8123]));
   });
 
   it('places the starting pin', async () => {
-    render(<MapLibreView {...common} pin={{ lat: 24.7, lng: 46.6 }} />);
+    render(<MapLibreView {...common} pin={{ lat: 24.7, lng: 46.6 }} />, { wrapper });
     await waitFor(() => expect(placed.markers).toContainEqual([46.6, 24.7]));
+  });
+
+  it("speaks the page's language: MapLibre's own labels come from the catalogue (Phase 17)", async () => {
+    render(<MapLibreView {...common} label="خريطة المحل" pin={null} />, { wrapper });
+    await waitFor(() => expect(placed.options).toHaveLength(1));
+    expect(placed.options[0]!.locale).toEqual({
+      'Map.Title': 'خريطة المحل',
+      'NavigationControl.ZoomIn': ar.locationPicker.zoomIn,
+      'NavigationControl.ZoomOut': ar.locationPicker.zoomOut,
+      'AttributionControl.ToggleAttribution': ar.locationPicker.toggleAttribution,
+    });
   });
 });

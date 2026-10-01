@@ -125,17 +125,22 @@ pnpm lint && pnpm typecheck && pnpm format:check      # ESLint (no warnings), st
 pnpm test                                              # Vitest: formatters, message key parity, token contrast, shells
 pnpm openapi:check                                     # generated API types match apps/api/openapi/v1.json
 pnpm build                                             # Next.js production build
+pnpm bundle:check                                      # first-load JavaScript per route against its budget
 pnpm --filter @trimme/e2e install-browsers             # once
-E2E_BASE_URL=http://localhost:3000 pnpm e2e            # Playwright smoke against a running stack
+E2E_BASE_URL=http://localhost:3000 pnpm e2e            # Playwright: smoke, flows and the route audit
+E2E_BASE_URL=http://localhost:3000 pnpm e2e --project=a11y   # only the route audit and keyboard pass
 ```
+
+- The `a11y` project visits every page as the role that opens it, in both locales. It checks axe, untranslated strings, `noindex`, canonical/hreflang, JSON-LD and overflow at 390 px. Every Playwright test also fails on a Content Security Policy violation (D-117, D-122; `docs/accessibility.md`).
+- Load smoke (local only): `docker run --rm -i -e BASE_URL=http://host.docker.internal:3000 grafana/k6 run - < tests/load/smoke.js` (`docs/performance.md`).
 
 After an API contract change, regenerate the web types with `pnpm openapi:generate`.
 
 CI (`.github/workflows/ci.yml`) runs four jobs:
-- **backend:** build, all .NET suites and migration validation;
-- **web:** lint, typecheck, format, unit tests, OpenAPI client drift and build;
+- **backend:** build, all .NET suites (including the N+1 query budgets), migration validation and the NuGet advisory audit;
+- **web:** lint, typecheck, format, unit tests, OpenAPI client drift, build, bundle budgets and `pnpm audit`;
 - **secret-scan:** gitleaks;
-- **stack:** Docker Compose up, then the Playwright smoke tests.
+- **stack:** Docker Compose up, then every Playwright project (smoke, flows, route audit).
 
 ## Troubleshooting
 
@@ -145,4 +150,6 @@ CI (`.github/workflows/ci.yml`) runs four jobs:
 
 ## Deployment
 
-The production topology is a single domain behind Nginx, with the API under `/api` and `/hubs` and the web app for everything else. Migrations run as an explicit release step. Dedicated deployment and backup guides (`docs/deployment.md`, `docs/backup-restore.md`) are not part of the current plan (D-116).
+The production topology is a single domain behind Nginx, with the API under `/api` and `/hubs` and the web app for everything else. Migrations run as an explicit release step.
+
+The required production settings, the proxy's client-address forwarding and key rotation are in `docs/security.md`. Telemetry (OTLP), health checks and log fields are in `docs/observability.md`. Dedicated deployment and backup guides (`docs/deployment.md`, `docs/backup-restore.md`) are not part of the current plan (D-116).

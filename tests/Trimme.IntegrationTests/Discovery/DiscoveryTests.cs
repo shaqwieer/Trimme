@@ -8,6 +8,7 @@ using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
+using Trimme.BuildingBlocks.Web.Caching;
 using Trimme.IntegrationTests.Bookings;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
@@ -246,6 +247,23 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
         // ...but a signed-in reader is never served from it (authorization-sensitive responses are not cached).
         using var customer = await CustomerAsync(d.W.Factory, "ريم", ct);
         (await OkAsync(customer.GetAsync(path, ct), ct)).GetProperty("descriptionAr").GetString().ShouldBe("خارج التطبيق");
+
+        // HTTP caching (Phase 17): anonymous answers, fresh or replayed from the cache, may be kept briefly by browsers
+        // and shared caches; a signed-in reader's answer and a time-dependent endpoint never.
+        using (var cached = await visitor.GetAsync(path, ct))
+        {
+            cached.Headers.CacheControl!.ToString().ShouldBe(PublicCache.HttpCacheControl);
+        }
+
+        using (var signedIn = await customer.GetAsync(path, ct))
+        {
+            signedIn.Headers.CacheControl!.NoStore.ShouldBeTrue();
+        }
+
+        using (var status = await visitor.GetAsync($"{path}/status", ct))
+        {
+            status.Headers.CacheControl!.NoStore.ShouldBeTrue("open now and the next times change by the minute");
+        }
 
         // A save of public content through the application evicts it at once (D-093).
         var profile = await OkAsync(d.OwnerA.GetAsync("/api/v1/shop/profile", ct), ct);

@@ -147,6 +147,7 @@ export function AppointmentsBoard({
             ))}
           </SelectField>
           <form
+            method="post"
             role="search"
             onSubmit={(event) => {
               event.preventDefault();

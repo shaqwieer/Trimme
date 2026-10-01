@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { InlineAlert, StateCard } from '@/components/ui/states';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -67,7 +67,7 @@ export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
         </Link>
       }
     >
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
           name="email"
@@ -142,7 +142,7 @@ export function ForgotPasswordForm() {
 
   return (
     <AuthCard title={t('title')} subtitle={t('subtitle')}>
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
           name="email"
@@ -215,7 +215,7 @@ export function ResetPasswordForm({ userId, token }: { userId?: string; token?: 
 
   return (
     <AuthCard title={t('title')}>
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
           name="password"
@@ -287,7 +287,7 @@ export function AcceptInviteForm({ token }: { token?: string }) {
 
   return (
     <AuthCard showLogo title={t('title')} subtitle={t('subtitle')}>
-      <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
           name="displayName"

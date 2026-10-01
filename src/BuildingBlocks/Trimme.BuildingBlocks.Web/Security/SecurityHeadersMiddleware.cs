@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Trimme.BuildingBlocks.Web.Caching;
 
 namespace Trimme.BuildingBlocks.Web.Security;
 
@@ -9,9 +10,9 @@ namespace Trimme.BuildingBlocks.Web.Security;
 /// </summary>
 public sealed class SecurityHeadersMiddleware(RequestDelegate next)
 {
-    internal const string StrictContentSecurityPolicy = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+    public const string StrictContentSecurityPolicy = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
-    internal const string DashboardContentSecurityPolicy =
+    public const string DashboardContentSecurityPolicy =
         "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
         + "frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
@@ -23,6 +24,9 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
     {
         ArgumentNullException.ThrowIfNull(context);
 
+        // Decide on the path as it arrives: branches such as the jobs dashboard (`Map`) move their prefix into PathBase
+        // before the response starts, so the path seen in OnStarting would no longer match (D-117).
+        var path = context.Request.Path;
         context.Response.OnStarting(() =>
         {
             var headers = context.Response.Headers;
@@ -33,17 +37,18 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             headers["Cross-Origin-Opener-Policy"] = "same-origin";
             headers["Cross-Origin-Resource-Policy"] = "same-site";
 
-            // API responses are per-user by default: never cached by browsers or proxies unless an endpoint says so.
+            // API responses are per-user by default: never cached by browsers or proxies unless an endpoint says so, or
+            // it is an anonymous public read (Phase 17, D-121).
             if (!headers.ContainsKey("Cache-Control"))
             {
-                headers.CacheControl = "no-store";
+                headers.CacheControl = PublicCache.MayBeKeptByHttpCaches(context) ? PublicCache.HttpCacheControl : "no-store";
             }
 
-            if (context.Request.Path.StartsWithSegments(DashboardPath, StringComparison.OrdinalIgnoreCase))
+            if (path.StartsWithSegments(DashboardPath, StringComparison.OrdinalIgnoreCase))
             {
                 headers.ContentSecurityPolicy = DashboardContentSecurityPolicy;
             }
-            else if (!RelaxedCspPaths.Any(p => context.Request.Path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase)))
+            else if (!RelaxedCspPaths.Any(p => path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase)))
             {
                 headers.ContentSecurityPolicy = StrictContentSecurityPolicy;
             }

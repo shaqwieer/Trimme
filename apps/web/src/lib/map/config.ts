@@ -26,3 +26,19 @@ export function roundCoordinate(value: number): number {
 export function formatCoordinates(point: LatLng): string {
   return `${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
 }
+
+/**
+ * MapLibre's own labels in the page's language (Phase 17 route audit: the map canvas announced "Map" in Arabic).
+ * `t` is the `locationPicker` translator; `title` names the map for screen readers.
+ */
+export function mapLibreLocale(
+  t: (key: 'zoomIn' | 'zoomOut' | 'toggleAttribution') => string,
+  title: string,
+) {
+  return {
+    'Map.Title': title,
+    'NavigationControl.ZoomIn': t('zoomIn'),
+    'NavigationControl.ZoomOut': t('zoomOut'),
+    'AttributionControl.ToggleAttribution': t('toggleAttribution'),
+  };
+}

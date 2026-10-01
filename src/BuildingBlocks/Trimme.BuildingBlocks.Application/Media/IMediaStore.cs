@@ -13,7 +13,8 @@ public interface IMediaStore
 {
     /// <summary>
     /// Validates <paramref name="content"/> by its bytes (JPEG, PNG or WebP only; the declared content type is ignored),
-    /// strips metadata such as EXIF location, and stages it.
+    /// re-encodes it from its pixels (no metadata such as EXIF location survives; the longer side is at most 2560 px),
+    /// and stages it.
     /// </summary>
     Result<StoredImage> AddImage(ReadOnlySpan<byte> content, MediaPurpose purpose);
 
@@ -33,7 +34,7 @@ public static class MediaRules
 
     public const int MaxDimension = 8000;
 
-    /// <summary>Guards clients against decompression bombs: they, not the API, decode the image.</summary>
+    /// <summary>Decompression-bomb guard, checked on the header before the API decodes the image to re-encode it (D-119).</summary>
     public const long MaxPixels = 40_000_000;
 
     public static int MinDimension(MediaPurpose purpose) => purpose switch

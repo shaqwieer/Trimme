@@ -89,7 +89,12 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
             title: (
               <>
                 {actionLabel(entry.action)}
-                {entry.summary && <span className="block font-normal text-text-strong">{entry.summary}</span>}
+                {/* The summary is an English technical record written when the action happened (D-122). */}
+                {entry.summary && (
+                  <span className="block font-normal text-text-strong">
+                    <bdi lang="en">{entry.summary}</bdi>
+                  </span>
+                )}
               </>
             ),
             meta: (

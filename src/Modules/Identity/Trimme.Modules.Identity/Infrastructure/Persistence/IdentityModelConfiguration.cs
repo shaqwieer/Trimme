@@ -37,6 +37,9 @@ internal static class IdentityModel
             user.HasIndex(u => u.PhoneLookupHash).IsUnique().HasFilter("phone_lookup_hash IS NOT NULL");
             user.HasIndex(u => u.ShopId);
 
+            // The customers directory (newest first) and the overview's new customers (Phase 17).
+            user.HasIndex(u => new { u.UserType, u.CreatedAt });
+
             user.HasMany<IdentityUserClaim<Guid>>().WithOne().HasForeignKey(c => c.UserId).IsRequired();
             user.HasMany<IdentityUserLogin<Guid>>().WithOne().HasForeignKey(l => l.UserId).IsRequired();
             user.HasMany<IdentityUserToken<Guid>>().WithOne().HasForeignKey(t => t.UserId).IsRequired();

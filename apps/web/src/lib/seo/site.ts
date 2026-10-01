@@ -29,6 +29,9 @@ export function localizedAlternates(path: string, locale: string): NonNullable<M
   };
 }
 
+/** The default share image: the logo on the brand navy, 1200×630, with no text to shape (Phase 17). */
+export const OG_IMAGE = { url: '/brand/trimme-og.png', width: 1200, height: 630 } as const;
+
 /** Open Graph locale names. */
 export const OG_LOCALE: Record<string, string> = { ar: 'ar_SA', en: 'en_US' };
 

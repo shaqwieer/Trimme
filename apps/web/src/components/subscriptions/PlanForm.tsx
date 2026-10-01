@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Controller, useFieldArray } from 'react-hook-form';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button, IconButton } from '@/components/ui/Button';
 import { SelectField, Switch, TextField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
@@ -162,7 +162,13 @@ export function PlanForm({ plan }: { plan?: Plan }) {
 
   const rootError = form.formState.errors.root?.server?.message;
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5" data-testid="plan-form">
+    <form
+      method="post"
+      noValidate
+      onSubmit={onSubmit}
+      className="flex flex-col gap-5"
+      data-testid="plan-form"
+    >
       <fieldset disabled={archived} className="grid gap-4 md:grid-cols-2">
         <FormTextField control={form.control} name="nameAr" label={t('nameAr')} dir="rtl" />
         <FormTextField control={form.control} name="nameEn" label={t('nameEn')} dir="ltr" />

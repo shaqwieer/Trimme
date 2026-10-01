@@ -177,6 +177,24 @@ describe('data display', () => {
     expect(screen.getByText('عرض 1–4 من 128')).toBeInTheDocument();
   });
 
+  it('Pagination keeps only previous, current and next on a phone', () => {
+    renderWithIntl(
+      <Pagination page={3} pageSize={25} total={150} hrefForPage={(p) => `/admin/shops?page=${p}`} />,
+    );
+    expect(screen.getByRole('link', { name: 'الصفحة 3' }).closest('li')).not.toHaveClass('max-md:hidden');
+    for (const other of [1, 2, 4, 5, 6]) {
+      expect(screen.getByRole('link', { name: `الصفحة ${other}` }).closest('li')).toHaveClass(
+        'max-md:hidden',
+      );
+    }
+    expect(screen.getByRole('link', { name: 'الصفحة السابقة' }).closest('li')).not.toHaveClass(
+      'max-md:hidden',
+    );
+    expect(screen.getByRole('link', { name: 'الصفحة التالية' }).closest('li')).not.toHaveClass(
+      'max-md:hidden',
+    );
+  });
+
   it('Breadcrumb marks the current page', () => {
     renderWithIntl(
       <Breadcrumb
@@ -228,7 +246,9 @@ describe('charts (dataviz rules)', () => {
   it('RatingDistribution exposes each row as text', () => {
     renderWithIntl(<RatingDistribution counts={{ 5: 268, 4: 52, 3: 15, 2: 7, 1: 4 }} />);
     expect(screen.getByRole('list', { name: 'توزيع التقييمات' })).toBeInTheDocument();
-    expect(screen.getByText('5 نجوم: 268 تقييم')).toBeInTheDocument();
+    // Arabic plural forms (Phase 17): 268 takes «many», 7 takes «few».
+    expect(screen.getByText('5 نجوم: 268 تقييماً')).toBeInTheDocument();
+    expect(screen.getByText('2 نجوم: 7 تقييمات')).toBeInTheDocument();
   });
 
   it('BarChart ships an accessible data table and labels the peak', async () => {

@@ -12,7 +12,7 @@ import { Link } from '@/i18n/navigation';
 import type { ShopSearchItem } from '@/lib/api/public-types';
 import { isTomorrow } from '@/lib/discovery/opening';
 import { type AppLocale, formatDistanceKm, formatPrice, formatTime } from '@/lib/i18n/format';
-import { DEFAULT_CENTER, DEFAULT_ZOOM, TILE_URL } from '@/lib/map/config';
+import { DEFAULT_CENTER, DEFAULT_ZOOM, mapLibreLocale, TILE_URL } from '@/lib/map/config';
 
 /** Probed once per page load: each probe creates a WebGL context, and browsers keep only a few alive. */
 let webGlSupport: boolean | undefined;
@@ -104,11 +104,13 @@ export function ResultsMap({
           },
           center: [center.lng, center.lat],
           zoom: DEFAULT_ZOOM,
+          locale: mapLibreLocale(picker, messages('map.label')),
           attributionControl: false,
           dragRotate: false,
           pitchWithRotate: false,
         });
-        map.addControl(new AttributionControl({ compact: false }), 'bottom-left');
+        // Top: the selected-shop card and the picker's hint sit at the bottom and must never hide the map credits.
+        map.addControl(new AttributionControl({ compact: false }), 'top-right');
         map.addControl(new NavigationControl({ showCompass: false }), 'top-left');
         map.touchZoomRotate.disableRotation();
 

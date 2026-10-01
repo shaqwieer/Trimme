@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 05 tenancy flows against the compose stack. The `seed` service provides the bootstrap SuperAdmin and two
@@ -36,6 +37,8 @@ async function latestEmailLink(request: APIRequestContext, recipient: string): P
 }
 
 async function expectNoSeriousAxeViolations(page: Page) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(blocking.map((v) => `${v.id}: ${v.help}`)).toEqual([]);

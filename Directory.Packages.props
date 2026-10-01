@@ -10,6 +10,11 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
   </ItemGroup>
+  <ItemGroup Label="Media">
+    <!-- Upload re-encoding (D-119). MIT licensed; the Linux assets carry no system dependencies (no fontconfig). -->
+    <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
+  </ItemGroup>
   <ItemGroup Label="Domain">
     <PackageVersion Include="libphonenumber-csharp" Version="9.0.40" />
   </ItemGroup>
@@ -23,6 +28,16 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
+  </ItemGroup>
+  <ItemGroup Label="Observability">
+    <!-- Stable packages only (D-118): EF Core and Hangfire instrumentation are prerelease, so database spans come from
+         Npgsql's own tracing and job spans from TRIMME's Hangfire filter. -->
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
+    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.3" />
   </ItemGroup>
   <ItemGroup Label="Jobs">
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.25" />

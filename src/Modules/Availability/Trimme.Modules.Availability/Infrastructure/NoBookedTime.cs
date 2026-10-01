@@ -13,6 +13,10 @@ internal sealed class NoBookedTime : IBookedTimeReader
         ShopId shopId, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<BusyTime>>([]);
 
+    public Task<IReadOnlyList<BusyTime>> GetBusyAsync(
+        IReadOnlyCollection<ShopId> shopIds, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<BusyTime>>([]);
+
     public Task<IReadOnlyList<BookedAppointment>> GetAppointmentsAsync(
         ShopId shopId, ProfessionalId? professionalId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<BookedAppointment>>([]);

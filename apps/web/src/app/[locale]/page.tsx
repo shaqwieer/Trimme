@@ -13,7 +13,7 @@ import { optional } from '@/lib/api/safe';
 import { readLocation } from '@/lib/discovery/location.server';
 import { formatNumber, formatRating } from '@/lib/i18n/format';
 import { organizationLd, websiteLd } from '@/lib/seo/jsonld';
-import { absoluteUrl, localizedAlternates, OG_LOCALE } from '@/lib/seo/site';
+import { absoluteUrl, localizedAlternates, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 export async function generateMetadata({ params }: PageProps<'/[locale]'>): Promise<Metadata> {
   const locale = asLocale((await params).locale);
@@ -30,9 +30,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>): Prom
       description: t('description'),
       locale: OG_LOCALE[locale],
       url: `/${locale}`,
-      images: [
-        { url: '/brand/trimme-hero-barbershop.png', width: 1152, height: 1536, alt: t('heroImageAlt') },
-      ],
+      images: [{ ...OG_IMAGE, alt: app('appName') }],
     },
   };
 }
@@ -126,7 +124,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
               method="get"
               role="search"
               aria-label={t('search.label')}
-              className="grid w-full max-w-[680px] gap-2 rounded-section border border-border bg-surface p-2 shadow-e3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center"
+              className="grid w-full max-w-[680px] gap-2 rounded-section border border-border bg-surface p-2 shadow-e3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center"
             >
               <label className="flex min-h-12 items-center gap-2 px-2">
                 <Icon name="search" className="size-5 text-text-tertiary" />
@@ -140,7 +138,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
               </label>
               <Link
                 href={{ pathname: '/onboarding/location', query: { returnTo: '/search' } }}
-                className="inline-flex min-h-12 items-center gap-1.5 rounded-field border-t border-border px-3 text-label font-bold text-text-strong hover:bg-bg-subtle sm:border-s sm:border-t-0"
+                className="inline-flex min-h-12 items-center gap-1.5 rounded-field border-t border-border px-3 text-label font-bold text-text-strong hover:bg-bg-subtle md:border-s md:border-t-0"
               >
                 <Icon name="pin" className="size-4 text-brand-600" />
                 {location ? location.label || t('search.location') : t('search.locationUnset')}
@@ -184,7 +182,8 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
               src="/brand/trimme-hero-barbershop.png"
               alt={t('heroImageAlt')}
               fill
-              priority
+              loading="eager"
+              fetchPriority="high"
               sizes="(min-width: 1200px) 500px, (min-width: 768px) 44vw, 92vw"
               className="object-cover object-center"
             />

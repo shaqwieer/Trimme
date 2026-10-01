@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { type APIRequestContext, type BrowserContext, expect, type Page, test } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 14 flows (R-AD-01/05/06/07/11/12/13): the platform overview, a booking intervention (reschedule, then cancel on
@@ -23,6 +24,8 @@ async function staffSignIn(page: Page, email: string, password: string) {
 }
 
 async function expectNoSeriousAxeViolations(page: Page) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(

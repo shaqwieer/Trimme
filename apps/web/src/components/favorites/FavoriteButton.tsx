@@ -51,25 +51,37 @@ export function FavoriteButton({
   target,
   name,
   initiallySaved,
+  mayBeSignedIn = true,
   className,
 }: {
   target: Target;
   name: string;
   /** Known on the favorites page; public pages ask the API. */
   initiallySaved?: boolean;
+  /**
+   * False when the page saw no session cookie: the heart is the sign-in link at once, without a request that could
+   * only answer 401 (a console error on every public page view, Phase 17 Lighthouse).
+   */
+  mayBeSignedIn?: boolean;
   className?: string;
 }) {
   const t = useTranslations('favorites');
   const pathname = usePathname();
   const [state, setState] = useState<State>(
-    initiallySaved === undefined ? 'unknown' : initiallySaved ? 'saved' : 'notSaved',
+    initiallySaved !== undefined
+      ? initiallySaved
+        ? 'saved'
+        : 'notSaved'
+      : mayBeSignedIn
+        ? 'unknown'
+        : 'signedOut',
   );
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const { kind, id } = target;
 
   useEffect(() => {
-    if (initiallySaved !== undefined) return;
+    if (initiallySaved !== undefined || !mayBeSignedIn) return;
     let live = true;
     void savedFavorites().then((saved) => {
       if (!live) return;
@@ -85,7 +97,7 @@ export function FavoriteButton({
     return () => {
       live = false;
     };
-  }, [initiallySaved, kind, id]);
+  }, [initiallySaved, mayBeSignedIn, kind, id]);
 
   const base = cn(
     'inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface transition-colors hover:bg-bg-subtle',

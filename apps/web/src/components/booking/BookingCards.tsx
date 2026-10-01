@@ -139,7 +139,7 @@ export function RebookCard({ booking }: { booking: CustomerBooking }) {
         <span className="block text-label font-bold text-text-primary">{t('title')}</span>
         <span className="block text-helper text-text-secondary">{t('body')}</span>
       </span>
-      <Icon name="chevL" className="size-4 text-text-tertiary" />
+      <Icon name="chevR" className="size-4 text-text-tertiary" />
     </Link>
   );
 }

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 import { png } from '../support/images';
 
 /**
@@ -20,6 +21,8 @@ async function staffSignIn(page: Page, email: string, password: string) {
 }
 
 async function expectNoSeriousAxeViolations(page: Page) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
     // The map canvas is a third-party widget; its keyboard/text alternative is the coordinate form.

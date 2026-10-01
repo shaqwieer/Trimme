@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { Checkbox, SelectField, Switch } from '@/components/ui/inputs';
@@ -132,7 +132,13 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
   const lock = (field: ShopProfileField) => (!isAdmin && !editable(field) ? <LockNote /> : undefined);
 
   return (
-    <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5" data-testid="shop-profile-form">
+    <form
+      method="post"
+      noValidate
+      onSubmit={onSubmit}
+      className="flex flex-col gap-5"
+      data-testid="shop-profile-form"
+    >
       {!isAdmin && <p className="text-helper text-text-tertiary">{t('lockedHint')}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         <FormTextField

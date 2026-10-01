@@ -415,6 +415,7 @@ export function TemplateEditor({ initial, canEdit, canActivate, canTestSend }: P
                 <p
                   className="line-clamp-2 text-helper whitespace-pre-line text-text-strong"
                   dir={detail.locale === 'ar' ? 'rtl' : 'ltr'}
+                  lang={detail.locale}
                 >
                   {version.body}
                 </p>

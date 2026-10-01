@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "openapi:generate": "openapi-typescript ../api/openapi/v1.json -o src/lib/api/schema.d.ts",
-    "openapi:check": "node scripts/openapi-check.mjs"
+    "openapi:check": "node scripts/openapi-check.mjs",
+    "bundle:check": "node scripts/bundle-budget.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.1",

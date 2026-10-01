@@ -81,11 +81,14 @@ These rules were proven non-vacuous with deliberate violations (recorded in `imp
 ### Security baseline
 
 - **CORS:** a strict allowlist with credentials; wildcards are rejected at startup.
-- **Security headers:** `nosniff`, `DENY` framing, a strict CSP for API responses, a restrictive referrer policy and permissions policy, and no `Server` header.
+- **Security headers:** `nosniff`, `DENY` framing, a strict CSP for API responses, a restrictive referrer policy and permissions policy, and no `Server` header. The web app sends a per-request nonce CSP on every page, a script-less policy on files, COOP/CORP `same-origin`, and HSTS for an HTTPS site (D-117).
 - **Request bodies:** limited to 1 MB by default (a 413 problem response). Image upload endpoints opt into 5 MB plus multipart framing with `.AcceptsImageUpload()`, for that endpoint only.
-- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`, `geocode`), partitioned by user when signed in and by client IP otherwise. The limits are configurable, and rejections return a 429 problem response.
+- **Rate limits:** named policies (`auth`, `otp`, `search`, `availability`, `booking`, `review`, `qr`, `geocode`, `favorites`), partitioned by user when signed in and by client IP otherwise. The limits are configurable, and rejections return a 429 problem response with `Retry-After`. Which endpoint carries which policy is pinned by a test (Phase 17).
+- **Uploads:** type from magic bytes, a pixel cap read from the headers, then re-encoding from the pixels, so no metadata or appended payload survives (D-119).
+- **Keys at rest:** outside Development and Testing, the Data Protection key ring is wrapped with a mounted certificate (D-120). Rotation is described in `docs/security.md`.
 - **Forwarded headers:** trusted only from configured proxies.
-- **Caching:** API responses default to `Cache-Control: no-store` (per-user data is never cached by browsers or proxies).
+- **Caching:** API responses default to `Cache-Control: no-store` (per-user data is never cached by browsers or proxies). Anonymous public reads may be kept for 60 s (D-121).
+- **Observability:** OpenTelemetry traces and metrics, exported only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, and health checks for Hangfire and the outbox (D-118, `docs/observability.md`).
 
 ### Authentication, sessions and authorization (Phase 04)
 

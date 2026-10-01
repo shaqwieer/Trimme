@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in made by staff and seen live on the
@@ -25,6 +26,8 @@ async function staffSignIn(page: Page, email: string) {
 }
 
 async function expectNoSeriousAxe(page: Page, label: string) {
+  // A soft refresh replaces the <title> element; let it settle so axe never sees the page between the two.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   const blocking = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   expect(

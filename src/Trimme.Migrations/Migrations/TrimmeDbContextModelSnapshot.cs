@@ -971,6 +971,9 @@ namespace Trimme.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_bookings_reference");
 
+                    b.HasIndex("StartsAt")
+                        .HasDatabaseName("ix_bookings_starts_at");
+
                     b.HasIndex("CustomerId", "StartsAt")
                         .HasDatabaseName("ix_bookings_customer_id_starts_at");
 
@@ -1538,6 +1541,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasIndex("ShopId")
                         .HasDatabaseName("ix_users_shop_id");
+
+                    b.HasIndex("UserType", "CreatedAt")
+                        .HasDatabaseName("ix_users_user_type_created_at");
 
                     b.ToTable("users", "identity");
                 });
@@ -2469,6 +2475,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasIndex("ShopId", "ProfessionalId")
                         .HasDatabaseName("ix_reviews_shop_id_professional_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_reviews_status_created_at");
 
                     b.HasIndex("ProfessionalId", "Status", "CreatedAt")
                         .HasDatabaseName("ix_reviews_professional_id_status_created_at");

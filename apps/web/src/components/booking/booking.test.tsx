@@ -351,6 +351,16 @@ describe('FavoriteButton (R-CUS-10, D-098)', () => {
     fetchMock.mockRestore();
   });
 
+  it('without a session cookie, is the sign-in link at once and asks the API nothing (Phase 17)', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    renderWithIntl(
+      <FavoriteButton target={{ kind: 'shop', id: 's1' }} name="باربر هاوس" mayBeSignedIn={false} />,
+    );
+    expect(screen.getByRole('link', { name: 'سجّل الدخول لحفظ باربر هاوس في المفضلة' })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    fetchMock.mockRestore();
+  });
+
   it('toggles optimistically and rolls back when the API refuses', async () => {
     const user = userEvent.setup();
     api.DELETE.mockResolvedValue(fail(500, 'server.unexpected'));

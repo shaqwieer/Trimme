@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 test.describe('locales (R-WEB-04)', () => {
   test('locale_ar_is_rtl', async ({ page }) => {

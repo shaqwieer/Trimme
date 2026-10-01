@@ -37,7 +37,16 @@ public sealed class OperationsHub(IPermissionResolver permissions, IShopDirector
 
     public override async Task OnConnectedAsync()
     {
-        var group = await GroupForAsync(Context.User);
+        string? group;
+        try
+        {
+            group = await GroupForAsync(Context.User);
+        }
+        catch (OperationCanceledException) when (Context.ConnectionAborted.IsCancellationRequested)
+        {
+            return; // the client left during the handshake (a page navigated away): nothing to join, nothing to report
+        }
+
         if (group is null)
         {
             Context.Abort();

@@ -40,7 +40,7 @@ import {
 import { cutoffParts, endOf } from '@/lib/booking/format';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
-import { localizedName } from '@/lib/i18n/localized';
+import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 
 export type WizardShop = {
   slug: string;
@@ -280,10 +280,10 @@ export function BookingWizard({
               aria-label={t('backToShop')}
               className="inline-flex size-11 items-center justify-center rounded-button border border-border bg-surface text-text-strong hover:bg-bg-subtle"
             >
-              <Icon name="chevR" className="size-5" />
+              <Icon name="chevL" className="size-5" />
             </Link>
           ) : (
-            <IconButton icon="chevR" label={t('back')} variant="outline" onClick={goBack} />
+            <IconButton icon="chevL" label={t('back')} variant="outline" onClick={goBack} />
           )}
           <div className="min-w-0 flex-1">
             <h1
@@ -610,21 +610,23 @@ function ServiceStep({
           <legend className="pb-2 text-label font-bold text-text-strong">
             {t(group.kind === 'service' ? 'services' : 'packages')}
           </legend>
-          {group.items.map((o) => (
-            <ServiceOption
-              key={`${o.kind}-${o.id}`}
-              name="offer"
-              value={`${o.kind}:${o.id}`}
-              checked={value?.kind === o.kind && value.id === o.id}
-              onChange={() => onChange(o)}
-              title={localizedName(locale, o.nameAr, o.nameEn)}
-              description={
-                (locale === 'en' ? (o.descriptionEn ?? o.descriptionAr) : o.descriptionAr) ?? undefined
-              }
-              price={o.price}
-              durationMinutes={o.durationMinutes}
-            />
-          ))}
+          {group.items.map((o) => {
+            const description = localizedText(locale, o.descriptionAr, o.descriptionEn);
+            return (
+              <ServiceOption
+                key={`${o.kind}-${o.id}`}
+                name="offer"
+                value={`${o.kind}:${o.id}`}
+                checked={value?.kind === o.kind && value.id === o.id}
+                onChange={() => onChange(o)}
+                title={localizedName(locale, o.nameAr, o.nameEn)}
+                description={description?.text}
+                descriptionLang={description ? langIfOther(description, locale) : undefined}
+                price={o.price}
+                durationMinutes={o.durationMinutes}
+              />
+            );
+          })}
         </fieldset>
       ))}
     </div>

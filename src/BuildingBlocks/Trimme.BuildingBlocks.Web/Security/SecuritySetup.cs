@@ -39,7 +39,7 @@ public static class SecuritySetup
         services.AddSingleton<IAuthorizationPolicyProvider, TrimmeAuthorizationPolicyProvider>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
-        services.AddDataProtection().SetApplicationName(DataProtectionApplicationName);
+        services.AddDataProtection().SetApplicationName(DataProtectionApplicationName).ProtectTrimmeKeys(configuration, environment);
         services.AddOptions<KeyManagementOptions>()
             .Configure<IServiceScopeFactory>((options, scopes) => options.XmlRepository = new DatabaseXmlRepository(scopes));
 

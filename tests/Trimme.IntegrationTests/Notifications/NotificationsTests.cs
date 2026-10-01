@@ -12,6 +12,7 @@ using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.BuildingBlocks.Web.Hosting;
 using Trimme.BuildingBlocks.Web.Jobs;
+using Trimme.BuildingBlocks.Web.Security;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
 using Trimme.Modules.Administration.Domain;
@@ -451,8 +452,15 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         using var page = await admin.GetAsync(JobsSetup.DashboardPath, ct);
         page.StatusCode.ShouldBe(HttpStatusCode.OK);
         page.Content.Headers.ContentType!.MediaType.ShouldBe("text/html");
-        page.Headers.GetValues("Content-Security-Policy").Single().ShouldContain("frame-ancestors 'none'");
+        page.Headers.GetValues("Content-Security-Policy").Single().ShouldBe(SecurityHeadersMiddleware.DashboardContentSecurityPolicy);
         (await page.Content.ReadAsStringAsync(ct)).ShouldNotContain("Host=", Case.Insensitive, "the storage connection string is never shown");
+
+        // Inner pages run inside the dashboard's branch, which moves its prefix into PathBase: they keep the dashboard's
+        // policy rather than the API's `default-src 'none'`, which blocked their scripts and styles (found by the Phase 17
+        // E2E CSP guard).
+        using var inner = await admin.GetAsync($"{JobsSetup.DashboardPath}/recurring", ct);
+        inner.StatusCode.ShouldBe(HttpStatusCode.OK);
+        inner.Headers.GetValues("Content-Security-Policy").Single().ShouldBe(SecurityHeadersMiddleware.DashboardContentSecurityPolicy);
     }
 
     [Fact]

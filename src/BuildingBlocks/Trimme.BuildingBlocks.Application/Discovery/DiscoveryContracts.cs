@@ -74,6 +74,16 @@ public sealed record ShopOpenStatus(bool IsOpenNow, DateTimeOffset? ClosesAt, Da
 /// <summary>A weekly opening window in minutes from the weekday's local midnight; the end may pass midnight (D-082).</summary>
 public sealed record OpeningInterval(DayOfWeek Day, int StartMinute, int EndMinute);
 
+/// <summary>One probe of <see cref="ISlotProbe.ProbeManyAsync"/>: as <see cref="ISlotProbe.ProbeAsync"/>'s arguments.</summary>
+public sealed record SlotProbeRequest(
+    ShopId ShopId,
+    string TimeZone,
+    int DurationMinutes,
+    IReadOnlyList<ProfessionalId> ProfessionalIds,
+    DateOnly From,
+    DateOnly To,
+    int MaxSlots);
+
 /// <summary>
 /// Genuinely bookable starts of one offer, for discovery's bounded probe (implemented by the Availability module, D-091).
 /// It applies every online rule (lead time, horizon, the slot grid, collisions) and reads through the caller's scope.
@@ -95,6 +105,12 @@ public interface ISlotProbe
         int maxSlots,
         CancellationToken cancellationToken,
         Guid? ignoreBookingId = null);
+
+    /// <summary>
+    /// Several probes at once, results in request order. Their schedules and bookings are read with a fixed number of
+    /// queries whatever the number of requests (Phase 17: discovery probed each shop separately, about six queries each).
+    /// </summary>
+    Task<IReadOnlyList<IReadOnlyList<ProbedSlot>>> ProbeManyAsync(IReadOnlyList<SlotProbeRequest> requests, CancellationToken cancellationToken);
 
     /// <summary>The shop's local date at <paramref name="now"/>.</summary>
     DateOnly Today(string timeZone, DateTimeOffset now);

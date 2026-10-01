@@ -128,12 +128,21 @@ export function ShopCard({
 type ServiceOptionProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'children'> & {
   title: string;
   description?: string;
+  /** The description's language when it differs from the page's (an Arabic-only description in English). */
+  descriptionLang?: string;
   price: number;
   durationMinutes: number;
 };
 
 /** Selectable service/package row for the booking wizard (design 515–536), on a native radio. */
-export function ServiceOption({ title, description, price, durationMinutes, ...input }: ServiceOptionProps) {
+export function ServiceOption({
+  title,
+  description,
+  descriptionLang,
+  price,
+  durationMinutes,
+  ...input
+}: ServiceOptionProps) {
   const locale = useLocale() as AppLocale;
   return (
     <RadioCard
@@ -150,7 +159,11 @@ export function ServiceOption({ title, description, price, durationMinutes, ...i
       }
     >
       <span className="block text-[0.9375rem] font-bold text-text-primary">{title}</span>
-      {description && <span className="block text-helper text-text-secondary">{description}</span>}
+      {description && (
+        <span lang={descriptionLang} className="block text-helper text-text-secondary">
+          {description}
+        </span>
+      )}
     </RadioCard>
   );
 }

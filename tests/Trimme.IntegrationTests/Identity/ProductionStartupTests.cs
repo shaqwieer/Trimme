@@ -8,15 +8,20 @@ namespace Trimme.IntegrationTests.Identity;
 /// <summary>Development conveniences (dev OTP inbox, dev lookup key, no SMTP) can never reach production.</summary>
 public sealed class ProductionStartupTests(PostgresFixture postgres)
 {
+    private static readonly TestCertificates.File KeyCertificate = TestCertificates.Create("production");
+
     private static readonly Dictionary<string, string?> ProductionSecrets = new()
     {
         ["PersonalData:LookupKey"] = Convert.ToBase64String(new byte[32]),
         ["Email:Smtp:Host"] = "smtp.invalid",
+        ["DataProtection:CertificatePath"] = KeyCertificate.Path,
+        ["DataProtection:CertificatePassword"] = KeyCertificate.Password,
     };
 
     [Theory]
     [InlineData("PersonalData:LookupKey")]
     [InlineData("Email:Smtp:Host")]
+    [InlineData("DataProtection:CertificatePath")]
     public async Task Production_RefusesToStart_WithoutRequiredSecret(string missing)
     {
         var ct = TestContext.Current.CancellationToken;

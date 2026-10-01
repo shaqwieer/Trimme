@@ -81,7 +81,8 @@ internal static class SubscriptionAdminReader
     public static Error ShopNotFound() => Error.NotFound("shop.not_found", "The shop was not found.");
 
     public static Task<ShopSubscription?> FindAsync(TrimmeDbContext db, ShopId shopId, CancellationToken cancellationToken) =>
-        db.Set<ShopSubscription>().Include(s => s.Periods).Include(s => s.Overrides).SingleOrDefaultAsync(s => s.ShopId == shopId, cancellationToken);
+        db.Set<ShopSubscription>().Include(s => s.Periods).Include(s => s.Overrides).AsSplitQuery()
+            .SingleOrDefaultAsync(s => s.ShopId == shopId, cancellationToken);
 
     public static async Task<AdminShopSubscriptionResponse> ResponseAsync(
         TrimmeDbContext db, PlatformSettingsSnapshot settings, DateOnly today, ShopSummary shop, ShopSubscription? subscription, CancellationToken cancellationToken)

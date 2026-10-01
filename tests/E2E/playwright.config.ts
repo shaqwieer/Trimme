@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: '.',
-  testMatch: ['smoke/**/*.spec.ts', 'flows/**/*.spec.ts'],
+  testMatch: ['smoke/**/*.spec.ts', 'flows/**/*.spec.ts', 'audit/**/*.spec.ts'],
   outputDir: 'test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -30,6 +30,12 @@ export default defineConfig({
       name: 'flows',
       testMatch: 'flows/**/*.spec.ts',
       timeout: 90_000,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
+    },
+    {
+      // Phase 17 route audit: every page, each role, both locales (axe, language, indexing, overflow, CSP).
+      name: 'a11y',
+      testMatch: 'audit/**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
     },
   ],

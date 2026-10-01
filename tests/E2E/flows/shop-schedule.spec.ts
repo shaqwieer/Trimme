@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { type APIRequestContext, type BrowserContext, expect, type Page, test } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
+import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 09 flow (spec §19 E2, schedule part; R-AVL-02/03): the shop edits a professional's hours, records time off and
