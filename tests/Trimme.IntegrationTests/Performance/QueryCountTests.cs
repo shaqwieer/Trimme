@@ -2,7 +2,6 @@ using System.Data.Common;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
