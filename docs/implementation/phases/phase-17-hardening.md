@@ -194,7 +194,7 @@ Session 13 (2026-10-01).
 | k6 smoke | availability p95 34 ms, 0 errors; uncontended booking p95 29 ms; 320/320 checks |
 | Lighthouse mobile (`docs/performance.md` §4) | a11y/BP/SEO 100 on indexable pages; perf 88–92; LCP 3.5–3.8 s |
 | No-transfer and R-NEG-08 grep gates | PASS: R-NEG-08 hits only in tests, seeders and the excluded geocoder |
-| gitleaks `dir` | PASS, no leaks; `git` after the commit: GITLEAKS |
+| gitleaks `dir` | PASS, no leaks; `git` (v8.30.1, 67 commits, after the phase commit `41412ee`): no leaks |
 
 **Found and fixed during the phase (beyond the planned work):**
 - the Hangfire dashboard's inner pages blocked by the API CSP;

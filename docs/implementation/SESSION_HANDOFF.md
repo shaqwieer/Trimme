@@ -3,8 +3,8 @@
 - **Updated:** 2026-10-01 (Session 13: Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Pushed: everything up to `3330ec0` (the D-116 plan change).
-  - Local only: the Phase 17 commit COMMIT and the `docs:` commit that records its hash (run `git log --oneline -3`).
-- **HEAD commit:** the `docs:` commit recording the Phase 17 hash and the gitleaks `git` result, on top of COMMIT (feat: phase 17 hardening).
+  - Local only: the Phase 17 commit `41412ee` and the `docs:` commit that records its hash (run `git log --oneline -3`).
+- **HEAD commit:** the `docs:` commit recording the Phase 17 hash and the gitleaks `git` result, on top of `41412ee` (feat: phase 17 hardening).
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose,** on the volume from this session's fresh `down -v` + `up --build`. After that, the API was rebuilt with the hub fix.
   - Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -82,7 +82,7 @@ The rest is recorded in DV-C11 and DV-T14.
 | Web `format:check`, `lint`, `typecheck`, `test`, `build`, `openapi:check`, `bundle:check` | PASS: 385 tests; 79 routes within budget |
 | Fresh `down -v` + `up --build`, `CI=1 --workers=2 --retries=0` | 85/85 ×2; 0 × 5xx, 0 × 429. After the hub fix: run 3 84/85 (axe `<title>` race, fixed); run 4 83/85 (pagination overflow at 390 px on a six-page list, fixed); run 5 **85/85** |
 | Linux Chromium: route audit, keyboard pass, `public-discovery`, `customer-booking` | 26/26 (`customer-booking` rerun after its seeded numbers' hourly OTP limit, which runs 4 and 5 had used) |
-| ZAP baseline; `pnpm audit`; NuGet audit; gitleaks `dir`/`git` | 0 FAIL; clean; clean; no leaks (GITLEAKS) |
+| ZAP baseline; `pnpm audit`; NuGet audit; gitleaks `dir`/`git` | 0 FAIL; clean; clean; no leaks (`git`: 67 commits) |
 | Phone-leak sweep | 0 everywhere (logs, 50,601 spans, Hangfire, outbox, audit) |
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
