@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-10-01 (Session 14: dark mode, after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Session 14's dark-mode commit is **local and not pushed**. Everything up to `f864343` was already pushed.
+  - Pushed: everything, including Session 14's dark mode (`bf2aea2`, `5cec1eb`), at the user's request.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - The `web` service was rebuilt from this session's tree (`docker compose -f infra/docker-compose.yml -p trimme up -d --build --no-deps web`). The API and database were not touched.
@@ -135,7 +135,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-1. Review the dark-mode commits (local, not pushed). Push only when you choose. CI's `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests); keep an eye on the 45-minute stack job.
+1. Done: dark mode pushed to `origin/main`. Watch its CI run: `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests), so keep an eye on the 45-minute stack job.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.
 
