@@ -105,6 +105,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **LCP on simulated slow 4G is 3.5–3.8 s** (target 2.5 s; next steps in `docs/performance.md` §4).
 - **A contended booking race costs about 1 s** (deadlock path, D-089); a per-barber advisory lock is recommended (D-123).
 - **Native date and time inputs** follow the browser's language (DV-T14).
+- **The OTP limit when re-running E2E.** `customer-booking` signs in with three fixed seeded numbers, and each number gets 5 OTP codes per hour. More than about five suite runs in an hour against one stack give 429 on `/auth/otp/request`. That is the limit working, not a regression. CI uses a fresh stack per run.
 - **Production setup is not in this repository** (D-116):
   - Nginx with `X-Forwarded-For` overwrite, `KnownProxies`/`KnownNetworks` and `client_max_body_size 6m`;
   - the certificate and the lookup key;

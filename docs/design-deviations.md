@@ -151,6 +151,7 @@ DV-C11 — Phase 17 visual review (all 25 product screens against `design/refere
   - Review counts use Arabic and English plural forms («٤ تقييمات», «268 تقييماً», «1 review»).
   - Admin search buttons used two styles; there is now one outlined style.
   - A suspended shop was red on the shops list but grey for subscriptions; it is grey (neutral) in both, as drawn.
+- **Changed: pagination on a phone** (design 758–774). Below `md`, only previous, the current page and next are shown, and the summary line gives the range and total. The design's full row of seven numbered cells plus two arrows needs about 440 px, wider than a 390 px phone; the route audit found the overflow on a six-page list (D-122). Tablet and desktop keep the design's row.
 - **Accepted, as built since earlier phases.**
   - **Shop and admin header.** The global header search is not built; search lives on the lists that have it (appointments, customers, shops, bookings). The sidebar keeps short labels («التقويم», «المواعيد»). The sidebar footer shows the shop or role and a sign-out button instead of the design's account card.
   - **Customer screens.**

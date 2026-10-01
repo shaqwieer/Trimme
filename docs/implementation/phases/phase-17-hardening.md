@@ -180,7 +180,7 @@ Session 13 (2026-10-01).
 |---|---|
 | Re-validation of Phase 16 | `QrTests` 3/3, `qr.spec.ts` 3/3 |
 | `dotnet build Trimme.slnx -c Release --no-incremental` | PASS, 0 warnings |
-| Unit / architecture / integration | PASS: 429 / 65 / 199 (420 → 429, 175 → 199). EF query-shape warnings now throw in Testing |
+| Unit / architecture / integration | PASS: 429 / 65 / 199 (420 → 429, 175 → 199), rerun on the committed `41412ee` with the same counts. EF query-shape warnings now throw in Testing |
 | `dotnet ef migrations has-pending-model-changes` | PASS, no changes |
 | `pnpm audit`; `dotnet list package --vulnerable --include-transitive` | No known vulnerabilities; no vulnerable packages |
 | OpenAPI | `pnpm openapi:check` PASS (unchanged) |
