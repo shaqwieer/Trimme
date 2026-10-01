@@ -24,7 +24,10 @@
   - Web: `pnpm lint`, `typecheck`, `format:check`, `test` (44 files, 423 tests), `build` and `bundle:check` all pass.
   - `flows/theme.spec.ts`: 7 tests, 5 consecutive green runs.
   - `a11y-dark` route audit: 8/8, axe 0 serious or critical, colour contrast included, and every page confirmed dark.
-  - Full E2E on compose: 99/100. The failure was `qr.spec` («موقوف» not shown within 5 s under parallel load); it passed 3/3 alone. An earlier full run on a bare `next start` failed only on that harness: dev routes off, no hub proxy, plus a tenancy timing flake that passed 3/3 alone.
+  - Full E2E on compose (all four projects): 99/100. The one failure was `qr.spec`: the switched-off code still shows active after 5 s under parallel load; it passes 3/3 alone.
+  - Without `a11y-dark`: 89/92. The failures were `qr.spec`, `customer-booking` E7 (Sara's seeded visits are past the 7-day review window on this volume) and the retired-QR page reporting no `lang`/`dir` in the light audit.
+  - **The pre-change baseline (`f864343`) on the same volume fails the same three tests** (82/85), so they are pre-existing volume and load issues, not regressions. A run on a bare `next start` failed only where the harness differs (dev routes off, no hub proxy).
+- **Visual pass in dark** at 1280 and 390, with data loaded: the shop board, appointment drawer, cancel dialog, day and week calendars, the gallery's dropdown, toasts, tooltip, dialog, sheet and confirm, the search filter sheet, the booking wizard (selected slot, disabled Next), dashboards, tables, forms, charts, the QR pages and poster, account and auth.
 - **Not inspected by hand:** the NVDA pass (still open from Phase 17), and Safari and Firefox. Chrome only.
 
 ## Completed in Session 13 (Phase 17)
@@ -114,6 +117,9 @@ The rest is recorded in DV-C11 and DV-T14.
 
 ## Known issues or blockers
 - **The NVDA pass is not run** (manual, `docs/accessibility.md` §3); 2 points are held back.
+- **E2E on the long-lived volume:**
+  - E7 needs a fresh volume (`docker compose down -v`), as its own message says.
+  - `qr.spec`'s switch-off assertion and the retired-QR `lang`/`dir` check fail under full parallel load, on the baseline too. They are worth a look: the 5 s wait, and the 404 path for retired codes.
 - **LCP on simulated slow 4G is 3.5–3.8 s** (target 2.5 s; next steps in `docs/performance.md` §4).
 - **A contended booking race costs about 1 s** (deadlock path, D-089); a per-barber advisory lock is recommended (D-123).
 - **Native date and time inputs** follow the browser's language (DV-T14).
@@ -129,7 +135,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-1. Done: pushed to `origin/main`. Watch the CI run for the Phase 17 push; it runs about 85 Playwright tests, including the route audit, plus the bundle budgets and both audits; the stack job allows 45 minutes.
+1. Review the dark-mode commits (local, not pushed). Push only when you choose. CI's `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests); keep an eye on the 45-minute stack job.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.
 

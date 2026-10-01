@@ -241,12 +241,15 @@
   color-scheme: light dark;
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
-}
+/* Screen only, like the palette: an explicit Dark choice must not reach the printer. */
+@media screen {
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
 }
 
 @media print {

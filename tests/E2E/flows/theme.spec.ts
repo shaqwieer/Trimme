@@ -116,6 +116,10 @@ test.describe('dark mode (D-124)', () => {
     await expectBackground(page, DARK_PAGE);
     await page.emulateMedia({ media: 'print' });
     await expectBackground(page, LIGHT_PAGE);
+    // Native controls and the browser's own colours follow color-scheme, which must be light on paper too.
+    await expect
+      .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
+      .toBe('light');
   });
 
   test('works from the keyboard: Enter opens, arrows preview, Escape closes back on the button', async ({
