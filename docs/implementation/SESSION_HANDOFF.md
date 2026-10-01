@@ -2,9 +2,8 @@
 
 - **Updated:** 2026-10-01 (Session 13: Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Pushed: everything up to `3330ec0` (the D-116 plan change).
-  - Local only: the Phase 17 commit `41412ee` and the `docs:` commit that records its hash (run `git log --oneline -3`).
-- **HEAD commit:** the `docs:` commit recording the Phase 17 hash and the gitleaks `git` result, on top of `41412ee` (feat: phase 17 hardening).
+  - Pushed: everything, including Phase 17 (`41412ee` and its `docs:` follow-ups), at the user's request.
+- **HEAD commit:** the `docs:` commit that records this push, on top of `944993d` (Phase 17 docs follow-up) and `41412ee` (feat: phase 17 hardening).
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose,** on the volume from this session's fresh `down -v` + `up --build`. After that, the API was rebuilt with the hub fix.
   - Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -117,7 +116,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-1. Push when the user asks: `git push origin main`. CI now runs about 85 Playwright tests, including the route audit, plus the bundle budgets and both audits; the stack job allows 45 minutes.
+1. Done: pushed to `origin/main`. Watch the CI run for the Phase 17 push; it runs about 85 Playwright tests, including the route audit, plus the bundle budgets and both audits; the stack job allows 45 minutes.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.
 
