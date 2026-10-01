@@ -2,13 +2,16 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Tajawal } from 'next/font/google';
 import { locale as localeParam } from 'next/root-params';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { connection } from 'next/server';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { DirectionProvider } from '@/components/providers/DirectionProvider';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { localeDirection, routing } from '@/i18n/routing';
 import { OG_IMAGE, OG_LOCALE, siteUrl } from '@/lib/seo/site';
-import { BRAND_NAVY_900 } from '@/styles/brand';
+import { colorScheme, parseTheme, THEME_COOKIE, themeAttribute } from '@/lib/theme/theme';
+import { BRAND_NAVY_900, DARK_BG_PAGE } from '@/styles/brand';
 import '../globals.css';
 
 const tajawal = Tajawal({
@@ -60,11 +63,31 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = {
-  themeColor: BRAND_NAVY_900,
-  width: 'device-width',
-  initialScale: 1,
-};
+async function themePreference() {
+  return parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+}
+
+/**
+ * `color-scheme` follows the saved theme (D-124), so the browser paints its canvas, scrollbars and form controls in the
+ * right scheme before the stylesheet arrives. The browser UI colour follows the scheme in System mode.
+ */
+export async function generateViewport(): Promise<Viewport> {
+  const preference = await themePreference();
+  return {
+    themeColor:
+      preference === 'dark'
+        ? DARK_BG_PAGE
+        : preference === 'light'
+          ? BRAND_NAVY_900
+          : [
+              { media: '(prefers-color-scheme: dark)', color: DARK_BG_PAGE },
+              { media: '(prefers-color-scheme: light)', color: BRAND_NAVY_900 },
+            ],
+    colorScheme: colorScheme(preference),
+    width: 'device-width',
+    initialScale: 1,
+  };
+}
 
 export default async function LocaleLayout({ children }: LayoutProps<'/[locale]'>) {
   // Every page renders per request so its scripts carry that request's CSP nonce (D-117); a prerendered page would
@@ -74,12 +97,22 @@ export default async function LocaleLayout({ children }: LayoutProps<'/[locale]'
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
+  // The saved theme is rendered into the HTML (no flash, no hydration mismatch, no inline script); System has no
+  // attribute and the stylesheet follows the OS directly (D-124).
+  const theme = await themePreference();
 
   return (
-    <html lang={locale} dir={localeDirection[locale]} className={`${tajawal.variable} ${inter.variable}`}>
+    <html
+      lang={locale}
+      dir={localeDirection[locale]}
+      data-theme={themeAttribute(theme)}
+      className={`${tajawal.variable} ${inter.variable}`}
+    >
       <body>
         <NextIntlClientProvider>
-          <DirectionProvider dir={localeDirection[locale]}>{children}</DirectionProvider>
+          <ThemeProvider initial={theme}>
+            <DirectionProvider dir={localeDirection[locale]}>{children}</DirectionProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

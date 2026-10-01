@@ -15,6 +15,14 @@
     },
     "brand": {
       "logoAlt": "تريمي"
+    },
+    "theme": {
+      "label": "المظهر",
+      "menuLabel": "المظهر: {value}",
+      "system": "تلقائي",
+      "light": "فاتح",
+      "dark": "داكن",
+      "systemHint": "«تلقائي» يتبع إعداد جهازك ويتغيّر معه."
     }
   },
   "shell": {
@@ -359,7 +367,8 @@
     "groups": {
       "preferences": "التفضيلات",
       "account": "الحساب",
-      "support": "الدعم"
+      "support": "الدعم",
+      "appearance": "المظهر"
     },
     "rows": {
       "language": "اللغة",

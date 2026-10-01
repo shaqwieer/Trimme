@@ -72,7 +72,7 @@ export function PauseCard({
           aria-hidden="true"
           className={cn(
             'flex size-10 shrink-0 items-center justify-center rounded-button',
-            paused ? 'bg-warning-100 text-warning-700' : 'bg-brand-100 text-brand-700',
+            paused ? 'bg-warning-50 text-warning-700' : 'bg-brand-100 text-brand-700',
           )}
         >
           <Icon name="pause" className="size-5" />

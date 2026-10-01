@@ -143,7 +143,7 @@ const iconButtonVariants = {
   outline: 'border-[1.5px] border-border-strong bg-surface text-text-strong hover:border-brand-500',
   secondary: 'bg-brand-100 text-brand-700 hover:bg-brand-150',
   ghost: 'text-text-strong hover:bg-brand-100',
-  onDark: 'text-on-navy-muted hover:bg-on-navy-subtle hover:text-on-navy',
+  onDark: 'text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome',
 } as const;
 
 const iconButtonSizes = {

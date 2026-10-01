@@ -48,12 +48,12 @@ export default async function ShopSubscriptionPage({ params }: PageProps<'/[loca
                 </InlineAlert>
               )}
               <section
-                className="flex flex-col gap-4 rounded-card bg-navy-900 p-6 text-on-navy shadow-e2"
+                className="flex flex-col gap-4 rounded-card bg-chrome p-6 text-on-chrome shadow-e2"
                 data-testid="shop-subscription-card"
                 aria-labelledby="shop-subscription-plan"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-helper font-bold tracking-wide text-on-navy-muted">
+                  <span className="text-helper font-bold tracking-wide text-on-chrome-muted">
                     {t('eyebrow')}
                   </span>
                   <StatusBadge kind="subscription" status={mine.status} />
@@ -77,14 +77,14 @@ export default async function ShopSubscriptionPage({ params }: PageProps<'/[loca
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={mine.elapsedPercent}
-                        className="h-2 overflow-hidden rounded-full bg-navy-800"
+                        className="h-2 overflow-hidden rounded-full bg-chrome-800"
                       >
                         <div
-                          className="h-full rounded-full bg-brand-300"
+                          className="h-full rounded-full bg-brand-300 dark:bg-on-chrome-accent"
                           style={{ width: `${mine.elapsedPercent}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-helper text-on-navy-muted">
+                      <div className="flex justify-between text-helper text-on-chrome-muted">
                         <span>
                           {t('start')}: {mine.startDate ? longDate(mine.startDate, lang) : '—'}
                         </span>
@@ -99,7 +99,7 @@ export default async function ShopSubscriptionPage({ params }: PageProps<'/[loca
                     {t('none')}
                   </h2>
                 )}
-                <p className="text-helper text-on-navy-muted">{t('note')}</p>
+                <p className="text-helper text-on-chrome-muted">{t('note')}</p>
               </section>
             </div>
             <section

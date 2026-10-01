@@ -181,7 +181,7 @@ export function QrCard({ name, url, downloadHref, image, share }: QrCardProps) {
       <div
         role={image ? undefined : 'img'}
         aria-label={image ? undefined : t('code', { name })}
-        className="flex size-24 shrink-0 items-center justify-center rounded-button bg-navy-900 text-on-navy-accent"
+        className="flex size-24 shrink-0 items-center justify-center rounded-button bg-chrome text-on-chrome-accent"
       >
         {image ?? <Icon name="qr" className="size-14" />}
       </div>

@@ -142,7 +142,13 @@ async function structuredDataProblems(page: Page): Promise<string[]> {
   return problems;
 }
 
-async function auditPage(page: Page, locale: Locale, route: AuditRoute, origin: string): Promise<string[]> {
+async function auditPage(
+  page: Page,
+  locale: Locale,
+  route: AuditRoute,
+  origin: string,
+  colorScheme: 'light' | 'dark' | 'no-preference' | null,
+): Promise<string[]> {
   const problems: string[] = [];
   const errors: string[] = [];
   const onError = (error: Error) => errors.push(error.message);
@@ -157,6 +163,14 @@ async function auditPage(page: Page, locale: Locale, route: AuditRoute, origin: 
     await page.goto(url, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
     if (route.map) await page.waitForTimeout(800);
+
+    if (colorScheme === 'dark') {
+      const background = await page.evaluate(
+        () => getComputedStyle(document.documentElement).backgroundColor,
+      );
+      if (background !== 'rgb(12, 22, 32)')
+        problems.push(`not in the dark theme (page background ${background})`);
+    }
 
     const head = await page.evaluate(() => ({
       lang: document.documentElement.getAttribute('lang'),
@@ -245,7 +259,12 @@ test.describe('route audit (Phase 17)', () => {
         baseURL,
       }, testInfo) => {
         test.setTimeout(10 * 60_000);
-        const context = await browser.newContext({ locale: locale === 'ar' ? 'ar-SA' : 'en-US' });
+        // The a11y-dark project audits the same pages with the OS in dark mode (D-124).
+        const colorScheme = testInfo.project.use.colorScheme ?? 'light';
+        const context = await browser.newContext({
+          locale: locale === 'ar' ? 'ar-SA' : 'en-US',
+          colorScheme,
+        });
         const page = await context.newPage();
         await stubTiles(page);
         const cleanUp = await signedIn(context, page, role);
@@ -259,7 +278,7 @@ test.describe('route audit (Phase 17)', () => {
         const visited = routes(role, runtime);
         try {
           for (const route of visited) {
-            problems.push(...(await auditPage(page, locale, route, baseURL!)));
+            problems.push(...(await auditPage(page, locale, route, baseURL!, colorScheme)));
           }
         } finally {
           await cleanUp();

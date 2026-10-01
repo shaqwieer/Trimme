@@ -27,10 +27,19 @@
   --color-navy-800: #1b3a55;
   --color-navy-900: #10283d; /* primary buttons, headings, sidebar */
   --color-navy-950: #0a1b2a;
-  --color-on-navy: #ffffff;
-  --color-on-navy-muted: #8fb0d0; /* 6.67:1 on navy */
-  --color-on-navy-accent: #7fa8d4;
-  --color-on-navy-subtle: rgb(255 255 255 / 0.1);
+  --color-on-navy: #ffffff; /* text on an ink fill (navy-900, danger) — becomes dark when the fill turns light */
+
+  /*
+   * Chrome: brand navy panels that stay navy in both themes (dashboard sidebar and drawer, toasts, landing hero and
+   * partner band, subscription card, QR poster, badges over photos). `navy-900` itself is "ink" and inverts in dark.
+   */
+  --color-chrome: #10283d;
+  --color-chrome-800: #1b3a55;
+  --color-chrome-950: #0a1b2a;
+  --color-on-chrome: #ffffff;
+  --color-on-chrome-muted: #8fb0d0; /* 6.67:1 on chrome */
+  --color-on-chrome-accent: #7fa8d4;
+  --color-on-chrome-subtle: rgb(255 255 255 / 0.1);
   --color-selection: #d6e5f5;
 
   /* Text */
@@ -156,14 +165,14 @@
   --radius-pill: 20px;
   --radius-full: 9999px;
 
-  /* Elevation */
-  --shadow-e1: 0 1px 2px rgb(16 40 61 / 0.04);
-  --shadow-e2: 0 6px 16px -6px rgb(16 40 61 / 0.16);
-  --shadow-e3: 0 18px 40px -12px rgb(16 40 61 / 0.26);
-  --shadow-button-hover: 0 6px 16px -6px rgb(16 40 61 / 0.35);
-  --shadow-toast: 0 18px 40px -14px rgb(16 40 61 / 0.6);
-  --shadow-segment: 0 1px 2px rgb(16 40 61 / 0.08);
-  --shadow-sheet: 0 -18px 40px -20px rgb(16 40 61 / 0.5);
+  /* Elevation — colours are variables (see :root below) so the dark theme can deepen them. */
+  --shadow-e1: 0 1px 2px var(--elevation-1);
+  --shadow-e2: 0 6px 16px -6px var(--elevation-2);
+  --shadow-e3: 0 18px 40px -12px var(--elevation-3);
+  --shadow-button-hover: 0 6px 16px -6px var(--elevation-button-hover);
+  --shadow-toast: 0 18px 40px -14px var(--elevation-toast);
+  --shadow-segment: 0 1px 2px var(--elevation-segment);
+  --shadow-sheet: 0 -18px 40px -20px var(--elevation-sheet);
 
   /* Breakpoints (D-041): 390 phone reference · 768 tablet (drawer) · 1200 desktop (fixed sidebar) · 1440 wide */
   --breakpoint-sm: 24.375rem;
@@ -192,6 +201,24 @@
   }
 }
 
+/*
+ * Theme (D-124). `data-theme` on <html> is set by the server from the `trimme-theme` cookie only for an explicit Light
+ * or Dark choice; System has no attribute and follows `prefers-color-scheme`. Both branches are screen-only, so
+ * printed pages (QR posters, receipts) always use the light palette. The variant also powers `dark:` utilities.
+ */
+@custom-variant dark {
+  @media screen {
+    &:where([data-theme='dark'], [data-theme='dark'] *) {
+      @slot;
+    }
+  }
+  @media screen and (prefers-color-scheme: dark) {
+    &:where(:not([data-theme='light'], [data-theme='light'] *)) {
+      @slot;
+    }
+  }
+}
+
 /* Layout constants used by shells (not Tailwind utilities). */
 :root {
   --layout-sidebar-width: 264px;
@@ -202,4 +229,131 @@
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 320ms;
+
+  --elevation-1: rgb(16 40 61 / 0.04);
+  --elevation-2: rgb(16 40 61 / 0.16);
+  --elevation-3: rgb(16 40 61 / 0.26);
+  --elevation-button-hover: rgb(16 40 61 / 0.35);
+  --elevation-toast: rgb(16 40 61 / 0.6);
+  --elevation-segment: rgb(16 40 61 / 0.08);
+  --elevation-sheet: rgb(16 40 61 / 0.5);
+
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+}
+
+/*
+ * Dark palette (D-124). Same token names, so every utility re-themes without per-component changes. Surfaces step up
+ * in lightness (page → card → subtle) instead of relying on shadows; text and status colours are lightened to keep
+ * ≥4.5:1 on every surface (asserted in tokens.test.ts). Ink (`navy-900`) turns light, so primary buttons and selected
+ * chips become light fills with dark `on-navy` text; brand panels use `chrome`, which stays navy.
+ */
+/* Unlayered and after the :root block above, so it wins over both Tailwind's theme layer and the light elevations. */
+:root {
+  @variant dark {
+    --color-brand-50: #112030;
+    --color-brand-100: #172b3e;
+    --color-brand-150: #1c3349;
+    --color-brand-200: #223b54;
+    --color-brand-300: #36536f;
+    --color-brand-500: #6d9bcb;
+    --color-brand-600: #7fadd9;
+    --color-brand-700: #8dbbe8;
+    --color-navy-800: #f1f6fb;
+    --color-navy-900: #dce8f4;
+    --color-navy-950: #c3d5e8;
+    --color-on-navy: #0c1620;
+    --color-selection: #2b4a6b;
+
+    --color-chrome: #10283d;
+    --color-chrome-800: #1b3a55;
+    --color-chrome-950: #0a1b2a;
+
+    --color-text-primary: #e7eef5;
+    --color-text-strong: #c5d3e0;
+    --color-text-secondary: #a3b3c3;
+    --color-text-tertiary: #a3b3c3;
+    --color-text-placeholder: #93a5b7;
+    --color-text-disabled: #5d6e7f;
+    --color-text-link: #8dbbe8;
+    --color-text-inverse: #0c1620;
+
+    --color-decorative-400: #71859a;
+    --color-decorative-300: #7d90a3;
+    --color-decorative-200: #34465a;
+
+    --color-border: #233447;
+    --color-border-input: #2e4257;
+    --color-border-strong: #38506a;
+    --color-border-dashed: #3d566f;
+    --color-border-subtle: #1d2d3d;
+    --color-border-row: #1b2a39;
+    --color-switch-off: #71849a;
+
+    --color-surface: #142230;
+    --color-bg-page: #0c1620;
+    --color-bg-app: #1e2c3a; /* disabled fills and skeleton base: a raised neutral, not a hole */
+    --color-bg-subtle: #1a2a3a;
+    --color-bg-muted: #1b2a38;
+    --color-bg-tile: #172635;
+    --color-skeleton-highlight: #2a3d52;
+    --color-header-glass: rgb(12 22 32 / 0.9);
+    --color-overlay: rgb(2 8 14 / 0.66);
+
+    --color-success-50: #11291f;
+    --color-success-500: #3daa77;
+    --color-success-700: #7dd4a8;
+    --color-warning-50: #2b2112;
+    --color-warning-500: #e0a63f;
+    --color-warning-700: #f0c47a;
+    --color-warning-border: #4d3b1d;
+    --color-danger-50: #2e1719;
+    --color-danger-100: #3b1d20;
+    --color-danger-500: #e06a6a;
+    --color-danger-700: #f4a3a3;
+    --color-danger-surface: #24151a;
+    --color-danger-border: #6b3236;
+    --color-info-50: #13263a;
+    --color-rating: #e8ad45;
+
+    --color-status-pending-bg: #2b2112;
+    --color-status-pending-fg: #f0c47a;
+    --color-status-pending-dot: #e0a63f;
+    --color-status-confirmed-bg: #13263a;
+    --color-status-confirmed-fg: #9cc4ec;
+    --color-status-confirmed-dot: #6d9bcb;
+    --color-status-arrived-bg: #172b3e;
+    --color-status-arrived-fg: #c5d3e0;
+    --color-status-arrived-dot: #7fadd9;
+    --color-status-completed-bg: #11291f;
+    --color-status-completed-fg: #7dd4a8;
+    --color-status-completed-dot: #3daa77;
+    --color-status-cancelled-bg: #2e1719;
+    --color-status-cancelled-fg: #f4a3a3;
+    --color-status-cancelled-dot: #e06a6a;
+    --color-status-noshow-bg: #1b2a38;
+    --color-status-noshow-fg: #a3b3c3;
+    --color-status-noshow-dot: #71859a;
+
+    --elevation-1: rgb(0 0 0 / 0.3);
+    --elevation-2: rgb(0 0 0 / 0.45);
+    --elevation-3: rgb(0 0 0 / 0.6);
+    --elevation-button-hover: rgb(0 0 0 / 0.55);
+    --elevation-toast: rgb(0 0 0 / 0.75);
+    --elevation-segment: rgb(0 0 0 / 0.4);
+    --elevation-sheet: rgb(0 0 0 / 0.7);
+  }
 }

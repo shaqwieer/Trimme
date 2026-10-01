@@ -1,20 +1,33 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-01 (Session 13: Phase 17)
+- **Updated:** 2026-10-01 (Session 14: dark mode, after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Pushed: everything, including Phase 17 (`41412ee` and its `docs:` follow-ups), at the user's request.
-- **HEAD commit:** the `docs:` commit that records this push, on top of `944993d` (Phase 17 docs follow-up) and `41412ee` (feat: phase 17 hardening).
+  - Session 14's dark-mode commit is **local and not pushed**. Everything up to `f864343` was already pushed.
 - **Working tree:** clean after the commit.
-- **Local stack: running, all in compose,** on the volume from this session's fresh `down -v` + `up --build`. After that, the API was rebuilt with the hub fix.
-  - Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+- **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - The `web` service was rebuilt from this session's tree (`docker compose -f infra/docker-compose.yml -p trimme up -d --build --no-deps web`). The API and database were not touched.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
-  - Optional telemetry: `TRIMME_OTLP_ENDPOINT=http://host.docker.internal:4317` with a local collector (`docs/observability.md` §5).
-  - This volume has had five full E2E runs and the Linux Chromium run.
-- **Current phase:** 17 is complete; it is the last phase (D-116).
-- **Phase score:** 98 / 100 (Phase 17). 2 points are held back for the NVDA pass, which has not been run.
-- **Last fully completed phase:** 17, localization, SEO, accessibility, security, observability and performance.
+- **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode was requested after the phases and is recorded as D-124, not as a phase.
 
-## Completed this session
+## Session 14: dark mode (D-124)
+- **What:** Light / Dark / System (System by default) across every page and portal.
+  - The theme button is in every shell header (public and auth pages, customer, shop and admin dashboards), and the customer account page has an Appearance setting.
+  - The choice is saved in the `trimme-theme` cookie (one year) and rendered by the server: no flash, no inline script, no hydration mismatch, correct even without JavaScript.
+  - System follows the OS live through CSS. Open tabs follow a change through a `BroadcastChannel`. Printing stays light.
+- **How:** one dark palette under `@custom-variant dark` in `tokens.css`, with the same token names, so utilities re-theme.
+  - `navy-900` is ink and inverts.
+  - New `chrome` tokens keep brand navy panels navy: the sidebar and drawer, toasts, hero, subscription card, poster, photo badges and map pins.
+  - Shadow colours are variables. MapLibre controls are restyled; tiles, photos and QR codes are untouched.
+  - Rules for new UI: `docs/theming.md`.
+- **Fixes found on the way:** `bg-warning-100` (not a token) on the paused chip is now `warning-50` (DV-T15). The header selector first used Radix's dropdown, which pushed public pages to 228.7 KB (budget 220). It is now a native radio disclosure (216.6 KB). A focus bug in that disclosure, where a mouse choice was lost, was caught in the browser and is now covered by a unit test.
+- **Evidence:**
+  - Web: `pnpm lint`, `typecheck`, `format:check`, `test` (44 files, 423 tests), `build` and `bundle:check` all pass.
+  - `flows/theme.spec.ts`: 7 tests, 5 consecutive green runs.
+  - `a11y-dark` route audit: 8/8, axe 0 serious or critical, colour contrast included, and every page confirmed dark.
+  - Full E2E on compose: 99/100. The failure was `qr.spec` («موقوف» not shown within 5 s under parallel load); it passed 3/3 alone. An earlier full run on a bare `next start` failed only on that harness: dev routes off, no hub proxy, plus a tenancy timing flake that passed 3/3 alone.
+- **Not inspected by hand:** the NVDA pass (still open from Phase 17), and Safari and Firefox. Chrome only.
+
+## Completed in Session 13 (Phase 17)
 Phase 17 (`phases/phase-17-hardening.md`, D-117 to D-123).
 
 **Security** (`docs/security.md`):

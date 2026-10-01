@@ -8,6 +8,7 @@ import { Sheet } from '@/components/ui/overlays';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
 import { AdminNotificationBell, NotificationBell } from '@/components/notifications/NotificationBell';
+import { ThemeMenu } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { activeHref, adminNav, shopNav, visibleItems } from './navigation';
 
@@ -58,7 +59,7 @@ export function DashboardShell({
         {t('common.skipToContent')}
       </a>
 
-      <aside className="fixed inset-y-0 start-0 z-40 hidden w-[var(--layout-sidebar-width)] bg-navy-900 lg:flex">
+      <aside className="fixed inset-y-0 start-0 z-40 hidden w-[var(--layout-sidebar-width)] bg-chrome lg:flex">
         {sidebar()}
       </aside>
 
@@ -81,6 +82,7 @@ export function DashboardShell({
           {titleAddon}
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
+            <ThemeMenu />
             {!notifications ? (
               <IconButton icon="bell" label={t('shell.notifications')} />
             ) : variant === 'shop' ? (
@@ -126,7 +128,7 @@ function SidebarContent({
     <div className="flex w-full flex-col gap-1 overflow-y-auto px-3 py-5">
       <div className="flex flex-col items-center gap-2 pb-5">
         <Logo height={36} tone="onDark" />
-        <span className="font-latin text-eyebrow font-bold tracking-[0.16em] text-on-navy-accent">
+        <span className="font-latin text-eyebrow font-bold tracking-[0.16em] text-on-chrome-accent">
           {variant === 'shop' ? t('shell.shopEyebrow') : t('shell.adminEyebrow')}
         </span>
       </div>
@@ -143,8 +145,8 @@ function SidebarContent({
                   className={cn(
                     'flex min-h-11 items-center gap-3 rounded-field px-3 text-label transition-colors',
                     active
-                      ? 'bg-on-navy-subtle font-bold text-on-navy'
-                      : 'font-medium text-on-navy-muted hover:bg-on-navy-subtle hover:text-on-navy',
+                      ? 'bg-on-chrome-subtle font-bold text-on-chrome'
+                      : 'font-medium text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome',
                   )}
                 >
                   <Icon aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />

@@ -12,8 +12,11 @@ const tones: Record<BadgeTone, { box: string; dot: string }> = {
   success: { box: 'bg-status-completed-bg text-status-completed-fg', dot: 'bg-status-completed-dot' },
   warning: { box: 'bg-status-pending-bg text-status-pending-fg', dot: 'bg-status-pending-dot' },
   danger: { box: 'bg-status-cancelled-bg text-status-cancelled-fg', dot: 'bg-status-cancelled-dot' },
-  onImage: { box: 'bg-navy-900/90 text-on-navy', dot: 'bg-success-500' },
-  onImageMuted: { box: 'bg-text-secondary/95 text-on-navy', dot: 'bg-on-navy' },
+  onImage: { box: 'bg-chrome/90 text-on-chrome', dot: 'bg-success-500' },
+  onImageMuted: {
+    box: 'bg-text-secondary/95 text-on-navy dark:bg-chrome-800/95 dark:text-on-chrome',
+    dot: 'bg-on-navy dark:bg-on-chrome',
+  },
 };
 
 type BadgeProps = {

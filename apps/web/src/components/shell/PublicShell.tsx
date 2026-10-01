@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/brand/Logo';
 import { ButtonLink } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
+import { ThemeMenu } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
@@ -67,6 +68,7 @@ export function PublicShell({
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <ThemeMenu />
             {hasMarketingChrome && (
               <Link
                 href="/auth/sign-in"

@@ -227,7 +227,7 @@ export function Sheet({
           aria-describedby={undefined}
           className={cn(
             'fixed z-40 flex flex-col overflow-y-auto shadow-e3 outline-none',
-            tone === 'navy' ? 'bg-navy-900' : 'bg-surface',
+            tone === 'navy' ? 'bg-chrome' : 'bg-surface',
             sheetSides[side],
             className,
           )}
@@ -236,7 +236,7 @@ export function Sheet({
             className={cn(
               'text-h3 font-bold',
               hideTitle ? 'sr-only' : 'px-5 pt-5',
-              tone === 'navy' ? 'text-on-navy' : 'text-text-primary',
+              tone === 'navy' ? 'text-on-chrome' : 'text-text-primary',
             )}
           >
             {title}
@@ -246,7 +246,7 @@ export function Sheet({
             className={cn(
               'absolute end-2 top-3 z-10 inline-flex size-11 items-center justify-center rounded-button',
               tone === 'navy'
-                ? 'text-on-navy-muted hover:bg-on-navy-subtle hover:text-on-navy'
+                ? 'text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome'
                 : 'text-text-tertiary hover:bg-bg-subtle',
             )}
           >

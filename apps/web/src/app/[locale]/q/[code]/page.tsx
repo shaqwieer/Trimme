@@ -244,7 +244,7 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
           ) : (
             <ImagePlaceholder className="h-full w-full" />
           )}
-          <span className="absolute start-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-sm bg-navy-900/90 px-3 py-1.5 text-helper font-bold text-on-navy">
+          <span className="absolute start-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-sm bg-chrome/90 px-3 py-1.5 text-helper font-bold text-on-chrome">
             <Icon name="qr" className="size-4" />
             {t(`badge.${kind}`)}
           </span>
@@ -257,7 +257,7 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
                 <Avatar name={title} src={professional.avatarUrl} size="lg" />
               </div>
             ) : (
-              <div className="relative -mt-9 flex size-[58px] shrink-0 items-center justify-center overflow-hidden rounded-[15px] border-[3px] border-surface bg-navy-900 text-[1.375rem] font-extrabold text-on-navy">
+              <div className="relative -mt-9 flex size-[58px] shrink-0 items-center justify-center overflow-hidden rounded-[15px] border-[3px] border-surface bg-chrome text-[1.375rem] font-extrabold text-on-chrome">
                 {shop.logoUrl ? (
                   <Image
                     src={shop.logoUrl}

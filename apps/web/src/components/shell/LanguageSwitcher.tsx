@@ -28,7 +28,7 @@ export function LanguageSwitcher({
       className={cn(
         'inline-flex min-h-11 items-center gap-2 rounded-field px-3 text-label font-bold transition-colors',
         tone === 'onDark'
-          ? 'text-on-navy-muted hover:bg-on-navy-subtle hover:text-on-navy'
+          ? 'text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome'
           : 'border border-border-input bg-surface text-text-strong hover:bg-brand-100',
         className,
       )}

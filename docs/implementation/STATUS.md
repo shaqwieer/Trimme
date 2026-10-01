@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-10-01 (Session 13)
+- **Updated:** 2026-10-01 (Session 14: dark mode, after Phase 17)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -9,6 +9,7 @@
   - **Visual review** of all 25 design screens.
 
   2 points are held back for the NVDA screen-reader pass, a manual checklist the user can run. The phase is committed locally and not pushed.
+- **After Phase 17 (Session 14, at the user's request): dark mode (D-124).** Light / Dark / System (System by default) on every page, from the shell headers and the account page. The choice is saved in a cookie the server renders from, so there is no flash and no script; open tabs follow at once; printing stays light. The dark palette is checked by `tokens.test.ts`, `flows/theme.spec.ts`, and the `a11y-dark` route audit (81 routes, both locales, every role, axe 0 serious). See `docs/theming.md`.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

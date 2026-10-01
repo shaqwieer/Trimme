@@ -12,6 +12,21 @@ function token(name: string): string {
   return match[1].toLowerCase();
 }
 
+/** The dark palette (D-124): the `@variant dark { … }` block of tokens.css. */
+const darkBlock = (() => {
+  const start = css.indexOf('@variant dark {');
+  if (start < 0) throw new Error('Dark palette not found');
+  return css.slice(start, css.indexOf('}', start));
+})();
+
+function dark(name: string): string {
+  const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(darkBlock);
+  if (!match?.[1]) {
+    throw new Error(`Dark token --${name} not found`);
+  }
+  return match[1].toLowerCase();
+}
+
 function luminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => {
     const channel = parseInt(hex.slice(i, i + 2), 16) / 255;
@@ -91,7 +106,106 @@ describe('tokens_match_design_snapshot (R-WEB-01)', () => {
     expect(contrast(token('color-switch-off'), token('color-bg-page'))).toBeGreaterThanOrEqual(3);
   });
 
-  it('keeps sidebar text readable on navy', () => {
-    expect(contrast(token('color-on-navy-muted'), token('color-navy-900'))).toBeGreaterThanOrEqual(4.5);
+  it('keeps sidebar text readable on navy chrome', () => {
+    expect(contrast(token('color-on-chrome-muted'), token('color-chrome'))).toBeGreaterThanOrEqual(4.5);
+    // Chrome is the brand navy itself in the light theme.
+    expect(token('color-chrome')).toBe(token('color-navy-900'));
+  });
+});
+
+describe('dark palette (D-124)', () => {
+  const SURFACES = [
+    'color-bg-page',
+    'color-bg-app',
+    'color-surface',
+    'color-bg-subtle',
+    'color-bg-muted',
+    'color-bg-tile',
+    'color-brand-50',
+    'color-brand-100',
+  ];
+
+  it('defines both theme selectors from one source: explicit Dark and System on a dark OS, screen only', () => {
+    expect(css).toContain("&:where([data-theme='dark'], [data-theme='dark'] *)");
+    expect(css).toContain('@media screen and (prefers-color-scheme: dark)');
+    expect(css).toContain("&:where(:not([data-theme='light'], [data-theme='light'] *))");
+  });
+
+  it('uses dark surfaces that step up in lightness (page → card → subtle) for separation', () => {
+    const [page, surface, subtle] = ['color-bg-page', 'color-surface', 'color-bg-subtle'].map((n) =>
+      luminance(dark(n)),
+    ) as [number, number, number];
+    expect(page).toBeLessThan(surface);
+    expect(surface).toBeLessThan(subtle);
+    expect(page).toBeLessThan(0.02);
+  });
+
+  it.each([
+    'color-text-primary',
+    'color-text-strong',
+    'color-text-secondary',
+    'color-text-tertiary',
+    'color-text-placeholder',
+    'color-text-link',
+    'color-brand-700',
+    'color-navy-900',
+    'color-success-700',
+    'color-warning-700',
+    'color-danger-700',
+  ])('text token %s meets AA (4.5:1) on every dark surface', (name) => {
+    for (const surface of SURFACES) {
+      expect(contrast(dark(name), dark(surface)), surface).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(['pending', 'confirmed', 'arrived', 'completed', 'cancelled', 'noshow'])(
+    'status %s badge text meets AA on its dark background',
+    (status) => {
+      expect(
+        contrast(dark(`color-status-${status}-fg`), dark(`color-status-${status}-bg`)),
+      ).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('ink fills (primary button, selected chips, danger) keep AA with on-navy text in every state', () => {
+    for (const fill of [
+      'color-navy-900',
+      'color-navy-800',
+      'color-navy-950',
+      'color-danger-500',
+      'color-danger-700',
+      'color-text-primary', // tooltip
+    ]) {
+      expect(contrast(dark('color-on-navy'), dark(fill)), fill).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('chrome panels stay navy with readable text', () => {
+    expect(dark('color-chrome')).toBe(token('color-chrome'));
+    expect(contrast(token('color-on-chrome-muted'), dark('color-chrome'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('essential non-text UI meets 3:1 (switch track, focus ring, status dots, rating)', () => {
+    for (const name of [
+      'color-switch-off',
+      'color-brand-500',
+      'color-success-500',
+      'color-warning-500',
+      'color-danger-500',
+      'color-rating',
+    ]) {
+      expect(contrast(dark(name), dark('color-surface')), name).toBeGreaterThanOrEqual(3);
+      expect(contrast(dark(name), dark('color-bg-page')), name).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('overrides every light colour token that has a hex value', () => {
+    const light = [
+      ...css.slice(0, css.indexOf('@variant dark {')).matchAll(/--(color-[a-z0-9-]+):\s*#/g),
+    ].map((m) => m[1]!);
+    const darkNames = new Set([...darkBlock.matchAll(/--(color-[a-z0-9-]+):/g)].map((m) => m[1]!));
+    // Text on chrome is the same in both themes by design (chrome stays navy).
+    const same = new Set(['color-on-chrome', 'color-on-chrome-muted', 'color-on-chrome-accent']);
+    expect(light.filter((name) => !darkNames.has(name) && !same.has(name))).toEqual([]);
   });
 });

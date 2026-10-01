@@ -38,5 +38,12 @@ export default defineConfig({
       testMatch: 'audit/**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
     },
+    {
+      // The same route audit in the dark theme (D-124): the OS prefers dark and no theme cookie is set, so every page
+      // renders through the System path. axe's colour-contrast rule checks every page against the dark palette.
+      name: 'a11y-dark',
+      testMatch: 'audit/routes.spec.ts',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 }, colorScheme: 'dark' },
+    },
   ],
 });

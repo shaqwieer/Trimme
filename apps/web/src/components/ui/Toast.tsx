@@ -106,7 +106,7 @@ function ToastItem({
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="pointer-events-auto flex items-center gap-3 rounded-button bg-navy-900 px-4 py-3 text-[0.875rem] text-on-navy shadow-toast"
+      className="pointer-events-auto flex items-center gap-3 rounded-button bg-chrome px-4 py-3 text-[0.875rem] text-on-chrome shadow-toast"
     >
       <span
         aria-hidden="true"
@@ -131,7 +131,7 @@ function ToastItem({
             toast.action?.onClick();
             onDismiss(toast.id);
           }}
-          className="min-h-11 shrink-0 rounded-sm px-2 font-bold text-on-navy underline underline-offset-4"
+          className="min-h-11 shrink-0 rounded-sm px-2 font-bold text-on-chrome underline underline-offset-4"
         >
           {toast.action.label}
         </button>
@@ -140,7 +140,7 @@ function ToastItem({
         type="button"
         onClick={() => onDismiss(toast.id)}
         aria-label={dismissLabel}
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-sm text-on-navy-muted hover:text-on-navy"
+        className="inline-flex size-9 shrink-0 items-center justify-center rounded-sm text-on-chrome-muted hover:text-on-chrome"
       >
         <Icon name="x" className="size-4" />
       </button>

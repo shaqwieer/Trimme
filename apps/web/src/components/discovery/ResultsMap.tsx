@@ -49,7 +49,8 @@ function highlightPins(registry: PinRegistry, selectedId: string | null) {
 const PIN_CLASS =
   'rounded-pill border px-2.5 py-1 font-latin text-[0.8125rem] font-bold whitespace-nowrap shadow-e2 outline-offset-2 focus-visible:outline-2 focus-visible:outline-brand-500';
 const PIN_IDLE = 'border-border bg-surface text-navy-900';
-const PIN_SELECTED = 'border-navy-900 bg-navy-900 text-on-navy';
+// Selected pins stay navy in both themes: they sit on the light map tiles, not on a themed surface.
+const PIN_SELECTED = 'border-chrome bg-chrome text-on-chrome';
 
 /**
  * Discovery map (c-map "MAP VIEW" 1126–1164): one price pin per result (the matched service's price, else the shop's

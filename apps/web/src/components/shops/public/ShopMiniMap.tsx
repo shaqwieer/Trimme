@@ -58,7 +58,7 @@ export function ShopMiniMap({ latitude, longitude, label }: { latitude: number; 
         });
         map.addControl(new AttributionControl({ compact: true }), 'bottom-left');
         const pin = document.createElement('div');
-        pin.className = 'text-navy-900 drop-shadow-md';
+        pin.className = 'text-chrome drop-shadow-md';
         pin.innerHTML = PIN_SVG;
         new Marker({ element: pin, anchor: 'bottom' }).setLngLat([longitude, latitude]).addTo(map);
       })

@@ -246,7 +246,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
 
         <div className="flex flex-col gap-5 px-4 pb-6 md:px-6">
           <div className="-mt-8 flex items-end gap-4">
-            <div className="relative flex size-[72px] shrink-0 items-center justify-center overflow-hidden rounded-card border-4 border-surface bg-navy-900 text-[1.75rem] font-extrabold text-on-navy shadow-e2">
+            <div className="relative flex size-[72px] shrink-0 items-center justify-center overflow-hidden rounded-card border-4 border-surface bg-chrome text-[1.75rem] font-extrabold text-on-chrome shadow-e2">
               {shop.logoUrl ? (
                 <Image
                   src={shop.logoUrl}

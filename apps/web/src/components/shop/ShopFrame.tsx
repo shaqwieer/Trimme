@@ -97,8 +97,8 @@ function Shell({
       permissions={permissions}
       notifications={permissions.includes('Shop.Bookings.Read')}
       sidebarFooter={
-        <div className="flex flex-col gap-3 rounded-card bg-on-navy-subtle p-3">
-          <p className="truncate text-label font-bold text-on-navy">{name}</p>
+        <div className="flex flex-col gap-3 rounded-card bg-on-chrome-subtle p-3">
+          <p className="truncate text-label font-bold text-on-chrome">{name}</p>
           <SignOutButton staff className="w-full" />
         </div>
       }

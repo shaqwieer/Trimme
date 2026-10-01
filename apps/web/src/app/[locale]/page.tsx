@@ -177,7 +177,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
             )}
           </div>
 
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[540px] overflow-hidden rounded-[24px] bg-navy-900 shadow-e3">
+          <div className="relative mx-auto aspect-[4/5] w-full max-w-[540px] overflow-hidden rounded-[24px] bg-chrome shadow-e3">
             <Image
               src="/brand/trimme-hero-barbershop.png"
               alt={t('heroImageAlt')}
@@ -189,9 +189,9 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
             />
             <div
               aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-navy-950/55 to-transparent"
+              className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-chrome-950/55 to-transparent"
             />
-            <div className="border-white/60 bg-white/95 absolute start-4 bottom-4 max-w-[calc(100%-2rem)] rounded-card border px-4 py-3 shadow-e3 backdrop-blur md:start-6 md:bottom-6">
+            <div className="absolute start-4 bottom-4 max-w-[calc(100%-2rem)] rounded-card border border-surface/60 bg-surface/95 px-4 py-3 shadow-e3 backdrop-blur md:start-6 md:bottom-6">
               <span className="flex items-center gap-2 text-helper font-bold text-success-700">
                 <span className="flex size-5 items-center justify-center rounded-full bg-success-50">
                   <Icon name="check" className="size-3.5" />
@@ -351,20 +351,20 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       <section id="for-shops" className="scroll-mt-20 px-4 pb-14 md:px-6 md:pb-20">
-        <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-[24px] bg-navy-900 px-6 py-10 text-on-navy md:px-10 md:py-12">
+        <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-[24px] bg-chrome px-6 py-10 text-on-chrome md:px-10 md:py-12">
           <div
             aria-hidden="true"
             className="absolute -end-16 -top-24 size-64 rounded-full bg-brand-500/20 blur-3xl"
           />
           <div className="relative grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <span className="text-eyebrow font-bold tracking-[0.14em] text-on-navy-accent uppercase">
+              <span className="text-eyebrow font-bold tracking-[0.14em] text-on-chrome-accent uppercase">
                 {t('partner.eyebrow')}
               </span>
               <h2 className="mt-2 max-w-[22ch] text-[1.75rem] leading-tight font-extrabold md:text-[2.25rem]">
                 {t('partner.title')}
               </h2>
-              <p className="mt-3 max-w-[65ch] text-body text-on-navy-muted">{t('partner.body')}</p>
+              <p className="mt-3 max-w-[65ch] text-body text-on-chrome-muted">{t('partner.body')}</p>
             </div>
             {partnerContact && (
               <a

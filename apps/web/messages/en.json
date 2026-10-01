@@ -15,6 +15,14 @@
     },
     "brand": {
       "logoAlt": "TRIMME"
+    },
+    "theme": {
+      "label": "Theme",
+      "menuLabel": "Theme: {value}",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark",
+      "systemHint": "System follows your device setting and changes with it."
     }
   },
   "shell": {
@@ -359,7 +367,8 @@
     "groups": {
       "preferences": "Preferences",
       "account": "Account",
-      "support": "Support"
+      "support": "Support",
+      "appearance": "Appearance"
     },
     "rows": {
       "language": "Language",

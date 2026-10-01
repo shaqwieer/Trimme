@@ -86,6 +86,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-T12 | Secondary text `#647484` on the grey note boxes (`bg-muted`, `bg-subtle`) is 4.35–4.38:1 | `text-secondary` → `#5F6F80` (D-039); `tokens.test.ts` checks the grey surfaces | 13 — **applied** |
 | DV-T13 | Landing "how it works" step numerals `01–03` in `brand-150` on the tile are 1.18:1 (axe checks them even when hidden from assistive tech) | `brand-600` (4.10:1; the numerals are 32 px bold, so 3:1 applies) | 13 CI follow-up — **applied** |
 | DV-T14 | Dates and times are drawn as Arabic text («٩:٠٠ ص», «١ أكتوبر») in the filters and schedule fields | The shop and admin date-range filters, the walk-in day and the schedule times are native `<input type="date|time">`. They are accessible and keyboard-operable everywhere, but the browser draws their value in its own UI language: an Arabic browser shows Arabic, an English one `10/01/2026`, `10:00 AM`. Every value the app itself prints follows DV-T03. Custom localized pickers are a later polish item | 17 | accepted (Phase 17 visual review) |
+| DV-T15 | The design has a light theme only | A dark theme (D-124) derived from the same tokens: brand navy stays as `chrome` panels, ink inverts, and surfaces step up in lightness. The light theme is unchanged, except that the paused-booking chip now gets the `warning-50` background it was meant to have (`bg-warning-100` was not a token, so it rendered without a background) | 14 | accepted (user request) |
 
 ## DV-C — Copy/data inconsistencies not replicated
 

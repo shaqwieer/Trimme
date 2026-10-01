@@ -95,7 +95,7 @@ export function MapLibreView({
         map.touchZoomRotate.disableRotation();
 
         const element = document.createElement('div');
-        element.className = 'cursor-grab text-navy-900 drop-shadow-md active:cursor-grabbing';
+        element.className = 'cursor-grab text-chrome drop-shadow-md active:cursor-grabbing';
         element.innerHTML = PIN_SVG;
         element.setAttribute('role', 'img');
         element.setAttribute('aria-label', markerLabel);

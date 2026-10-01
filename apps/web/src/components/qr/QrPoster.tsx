@@ -53,7 +53,7 @@ export function QrPoster({
         id="qr-poster"
         aria-label={t('title')}
         data-testid="qr-poster"
-        className="flex aspect-[148/210] w-full max-w-[420px] flex-col items-center justify-center gap-4 overflow-hidden rounded-card bg-navy-900 px-[8%] py-[6%] text-center text-on-navy shadow-e3 [&>*]:shrink-0"
+        className="flex aspect-[148/210] w-full max-w-[420px] flex-col items-center justify-center gap-4 overflow-hidden rounded-card bg-chrome px-[8%] py-[6%] text-center text-on-chrome shadow-e3 [&>*]:shrink-0"
       >
         <Logo height={40} tone="onDark" />
         <div className="bg-white w-[72%] rounded-[18px] p-[5%]">
@@ -69,10 +69,10 @@ export function QrPoster({
         </div>
         <div className="flex flex-col gap-1">
           <p className="text-[1.375rem] leading-snug font-extrabold">{name}</p>
-          {subtitle && <p className="text-body font-bold text-on-navy-muted">{subtitle}</p>}
-          <p className="text-[1.0625rem] font-bold text-on-navy-accent">{t('scan')}</p>
+          {subtitle && <p className="text-body font-bold text-on-chrome-muted">{subtitle}</p>}
+          <p className="text-[1.0625rem] font-bold text-on-chrome-accent">{t('scan')}</p>
         </div>
-        <bdi dir="ltr" className="font-latin text-helper text-on-navy-muted">
+        <bdi dir="ltr" className="font-latin text-helper text-on-chrome-muted">
           {displayUrl(url)}
         </bdi>
       </section>

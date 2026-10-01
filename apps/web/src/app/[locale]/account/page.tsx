@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { SignOutButton } from '@/components/auth/SessionClient';
+import { ThemeSettings } from '@/components/theme/ThemeSettings';
 import { Ltr } from '@/components/text/Ltr';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon, type DesignIconName } from '@/components/ui/icons';
@@ -111,6 +112,18 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
         >
           <Icon name="edit" className="size-5" />
         </Link>
+      </section>
+
+      <section aria-labelledby="account-appearance" className="flex flex-col gap-2">
+        <h2
+          id="account-appearance"
+          className="px-1 text-eyebrow font-bold tracking-[0.1em] text-text-tertiary"
+        >
+          {t('groups.appearance')}
+        </h2>
+        <div className="rounded-card border border-border bg-surface p-4">
+          <ThemeSettings />
+        </div>
       </section>
 
       {groups.map((group) => (
