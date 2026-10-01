@@ -12,10 +12,21 @@ export const THEME_ICONS: Record<ThemePreference, LucideIcon> = { system: Monito
 /**
  * Header theme switch (D-124): an icon button named after the current choice ("Theme: System") that discloses a native
  * radio group. Native radios give arrow keys and RTL order for free; Escape, a click outside or tabbing away closes it,
- * and focus returns to the button. No menu library, so the public pages stay inside their bundle budget. Fits the 390px
- * headers next to the language switch, so it is reachable on every page, signed in or not.
+ * and focus returns to the button. No menu library, so the public pages stay inside their bundle budget. It sits next
+ * to the language switch in the public and customer headers; on dashboards it moves into the navy navigation drawer
+ * below 768px (`tone="onChrome"`, `align="start"`), where the header has no room left for it.
  */
-export function ThemeMenu({ className }: { className?: string }) {
+export function ThemeMenu({
+  className,
+  tone = 'default',
+  align = 'end',
+}: {
+  className?: string;
+  /** `onChrome` for the navy sidebar/drawer. */
+  tone?: 'default' | 'onChrome';
+  /** Which edge of the button the panel lines up with. */
+  align?: 'start' | 'end';
+}) {
   const t = useTranslations('common.theme');
   const { preference, setPreference } = useTheme();
   const [open, setOpen] = useState(false);
@@ -36,13 +47,24 @@ export function ThemeMenu({ className }: { className?: string }) {
     const onPointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
+    // Escape closes only this panel. Radix dialogs (the dashboard drawer) listen for Escape in the capture phase on the
+    // document and skip a prevented event, so this listener runs first, on the window.
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
     document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onEscape, true);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onEscape, true);
+    };
   }, [open]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!open) return;
-    if (event.key === 'Escape' || (event.key === 'Enter' && event.target instanceof HTMLInputElement)) {
+    if (open && event.key === 'Enter' && event.target instanceof HTMLInputElement) {
       event.preventDefault();
       event.stopPropagation();
       close(true);
@@ -66,14 +88,22 @@ export function ThemeMenu({ className }: { className?: string }) {
         aria-controls={open ? `${id}-panel` : undefined}
         data-testid="theme-menu"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex size-11 shrink-0 items-center justify-center rounded-button text-text-strong transition-colors hover:bg-brand-100 aria-expanded:bg-brand-100"
+        className={cn(
+          'inline-flex size-11 shrink-0 items-center justify-center rounded-button transition-colors',
+          tone === 'onChrome'
+            ? 'text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome aria-expanded:bg-on-chrome-subtle aria-expanded:text-on-chrome'
+            : 'text-text-strong hover:bg-brand-100 aria-expanded:bg-brand-100',
+        )}
       >
         <Current aria-hidden="true" className="size-[19px]" strokeWidth={1.75} />
       </button>
       {open && (
         <div
           id={`${id}-panel`}
-          className="absolute end-0 top-full z-50 mt-1.5 min-w-[200px] rounded-button border border-border bg-surface p-1.5 shadow-e3"
+          className={cn(
+            'absolute top-full z-50 mt-1.5 min-w-[200px] rounded-button border border-border bg-surface p-1.5 shadow-e3',
+            align === 'end' ? 'end-0' : 'start-0',
+          )}
         >
           <p id={`${id}-label`} className="px-3 pt-1.5 pb-1 text-helper font-bold text-text-secondary">
             {t('label')}

@@ -142,6 +142,18 @@ async function structuredDataProblems(page: Page): Promise<string[]> {
   return problems;
 }
 
+/**
+ * Next.js serves a 404 (`notFound()`, e.g. a retired QR code) as its bare error document (`<html id="__next_error__">`,
+ * no `lang`, no stylesheet) and renders the localized not-found page on the client. Waiting for the root layout's
+ * `lang` makes the checks see that page, not the race (CI flaked on `/q/bhxx8dfg`). A page that never gets `lang`
+ * still fails the `lang` check below.
+ */
+async function rootLayoutRendered(page: Page) {
+  await page
+    .waitForFunction(() => document.documentElement.lang !== '', null, { timeout: 10_000 })
+    .catch(() => {});
+}
+
 async function auditPage(
   page: Page,
   locale: Locale,
@@ -161,6 +173,7 @@ async function auditPage(
     await page.setViewportSize({ width: 1280, height: 900 });
     const url = `/${locale}${route.path === '/' ? '' : route.path}`;
     await page.goto(url, { waitUntil: 'load' });
+    await rootLayoutRendered(page);
     await page.evaluate(() => document.fonts.ready);
     if (route.map) await page.waitForTimeout(800);
 
@@ -220,6 +233,7 @@ async function auditPage(
     // A phone loads the page at its own width (resizing a loaded desktop page keeps some measured layouts).
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'load' });
+    await rootLayoutRendered(page);
     await page.evaluate(() => document.fonts.ready);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

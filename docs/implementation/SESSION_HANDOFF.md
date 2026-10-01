@@ -28,6 +28,11 @@
   - Without `a11y-dark`: 89/92. The failures were `qr.spec`, `customer-booking` E7 (Sara's seeded visits are past the 7-day review window on this volume) and the retired-QR page reporting no `lang`/`dir` in the light audit.
   - **The pre-change baseline (`f864343`) on the same volume fails the same three tests** (82/85), so they are pre-existing volume and load issues, not regressions. A run on a bare `next start` failed only where the harness differs (dev routes off, no hub proxy).
 - **Visual pass in dark** at 1280 and 390, with data loaded: the shop board, appointment drawer, cancel dialog, day and week calendars, the gallery's dropdown, toasts, tooltip, dialog, sheet and confirm, the search filter sheet, the booking wizard (selected slot, disabled Next), dashboards, tables, forms, charts, the QR pages and poster, account and auth.
+- **CI follow-up (after the push):** CI failed the route audit on `/en/shop/*` (5 px overflow at 390, light and dark) and flaked on `/ar/q/bhxx8dfg`.
+  - The overflow was the dashboard header plus the theme button; reproduced in `playwright:v1.63.0-noble` (6 px, title squeezed to 0 px). The dashboard theme button now lives in the drawer below 768px (D-124).
+  - The flake: every 404 is served as Next's bare `__next_error__` document, and the localized not-found page renders on the client. The audit now waits up to 10 s for the root layout's `lang` before checking.
+  - Evidence: Linux Chromium route audit (light and dark), keyboard pass and theme flows **28/28**, `--retries=0`; the hub-blocked worst case is 0 px overflow with the title back to 32 px. Web 424 tests. Compose full suite 98/100; the two failures are the known volume ones (E7, QR), which also fail on the baseline.
+  - Worth a separate look: server-render the localized 404 (no-JS visitors and crawlers currently get an empty document).
 - **Not inspected by hand:** the NVDA pass (still open from Phase 17), and Safari and Firefox. Chrome only.
 
 ## Completed in Session 13 (Phase 17)

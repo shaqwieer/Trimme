@@ -46,6 +46,34 @@ describe('DashboardShell', () => {
     await waitFor(() => expect(menuButton).toHaveFocus());
   });
 
+  it('keeps the theme switch out of the crowded phone header and in the drawer instead (D-124)', async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <DashboardShell variant="shop" title="Overview">
+        <p>content</p>
+      </DashboardShell>,
+      { locale: 'en' },
+    );
+
+    // The header copy is hidden below 768px (`hidden md:block`); the drawer copy only below 768px.
+    const header = screen.getByRole('banner');
+    expect(within(header).getByRole('button', { name: 'Theme: System' }).parentElement).toHaveClass(
+      'hidden',
+      'md:block',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Open menu' }));
+    const drawer = screen.getByRole('dialog', { name: 'Main navigation' });
+    const drawerSwitch = within(drawer).getByRole('button', { name: 'Theme: System' });
+    expect(drawerSwitch.closest('.md\\:hidden')).not.toBeNull();
+
+    // Escape inside the open theme panel closes the panel, not the drawer.
+    await user.click(drawerSwitch);
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Main navigation' })).toBeInTheDocument();
+    expect(drawerSwitch).toHaveFocus();
+  });
+
   it('hides items the user has no permission for', () => {
     renderWithIntl(
       <DashboardShell

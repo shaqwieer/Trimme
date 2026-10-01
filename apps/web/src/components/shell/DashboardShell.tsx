@@ -82,7 +82,8 @@ export function DashboardShell({
           {titleAddon}
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <ThemeMenu />
+            {/* Below 768px the header has no room left (title, live status, language, bell); the drawer has it. */}
+            <ThemeMenu className="hidden md:block" />
             {!notifications ? (
               <IconButton icon="bell" label={t('shell.notifications')} />
             ) : variant === 'shop' ? (
@@ -126,6 +127,12 @@ function SidebarContent({
 
   return (
     <div className="flex w-full flex-col gap-1 overflow-y-auto px-3 py-5">
+      {onNavigate && (
+        // Drawer only (it is the phone and tablet navigation): mirrors the drawer's close button in the other corner.
+        <div className="absolute start-2 top-3 z-10 md:hidden">
+          <ThemeMenu tone="onChrome" align="start" />
+        </div>
+      )}
       <div className="flex flex-col items-center gap-2 pb-5">
         <Logo height={36} tone="onDark" />
         <span className="font-latin text-eyebrow font-bold tracking-[0.16em] text-on-chrome-accent">
