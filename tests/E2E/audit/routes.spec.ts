@@ -230,6 +230,19 @@ async function auditPage(
       );
     }
 
+    // Tab strips scroll sideways on narrow screens but must never overflow vertically: a 1px overlap there drew
+    // scrollbars on every tab strip under Windows' classic scrollbars.
+    const scrollingStrips = await page.evaluate(() =>
+      [...document.querySelectorAll('[role="tablist"], nav > ul')]
+        .filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))
+        .filter((el) => el.scrollHeight > el.clientHeight)
+        .map(
+          (el) => el.getAttribute('aria-label') ?? el.parentElement?.getAttribute('aria-label') ?? el.tagName,
+        ),
+    );
+    for (const strip of scrollingStrips)
+      problems.push(`tab strip "${strip}" overflows vertically (scrollbar)`);
+
     // A phone loads the page at its own width (resizing a loaded desktop page keeps some measured layouts).
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'load' });

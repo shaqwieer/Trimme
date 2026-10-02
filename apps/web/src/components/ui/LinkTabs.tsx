@@ -11,7 +11,7 @@ type LinkTab = { href: string; label: ReactNode; active: boolean };
 export function LinkTabs({ tabs, label, className }: { tabs: LinkTab[]; label: string; className?: string }) {
   return (
     <nav aria-label={label} className={className}>
-      <ul className="flex gap-6 overflow-x-auto border-b border-border">
+      <ul className="flex gap-6 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-border)]">
         {tabs.map((tab) => (
           <li key={tab.href}>
             <Link
@@ -19,7 +19,7 @@ export function LinkTabs({ tabs, label, className }: { tabs: LinkTab[]; label: s
               aria-current={tab.active ? 'page' : undefined}
               scroll={false}
               className={cn(
-                '-mb-px inline-flex min-h-11 items-end border-b-[2.5px] pb-2.5 text-button whitespace-nowrap transition-colors',
+                'inline-flex min-h-11 items-end border-b-[2.5px] pb-2.5 text-button whitespace-nowrap transition-colors',
                 tab.active
                   ? 'border-navy-900 font-bold text-navy-900'
                   : 'border-transparent text-text-secondary hover:text-text-primary',

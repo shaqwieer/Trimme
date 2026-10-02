@@ -23,12 +23,12 @@ export function ShopTabs({ tabs, initial, label }: { tabs: ShopTab[]; initial: s
 
   return (
     <RadixTabs.Root value={value} onValueChange={change}>
-      <RadixTabs.List aria-label={label} className="flex gap-6 overflow-x-auto border-b border-border">
+      <RadixTabs.List aria-label={label} className="flex gap-6 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-border)]">
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}
             value={tab.value}
-            className="-mb-px min-h-11 border-b-[2.5px] border-transparent pb-2.5 text-button whitespace-nowrap text-text-secondary transition-colors hover:text-text-primary data-[state=active]:border-navy-900 data-[state=active]:font-bold data-[state=active]:text-navy-900"
+            className="min-h-11 border-b-[2.5px] border-transparent pb-2.5 text-button whitespace-nowrap text-text-secondary transition-colors hover:text-text-primary data-[state=active]:border-navy-900 data-[state=active]:font-bold data-[state=active]:text-navy-900"
           >
             {tab.label}
           </RadixTabs.Trigger>
