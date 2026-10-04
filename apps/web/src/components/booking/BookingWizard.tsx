@@ -6,8 +6,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button, IconButton } from '@/components/ui/Button';
-import { DateStrip, SlotGrid, Stepper } from '@/components/ui/booking';
-import { ProfessionalOption, ServiceOption } from '@/components/ui/cards';
+import { BookingProgress, DateStrip, HourMinutePicker } from '@/components/ui/booking';
+import { ProfessionalOption, ServiceTile } from '@/components/ui/cards';
 import { Icon, type DesignIconName } from '@/components/ui/icons';
 import { TextareaField } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
@@ -23,11 +23,14 @@ import {
   eligibleProfessionals,
   keyFor,
   type KeyedIntent,
+  MAX_SERVICES,
   newIdempotencyKey,
   nextStep,
+  offerKey,
   previousStep,
   readWizardQuery,
   resolveStart,
+  restoreSelection,
   selectionFrom,
   WIZARD_STEPS,
   type WizardNotice,
@@ -36,6 +39,7 @@ import {
   type WizardSelection,
   type WizardStep,
   wizardPath,
+  withItems,
 } from '@/lib/booking/wizard';
 import { cutoffParts, endOf } from '@/lib/booking/format';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
@@ -68,18 +72,40 @@ export type WizardViewer = 'guest' | 'customer' | 'staff';
 
 const NOTE_MAX = 500;
 
-function offerQuery(offer: WizardOffer, pro: string) {
+/** The customer's view of the steps (D-125): the shop is already chosen; service and professional, then date and time. */
+const PHASES = ['shop', 'service', 'time', 'confirm'] as const;
+const PHASE_OF: Record<WizardStep, number> = { service: 1, professional: 1, date: 2, time: 2, review: 3 };
+
+function offerQuery(items: WizardOffer[], pro: string) {
+  const services = items.filter((item) => item.kind === 'service').map((item) => item.id);
   return {
-    serviceId: offer.kind === 'service' ? offer.id : undefined,
-    packageId: offer.kind === 'package' ? offer.id : undefined,
+    serviceId: services.length === 1 ? services[0] : undefined,
+    serviceIds: services.length > 1 ? services : undefined,
+    packageId: items.find((item) => item.kind === 'package')?.id,
     professionalId: pro === ANY_PROFESSIONAL ? undefined : pro,
   };
 }
 
 /**
- * The booking wizard (c-booking, spec §12, D-028, D-096): service or package → professional or "any" → date → time →
- * review → confirmation. Only bookable dates and slots are offered (server-computed, D-009). Guests review everything
- * and sign in when they confirm; the wizard URL (with the review step) is the `returnTo`, so they come back to the same
+ * The tab's last choices per shop, so going back to the shop page and into the wizard again keeps them (D-125). It is
+ * memory only (no web storage, spec §9): it lasts across in-app navigation, not a reload.
+ */
+const lastChoices = new Map<string, string>();
+
+function remember(slug: string, selection: WizardSelection) {
+  if (selection.items.length === 0) lastChoices.delete(slug);
+  else lastChoices.set(slug, wizardPath(slug, selection, 'service').split('?')[1] ?? '');
+}
+
+function recall(slug: string): string | undefined {
+  return lastChoices.get(slug);
+}
+
+/**
+ * The booking wizard (c-booking, spec §12, D-028, D-096, D-125): one or more services or a package → professional or
+ * "any" → date (with the nearest free time offered first) → hour, then minutes → review → confirmation. Only bookable
+ * dates and slots are offered (server-computed, D-009). Going back never drops a choice. Guests review everything and
+ * sign in when they confirm; the wizard URL (with the review step) is the `returnTo`, so they come back to the same
  * choice, which is checked again. The submit carries an idempotency key, and a time taken meanwhile sends the customer
  * back to fresh slots.
  */
@@ -105,7 +131,9 @@ export function BookingWizard({
   const selection = selectionFrom(query, offers, professionals);
   const step = currentStep(query, selection);
   const stepIndex = WIZARD_STEPS.indexOf(step);
-  const { offer, pro, date, time } = selection;
+  const { items, offer, pro, date, time } = selection;
+  const itemsKey = offerKey(items);
+  const today = todayLocal(shop.timeZone);
 
   const notice = wizardNotice(query);
   const [note, setNote] = useState('');
@@ -113,6 +141,7 @@ export function BookingWizard({
   const [error, setError] = useState<string>();
   const keyed = useRef<KeyedIntent | undefined>(undefined);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const latest = useRef<WizardSelection | null>(null);
 
   const go = (
     next: WizardSelection,
@@ -120,9 +149,37 @@ export function BookingWizard({
     mode: 'push' | 'replace' = 'push',
     reason?: WizardNotice,
   ) => {
+    latest.current = next;
+    remember(shop.slug, next);
     const url = `/${locale}${wizardPath(shop.slug, next, to, reason)}`;
     window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url);
   };
+
+  // Going back must never drop a choice (D-125). A bare link to the wizard picks up this tab's last choices at the shop;
+  // a history entry from before the later steps were chosen (the browser's or phone's back button) gets them back.
+  useEffect(() => {
+    const previous = latest.current;
+    if (!previous) {
+      latest.current = selection;
+      const stored = recall(shop.slug);
+      const bare = !query.package && query.services.length === 0 && !query.pro && !query.date;
+      if (bare && stored) {
+        const restored = selectionFrom(readWizardQuery(new URLSearchParams(stored)), offers, professionals);
+        if (restored.items.length > 0) go(restored, 'service', 'replace');
+      } else if (selection.items.length > 0) {
+        remember(shop.slug, selection);
+      }
+      return;
+    }
+    const restored = restoreSelection(selection, previous);
+    if (wizardPath(shop.slug, restored, step) !== wizardPath(shop.slug, selection, step)) {
+      go(restored, step, 'replace');
+    } else {
+      latest.current = selection;
+    }
+    // Runs when the URL changes; `selection`, `step` and `go` are derived from it on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Move focus to the step heading when the step changes, so keyboard and screen-reader users follow along.
   const shownStep = useRef(step);
@@ -134,32 +191,42 @@ export function BookingWizard({
   }, [step]);
 
   const dates = useQuery({
-    queryKey: ['booking-dates', shop.slug, offer?.kind, offer?.id, pro],
+    queryKey: ['booking-dates', shop.slug, itemsKey, pro],
     enabled: Boolean(offer) && stepIndex >= 2,
     queryFn: async () =>
       ensureOk(
         await browserApi.GET('/api/v1/public/shops/{slug}/availability/dates', {
-          params: { path: { slug: shop.slug }, query: offerQuery(offer!, pro) },
+          params: { path: { slug: shop.slug }, query: offerQuery(items, pro) },
         }),
       ),
   });
 
-  const slots = useQuery({
-    queryKey: ['booking-slots', shop.slug, offer?.kind, offer?.id, pro, date],
-    enabled: Boolean(offer && date) && stepIndex >= 3,
+  const slotsOf = (day: string | undefined, enabled: boolean) => ({
+    queryKey: ['booking-slots', shop.slug, itemsKey, pro, day],
+    enabled: Boolean(offer && day) && enabled,
     queryFn: async () =>
       ensureOk(
         await browserApi.GET('/api/v1/public/shops/{slug}/availability/slots', {
-          params: { path: { slug: shop.slug }, query: { ...offerQuery(offer!, pro), date: date! } },
+          params: { path: { slug: shop.slug }, query: { ...offerQuery(items, pro), date: day! } },
         }),
       ),
   });
+
+  const slots = useQuery(slotsOf(date, stepIndex >= 3));
+
+  // The nearest free time, offered before the customer looks through days and hours (D-125): one extra request, for
+  // the first day that has a free slot (the same cache entry the time step reads when that day is picked).
+  const nearestDate = dates.data?.dates.find((d) => d.slotCount > 0 && d.date >= today)?.date;
+  const nearest = useQuery(slotsOf(nearestDate, step === 'date'));
+  const nearestSlot = nearest.data?.bookable === false ? undefined : nearest.data?.slots[0];
 
   const startsAt = resolveStart(slots.data?.slots, time);
   const blocked = dates.data?.bookable === false || slots.data?.bookable === false;
   const blockedReason = dates.data?.blockedReason ?? slots.data?.blockedReason;
+  const dateOk = Boolean(date && dates.data?.dates.some((d) => d.date === date && d.slotCount > 0));
 
-  // A date or time from the URL (a shared link, the sign-in round trip) is checked against fresh availability.
+  // A date or time from the URL (a shared link, the sign-in round trip, a change of services) is checked against fresh
+  // availability.
   useEffect(() => {
     if (blocked) return;
     if (stepIndex >= 3 && date && dates.data) {
@@ -177,21 +244,28 @@ export function BookingWizard({
   }, [dates.data, slots.data, step, date, time, startsAt, blocked]);
 
   const eligible = eligibleProfessionals(offer, professionals);
+  const noCommonPro = items.length > 1 && eligible.length === 0;
   const chosenPro = professionals.find((p) => p.id === pro);
   const offerName = offer ? localizedName(locale, offer.nameAr, offer.nameEn) : '';
   const proName = chosenPro ? localizedName(locale, chosenPro.nameAr, chosenPro.nameEn) : t('any.title');
   const shopName = localizedName(locale, shop.nameAr, shop.nameEn);
   const cutoff = cutoffParts(shop.cancellationCutoffMinutes);
-  const dateLabel = date
-    ? formatLocalDate(date, locale, { weekday: 'long', day: 'numeric', month: 'long' })
-    : '';
+  const dayLabel = (day: string) =>
+    day === today
+      ? t('today')
+      : formatLocalDate(day, locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = date ? dayLabel(date) : '';
   const timeLabel = startsAt ? formatTime(startsAt, locale, shop.timeZone) : '';
+  const itemsLabel =
+    items.length > 1
+      ? `${t('selectedCount', { count: items.length })} · ${formatDurationMinutes(offer!.durationMinutes, locale)}`
+      : offerName;
 
   const canContinue =
     !blocked &&
-    ((step === 'service' && Boolean(offer)) ||
+    ((step === 'service' && Boolean(offer) && !noCommonPro) ||
       step === 'professional' ||
-      (step === 'date' && Boolean(date)) ||
+      (step === 'date' && dateOk) ||
       (step === 'time' && Boolean(startsAt)));
 
   const goNext = () => {
@@ -207,6 +281,20 @@ export function BookingWizard({
     }
   };
 
+  const toggle = (item: WizardOffer) => {
+    const chosen = items.some((i) => i.kind === item.kind && i.id === item.id);
+    // A package is booked on its own; services are booked together (up to the API's limit).
+    const next =
+      item.kind === 'package'
+        ? chosen
+          ? []
+          : [item]
+        : chosen
+          ? items.filter((i) => !(i.kind === item.kind && i.id === item.id))
+          : [...items.filter((i) => i.kind === 'service'), item].slice(0, MAX_SERVICES);
+    go(withItems(selection, next, professionals), 'service', 'replace');
+  };
+
   const confirm = async () => {
     if (!offer || !startsAt) return;
     setError(undefined);
@@ -220,9 +308,10 @@ export function BookingWizard({
     const trimmed = note.trim();
     keyed.current = keyFor(
       keyed.current,
-      { offerId: offer.id, pro, startsAt, note: trimmed },
+      { offerId: itemsKey, pro, startsAt, note: trimmed },
       newIdempotencyKey,
     );
+    const target = offerQuery(items, pro);
     setSubmitting(true);
     try {
       const booking = ensureOk(
@@ -230,14 +319,16 @@ export function BookingWizard({
           params: { header: { 'Idempotency-Key': keyed.current.key } },
           body: {
             shopSlug: shop.slug,
-            serviceId: offer.kind === 'service' ? offer.id : null,
-            packageId: offer.kind === 'package' ? offer.id : null,
-            professionalId: pro === ANY_PROFESSIONAL ? null : pro,
+            serviceId: target.serviceId ?? null,
+            serviceIds: target.serviceIds ?? null,
+            packageId: target.packageId ?? null,
+            professionalId: target.professionalId ?? null,
             startsAt,
             note: trimmed || null,
           },
         }),
       );
+      remember(shop.slug, { items: [], pro: ANY_PROFESSIONAL });
       router.push(`/account/bookings/${booking.id}?created=1`);
     } catch (failure) {
       setSubmitting(false);
@@ -263,9 +354,9 @@ export function BookingWizard({
 
   const footerNote =
     step === 'service'
-      ? offerName
+      ? itemsLabel
       : step === 'professional' || step === 'date'
-        ? [offerName, proName].filter(Boolean).join(' · ')
+        ? [itemsLabel, proName].filter(Boolean).join(' · ')
         : step === 'time'
           ? [dateLabel, proName].filter(Boolean).join(' · ')
           : [dateLabel, timeLabel].filter(Boolean).join(' · ');
@@ -299,7 +390,7 @@ export function BookingWizard({
             </p>
           </div>
         </div>
-        <Stepper steps={WIZARD_STEPS.map((s) => t(`steps.${s}`))} current={stepIndex} />
+        <BookingProgress steps={PHASES.map((p) => t(`phases.${p}`))} current={PHASE_OF[step]} />
       </header>
 
       <section aria-labelledby="wizard-step" className="flex flex-1 flex-col gap-4 px-4 py-5 md:px-6">
@@ -322,22 +413,10 @@ export function BookingWizard({
         )}
 
         {step === 'service' && (
-          <ServiceStep
-            offers={offers}
-            value={offer}
-            onChange={(next) =>
-              go(
-                {
-                  offer: next,
-                  pro: eligibleProfessionals(next, professionals).some((p) => p.id === pro)
-                    ? pro
-                    : ANY_PROFESSIONAL,
-                },
-                'service',
-                'replace',
-              )
-            }
-          />
+          <>
+            <ServiceStep offers={offers} value={items} onToggle={toggle} />
+            {noCommonPro && <InlineAlert tone="warning" title={t('noCommonProfessional')} />}
+          </>
         )}
 
         {step === 'professional' && (
@@ -347,7 +426,7 @@ export function BookingWizard({
               name="professional"
               value={ANY_PROFESSIONAL}
               checked={pro === ANY_PROFESSIONAL}
-              onChange={() => go({ offer, pro: ANY_PROFESSIONAL, date }, 'professional', 'replace')}
+              onChange={() => go({ ...selection, pro: ANY_PROFESSIONAL }, 'professional', 'replace')}
               aside={
                 <span className="rounded-badge bg-success-50 px-2 py-1 text-badge font-bold text-success-700">
                   {t('any.tag')}
@@ -380,7 +459,7 @@ export function BookingWizard({
                       name="professional"
                       value={p.id}
                       checked={pro === p.id}
-                      onChange={() => go({ offer, pro: p.id, date }, 'professional', 'replace')}
+                      onChange={() => go({ ...selection, pro: p.id }, 'professional', 'replace')}
                       displayName={name}
                       specialty={specialty ?? undefined}
                       photoUrl={p.avatarUrl}
@@ -406,16 +485,50 @@ export function BookingWizard({
               <LoadError onRetry={() => dates.refetch()} />
             ) : blocked ? null : (
               <>
+                {nearestDate && nearestSlot && (
+                  <div
+                    className="flex flex-wrap items-center gap-3 rounded-card border-[1.5px] border-brand-500 bg-brand-50 p-4"
+                    data-testid="nearest-slot"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-brand-700"
+                    >
+                      <Icon name="clock" className="size-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-helper font-bold text-brand-700">{t('nearest.title')}</p>
+                      <p className="text-[0.9375rem] font-bold text-text-primary">
+                        {dayLabel(nearestDate)} · {formatTime(nearestSlot.startsAt, locale, shop.timeZone)}
+                      </p>
+                    </div>
+                    <Button
+                      size="md"
+                      onClick={() =>
+                        go({ ...selection, date: nearestDate, time: nearestSlot.localTime }, 'review')
+                      }
+                    >
+                      {t('nearest.book')}
+                    </Button>
+                  </div>
+                )}
+                {nearestDate && nearestSlot && (
+                  <p className="text-label font-bold text-text-strong">{t('nearest.orPick')}</p>
+                )}
                 <DateStrip
                   name="date"
-                  today={todayLocal(shop.timeZone)}
+                  today={today}
                   days={dates.data.dates.map((d) => ({ date: d.date, available: d.slotCount > 0 }))}
-                  value={date}
+                  value={dateOk ? date : undefined}
                   onValueChange={(next) => {
-                    go({ offer, pro, date: next }, 'date', 'replace');
+                    go(
+                      { ...selection, date: next, time: next === date ? time : undefined },
+                      'date',
+                      'replace',
+                    );
                   }}
                 />
-                {date && (
+                {dateOk && (
                   <p role="status" className="text-helper font-bold text-text-strong">
                     {t('slotCount', { count: dates.data.dates.find((d) => d.date === date)?.slotCount ?? 0 })}
                   </p>
@@ -450,15 +563,15 @@ export function BookingWizard({
             ) : slots.isError ? (
               <LoadError onRetry={() => slots.refetch()} />
             ) : blocked ? null : (
-              <SlotGrid
+              <HourMinutePicker
                 name="time"
                 timeZone={shop.timeZone}
-                slots={slots.data.slots.map((s) => ({ start: s.startsAt }))}
+                slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
                 value={startsAt}
                 onValueChange={(start) => {
                   const slot = slots.data.slots.find((s) => s.startsAt === start);
                   if (slot) {
-                    go({ offer, pro, date, time: slot.localTime }, 'time', 'replace');
+                    go({ ...selection, time: slot.localTime }, 'time', 'replace');
                   }
                 }}
               />
@@ -476,7 +589,21 @@ export function BookingWizard({
               </div>
             </div>
             <dl className="flex flex-col divide-y divide-border-row rounded-card border border-border bg-surface px-4">
-              <SummaryRow icon="scissors" label={t('summary.service')} value={offerName} />
+              <SummaryRow
+                icon="scissors"
+                label={t(items.length > 1 ? 'summary.services' : 'summary.service')}
+                value={
+                  items.length > 1 ? (
+                    <ul className="flex flex-col gap-0.5">
+                      {items.map((item) => (
+                        <li key={item.id}>{localizedName(locale, item.nameAr, item.nameEn)}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    offerName
+                  )
+                }
+              />
               <SummaryRow
                 icon="user"
                 label={t('summary.professional')}
@@ -586,14 +713,15 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+/** Compact tiles (D-125): any number of services, booked together; a package is booked on its own. */
 function ServiceStep({
   offers,
   value,
-  onChange,
+  onToggle,
 }: {
   offers: WizardOffer[];
-  value: WizardOffer | undefined;
-  onChange: (offer: WizardOffer) => void;
+  value: WizardOffer[];
+  onToggle: (offer: WizardOffer) => void;
 }) {
   const t = useTranslations('booking');
   const locale = useLocale() as AppLocale;
@@ -606,27 +734,32 @@ function ServiceStep({
   return (
     <div className="flex flex-col gap-5">
       {groups.map((group) => (
-        <fieldset key={group.kind} className="flex min-w-0 flex-col gap-2.5">
-          <legend className="pb-2 text-label font-bold text-text-strong">
+        <fieldset key={group.kind} className="flex min-w-0 flex-col">
+          <legend className="pb-1 text-label font-bold text-text-strong">
             {t(group.kind === 'service' ? 'services' : 'packages')}
           </legend>
-          {group.items.map((o) => {
-            const description = localizedText(locale, o.descriptionAr, o.descriptionEn);
-            return (
-              <ServiceOption
-                key={`${o.kind}-${o.id}`}
-                name="offer"
-                value={`${o.kind}:${o.id}`}
-                checked={value?.kind === o.kind && value.id === o.id}
-                onChange={() => onChange(o)}
-                title={localizedName(locale, o.nameAr, o.nameEn)}
-                description={description?.text}
-                descriptionLang={description ? langIfOther(description, locale) : undefined}
-                price={o.price}
-                durationMinutes={o.durationMinutes}
-              />
-            );
-          })}
+          <p className="pb-2.5 text-helper text-text-secondary">
+            {t(group.kind === 'service' ? 'servicesHint' : 'packagesHint')}
+          </p>
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
+            {group.items.map((o) => {
+              const description = localizedText(locale, o.descriptionAr, o.descriptionEn);
+              return (
+                <ServiceTile
+                  key={`${o.kind}-${o.id}`}
+                  name={group.kind === 'service' ? 'services' : 'package'}
+                  value={`${o.kind}:${o.id}`}
+                  checked={value.some((v) => v.kind === o.kind && v.id === o.id)}
+                  onChange={() => onToggle(o)}
+                  title={localizedName(locale, o.nameAr, o.nameEn)}
+                  description={description?.text}
+                  descriptionLang={description ? langIfOther(description, locale) : undefined}
+                  price={o.price}
+                  durationMinutes={o.durationMinutes}
+                />
+              );
+            })}
+          </div>
         </fieldset>
       ))}
     </div>

@@ -1,9 +1,14 @@
 /** Links shared by public pages, the wizard and the account pages (no server-only imports). */
 
-/** A booking link for the wizard (Phase 12, D-028): the step state lives in the URL. */
-export function bookHref(slug: string, query: Record<string, string | undefined> = {}): string {
+/** A booking link for the wizard (Phase 12, D-028): the step state lives in the URL; a list repeats its key. */
+export function bookHref(slug: string, query: Record<string, string | string[] | undefined> = {}): string {
   const params = new URLSearchParams(
-    Object.entries(query).filter((entry): entry is [string, string] => Boolean(entry[1])),
+    Object.entries(query).flatMap(([key, value]) =>
+      [value ?? []]
+        .flat()
+        .filter(Boolean)
+        .map((item): [string, string] => [key, item]),
+    ),
   );
   const text = params.toString();
   return text ? `/shops/${slug}/book?${text}` : `/shops/${slug}/book`;

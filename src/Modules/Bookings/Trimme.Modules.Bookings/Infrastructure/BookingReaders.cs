@@ -53,7 +53,10 @@ internal sealed class BookedTimeReader(TrimmeDbContext db) : IBookedTimeReader
     }
 }
 
-/// <summary>A service in any booking (as the service or inside a booked package) is in use: archive it, never delete (R-SVC-02).</summary>
+/// <summary>
+/// A service in any booking (as the service, inside a booked package or among services booked together) is in use:
+/// archive it, never delete (R-SVC-02).
+/// </summary>
 internal sealed class BookingServiceUsage(TrimmeDbContext db) : IShopServiceUsage
 {
     public async Task<bool> IsInUseAsync(ShopId shopId, Guid serviceId, CancellationToken cancellationToken)
@@ -63,9 +66,9 @@ internal sealed class BookingServiceUsage(TrimmeDbContext db) : IShopServiceUsag
             return true;
         }
 
-        // Package items are a JSON list on the booking; they reference services the package already keeps in use, but a
-        // package may later drop an item, so check the booked snapshots too.
-        return await db.Set<Booking>().AnyAsync(b => b.ShopId == shopId && b.PackageId != null && b.PackageItems.Any(i => i.ServiceId == serviceId), cancellationToken);
+        // Items are a JSON list on the booking: a package's services (which the package already keeps in use, but it may
+        // later drop one) or the services booked together.
+        return await db.Set<Booking>().AnyAsync(b => b.ShopId == shopId && b.PackageItems.Any(i => i.ServiceId == serviceId), cancellationToken);
     }
 }
 

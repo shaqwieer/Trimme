@@ -160,6 +160,54 @@ public sealed class BookingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task ServicesBookedTogether_AddUp_NeedOneProfessionalForAll_AndStayInUse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "bkg_multi", ct);
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        using var anonymous = ApiSession.Create(w.Factory);
+        var both = $"serviceIds={w.Haircut}&serviceIds={w.Beard}";
+
+        // A third service only Omar does: together with the haircut, only he is a candidate.
+        var facial = (await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/services", new { nameAr = "وجه", price = 40m, durationMinutes = 20, onlineBookable = true }, ct), ct, HttpStatusCode.Created))
+            .GetProperty("id").GetGuid();
+        await OkAsync(w.Admin.PutAsync($"/api/v1/admin/professionals/{w.Omar}/services", new { serviceIds = new[] { w.Haircut, w.Beard, facial } }, ct), ct);
+
+        var dates = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/availability/dates?{both}&from={Iso(Target)}&to={Iso(Target)}", ct), ct);
+        dates.GetProperty("dates")[0].GetProperty("slotCount").GetInt32().ShouldBeGreaterThan(0);
+        var slots = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/availability/slots?{both}&date={Iso(Target)}", ct), ct);
+        var ten = slots.GetProperty("slots").EnumerateArray().Single(s => s.GetProperty("startsAt").GetDateTimeOffset() == At(Target, 10));
+        ten.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 50), "30 + 20 minutes, back to back");
+        var withFacial = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/availability/slots?serviceId={w.Haircut}&serviceIds={facial}&date={Iso(Target)}", ct), ct);
+        withFacial.GetProperty("slots")[0].GetProperty("professionalIds").EnumerateArray().Select(p => p.GetGuid()).ShouldBe([w.Omar]);
+        await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/availability/slots?serviceId={w.Haircut}&serviceIds={facial}&professionalId={w.Faisal}&date={Iso(Target)}", ct),
+            HttpStatusCode.UnprocessableEntity, "availability.professional_not_eligible", ct);
+        await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/availability/slots?{both}&packageId={w.Package}&date={Iso(Target)}", ct), HttpStatusCode.BadRequest, null, ct);
+
+        // One booking, one professional: the items are snapshotted, duration and price add up.
+        var booking = await OkAsync(noura.SendAsync(HttpMethod.Post, "/api/v1/bookings",
+            new { shopSlug = w.SlugA, serviceIds = new[] { w.Haircut, w.Beard }, professionalId = w.Faisal, startsAt = At(Target, 10) }, ct, headers: Key()), ct, HttpStatusCode.Created);
+        var item = booking.GetProperty("item");
+        item.GetProperty("serviceId").GetGuid().ShouldBe(w.Haircut);
+        item.GetProperty("packageId").ValueKind.ShouldBe(JsonValueKind.Null);
+        item.GetProperty("nameAr").GetString().ShouldBe("حلاقة + لحية");
+        item.GetProperty("price").GetDecimal().ShouldBe(120m);
+        item.GetProperty("durationMinutes").GetInt32().ShouldBe(50);
+        item.GetProperty("packageItems").EnumerateArray().Select(i => i.GetProperty("serviceId").GetGuid()).ShouldBe([w.Haircut, w.Beard]);
+        booking.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 50));
+        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 30), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+
+        // A reschedule keeps the whole duration.
+        var moved = await OkAsync(noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{booking.GetProperty("id").GetGuid()}/reschedule",
+            new { startsAt = At(Target, 12), version = booking.GetProperty("version").GetUInt32() }, ct, headers: Key()), ct);
+        moved.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 12, 50));
+
+        // The second service is only in the booking's items, and that keeps it in use (R-SVC-02).
+        await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/packages/{w.Package}/archive", null, ct), ct);
+        await FailsAsync(w.OwnerA.DeleteAsync($"/api/v1/shop/services/{w.Beard}", ct), HttpStatusCode.Conflict, "service.in_use", ct);
+    }
+
+    [Fact]
     public async Task Customers_SeeAndChangeOnlyTheirOwnBookings_ShopsOnlyTheirOwn()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -1,13 +1,50 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-01 (Session 14: dark mode, after Phase 17)
+- **Updated:** 2026-10-04 (Session 15: simpler customer booking, after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Pushed: everything, including Session 14's dark mode (`bf2aea2`, `5cec1eb`), at the user's request.
+  - Pushed: everything, including Session 15's booking changes, at the user's request.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - The `web` service was rebuilt from this session's tree (`docker compose -f infra/docker-compose.yml -p trimme up -d --build --no-deps web`). The API and database were not touched.
+  - The `api` and `web` services were rebuilt from this session's tree. The database was not touched.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
-- **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode was requested after the phases and is recorded as D-124, not as a phase.
+- **Demo deployment:** trimme.net (VPS, demo mode) was redeployed from `main`: `git pull` in `/opt/trimme`, then build, migrate (no new migration) and `up -d` in `/opt/trimme-deploy`.
+- **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 15: simpler customer booking (D-125)
+- **What (the client's nine points):**
+  1. The search placeholder is «ابحث عن صالون».
+  2. The location button says «استخدم موقعي».
+  3. Several services can be booked in one booking.
+  4. Services are compact tiles.
+  5. Dates start at today.
+  6. The time is picked as the hour, then the minutes.
+  7. The nearest free time is offered first.
+  8. Step circles show progress.
+  9. Going back keeps every choice.
+- **Backend:**
+  - `serviceIds` on the public `availability/dates|slots` and on `POST /bookings`. `IBookableOfferCatalog.FindServicesAsync` sums durations and prices and keeps the barbers assigned to every service.
+  - A booking keeps `service_id` = the first service and lists every service in the JSON items, so there is no migration.
+  - Reschedule and the admin candidates resolve the booked services (`FindBookedAsync`). A service that appears only in booking items is in use.
+- **Web:**
+  - `wizard.ts`: repeated `service`, `combineOffers`, `withItems`, `restoreSelection`, `offerKey`.
+  - New components: `ServiceTile`, `HourMinutePicker`, `BookingProgress`.
+  - Rebook links carry every service.
+  - The last choices per shop are kept in module memory (Web Storage is banned).
+- **Evidence:**
+  - Web: `pnpm lint`, `typecheck`, `format:check`, `openapi:check`, `build` and `bundle:check` all pass. `pnpm test` passes 44 files and 434 tests.
+    - One earlier run under parallel Docker load timed out the five-step wizard test at 5.2 s. It now has a 15 s timeout.
+  - .NET:
+    - Unit tests 429/429 and architecture tests 65/65.
+    - Integration tests 198/200 on a run concurrent with a Docker rebuild. Both failures were Postgres `53300 too many clients` in the shared test container. Their classes then passed alone: `BookingTests` 11/11 (including the new multi-service test) and `NotificationsTests` 12/12.
+  - E2E on compose with the rebuilt API and web, `--retries=0`:
+    - `customer-booking` and `qr` passed 6/8. E1, E6 and QR passed.
+    - E7 is the known volume issue (Sara's seeded visits are past the review window).
+    - "favorites and profile" timed out under parallel load and passed 2/2 alone.
+  - Visual check at 390 px: tiles, step circles, nearest-time card, dates from today, hours then minutes, review. Browser back twice kept the services, date and time.
+- **Known limits:**
+  - Booking statistics count services booked together under the first service.
+  - The per-shop memory lasts across in-app navigation, not a reload.
+  - Walk-ins stay single-service.
 
 ## Session 14: dark mode (D-124)
 - **What:** Light / Dark / System (System by default) across every page and portal.

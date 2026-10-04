@@ -127,7 +127,11 @@
       "evening": "مساءً",
       "emptyPeriod": "لا أوقات متاحة في هذه الفترة",
       "emptyDay": "لا أوقات متاحة في هذا اليوم — جرّب يوماً آخر",
-      "label": "الأوقات المتاحة"
+      "label": "الأوقات المتاحة",
+      "hour": "اختر الساعة",
+      "minute": "اختر الدقيقة",
+      "pickHour": "اختر ساعة لعرض الدقائق المتاحة فيها.",
+      "minutesCount": "{count, plural, one {وقت واحد} two {وقتان} few {# أوقات} many {# وقتاً} other {# وقت}}"
     },
     "calendar": {
       "previousMonth": "الشهر السابق",
@@ -143,7 +147,12 @@
     },
     "stepper": {
       "label": "خطوات الحجز",
-      "progress": "الخطوة {current} من {total}"
+      "progress": "الخطوة {current} من {total}",
+      "state": {
+        "done": "مكتملة:",
+        "current": "الخطوة الحالية:",
+        "todo": "متبقية:"
+      }
     },
     "toast": {
       "region": "التنبيهات",
@@ -1389,9 +1398,9 @@
     "lead": "شاهد المواعيد المتاحة فعلاً، واختر الحلاق المناسب، وأكد زيارتك بلا اتصال ولا انتظار للرد.",
     "search": {
       "label": "ابحث عن خدمة أو محل",
-      "placeholder": "قصة شعر، تهذيب لحية أو اسم محل",
+      "placeholder": "ابحث عن صالون",
       "location": "موقعك",
-      "locationUnset": "حدد موقعك",
+      "locationUnset": "استخدم موقعي",
       "submit": "اعرض المواعيد المتاحة"
     },
     "browse": "تصفح الصالونات الأعلى تقييماً",
@@ -1521,11 +1530,11 @@
     },
     "yourLocation": "موقعك الحالي",
     "currentLocation": "موقعي الحالي",
-    "setLocation": "حدد موقعك",
+    "setLocation": "استخدم موقعي",
     "changeLocation": "تغيير الموقع: {label}",
     "search": {
       "label": "ابحث عن محل أو خدمة",
-      "placeholder": "ابحث عن محل أو خدمة",
+      "placeholder": "ابحث عن صالون",
       "submit": "بحث"
     },
     "categories": "التصنيفات",
@@ -1558,7 +1567,7 @@
     },
     "back": "رجوع",
     "label": "ابحث عن محل أو خدمة",
-    "placeholder": "ابحث عن محل أو خدمة",
+    "placeholder": "ابحث عن صالون",
     "submit": "بحث",
     "filters": "فلاتر",
     "filtersCount": "فلاتر · {count}",
@@ -1568,7 +1577,7 @@
     "results": "{count, plural, =0 {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}} ضمن {km} كم",
     "resultsAll": "{count, plural, =0 {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
     "noLocation": "بدون موقع تُرتب النتائج حسب التقييم.",
-    "setLocation": "حدد موقعك",
+    "setLocation": "استخدم موقعي",
     "earliest": "أقرب موعد {time}",
     "tomorrow": "غداً {time}",
     "notBookable": "الحجز الإلكتروني متوقف",
@@ -1813,8 +1822,14 @@
       "time": "الوقت",
       "review": "المراجعة"
     },
+    "phases": {
+      "shop": "الصالون",
+      "service": "الخدمة",
+      "time": "الوقت",
+      "confirm": "التأكيد"
+    },
     "titles": {
-      "service": "اختر الخدمة",
+      "service": "اختر الخدمات",
       "professional": "اختر الحلاق",
       "date": "اختر التاريخ",
       "time": "اختر الوقت",
@@ -1828,6 +1843,16 @@
     "retry": "إعادة المحاولة",
     "services": "الخدمات",
     "packages": "الباقات",
+    "servicesHint": "اختر خدمة أو أكثر لنفس الموعد.",
+    "packagesHint": "الباقة تُحجز وحدها.",
+    "selectedCount": "{count, plural, one {خدمة واحدة} two {خدمتان} few {# خدمات} many {# خدمة} other {# خدمة}}",
+    "noCommonProfessional": "لا يوجد حلاق واحد يقدّم كل هذه الخدمات معاً. أزل خدمة أو احجزها في موعد منفصل.",
+    "today": "اليوم",
+    "nearest": {
+      "title": "أقرب موعد متاح",
+      "book": "احجز هذا الموعد",
+      "orPick": "أو اختر اليوم والوقت المناسب لك"
+    },
     "noServices": "لا توجد خدمات متاحة للحجز الإلكتروني في هذا المحل حالياً.",
     "any": {
       "title": "أي حلاق متاح",
@@ -1861,6 +1886,7 @@
     },
     "summary": {
       "service": "الخدمة",
+      "services": "الخدمات",
       "professional": "الحلاق",
       "anyAssigned": "أي حلاق متاح — نحدده عند التأكيد",
       "date": "التاريخ",

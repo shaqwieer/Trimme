@@ -168,6 +168,65 @@ export function ServiceOption({
   );
 }
 
+type ServiceTileProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'children'> & {
+  title: string;
+  description?: string;
+  /** The description's language when it differs from the page's (an Arabic-only description in English). */
+  descriptionLang?: string;
+  price: number;
+  durationMinutes: number;
+};
+
+/**
+ * Compact selectable service or package tile for the booking wizard (D-125): two or three to a row, name, price and
+ * duration, a one-line description. A native checkbox, since several services can be booked together.
+ */
+export function ServiceTile({
+  title,
+  description,
+  descriptionLang,
+  price,
+  durationMinutes,
+  className,
+  ...input
+}: ServiceTileProps) {
+  const locale = useLocale() as AppLocale;
+  return (
+    <label
+      className={cn(
+        'relative flex min-h-[76px] cursor-pointer flex-col justify-between gap-1.5 rounded-card border border-border bg-surface p-3 transition-colors',
+        'hover:border-brand-500 has-checked:border-[1.5px] has-checked:border-brand-500 has-checked:bg-brand-50',
+        'has-focus-visible:shadow-[var(--focus-ring)]',
+        className,
+      )}
+    >
+      <input type="checkbox" className="peer sr-only" {...input} />
+      <span
+        aria-hidden="true"
+        className="absolute end-2.5 top-2.5 flex size-5 items-center justify-center rounded-full border-[1.5px] border-border-strong text-on-navy peer-checked:border-navy-900 peer-checked:bg-navy-900 [&>svg]:invisible peer-checked:[&>svg]:visible"
+      >
+        <Icon name="check" className="size-3" strokeWidth={2.5} />
+      </span>
+      <span className="min-w-0 pe-6">
+        <span className="line-clamp-2 text-[0.875rem] leading-snug font-bold text-text-primary">{title}</span>
+        {description && (
+          <span lang={descriptionLang} className="mt-0.5 block truncate text-badge text-text-secondary">
+            {description}
+          </span>
+        )}
+      </span>
+      <span className="flex items-baseline justify-between gap-2">
+        <span className="font-latin text-[0.875rem] font-bold whitespace-nowrap text-navy-900">
+          {formatPrice(price, locale)}
+        </span>
+        <span className="text-badge whitespace-nowrap text-text-secondary">
+          {formatDurationMinutes(durationMinutes, locale)}
+        </span>
+      </span>
+    </label>
+  );
+}
+
 type ProfessionalOptionProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'children'> & {
   name: string;
   displayName: string;

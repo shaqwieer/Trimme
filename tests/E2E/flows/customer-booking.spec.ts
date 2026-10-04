@@ -92,8 +92,17 @@ async function pickDate(page: Page, name: string, from: number): Promise<string>
   throw new Error(`No bookable day between ${from} and ${from + 4} days ahead for ${name}.`);
 }
 
-/** Picks the n-th offered time on a slot grid and returns its start instant. */
+/**
+ * Picks the n-th offered time on a slot grid and returns its start instant. The wizard asks for the hour first
+ * (D-125): its first hour is chosen, then the n-th minute of it.
+ */
 async function pickSlot(page: Page, name: string, index = 0): Promise<string> {
+  await expect(page.locator(`input[name="${name}"], input[name="${name}-hour"]`).first()).toBeAttached();
+  const hour = page.locator(`input[name="${name}-hour"]`).first();
+  if ((await hour.count()) > 0 && !(await hour.isChecked())) {
+    const value = (await hour.getAttribute('value'))!;
+    await page.locator(`label:has(input[name="${name}-hour"][value="${value}"])`).click();
+  }
   const input = page.locator(`input[name="${name}"]`).nth(index);
   await expect(input).toBeAttached();
   const value = (await input.getAttribute('value'))!;

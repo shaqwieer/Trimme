@@ -1,14 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 import type { WizardOffer } from '@/lib/booking/wizard';
+import { addDays, formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { CancelBookingButton } from './BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from './BookingDetailParts';
+import { HourMinutePicker } from '@/components/ui/booking';
 import { BookingWizard, type WizardPro } from './BookingWizard';
 import { ReviewForm } from './ReviewForm';
 
@@ -77,19 +79,33 @@ const SHOP = {
   logoUrl: null,
 };
 
+// The strip starts at the shop's today (D-125), so the test days are today and tomorrow.
+const D1 = todayLocal('Asia/Riyadh');
+const D2 = addDays(D1, 1);
+const dayName = (date: string) => new RegExp(formatLocalDate(date, 'ar', { day: 'numeric', month: 'long' }));
 const DATES = {
-  from: '2026-10-01',
-  to: '2026-10-02',
+  from: D1,
+  to: D2,
   timeZone: 'Asia/Riyadh',
   bookable: true,
   blockedReason: null,
   dates: [
-    { date: '2026-10-01', slotCount: 2 },
-    { date: '2026-10-02', slotCount: 0 },
+    { date: D1, slotCount: 2 },
+    { date: D2, slotCount: 0 },
   ],
 };
+const BEARD: WizardOffer = {
+  ...SERVICE,
+  id: 'svc-2',
+  nameAr: 'تهذيب لحية',
+  nameEn: 'Beard trim',
+  descriptionAr: null,
+  price: 40,
+  durationMinutes: 20,
+  professionalIds: ['omar', 'majed'],
+};
 const slotsOf = (times: Array<[string, string]>) => ({
-  date: '2026-10-01',
+  date: D1,
   timeZone: 'Asia/Riyadh',
   bookable: true,
   blockedReason: null,
@@ -133,6 +149,7 @@ beforeEach(() => {
 });
 
 describe('BookingWizard (c-booking, D-028, D-096)', () => {
+  // The longest walk in the suite (five steps and an axe pass), hence the longer timeout.
   it('walks service → any professional → date → time → review, with the price paid at the shop and no payment step', async () => {
     const user = userEvent.setup();
     availability();
@@ -141,9 +158,12 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
       <BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />,
     );
 
-    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الخدمة');
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الخدمات');
+    expect(screen.getByRole('navigation', { name: 'خطوات الحجز' })).toHaveTextContent(
+      /الصالون.*الخدمة.*الوقت.*التأكيد/,
+    );
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
-    await user.click(screen.getByRole('radio', { name: /قص وتصفيف/ }));
+    await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
     // Only the professionals assigned to the service, "any" preselected (design rule 2).
@@ -155,12 +175,14 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
 
     // Dates come from the API; a day without slots cannot be picked.
     expect(window.location.search).toContain('step=date');
-    const day = await screen.findByRole('radio', { name: /1 أكتوبر|١ أكتوبر/ });
-    expect(screen.getByRole('radio', { name: /2 أكتوبر|٢ أكتوبر/ })).toBeDisabled();
+    const day = await screen.findByRole('radio', { name: dayName(D1) });
+    expect(screen.getByRole('radio', { name: dayName(D2) })).toBeDisabled();
     await user.click(day);
     expect(screen.getByRole('status')).toHaveTextContent('وقتان متاحان');
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
+    // Hour first, then that hour's minutes (one hour here, so its minutes are already shown).
+    expect(await screen.findByRole('radio', { name: /١٠ ص/ })).toBeChecked();
     await user.click(await screen.findByRole('radio', { name: /١٠:٣٠/ }));
     expect(window.location.search).toContain('time=10%3A30');
     await user.click(screen.getByRole('button', { name: 'التالي' }));
@@ -183,12 +205,13 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(init.body).toEqual({
       shopSlug: 'barber-house',
       serviceId: 'svc-1',
+      serviceIds: null,
       packageId: null,
       professionalId: null,
       startsAt: '2026-10-01T07:30:00Z',
       note: 'تدريج',
     });
-  });
+  }, 15_000);
 
   it('sends a time taken meanwhile back to fresh slots with the "just taken" notice, and keeps the key on a plain retry', async () => {
     const user = userEvent.setup();
@@ -196,7 +219,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     window.history.replaceState(
       null,
       '',
-      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=2026-10-01&time=10:00`,
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
     );
     api.POST.mockResolvedValueOnce(fail(500, 'server.unexpected')).mockResolvedValueOnce(
       fail(409, 'booking.slot_unavailable'),
@@ -221,11 +244,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
 
   it('checks a time from the URL against fresh slots and says when it is gone', async () => {
     availability(slotsOf([['11:00', '2026-10-01T08:00:00Z']]));
-    window.history.replaceState(
-      null,
-      '',
-      `/ar/shops/barber-house/book?service=svc-1&date=2026-10-01&time=10:00`,
-    );
+    window.history.replaceState(null, '', `/ar/shops/barber-house/book?service=svc-1&date=${D1}&time=10:00`);
     renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
     await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الوقت'));
     expect(screen.getByText('الوقت الذي اخترته لم يعد متاحاً')).toBeInTheDocument();
@@ -238,7 +257,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     window.history.replaceState(
       null,
       '',
-      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=2026-10-01&time=10:00`,
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
     );
     renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="guest" />);
 
@@ -251,7 +270,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(target.startsWith('/auth/sign-in?returnTo=')).toBe(true);
     const returnTo = decodeURIComponent(target.split('returnTo=')[1]!);
     expect(returnTo).toBe(
-      '/shops/barber-house/book?service=svc-1&pro=omar&date=2026-10-01&time=10%3A00&step=review',
+      `/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10%3A00&step=review`,
     );
     expect(api.POST).not.toHaveBeenCalled();
   });
@@ -260,11 +279,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     const user = userEvent.setup();
     availability();
     api.POST.mockResolvedValue(fail(422, 'booking.profile_incomplete'));
-    window.history.replaceState(
-      null,
-      '',
-      `/ar/shops/barber-house/book?service=svc-1&date=2026-10-01&time=10:00`,
-    );
+    window.history.replaceState(null, '', `/ar/shops/barber-house/book?service=svc-1&date=${D1}&time=10:00`);
     renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
     const confirm = await screen.findByRole('button', { name: 'تأكيد الحجز' });
     await waitFor(() => expect(confirm).toBeEnabled());
@@ -274,6 +289,114 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
         expect.stringMatching(/^\/auth\/complete-profile\?returnTo=%2Fshops%2Fbarber-house%2Fbook/),
       ),
     );
+  });
+
+  it('books several services together: one barber for all, durations and prices added, sent as serviceIds', async () => {
+    const user = userEvent.setup();
+    availability();
+    api.POST.mockResolvedValue(ok({ id: 'booking-2', status: 'Confirmed' }, 201));
+    renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'multi-shop' }}
+        offers={[SERVICE, BEARD]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
+    await user.click(screen.getByRole('checkbox', { name: /تهذيب لحية/ }));
+    expect(screen.getByTestId('wizard-footer-note')).toHaveTextContent('خدمتان');
+    expect(screen.getByText('125 ر.س')).toBeInTheDocument();
+    expect(window.location.search).toBe('?service=svc-1&service=svc-2&step=service');
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    // Only Omar does both services.
+    expect(screen.getByRole('radio', { name: /عمر السالم/ })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /ماجد/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    await user.click(await screen.findByRole('radio', { name: dayName(D1) }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    await user.click(await screen.findByRole('radio', { name: /١٠:٠٠/ }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    const review = await screen.findByTestId('booking-review');
+    expect(review).toHaveTextContent('قص وتصفيف');
+    expect(review).toHaveTextContent('تهذيب لحية');
+    expect(review).toHaveTextContent('125 ر.س');
+    const datesCall = api.GET.mock.calls.find(([path]) => String(path).endsWith('/dates'))!;
+    expect(datesCall[1].params.query).toMatchObject({ serviceIds: ['svc-1', 'svc-2'], serviceId: undefined });
+    await user.click(screen.getByRole('button', { name: 'تأكيد الحجز' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalled());
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({
+      serviceId: null,
+      serviceIds: ['svc-1', 'svc-2'],
+    });
+  });
+
+  it('says when no single barber does every chosen service', async () => {
+    const user = userEvent.setup();
+    availability();
+    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'] };
+    renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'no-common' }}
+        offers={[SERVICE, COLOR]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
+    await user.click(screen.getByRole('checkbox', { name: /صبغة/ }));
+    expect(screen.getByText(/لا يوجد حلاق واحد يقدّم كل هذه الخدمات/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
+  });
+
+  it('offers the nearest free time before the days and hours, and books it in one tap', async () => {
+    const user = userEvent.setup();
+    availability();
+    window.history.replaceState(null, '', '/ar/shops/barber-house/book?service=svc-1&step=date');
+    renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
+
+    const nearest = await screen.findByTestId('nearest-slot');
+    expect(nearest).toHaveTextContent('أقرب موعد متاح');
+    expect(nearest).toHaveTextContent('اليوم');
+    expect(nearest).toHaveTextContent('١٠:٠٠');
+    await user.click(within(nearest).getByRole('button', { name: 'احجز هذا الموعد' }));
+    expect(await screen.findByTestId('booking-review')).toBeInTheDocument();
+    expect(window.location.search).toContain(`date=${D1}`);
+    expect(window.location.search).toContain('time=10%3A00');
+  });
+
+  it('keeps every choice when the customer goes back, with the app or the browser', async () => {
+    const user = userEvent.setup();
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&service=svc-2&pro=omar&date=${D1}&time=10:30&step=time`,
+    );
+    renderWizard(
+      <BookingWizard shop={SHOP} offers={[SERVICE, BEARD]} professionals={PROS} viewer="customer" />,
+    );
+    expect(await screen.findByRole('radio', { name: /١٠:٣٠/ })).toBeChecked();
+
+    // The app's back button: the date is still chosen.
+    await user.click(screen.getByRole('button', { name: 'الخطوة السابقة' }));
+    expect(await screen.findByRole('radio', { name: dayName(D1) })).toBeChecked();
+
+    // The browser's back button lands on an entry from before the professional and time were chosen.
+    act(() =>
+      window.history.replaceState(
+        null,
+        '',
+        '/ar/shops/barber-house/book?service=svc-1&service=svc-2&step=service',
+      ),
+    );
+    await waitFor(() => expect(window.location.search).toContain('time=10%3A30'));
+    expect(window.location.search).toContain('pro=omar');
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /تهذيب لحية/ })).toBeChecked();
   });
 });
 
@@ -466,5 +589,33 @@ describe('FavoriteButton after signing in (client-side return)', () => {
     expect(await screen.findByRole('button', { name: 'أزل عمر من المفضلة' })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);
     fetchMock.mockRestore();
+  });
+});
+
+describe('HourMinutePicker (D-125)', () => {
+  it("shows the hours first, then only the chosen hour's minutes", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    const { container } = renderWithIntl(
+      <HourMinutePicker
+        name="time"
+        timeZone="Asia/Riyadh"
+        slots={[
+          { localTime: '10:00', start: '2026-10-01T07:00:00Z' },
+          { localTime: '10:30', start: '2026-10-01T07:30:00Z' },
+          { localTime: '11:15', start: '2026-10-01T08:15:00Z' },
+        ]}
+        onValueChange={onValueChange}
+      />,
+    );
+
+    expect(screen.getByRole('radio', { name: /١٠ ص/ })).toHaveAccessibleName(/وقتان/);
+    expect(screen.queryByRole('radio', { name: /١٠:٣٠/ })).not.toBeInTheDocument();
+    expect(screen.getByText('اختر ساعة لعرض الدقائق المتاحة فيها.')).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /١١ ص/ }));
+    expect(screen.queryByRole('radio', { name: /١٠:٣٠/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /١١:١٥/ }));
+    expect(onValueChange).toHaveBeenCalledWith('2026-10-01T08:15:00Z');
+    await expectNoAxeViolations(container);
   });
 });

@@ -22,10 +22,16 @@ export function isActive(booking: Pick<CustomerBooking, 'status'>): boolean {
   return ACTIVE.has(booking.status);
 }
 
-/** The wizard pre-filled from a booking: same shop, service or package, and professional (c-appointments rebook). */
+/**
+ * The wizard pre-filled from a booking: same shop, service(s) or package, and professional (c-appointments rebook).
+ * Services booked together are the booking's items.
+ */
 export function rebookHref(booking: CustomerBooking): string {
+  const together = !booking.item.packageId && booking.item.packageItems.length > 1;
   return bookHref(booking.shop.slug, {
-    service: booking.item.serviceId ?? undefined,
+    service: together
+      ? booking.item.packageItems.map((item) => item.serviceId)
+      : (booking.item.serviceId ?? undefined),
     package: booking.item.packageId ?? undefined,
     pro: booking.professional.id,
   });

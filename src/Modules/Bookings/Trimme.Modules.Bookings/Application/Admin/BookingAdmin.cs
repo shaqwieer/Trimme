@@ -306,7 +306,8 @@ internal static class AdminRescheduleTargets
         Booking booking, IBookableOfferCatalog catalog, IProfessionalDirectory professionals, CancellationToken cancellationToken)
     {
         var staff = await professionals.ListByShopAsync(booking.ShopId, cancellationToken);
-        var offer = await catalog.FindAsync(booking.ShopId, booking.ServiceId, booking.PackageId, cancellationToken);
+        var offer = await catalog.FindBookedAsync(
+            booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken);
         var eligible = offer?.EligibleProfessionalIds.ToHashSet() ?? [];
         return [.. staff.Where(p => p.Id == booking.ProfessionalId || (p.IsActive && eligible.Contains(p.Id)))];
     }

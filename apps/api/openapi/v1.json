@@ -7202,7 +7202,7 @@
         "tags": [
           "Public"
         ],
-        "summary": "Bookable slot counts per local date (default: 14 days from today, at most 31) for a service or package, one professional or any.",
+        "summary": "Bookable slot counts per local date (default: 14 days from today, at most 31) for a service, several services booked together (serviceIds) or a package, one professional or any.",
         "operationId": "GetAvailableDates",
         "parameters": [
           {
@@ -7219,6 +7219,17 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "serviceIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           },
           {
@@ -7320,6 +7331,17 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "serviceIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           },
           {
@@ -14431,9 +14453,19 @@
               "null",
               "string"
             ]
+          },
+          "serviceIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
-        "description": "A customer\u0027s online booking of a published service or package (exactly one of the two). Without a professional the\nserver picks a free one (D-012). The start must be one of the offered slots."
+        "description": "A customer\u0027s online booking of a published service, several services booked together (\u0060ServiceIds\u0060, one\nprofessional back to back) or a package: services or a package, never both. Without a professional the server picks a\nfree one (D-012). The start must be one of the offered slots."
       },
       "CreatePlanRequest": {
         "required": [

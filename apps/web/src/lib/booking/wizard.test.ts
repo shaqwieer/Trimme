@@ -3,14 +3,18 @@ import { safeReturnTo, withReturnTo } from '@/lib/auth/paths';
 import { calendarDaysUntil, changeDeadline, cutoffParts, endOf, timeUntil } from './format';
 import {
   ANY_PROFESSIONAL,
+  combineOffers,
   currentStep,
   eligibleProfessionals,
   keyFor,
+  offerKey,
   readWizardQuery,
   resolveStart,
+  restoreSelection,
   selectionFrom,
   wizardNotice,
   wizardPath,
+  withItems,
   type WizardOffer,
 } from './wizard';
 
@@ -27,7 +31,16 @@ const HAIRCUT: WizardOffer = {
   professionalIds: ['omar', 'majed'],
 };
 const PACKAGE: WizardOffer = { ...HAIRCUT, kind: 'package', id: 'pkg-1', professionalIds: ['omar'] };
-const OFFERS = [HAIRCUT, PACKAGE];
+const BEARD: WizardOffer = {
+  ...HAIRCUT,
+  id: 'svc-beard',
+  nameAr: 'لحية',
+  nameEn: 'Beard',
+  price: 40,
+  durationMinutes: 20,
+  professionalIds: ['majed', 'sultan'],
+};
+const OFFERS = [HAIRCUT, PACKAGE, BEARD];
 const PROS = [{ id: 'omar' }, { id: 'majed' }, { id: 'sultan' }];
 
 const parse = (search: string) => {
@@ -98,7 +111,9 @@ describe('booking wizard URL state (D-028, D-096)', () => {
     ).toBe('conflict');
     expect(wizardNotice(readWizardQuery(new URLSearchParams('notice=<script>')))).toBeNull();
     // "any" is the default, so it is not written.
-    expect(wizardPath('x', { offer: HAIRCUT, pro: ANY_PROFESSIONAL }, 'date')).not.toContain('pro=');
+    expect(
+      wizardPath('x', { items: [HAIRCUT], offer: HAIRCUT, pro: ANY_PROFESSIONAL }, 'date'),
+    ).not.toContain('pro=');
   });
 
   it('survives the sign-in round trip: sign-in → verify → complete profile keep the whole wizard URL', () => {
@@ -125,6 +140,61 @@ describe('booking wizard URL state (D-028, D-096)', () => {
     expect(resolveStart(slots, '10:30')).toBe('2026-10-01T07:30:00Z');
     expect(resolveStart(slots, '11:00')).toBeUndefined();
     expect(resolveStart(undefined, '10:30')).toBeUndefined();
+  });
+});
+
+describe('several services in one booking (D-125)', () => {
+  it('reads repeated services in order, without repeats, and a package on its own', () => {
+    const { selection, step } = parse(`service=${HAIRCUT.id}&service=${BEARD.id}&service=${HAIRCUT.id}`);
+    expect(selection.items.map((item) => item.id)).toEqual([HAIRCUT.id, BEARD.id]);
+    expect(step).toBe('professional');
+    expect(parse(`package=pkg-1&service=${HAIRCUT.id}`).selection.items).toEqual([PACKAGE]);
+  });
+
+  it('adds up durations and prices, joins the names, and keeps only professionals who do every service', () => {
+    const combined = combineOffers([HAIRCUT, BEARD])!;
+    expect(combined).toMatchObject({
+      kind: 'service',
+      id: HAIRCUT.id,
+      nameAr: 'قص وتصفيف + لحية',
+      nameEn: 'Cut and style + Beard',
+      price: 100,
+      durationMinutes: 50,
+      professionalIds: ['majed'],
+    });
+    expect(combineOffers([HAIRCUT])).toBe(HAIRCUT);
+    expect(combineOffers([])).toBeUndefined();
+    expect(parse(`service=${HAIRCUT.id}&service=${BEARD.id}&pro=omar`).selection.pro).toBe(ANY_PROFESSIONAL);
+  });
+
+  it('writes every service into the URL and keys the request on all of them', () => {
+    const selection = parse(`service=${HAIRCUT.id}&service=${BEARD.id}&pro=majed`).selection;
+    expect(wizardPath('x', selection, 'date')).toBe(
+      `/shops/x/book?service=${HAIRCUT.id}&service=${BEARD.id}&pro=majed&step=date`,
+    );
+    expect(offerKey(selection.items)).not.toBe(offerKey([HAIRCUT]));
+  });
+
+  it('keeps the date and time when the services change, and the professional while they still do them all', () => {
+    const selection = parse(`service=${HAIRCUT.id}&pro=majed&date=2026-10-01&time=10:00`).selection;
+    expect(withItems(selection, [HAIRCUT, BEARD], PROS)).toMatchObject({
+      pro: 'majed',
+      date: '2026-10-01',
+      time: '10:00',
+    });
+    expect(withItems(parse(`service=${HAIRCUT.id}&pro=omar`).selection, [HAIRCUT, BEARD], PROS).pro).toBe(
+      ANY_PROFESSIONAL,
+    );
+    expect(withItems(selection, [], PROS).date).toBeUndefined();
+  });
+
+  it('restores the later choices an older history entry lacks, only for the same services', () => {
+    const latest = parse(`service=${HAIRCUT.id}&pro=majed&date=2026-10-01&time=10:00`).selection;
+    const older = parse(`service=${HAIRCUT.id}`).selection;
+    expect(restoreSelection(older, latest)).toEqual(latest);
+    expect(restoreSelection(parse('').selection, latest)).toEqual(latest);
+    const other = parse(`service=${BEARD.id}`).selection;
+    expect(restoreSelection(other, latest)).toBe(other);
   });
 });
 

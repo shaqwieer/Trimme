@@ -127,7 +127,11 @@
       "evening": "Evening",
       "emptyPeriod": "No available times in this period",
       "emptyDay": "No available times on this day — try another day",
-      "label": "Available times"
+      "label": "Available times",
+      "hour": "Choose the hour",
+      "minute": "Choose the minutes",
+      "pickHour": "Choose an hour to see its free minutes.",
+      "minutesCount": "{count, plural, one {1 time} other {# times}}"
     },
     "calendar": {
       "previousMonth": "Previous month",
@@ -143,7 +147,12 @@
     },
     "stepper": {
       "label": "Booking steps",
-      "progress": "Step {current} of {total}"
+      "progress": "Step {current} of {total}",
+      "state": {
+        "done": "Done:",
+        "current": "Current step:",
+        "todo": "To do:"
+      }
     },
     "toast": {
       "region": "Notifications",
@@ -1389,9 +1398,9 @@
     "lead": "See real available times, choose the barber you want and confirm your visit without calling or waiting for a reply.",
     "search": {
       "label": "Search for a service or a shop",
-      "placeholder": "Haircut, beard trim or shop name",
+      "placeholder": "Search for a salon",
       "location": "Your location",
-      "locationUnset": "Set your location",
+      "locationUnset": "Use my location",
       "submit": "Find available times"
     },
     "browse": "Browse top-rated shops",
@@ -1521,11 +1530,11 @@
     },
     "yourLocation": "Your location",
     "currentLocation": "My current location",
-    "setLocation": "Set your location",
+    "setLocation": "Use my location",
     "changeLocation": "Change location: {label}",
     "search": {
       "label": "Search for a shop or service",
-      "placeholder": "Search for a shop or service",
+      "placeholder": "Search for a salon",
       "submit": "Search"
     },
     "categories": "Categories",
@@ -1558,7 +1567,7 @@
     },
     "back": "Back",
     "label": "Search for a shop or service",
-    "placeholder": "Search for a shop or service",
+    "placeholder": "Search for a salon",
     "submit": "Search",
     "filters": "Filters",
     "filtersCount": "Filters · {count}",
@@ -1568,7 +1577,7 @@
     "results": "{count, plural, =0 {No results} one {# result} other {# results}} within {km} km",
     "resultsAll": "{count, plural, =0 {No results} one {# result} other {# results}}",
     "noLocation": "Without a location, results are sorted by rating.",
-    "setLocation": "Set your location",
+    "setLocation": "Use my location",
     "earliest": "Earliest {time}",
     "tomorrow": "Tomorrow {time}",
     "notBookable": "Online booking paused",
@@ -1813,8 +1822,14 @@
       "time": "Time",
       "review": "Review"
     },
+    "phases": {
+      "shop": "Salon",
+      "service": "Service",
+      "time": "Time",
+      "confirm": "Confirm"
+    },
     "titles": {
-      "service": "Choose the service",
+      "service": "Choose your services",
       "professional": "Choose the barber",
       "date": "Choose the date",
       "time": "Choose the time",
@@ -1828,6 +1843,16 @@
     "retry": "Try again",
     "services": "Services",
     "packages": "Packages",
+    "servicesHint": "Pick one or more services for the same visit.",
+    "packagesHint": "A package is booked on its own.",
+    "selectedCount": "{count, plural, one {1 service} other {# services}}",
+    "noCommonProfessional": "No single barber offers all of these services together. Remove one, or book it as a separate visit.",
+    "today": "Today",
+    "nearest": {
+      "title": "Earliest available time",
+      "book": "Book this time",
+      "orPick": "Or pick the day and time that suit you"
+    },
     "noServices": "This shop has no services you can book online right now.",
     "any": {
       "title": "Any available barber",
@@ -1861,6 +1886,7 @@
     },
     "summary": {
       "service": "Service",
+      "services": "Services",
       "professional": "Barber",
       "anyAssigned": "Any available barber — assigned when you confirm",
       "date": "Date",

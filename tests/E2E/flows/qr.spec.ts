@@ -134,7 +134,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     // The guest then signs up (the cookie survives the sign-up) and books in the wizard, without scanning again.
     await signUp(scan, 'ريم الشهري');
     await scan.goto('/ar/shops/barber-house/book');
-    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الخدمة');
+    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الخدمات');
     await scan.getByText('قص وتصفيف').first().click();
     await scan.getByRole('button', { name: 'التالي' }).click();
     await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الحلاق');
@@ -143,6 +143,12 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await pickDate(scan, 5);
     await scan.getByRole('button', { name: 'التالي' }).click();
     await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الوقت');
+    // The hour first, then a minute of it (D-125).
+    const hour = scan.locator('input[name="time-hour"]').first();
+    await expect(hour).toBeAttached();
+    await scan
+      .locator(`label:has(input[name="time-hour"][value="${await hour.getAttribute('value')}"])`)
+      .click();
     const slot = scan.locator('input[name="time"]').first();
     await expect(slot).toBeAttached();
     await scan.locator(`label:has(input[name="time"][value="${await slot.getAttribute('value')}"])`).click();

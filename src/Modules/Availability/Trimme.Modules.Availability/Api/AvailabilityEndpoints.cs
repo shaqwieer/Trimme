@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Web.Errors;
@@ -141,15 +142,15 @@ internal static class AvailabilityEndpoints
 
     private static void MapPublic(RouteGroupBuilder group)
     {
-        group.MapGet("/dates", async (string slug, Guid? serviceId, Guid? packageId, Guid? professionalId, DateOnly? from, DateOnly? to, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new GetAvailableDatesQuery(slug, serviceId, packageId, professionalId, from, to), ct)).ToHttpResult())
+        group.MapGet("/dates", async (string slug, Guid? serviceId, [FromQuery] Guid[]? serviceIds, Guid? packageId, Guid? professionalId, DateOnly? from, DateOnly? to, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetAvailableDatesQuery(slug, serviceId, packageId, professionalId, from, to, serviceIds), ct)).ToHttpResult())
             .AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Availability)
             .WithName("GetAvailableDates")
-            .WithSummary("Bookable slot counts per local date (default: 14 days from today, at most 31) for a service or package, one professional or any.")
+            .WithSummary("Bookable slot counts per local date (default: 14 days from today, at most 31) for a service, several services booked together (serviceIds) or a package, one professional or any.")
             .Produces<AvailableDatesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
-        group.MapGet("/slots", async (string slug, Guid? serviceId, Guid? packageId, Guid? professionalId, DateOnly date, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new GetAvailableSlotsQuery(slug, serviceId, packageId, professionalId, date), ct)).ToHttpResult())
+        group.MapGet("/slots", async (string slug, Guid? serviceId, [FromQuery] Guid[]? serviceIds, Guid? packageId, Guid? professionalId, DateOnly date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetAvailableSlotsQuery(slug, serviceId, packageId, professionalId, date, serviceIds), ct)).ToHttpResult())
             .AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Availability)
             .WithName("GetAvailableSlots")
             .WithSummary("Only genuinely bookable starts of one local date, with the professionals free for each (any professional when none is given).")

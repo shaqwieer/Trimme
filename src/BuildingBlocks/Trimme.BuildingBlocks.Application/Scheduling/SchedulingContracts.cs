@@ -10,6 +10,48 @@ public interface IBookableOfferCatalog
 {
     /// <summary>The shop's service or package (exactly one id is set), or <see langword="null"/> when it is not published.</summary>
     Task<BookableOffer?> FindAsync(ShopId shopId, Guid? serviceId, Guid? packageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Several of the shop's services booked together as one contiguous appointment with one professional (like a package):
+    /// durations and prices add up, the eligible professionals are those assigned to every service, and the services are
+    /// the offer's items. One id is the service itself. <see langword="null"/> when any is not published or the
+    /// currencies differ.
+    /// </summary>
+    Task<BookableOffer?> FindServicesAsync(ShopId shopId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken);
+}
+
+/// <summary>How a request names what it books: one service, several services, or one package.</summary>
+public static class BookableOfferRequest
+{
+    /// <summary>At most this many services in one booking.</summary>
+    public const int MaxServices = 10;
+
+    /// <summary>
+    /// <paramref name="serviceId"/> and <paramref name="serviceIds"/> as one list, in order and without repeats, or
+    /// <see langword="null"/> when the request is invalid: no item, both services and a package, or too many services.
+    /// </summary>
+    public static IReadOnlyList<Guid>? Services(Guid? serviceId, IEnumerable<Guid>? serviceIds, Guid? packageId)
+    {
+        List<Guid> services = [.. new[] { serviceId }.OfType<Guid>().Concat(serviceIds ?? []).Distinct()];
+        return (services.Count > 0) == (packageId is not null) || services.Count > MaxServices ? null : services;
+    }
+
+    /// <summary>The offer for validated <paramref name="serviceIds"/> (see <see cref="Services"/>) or a package.</summary>
+    public static Task<BookableOffer?> FindAsync(
+        this IBookableOfferCatalog catalog, ShopId shopId, IReadOnlyList<Guid> serviceIds, Guid? packageId, CancellationToken cancellationToken) =>
+        packageId is { } package
+            ? catalog.FindAsync(shopId, null, package, cancellationToken)
+            : catalog.FindServicesAsync(shopId, serviceIds, cancellationToken);
+
+    /// <summary>
+    /// The offer a booking was made for: its package, its services when several were booked together (the first is the
+    /// booking's service and all of them are its items), else its service.
+    /// </summary>
+    public static Task<BookableOffer?> FindBookedAsync(
+        this IBookableOfferCatalog catalog, ShopId shopId, Guid? serviceId, Guid? packageId, IReadOnlyList<Guid> itemServiceIds, CancellationToken cancellationToken) =>
+        packageId is null && itemServiceIds.Count > 1
+            ? catalog.FindServicesAsync(shopId, itemServiceIds, cancellationToken)
+            : catalog.FindAsync(shopId, serviceId, packageId, cancellationToken);
 }
 
 /// <param name="Id">The service or package id.</param>
@@ -24,7 +66,7 @@ public interface IBookableOfferCatalog
 /// <param name="NameEn">The optional English name.</param>
 /// <param name="Price">The shop's own price.</param>
 /// <param name="Currency">ISO currency of the price.</param>
-/// <param name="Items">For a package, its services in order; empty for a service.</param>
+/// <param name="Items">For a package or several services booked together, the services in order; empty for one service.</param>
 public sealed record BookableOffer(
     Guid Id,
     bool IsPackage,

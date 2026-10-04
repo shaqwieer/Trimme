@@ -28,10 +28,11 @@ public sealed record AvailableDateResponse(DateOnly Date, int SlotCount);
 /// <summary>Every date from <c>From</c> to <c>To</c> with its number of bookable slots (0 = none), for the date strip.</summary>
 public sealed record AvailableDatesResponse(DateOnly From, DateOnly To, string TimeZone, bool Bookable, string? BlockedReason, IReadOnlyList<AvailableDateResponse> Dates);
 
-internal sealed record GetAvailableSlotsQuery(string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateOnly Date)
+/// <summary><c>ServiceIds</c> adds services booked together with <c>ServiceId</c> (or on their own); never with a package.</summary>
+internal sealed record GetAvailableSlotsQuery(string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateOnly Date, IReadOnlyList<Guid>? ServiceIds = null)
     : IQuery<Result<AvailableSlotsResponse>>;
 
-internal sealed record GetAvailableDatesQuery(string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateOnly? From, DateOnly? To)
+internal sealed record GetAvailableDatesQuery(string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateOnly? From, DateOnly? To, IReadOnlyList<Guid>? ServiceIds = null)
     : IQuery<Result<AvailableDatesResponse>>;
 
 /// <summary>What one availability request resolved to: the shop and either a block reason or the computed slots.</summary>
@@ -59,9 +60,10 @@ internal sealed class PublicAvailabilityService(
     public const int DefaultRangeDays = 14;
 
     public async Task<Result<AvailabilityRun>> RunAsync(
-        string slug, Guid? serviceId, Guid? packageId, Guid? professionalId, DateOnly? from, DateOnly? to, CancellationToken cancellationToken)
+        string slug, Guid? serviceId, IReadOnlyList<Guid>? serviceIds, Guid? packageId, Guid? professionalId, DateOnly? from, DateOnly? to,
+        CancellationToken cancellationToken)
     {
-        if ((serviceId is null) == (packageId is null))
+        if (BookableOfferRequest.Services(serviceId, serviceIds, packageId) is not { } services)
         {
             return ScheduleErrors.InvalidQuery("serviceId");
         }
@@ -94,7 +96,7 @@ internal sealed class PublicAvailabilityService(
             return new AvailabilityRun(shop, zone, start, end, gate.BlockedReason, []);
         }
 
-        var offer = await catalog.FindAsync(shop.Id, serviceId, packageId, cancellationToken);
+        var offer = await catalog.FindAsync(shop.Id, services, packageId, cancellationToken);
         if (offer is null)
         {
             return ScheduleErrors.OfferNotFound();
@@ -137,7 +139,7 @@ internal sealed class GetAvailableSlotsHandler(PublicAvailabilityService availab
 {
     public async Task<Result<AvailableSlotsResponse>> Handle(GetAvailableSlotsQuery query, CancellationToken cancellationToken)
     {
-        var run = await availability.RunAsync(query.ShopSlug, query.ServiceId, query.PackageId, query.ProfessionalId, query.Date, query.Date, cancellationToken);
+        var run = await availability.RunAsync(query.ShopSlug, query.ServiceId, query.ServiceIds, query.PackageId, query.ProfessionalId, query.Date, query.Date, cancellationToken);
         if (run.IsFailure)
         {
             return run.Error;
@@ -154,7 +156,7 @@ internal sealed class GetAvailableDatesHandler(PublicAvailabilityService availab
 {
     public async Task<Result<AvailableDatesResponse>> Handle(GetAvailableDatesQuery query, CancellationToken cancellationToken)
     {
-        var run = await availability.RunAsync(query.ShopSlug, query.ServiceId, query.PackageId, query.ProfessionalId, query.From, query.To, cancellationToken);
+        var run = await availability.RunAsync(query.ShopSlug, query.ServiceId, query.ServiceIds, query.PackageId, query.ProfessionalId, query.From, query.To, cancellationToken);
         if (run.IsFailure)
         {
             return run.Error;

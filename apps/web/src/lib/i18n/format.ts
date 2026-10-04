@@ -40,6 +40,13 @@ export function formatTime(value: DateInput, locale: AppLocale, timeZone = OPERA
   }).format(toDate(value));
 }
 
+/** "٥ م" (ar) · "5 pm" (en): the hour of a time, for the hour-then-minutes time picker. */
+export function formatHour(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
+  return new Intl.DateTimeFormat(TIME_LOCALE[locale], { hour: 'numeric', hour12: true, timeZone }).format(
+    toDate(value),
+  );
+}
+
 /** "الجمعة ١٨ سبتمبر" (ar) · "Friday 18 September" (en); `withYear` appends the year. */
 export function formatDate(
   value: DateInput,

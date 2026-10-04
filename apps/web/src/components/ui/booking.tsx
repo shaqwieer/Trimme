@@ -1,9 +1,10 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { OPERATING_TIME_ZONE } from '@/lib/i18n/config';
-import { type AppLocale, formatDayNumber, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatDayNumber, formatHour, formatTime } from '@/lib/i18n/format';
 import {
   formatLocalDate,
   formatMonthYear,
@@ -31,17 +32,19 @@ type DateStripProps = {
 
 /**
  * Horizontal day picker for the booking wizard (design journey step, 14-day horizon). Native radios:
- * arrow keys move between bookable days; closed days are disabled and labelled.
+ * arrow keys move between bookable days; closed days are disabled and labelled. With `today` it starts there:
+ * earlier days are never shown (D-125).
  */
 export function DateStrip({ name, days, value, onValueChange, today }: DateStripProps) {
   const t = useTranslations('ui.dateStrip');
   const locale = useLocale() as AppLocale;
+  const shown = today ? days.filter((day) => day.date >= today) : days;
 
   return (
     <fieldset className="min-w-0">
       <legend className="sr-only">{t('label')}</legend>
       <div className="-mx-4 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 pb-1">
-        {days.map((day) => {
+        {shown.map((day) => {
           const weekdayName =
             day.date === today ? t('today') : formatLocalDate(day.date, locale, { weekday: 'short' });
           return (
@@ -173,6 +176,173 @@ export function SlotGrid({
         </div>
       ))}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Hour, then minutes */
+
+export type TimedSlot = { start: string; localTime: string };
+
+type HourMinutePickerProps = {
+  name: string;
+  /** Only genuinely bookable slots, as returned by the availability API (D-009). */
+  slots: TimedSlot[];
+  value?: string;
+  onValueChange: (start: string) => void;
+  timeZone?: string;
+};
+
+/**
+ * The booking wizard's time picker in two steps (D-125): the hours that have a free start, then that hour's free
+ * minutes only, so the customer never scans a wall of times. The chosen time's hour opens by itself (a link or a
+ * return from sign-in). Native radios in both rows.
+ */
+export function HourMinutePicker({
+  name,
+  slots,
+  value,
+  onValueChange,
+  timeZone = OPERATING_TIME_ZONE,
+}: HourMinutePickerProps) {
+  const t = useTranslations('ui.slots');
+  const locale = useLocale() as AppLocale;
+  const [picked, setPicked] = useState<string>();
+
+  if (slots.length === 0) {
+    return (
+      <p
+        role="status"
+        className="rounded-card border border-border bg-bg-page px-4 py-5 text-center text-caption text-text-secondary"
+      >
+        {t('emptyDay')}
+      </p>
+    );
+  }
+
+  const hourOf = (slot: TimedSlot) => slot.localTime.slice(0, 2);
+  const hours = [...new Set(slots.map(hourOf))];
+  const chosen = slots.find((slot) => slot.start === value);
+  const hour =
+    picked && hours.includes(picked)
+      ? picked
+      : chosen
+        ? hourOf(chosen)
+        : hours.length === 1
+          ? hours[0]
+          : undefined;
+  const minutes = slots.filter((slot) => hourOf(slot) === hour);
+  const chip =
+    'relative flex min-h-11 cursor-pointer items-center justify-center rounded-field border-[1.5px] border-border-input bg-surface px-2 text-[0.84375rem] font-bold text-text-strong transition-colors hover:border-brand-500 has-checked:border-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]';
+
+  return (
+    <div className="flex flex-col gap-5">
+      <fieldset className="flex min-w-0 flex-col">
+        <legend className="pb-2.5 text-label font-bold text-text-strong">{t('hour')}</legend>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
+          {hours.map((h) => {
+            const inHour = slots.filter((slot) => hourOf(slot) === h);
+            return (
+              <label key={h} className={cn(chip, 'flex-col gap-0.5 py-1.5')}>
+                <input
+                  type="radio"
+                  name={`${name}-hour`}
+                  value={h}
+                  checked={hour === h}
+                  onChange={() => setPicked(h)}
+                  className="sr-only"
+                />
+                <span>{formatHour(inHour[0]!.start, locale, timeZone)}</span>
+                <span className="text-[0.6875rem] font-medium opacity-80">
+                  {t('minutesCount', { count: inHour.length })}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+      {hour ? (
+        <fieldset className="flex min-w-0 flex-col">
+          <legend className="pb-2.5 text-label font-bold text-text-strong">{t('minute')}</legend>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(82px,1fr))] gap-2">
+            {minutes.map((slot) => (
+              <label key={slot.start} className={chip}>
+                <input
+                  type="radio"
+                  name={name}
+                  value={slot.start}
+                  checked={value === slot.start}
+                  onChange={() => onValueChange(slot.start)}
+                  className="sr-only"
+                />
+                {formatTime(slot.start, locale, timeZone)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <p className="text-helper text-text-secondary">{t('pickHour')}</p>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Booking progress */
+
+/**
+ * Where the customer is in the booking (D-125): a short row of numbered circles joined by lines, shown at every width.
+ * Done steps are filled with a check, the current one is ringed, the rest are outlined.
+ */
+export function BookingProgress({ steps, current }: { steps: string[]; current: number }) {
+  const t = useTranslations('ui.stepper');
+  return (
+    <nav aria-label={t('label')}>
+      <ol className="flex items-start">
+        {steps.map((step, index) => {
+          const state = index < current ? 'done' : index === current ? 'current' : 'todo';
+          return (
+            <li
+              key={step}
+              aria-current={state === 'current' ? 'step' : undefined}
+              className="relative flex flex-1 flex-col items-center gap-1.5 text-center"
+            >
+              {index > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute end-[calc(50%+1.125rem)] top-3.5 h-0.5 w-[calc(100%-2.25rem)] -translate-y-1/2 rounded-full',
+                    index <= current ? 'bg-navy-900' : 'bg-border',
+                  )}
+                />
+              )}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'relative flex size-7 items-center justify-center rounded-full border-2 font-latin text-badge font-bold transition-colors',
+                  state === 'done' && 'border-navy-900 bg-navy-900 text-on-navy',
+                  state === 'current' && 'border-navy-900 bg-surface text-navy-900 ring-4 ring-brand-100',
+                  state === 'todo' && 'border-border bg-surface text-text-tertiary',
+                )}
+              >
+                {state === 'done' ? <Icon name="check" className="size-3.5" strokeWidth={2.5} /> : index + 1}
+              </span>
+              <span
+                className={cn(
+                  'text-helper',
+                  state === 'current'
+                    ? 'font-bold text-navy-900'
+                    : state === 'done'
+                      ? 'text-text-strong'
+                      : 'text-text-tertiary',
+                )}
+              >
+                <span className="sr-only">{t(`state.${state}`)} </span>
+                {step}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 

@@ -2142,7 +2142,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bookable slot counts per local date (default: 14 days from today, at most 31) for a service or package, one professional or any. */
+        /** Bookable slot counts per local date (default: 14 days from today, at most 31) for a service, several services booked together (serviceIds) or a package, one professional or any. */
         get: operations["GetAvailableDates"];
         put?: never;
         post?: never;
@@ -4121,8 +4121,9 @@ export interface components {
             message: null | string;
         };
         /**
-         * @description A customer's online booking of a published service or package (exactly one of the two). Without a professional the
-         *     server picks a free one (D-012). The start must be one of the offered slots.
+         * @description A customer's online booking of a published service, several services booked together (`ServiceIds`, one
+         *     professional back to back) or a package: services or a package, never both. Without a professional the server picks a
+         *     free one (D-012). The start must be one of the offered slots.
          */
         CreateBookingRequest: {
             shopSlug: string;
@@ -4135,6 +4136,7 @@ export interface components {
             /** Format: date-time */
             startsAt: string;
             note: null | string;
+            serviceIds?: null | string[];
         };
         /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
         CreatePlanRequest: {
@@ -11707,6 +11709,7 @@ export interface operations {
         parameters: {
             query?: {
                 serviceId?: string;
+                serviceIds?: string[];
                 packageId?: string;
                 professionalId?: string;
                 from?: string;
@@ -11762,6 +11765,7 @@ export interface operations {
         parameters: {
             query: {
                 serviceId?: string;
+                serviceIds?: string[];
                 packageId?: string;
                 professionalId?: string;
                 date: string;

@@ -29,7 +29,7 @@ public enum BookingsTab
 /// <summary><c>QrVisitId</c> is the scan in the browser's attribution cookie, if any (R-QR-02); it never makes the booking fail.</summary>
 internal sealed record CreateOnlineBookingCommand(
     string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, string IdempotencyKey,
-    Guid? QrVisitId = null)
+    Guid? QrVisitId = null, IReadOnlyList<Guid>? ServiceIds = null)
     : ICommand<Result<CustomerBookingResult>>;
 
 internal sealed record RescheduleMyBookingCommand(Guid BookingId, DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version, string IdempotencyKey)
@@ -189,7 +189,9 @@ internal sealed class CreateOnlineBookingHandler(
                 return BookingErrors.ShopNotAccepting(gate.BlockedReason);
             }
 
-            offer = await catalog.FindAsync(shop.Id, command.ServiceId, command.PackageId, cancellationToken);
+            offer = BookableOfferRequest.Services(command.ServiceId, command.ServiceIds, command.PackageId) is { } services
+                ? await catalog.FindAsync(shop.Id, services, command.PackageId, cancellationToken)
+                : null;
             if (offer is null)
             {
                 return BookingErrors.OfferNotFound();
@@ -327,7 +329,8 @@ internal sealed class RescheduleMyBookingHandler(
                 return BookingErrors.ShopNotAccepting(gate.BlockedReason);
             }
 
-            var offer = await catalog.FindAsync(booking.ShopId, booking.ServiceId, booking.PackageId, cancellationToken);
+            var offer = await catalog.FindBookedAsync(
+                booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken);
             if (offer is null)
             {
                 return BookingErrors.OfferNotFound();
