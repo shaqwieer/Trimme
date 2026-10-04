@@ -4,8 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { DiscoveryShopCard } from '@/components/discovery/ShopCards';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
-import { buttonClasses } from '@/components/ui/Button';
-import { type DesignIconName, Icon } from '@/components/ui/icons';
+import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getPublicApi } from '@/lib/api/public';
@@ -35,27 +34,10 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>): Prom
   };
 }
 
-const TRUST_ITEMS: Array<{ key: 'time' | 'choose' | 'whatsapp'; icon: DesignIconName }> = [
-  { key: 'time', icon: 'clock' },
-  { key: 'choose', icon: 'user' },
-  { key: 'whatsapp', icon: 'msg' },
-];
-
-const STEPS: Array<{ key: 'find' | 'choose' | 'confirm'; icon: DesignIconName }> = [
-  { key: 'find', icon: 'search' },
-  { key: 'choose', icon: 'calendar' },
-  { key: 'confirm', icon: 'check' },
-];
-
-const OUTCOMES: Array<{ key: 'noCalls' | 'clearChoice' | 'rightFit'; icon: DesignIconName }> = [
-  { key: 'noCalls', icon: 'phone' },
-  { key: 'clearChoice', icon: 'star' },
-  { key: 'rightFit', icon: 'clock' },
-];
-
-const FAQ_KEYS = ['cost', 'download', 'barber', 'confirmation', 'changes'] as const;
-
-/** Arabic-first acquisition page: customer discovery is primary; shop partnership is secondary. */
+/**
+ * Arabic-first home page, short on purpose (D-126): the search (with the location and the figures), the photo, and the
+ * top-rated salons. Nothing else, so a visitor on a phone finds a salon without a long scroll.
+ */
 export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
   const locale = asLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: 'landing' });
@@ -83,7 +65,6 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
       ? { value: formatRating(stats.averageRating, locale), label: t('stats.rating') }
       : null,
   ].filter((figure): figure is { value: string; label: string } => figure !== null);
-  const partnerContact = process.env.TRIMME_PARTNER_CONTACT_URL;
 
   return (
     <PublicShell variant="landing">
@@ -104,7 +85,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_15%_15%,var(--color-brand-150),transparent_58%)] opacity-70 rtl:bg-[radial-gradient(circle_at_85%_15%,var(--color-brand-150),transparent_58%)]"
         />
-        <div className="relative mx-auto grid max-w-[1280px] items-center gap-9 px-4 py-8 md:px-6 md:py-12 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14 lg:py-16 xl:px-10">
+        <div className="relative mx-auto grid max-w-[1280px] items-center gap-9 px-4 py-6 md:px-6 md:py-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14 lg:py-14 xl:px-10">
           <div className="flex flex-col items-start gap-5">
             <span className="inline-flex items-center gap-1.5 rounded-pill bg-brand-100 px-3 py-1.5 text-helper font-bold text-brand-700">
               <Icon name="pin" className="size-4" />
@@ -177,7 +158,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
             )}
           </div>
 
-          <div className="relative mx-auto aspect-[4/5] w-full max-w-[540px] overflow-hidden rounded-[24px] bg-chrome shadow-e3">
+          <div className="relative mx-auto aspect-[16/10] w-full max-w-[540px] overflow-hidden rounded-[24px] bg-chrome shadow-e3 lg:aspect-[4/5]">
             <Image
               src="/brand/trimme-hero-barbershop.png"
               alt={t('heroImageAlt')}
@@ -204,33 +185,9 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
         </div>
       </section>
 
-      <section aria-labelledby="trust-heading" className="bg-surface">
-        <div className="mx-auto max-w-[1280px] px-4 py-7 md:px-6 xl:px-10">
-          <h2 id="trust-heading" className="sr-only">
-            {t('trust.label')}
-          </h2>
-          <ul className="grid gap-3 md:grid-cols-3 md:divide-x md:divide-border-subtle rtl:md:divide-x-reverse">
-            {TRUST_ITEMS.map(({ key, icon }) => (
-              <li
-                key={key}
-                className="flex items-center gap-3 rounded-card bg-bg-tile p-4 md:rounded-none md:bg-transparent md:px-6 first:md:ps-0 last:md:pe-0"
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                  <Icon name={icon} className="size-5" />
-                </span>
-                <div>
-                  <h3 className="text-[0.9375rem] font-bold text-text-primary">{t(`trust.${key}.title`)}</h3>
-                  <p className="mt-0.5 text-helper text-text-secondary">{t(`trust.${key}.body`)}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
       <section
         aria-labelledby="top-heading"
-        className="mx-auto max-w-[1280px] px-4 py-14 md:px-6 md:py-20 xl:px-10"
+        className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-12 xl:px-10"
       >
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -273,153 +230,6 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
             </Link>
           </div>
         )}
-      </section>
-
-      <section
-        id="how-it-works"
-        aria-labelledby="steps-heading"
-        className="scroll-mt-20 border-y border-border-subtle bg-surface"
-      >
-        <div className="mx-auto max-w-[1120px] px-4 py-14 md:px-6 md:py-20">
-          <div className="mx-auto max-w-[650px] text-center">
-            <span className="text-eyebrow font-bold tracking-[0.14em] text-brand-700 uppercase">
-              {t('steps.eyebrow')}
-            </span>
-            <h2
-              id="steps-heading"
-              className="mt-2 text-[1.75rem] font-extrabold text-navy-900 md:text-[2.25rem]"
-            >
-              {t('steps.title')}
-            </h2>
-            <p className="mt-3 text-body text-text-secondary">{t('steps.body')}</p>
-          </div>
-          <ol className="mt-10 grid gap-5 md:grid-cols-3">
-            {STEPS.map(({ key, icon }, index) => (
-              <li
-                key={key}
-                className="relative rounded-section border border-border bg-bg-tile p-6 shadow-e1"
-              >
-                <span className="absolute end-5 top-5 font-latin text-[2rem] font-extrabold text-brand-600">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className="flex size-11 items-center justify-center rounded-button bg-navy-900 text-on-navy">
-                  <Icon name={icon} className="size-5" />
-                </span>
-                <h3 className="mt-5 text-[1rem] font-bold text-text-primary">{t(`steps.${key}.title`)}</h3>
-                <p className="mt-2 text-helper text-text-secondary">{t(`steps.${key}.body`)}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section
-        aria-labelledby="outcomes-heading"
-        className="mx-auto grid max-w-[1180px] gap-10 px-4 py-14 md:px-6 md:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
-      >
-        <div>
-          <span className="text-eyebrow font-bold tracking-[0.14em] text-brand-700 uppercase">
-            {t('outcomes.eyebrow')}
-          </span>
-          <h2
-            id="outcomes-heading"
-            className="mt-2 text-[1.75rem] leading-tight font-extrabold text-navy-900 md:text-[2.25rem]"
-          >
-            {t('outcomes.title')}
-          </h2>
-          <p className="mt-3 max-w-[56ch] text-body text-text-secondary">{t('outcomes.body')}</p>
-          <Link href="/discover" className={`${buttonClasses({ variant: 'primary', size: 'lg' })} mt-6`}>
-            {t('outcomes.cta')}
-          </Link>
-        </div>
-        <ul className="grid gap-4">
-          {OUTCOMES.map(({ key, icon }) => (
-            <li
-              key={key}
-              className="flex gap-4 rounded-section border border-border bg-surface p-5 shadow-e1"
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-button bg-brand-100 text-brand-700">
-                <Icon name={icon} className="size-5" />
-              </span>
-              <div>
-                <h3 className="font-bold text-text-primary">{t(`outcomes.${key}.title`)}</h3>
-                <p className="mt-1 text-helper text-text-secondary">{t(`outcomes.${key}.body`)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section id="for-shops" className="scroll-mt-20 px-4 pb-14 md:px-6 md:pb-20">
-        <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-[24px] bg-chrome px-6 py-10 text-on-chrome md:px-10 md:py-12">
-          <div
-            aria-hidden="true"
-            className="absolute -end-16 -top-24 size-64 rounded-full bg-brand-500/20 blur-3xl"
-          />
-          <div className="relative grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div>
-              <span className="text-eyebrow font-bold tracking-[0.14em] text-on-chrome-accent uppercase">
-                {t('partner.eyebrow')}
-              </span>
-              <h2 className="mt-2 max-w-[22ch] text-[1.75rem] leading-tight font-extrabold md:text-[2.25rem]">
-                {t('partner.title')}
-              </h2>
-              <p className="mt-3 max-w-[65ch] text-body text-on-chrome-muted">{t('partner.body')}</p>
-            </div>
-            {partnerContact && (
-              <a
-                href={partnerContact}
-                className={`${buttonClasses({ variant: 'secondary', size: 'lg' })} shrink-0`}
-              >
-                {t('partner.cta')}
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="faq-heading" className="border-y border-border-subtle bg-surface">
-        <div className="mx-auto grid max-w-[1080px] gap-9 px-4 py-14 md:px-6 md:py-20 lg:grid-cols-[0.72fr_1.28fr]">
-          <div>
-            <span className="text-eyebrow font-bold tracking-[0.14em] text-brand-700 uppercase">
-              {t('faq.eyebrow')}
-            </span>
-            <h2
-              id="faq-heading"
-              className="mt-2 text-[1.75rem] font-extrabold text-navy-900 md:text-[2.25rem]"
-            >
-              {t('faq.title')}
-            </h2>
-            <p className="mt-3 text-body text-text-secondary">{t('faq.body')}</p>
-          </div>
-          <div className="divide-y divide-border rounded-section border border-border px-5">
-            {FAQ_KEYS.map((key, index) => (
-              <details key={key} className="group py-1" open={index === 0}>
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-bold text-text-primary marker:hidden">
-                  {t(`faq.${key}.question`)}
-                  <Icon
-                    name="plus"
-                    className="size-5 text-brand-700 transition-transform group-open:rotate-45"
-                  />
-                </summary>
-                <p className="max-w-[70ch] pb-5 text-helper text-text-secondary">{t(`faq.${key}.answer`)}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-14 md:px-6 md:py-20">
-        <div className="mx-auto flex max-w-[900px] flex-col items-center rounded-[24px] bg-brand-100 px-6 py-10 text-center md:px-10 md:py-12">
-          <Icon name="scissors" className="size-8 text-brand-700" />
-          <h2 className="mt-4 text-[1.75rem] font-extrabold text-navy-900 md:text-[2.25rem]">
-            {t('finalCta.title')}
-          </h2>
-          <p className="mt-3 max-w-[56ch] text-body text-text-secondary">{t('finalCta.body')}</p>
-          <Link href="/shops" className={`${buttonClasses({ variant: 'primary', size: 'lg' })} mt-6`}>
-            {t('finalCta.cta')}
-          </Link>
-        </div>
       </section>
     </PublicShell>
   );

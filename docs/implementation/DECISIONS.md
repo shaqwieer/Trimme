@@ -1151,3 +1151,13 @@ The client's nine points for the customer side, as implemented.
 - **Step circles.** `BookingProgress` (new) shows الصالون — الخدمة — الوقت — التأكيد at every width, with the salon done from the start. The old `Stepper` hid its circles below `md`, so phones only saw "Step 1 of 5" and a bar. The five wizard steps map onto the four circles.
 - **Going back keeps every choice.** The in-app back button already did. The browser and phone back button landed on history entries written before the later steps were chosen. A ref now holds the latest choices, and when the URL changes without the wizard (popstate) the missing values are restored with `replaceState` (`restoreSelection`), only for the same items. Going back to the shop page and into the wizard again restores the tab's last choices for that shop from module memory. Web Storage stays banned (spec §9 lint guard), so this lasts across in-app navigation but not a reload.
 - **Verification.** Integration test `ServicesBookedTogether_AddUp_NeedOneProfessionalForAll_AndStayInUse`: query binding of `serviceIds`, the summed `endsAt`, eligibility intersection, a mixed request refused, the snapshot, overlap rejection, a reschedule keeping 50 minutes, and the second service in use. Web unit tests cover the URL state, `combineOffers`, `withItems`, `restoreSelection`, the wizard flows (several services, no common barber, nearest time, back with the app and the browser) and `HourMinutePicker`. The E2E helpers pick an hour before a minute.
+
+## D-126 — A short home page: search, figures, photo, top-rated salons — Accepted (Session 15, after Phase 17, at the client's request)
+- **What stays.** The client asked for a home page made of only what their three screenshots show, with no long scroll:
+  - the hero: title, lead, the search box with «استخدم موقعي» and the submit, the "browse top-rated" link, and the figures;
+  - the photo;
+  - the top-rated salons.
+- **What goes.** The trust strip, "how it works" (three steps), outcomes, the shop-partner band, the FAQ and the final call to action. Their catalogue entries are removed (`landing.trust|steps|outcomes|partner|faq|finalCta`).
+- **Header.** The landing header pointed at `#how-it-works` and `#for-shops`, which no longer exist. It now has the same links as the other public pages: Shops and Nearby.
+- **Shop sign-up.** The partner band was the only place showing `TRIMME_PARTNER_CONTACT_URL`, so the home page has no entry point for shops for now. The variable is kept for when one is wanted.
+- **Shorter on a phone.** The photo is 16:10 below `lg` (4:5 from `lg`), and the vertical padding is smaller. At 390 px the page went from 5,485 px to 1,746 px tall (about two screens); at 1,440 px, from 4,029 px to 1,434 px. The footer is unchanged.

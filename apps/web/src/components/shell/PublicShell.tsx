@@ -46,22 +46,12 @@ export function PublicShell({
                   </li>
                   <li>
                     <Link
-                      href={variant === 'landing' ? '/#how-it-works' : '/discover'}
+                      href="/discover"
                       className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-medium text-text-secondary hover:bg-bg-subtle"
                     >
-                      {variant === 'landing' ? nav('howItWorks') : nav('discover')}
+                      {nav('discover')}
                     </Link>
                   </li>
-                  {variant === 'landing' && (
-                    <li>
-                      <Link
-                        href="/#for-shops"
-                        className="inline-flex min-h-11 items-center rounded-field px-3 text-label font-medium text-text-secondary hover:bg-bg-subtle"
-                      >
-                        {nav('forShops')}
-                      </Link>
-                    </li>
-                  )}
                 </ul>
               </nav>
             )}
