@@ -17,5 +17,12 @@
     "openapi:check": "pnpm --filter @trimme/web openapi:check",
     "e2e": "pnpm --filter @trimme/e2e test",
     "bundle:check": "pnpm --filter @trimme/web bundle:check"
+  },
+  "pnpm": {
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2026-93687"
+      ]
+    }
   }
 }

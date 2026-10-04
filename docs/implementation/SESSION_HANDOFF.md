@@ -41,6 +41,9 @@
     - E7 is the known volume issue (Sara's seeded visits are past the review window).
     - "favorites and profile" timed out under parallel load and passed 2/2 alone.
   - Visual check at 390 px: tiles, step circles, nearest-time card, dates from today, hours then minutes, review. Browser back twice kept the services, date and time.
+  - axe on the services (checked tiles), date (nearest card), hours and minutes steps, in light and dark: 0 serious, contrast included. The route audit itself only visits the wizard's first step.
+  - A real two-service booking through the local UI: haircut + beard via "Book this time". Majed was picked automatically (the only barber who does both), 10:00–10:45, 85 SAR, and the detail reads «قص وتصفيف + تحديد لحية». The booking was cancelled, and the rebook link carries both services.
+- **CI follow-up (after the push):** the web job failed `pnpm audit --audit-level high` on a new advisory. CVE-2026-93687 (`braces` ≤ 3.0.3, published 2026-09-18, no fix released) sits in the lint-only `eslint-config-next` chain. It is not caused by this change, and any push would have failed. It is ignored by CVE in root `package.json` and recorded in `docs/security.md` with a removal condition. That failure had also skipped the Playwright job, so the follow-up push is the first full CI run of D-125.
 - **Known limits:**
   - Booking statistics count services booked together under the first service.
   - The per-shop memory lasts across in-app navigation, not a reload.
