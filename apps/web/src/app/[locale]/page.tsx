@@ -4,13 +4,13 @@ import { getTranslations } from 'next-intl/server';
 import { DiscoveryShopCard } from '@/components/discovery/ShopCards';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { buttonClasses } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getPublicApi } from '@/lib/api/public';
 import { optional } from '@/lib/api/safe';
 import { readLocation } from '@/lib/discovery/location.server';
-import { formatNumber, formatRating } from '@/lib/i18n/format';
 import { organizationLd, websiteLd } from '@/lib/seo/jsonld';
 import { absoluteUrl, localizedAlternates, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
@@ -34,17 +34,18 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>): Prom
   };
 }
 
+const FAQ_KEYS = ['cost', 'download', 'barber', 'confirmation', 'changes'] as const;
+
 /**
- * Arabic-first home page, short on purpose (D-126): the search (with the location and the figures), the photo, and the
- * top-rated salons. Nothing else, so a visitor on a phone finds a salon without a long scroll.
+ * Arabic-first home page, short on purpose (D-126, D-128): the search with the location and «احجز الآن», the photo, the
+ * top-rated salons, the FAQ and a closing call to action. No platform figures: a customer does not need them.
  */
 export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
   const locale = asLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: 'landing' });
   const app = await getTranslations({ locale, namespace: 'metadata' });
   const api = await getPublicApi();
-  const [stats, top, areas, location] = await Promise.all([
-    optional(() => api.GET('/api/v1/public/stats'), 'stats'),
+  const [top, areas, location] = await Promise.all([
     optional(
       () => api.GET('/api/v1/public/shops/search', { params: { query: { sort: 'Rating', pageSize: 4 } } }),
       'top rated',
@@ -54,18 +55,6 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
   ]);
   const cities = [...new Set((areas?.areas ?? []).map((area) => area.city))];
   const city = cities.length === 1 ? cities[0] : null;
-  const figures = [
-    stats && stats.shopCount > 0
-      ? { value: formatNumber(stats.shopCount, locale), label: t('stats.shops') }
-      : null,
-    stats && stats.professionalCount > 0
-      ? { value: formatNumber(stats.professionalCount, locale), label: t('stats.professionals') }
-      : null,
-    stats && stats.reviewCount > 0
-      ? { value: formatRating(stats.averageRating, locale), label: t('stats.rating') }
-      : null,
-  ].filter((figure): figure is { value: string; label: string } => figure !== null);
-
   return (
     <PublicShell variant="landing">
       <JsonLd
@@ -140,22 +129,6 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
               {t('browse')}
               <Icon name="chevR" className="size-4" />
             </Link>
-
-            {figures.length > 0 && (
-              <dl
-                aria-label={t('stats.label')}
-                className="flex flex-wrap gap-x-8 gap-y-3 border-t border-border-subtle pt-5"
-              >
-                {figures.map((figure) => (
-                  <div key={figure.label} className="flex flex-col">
-                    <dt className="order-2 text-helper text-text-secondary">{figure.label}</dt>
-                    <dd className="order-1 font-latin text-[1.5rem] font-extrabold text-navy-900">
-                      {figure.value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
           </div>
 
           <div className="relative mx-auto aspect-[16/10] w-full max-w-[540px] overflow-hidden rounded-[24px] bg-chrome shadow-e3 lg:aspect-[4/5]">
@@ -230,6 +203,49 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
             </Link>
           </div>
         )}
+      </section>
+      <section aria-labelledby="faq-heading" className="border-y border-border-subtle bg-surface">
+        <div className="mx-auto grid max-w-[1080px] gap-9 px-4 py-14 md:px-6 md:py-20 lg:grid-cols-[0.72fr_1.28fr]">
+          <div>
+            <span className="text-eyebrow font-bold tracking-[0.14em] text-brand-700 uppercase">
+              {t('faq.eyebrow')}
+            </span>
+            <h2
+              id="faq-heading"
+              className="mt-2 text-[1.75rem] font-extrabold text-navy-900 md:text-[2.25rem]"
+            >
+              {t('faq.title')}
+            </h2>
+            <p className="mt-3 text-body text-text-secondary">{t('faq.body')}</p>
+          </div>
+          <div className="divide-y divide-border rounded-section border border-border px-5">
+            {FAQ_KEYS.map((key, index) => (
+              <details key={key} className="group py-1" open={index === 0}>
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 font-bold text-text-primary marker:hidden">
+                  {t(`faq.${key}.question`)}
+                  <Icon
+                    name="plus"
+                    className="size-5 text-brand-700 transition-transform group-open:rotate-45"
+                  />
+                </summary>
+                <p className="max-w-[70ch] pb-5 text-helper text-text-secondary">{t(`faq.${key}.answer`)}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-14 md:px-6 md:py-20">
+        <div className="mx-auto flex max-w-[900px] flex-col items-center rounded-[24px] bg-brand-100 px-6 py-10 text-center md:px-10 md:py-12">
+          <Icon name="scissors" className="size-8 text-brand-700" />
+          <h2 className="mt-4 text-[1.75rem] font-extrabold text-navy-900 md:text-[2.25rem]">
+            {t('finalCta.title')}
+          </h2>
+          <p className="mt-3 max-w-[56ch] text-body text-text-secondary">{t('finalCta.body')}</p>
+          <Link href="/shops" className={`${buttonClasses({ variant: 'primary', size: 'lg' })} mt-6`}>
+            {t('finalCta.cta')}
+          </Link>
+        </div>
       </section>
     </PublicShell>
   );

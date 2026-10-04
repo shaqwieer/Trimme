@@ -28,7 +28,7 @@ import { mayBeSignedIn } from '@/lib/auth/session.server';
 import { optional } from '@/lib/api/safe';
 import { openingLabel } from '@/lib/discovery/opening';
 import { bookHref, directionsUrl, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
-import { type AppLocale, formatPrice, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatTime } from '@/lib/i18n/format';
 import { aggregateRatingLd, breadcrumbLd, openingHoursLd } from '@/lib/seo/jsonld';
 import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
@@ -107,18 +107,11 @@ async function LiveStatus({ slug, locale, timeZone }: { slug: string; locale: Ap
   );
 }
 
-/** The sticky "starts from · book now" bar (c-shop 1358–1361); disabled with the reason while online booking is off. */
-async function BookBar({
-  slug,
-  locale,
-  minPrice,
-  currency,
-}: {
-  slug: string;
-  locale: AppLocale;
-  minPrice: number | null;
-  currency: string;
-}) {
+/**
+ * The sticky «احجز الآن» bar (c-shop 1358–1361), centred and without a "starts from" price (D-128): the prices are on
+ * the services themselves. Disabled with the reason while online booking is off.
+ */
+async function BookBar({ slug, locale }: { slug: string; locale: AppLocale }) {
   const [status, t] = await Promise.all([
     getPublicShopStatus(slug),
     getTranslations({ locale, namespace: 'shopPage.footer' }),
@@ -126,17 +119,9 @@ async function BookBar({
   const accepts = status?.acceptsOnlineBookings ?? false;
   return (
     <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[960px] items-center justify-between gap-4 px-4 py-3 md:px-6">
-        {minPrice !== null && (
-          <p className="flex flex-col">
-            <span className="text-helper text-text-secondary">{t('from')}</span>
-            <span className="font-latin text-[1.25rem] font-extrabold text-navy-900">
-              {formatPrice(minPrice, locale, currency)}
-            </span>
-          </p>
-        )}
+      <div className="mx-auto flex max-w-[960px] items-center justify-center px-4 py-3 md:px-6">
         {accepts ? (
-          <ButtonLink href={bookHref(slug)} variant="primary" size="lg" className="min-w-[180px]">
+          <ButtonLink href={bookHref(slug)} variant="primary" size="lg" className="w-full max-w-[420px]">
             {t('book')}
           </ButtonLink>
         ) : (
@@ -390,12 +375,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
           />
         </div>
         <Suspense fallback={null}>
-          <BookBar
-            slug={shop.slug}
-            locale={locale}
-            minPrice={shop.minPrice ?? null}
-            currency={shop.currency ?? 'SAR'}
-          />
+          <BookBar slug={shop.slug} locale={locale} />
         </Suspense>
       </article>
     </PublicShell>

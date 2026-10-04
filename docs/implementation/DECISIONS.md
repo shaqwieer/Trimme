@@ -1188,3 +1188,17 @@ The client's nine points for the customer side, as implemented.
   - Unit tests for the editor (defaults, warning, request bodies, axe).
   - A browser pass (add from the tab, edit the price; customers see the new price), with axe in light and dark on the tab and the new page.
   - The route audit inventory lists the new page.
+
+## D-128 — No starting prices or platform figures for customers; «احجز الآن» — Accepted (Session 15, after Phase 17, at the client's request)
+This refines D-126.
+- **No "from" or minimum price for a salon.**
+  - The shop page's sticky bar no longer shows «تبدأ من …». Its «احجز الآن» button is centred, up to 420 px wide.
+  - Shop cards (home, shops list, nearby) no longer show «من … ر.س».
+  - A search result without a matched service shows no price. With a matched service it still shows that service's price.
+  - Prices stay on the services themselves.
+  - The JSON-LD `priceRange` is unchanged: it is machine data, not shown.
+- **Search button.** «اعرض المواعيد المتاحة» becomes «احجز الآن» ("Book now"). It still opens the search.
+- **No platform figures.** The partner salons, barbers and average rating row is removed from the home page, together with its `public/stats` request and the `landing.stats` entries. The client does not want customers to see these numbers.
+- **Home page contents.** As in the client's screenshots: the hero (search, location, «احجز الآن», the browse link), the photo, the top-rated salons, and the FAQ and the closing call to action, which D-126 had removed and which are now restored with their catalogue entries.
+  - The trust strip, how it works, outcomes and the shop-partner band stay out.
+  - At 390 px the page is 2,753 px tall; it was 5,485 px before D-126.

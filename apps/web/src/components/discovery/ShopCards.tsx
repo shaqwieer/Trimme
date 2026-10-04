@@ -49,7 +49,6 @@ export function DiscoveryShopCard({
         distanceKm: shop.distanceKm,
         openingLabel: openingLabel(t, locale, shop, shop.timeZone),
         isOpen: shop.isOpenNow,
-        fromPrice: shop.minPrice,
       }}
     />
   );
@@ -79,7 +78,7 @@ function RatingLine({ shop, locale }: { shop: ShopSearchItem; locale: AppLocale 
   );
 }
 
-/** Home "near you" card (c-home 1022–1040): thumbnail, name, rating, open badge, distance and the lowest price. */
+/** Home "near you" card (c-home 1022–1040): thumbnail, name, rating, open badge and distance (no lowest price, D-128). */
 export function ShopListCard({ shop }: { shop: ShopSearchItem }) {
   const locale = useLocale() as AppLocale;
   const t = useTranslations('opening');
@@ -111,9 +110,6 @@ export function ShopListCard({ shop }: { shop: ShopSearchItem }) {
           <Badge tone={shop.isOpenNow ? 'success' : 'neutral'} size="sm">
             {shop.isOpenNow ? t('open') : openingLabel(t, locale, shop, shop.timeZone)}
           </Badge>
-          <span className="text-helper text-text-secondary">
-            {tCard('from', { price: formatPrice(shop.minPrice, locale, shop.currency) })}
-          </span>
         </div>
       </div>
     </article>
@@ -157,7 +153,7 @@ export function ShopResultCard({ shop }: { shop: ShopSearchItem }) {
                 price: formatPrice(offer.price, locale, offer.currency),
                 duration: formatDurationMinutes(offer.durationMinutes, locale),
               })
-            : tCard('from', { price: formatPrice(shop.minPrice, locale, shop.currency) })}
+            : null}
         </span>
         {!shop.acceptsOnlineBookings ? (
           <Badge tone="warning" size="sm">

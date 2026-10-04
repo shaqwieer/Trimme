@@ -23,6 +23,12 @@
   - Creating a shop lands on its Services tab.
   - An existing OperationsManager role needs the permission granted by hand.
 - **Gap to raise:** admins cannot set a shop's opening hours.
+- **Third request (D-128):**
+  - No "from" price on the shop page bar (now a centred «احجز الآن») or on the shop cards.
+  - The search button reads «احجز الآن».
+  - The figures row is removed, with its `public/stats` request.
+  - The FAQ and closing call to action are restored.
+  - Home page height at 390 px: 2,753 px.
 - **Also fixed:** a race in the `FilterSheet` unit test. It now waits for the count request that carries the new filter.
 
 ## Session 15: simpler customer booking (D-125)

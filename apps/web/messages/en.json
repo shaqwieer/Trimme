@@ -1420,15 +1420,9 @@
       "placeholder": "Search for a salon",
       "location": "Your location",
       "locationUnset": "Use my location",
-      "submit": "Find available times"
+      "submit": "Book now"
     },
     "browse": "Browse top-rated shops",
-    "stats": {
-      "label": "TRIMME in numbers",
-      "shops": "partner salons",
-      "professionals": "professional barbers",
-      "rating": "average rating"
-    },
     "heroCard": {
       "title": "Your appointment is confirmed",
       "body": "Details and a reminder arrive on WhatsApp"
@@ -1441,6 +1435,36 @@
       "body": "Compare ratings, services and prices, then choose the appointment that fits your day.",
       "viewAll": "View all nearby shops",
       "empty": "No published shops match this view yet. Browse all shops to keep looking."
+    },
+    "faq": {
+      "eyebrow": "Good to know",
+      "title": "Questions before you book?",
+      "body": "The essentials, without the fine print.",
+      "cost": {
+        "question": "Does it cost the customer to book?",
+        "answer": "TRIMME shows each shop's own service prices before you choose. Any payment terms are shown as part of the shop and booking details."
+      },
+      "download": {
+        "question": "Do I need to download an app?",
+        "answer": "No. You can discover shops and complete your booking in the website from your phone."
+      },
+      "barber": {
+        "question": "Can I choose a specific barber?",
+        "answer": "Yes, when the shop offers that option. You can choose an available barber or ask for any available barber to see more times."
+      },
+      "confirmation": {
+        "question": "How do I know the booking is confirmed?",
+        "answer": "After you confirm, the appointment is recorded in TRIMME and its details are sent through the shop's configured notification channel, including WhatsApp when enabled."
+      },
+      "changes": {
+        "question": "Can I cancel or reschedule?",
+        "answer": "Open the appointment in your account to see the available cancellation or rescheduling options and the shop's policy."
+      }
+    },
+    "finalCta": {
+      "title": "Ready for a better way to book?",
+      "body": "Find a nearby shop, pick the right barber and choose a time that is actually free.",
+      "cta": "Find my next appointment"
     }
   },
   "shopsList": {
@@ -1638,7 +1662,6 @@
       "category": "Type"
     },
     "footer": {
-      "from": "Starts from",
       "book": "Book now",
       "unavailable": "Online booking is paused right now"
     },

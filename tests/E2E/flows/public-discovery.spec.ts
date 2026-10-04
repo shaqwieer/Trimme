@@ -42,7 +42,10 @@ test.describe('public discovery (Phase 11)', () => {
   }) => {
     await page.goto('/ar');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('حلاقتك الجاية، احجزها في دقيقة.');
-    await expect(page.getByLabel('تريمي بالأرقام')).toContainText('صالون شريك');
+    // D-128: no platform figures; the search ends with «احجز الآن», and the FAQ is there.
+    await expect(page.getByText('صالون شريك')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'احجز الآن' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'عندك سؤال قبل الحجز؟' })).toBeVisible();
     const topRated = page
       .getByRole('region', { name: /الأعلى تقييماً/ })
       .or(page.locator('section[aria-labelledby="top-heading"]'));
