@@ -175,15 +175,17 @@ describe('FilterSheet (c-map filter drawer)', () => {
     expect(screen.getByRole('dialog', { name: 'التصفية والترتيب' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'الأقرب مسافةً' })).toBeChecked();
     await user.click(screen.getByRole('switch', { name: 'محلات موثّقة فقط' }));
+    // Every count answers 7, so wait for the count that carries the new filter (the one sent on opening may land first).
+    await waitFor(() =>
+      expect(api.GET.mock.calls.at(-1)?.[1]?.params?.query).toMatchObject({
+        lat: 24.77,
+        lng: 46.64,
+        openNow: true,
+        verified: true,
+        pageSize: 1,
+        sort: 'Distance',
+      }),
+    );
     await waitFor(() => expect(screen.getByRole('button', { name: 'عرض 7 نتائج' })).toBeInTheDocument());
-    const query = api.GET.mock.calls.at(-1)?.[1]?.params?.query;
-    expect(query).toMatchObject({
-      lat: 24.77,
-      lng: 46.64,
-      openNow: true,
-      verified: true,
-      pageSize: 1,
-      sort: 'Distance',
-    });
   });
 });

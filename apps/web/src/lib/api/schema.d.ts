@@ -276,6 +276,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a service to a shop with the shop's own price and duration, and the shop's barbers who do it (audited). */
+        post: operations["AdminCreateService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/service-categories": {
         parameters: {
             query?: never;
@@ -1851,7 +1868,8 @@ export interface paths {
         };
         /** One shop service. */
         get: operations["AdminGetService"];
-        put?: never;
+        /** Edits a shop's service and who does it, with the shop's own price and duration (audited). */
+        put: operations["AdminUpdateService"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3641,6 +3659,29 @@ export interface components {
             isArchived: boolean;
             moderation: components["schemas"]["ModerationState"];
         };
+        /**
+         * @description An admin's service for a shop (D-127): the shop's own name, price and duration, and the shop's barbers who do it.
+         *     On an edit, `ProfessionalIds` null keeps them and `Version` is the one read.
+         */
+        AdminServiceRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: uuid */
+            categoryId: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            onlineBookable: boolean;
+            professionalIds: null | string[];
+            /**
+             * Format: uint32
+             * @default 0
+             */
+            version: number;
+        };
         AdminServiceResponse: {
             /** Format: uuid */
             id: string;
@@ -3668,6 +3709,7 @@ export interface components {
             assignedProfessionalCount: number;
             /** Format: uint32 */
             version: number;
+            professionalIds: string[];
         };
         /** @description A shop with its full profile, location and shop-edit policy, as the platform admin edits it. */
         AdminShopDetailResponse: {
@@ -6863,6 +6905,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfessionalNextSlotsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminCreateService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -10939,6 +11025,59 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdateService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -81,6 +81,22 @@ public sealed record OverrideServiceRequest(
 
 public sealed record ProfessionalServicesRequest(IReadOnlyList<Guid> ServiceIds);
 
+/// <summary>
+/// An admin's service for a shop (D-127): the shop's own name, price and duration, and the shop's barbers who do it.
+/// On an edit, <c>ProfessionalIds</c> null keeps them and <c>Version</c> is the one read.
+/// </summary>
+public sealed record AdminServiceRequest(
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    Guid? CategoryId,
+    decimal Price,
+    int DurationMinutes,
+    bool OnlineBookable,
+    IReadOnlyList<Guid>? ProfessionalIds,
+    uint Version = 0);
+
 internal static class CatalogEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -89,6 +105,7 @@ internal static class CatalogEndpoints
     private const string ServicesView = "Admin.ShopServices.View";
     private const string ServicesModerate = "Admin.ShopServices.Moderate";
     private const string ServicesOverride = "Admin.ShopServices.SupportOverride";
+    private const string ServicesManage = "Admin.ShopServices.Manage";
     private const string ProfessionalsView = "Admin.Professionals.View";
     private const string AssignServices = "Admin.Professionals.AssignServices";
 
@@ -241,6 +258,18 @@ internal static class CatalogEndpoints
             .RequirePermission(ServicesOverride)
             .WithName("AdminOverrideService").WithSummary("Support correction of one shop service, with a reason; audited before → after.")
             .Produces<AdminServiceResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+
+        services.MapPut("/{serviceId:guid}", async (Guid serviceId, AdminServiceRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminUpdateServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds, r.Version), ct)).ToHttpResult())
+            .RequirePermission(ServicesManage)
+            .WithName("AdminUpdateService").WithSummary("Edits a shop's service and who does it, with the shop's own price and duration (audited).")
+            .Produces<AdminServiceResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        api.MapPost("/admin/shops/{shopId:guid}/services", async (Guid shopId, AdminServiceRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminCreateServiceCommand(shopId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds), ct))
+                    .ToHttpResult(s => TypedResults.Created($"/api/v1/admin/services/{s.Id}", s)))
+            .RequirePermission(ServicesManage).WithTags("Admin: services")
+            .WithName("AdminCreateService").WithSummary("Adds a service to a shop with the shop's own price and duration, and the shop's barbers who do it (audited).")
+            .Produces<AdminServiceResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
 
         var packages = api.MapGroup("/admin/packages").WithTags("Admin: services");
         packages.MapGet("/", async (int? page, int? pageSize, Guid? shopId, CatalogStateFilter? state, string? search, IDispatcher d, CancellationToken ct) =>

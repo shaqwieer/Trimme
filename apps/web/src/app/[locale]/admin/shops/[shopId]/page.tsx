@@ -6,6 +6,7 @@ import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { InviteShopUserForm, ShopStatusActions } from '@/components/admin/ShopForms';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
+import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
 import { ShopLocationEditor } from '@/components/shops/ShopLocationEditor';
 import { ShopProfileEditor } from '@/components/shops/ShopProfileEditor';
@@ -20,11 +21,12 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
-import { formatDate } from '@/lib/i18n/format';
+import { formatDate, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const TABS = ['profile', 'location', 'users', 'professionals', 'subscription'] as const;
+const TABS = ['profile', 'location', 'users', 'professionals', 'services', 'subscription'] as const;
 type Tab = (typeof TABS)[number];
 
 function Card({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
@@ -41,8 +43,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 
 /**
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
- * exact location (pin picker), accounts, the shop's professionals and its subscription. Tab state lives in the URL
- * (`?tab=`).
+ * exact location (pin picker), accounts, the shop's professionals, its services (added and edited here, D-127) and its
+ * subscription. Tab state lives in the URL (`?tab=`).
  */
 export default async function AdminShopPage({
   params,
@@ -113,6 +115,52 @@ export default async function AdminShopPage({
           );
         } else if (tab === 'subscription') {
           content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
+        } else if (tab === 'services') {
+          const { data: services } = me.permissions.includes('Admin.ShopServices.View')
+            ? await api.GET('/api/v1/admin/services', {
+                params: { query: { shopId: shop.id, pageSize: 100 } },
+              })
+            : { data: undefined };
+          const live = (services?.items ?? []).filter((service) => !service.isArchived);
+          const canManage = me.permissions.includes('Admin.ShopServices.Manage');
+          content = (
+            <Card title={t('services.title')} testId="shop-services-card">
+              <p className="text-caption text-text-secondary">{t('services.body')}</p>
+              {live.length > 0 ? (
+                <ul className="flex flex-col divide-y divide-border-row">
+                  {live.map((service) => (
+                    <li key={service.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
+                      <Link
+                        href={`/admin/services/${service.id}`}
+                        className="min-w-0 flex-1 font-bold text-text-link hover:underline"
+                      >
+                        {localizedName(lang, service.nameAr, service.nameEn)}
+                      </Link>
+                      <span className="font-latin text-label font-bold text-navy-900">
+                        {formatPrice(service.price, lang, service.currency)}
+                      </span>
+                      <span className="text-helper text-text-secondary">
+                        {formatDurationMinutes(service.durationMinutes, lang)}
+                      </span>
+                      <CatalogStatusBadge item={service} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyState icon="tag" title={t('services.empty')} body={t('services.emptyBody')} />
+              )}
+              {canManage && (
+                <ButtonLink
+                  href={`/admin/services/new?shopId=${shop.id}`}
+                  size="md"
+                  icon="plus"
+                  className="self-start"
+                >
+                  {t('services.add')}
+                </ButtonLink>
+              )}
+            </Card>
+          );
         } else {
           const { data: professionals } = me.permissions.includes('Admin.Professionals.View')
             ? await api.GET('/api/v1/admin/professionals', {

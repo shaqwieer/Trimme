@@ -571,6 +571,7 @@
       "location": "Location",
       "users": "Accounts",
       "professionals": "Professionals",
+      "services": "Services",
       "subscription": "Subscription"
     },
     "sections": {
@@ -590,6 +591,14 @@
       "body": "Each professional belongs to this shop only.",
       "add": "Add a professional to this shop",
       "empty": "No professionals in this shop yet"
+    },
+    "services": {
+      "title": "The shop's services",
+      "body": "Every shop has its own services, prices and durations. Add its services here and pick the barbers who do each one.",
+      "add": "Add a service to this shop",
+      "empty": "This shop has no services yet",
+      "emptyBody": "Add the first service so customers can book.",
+      "barbers": "{count, plural, =0 {No barber} one {1 barber} other {# barbers}}"
     }
   },
   "shopCategory": {
@@ -883,7 +892,11 @@
       "packageDuration": "Total package duration",
       "create": "Create service",
       "createPackage": "Create package",
-      "save": "Save changes"
+      "save": "Save changes",
+      "professionals": "Barbers who do this service",
+      "professionalsHint": "The service can be booked with the picked barbers only.",
+      "noShopProfessionals": "This shop has no barbers yet. Add them on the Barbers tab, then pick them here.",
+      "noProfessionalsPicked": "No barber picked: the service shows no times until at least one barber is picked."
     },
     "activeFor": "{name}: bookable",
     "editItem": "Edit {name}",
@@ -937,6 +950,14 @@
       "overrideSubmit": "Save correction",
       "overridden": "Correction saved and recorded in the activity log.",
       "assignedCount": "Professionals assigned"
+    },
+    "manage": {
+      "newTitle": "New service",
+      "editTitle": "Edit the service",
+      "editBody": "The price and duration change for this shop only. The edit is recorded in the activity log.",
+      "create": "Add the service",
+      "save": "Save changes",
+      "noShop": "Open the shop first, then add the service from its Services tab."
     },
     "categories": {
       "caption": "Service categories",
@@ -2464,6 +2485,7 @@
       "Admin_ShopServices_View": "View shop services",
       "Admin_ShopServices_Moderate": "Hide and restore shop services",
       "Admin_ShopServices_SupportOverride": "Correct a shop service (support override)",
+      "Admin_ShopServices_Manage": "Add and edit shops' services",
       "Admin_Packages_Manage": "Manage platform packages",
       "Admin_Bookings_View": "View bookings",
       "Admin_Bookings_Intervene": "Change and reschedule bookings",
@@ -2639,6 +2661,8 @@
       "service_hidden": "Service hidden",
       "service_unhidden": "Service restored",
       "service_support_override": "Service corrected by support",
+      "service_admin_created": "Service added by an admin",
+      "service_admin_updated": "Service edited by an admin",
       "package_hidden": "Package hidden",
       "package_unhidden": "Package restored",
       "service_category_created": "Category created",

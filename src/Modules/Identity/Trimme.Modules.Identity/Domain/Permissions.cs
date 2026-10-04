@@ -46,6 +46,7 @@ public static class Permissions
         public const string ShopServicesView = "Admin.ShopServices.View";
         public const string ShopServicesModerate = "Admin.ShopServices.Moderate";
         public const string ShopServicesSupportOverride = "Admin.ShopServices.SupportOverride";
+        public const string ShopServicesManage = "Admin.ShopServices.Manage";
         public const string PackagesManage = "Admin.Packages.Manage";
         public const string BookingsView = "Admin.Bookings.View";
         public const string BookingsIntervene = "Admin.Bookings.Intervene";

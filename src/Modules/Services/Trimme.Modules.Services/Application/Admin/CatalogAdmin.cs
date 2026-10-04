@@ -16,7 +16,9 @@ namespace Trimme.Modules.Services.Application.Admin;
 
 // Platform admin use cases. Categories are platform-owned; everything else is shop-owned and read inside
 // IAdminDataScope. Admins never set a shared price: moderation hides an item, and a support override corrects one
-// service of one shop, with a reason, audited (spec §7, §10, DV-S02).
+// service of one shop, with a reason, audited (spec §7, §10, DV-S02). Since D-127 an admin with
+// Admin.ShopServices.Manage also builds a shop's catalogue for it (adds and edits its services, each still with that
+// shop's own price and duration, and picks the shop's barbers who do it), audited.
 
 public sealed record AdminCategoryResponse(Guid Id, string NameAr, string NameEn, string Icon, int DisplayOrder, bool IsActive, int ServiceCount);
 
@@ -68,7 +70,8 @@ public sealed record AdminServiceResponse(
     ModerationState Moderation,
     string? ModerationReason,
     int AssignedProfessionalCount,
-    uint Version);
+    uint Version,
+    IReadOnlyList<Guid> ProfessionalIds);
 
 public sealed record AdminPackageListItem(
     Guid Id,
@@ -138,6 +141,36 @@ internal sealed record OverrideServiceCommand(
     string Reason,
     uint Version) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
 
+/// <summary>
+/// A service an admin adds to a shop (D-127), with the shop's own price and duration. <c>ProfessionalIds</c> are the
+/// shop's barbers who do it.
+/// </summary>
+internal sealed record AdminCreateServiceCommand(
+    Guid ShopId,
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    Guid? CategoryId,
+    decimal Price,
+    int DurationMinutes,
+    bool OnlineBookable,
+    IReadOnlyList<Guid>? ProfessionalIds) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
+
+/// <summary>An admin's edit of a shop's service (D-127); <c>ProfessionalIds</c> null keeps who does it.</summary>
+internal sealed record AdminUpdateServiceCommand(
+    Guid ServiceId,
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    Guid? CategoryId,
+    decimal Price,
+    int DurationMinutes,
+    bool OnlineBookable,
+    IReadOnlyList<Guid>? ProfessionalIds,
+    uint Version) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
+
 internal sealed record ListAdminPackagesQuery(PageRequest Page, Guid? ShopId, CatalogStateFilter? State, string? Search)
     : IQuery<PagedResponse<AdminPackageListItem>>;
 
@@ -191,6 +224,16 @@ internal sealed class OverrideServiceValidator : AbstractValidator<OverrideServi
         RuleFor(c => c.Reason).Must(r => (r?.Trim().Length ?? 0) >= 5).WithErrorCode("validation.reason_required")
             .MaximumLength(500).WithErrorCode("validation.too_long");
     }
+}
+
+internal sealed class AdminCreateServiceValidator : AbstractValidator<AdminCreateServiceCommand>
+{
+    public AdminCreateServiceValidator() => Include(new CatalogTextRules<AdminCreateServiceCommand>());
+}
+
+internal sealed class AdminUpdateServiceValidator : AbstractValidator<AdminUpdateServiceCommand>
+{
+    public AdminUpdateServiceValidator() => Include(new CatalogTextRules<AdminUpdateServiceCommand>());
 }
 
 internal sealed class ListCategoriesHandler(TrimmeDbContext db, IAdminDataScope scope) : IQueryHandler<ListCategoriesQuery, IReadOnlyList<AdminCategoryResponse>>
@@ -276,7 +319,8 @@ internal static class AdminCatalogReader
     public static async Task<AdminServiceResponse> ServiceAsync(TrimmeDbContext db, IShopDirectory shops, ShopService service, CancellationToken cancellationToken)
     {
         var shop = await shops.FindAsync(service.ShopId, cancellationToken);
-        var assigned = await db.Set<ProfessionalServiceAssignment>().CountAsync(a => a.ServiceId == service.Id, cancellationToken);
+        var assigned = await db.Set<ProfessionalServiceAssignment>().Where(a => a.ServiceId == service.Id)
+            .Select(a => a.ProfessionalId).ToListAsync(cancellationToken);
         return new AdminServiceResponse(
             service.Id.Value,
             service.ShopId.Value,
@@ -295,8 +339,9 @@ internal static class AdminCatalogReader
             service.IsArchived,
             service.Moderation,
             service.ModerationReason,
-            assigned,
-            service.Version);
+            assigned.Count,
+            service.Version,
+            [.. assigned.Select(p => p.Value)]);
     }
 
     public static AdminPackageListItem Package(ServicePackage package, ShopSummary? shop) => new(
@@ -417,7 +462,7 @@ internal sealed class OverrideServiceHandler(TrimmeDbContext db, IAdminDataScope
             return category.Error;
         }
 
-        var before = (service.NameAr, service.NameEn, service.Price, service.DurationMinutes, service.CategoryId, service.OnlineBookable);
+        var before = ServiceChanges.Snapshot(service);
         db.Entry(service).Property(s => s.Version).OriginalValue = command.Version;
         var updated = service.Update(CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes, command.OnlineBookable, clock.GetUtcNow());
         if (updated.IsFailure)
@@ -425,6 +470,24 @@ internal sealed class OverrideServiceHandler(TrimmeDbContext db, IAdminDataScope
             return updated.Error;
         }
 
+        var changes = ServiceChanges.Describe(before, service);
+        audit.Record(new AuditRecord(
+            "service.support_override", nameof(ShopService), service.Id.ToString(), service.ShopId,
+            changes.Count == 0 ? "No changes" : string.Join("; ", changes), command.Reason.Trim()));
+        await db.SaveChangesAsync(cancellationToken);
+        return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
+    }
+}
+
+/// <summary>The admin's view of a service's changes for the audit entry (prices and durations are the shop's own).</summary>
+internal static class ServiceChanges
+{
+    public static (string NameAr, string? NameEn, decimal Price, int DurationMinutes, ServiceCategoryId? CategoryId, bool OnlineBookable) Snapshot(ShopService service) =>
+        (service.NameAr, service.NameEn, service.Price, service.DurationMinutes, service.CategoryId, service.OnlineBookable);
+
+    public static List<string> Describe(
+        (string NameAr, string? NameEn, decimal Price, int DurationMinutes, ServiceCategoryId? CategoryId, bool OnlineBookable) before, ShopService service)
+    {
         var changes = new List<string>();
         if (before.Price != service.Price)
         {
@@ -451,9 +514,131 @@ internal sealed class OverrideServiceHandler(TrimmeDbContext db, IAdminDataScope
             changes.Add(service.OnlineBookable ? "Online booking on" : "Online booking off");
         }
 
+        return changes;
+    }
+
+    /// <summary>
+    /// Makes exactly <paramref name="professionalIds"/> do the service: barbers of the service's own shop only (any other id
+    /// is refused, so no barber of another shop is ever linked). Returns how many changed.
+    /// </summary>
+    public static async Task<Result<int>> AssignAsync(
+        TrimmeDbContext db, IProfessionalDirectory professionals, ShopService service, IReadOnlyList<Guid> professionalIds, DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var shopStaff = (await professionals.ListByShopAsync(service.ShopId, cancellationToken)).Select(p => p.Id).ToHashSet();
+        var requested = professionalIds.Distinct().Select(id => new ProfessionalId(id)).ToList();
+        if (!requested.All(shopStaff.Contains))
+        {
+            return CatalogErrors.ProfessionalsNotInShop();
+        }
+
+        var current = await db.Set<ProfessionalServiceAssignment>().Where(a => a.ServiceId == service.Id).ToListAsync(cancellationToken);
+        var removed = current.Where(a => !requested.Contains(a.ProfessionalId)).ToList();
+        db.RemoveRange(removed);
+        var added = requested.Where(id => current.All(a => a.ProfessionalId != id)).ToList();
+        foreach (var professionalId in added)
+        {
+            db.Add(new ProfessionalServiceAssignment(service.ShopId, professionalId, service.Id, now));
+        }
+
+        return removed.Count + added.Count;
+    }
+}
+
+/// <summary>An admin adds a service to a shop (D-127): the shop's own price and duration, next in its order, audited.</summary>
+internal sealed class AdminCreateServiceHandler(
+    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IProfessionalDirectory professionals, IAuditLog audit, TimeProvider clock)
+    : ICommandHandler<AdminCreateServiceCommand, Result<AdminServiceResponse>>
+{
+    public async Task<Result<AdminServiceResponse>> Handle(AdminCreateServiceCommand command, CancellationToken cancellationToken)
+    {
+        using var _ = scope.Begin();
+        var shopId = new ShopId(command.ShopId);
+        if (await shops.FindAsync(shopId, cancellationToken) is null)
+        {
+            return Error.NotFound("shop.not_found", "The shop was not found.");
+        }
+
+        var category = await CatalogMapping.CategoryAsync(db, command.CategoryId, null, cancellationToken);
+        if (category.IsFailure)
+        {
+            return category.Error;
+        }
+
+        // The admin scope lifts the tenant filter, so the order is counted within this shop only.
+        var order = (await db.Set<ShopService>().Where(s => s.ShopId == shopId).MaxAsync(s => (int?)s.DisplayOrder, cancellationToken) ?? 0) + 1;
+        var now = clock.GetUtcNow();
+        var created = ShopService.Create(
+            EntityId.New<ShopServiceId>(), shopId, CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes,
+            command.OnlineBookable, order, now);
+        if (created.IsFailure)
+        {
+            return created.Error;
+        }
+
+        var service = created.Value;
+        db.Add(service);
+        var assigned = await ServiceChanges.AssignAsync(db, professionals, service, command.ProfessionalIds ?? [], now, cancellationToken);
+        if (assigned.IsFailure)
+        {
+            return assigned.Error;
+        }
+
         audit.Record(new AuditRecord(
-            "service.support_override", nameof(ShopService), service.Id.ToString(), service.ShopId,
-            changes.Count == 0 ? "No changes" : string.Join("; ", changes), command.Reason.Trim()));
+            "service.admin_created", nameof(ShopService), service.Id.ToString(), shopId,
+            string.Create(CultureInfo.InvariantCulture, $"{service.Price:0.00} {service.Currency}, {service.DurationMinutes} min, {assigned.Value} barbers")));
+        await db.SaveChangesAsync(cancellationToken);
+        return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
+    }
+}
+
+/// <summary>An admin edits a shop's service (D-127): optimistic concurrency, and an audit entry with what changed.</summary>
+internal sealed class AdminUpdateServiceHandler(
+    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IProfessionalDirectory professionals, IAuditLog audit, TimeProvider clock)
+    : ICommandHandler<AdminUpdateServiceCommand, Result<AdminServiceResponse>>
+{
+    public async Task<Result<AdminServiceResponse>> Handle(AdminUpdateServiceCommand command, CancellationToken cancellationToken)
+    {
+        using var _ = scope.Begin();
+        var id = new ShopServiceId(command.ServiceId);
+        if (await db.Set<ShopService>().SingleOrDefaultAsync(s => s.Id == id, cancellationToken) is not { } service)
+        {
+            return CatalogErrors.ServiceNotFound();
+        }
+
+        var category = await CatalogMapping.CategoryAsync(db, command.CategoryId, service.CategoryId, cancellationToken);
+        if (category.IsFailure)
+        {
+            return category.Error;
+        }
+
+        var before = ServiceChanges.Snapshot(service);
+        db.Entry(service).Property(s => s.Version).OriginalValue = command.Version;
+        var now = clock.GetUtcNow();
+        var updated = service.Update(CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes, command.OnlineBookable, now);
+        if (updated.IsFailure)
+        {
+            return updated.Error;
+        }
+
+        var changes = ServiceChanges.Describe(before, service);
+        if (command.ProfessionalIds is { } professionalIds)
+        {
+            var assigned = await ServiceChanges.AssignAsync(db, professionals, service, professionalIds, now, cancellationToken);
+            if (assigned.IsFailure)
+            {
+                return assigned.Error;
+            }
+
+            if (assigned.Value > 0)
+            {
+                changes.Add(string.Create(CultureInfo.InvariantCulture, $"Barbers: {professionalIds.Distinct().Count()}"));
+            }
+        }
+
+        audit.Record(new AuditRecord(
+            "service.admin_updated", nameof(ShopService), service.Id.ToString(), service.ShopId,
+            changes.Count == 0 ? "No changes" : string.Join("; ", changes)));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
     }

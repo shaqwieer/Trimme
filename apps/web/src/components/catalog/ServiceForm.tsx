@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
-import { SelectField, Switch } from '@/components/ui/inputs';
+import { Checkbox, SelectField, Switch } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
@@ -53,9 +53,13 @@ const FIELDS = [
 
 const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 
+/** A barber who can be picked to do the service (the admin's form, D-127). */
+export type ServiceFormProfessional = { id: string; name: string };
+
 /**
  * The shop's own service form (DV-A01, DV-S03): Arabic name required, English optional, the shop's own price and a
- * duration in 5-minute steps. Also used by the admin's support override (with a reason) through `onSubmitValues`.
+ * duration in 5-minute steps. Also used by the admin's support override (with a reason) and by the admin building a
+ * shop's catalogue (D-127, with the shop's barbers to pick) through `onSubmitValues`.
  */
 export function ServiceForm({
   categories,
@@ -63,14 +67,27 @@ export function ServiceForm({
   submitLabel,
   onSubmitValues,
   reasonLabel,
+  professionals,
+  assignedIds,
 }: {
   categories: Category[];
   service?: Service | components['schemas']['AdminServiceResponse'];
   submitLabel?: string;
-  /** Custom save (admin override). Defaults to the shop's own create/update. */
-  onSubmitValues?: (body: components['schemas']['UpdateShopServiceRequest'], reason: string) => Promise<void>;
+  /**
+   * Custom save (admin). Defaults to the shop's own create/update. Resolve to `'navigated'` when it moved to another
+   * page, so the form does not refresh this one.
+   */
+  onSubmitValues?: (
+    body: components['schemas']['UpdateShopServiceRequest'],
+    reason: string,
+    professionalIds: string[],
+  ) => Promise<void | 'navigated'>;
   /** Label of a required reason field (admin support override). */
   reasonLabel?: string;
+  /** The shop's barbers, to pick who does the service (admin, D-127). Without it the field is not shown. */
+  professionals?: ServiceFormProfessional[];
+  /** The barbers who do it now; a new service starts with every barber picked. */
+  assignedIds?: string[];
 }) {
   const t = useTranslations('shopServices.form');
   const tServices = useTranslations('shopServices');
@@ -84,6 +101,7 @@ export function ServiceForm({
 
   const schema = serviceSchema.extend({
     reason: reasonLabel ? z.string().trim().min(5, { error: 'reasonRequired' }).max(500) : z.string(),
+    professionalIds: z.array(z.string()),
   });
   const form = useZodForm(schema, {
     mode: 'onSubmit',
@@ -97,6 +115,7 @@ export function ServiceForm({
       durationMinutes: String(service?.durationMinutes ?? 30),
       onlineBookable: service?.onlineBookable ?? true,
       reason: '',
+      professionalIds: assignedIds ?? (service ? [] : (professionals ?? []).map((p) => p.id)),
     },
   });
 
@@ -116,7 +135,7 @@ export function ServiceForm({
     };
     try {
       if (onSubmitValues) {
-        await onSubmitValues(body, values.reason);
+        if ((await onSubmitValues(body, values.reason, values.professionalIds)) === 'navigated') return;
       } else if (service) {
         ensureOk(
           await browserApi.PUT('/api/v1/shop/services/{serviceId}', {
@@ -133,7 +152,7 @@ export function ServiceForm({
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.isValidation)
-        applyProblemToForm(error, form.setError, [...FIELDS, 'reason']);
+        applyProblemToForm(error, form.setError, [...FIELDS, 'reason', 'professionalIds']);
       else setFailure(apiMessage(error instanceof ApiError ? error : 'server.unexpected'));
     }
   });
@@ -232,6 +251,42 @@ export function ServiceForm({
           </div>
         )}
       />
+      {professionals && (
+        <Controller
+          control={form.control}
+          name="professionalIds"
+          render={({ field, fieldState }) => (
+            <fieldset className="flex min-w-0 flex-col gap-2" data-testid="service-professionals">
+              <legend className="pb-1 text-label font-bold text-text-strong">{t('professionals')}</legend>
+              <p className="text-helper text-text-tertiary">{t('professionalsHint')}</p>
+              {professionals.length === 0 ? (
+                <InlineAlert tone="info" title={t('noShopProfessionals')} />
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {professionals.map((professional) => (
+                    <Checkbox
+                      key={professional.id}
+                      label={professional.name}
+                      checked={field.value.includes(professional.id)}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.checked
+                            ? [...field.value, professional.id]
+                            : field.value.filter((id) => id !== professional.id),
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+              {professionals.length > 0 && field.value.length === 0 && (
+                <InlineAlert tone="warning" title={t('noProfessionalsPicked')} />
+              )}
+              {fieldState.error && <InlineAlert tone="danger" title={message(fieldState.error)} />}
+            </fieldset>
+          )}
+        />
+      )}
       {reasonLabel && (
         <FormTextareaField control={form.control} name="reason" label={reasonLabel} maxLength={500} />
       )}

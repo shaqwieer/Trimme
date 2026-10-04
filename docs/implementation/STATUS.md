@@ -19,6 +19,10 @@
   - Step circles (الصالون — الخدمة — الوقت — التأكيد) at every width.
   - Going back, with the app or the browser, keeps every choice.
   - Deployed to trimme.net.
+- **Session 15, second request (D-126, D-127).**
+  - The home page is cut to the search (with the location and the figures), the photo and the top-rated salons: 1,746 px tall on a phone instead of 5,485.
+  - The admin shop page has a Services tab to add and edit a shop's services and pick its barbers for each.
+  - Gap: admins still cannot set a shop's opening hours.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

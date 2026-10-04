@@ -32,6 +32,7 @@
 | `Admin.ShopServices.View` | ✓ | ✓ | ✓ |
 | `Admin.ShopServices.Moderate` | ✓ | ✓ | — |
 | `Admin.ShopServices.SupportOverride` | ✓ | ✓ | — |
+| `Admin.ShopServices.Manage` | ✓ | ✓ (default for a new role; an existing OperationsManager role is granted it on the roles page) | — |
 | `Admin.Packages.Manage` | ✓ | ✓ | — |
 | `Admin.Bookings.View` | ✓ | ✓ | ✓ |
 | `Admin.Bookings.Intervene` | ✓ | ✓ | ✓ |
@@ -144,6 +145,7 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/services`, `GET /api/v1/admin/services/{id}`, `GET /api/v1/admin/packages` | `Admin.ShopServices.View` · paged |
 | `POST /api/v1/admin/services/{id}/moderation`, `POST /api/v1/admin/packages/{id}/moderation` | `Admin.ShopServices.Moderate` · hide needs a reason · audited |
 | `PUT /api/v1/admin/services/{id}/override` | `Admin.ShopServices.SupportOverride` · reason required · audited before → after |
+| `POST /api/v1/admin/shops/{shopId}/services`, `PUT /api/v1/admin/services/{id}` | `Admin.ShopServices.Manage` · the admin builds the shop's catalogue for it (D-127): the shop's own price and duration, the shop's own barbers only (`professionalIds`) · audited |
 | `GET /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.View` |
 | `PUT /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.AssignServices` · the professional's own shop's services only · audited |
 | `GET /api/v1/admin/subscription-plans`, `GET .../{id}`, `GET .../{id}/prices` | `Admin.Subscriptions.View` |

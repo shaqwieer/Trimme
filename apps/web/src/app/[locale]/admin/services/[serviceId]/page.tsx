@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
-import { ModerationControl, ServiceOverride } from '@/components/admin/AdminCatalog';
+import { AdminServiceEditor, ModerationControl, ServiceOverride } from '@/components/admin/AdminCatalog';
 import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
 import { Breadcrumb } from '@/components/ui/data';
 import { EmptyState, ErrorState } from '@/components/ui/states';
@@ -13,7 +13,10 @@ import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-/** One shop service for the admin: facts, moderation and the audited support override. */
+/**
+ * One shop service for the admin: facts, moderation, and either the edit of the shop's catalogue (with the barbers who
+ * do it, D-127) or, without that permission, the audited support override with a reason.
+ */
 export default async function AdminServicePage({
   params,
 }: PageProps<'/[locale]/admin/services/[serviceId]'>) {
@@ -39,6 +42,13 @@ export default async function AdminServicePage({
         if (!service) return <ErrorState />;
 
         const name = localizedName(lang, service.nameAr, service.nameEn);
+        const canManage = me.permissions.includes('Admin.ShopServices.Manage') && !service.isArchived;
+        const { data: professionals } =
+          canManage && me.permissions.includes('Admin.Professionals.View')
+            ? await api.GET('/api/v1/admin/professionals', {
+                params: { query: { shopId: service.shopId, pageSize: 100 } },
+              })
+            : { data: undefined };
         return (
           <div className="flex max-w-[1000px] flex-col gap-5">
             <Breadcrumb items={[{ label: t('detail.back'), href: '/admin/services' }, { label: name }]} />
@@ -88,16 +98,36 @@ export default async function AdminServicePage({
               </section>
             )}
 
-            {me.permissions.includes('Admin.ShopServices.SupportOverride') && !service.isArchived && (
+            {canManage && (
               <section
                 className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6 shadow-e1"
-                data-testid="service-override"
+                data-testid="service-manage"
               >
-                <h2 className="text-h3 font-bold text-navy-900">{t('detail.overrideTitle')}</h2>
-                <p className="text-caption text-text-secondary">{t('detail.overrideBody')}</p>
-                <ServiceOverride service={service} categories={categories ?? []} />
+                <h2 className="text-h3 font-bold text-navy-900">{t('manage.editTitle')}</h2>
+                <p className="text-caption text-text-secondary">{t('manage.editBody')}</p>
+                <AdminServiceEditor
+                  shopId={service.shopId}
+                  service={service}
+                  categories={categories ?? []}
+                  professionals={(professionals?.items ?? [])
+                    .filter((pro) => pro.status === 'Active' || service.professionalIds.includes(pro.id))
+                    .map((pro) => ({ id: pro.id, name: lang === 'ar' ? pro.nameAr : pro.nameEn }))}
+                />
               </section>
             )}
+
+            {!canManage &&
+              me.permissions.includes('Admin.ShopServices.SupportOverride') &&
+              !service.isArchived && (
+                <section
+                  className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6 shadow-e1"
+                  data-testid="service-override"
+                >
+                  <h2 className="text-h3 font-bold text-navy-900">{t('detail.overrideTitle')}</h2>
+                  <p className="text-caption text-text-secondary">{t('detail.overrideBody')}</p>
+                  <ServiceOverride service={service} categories={categories ?? []} />
+                </section>
+              )}
           </div>
         );
       }}

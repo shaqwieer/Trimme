@@ -1161,3 +1161,30 @@ The client's nine points for the customer side, as implemented.
 - **Header.** The landing header pointed at `#how-it-works` and `#for-shops`, which no longer exist. It now has the same links as the other public pages: Shops and Nearby.
 - **Shop sign-up.** The partner band was the only place showing `TRIMME_PARTNER_CONTACT_URL`, so the home page has no entry point for shops for now. The variable is kept for when one is wanted.
 - **Shorter on a phone.** The photo is 16:10 below `lg` (4:5 from `lg`), and the vertical padding is smaller. At 390 px the page went from 5,485 px to 1,746 px tall (about two screens); at 1,440 px, from 4,029 px to 1,434 px. The footer is unchanged.
+
+## D-127 — The admin builds a shop's catalogue from the shop page — Accepted (Session 15, after Phase 17, at the client's request)
+- **Request.** The client sets up each salon's account themselves: they enter the salon's details, then its services. Every salon has its own services, prices and durations. They want to add and edit them from the shop page, the same way the barbers are managed.
+- **Change to the admin's role.** Spec §10 and DV-S02 had admins only moderate (hide) or correct one service with a stated reason. A new permission, `Admin.ShopServices.Manage`, now lets an admin add and edit a shop's services for it.
+  - SuperAdmin gets it automatically, because its grants are reset on every `migrate`.
+  - Existing OperationsManager roles do not; it can be granted on the roles page.
+  - Support keeps view only.
+  - The non-negotiable still holds: services stay shop-owned, with that shop's own price and duration, and there is no shared price.
+- **API:**
+  - `POST /api/v1/admin/shops/{shopId}/services` creates a service.
+  - `PUT /api/v1/admin/services/{id}` edits one, with optimistic concurrency and no reason needed.
+  - Both take `professionalIds`: the shop's barbers who do the service. On an edit, null keeps them. A barber of another shop is refused (`professionalIds` `validation.invalid`).
+  - Both are audited (`service.admin_created` / `service.admin_updated`), and the edit records what changed. The support override shares the change description (`ServiceChanges`).
+  - `AdminServiceResponse` gains `ProfessionalIds`.
+  - Display order is counted within that shop, because the admin scope lifts the tenant filter.
+  - The public cache is evicted as for any public-content save (D-093).
+- **Web:**
+  - The admin shop page has a «الخدمات» tab: the shop's services with price, duration and status, and «إضافة خدمة لهذا المحل».
+  - `/admin/services/new?shopId=` reuses the shop's `ServiceForm`, which now has an optional "barbers who do this service" checklist. A new service starts with every active barber ticked. A warning shows when none is ticked, since the service would have no times.
+  - On `/admin/services/{id}`, an admin with the permission gets the same edit form. Without it, support keeps the override with a reason.
+  - Creating a shop now lands on its Services tab.
+- **Not done (gap):** an admin cannot set a shop's opening hours; only the shop owner can, on the shop's schedule page. A salon set up by the admin alone has services but no bookable times until its hours are set.
+- **Verification:**
+  - Integration test `AdminShopServicesTests`: Support 403, another shop's barber refused, unknown shop 404, the service published at once in the shop's list and availability with the picked barber only, a stale version 409, barbers kept when left out, the owner sees it as their own and another owner does not, and the audit trail.
+  - Unit tests for the editor (defaults, warning, request bodies, axe).
+  - A browser pass (add from the tab, edit the price; customers see the new price), with axe in light and dark on the tab and the new page.
+  - The route audit inventory lists the new page.

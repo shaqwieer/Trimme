@@ -112,6 +112,7 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/admin/services' },
         { path: '/admin/services/categories' },
         { path: `/admin/services/${SEED.haircut}` },
+        { path: `/admin/services/new?shopId=${SEED.alAsala.id}` },
         { path: '/admin/packages' },
         { path: '/admin/bookings' },
         { path: `/admin/bookings/${SEED.nouraBooking}` },

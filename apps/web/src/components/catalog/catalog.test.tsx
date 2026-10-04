@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/schema';
 import { DURATION_OPTIONS, parsePrice } from '@/lib/forms/price';
 import { localizedName } from '@/lib/i18n/localized';
+import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
+// After the render helper, which mocks Next's router before anything imports it.
+import { AdminServiceEditor } from '@/components/admin/AdminCatalog';
 import { ServiceForm } from './ServiceForm';
 import { ShopCatalogList } from './ShopCatalogLists';
 
@@ -77,6 +80,87 @@ describe('ServiceForm', () => {
       await screen.findByText('أدخل سعراً من 0 إلى 100000 بمنزلتين عشريتين على الأكثر'),
     ).toBeInTheDocument();
     expect(api.POST).not.toHaveBeenCalled();
+  });
+});
+
+describe('AdminServiceEditor (D-127)', () => {
+  const BARBERS = [
+    { id: 'faisal', name: 'فيصل' },
+    { id: 'omar', name: 'عمر' },
+  ];
+
+  it('adds a service to the shop with every barber picked by default, and warns when none is', async () => {
+    api.POST.mockResolvedValue({ data: { id: 'new' }, response: new Response(null, { status: 201 }) });
+    const { container } = renderWithIntl(
+      <AdminServiceEditor shopId="shop-1" categories={[]} professionals={BARBERS} />,
+    );
+
+    const faisal = screen.getByRole('checkbox', { name: 'فيصل' });
+    const omar = screen.getByRole('checkbox', { name: 'عمر' });
+    expect(faisal).toBeChecked();
+    expect(omar).toBeChecked();
+    await userEvent.click(faisal);
+    await userEvent.click(omar);
+    expect(screen.getByText(/لم تختر أي حلاق/)).toBeInTheDocument();
+    await userEvent.click(omar);
+    expect(screen.queryByText(/لم تختر أي حلاق/)).not.toBeInTheDocument();
+    await expectNoAxeViolations(container);
+
+    await userEvent.type(screen.getByLabelText('اسم الخدمة بالعربية'), 'صبغة');
+    await userEvent.type(screen.getByLabelText('السعر (ر.س)'), '90');
+    await userEvent.click(screen.getByRole('button', { name: 'إضافة الخدمة' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalled());
+    const [path, init] = api.POST.mock.calls[0]!;
+    expect(path).toBe('/api/v1/admin/shops/{shopId}/services');
+    expect(init.params.path.shopId).toBe('shop-1');
+    expect(init.body).toMatchObject({
+      nameAr: 'صبغة',
+      price: 90,
+      durationMinutes: 30,
+      professionalIds: ['omar'],
+    });
+  });
+
+  it('edits a service with the barbers who do it now', async () => {
+    api.PUT.mockResolvedValue({ data: {}, response: new Response(null, { status: 200 }) });
+    renderWithIntl(
+      <AdminServiceEditor
+        shopId="shop-1"
+        categories={[]}
+        professionals={BARBERS}
+        service={{
+          id: 'svc-1',
+          shopId: 'shop-1',
+          shopNameAr: 'باربر',
+          shopNameEn: 'Barber',
+          nameAr: 'حلاقة',
+          nameEn: null,
+          descriptionAr: null,
+          descriptionEn: null,
+          categoryId: null,
+          price: 60,
+          currency: 'SAR',
+          durationMinutes: 30,
+          onlineBookable: true,
+          isActive: true,
+          isArchived: false,
+          moderation: 'Visible',
+          moderationReason: null,
+          assignedProfessionalCount: 1,
+          version: 7,
+          professionalIds: ['faisal'],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: 'فيصل' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'عمر' })).not.toBeChecked();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'عمر' }));
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التعديلات' }));
+    await waitFor(() => expect(api.PUT).toHaveBeenCalled());
+    const [path, init] = api.PUT.mock.calls[0]!;
+    expect(path).toBe('/api/v1/admin/services/{serviceId}');
+    expect(init.body).toMatchObject({ version: 7, professionalIds: ['faisal', 'omar'] });
   });
 });
 

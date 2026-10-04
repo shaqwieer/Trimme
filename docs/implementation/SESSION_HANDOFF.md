@@ -10,6 +10,21 @@
 - **Demo deployment:** trimme.net (VPS, demo mode) was redeployed from `main`: `git pull` in `/opt/trimme`, then build, migrate (no new migration) and `up -d` in `/opt/trimme-deploy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 15, second request: short home page (D-126) and admin services (D-127)
+- **Home page:** only the hero (search, «استخدم موقعي», the figures, browse link), the photo (16:10 on phones) and the top-rated salons.
+  - The trust strip, how it works, outcomes, shop-partner band, FAQ and final call to action were removed, with their catalogue entries.
+  - The header anchors became Shops and Nearby.
+  - Page height at 390 px went from 5,485 to 1,746 px.
+  - Shop sign-up has no entry point on the home page now (`TRIMME_PARTNER_CONTACT_URL` is unused).
+- **Admin services:**
+  - New permission `Admin.ShopServices.Manage`.
+  - New endpoints: `POST /admin/shops/{id}/services` and `PUT /admin/services/{id}`, both with `professionalIds` and both audited.
+  - New Services tab on the admin shop page, the `/admin/services/new?shopId=` page, and an edit form on `/admin/services/{id}`.
+  - Creating a shop lands on its Services tab.
+  - An existing OperationsManager role needs the permission granted by hand.
+- **Gap to raise:** admins cannot set a shop's opening hours.
+- **Also fixed:** a race in the `FilterSheet` unit test. It now waits for the count request that carries the new filter.
+
 ## Session 15: simpler customer booking (D-125)
 - **What (the client's nine points):**
   1. The search placeholder is «ابحث عن صالون».

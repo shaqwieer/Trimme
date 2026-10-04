@@ -53,7 +53,7 @@ export function CreateShopForm() {
       const shop = ensureOk(
         await browserApi.POST('/api/v1/admin/shops', { body: { ...values, timeZone: null } }),
       );
-      router.push(`/admin/shops/${shop.id}`);
+      router.push(`/admin/shops/${shop.id}?tab=services`);
     } catch (error) {
       if (error instanceof ApiError && error.isValidation)
         applyProblemToForm(error, form.setError, ['nameAr', 'nameEn', 'slug']);

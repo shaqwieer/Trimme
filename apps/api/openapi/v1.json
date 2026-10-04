@@ -705,6 +705,68 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/services": {
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Adds a service to a shop with the shop\u0027s own price and duration, and the shop\u0027s barbers who do it (audited).",
+        "operationId": "AdminCreateService",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/service-categories": {
       "get": {
         "tags": [
@@ -6184,6 +6246,76 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Edits a shop\u0027s service and who does it, with the shop\u0027s own price and duration (audited).",
+        "operationId": "AdminUpdateService",
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12712,6 +12844,77 @@
           }
         }
       },
+      "AdminServiceRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "descriptionAr",
+          "descriptionEn",
+          "categoryId",
+          "price",
+          "durationMinutes",
+          "onlineBookable",
+          "professionalIds"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descriptionEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onlineBookable": {
+            "type": "boolean"
+          },
+          "professionalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32",
+            "default": 0
+          }
+        },
+        "description": "An admin\u0027s service for a shop (D-127): the shop\u0027s own name, price and duration, and the shop\u0027s barbers who do it.\nOn an edit, \u0060ProfessionalIds\u0060 null keeps them and \u0060Version\u0060 is the one read."
+      },
       "AdminServiceResponse": {
         "required": [
           "id",
@@ -12732,7 +12935,8 @@
           "moderation",
           "moderationReason",
           "assignedProfessionalCount",
-          "version"
+          "version",
+          "professionalIds"
         ],
         "type": "object",
         "properties": {
@@ -12814,6 +13018,13 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -21930,6 +22141,9 @@
       "name": "Public"
     },
     {
+      "name": "Admin: services"
+    },
+    {
       "name": "Shop: bookings"
     },
     {
@@ -21967,9 +22181,6 @@
     },
     {
       "name": "Shop: services"
-    },
-    {
-      "name": "Admin: services"
     },
     {
       "name": "Admin: QR"

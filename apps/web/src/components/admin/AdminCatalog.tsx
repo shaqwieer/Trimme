@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { ServiceForm } from '@/components/catalog/ServiceForm';
+import { ServiceForm, type ServiceFormProfessional } from '@/components/catalog/ServiceForm';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField, TextareaField, TextField } from '@/components/ui/inputs';
 import { Dialog } from '@/components/ui/overlays';
@@ -158,6 +158,54 @@ export function ServiceOverride({
             body: { ...body, reason },
           }),
         );
+      }}
+    />
+  );
+}
+
+/**
+ * The admin builds a shop's catalogue for it (D-127): a new service for `shopId`, or an edit of `service`, each with the
+ * shop's own price and duration and the shop's barbers who do it. A new service goes back to the shop's services tab.
+ */
+export function AdminServiceEditor({
+  shopId,
+  service,
+  categories,
+  professionals,
+}: {
+  shopId: string;
+  service?: Schemas['AdminServiceResponse'];
+  categories: Schemas['ServiceCategoryResponse'][];
+  professionals: ServiceFormProfessional[];
+}) {
+  const t = useTranslations('adminServices.manage');
+  const router = useRouter();
+  return (
+    <ServiceForm
+      categories={categories}
+      service={service}
+      professionals={professionals}
+      assignedIds={service?.professionalIds}
+      submitLabel={service ? t('save') : t('create')}
+      onSubmitValues={async (body, _reason, professionalIds) => {
+        if (service) {
+          ensureOk(
+            await browserApi.PUT('/api/v1/admin/services/{serviceId}', {
+              params: { path: { serviceId: service.id } },
+              body: { ...body, professionalIds },
+            }),
+          );
+          return;
+        }
+        ensureOk(
+          await browserApi.POST('/api/v1/admin/shops/{shopId}/services', {
+            params: { path: { shopId } },
+            body: { ...body, version: 0, professionalIds },
+          }),
+        );
+        router.push(`/admin/shops/${shopId}?tab=services`);
+        router.refresh();
+        return 'navigated';
       }}
     />
   );

@@ -517,6 +517,8 @@ public static class CatalogErrors
 
     public static Error ItemsNotInShop() => Field("serviceIds", "validation.invalid");
 
+    public static Error ProfessionalsNotInShop() => Field("professionalIds", "validation.invalid");
+
     public static Error InvalidCategory() => Field("categoryId", "validation.invalid");
 
     public static Error OrderMismatch() => Field("orderedIds", "validation.order_mismatch");

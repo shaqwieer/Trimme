@@ -571,6 +571,7 @@
       "location": "الموقع",
       "users": "الحسابات",
       "professionals": "الحلاقون",
+      "services": "الخدمات",
       "subscription": "الاشتراك"
     },
     "sections": {
@@ -590,6 +591,14 @@
       "body": "كل حلاق يتبع هذا المحل وحده.",
       "add": "إضافة حلاق لهذا المحل",
       "empty": "لا يوجد حلاقون في هذا المحل بعد"
+    },
+    "services": {
+      "title": "خدمات المحل",
+      "body": "لكل محل خدماته وأسعاره ومدده الخاصة. أضف خدماته هنا واختر الحلاقين الذين يقدّمون كل خدمة.",
+      "add": "إضافة خدمة لهذا المحل",
+      "empty": "لا توجد خدمات في هذا المحل بعد",
+      "emptyBody": "أضف أول خدمة ليتمكن العملاء من الحجز.",
+      "barbers": "{count, plural, =0 {بلا حلاق} one {حلاق واحد} two {حلاقان} few {# حلاقين} many {# حلاقاً} other {# حلاق}}"
     }
   },
   "shopCategory": {
@@ -883,7 +892,11 @@
       "packageDuration": "المدة الإجمالية للباقة",
       "create": "إنشاء الخدمة",
       "createPackage": "إنشاء الباقة",
-      "save": "حفظ التعديلات"
+      "save": "حفظ التعديلات",
+      "professionals": "الحلاقون الذين يقدّمون الخدمة",
+      "professionalsHint": "تظهر الخدمة للحجز مع الحلاقين المختارين فقط.",
+      "noShopProfessionals": "لا يوجد حلاقون في هذا المحل بعد. أضفهم من تبويب «الحلاقون» ثم اخترهم هنا.",
+      "noProfessionalsPicked": "لم تختر أي حلاق: لن تظهر أوقات لهذه الخدمة حتى تختار حلاقاً واحداً على الأقل."
     },
     "activeFor": "{name}: متاحة للحجز",
     "editItem": "تعديل {name}",
@@ -937,6 +950,14 @@
       "overrideSubmit": "حفظ التصحيح",
       "overridden": "حُفظ التصحيح وسُجّل في سجل النشاط.",
       "assignedCount": "حلاقون مسندون"
+    },
+    "manage": {
+      "newTitle": "خدمة جديدة",
+      "editTitle": "تعديل الخدمة",
+      "editBody": "يتغيّر السعر والمدة لهذا المحل وحده. يُسجَّل التعديل في سجل النشاط.",
+      "create": "إضافة الخدمة",
+      "save": "حفظ التعديلات",
+      "noShop": "افتح المحل أولاً ثم أضف الخدمة من تبويب «الخدمات»."
     },
     "categories": {
       "caption": "تصنيفات الخدمات",
@@ -2464,6 +2485,7 @@
       "Admin_ShopServices_View": "عرض خدمات المحلات",
       "Admin_ShopServices_Moderate": "إخفاء خدمات المحلات وإعادتها",
       "Admin_ShopServices_SupportOverride": "تصحيح خدمة محل (تدخّل الدعم)",
+      "Admin_ShopServices_Manage": "إضافة خدمات المحلات وتعديلها",
       "Admin_Packages_Manage": "إدارة باقات المنصة",
       "Admin_Bookings_View": "عرض المواعيد",
       "Admin_Bookings_Intervene": "تغيير المواعيد وإعادة جدولتها",
@@ -2639,6 +2661,8 @@
       "service_hidden": "إخفاء خدمة",
       "service_unhidden": "إعادة خدمة",
       "service_support_override": "تصحيح خدمة من الدعم",
+      "service_admin_created": "أضاف المشرف خدمة",
+      "service_admin_updated": "عدّل المشرف خدمة",
       "package_hidden": "إخفاء باقة",
       "package_unhidden": "إعادة باقة",
       "service_category_created": "إنشاء تصنيف",
