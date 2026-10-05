@@ -68,7 +68,8 @@ test.describe('shops and tenancy (R-SHP-01, R-AUTH-02, R-TEN-01/06)', () => {
     await admin.getByLabel('Shop name in English').fill('Trial Salon');
     await admin.getByLabel('Shop page link').fill(slug);
     await admin.getByRole('button', { name: 'Create shop' }).click();
-    await expect(admin).toHaveURL(/\/en\/admin\/shops\/[0-9a-f-]{36}$/);
+    // A new shop opens on its Services tab (D-127); the status and actions are above the tabs.
+    await expect(admin).toHaveURL(/\/en\/admin\/shops\/[0-9a-f-]{36}\?tab=services$/);
     await expect(admin.getByText('Draft', { exact: true })).toBeVisible();
     await expectNoSeriousAxeViolations(admin);
 

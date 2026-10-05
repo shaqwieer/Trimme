@@ -86,7 +86,7 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     await expect(page.getByTestId(`catalog-row-${serviceId}`)).toContainText('Archived');
   });
 
-  test('admin moderates, corrects with a reason and assigns only the shop’s own services', async ({
+  test('admin moderates, edits the shop’s service and assigns only the shop’s own services', async ({
     browser,
   }) => {
     const ownerContext = await browser.newContext();
@@ -124,11 +124,12 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     // Wait for the refreshed page (new version) before editing again; an older version is a real conflict (409).
     await expect(admin.getByRole('button', { name: 'Hide from customers' })).toBeVisible();
 
-    // Support override needs a reason and is audited.
-    const override = admin.getByTestId('service-override');
-    await override.getByLabel('Price (SAR)').fill('55');
-    await override.getByLabel('Reason for the correction').fill('Shop asked by phone');
-    await override.getByRole('button', { name: 'Save correction' }).click();
+    // An admin who builds shops' catalogues edits the service directly (D-127); the support override with a reason
+    // is for admins without that permission. Either way the price stays the shop's own and the change is audited.
+    const manage = admin.getByTestId('service-manage');
+    await expect(admin.getByTestId('service-override')).toHaveCount(0);
+    await manage.getByLabel('Price (SAR)').fill('55');
+    await manage.getByRole('button', { name: 'Save changes' }).click();
     await expect(admin.getByText('Changes saved.')).toBeVisible();
     expect((await (await admin.request.get(`/api/v1/admin/services/${service.id}`)).json()).price).toBe(55);
     await expectNoSeriousAxeViolations(admin);
