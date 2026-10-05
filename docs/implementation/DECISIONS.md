@@ -1202,3 +1202,23 @@ This refines D-126.
 - **Home page contents.** As in the client's screenshots: the hero (search, location, «احجز الآن», the browse link), the photo, the top-rated salons, and the FAQ and the closing call to action, which D-126 had removed and which are now restored with their catalogue entries.
   - The trust strip, how it works, outcomes and the shop-partner band stay out.
   - At 390 px the page is 2,753 px tall; it was 5,485 px before D-126.
+
+## D-129 — Salon wording, day and time on one screen, month on dates, no salon phone, 15-minute slots — Accepted (Session 15, after Phase 17, at the client's request)
+- **Wording ("the whole site is a salon").** Customer-facing text no longer says حلاق or محل:
+  - places are «صالون / الصالونات»;
+  - staff are «المختص / المختصون»;
+  - in English, "salon(s)" and "specialist(s)".
+  - The change was made by a scripted word mapping over the customer namespaces (public pages, booking, appointments, account, favourites, QR landing, legal, metadata) and a few shared keys customers see. «حلاقة» (the service) is untouched, and so are ICU placeholder names.
+  - The shop and admin dashboards keep their wording. The client chose wording only: the specialist step, tab and pages stay.
+  - The header button «ابحث عن صالون» is hidden below `md`, where the home search box sits. It is hidden with `max-md:hidden`: `hidden` lost to the button's own `inline-flex`.
+- **Day and time on one screen.** The wizard has four steps (service, specialist, day-and-time, review). Tapping a day shows that day's hours and minutes under the days at once and scrolls to them. Next stays disabled until a time is picked.
+  - An old `step=time` link opens the day-and-time step.
+  - The notices (`timeGone`, `conflict`) return there.
+- **Month on the date chips.** Each day shows its short month («أكتوبر» / "Oct") under the number, in the wizard and on the reschedule page.
+- **No salon phone for customers.** `PublicShopResponse` no longer carries `PublicPhone`: the field is removed from the public API, and so the shop page's phone row and `tel:` link go. The HairSalon JSON-LD has no `telephone`, and the booking detail no longer offers «اتصل بالصالون» after the cutoff.
+  - Texts that told customers to contact the salon directly now say to contact the TRIMME team.
+  - The shop and the admin still keep and edit the number.
+  - There is no TRIMME support contact on the site yet.
+- **Slots every 15 minutes.** The platform setting `SlotStepMinutes` was set to 15 on the demo deployment (it was 5), so each hour offers :00/:15/:30/:45.
+  - The count still differs from hour to hour, by design: existing bookings, the service's duration (it must end before closing or the next booking) and the minimum lead time remove starts.
+  - The code default is unchanged (CI and the seed keep 5).

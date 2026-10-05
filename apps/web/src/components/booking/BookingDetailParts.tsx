@@ -1,9 +1,7 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { Ltr } from '@/components/text/Ltr';
-import { Icon } from '@/components/ui/icons';
 import { InlineAlert } from '@/components/ui/states';
 import { changeDeadline, cutoffParts } from '@/lib/booking/format';
-import { type AppLocale, formatDate, formatPhone, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatDate, formatTime } from '@/lib/i18n/format';
 
 /**
  * The message after booking (DV-S13): "confirmed" only when the shop auto-confirms; a shop that confirms manually
@@ -21,19 +19,18 @@ export function CreatedBanner({ status }: { status: string }) {
 
 /**
  * The cancellation policy of an active booking (D-015, DV-S10). Before the cutoff: until when it can be cancelled or
- * moved online. After it (the API no longer allows either): the window has closed, and the shop's phone to call.
+ * moved online. After it (the API no longer allows either): the window has closed, and TRIMME is the one to contact; no
+ * shop phone is shown (D-129).
  */
 export function BookingPolicy({
   startsAt,
   cutoffMinutes,
   canChange,
-  shopPhone,
   timeZone,
 }: {
   startsAt: string;
   cutoffMinutes: number;
   canChange: boolean;
-  shopPhone: string | null;
   timeZone?: string;
 }) {
   const t = useTranslations('bookings.detail');
@@ -52,20 +49,9 @@ export function BookingPolicy({
           })}
         </p>
       ) : (
-        <>
-          <p className="text-helper leading-[1.8] text-text-secondary" data-testid="cutoff-passed">
-            {t('policy.after', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
-          </p>
-          {shopPhone && (
-            <a
-              href={`tel:${shopPhone}`}
-              className="inline-flex min-h-11 items-center gap-2 self-start rounded-button border border-border-input bg-surface px-4 text-label font-bold text-text-strong"
-            >
-              <Icon name="phone" className="size-4" />
-              {t('policy.callShop')} <Ltr>{formatPhone(shopPhone)}</Ltr>
-            </a>
-          )}
-        </>
+        <p className="text-helper leading-[1.8] text-text-secondary" data-testid="cutoff-passed">
+          {t('policy.after', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
+        </p>
       )}
     </section>
   );

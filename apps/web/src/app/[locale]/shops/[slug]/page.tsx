@@ -184,7 +184,6 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
             image: [shop.coverUrl, ...gallery].filter(Boolean).map((u) => absoluteUrl(u!)),
             logo: shop.logoUrl ? absoluteUrl(shop.logoUrl) : undefined,
             description: (locale === 'en' ? shop.descriptionEn : shop.descriptionAr) ?? undefined,
-            telephone: shop.publicPhone ?? undefined,
             address: shop.location
               ? {
                   '@type': 'PostalAddress',

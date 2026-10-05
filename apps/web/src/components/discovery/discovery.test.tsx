@@ -64,7 +64,7 @@ describe('ShopResultCard (c-home search results)', () => {
     );
     expect(screen.getByText(/تهذيب لحية · 35 ر.س · ٢٠ دقيقة/)).toBeInTheDocument();
     expect(screen.getByText('2.4 كم')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'محل موثّق' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'صالون موثّق' })).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
 
@@ -174,7 +174,7 @@ describe('FilterSheet (c-map filter drawer)', () => {
     await user.click(screen.getByRole('button', { name: 'فلاتر · 1' }));
     expect(screen.getByRole('dialog', { name: 'التصفية والترتيب' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'الأقرب مسافةً' })).toBeChecked();
-    await user.click(screen.getByRole('switch', { name: 'محلات موثّقة فقط' }));
+    await user.click(screen.getByRole('switch', { name: 'صالونات موثّقة فقط' }));
     // Every count answers 7, so wait for the count that carries the new filter (the one sent on opening may land first).
     await waitFor(() =>
       expect(api.GET.mock.calls.at(-1)?.[1]?.params?.query).toMatchObject({

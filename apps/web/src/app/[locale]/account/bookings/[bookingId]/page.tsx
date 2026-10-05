@@ -165,7 +165,6 @@ export default async function BookingDetailPage({
           startsAt={booking.startsAt}
           cutoffMinutes={booking.cancellationCutoffMinutes}
           canChange={actions.has('Cancel')}
-          shopPhone={shop?.publicPhone ?? null}
           timeZone={timeZone}
         />
       )}

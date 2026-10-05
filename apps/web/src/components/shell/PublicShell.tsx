@@ -68,7 +68,7 @@ export function PublicShell({
               </Link>
             )}
             {variant === 'landing' && (
-              <ButtonLink href="/shops" variant="primary" size="sm" className="hidden sm:inline-flex">
+              <ButtonLink href="/shops" variant="primary" size="sm" className="max-md:hidden">
                 {nav('findBarber')}
               </ButtonLink>
             )}

@@ -117,7 +117,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     const scan = await visitor.newPage();
     await waitForScan(scan, `/q/${code}`);
     await expect(scan).toHaveURL(new RegExp(`/ar/q/${code}$`));
-    await expect(scan.getByText('دخلت عبر رمز المحل')).toBeVisible();
+    await expect(scan.getByText('دخلت عبر رمز الصالون')).toBeVisible();
     await expect(scan.getByRole('heading', { level: 1 })).toContainText('باربر هاوس');
     await expect(scan.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(scan.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/ar\/shops\/barber-house$/);
@@ -137,13 +137,11 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الخدمات');
     await scan.getByText('قص وتصفيف').first().click();
     await scan.getByRole('button', { name: 'التالي' }).click();
-    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الحلاق');
+    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر المختص');
     await scan.getByRole('button', { name: 'التالي' }).click();
-    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر التاريخ');
+    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر اليوم والوقت');
     await pickDate(scan, 5);
-    await scan.getByRole('button', { name: 'التالي' }).click();
-    await expect(scan.getByTestId('wizard-title')).toHaveText('اختر الوقت');
-    // The hour first, then a minute of it (D-125).
+    // The day's times show under the days (D-129): the hour first, then a minute of it (D-125).
     const hour = scan.locator('input[name="time-hour"]').first();
     await expect(hour).toBeAttached();
     await scan
@@ -177,7 +175,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     const cancel = scan.getByRole('dialog');
     await cancel.getByRole('button', { name: 'ظرف طارئ' }).click();
     await cancel.getByRole('button', { name: 'نعم، ألغِ الموعد' }).click();
-    await expect(scan.getByText('تم إلغاء الموعد وأُخطر المحل.')).toBeVisible();
+    await expect(scan.getByText('تم إلغاء الموعد وأُخطر الصالون.')).toBeVisible();
 
     // Switched off: the printed code now shows «not found»; its figures stay.
     await page.goto('/ar/admin/qr');
@@ -204,7 +202,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await waitForScan(landing, `/q/${SULTAN_CODE}`);
     await expect(landing).toHaveURL(new RegExp(`/en/q/${SULTAN_CODE}$`));
     await expect(landing.getByTestId('qr-landing')).toHaveAttribute('data-target', 'Professional');
-    await expect(landing.getByText("You came in with the barber's code")).toBeVisible();
+    await expect(landing.getByText("You came in with the specialist's code")).toBeVisible();
     await expect(landing.getByRole('heading', { level: 1 })).toHaveText('Sultan Al-Harbi');
     await expect(landing.getByText('at Al Asala Barbershop')).toBeVisible();
     await expect(landing.locator('link[rel="canonical"]')).toHaveAttribute(

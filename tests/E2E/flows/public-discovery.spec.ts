@@ -95,8 +95,8 @@ test.describe('public discovery (Phase 11)', () => {
     await expect(first).toContainText('كم');
 
     // Text search with an Arabic spelling variant finds the service and says which one matched.
-    await page.getByRole('searchbox', { name: 'ابحث عن محل أو خدمة' }).fill('تحديد لحيه');
-    await page.getByRole('searchbox', { name: 'ابحث عن محل أو خدمة' }).press('Enter');
+    await page.getByRole('searchbox', { name: 'ابحث عن صالون أو خدمة' }).fill('تحديد لحيه');
+    await page.getByRole('searchbox', { name: 'ابحث عن صالون أو خدمة' }).press('Enter');
     await expect(page).toHaveURL(/q=/);
     const result = page.getByRole('article').filter({ hasText: 'باربر هاوس' });
     await expect(result).toContainText('تحديد لحية');
@@ -125,7 +125,7 @@ test.describe('public discovery (Phase 11)', () => {
     await expect(pin).toBeVisible();
     await pin.click();
     await expect(
-      page.getByRole('region', { name: 'المحل المختار' }).getByRole('link', { name: 'باربر هاوس' }),
+      page.getByRole('region', { name: 'الصالون المختار' }).getByRole('link', { name: 'باربر هاوس' }),
     ).toBeVisible();
     await page.getByRole('link', { name: 'عرض القائمة' }).click();
     await expect(page).not.toHaveURL(/view=map/);
@@ -152,7 +152,7 @@ test.describe('public discovery (Phase 11)', () => {
     );
 
     // Barbers link to their profiles.
-    await page.getByRole('tab', { name: 'الحلاقون' }).click();
+    await page.getByRole('tab', { name: 'المختصون' }).click();
     await expect(page).toHaveURL(/tab=professionals/);
     await expect(page.getByRole('link', { name: 'عمر السالم' })).toHaveAttribute(
       'href',
@@ -167,8 +167,8 @@ test.describe('public discovery (Phase 11)', () => {
     await expect(reviews).toContainText('قص وتصفيف');
 
     // About: hours past midnight, the cancellation policy from the platform settings, the map.
-    await page.getByRole('tab', { name: 'عن المحل' }).click();
-    const about = page.getByRole('tabpanel', { name: 'عن المحل' });
+    await page.getByRole('tab', { name: 'عن الصالون' }).click();
+    const about = page.getByRole('tabpanel', { name: 'عن الصالون' });
     await expect(about).toContainText('الإلغاء مجاني حتى ساعتين قبل الموعد');
     await expect(about.getByRole('row', { name: /الخميس/ })).toContainText('١:٠٠ ص');
     await expect(page.getByTestId('shop-mini-map')).toBeVisible();
@@ -185,9 +185,12 @@ test.describe('public discovery (Phase 11)', () => {
       /\/en\/shops\/barber-house$/,
     );
 
-    // No customer or professional phone anywhere in the page (spec §7/§8); the shop's own number is business data.
+    // No phone at all on the page: no customer or professional number (spec §7/§8), and no shop number either, so
+    // customers reach the salon only through TRIMME (D-129).
     const html = await page.content();
     expect(html).not.toMatch(/\+96650010/);
+    expect(html).not.toContain('tel:');
+    expect(business.telephone).toBeUndefined();
     await expectNoSeriousAxe(page, `/ar/shops/${BARBER_HOUSE}`);
   });
 

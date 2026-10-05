@@ -74,7 +74,7 @@ const NOTE_MAX = 500;
 
 /** The customer's view of the steps (D-125): the shop is already chosen; service and professional, then date and time. */
 const PHASES = ['shop', 'service', 'time', 'confirm'] as const;
-const PHASE_OF: Record<WizardStep, number> = { service: 1, professional: 1, date: 2, time: 2, review: 3 };
+const PHASE_OF: Record<WizardStep, number> = { service: 1, professional: 1, date: 2, review: 3 };
 
 function offerQuery(items: WizardOffer[], pro: string) {
   const services = items.filter((item) => item.kind === 'service').map((item) => item.id);
@@ -212,7 +212,10 @@ export function BookingWizard({
       ),
   });
 
-  const slots = useQuery(slotsOf(date, stepIndex >= 3));
+  // The chosen day's times, shown under the days at once (D-129) and checked again on the review.
+  const slots = useQuery(slotsOf(date, stepIndex >= 2));
+  const timesRef = useRef<HTMLDivElement>(null);
+  const scrollToTimes = useRef(false);
 
   // The nearest free time, offered before the customer looks through days and hours (D-125): one extra request, for
   // the first day that has a free slot (the same cache entry the time step reads when that day is picked).
@@ -237,11 +240,18 @@ export function BookingWizard({
       }
     }
     if (step === 'review' && time && slots.data && !startsAt) {
-      go({ ...selection, time: undefined }, 'time', 'replace', 'timeGone');
+      go({ ...selection, time: undefined }, 'date', 'replace', 'timeGone');
     }
     // `go` and `selection` are derived from the URL on every render; the data answers are what trigger the checks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dates.data, slots.data, step, date, time, startsAt, blocked]);
+
+  useEffect(() => {
+    if (scrollToTimes.current && dateOk) {
+      scrollToTimes.current = false;
+      timesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [date, dateOk]);
 
   const eligible = eligibleProfessionals(offer, professionals);
   const noCommonPro = items.length > 1 && eligible.length === 0;
@@ -265,8 +275,7 @@ export function BookingWizard({
     !blocked &&
     ((step === 'service' && Boolean(offer) && !noCommonPro) ||
       step === 'professional' ||
-      (step === 'date' && dateOk) ||
-      (step === 'time' && Boolean(startsAt)));
+      (step === 'date' && dateOk && Boolean(startsAt)));
 
   const goNext = () => {
     const to = nextStep(step);
@@ -343,7 +352,7 @@ export function BookingWizard({
       } else if (failure.errorCode === 'booking.slot_unavailable') {
         await queryClient.invalidateQueries({ queryKey: ['booking-slots'] });
         await queryClient.invalidateQueries({ queryKey: ['booking-dates'] });
-        go({ ...selection, time: undefined }, 'time', 'replace', 'conflict');
+        go({ ...selection, time: undefined }, 'date', 'replace', 'conflict');
       } else if (failure.status === 403) {
         setError(t('customersOnly'));
       } else {
@@ -355,11 +364,9 @@ export function BookingWizard({
   const footerNote =
     step === 'service'
       ? itemsLabel
-      : step === 'professional' || step === 'date'
+      : step === 'professional' || (step === 'date' && !dateOk)
         ? [itemsLabel, proName].filter(Boolean).join(' · ')
-        : step === 'time'
-          ? [dateLabel, proName].filter(Boolean).join(' · ')
-          : [dateLabel, timeLabel].filter(Boolean).join(' · ');
+        : [dateLabel, timeLabel].filter(Boolean).join(' · ');
 
   return (
     <div className="mx-auto flex w-full max-w-[720px] flex-1 flex-col">
@@ -521,6 +528,7 @@ export function BookingWizard({
                   days={dates.data.dates.map((d) => ({ date: d.date, available: d.slotCount > 0 }))}
                   value={dateOk ? date : undefined}
                   onValueChange={(next) => {
+                    scrollToTimes.current = true;
                     go(
                       { ...selection, date: next, time: next === date ? time : undefined },
                       'date',
@@ -533,6 +541,38 @@ export function BookingWizard({
                     {t('slotCount', { count: dates.data.dates.find((d) => d.date === date)?.slotCount ?? 0 })}
                   </p>
                 )}
+                {dateOk && (
+                  <div ref={timesRef} className="flex scroll-mt-24 flex-col gap-4" data-testid="day-times">
+                    {offer && (
+                      <p className="flex items-center gap-2 rounded-card bg-brand-50 px-4 py-3 text-helper text-brand-700">
+                        <Icon name="clock" className="size-4 shrink-0" />
+                        {t('durationNote', {
+                          service: offerName,
+                          duration: formatDurationMinutes(offer.durationMinutes, locale),
+                        })}
+                      </p>
+                    )}
+                    {slots.isPending ? (
+                      <SkeletonList rows={3} label={t('loading')} />
+                    ) : slots.isError ? (
+                      <LoadError onRetry={() => slots.refetch()} />
+                    ) : slots.data.bookable === false ? null : (
+                      <HourMinutePicker
+                        key={date}
+                        name="time"
+                        timeZone={shop.timeZone}
+                        slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
+                        value={startsAt}
+                        onValueChange={(start) => {
+                          const slot = slots.data.slots.find((s) => s.startsAt === start);
+                          if (slot) {
+                            go({ ...selection, time: slot.localTime }, 'date', 'replace');
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
                 {dates.data.dates.every((d) => d.slotCount === 0) && (
                   <InlineAlert tone="info" title={t('noDates')}>
                     {pro !== ANY_PROFESSIONAL ? t('tryAny') : null}
@@ -542,39 +582,6 @@ export function BookingWizard({
                   <p className="text-helper text-text-secondary">{t('tryAny')}</p>
                 )}
               </>
-            )}
-          </div>
-        )}
-
-        {step === 'time' && (
-          <div className="flex flex-col gap-4">
-            {offer && (
-              <p className="flex items-center gap-2 rounded-card bg-brand-50 px-4 py-3 text-helper text-brand-700">
-                <Icon name="clock" className="size-4 shrink-0" />
-                {t('durationNote', {
-                  service: offerName,
-                  duration: formatDurationMinutes(offer.durationMinutes, locale),
-                })}
-              </p>
-            )}
-            {date && <p className="text-label font-bold text-text-primary">{dateLabel}</p>}
-            {slots.isPending ? (
-              <SkeletonList rows={3} label={t('loading')} />
-            ) : slots.isError ? (
-              <LoadError onRetry={() => slots.refetch()} />
-            ) : blocked ? null : (
-              <HourMinutePicker
-                name="time"
-                timeZone={shop.timeZone}
-                slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
-                value={startsAt}
-                onValueChange={(start) => {
-                  const slot = slots.data.slots.find((s) => s.startsAt === start);
-                  if (slot) {
-                    go({ ...selection, time: slot.localTime }, 'time', 'replace');
-                  }
-                }}
-              />
             )}
           </div>
         )}

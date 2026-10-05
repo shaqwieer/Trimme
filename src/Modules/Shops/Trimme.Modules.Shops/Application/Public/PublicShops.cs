@@ -27,9 +27,9 @@ public sealed record OpeningIntervalResponse(DayOfWeek Day, int StartMinute, int
 public sealed record ShopRatingResponse(decimal Average, int Count);
 
 /// <summary>
-/// A published shop's public profile (<c>GET /public/shops/{slug}</c>). Only active shops are published. The phone is the
-/// shop's own business number; professional and customer numbers are never part of a public contract (R-PRO-02). The
-/// response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
+/// A published shop's public profile (<c>GET /public/shops/{slug}</c>). Only active shops are published. No phone number
+/// at all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a
+/// public contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
 /// <c>/status</c>. <c>ListedInDiscovery</c> is false while the subscription hides the shop (the page is then not indexed).
 /// </summary>
 public sealed record PublicShopResponse(
@@ -40,7 +40,6 @@ public sealed record PublicShopResponse(
     string? DescriptionAr,
     string? DescriptionEn,
     ShopCategory Category,
-    string? PublicPhone,
     IReadOnlyList<ShopAmenity> Amenities,
     bool IsVerified,
     string? LogoUrl,
@@ -124,7 +123,6 @@ internal sealed class GetPublicShopHandler(
             shop.DescriptionAr,
             shop.DescriptionEn,
             shop.Category,
-            shop.PublicPhone,
             shop.Amenities,
             shop.IsVerified,
             MediaRules.Url(shop.LogoMediaId),

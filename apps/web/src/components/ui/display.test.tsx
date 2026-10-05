@@ -30,7 +30,7 @@ describe('cards', () => {
       'href',
       '/ar/shops/al-asala',
     );
-    expect(screen.getByRole('img', { name: 'محل موثّق' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'صالون موثّق' })).toBeInTheDocument();
     expect(screen.getByText('2.4 كم')).toBeInTheDocument();
     expect(screen.getByText('من 35 ر.س')).toBeInTheDocument();
     await expectNoAxeViolations(container);

@@ -5234,9 +5234,9 @@ export interface components {
             formattedAddress: null | string;
         };
         /**
-         * @description A published shop's public profile (`GET /public/shops/{slug}`). Only active shops are published. The phone is the
-         *     shop's own business number; professional and customer numbers are never part of a public contract (R-PRO-02). The
-         *     response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
+         * @description A published shop's public profile (`GET /public/shops/{slug}`). Only active shops are published. No phone number
+         *     at all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a
+         *     public contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
          *     `/status`. `ListedInDiscovery` is false while the subscription hides the shop (the page is then not indexed).
          */
         PublicShopResponse: {
@@ -5248,7 +5248,6 @@ export interface components {
             descriptionAr: null | string;
             descriptionEn: null | string;
             category: components["schemas"]["ShopCategory"];
-            publicPhone: null | string;
             amenities: components["schemas"]["ShopAmenity"][];
             isVerified: boolean;
             logoUrl: null | string;

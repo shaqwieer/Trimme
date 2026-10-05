@@ -92,7 +92,7 @@ describe('StatusBadge (D-016 enums)', () => {
       </>,
     );
     expect(screen.getByText('ألغاه العميل')).toBeInTheDocument();
-    expect(screen.getByText('ألغاه المحل')).toBeInTheDocument();
+    expect(screen.getByText('ألغاه الصالون')).toBeInTheDocument();
     const badges = container.querySelectorAll('span.inline-flex');
     expect(badges[0]?.className).toBe(badges[1]?.className);
   });

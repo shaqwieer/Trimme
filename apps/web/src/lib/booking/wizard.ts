@@ -5,7 +5,8 @@
  * page's time chips link it) and `step`. Everything here is pure; the wizard component fetches the data and calls these.
  */
 
-export const WIZARD_STEPS = ['service', 'professional', 'date', 'time', 'review'] as const;
+/** The day and its times are one step (D-129): the times show under the days as soon as a day is tapped. */
+export const WIZARD_STEPS = ['service', 'professional', 'date', 'review'] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
 export const ANY_PROFESSIONAL = 'any';
@@ -198,19 +199,19 @@ export function restoreSelection(current: WizardSelection, latest: WizardSelecti
 /** The first step whose choice is missing: nothing after it can be shown yet. */
 export function firstIncompleteStep(selection: WizardSelection): WizardStep {
   if (!selection.offer) return 'service';
-  if (!selection.date) return 'date';
-  if (!selection.time) return 'time';
+  if (!selection.date || !selection.time) return 'date';
   return 'review';
 }
 
 /**
  * The step to show. An explicit `step` is honoured up to the first incomplete one; without it (links from the shop and
  * professional pages) the wizard opens at the furthest step the link implies: a service goes to the professional step
- * ("any" preselected), a service with a date to the time step, a full link to the review.
+ * ("any" preselected), a service with a date to the day-and-time step, a full link to the review. An old `step=time`
+ * link opens the day-and-time step.
  */
 export function currentStep(query: WizardQuery, selection: WizardSelection): WizardStep {
   const limit = WIZARD_STEPS.indexOf(firstIncompleteStep(selection));
-  const asked = WIZARD_STEPS.indexOf(query.step as WizardStep);
+  const asked = WIZARD_STEPS.indexOf((query.step === 'time' ? 'date' : query.step) as WizardStep);
   if (asked >= 0) return WIZARD_STEPS[Math.min(asked, limit)]!;
   if (!selection.offer) return 'service';
   if (!selection.date) return 'professional';

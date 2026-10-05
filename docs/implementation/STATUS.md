@@ -23,6 +23,7 @@
   - The home page is cut to the search (with the location and the figures), the photo and the top-rated salons: 1,746 px tall on a phone instead of 5,485.
   - The admin shop page has a Services tab to add and edit a shop's services and pick its barbers for each.
   - Gap: admins still cannot set a shop's opening hours.
+  - Then (D-129): «صالون / مختص» wording for customers; the day's times under the days on one step; the month on date chips; no salon phone for customers; 15-minute slots on the demo.
   - Then (D-128): no salon starting prices or platform figures for customers; «احجز الآن» on the search and the shop page's centred bar; the FAQ and closing call to action are back on the home page.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 

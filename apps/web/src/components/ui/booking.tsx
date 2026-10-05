@@ -51,7 +51,7 @@ export function DateStrip({ name, days, value, onValueChange, today }: DateStrip
             <label
               key={day.date}
               className={cn(
-                'relative flex min-h-[68px] w-[60px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-card border border-border-input bg-surface transition-colors',
+                'relative flex min-h-[80px] w-[62px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border border-border-input bg-surface transition-colors',
                 'has-checked:border-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]',
                 !day.available && 'cursor-not-allowed border-border-row bg-bg-muted text-text-disabled',
               )}
@@ -74,6 +74,9 @@ export function DateStrip({ name, days, value, onValueChange, today }: DateStrip
                 className={cn('font-latin text-[1.0625rem] font-bold', !day.available && 'line-through')}
               >
                 {formatDayNumber(toUtcNoon(day.date), locale, 'UTC')}
+              </span>
+              <span aria-hidden="true" className="text-[0.6875rem] font-medium opacity-80">
+                {formatLocalDate(day.date, locale, { month: 'short' })}
               </span>
             </label>
           );

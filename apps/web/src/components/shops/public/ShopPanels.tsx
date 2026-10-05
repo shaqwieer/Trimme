@@ -10,7 +10,6 @@ import { Icon } from '@/components/ui/icons';
 import { RatingStars } from '@/components/ui/Rating';
 import { TagChip } from '@/components/ui/selection';
 import { EmptyState } from '@/components/ui/states';
-import { Ltr } from '@/components/text/Ltr';
 import { Link } from '@/i18n/navigation';
 import type {
   OpeningInterval,
@@ -24,7 +23,7 @@ import type {
 import { durationParts, minuteOfDay, relativeTime } from '@/lib/discovery/format';
 import { isTomorrow } from '@/lib/discovery/opening';
 import { bookHref, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
-import { type AppLocale, formatDurationMinutes, formatPhone, formatPrice, formatRating, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatDurationMinutes, formatPrice, formatRating, formatTime } from '@/lib/i18n/format';
 import { langIfOther, type LocalizedText, localizedName, localizedText } from '@/lib/i18n/localized';
 import { ShopMiniMap } from './ShopMiniMap';
 
@@ -254,7 +253,7 @@ export function ReviewsPanel({
   );
 }
 
-/** Description, weekly hours (closed days kept at full contrast, DV-T11), policies from settings, amenities, phone, map. */
+/** Description, weekly hours (closed days kept at full contrast, DV-T11), policies from settings, amenities, map. No phone (D-129). */
 export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
   const t = useTranslations('shopPage.about');
   const tPage = useTranslations('shopPage');
@@ -344,16 +343,6 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
           <dt className="text-helper text-text-secondary">{t('category')}</dt>
           <dd className="text-body font-bold text-text-primary">{tCategory(shop.category)}</dd>
         </div>
-        {shop.publicPhone && (
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-helper text-text-secondary">{t('phone')}</dt>
-            <dd>
-              <a href={`tel:${shop.publicPhone}`} className="inline-flex min-h-11 items-center font-bold text-text-link hover:underline">
-                <Ltr>{formatPhone(shop.publicPhone)}</Ltr>
-              </a>
-            </dd>
-          </div>
-        )}
       </dl>
 
       {shop.location && <ShopMiniMap latitude={shop.location.latitude} longitude={shop.location.longitude} label={tPage('mapLabel', { name })} />}

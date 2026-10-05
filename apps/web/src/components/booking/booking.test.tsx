@@ -150,7 +150,7 @@ beforeEach(() => {
 
 describe('BookingWizard (c-booking, D-028, D-096)', () => {
   // The longest walk in the suite (five steps and an axe pass), hence the longer timeout.
-  it('walks service → any professional → date → time → review, with the price paid at the shop and no payment step', async () => {
+  it('walks service → any specialist → day and time → review, with the price paid at the salon and no payment step', async () => {
     const user = userEvent.setup();
     availability();
     api.POST.mockResolvedValue(ok({ id: 'booking-1', status: 'Confirmed' }, 201));
@@ -167,8 +167,8 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
     // Only the professionals assigned to the service, "any" preselected (design rule 2).
-    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الحلاق');
-    expect(screen.getByRole('radio', { name: /أي حلاق متاح/ })).toBeChecked();
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر المختص');
+    expect(screen.getByRole('radio', { name: /أي مختص متاح/ })).toBeChecked();
     expect(screen.getByRole('radio', { name: /عمر السالم/ })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /ماجد/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'التالي' }));
@@ -179,7 +179,11 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(screen.getByRole('radio', { name: dayName(D2) })).toBeDisabled();
     await user.click(day);
     expect(screen.getByRole('status')).toHaveTextContent('وقتان متاحان');
-    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    // The day's times show right under the days, without a Next (D-129); the month is on each day.
+    expect(day.closest('label')).toHaveTextContent(formatLocalDate(D1, 'ar', { month: 'short' }));
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر اليوم والوقت');
+    // A day alone is not enough: Next waits for a time.
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
 
     // Hour first, then that hour's minutes (one hour here, so its minutes are already shown).
     expect(await screen.findByRole('radio', { name: /١٠ ص/ })).toBeChecked();
@@ -188,16 +192,16 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
     const review = await screen.findByTestId('booking-review');
-    expect(review).toHaveTextContent('الإجمالي (يُدفع في المحل)');
+    expect(review).toHaveTextContent('الإجمالي (يُدفع في الصالون)');
     expect(review).toHaveTextContent('85 ر.س');
-    expect(review).toHaveTextContent('أي حلاق متاح — نحدده عند التأكيد');
+    expect(review).toHaveTextContent('أي مختص متاح — نحدده عند التأكيد');
     expect(review).toHaveTextContent('ساعتين');
     // R-NEG-02: nothing asks for a card or a payment.
     expect(container.querySelector('input[autocomplete^="cc-"]')).toBeNull();
     expect(screen.queryByText(/بطاقة|الدفع الآن|ادفع/)).not.toBeInTheDocument();
     await expectNoAxeViolations(container);
 
-    await user.type(screen.getByLabelText(/ملاحظة للحلاق/), 'تدريج');
+    await user.type(screen.getByLabelText(/ملاحظة للمختص/), 'تدريج');
     await user.click(screen.getByRole('button', { name: 'تأكيد الحجز' }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/account/bookings/booking-1?created=1'));
     const [, init] = api.POST.mock.calls[0]!;
@@ -232,7 +236,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'تأكيد الحجز' }));
 
-    await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الوقت'));
+    await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر اليوم والوقت'));
     expect(screen.getByText('حُجز هذا الوقت للتو')).toBeInTheDocument();
     expect(window.location.search).toContain('notice=conflict');
     expect(window.location.search).not.toContain('time=');
@@ -246,7 +250,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     availability(slotsOf([['11:00', '2026-10-01T08:00:00Z']]));
     window.history.replaceState(null, '', `/ar/shops/barber-house/book?service=svc-1&date=${D1}&time=10:00`);
     renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
-    await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الوقت'));
+    await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر اليوم والوقت'));
     expect(screen.getByText('الوقت الذي اخترته لم يعد متاحاً')).toBeInTheDocument();
   });
 
@@ -316,7 +320,6 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(screen.queryByRole('radio', { name: /ماجد/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'التالي' }));
     await user.click(await screen.findByRole('radio', { name: dayName(D1) }));
-    await user.click(screen.getByRole('button', { name: 'التالي' }));
     await user.click(await screen.findByRole('radio', { name: /١٠:٠٠/ }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
@@ -334,7 +337,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     });
   });
 
-  it('says when no single barber does every chosen service', async () => {
+  it('says when no single specialist does every chosen service', async () => {
     const user = userEvent.setup();
     availability();
     const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'] };
@@ -348,7 +351,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     );
     await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
     await user.click(screen.getByRole('checkbox', { name: /صبغة/ }));
-    expect(screen.getByText(/لا يوجد حلاق واحد يقدّم كل هذه الخدمات/)).toBeInTheDocument();
+    expect(screen.getByText(/لا يوجد مختص واحد يقدّم كل هذه الخدمات/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
   });
 
@@ -381,9 +384,12 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     );
     expect(await screen.findByRole('radio', { name: /١٠:٣٠/ })).toBeChecked();
 
-    // The app's back button: the date is still chosen.
+    // The app's back button: the specialist is still chosen, and so are the day and time when coming forward again.
     await user.click(screen.getByRole('button', { name: 'الخطوة السابقة' }));
+    expect(await screen.findByRole('radio', { name: /عمر السالم/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
     expect(await screen.findByRole('radio', { name: dayName(D1) })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: /١٠:٣٠/ })).toBeChecked();
 
     // The browser's back button lands on an entry from before the professional and time were chosen.
     act(() =>
@@ -520,30 +526,18 @@ describe('booking page parts (DV-S13, DV-S10)', () => {
     expect(screen.queryByText('تم تأكيد حجزك')).not.toBeInTheDocument();
   });
 
-  it('before the cutoff says until when; after it says the window closed and gives the shop phone', () => {
+  it('before the cutoff says until when; after it says the window closed, with no salon phone (D-129)', () => {
     const { unmount } = renderWithIntl(
-      <BookingPolicy
-        startsAt="2026-10-04T14:00:00Z"
-        cutoffMinutes={120}
-        canChange
-        shopPhone="+966512345678"
-      />,
+      <BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange />,
     );
     expect(screen.getByText(/مجاني عبر تريمي حتى/)).toHaveTextContent('٣:٠٠');
     expect(screen.queryByTestId('cutoff-passed')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /اتصل بالمحل/ })).not.toBeInTheDocument();
     unmount();
 
-    renderWithIntl(
-      <BookingPolicy
-        startsAt="2026-10-04T14:00:00Z"
-        cutoffMinutes={120}
-        canChange={false}
-        shopPhone="+966512345678"
-      />,
-    );
+    renderWithIntl(<BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange={false} />);
     expect(screen.getByTestId('cutoff-passed')).toHaveTextContent('ساعتين قبل الموعد');
-    expect(screen.getByRole('link', { name: /اتصل بالمحل/ })).toHaveAttribute('href', 'tel:+966512345678');
+    expect(screen.queryByRole('link', { name: /اتصل/ })).not.toBeInTheDocument();
+    expect(document.querySelector('a[href^="tel:"]')).toBeNull();
   });
 });
 

@@ -85,7 +85,9 @@ describe('booking wizard URL state (D-028, D-096)', () => {
 
   it('honours an explicit step only up to the first missing choice', () => {
     expect(parse(`service=${HAIRCUT.id}&step=review`).step).toBe('date');
-    expect(parse(`service=${HAIRCUT.id}&date=2026-10-01&step=review`).step).toBe('time');
+    // The day and its times are one step (D-129); an old step=time link opens it too.
+    expect(parse(`service=${HAIRCUT.id}&date=2026-10-01&step=review`).step).toBe('date');
+    expect(parse(`service=${HAIRCUT.id}&date=2026-10-01&time=10:00&step=time`).step).toBe('date');
     expect(parse(`service=${HAIRCUT.id}&date=2026-10-01&time=10:00&step=professional`).step).toBe(
       'professional',
     );
@@ -106,7 +108,7 @@ describe('booking wizard URL state (D-028, D-096)', () => {
     expect(parse(path.split('?')[1]!).selection).toEqual(selection);
     expect(
       wizardNotice(
-        readWizardQuery(new URLSearchParams(wizardPath('x', selection, 'time', 'conflict').split('?')[1])),
+        readWizardQuery(new URLSearchParams(wizardPath('x', selection, 'date', 'conflict').split('?')[1])),
       ),
     ).toBe('conflict');
     expect(wizardNotice(readWizardQuery(new URLSearchParams('notice=<script>')))).toBeNull();

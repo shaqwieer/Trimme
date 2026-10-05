@@ -2,7 +2,7 @@
   "metadata": {
     "appName": "TRIMME",
     "title": "TRIMME — Book your next haircut",
-    "description": "Discover nearby barbers and salons and book a real available appointment in seconds."
+    "description": "Discover nearby specialists and salons and book a real available appointment in seconds."
   },
   "common": {
     "skipToContent": "Skip to content",
@@ -159,7 +159,7 @@
       "dismiss": "Dismiss notification"
     },
     "shopCard": {
-      "verified": "Verified shop",
+      "verified": "Verified salon",
       "addFavorite": "Add to favorites",
       "removeFavorite": "Remove from favorites",
       "from": "From {price}"
@@ -208,7 +208,7 @@
       "Arrived": "Arrived",
       "Completed": "Completed",
       "CancelledByCustomer": "Cancelled by customer",
-      "CancelledByShop": "Cancelled by shop",
+      "CancelledByShop": "Cancelled by salon",
       "NoShow": "No-show"
     },
     "subscription": {
@@ -303,7 +303,7 @@
     },
     "completeProfile": {
       "title": "Complete your profile",
-      "subtitle": "What should we call you? Shops see your name on your bookings.",
+      "subtitle": "What should we call you? Salons see your name on your bookings.",
       "nameLabel": "Full name",
       "languageLabel": "App and message language",
       "arabic": "العربية",
@@ -387,7 +387,7 @@
       "bookings": "My appointments",
       "favorites": "Favourites",
       "payment": "Payment",
-      "paymentValue": "At the shop",
+      "paymentValue": "At the salon",
       "privacy": "Privacy & data",
       "terms": "Terms of use"
     },
@@ -428,7 +428,7 @@
     "invitation_email_registered": "An account with this email already exists.",
     "rate_limit_exceeded": "Too many requests in a short time. Wait a moment and try again.",
     "server_unexpected": "Something went wrong. Please try again.",
-    "shop_not_found": "The shop was not found.",
+    "shop_not_found": "The salon was not found.",
     "shop_invalid_transition": "The shop cannot change to this status.",
     "shop_profile_field_locked": "The platform admin has locked this field.",
     "resource_concurrency_conflict": "Someone else changed this a moment ago. Reload the page and edit again.",
@@ -461,13 +461,13 @@
     "availability_professional_not_eligible": "This professional does not provide this service.",
     "booking_slot_unavailable": "That time was just booked. Pick another one.",
     "booking_not_found": "The appointment was not found.",
-    "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the shop directly.",
+    "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the TRIMME team.",
     "booking_not_reschedulable": "This appointment can't be changed now.",
     "booking_invalid_transition": "This appointment's status can't change now.",
-    "booking_shop_not_accepting": "The shop isn't taking online bookings right now.",
+    "booking_shop_not_accepting": "The salon isn't taking online bookings right now.",
     "booking_offer_not_found": "The service is no longer offered.",
     "booking_offer_not_online_bookable": "This service can't be booked online.",
-    "booking_professional_not_eligible": "This barber doesn't offer this service.",
+    "booking_professional_not_eligible": "This specialist doesn't offer this service.",
     "booking_profile_incomplete": "Add your name to your profile before booking.",
     "idempotency_key_reused": "The request changed while sending. Try again.",
     "review_already_exists": "You already rated this visit.",
@@ -1382,15 +1382,15 @@
   "publicNav": {
     "label": "Main navigation",
     "home": "Home",
-    "shops": "Shops",
+    "shops": "Salons",
     "discover": "Nearby",
     "signIn": "Sign in",
-    "findBarber": "Find a barber"
+    "findBarber": "Find a salon"
   },
   "footer": {
     "label": "Site links",
     "tagline": "Book a real, available appointment at a salon near you, with confirmations on WhatsApp.",
-    "shops": "Shops",
+    "shops": "Salons",
     "terms": "Terms of use",
     "privacy": "Privacy policy",
     "rights": "© {year} TRIMME. All rights reserved."
@@ -1407,33 +1407,33 @@
   "landing": {
     "meta": {
       "title": "Your next haircut, booked in a minute",
-      "description": "Find nearby barbershops, compare real available times and book with the barber you choose. Confirmation and reminders arrive on WhatsApp.",
-      "heroImageAlt": "A barber finishing a customer's haircut in a modern barbershop"
+      "description": "Find nearby salons, compare real available times and book with the specialist you choose. Confirmation and reminders arrive on WhatsApp.",
+      "heroImageAlt": "A specialist finishing a customer's haircut in a modern salon"
     },
     "badge": "Now available in {city}",
-    "badgeGeneric": "Barbers near you, ready to book",
+    "badgeGeneric": "Salons near you, ready to book",
     "title": "Your next haircut, booked in a minute.",
-    "lead": "See real available times, choose the barber you want and confirm your visit without calling or waiting for a reply.",
+    "lead": "See real available times, choose the specialist you want and confirm your visit without calling or waiting for a reply.",
     "search": {
-      "label": "Search for a service or a shop",
+      "label": "Search for a service or a salon",
       "placeholder": "Search for a salon",
       "location": "Your location",
       "locationUnset": "Use my location",
       "submit": "Book now"
     },
-    "browse": "Browse top-rated shops",
+    "browse": "Browse top-rated salons",
     "heroCard": {
       "title": "Your appointment is confirmed",
       "body": "Details and a reminder arrive on WhatsApp"
     },
-    "heroImageAlt": "A barber finishing a customer's haircut in a modern barbershop",
+    "heroImageAlt": "A specialist finishing a customer's haircut in a modern salon",
     "topRated": {
       "eyebrow": "Popular near you",
-      "title": "Top-rated shops worth a look",
-      "titleCity": "Top-rated shops in {city}",
+      "title": "Top-rated salons worth a look",
+      "titleCity": "Top-rated salons in {city}",
       "body": "Compare ratings, services and prices, then choose the appointment that fits your day.",
-      "viewAll": "View all nearby shops",
-      "empty": "No published shops match this view yet. Browse all shops to keep looking."
+      "viewAll": "View all nearby salons",
+      "empty": "No published salons match this view yet. Browse all salons to keep looking."
     },
     "faq": {
       "eyebrow": "Good to know",
@@ -1441,55 +1441,55 @@
       "body": "The essentials, without the fine print.",
       "cost": {
         "question": "Does it cost the customer to book?",
-        "answer": "TRIMME shows each shop's own service prices before you choose. Any payment terms are shown as part of the shop and booking details."
+        "answer": "TRIMME shows each salon's own service prices before you choose. Any payment terms are shown as part of the salon and booking details."
       },
       "download": {
         "question": "Do I need to download an app?",
-        "answer": "No. You can discover shops and complete your booking in the website from your phone."
+        "answer": "No. You can discover salons and complete your booking in the website from your phone."
       },
       "barber": {
-        "question": "Can I choose a specific barber?",
-        "answer": "Yes, when the shop offers that option. You can choose an available barber or ask for any available barber to see more times."
+        "question": "Can I choose a specific specialist?",
+        "answer": "Yes, when the salon offers that option. You can choose an available specialist or ask for any available specialist to see more times."
       },
       "confirmation": {
         "question": "How do I know the booking is confirmed?",
-        "answer": "After you confirm, the appointment is recorded in TRIMME and its details are sent through the shop's configured notification channel, including WhatsApp when enabled."
+        "answer": "After you confirm, the appointment is recorded in TRIMME and its details are sent through the salon's configured notification channel, including WhatsApp when enabled."
       },
       "changes": {
         "question": "Can I cancel or reschedule?",
-        "answer": "Open the appointment in your account to see the available cancellation or rescheduling options and the shop's policy."
+        "answer": "Open the appointment in your account to see the available cancellation or rescheduling options and the salon's policy."
       }
     },
     "finalCta": {
       "title": "Ready for a better way to book?",
-      "body": "Find a nearby shop, pick the right barber and choose a time that is actually free.",
+      "body": "Find a nearby salon, pick the right specialist and choose a time that is actually free.",
       "cta": "Find my next appointment"
     }
   },
   "shopsList": {
     "meta": {
-      "title": "Barbershops",
-      "titleCity": "Barbershops in {city}",
-      "description": "Browse the barbershops on TRIMME, compare ratings and prices, and book an available appointment."
+      "title": "Salons",
+      "titleCity": "Salons in {city}",
+      "description": "Browse the salons on TRIMME, compare ratings and prices, and book an available appointment."
     },
-    "title": "Barbershops",
-    "titleCity": "Barbershops in {city}",
-    "intro": "Every shop listed takes bookings on TRIMME, with its own prices and durations.",
+    "title": "Salons",
+    "titleCity": "Salons in {city}",
+    "intro": "Every salon listed takes bookings on TRIMME, with its own prices and durations.",
     "cities": "Cities",
     "allCities": "All cities",
-    "empty": "No shops are published in this city yet.",
-    "count": "{count, plural, =0 {No shops} one {# shop} other {# shops}}"
+    "empty": "No salons are published in this city yet.",
+    "count": "{count, plural, =0 {No salons} one {# salon} other {# salons}}"
   },
   "discover": {
     "meta": {
-      "title": "Discover nearby shops"
+      "title": "Discover nearby salons"
     },
     "yourLocation": "Your location",
     "currentLocation": "My current location",
     "setLocation": "Use my location",
     "changeLocation": "Change location: {label}",
     "search": {
-      "label": "Search for a shop or service",
+      "label": "Search for a salon or service",
       "placeholder": "Search for a salon",
       "submit": "Search"
     },
@@ -1498,22 +1498,22 @@
     "nearYou": "Near you",
     "map": "Map",
     "nearEmpty": {
-      "title": "No shops nearby",
-      "body": "There are no shops within {km} km. Widen the search or change the district.",
+      "title": "No salons nearby",
+      "body": "There are no salons within {km} km. Widen the search or change the district.",
       "cta": "Widen to {km} km"
     },
     "noLocation": {
       "title": "Set your location to see what's nearest",
-      "body": "We sort shops by distance from the place you choose, and we don't keep it on our servers.",
+      "body": "We sort salons by distance from the place you choose, and we don't keep it on our servers.",
       "cta": "Set location"
     },
     "popular": {
       "title": "Popular services",
       "from": "From {price}",
-      "shops": "{count, plural, one {# shop} other {# shops}}"
+      "shops": "{count, plural, one {# salon} other {# salons}}"
     },
     "topPros": {
-      "title": "Highly rated barbers"
+      "title": "Highly rated specialists"
     },
     "topRated": "Top rated"
   },
@@ -1522,7 +1522,7 @@
       "title": "Search results"
     },
     "back": "Back",
-    "label": "Search for a shop or service",
+    "label": "Search for a salon or service",
     "placeholder": "Search for a salon",
     "submit": "Search",
     "filters": "Filters",
@@ -1544,7 +1544,7 @@
     "list": "List",
     "mapTab": "Map",
     "empty": {
-      "title": "No matching shops",
+      "title": "No matching salons",
       "body": "Try other words, remove some filters or widen the search.",
       "widen": "Widen to {km} km",
       "clear": "Clear filters"
@@ -1556,9 +1556,9 @@
       "label": "Map of results",
       "pin": "{shop}, from {price}",
       "you": "Your location",
-      "selected": "Selected shop",
+      "selected": "Selected salon",
       "close": "Close",
-      "open": "View shop"
+      "open": "View salon"
     }
   },
   "filters": {
@@ -1576,7 +1576,7 @@
     "minPrice": "Minimum price",
     "maxPrice": "Maximum price",
     "openNow": "Open now only",
-    "verified": "Verified shops only",
+    "verified": "Verified salons only",
     "today": "Takes bookings today",
     "clear": "Clear",
     "apply": "{count, plural, =0 {No results} one {Show # result} other {Show # results}}",
@@ -1588,7 +1588,7 @@
       "title": "Set your location"
     },
     "title": "Turn on location to see what's nearest",
-    "body": "We use your location to sort shops by distance. It stays on your device, and you can change it at any time.",
+    "body": "We use your location to sort salons by distance. It stays on your device, and you can change it at any time.",
     "allow": "Allow location access",
     "manual": "Enter your district",
     "locating": "Finding your location…",
@@ -1598,7 +1598,7 @@
     "filter": "Search districts",
     "areasLabel": "Available districts",
     "noAreas": "No matching districts.",
-    "areaShops": "{count, plural, one {# shop} other {# shops}}",
+    "areaShops": "{count, plural, one {# salon} other {# salons}}",
     "skip": "Skip for now",
     "mapPreview": "Map preview",
     "sheetTitle": "Your location",
@@ -1606,28 +1606,28 @@
   },
   "shopPage": {
     "meta": {
-      "description": "{name}, {area}. See services, prices, barbers and reviews, and book an available appointment.",
-      "descriptionNoArea": "{name}. See services, prices, barbers and reviews, and book an available appointment."
+      "description": "{name}, {area}. See services, prices, specialists and reviews, and book an available appointment.",
+      "descriptionNoArea": "{name}. See services, prices, specialists and reviews, and book an available appointment."
     },
     "breadcrumb": {
       "home": "Home",
-      "shops": "Shops"
+      "shops": "Salons"
     },
     "back": "Back",
-    "gallery": "Shop photos",
+    "gallery": "Salon photos",
     "galleryImage": "Photo {index} of {total}",
     "logoAlt": "{name} logo",
     "verified": "Verified",
-    "verifiedHint": "TRIMME has checked this shop's details",
+    "verifiedHint": "TRIMME has checked this salon's details",
     "noReviews": "No reviews yet",
     "distance": "{km} away",
     "address": "Address",
     "directions": "Directions",
     "mapLabel": "{name} on the map",
     "tabs": {
-      "label": "Shop sections",
+      "label": "Salon sections",
       "services": "Services",
-      "professionals": "Barbers",
+      "professionals": "Specialists",
       "reviews": "Reviews",
       "about": "About"
     },
@@ -1638,26 +1638,25 @@
       "bookLabel": "Book {name}",
       "packages": "Packages",
       "includes": "Includes: {items}",
-      "walkInOnly": "In-shop only"
+      "walkInOnly": "In-salon only"
     },
     "pros": {
-      "title": "Barbers",
-      "empty": "No barbers are published right now.",
+      "title": "Specialists",
+      "empty": "No specialists are published right now.",
       "today": "Today {time}",
       "tomorrow": "Tomorrow {time}",
       "none": "No times soon",
       "profile": "{name}'s profile"
     },
     "about": {
-      "description": "About the shop",
+      "description": "About the salon",
       "hours": "Opening hours",
       "closed": "Closed",
-      "noHours": "The shop hasn't set its hours yet.",
+      "noHours": "The salon hasn't set its hours yet.",
       "policies": "Policies",
       "cancel": "Free cancellation up to {duration} before the appointment",
-      "payAtShop": "Pay at the shop",
+      "payAtShop": "Pay at the salon",
       "amenities": "Amenities",
-      "phone": "Shop phone",
       "category": "Type"
     },
     "footer": {
@@ -1666,11 +1665,11 @@
     },
     "paused": {
       "title": "Online booking is paused",
-      "body": "The shop has paused online booking for now. Confirmed appointments still stand."
+      "body": "The salon has paused online booking for now. Confirmed appointments still stand."
     },
     "notListed": {
       "title": "Online booking isn't available right now",
-      "body": "This shop isn't taking new bookings through TRIMME at the moment."
+      "body": "This salon isn't taking new bookings through TRIMME at the moment."
     },
     "duration": {
       "hours": "{count, plural, one {# hour} other {# hours}}",
@@ -1682,8 +1681,8 @@
       "title": "{name} — {shop}",
       "description": "{name}, {specialty} at {shop}. See services, reviews and the earliest free times, and book."
     },
-    "back": "Back to the shop",
-    "heading": "Barber",
+    "back": "Back to the salon",
+    "heading": "Specialist",
     "worksAt": "Works at {shop}",
     "next": {
       "title": "Earliest available times",
@@ -1691,12 +1690,12 @@
       "titleOn": "Earliest available times on {day}",
       "more": "+{count} more",
       "none": "No free times in the coming week.",
-      "unavailable": "This shop has paused online booking.",
+      "unavailable": "This salon has paused online booking.",
       "slot": "Book {time}"
     },
     "services": {
       "title": "Services offered",
-      "empty": "No published services for this barber."
+      "empty": "No published services for this specialist."
     },
     "reviews": {
       "title": "Latest reviews",
@@ -1723,7 +1722,7 @@
       "sections": {
         "service": {
           "title": "The service",
-          "body": "TRIMME shows the times that are free at participating salons and records your booking. The shop provides the service and sets its own prices and durations."
+          "body": "TRIMME shows the times that are free at participating salons and records your booking. The salon provides the service and sets its own prices and durations."
         },
         "account": {
           "title": "Your account",
@@ -1731,7 +1730,7 @@
         },
         "bookings": {
           "title": "Bookings and cancellation",
-          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the shop directly. There are no payments through the platform in this version; you pay at the shop."
+          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the TRIMME team. There are no payments through the platform in this version; you pay at the salon."
         },
         "reviews": {
           "title": "Reviews",
@@ -1745,11 +1744,11 @@
       "sections": {
         "data": {
           "title": "What we collect",
-          "body": "Your mobile number, name, bookings and reviews. Shops never see your mobile number."
+          "body": "Your mobile number, name, bookings and reviews. Salons never see your mobile number."
         },
         "location": {
           "title": "Your location",
-          "body": "The location you choose is kept on your device only, to sort shops by distance. We don't store it on our servers."
+          "body": "The location you choose is kept on your device only, to sort salons by distance. We don't store it on our servers."
         },
         "messages": {
           "title": "Messages",
@@ -1757,7 +1756,7 @@
         },
         "cookies": {
           "title": "Cookies",
-          "body": "We use TRIMME's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a shop's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
+          "body": "We use TRIMME's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a salon's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
         },
         "rights": {
           "title": "Your rights",
@@ -1770,13 +1769,6 @@
     "meta": {
       "title": "Book at {shop}"
     },
-    "steps": {
-      "service": "Service",
-      "professional": "Barber",
-      "date": "Date",
-      "time": "Time",
-      "review": "Review"
-    },
     "phases": {
       "shop": "Salon",
       "service": "Service",
@@ -1785,13 +1777,12 @@
     },
     "titles": {
       "service": "Choose your services",
-      "professional": "Choose the barber",
-      "date": "Choose the date",
-      "time": "Choose the time",
+      "professional": "Choose the specialist",
+      "date": "Choose the day and time",
       "review": "Review your booking"
     },
     "back": "Previous step",
-    "backToShop": "Back to the shop",
+    "backToShop": "Back to the salon",
     "next": "Next",
     "confirm": "Confirm booking",
     "loading": "Loading times…",
@@ -1801,29 +1792,29 @@
     "servicesHint": "Pick one or more services for the same visit.",
     "packagesHint": "A package is booked on its own.",
     "selectedCount": "{count, plural, one {1 service} other {# services}}",
-    "noCommonProfessional": "No single barber offers all of these services together. Remove one, or book it as a separate visit.",
+    "noCommonProfessional": "No single specialist offers all of these services together. Remove one, or book it as a separate visit.",
     "today": "Today",
     "nearest": {
       "title": "Earliest available time",
       "book": "Book this time",
       "orPick": "Or pick the day and time that suit you"
     },
-    "noServices": "This shop has no services you can book online right now.",
+    "noServices": "This salon has no services you can book online right now.",
     "any": {
-      "title": "Any available barber",
+      "title": "Any available specialist",
       "body": "We pick the earliest one for you",
       "tag": "More times"
     },
-    "noProfessionals": "No barber offers this service right now.",
+    "noProfessionals": "No specialist offers this service right now.",
     "timeZoneNote": "Times are in Riyadh time",
     "slotCount": "{count, plural, =0 {No times available} one {1 time available} other {# times available}}",
     "noDates": "There are no free times in the coming days.",
-    "tryAny": "Choose \"Any available barber\" to see more times.",
+    "tryAny": "Choose \"Any available specialist\" to see more times.",
     "durationNote": "{service} takes {duration} — only times that fit it are shown",
     "loadError": "Couldn't load the times — nothing was booked. Check your connection and try again.",
     "blocked": {
-      "paused": "The shop has paused online booking. Try later or contact the shop.",
-      "other": "This shop isn't taking online bookings right now."
+      "paused": "The salon has paused online booking. Try again later.",
+      "other": "This salon isn't taking online bookings right now."
     },
     "notices": {
       "timeGone": {
@@ -1842,20 +1833,20 @@
     "summary": {
       "service": "Service",
       "services": "Services",
-      "professional": "Barber",
-      "anyAssigned": "Any available barber — assigned when you confirm",
+      "professional": "Specialist",
+      "anyAssigned": "Any available specialist — assigned when you confirm",
       "date": "Date",
       "time": "Time",
       "duration": "Duration",
-      "total": "Total (paid at the shop)"
+      "total": "Total (paid at the salon)"
     },
     "note": {
-      "label": "Note for the barber",
+      "label": "Note for the specialist",
       "placeholder": "e.g. short fade on the sides"
     },
     "policy": {
       "title": "Cancelling and payment",
-      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the shop — there is no payment in TRIMME."
+      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the salon — there is no payment in TRIMME."
     },
     "window": {
       "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -1873,10 +1864,10 @@
     },
     "empty": {
       "title": "Your schedule is empty",
-      "body": "Book your next haircut at your favourite shops in two taps.",
+      "body": "Book your next haircut at your favourite salons in two taps.",
       "pastTitle": "No past appointments yet",
       "pastBody": "Your visits appear here once they are done.",
-      "cta": "Explore shops"
+      "cta": "Explore salons"
     },
     "actions": {
       "details": "Details",
@@ -1888,27 +1879,26 @@
     },
     "bookNext": {
       "title": "Book your next appointment",
-      "body": "Same shop, same barber, two taps"
+      "body": "Same salon, same specialist, two taps"
     },
     "detail": {
       "title": "Appointment details",
       "addToCalendar": "Add to calendar",
       "directions": "Directions",
       "rows": {
-        "shop": "Shop",
+        "shop": "Salon",
         "service": "Service",
-        "professional": "Barber",
+        "professional": "Specialist",
         "duration": "Duration",
         "reference": "Booking number",
         "note": "Your note",
         "cancellationReason": "Cancellation reason"
       },
-      "total": "Total (paid at the shop)",
+      "total": "Total (paid at the salon)",
       "policy": {
         "title": "Cancellation policy",
         "before": "You can cancel or reschedule in TRIMME for free until {time}.",
-        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the shop directly.",
-        "callShop": "Call the shop"
+        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the TRIMME team."
       },
       "window": {
         "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -1921,17 +1911,17 @@
         },
         "pending": {
           "title": "Your booking request was sent",
-          "body": "The shop will confirm it soon, and you will get a WhatsApp message."
+          "body": "The salon will confirm it soon, and you will get a WhatsApp message."
         }
       },
       "rescheduled": "Your appointment was moved.",
-      "cancelled": "The appointment was cancelled and the shop was notified.",
+      "cancelled": "The appointment was cancelled and the salon was notified.",
       "reviewed": "Your review is published — thank you."
     },
     "cancel": {
       "open": "Cancel appointment",
       "title": "Cancel the appointment on {when}?",
-      "body": "The shop is told at once and the time is offered to others. This cannot be undone.",
+      "body": "The salon is told at once and the time is offered to others. This cannot be undone.",
       "reasonLabel": "Reason (optional)",
       "reasons": {
         "emergency": "An emergency",
@@ -1945,7 +1935,7 @@
       "title": "Reschedule",
       "currentTitle": "Your current appointment stays until you confirm the new one",
       "current": "Current appointment: {when}. It stays booked until you confirm the new one.",
-      "blocked": "The shop isn't taking online changes right now.",
+      "blocked": "The salon isn't taking online changes right now.",
       "pickDate": "Pick a new date",
       "pickTime": "Available times — {date}",
       "pickPrompt": "Pick a new date and time",
@@ -1995,13 +1985,13 @@
   },
   "favorites": {
     "title": "Favourites",
-    "count": "{shops, plural, one {{shopsText} shop} other {{shopsText} shops}} · {pros, plural, one {{prosText} barber} other {{prosText} barbers}}",
-    "shops": "Shops",
-    "professionals": "Barbers",
+    "count": "{shops, plural, one {{shopsText} salon} other {{shopsText} salons}} · {pros, plural, one {{prosText} specialist} other {{prosText} specialists}}",
+    "shops": "Salons",
+    "professionals": "Specialists",
     "empty": {
       "title": "No favourites yet",
-      "body": "Tap the heart on any shop or barber to find them here quickly.",
-      "cta": "Explore shops"
+      "body": "Tap the heart on any salon or specialist to find them here quickly.",
+      "cta": "Explore salons"
     },
     "add": "Add {name} to favourites",
     "remove": "Remove {name} from favourites",
@@ -2949,11 +2939,11 @@
       "title": "{name} — book from the QR code"
     },
     "badge": {
-      "Shop": "You came in with the shop's code",
-      "Professional": "You came in with the barber's code"
+      "Shop": "You came in with the salon's code",
+      "Professional": "You came in with the specialist's code"
     },
     "intro": {
-      "Shop": "You're on this shop's page directly. Choose your service, then enter your mobile number to complete the booking.",
+      "Shop": "You're on this salon's page directly. Choose your service, then enter your mobile number to complete the booking.",
       "Professional": "You're on {name}'s page directly. Choose your service, then enter your mobile number to complete the booking."
     },
     "times": {
@@ -2969,7 +2959,7 @@
     "cta": {
       "book": "Book now",
       "caption": "Your mobile number is only asked for at confirmation",
-      "unavailable": "Online booking is not available at this shop right now."
+      "unavailable": "Online booking is not available at this salon right now."
     },
     "worksAt": "at {shop}",
     "fullPage": "Full page"

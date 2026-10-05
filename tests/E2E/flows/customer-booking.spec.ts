@@ -127,7 +127,7 @@ async function cancelFromDetail(page: Page) {
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: 'ظرف طارئ' }).click();
   await dialog.getByRole('button', { name: 'نعم، ألغِ الموعد' }).click();
-  await expect(page.getByText('تم إلغاء الموعد وأُخطر المحل.')).toBeVisible();
+  await expect(page.getByText('تم إلغاء الموعد وأُخطر الصالون.')).toBeVisible();
   await expect(page.getByTestId('booking-detail')).toContainText('ألغاه العميل');
 }
 
@@ -139,24 +139,24 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     await page.goto(`/ar/shops/${BARBER_HOUSE}`);
     await page.getByRole('link', { name: 'احجز قص وتصفيف' }).click();
     await expect(page).toHaveURL(/\/ar\/shops\/barber-house\/book\?service=/);
-    await expect(page.getByTestId('wizard-title')).toHaveText('اختر الحلاق');
-    await expect(page.getByRole('radio', { name: /أي حلاق متاح/ })).toBeChecked();
+    await expect(page.getByTestId('wizard-title')).toHaveText('اختر المختص');
+    await expect(page.getByRole('radio', { name: /أي مختص متاح/ })).toBeChecked();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expectNoSeriousAxe(page, 'wizard professional');
     await page.getByText('عمر السالم').click();
     await page.getByRole('button', { name: 'التالي' }).click();
 
-    await expect(page.getByTestId('wizard-title')).toHaveText('اختر التاريخ');
+    // The day's times show under the days at once, without a Next (D-129).
+    await expect(page.getByTestId('wizard-title')).toHaveText('اختر اليوم والوقت');
     await pickDate(page, 'date', 3);
-    await page.getByRole('button', { name: 'التالي' }).click();
-    await expect(page.getByTestId('wizard-title')).toHaveText('اختر الوقت');
+    await expect(page.getByTestId('day-times')).toBeVisible();
     await pickSlot(page, 'time');
     await expectNoSeriousAxe(page, 'wizard time');
     await page.getByRole('button', { name: 'التالي' }).click();
 
     // Review: the price is paid at the shop; nothing asks for a card (R-NEG-02).
     const review = page.getByTestId('booking-review');
-    await expect(review).toContainText('الإجمالي (يُدفع في المحل)');
+    await expect(review).toContainText('الإجمالي (يُدفع في الصالون)');
     await expect(review).toContainText('عمر السالم');
     await expect(page.locator('input[autocomplete^="cc-"], input[name*="card" i]')).toHaveCount(0);
     await expect(page.getByText(/ادفع الآن|بطاقة ائتمان|الدفع الإلكتروني/)).toHaveCount(0);
@@ -218,7 +218,6 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     // Find the first free time with Omar a week or so ahead, then bring both customers to its review step.
     await first.goto(`/ar/shops/${BARBER_HOUSE}/book?service=${CUT_AND_STYLE}&pro=${OMAR}&step=date`);
     await pickDate(first, 'date', 9);
-    await first.getByRole('button', { name: 'التالي' }).click();
     await pickSlot(first, 'time');
     await first.getByRole('button', { name: 'التالي' }).click();
     await expect(first.getByTestId('booking-review')).toBeVisible();
@@ -244,7 +243,7 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     // The loser is back on fresh times, without the taken one selected; the winner cancels to keep reruns free.
     const loser = results[0] === 'taken' ? first : second;
     const winner = results[0] === 'booked' ? first : second;
-    await expect(loser.getByTestId('wizard-title')).toHaveText('اختر الوقت');
+    await expect(loser.getByTestId('wizard-title')).toHaveText('اختر اليوم والوقت');
     await expect(loser).not.toHaveURL(/time=/);
     await expectNoSeriousAxe(loser, 'conflict');
     await cancelFromDetail(winner);
@@ -363,7 +362,7 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     // Account: payment is "at the shop" (no payment in v1), and the name can be changed.
     await page.goto('/ar/account');
     await expect(page.getByText('طريقة الدفع')).toBeVisible();
-    await expect(page.getByText('في المحل')).toBeVisible();
+    await expect(page.getByText('في الصالون')).toBeVisible();
     await expectNoSeriousAxe(page, 'account');
     await page.getByRole('link', { name: 'تعديل البيانات الشخصية' }).click();
     await page.getByLabel('الاسم الكامل').fill('ليان محمد القحطاني');

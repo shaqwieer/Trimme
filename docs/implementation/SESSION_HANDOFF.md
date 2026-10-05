@@ -23,6 +23,13 @@
   - Creating a shop lands on its Services tab.
   - An existing OperationsManager role needs the permission granted by hand.
 - **Gap to raise:** admins cannot set a shop's opening hours.
+- **Fourth request (D-129):**
+  - Customer wording changed from «حلاق / محل» to «صالون / مختص» (dashboards unchanged).
+  - The wizard has four steps: the day's times show under the days.
+  - The month is shown on the date chips.
+  - The salon phone is removed from the public API and all customer pages.
+  - `SlotStepMinutes` = 15 on the demo database.
+  - Open: there is no TRIMME support contact for customers yet.
 - **Third request (D-128):**
   - No "from" price on the shop page bar (now a centred «احجز الآن») or on the shop cards.
   - The search button reads «احجز الآن».

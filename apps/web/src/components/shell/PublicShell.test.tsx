@@ -13,11 +13,11 @@ describe('PublicShell landing navigation', () => {
     );
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' });
-    expect(within(navigation).getByRole('link', { name: 'Shops' })).toHaveAttribute('href', '/en/shops');
+    expect(within(navigation).getByRole('link', { name: 'Salons' })).toHaveAttribute('href', '/en/shops');
     expect(within(navigation).getByRole('link', { name: 'Nearby' })).toHaveAttribute('href', '/en/discover');
     expect(within(navigation).queryByRole('link', { name: 'How it works' })).not.toBeInTheDocument();
     expect(within(navigation).queryByRole('link', { name: 'For shop owners' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Find a barber' })).toHaveAttribute('href', '/en/shops');
+    expect(screen.getByRole('link', { name: 'Find a salon' })).toHaveAttribute('href', '/en/shops');
   });
 
   it('does not show landing-only navigation on standard marketing pages', () => {
@@ -29,7 +29,7 @@ describe('PublicShell landing navigation', () => {
     );
 
     expect(screen.queryByRole('link', { name: 'For shop owners' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Find a barber' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Find a salon' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Nearby' })).toHaveAttribute('href', '/en/discover');
   });
 });

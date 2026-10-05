@@ -155,8 +155,10 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const dialog = page.getByRole('dialog', { name: 'إلغاء الموعد؟' });
     await dialog.getByLabel('سبب الإلغاء').fill('طلب العميل تأجيله');
     await dialog.getByRole('button', { name: 'نعم، ألغِ الموعد' }).click();
-    await expect(drawer).toContainText('ألغاه المحل');
-    await expect(watcher.getByTestId('appointments-board')).toContainText('ألغاه المحل', { timeout: 15_000 });
+    await expect(drawer).toContainText('ألغاه الصالون');
+    await expect(watcher.getByTestId('appointments-board')).toContainText('ألغاه الصالون', {
+      timeout: 15_000,
+    });
 
     // Another shop's booking is simply not found (tenant from the session, R-TEN-06).
     const foreign = await page.request.get(`/api/v1/shop/bookings/${AL_ASALA_BOOKING}`);

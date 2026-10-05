@@ -18121,7 +18121,6 @@
           "descriptionAr",
           "descriptionEn",
           "category",
-          "publicPhone",
           "amenities",
           "isVerified",
           "logoUrl",
@@ -18166,12 +18165,6 @@
           },
           "category": {
             "$ref": "#/components/schemas/ShopCategory"
-          },
-          "publicPhone": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "amenities": {
             "type": "array",
@@ -18247,7 +18240,7 @@
             "format": "date-time"
           }
         },
-        "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. The phone is the\nshop\u0027s own business number; professional and customer numbers are never part of a public contract (R-PRO-02). The\nresponse is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed)."
+        "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. No phone number\nat all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a\npublic contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed)."
       },
       "PublicShopStatusResponse": {
         "required": [
