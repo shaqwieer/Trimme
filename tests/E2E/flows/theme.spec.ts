@@ -56,7 +56,7 @@ test.describe('dark mode (D-124)', () => {
 
     await page
       .getByRole('navigation', { name: 'Main navigation' })
-      .getByRole('link', { name: 'Shops' })
+      .getByRole('link', { name: 'Salons' })
       .click();
     await page.waitForURL('**/en/shops');
     await expectBackground(page, DARK_PAGE);

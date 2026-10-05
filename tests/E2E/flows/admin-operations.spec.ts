@@ -129,7 +129,7 @@ test.describe('admin operations (Phase 14)', () => {
     await page.getByRole('dialog').getByLabel('Reason').fill('Shop closed that day');
     await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
     await expect(page.getByText('The booking was updated.')).toBeVisible();
-    await expect(page.getByText('Cancelled by shop').first()).toBeVisible();
+    await expect(page.getByText('Cancelled by salon').first()).toBeVisible();
 
     // Both interventions are in the activity log with their reasons.
     await page.goto(`/en/admin/audit?entityType=Booking&entityId=${bookingId}`);
