@@ -597,8 +597,7 @@
       "body": "Every shop has its own services, prices and durations. Add its services here and pick the barbers who do each one.",
       "add": "Add a service to this shop",
       "empty": "This shop has no services yet",
-      "emptyBody": "Add the first service so customers can book.",
-      "barbers": "{count, plural, =0 {No barber} one {1 barber} other {# barbers}}"
+      "emptyBody": "Add the first service so customers can book."
     }
   },
   "shopCategory": {

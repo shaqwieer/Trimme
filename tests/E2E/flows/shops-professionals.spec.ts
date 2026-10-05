@@ -75,8 +75,17 @@ test.describe('shops, locations and professionals (R-SHP-01/02, R-PRO-01, R-NEG-
     await page.getByLabel('Shop name in English').fill('Map Salon');
     await page.getByLabel('Shop page link').fill(slug);
     await page.getByRole('button', { name: 'Create shop' }).click();
-    await expect(page).toHaveURL(/\/en\/admin\/shops\/[0-9a-f-]{36}$/);
-    const shopId = page.url().split('/').pop()!;
+    // A new shop opens on its Services tab, ready for its own services (D-127).
+    await expect(page).toHaveURL(/\/en\/admin\/shops\/[0-9a-f-]{36}\?tab=services$/);
+    const shopId = new URL(page.url()).pathname.split('/').pop()!;
+    const services = page.getByTestId('shop-services-card');
+    await expect(services.getByText('This shop has no services yet')).toBeVisible();
+    await expect(services.getByRole('link', { name: 'Add a service to this shop' })).toHaveAttribute(
+      'href',
+      `/en/admin/services/new?shopId=${shopId}`,
+    );
+    await page.getByRole('link', { name: 'Profile & images' }).click();
+    await expect(page).toHaveURL(/tab=profile/);
 
     // Profile and images.
     const profile = page.getByTestId('shop-profile-form');
