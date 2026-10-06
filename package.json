@@ -23,6 +23,9 @@
       "ignoreCves": [
         "CVE-2026-93687"
       ]
+    },
+    "overrides": {
+      "source-map-js": "^1.2.2"
     }
   }
 }
