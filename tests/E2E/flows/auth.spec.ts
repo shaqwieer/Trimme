@@ -73,7 +73,7 @@ async function signUpCustomer(page: Page, national: string, name: string) {
   await page.getByLabel('الاسم الكامل').fill(name);
   await page.getByLabel(/أوافق على/).check();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
-  await expect(page).toHaveURL(/\/ar\/account$/);
+  await expect(page).toHaveURL(/\/ar\/discover$/);
 }
 
 test.describe('customer mobile sign-up and sessions (E1 auth, R-AUTH-01/05)', () => {
@@ -106,7 +106,9 @@ test.describe('customer mobile sign-up and sessions (E1 auth, R-AUTH-01/05)', ()
     await page.getByLabel(/أوافق على/).check();
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
 
-    await expect(page).toHaveURL(/\/ar\/account$/);
+    // Signing in lands on the customer home (D-130); the account page shows the new profile.
+    await expect(page).toHaveURL(/\/ar\/discover$/);
+    await page.goto('/ar/account');
     await expect(page.getByText('ريم العتيبي')).toBeVisible();
     await expect(page.getByText(`+966 5•• ••• •${national.slice(-2)}`)).toBeVisible();
     await expectNoTokensReachable(page);
@@ -138,7 +140,7 @@ test.describe('customer mobile sign-up and sessions (E1 auth, R-AUTH-01/05)', ()
     await expect(laptopPage).toHaveURL(/\/ar\/auth\/verify/);
     await laptopPage.getByLabel('رمز التحقق').fill(await latestOtp(laptopPage.request, national));
     await laptopPage.getByRole('button', { name: 'تحقق' }).click();
-    await expect(laptopPage).toHaveURL(/\/ar\/account$/);
+    await expect(laptopPage).toHaveURL(/\/ar\/discover$/);
 
     await laptopPage.goto('/ar/account/security');
     await expect(laptopPage.getByTestId('sessions').locator('li')).toHaveCount(2);

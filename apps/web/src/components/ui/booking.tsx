@@ -233,7 +233,21 @@ export function HourMinutePicker({
         : hours.length === 1
           ? hours[0]
           : undefined;
-  const minutes = slots.filter((slot) => hourOf(slot) === hour);
+  // Every 5 minutes of the hour, :00 to :55 (D-130): the free ones can be picked, the rest are shown greyed out.
+  const inHour = slots.filter((slot) => hourOf(slot) === hour);
+  const minutes = inHour[0]
+    ? Array.from({ length: 12 }, (_, index) => {
+        const minute = String(index * 5).padStart(2, '0');
+        const free = inHour.find((slot) => slot.localTime.slice(3, 5) === minute);
+        const anchor = inHour[0]!;
+        const offset = (index * 5 - Number(anchor.localTime.slice(3, 5))) * 60_000;
+        return {
+          minute,
+          free,
+          start: free?.start ?? new Date(Date.parse(anchor.start) + offset).toISOString(),
+        };
+      })
+    : [];
   const chip =
     'relative flex min-h-11 cursor-pointer items-center justify-center rounded-field border-[1.5px] border-border-input bg-surface px-2 text-[0.84375rem] font-bold text-text-strong transition-colors hover:border-brand-500 has-checked:border-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]';
 
@@ -267,19 +281,31 @@ export function HourMinutePicker({
         <fieldset className="flex min-w-0 flex-col">
           <legend className="pb-2.5 text-label font-bold text-text-strong">{t('minute')}</legend>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(82px,1fr))] gap-2">
-            {minutes.map((slot) => (
-              <label key={slot.start} className={chip}>
-                <input
-                  type="radio"
-                  name={name}
-                  value={slot.start}
-                  checked={value === slot.start}
-                  onChange={() => onValueChange(slot.start)}
-                  className="sr-only"
-                />
-                {formatTime(slot.start, locale, timeZone)}
-              </label>
-            ))}
+            {minutes.map((entry) =>
+              entry.free ? (
+                <label key={entry.minute} className={chip}>
+                  <input
+                    type="radio"
+                    name={name}
+                    value={entry.free.start}
+                    checked={value === entry.free.start}
+                    onChange={() => onValueChange(entry.free!.start)}
+                    className="sr-only"
+                  />
+                  {formatTime(entry.start, locale, timeZone)}
+                </label>
+              ) : (
+                <span
+                  key={entry.minute}
+                  aria-disabled="true"
+                  title={t('taken')}
+                  className="flex min-h-11 cursor-not-allowed items-center justify-center rounded-field border-[1.5px] border-border-row bg-bg-muted px-2 text-[0.84375rem] font-bold text-text-disabled line-through"
+                >
+                  <span className="sr-only">{t('taken')}: </span>
+                  {formatTime(entry.start, locale, timeZone)}
+                </span>
+              ),
+            )}
           </div>
         </fieldset>
       ) : (

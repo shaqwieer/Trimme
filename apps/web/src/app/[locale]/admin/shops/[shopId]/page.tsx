@@ -116,12 +116,15 @@ export default async function AdminShopPage({
         } else if (tab === 'subscription') {
           content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
         } else if (tab === 'services') {
-          const { data: services } = me.permissions.includes('Admin.ShopServices.View')
-            ? await api.GET('/api/v1/admin/services', {
-                params: { query: { shopId: shop.id, pageSize: 100 } },
-              })
-            : { data: undefined };
+          const canView = me.permissions.includes('Admin.ShopServices.View');
+          const [{ data: services }, { data: packages }] = canView
+            ? await Promise.all([
+                api.GET('/api/v1/admin/services', { params: { query: { shopId: shop.id, pageSize: 100 } } }),
+                api.GET('/api/v1/admin/packages', { params: { query: { shopId: shop.id, pageSize: 100 } } }),
+              ])
+            : [{ data: undefined }, { data: undefined }];
           const live = (services?.items ?? []).filter((service) => !service.isArchived);
+          const livePackages = (packages?.items ?? []).filter((item) => !item.isArchived);
           const canManage = me.permissions.includes('Admin.ShopServices.Manage');
           content = (
             <Card title={t('services.title')} testId="shop-services-card">
@@ -157,6 +160,47 @@ export default async function AdminShopPage({
                   className="self-start"
                 >
                   {t('services.add')}
+                </ButtonLink>
+              )}
+              <h3 className="pt-3 text-label font-bold text-text-strong">{t('services.packagesTitle')}</h3>
+              {livePackages.length > 0 ? (
+                <ul className="flex flex-col divide-y divide-border-row" data-testid="shop-packages">
+                  {livePackages.map((item) => (
+                    <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
+                      {canManage ? (
+                        <Link
+                          href={`/admin/packages/${item.id}`}
+                          className="min-w-0 flex-1 font-bold text-text-link hover:underline"
+                        >
+                          {localizedName(lang, item.nameAr, item.nameEn)}
+                        </Link>
+                      ) : (
+                        <span className="min-w-0 flex-1 font-bold text-text-primary">
+                          {localizedName(lang, item.nameAr, item.nameEn)}
+                        </span>
+                      )}
+                      <span className="font-latin text-label font-bold text-navy-900">
+                        {formatPrice(item.price, lang, item.currency)}
+                      </span>
+                      <span className="text-helper text-text-secondary">
+                        {formatDurationMinutes(item.durationMinutes, lang)}
+                      </span>
+                      <CatalogStatusBadge item={item} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-helper text-text-secondary">{t('services.noPackages')}</p>
+              )}
+              {canManage && live.length > 1 && (
+                <ButtonLink
+                  href={`/admin/packages/new?shopId=${shop.id}`}
+                  variant="outline"
+                  size="md"
+                  icon="plus"
+                  className="self-start"
+                >
+                  {t('services.addPackage')}
                 </ButtonLink>
               )}
             </Card>

@@ -5,5 +5,5 @@ import { safeReturnTo } from '@/lib/auth/paths';
 export default async function SessionPage({ searchParams }: PageProps<'/[locale]/auth/session'>) {
   const query = await searchParams;
   const raw = Array.isArray(query.returnTo) ? query.returnTo[0] : query.returnTo;
-  return <SessionRestore returnTo={safeReturnTo(raw, '/account')} />;
+  return <SessionRestore returnTo={safeReturnTo(raw, '/discover')} />;
 }

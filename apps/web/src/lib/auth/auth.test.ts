@@ -35,7 +35,7 @@ describe('returnTo is same-origin only (open-redirect guard)', () => {
   it('sends each user type to its home and encodes returnTo', () => {
     expect(homeFor('PlatformAdmin')).toBe('/admin');
     expect(homeFor('ShopUser')).toBe('/shop');
-    expect(homeFor('Customer')).toBe('/account');
+    expect(homeFor('Customer')).toBe('/discover');
     expect(withReturnTo('/auth/sign-in', '/a?b=c')).toBe('/auth/sign-in?returnTo=%2Fa%3Fb%3Dc');
   });
 });

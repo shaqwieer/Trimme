@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { PackageForm } from '@/components/catalog/PackageForm';
 import { ServiceForm, type ServiceFormProfessional } from '@/components/catalog/ServiceForm';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField, TextareaField, TextField } from '@/components/ui/inputs';
@@ -201,6 +202,48 @@ export function AdminServiceEditor({
           await browserApi.POST('/api/v1/admin/shops/{shopId}/services', {
             params: { path: { shopId } },
             body: { ...body, version: 0, professionalIds },
+          }),
+        );
+        router.push(`/admin/shops/${shopId}?tab=services`);
+        router.refresh();
+        return 'navigated';
+      }}
+    />
+  );
+}
+
+/**
+ * The admin builds a shop's packages for it (D-130): a new package for `shopId`, or an edit of `pkg`, of that shop's own
+ * services with its own price and duration. A new package goes back to the shop's services tab.
+ */
+export function AdminPackageEditor({
+  shopId,
+  pkg,
+  services,
+}: {
+  shopId: string;
+  pkg?: Schemas['ShopPackageResponse'];
+  services: Schemas['AdminServiceListItem'][];
+}) {
+  const router = useRouter();
+  return (
+    <PackageForm
+      services={services}
+      pkg={pkg}
+      onSubmitValues={async (body) => {
+        if (pkg) {
+          ensureOk(
+            await browserApi.PUT('/api/v1/admin/packages/{packageId}', {
+              params: { path: { packageId: pkg.id } },
+              body: { ...body, version: pkg.version },
+            }),
+          );
+          return;
+        }
+        ensureOk(
+          await browserApi.POST('/api/v1/admin/shops/{shopId}/packages', {
+            params: { path: { shopId } },
+            body: { ...body, version: 0 },
           }),
         );
         router.push(`/admin/shops/${shopId}?tab=services`);

@@ -28,7 +28,7 @@ export function homeFor(userType: string): string {
     case 'ShopUser':
       return '/shop';
     default:
-      return '/account';
+      return '/discover';
   }
 }
 

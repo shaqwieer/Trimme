@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { safeReturnTo, withReturnTo } from '@/lib/auth/paths';
 import { calendarDaysUntil, changeDeadline, cutoffParts, endOf, timeUntil } from './format';
 import {
+  allServicesFor,
   ANY_PROFESSIONAL,
   combineOffers,
   currentStep,
@@ -167,6 +168,14 @@ describe('several services in one booking (D-125)', () => {
     expect(combineOffers([HAIRCUT])).toBe(HAIRCUT);
     expect(combineOffers([])).toBeUndefined();
     expect(parse(`service=${HAIRCUT.id}&service=${BEARD.id}&pro=omar`).selection.pro).toBe(ANY_PROFESSIONAL);
+  });
+
+  it('"All services" takes every service of the chosen specialist, or of the one who does the most', () => {
+    expect(allServicesFor(OFFERS, PROS, 'sultan').map((o) => o.id)).toEqual([BEARD.id]);
+    expect(allServicesFor(OFFERS, PROS, 'majed').map((o) => o.id)).toEqual([HAIRCUT.id, BEARD.id]);
+    expect(allServicesFor(OFFERS, PROS, ANY_PROFESSIONAL).map((o) => o.id)).toEqual([HAIRCUT.id, BEARD.id]);
+    // Packages are never part of it.
+    expect(allServicesFor(OFFERS, PROS, 'omar').every((o) => o.kind === 'service')).toBe(true);
   });
 
   it('writes every service into the URL and keys the request on all of them', () => {

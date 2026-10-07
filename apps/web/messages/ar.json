@@ -33,7 +33,8 @@
     "search": "بحث",
     "account": "الحساب",
     "shopEyebrow": "BUSINESS",
-    "adminEyebrow": "PLATFORM ADMIN"
+    "adminEyebrow": "PLATFORM ADMIN",
+    "shopTabs": "صفحات الصالون الأساسية"
   },
   "nav": {
     "customer": {
@@ -48,8 +49,7 @@
       "calendar": "التقويم",
       "appointments": "المواعيد",
       "walkIn": "حجز حضوري",
-      "schedule": "الدوام والإجازات",
-      "services": "الخدمات",
+      "schedule": "الدوام والبريكات",
       "subscription": "الاشتراك",
       "notifications": "الإشعارات",
       "settings": "إعدادات المحل",
@@ -131,7 +131,8 @@
       "hour": "اختر الساعة",
       "minute": "اختر الدقيقة",
       "pickHour": "اختر ساعة لعرض الدقائق المتاحة فيها.",
-      "minutesCount": "{count, plural, one {وقت واحد} two {وقتان} few {# أوقات} many {# وقتاً} other {# وقت}}"
+      "minutesCount": "{count, plural, one {وقت واحد} two {وقتان} few {# أوقات} many {# وقتاً} other {# وقت}}",
+      "taken": "غير متاح"
     },
     "calendar": {
       "previousMonth": "الشهر السابق",
@@ -597,7 +598,10 @@
       "body": "لكل محل خدماته وأسعاره ومدده الخاصة. أضف خدماته هنا واختر الحلاقين الذين يقدّمون كل خدمة.",
       "add": "إضافة خدمة لهذا المحل",
       "empty": "لا توجد خدمات في هذا المحل بعد",
-      "emptyBody": "أضف أول خدمة ليتمكن العملاء من الحجز."
+      "emptyBody": "أضف أول خدمة ليتمكن العملاء من الحجز.",
+      "packagesTitle": "باقات الصالون",
+      "noPackages": "لا توجد باقات بعد.",
+      "addPackage": "إضافة باقة"
     }
   },
   "shopCategory": {
@@ -956,7 +960,10 @@
       "editBody": "يتغيّر السعر والمدة لهذا المحل وحده. يُسجَّل التعديل في سجل النشاط.",
       "create": "إضافة الخدمة",
       "save": "حفظ التعديلات",
-      "noShop": "افتح المحل أولاً ثم أضف الخدمة من تبويب «الخدمات»."
+      "noShop": "افتح المحل أولاً ثم أضف الخدمة من تبويب «الخدمات».",
+      "newPackageTitle": "باقة جديدة",
+      "editPackageTitle": "تعديل الباقة",
+      "packageNotFound": "الباقة غير موجودة"
     },
     "categories": {
       "caption": "تصنيفات الخدمات",
@@ -1488,15 +1495,7 @@
     "currentLocation": "موقعي الحالي",
     "setLocation": "استخدم موقعي",
     "changeLocation": "تغيير الموقع: {label}",
-    "search": {
-      "label": "ابحث عن صالون أو خدمة",
-      "placeholder": "ابحث عن صالون",
-      "submit": "بحث"
-    },
-    "categories": "التصنيفات",
-    "all": "الكل",
-    "nearYou": "قريب منك",
-    "map": "الخريطة",
+    "nearYou": "الصالونات القريبة منك",
     "nearEmpty": {
       "title": "لا توجد صالونات قريبة",
       "body": "لا توجد صالونات ضمن {km} كم — وسّع نطاق البحث أو غيّر الحي.",
@@ -1507,15 +1506,8 @@
       "body": "نرتب الصالونات حسب المسافة من الموقع الذي تختاره، ولا نحفظه على خوادمنا.",
       "cta": "تحديد الموقع"
     },
-    "popular": {
-      "title": "خدمات شائعة",
-      "from": "من {price}",
-      "shops": "{count, plural, one {صالون واحد} two {صالونان} few {# صالونات} many {# صالوناً} other {# صالون}}"
-    },
-    "topPros": {
-      "title": "مختصون بتقييم عالٍ"
-    },
-    "topRated": "الأعلى تقييماً"
+    "topRatedSalons": "الصالونات الأعلى تقييماً",
+    "allSalons": "كل الصالونات"
   },
   "search": {
     "meta": {
@@ -1853,7 +1845,8 @@
       "minutes": "{count, plural, one {دقيقة} two {دقيقتين} few {# دقائق} many {# دقيقة} other {# دقيقة}}"
     },
     "signInNote": "عند التأكيد نطلب رقم جوالك ونرسل لك رمز تحقق على واتساب، ثم نعيدك إلى هذه الخطوة.",
-    "customersOnly": "الحجز متاح لحسابات العملاء فقط. سجّل الدخول بحساب عميل."
+    "customersOnly": "الحجز متاح لحسابات العملاء فقط. سجّل الدخول بحساب عميل.",
+    "allServices": "كل الخدمات"
   },
   "bookings": {
     "title": "مواعيدي",
@@ -2716,7 +2709,9 @@
       "review_shop_contacted": "مراسلة المحل بشأن تقييم",
       "whatsapp_dispatch_retried": "إعادة إرسال رسالة واتساب",
       "whatsapp_template_activated": "تفعيل نسخة قالب واتساب",
-      "whatsapp_template_test_sent": "إرسال تجربة قالب واتساب"
+      "whatsapp_template_test_sent": "إرسال تجربة قالب واتساب",
+      "package_admin_created": "أضاف المشرف باقة",
+      "package_admin_updated": "عدّل المشرف باقة"
     }
   },
   "notifications": {

@@ -220,7 +220,7 @@ test.describe('public discovery (Phase 11)', () => {
   }) => {
     await page.goto('/ar/discover');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
-    await expect(page.getByRole('heading', { name: /قريب منك|الأعلى تقييماً/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /القريبة منك|الأعلى تقييماً/ })).toBeVisible();
     await expectNoSeriousAxe(page, '/ar/discover');
 
     await page.goto('/ar/shops');

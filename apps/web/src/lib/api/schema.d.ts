@@ -293,6 +293,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a package of a shop's own services to that shop, with its own price and duration (audited). */
+        post: operations["AdminCreatePackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/service-categories": {
         parameters: {
             query?: never;
@@ -1911,6 +1928,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/packages/{packageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One shop package with its services. */
+        get: operations["AdminGetPackage"];
+        /** Edits a shop's package (optimistic concurrency, audited). */
+        put: operations["AdminUpdatePackage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/packages": {
         parameters: {
             query?: never;
@@ -3501,6 +3536,29 @@ export interface components {
             isArchived: boolean;
             moderation: components["schemas"]["ModerationState"];
             moderationReason: null | string;
+        };
+        /** @description An admin's package for a shop (D-130): the shop's own price and duration, of that shop's services. */
+        AdminPackageRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            descriptionAr: null | string;
+            descriptionEn: null | string;
+            /** Format: double */
+            price: number;
+            /** Format: int32 */
+            durationMinutes: number;
+            serviceIds: string[];
+            /**
+             * Format: uint32
+             * @default 0
+             */
+            version: number;
+        };
+        /** @description One shop's package for the admin who manages that shop's catalogue (D-130). */
+        AdminPackageResponse: {
+            /** Format: uuid */
+            shopId: string;
+            package: components["schemas"]["ShopPackageResponse"];
         };
         /** @description A professional in the admin list. */
         AdminProfessionalListItem: {
@@ -6939,6 +6997,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminCreatePackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPackageRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageResponse"];
                 };
             };
             /** @description Bad Request */
@@ -11152,6 +11254,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminServiceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdatePackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                packageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPackageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPackageResponse"];
                 };
             };
             /** @description Bad Request */

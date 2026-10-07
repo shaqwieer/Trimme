@@ -38,52 +38,48 @@ async function csrf(context: BrowserContext, request: APIRequestContext): Promis
 }
 
 test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
-  test('shop creates a service with its own price and duration, edits, reorders and archives it', async ({
-    page,
+  test('the salon owner has no services page; the admin adds the salon’s package from its Services tab (D-130)', async ({
+    browser,
   }) => {
-    const name = `حلاقة تجربة ${Date.now().toString(36)}`;
-    await staffSignIn(page, 'owner@barber-house.trimme.local', DEMO_PASSWORD);
-    await page.goto('/en/shop/services');
-    await expect(page.getByTestId('shop-services')).toBeVisible();
-    await expectNoSeriousAxeViolations(page);
+    const ownerContext = await browser.newContext();
+    const owner = await ownerContext.newPage();
+    await staffSignIn(owner, 'owner@barber-house.trimme.local', DEMO_PASSWORD);
+    await expect(owner.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
+    const gone = await owner.goto('/en/shop/services');
+    expect(gone?.status()).toBe(404);
 
-    await page.getByRole('link', { name: 'Add service' }).click();
-    const form = page.getByTestId('service-form');
-    await form.getByLabel('Service name in Arabic').fill(name);
-    await form.getByLabel('Price (SAR)').fill('٧٢٫٥'); // Arabic-Indic digits and decimal separator
-    await form.getByLabel('Duration').selectOption('45');
-    await form.getByRole('button', { name: 'Create service' }).click();
-    await expect(page).toHaveURL(/\/en\/shop\/services\/[0-9a-f-]{36}$/);
-    const serviceId = page.url().split('/').pop()!;
-    await expect(page.getByRole('heading', { name })).toBeVisible();
+    const adminContext = await browser.newContext();
+    const admin = await adminContext.newPage();
+    await staffSignIn(admin, ADMIN_EMAIL, ADMIN_PASSWORD);
+    const shops = await (await admin.request.get('/api/v1/admin/shops?search=Barber%20House')).json();
+    const shopId = shops.items[0].id as string;
+    await admin.goto(`/en/admin/shops/${shopId}?tab=services`);
+    await admin.getByRole('link', { name: 'Add a package' }).click();
+    await expect(admin).toHaveURL(/\/en\/admin\/packages\/new\?shopId=/);
+    const name = `باقة تجربة ${Date.now().toString(36)}`;
+    const form = admin.getByTestId('package-form');
+    await form
+      .getByLabel(/name in Arabic/i)
+      .first()
+      .fill(name);
+    await form.getByLabel(/Price/).fill('99');
+    const choices = form.getByRole('checkbox');
+    await choices.nth(0).check();
+    await choices.nth(1).check();
+    await expectNoSeriousAxeViolations(admin);
+    await form.getByRole('button').last().click();
+    await expect(admin).toHaveURL(new RegExp(`/en/admin/shops/${shopId}\\?tab=services`));
+    const listed = admin.getByTestId('shop-packages').getByRole('link', { name });
+    await expect(listed).toBeVisible();
 
-    await form.getByLabel('Price (SAR)').fill('80');
-    await form.getByLabel('Duration').selectOption('50');
-    await form.getByRole('button', { name: 'Save changes' }).click();
-    await expect(page.getByText('Changes saved.')).toBeVisible();
-
-    const saved = await (await page.request.get(`/api/v1/shop/services/${serviceId}`)).json();
-    expect(saved.price).toBe(80);
-    expect(saved.durationMinutes).toBe(50);
-
-    // Keyboard reorder: the new service is last; move it up once.
-    await page.goto('/en/shop/services');
-    const row = page.getByTestId(`catalog-row-${serviceId}`);
-    await expect(row).toContainText('SAR 80');
-    await expect(row).toContainText('50 min');
-    const moveUp = row.getByRole('button', { name: `Move ${name} up` });
-    await moveUp.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByText(new RegExp(`${name} moved to position`))).toBeAttached();
-
-    // Off, then archive (confirm).
-    await row.getByRole('switch', { name: `${name}: bookable` }).click();
-    await expect(row).toContainText('Off');
-    await row.getByRole('button', { name: `Archive ${name}` }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
-    await expect(page.getByTestId(`catalog-row-${serviceId}`)).toHaveCount(0);
-    await page.getByRole('link', { name: 'Show archived' }).click();
-    await expect(page.getByTestId(`catalog-row-${serviceId}`)).toContainText('Archived');
+    // Leave the demo shop clean: retire the package this run created.
+    const id = ((await listed.getAttribute('href')) ?? '').split('/').pop()!;
+    const archived = await owner.request.post(`/api/v1/shop/packages/${id}/archive`, {
+      headers: { 'X-CSRF-Token': await csrf(ownerContext, owner.request) },
+    });
+    expect(archived.status()).toBe(200);
+    await adminContext.close();
+    await ownerContext.close();
   });
 
   test('admin moderates, edits the shop’s service and assigns only the shop’s own services', async ({

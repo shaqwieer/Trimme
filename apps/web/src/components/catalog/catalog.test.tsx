@@ -1,7 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { components } from '@/lib/api/schema';
 import { DURATION_OPTIONS, parsePrice } from '@/lib/forms/price';
 import { localizedName } from '@/lib/i18n/localized';
 import { expectNoAxeViolations } from '@/test/axe';
@@ -9,32 +8,9 @@ import { renderWithIntl } from '@/test/render';
 // After the render helper, which mocks Next's router before anything imports it.
 import { AdminServiceEditor } from '@/components/admin/AdminCatalog';
 import { ServiceForm } from './ServiceForm';
-import { ShopCatalogList } from './ShopCatalogLists';
 
 const api = vi.hoisted(() => ({ PUT: vi.fn(), POST: vi.fn(), DELETE: vi.fn() }));
 vi.mock('@/lib/api/client', () => ({ browserApi: api }));
-
-type Service = components['schemas']['ShopServiceResponse'];
-
-const service = (id: string, nameAr: string, order: number): Service => ({
-  id,
-  nameAr,
-  nameEn: null,
-  descriptionAr: null,
-  descriptionEn: null,
-  categoryId: null,
-  price: 60,
-  currency: 'SAR',
-  durationMinutes: 30,
-  onlineBookable: true,
-  isActive: true,
-  isArchived: false,
-  displayOrder: order,
-  moderation: 'Visible',
-  moderationReason: null,
-  assignedProfessionalCount: 0,
-  version: 1,
-});
 
 beforeEach(() => {
   api.PUT.mockReset();
@@ -72,7 +48,7 @@ describe('localizedName (D-070)', () => {
 
 describe('ServiceForm', () => {
   it('validates the price in the active language before calling the API', async () => {
-    renderWithIntl(<ServiceForm categories={[]} />);
+    renderWithIntl(<ServiceForm categories={[]} onSubmitValues={async () => {}} />);
     await userEvent.type(screen.getByLabelText('اسم الخدمة بالعربية'), 'حلاقة');
     await userEvent.type(screen.getByLabelText('السعر (ر.س)'), '10.005');
     await userEvent.click(screen.getByRole('button', { name: 'إنشاء الخدمة' }));
@@ -161,54 +137,5 @@ describe('AdminServiceEditor (D-127)', () => {
     const [path, init] = api.PUT.mock.calls[0]!;
     expect(path).toBe('/api/v1/admin/services/{serviceId}');
     expect(init.body).toMatchObject({ version: 7, professionalIds: ['faisal', 'omar'] });
-  });
-});
-
-describe('ShopCatalogList keyboard reorder', () => {
-  it('moves an item with the buttons, saves the full order and announces the new position', async () => {
-    api.PUT.mockResolvedValue({ data: [], response: new Response(null, { status: 200 }) });
-    renderWithIntl(
-      <ShopCatalogList
-        kind="services"
-        canManage
-        items={[service('a', 'حلاقة', 1), service('b', 'لحية', 2)]}
-      />,
-      { locale: 'ar' },
-    );
-
-    expect(screen.getByRole('button', { name: 'تحريك حلاقة للأعلى' })).toBeDisabled();
-    await userEvent.click(screen.getByRole('button', { name: 'تحريك لحية للأعلى' }));
-
-    await waitFor(() =>
-      expect(api.PUT).toHaveBeenCalledWith('/api/v1/shop/services/order', {
-        body: { orderedIds: ['b', 'a'] },
-      }),
-    );
-    expect(await screen.findByText('أصبحت لحية في الموضع 1')).toBeInTheDocument();
-    const rows = screen.getAllByTestId(/catalog-row-/);
-    expect(rows.map((row) => row.dataset.testid)).toEqual(['catalog-row-b', 'catalog-row-a']);
-  });
-
-  it('rolls the move back when the save fails', async () => {
-    api.PUT.mockResolvedValue({
-      error: { errorCode: 'server.unexpected' },
-      response: new Response(null, { status: 500 }),
-    });
-    renderWithIntl(
-      <ShopCatalogList
-        kind="services"
-        canManage
-        items={[service('a', 'حلاقة', 1), service('b', 'لحية', 2)]}
-      />,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: 'تحريك لحية للأعلى' }));
-    await waitFor(() => expect(api.PUT).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(screen.getAllByTestId(/catalog-row-/).map((row) => row.dataset.testid)).toEqual([
-        'catalog-row-a',
-        'catalog-row-b',
-      ]),
-    );
   });
 });

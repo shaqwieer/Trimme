@@ -10,7 +10,7 @@ import { cn } from '@/lib/cn';
 import { AdminNotificationBell, NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeMenu } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { activeHref, adminNav, shopNav, visibleItems } from './navigation';
+import { activeHref, adminNav, shopNav, shopTabKeys, visibleItems } from './navigation';
 
 type DashboardShellProps = {
   variant: 'shop' | 'admin';
@@ -30,7 +30,8 @@ type DashboardShellProps = {
  * Shop and admin dashboard layout (design s-overview / a-overview):
  * ≥1200px a fixed 264px navy sidebar on the inline-start side (right in Arabic);
  * below 1200px the same navigation opens in a <Sheet> drawer (Radix Dialog: focus trap, Escape,
- * focus return — D-048).
+ * focus return — D-048). The shop also gets an app-style bottom tab bar below 1200px with its four everyday pages
+ * (D-130); the drawer keeps the rest.
  */
 export function DashboardShell({
   variant,
@@ -95,10 +96,64 @@ export function DashboardShell({
         </div>
       </header>
 
-      <main id="main" tabIndex={-1} className="px-4 py-6 outline-none md:px-6 lg:px-8">
+      <main
+        id="main"
+        tabIndex={-1}
+        className={cn(
+          'px-4 py-6 outline-none md:px-6 lg:px-8',
+          variant === 'shop' &&
+            'pb-[calc(var(--layout-bottom-nav-height)+1.5rem+env(safe-area-inset-bottom))] lg:pb-6',
+        )}
+      >
         {children}
       </main>
+      {variant === 'shop' && <ShopTabBar permissions={permissions} />}
     </div>
+  );
+}
+
+/** The shop's bottom tab bar on phones and tablets (D-130): overview, hours and breaks, walk-in, appointments. */
+function ShopTabBar({ permissions }: { permissions?: readonly string[] }) {
+  const t = useTranslations();
+  const pathname = usePathname();
+  const items = shopTabKeys
+    .map((key) => shopNav.find((item) => item.key === key)!)
+    .filter((item) => visibleItems([item], permissions).length > 0);
+  if (items.length === 0) return null;
+  const current = activeHref(
+    pathname,
+    visibleItems(shopNav, permissions).map((i) => i.href),
+  );
+  return (
+    <nav
+      aria-label={t('shell.shopTabs')}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+      data-testid="shop-tab-bar"
+    >
+      <ul
+        className="mx-auto grid h-[var(--layout-bottom-nav-height)] max-w-[640px]"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
+        {items.map(({ key, href, icon: Icon }) => {
+          const active = current === href;
+          return (
+            <li key={key} className="flex">
+              <Link
+                href={href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex min-h-11 flex-1 flex-col items-center justify-center gap-1 px-1 text-center text-nav leading-tight transition-colors',
+                  active ? 'font-bold text-navy-900' : 'font-medium text-text-secondary',
+                )}
+              >
+                <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={active ? 2 : 1.75} />
+                <span className="line-clamp-1">{t(`nav.shop.${key}`)}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 

@@ -40,6 +40,7 @@ import {
   type WizardStep,
   wizardPath,
   withItems,
+  allServicesFor,
 } from '@/lib/booking/wizard';
 import { cutoffParts, endOf } from '@/lib/booking/format';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
@@ -421,7 +422,15 @@ export function BookingWizard({
 
         {step === 'service' && (
           <>
-            <ServiceStep offers={offers} value={items} onToggle={toggle} />
+            <ServiceStep
+              offers={offers}
+              value={items}
+              onToggle={toggle}
+              onSelectAll={() => {
+                const all = allServicesFor(offers, professionals, pro);
+                if (all.length > 0) go(withItems(selection, all, professionals), 'service', 'replace');
+              }}
+            />
             {noCommonPro && <InlineAlert tone="warning" title={t('noCommonProfessional')} />}
           </>
         )}
@@ -725,10 +734,12 @@ function ServiceStep({
   offers,
   value,
   onToggle,
+  onSelectAll,
 }: {
   offers: WizardOffer[];
   value: WizardOffer[];
   onToggle: (offer: WizardOffer) => void;
+  onSelectAll: () => void;
 }) {
   const t = useTranslations('booking');
   const locale = useLocale() as AppLocale;
@@ -745,9 +756,16 @@ function ServiceStep({
           <legend className="pb-1 text-label font-bold text-text-strong">
             {t(group.kind === 'service' ? 'services' : 'packages')}
           </legend>
-          <p className="pb-2.5 text-helper text-text-secondary">
-            {t(group.kind === 'service' ? 'servicesHint' : 'packagesHint')}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5">
+            <p className="text-helper text-text-secondary">
+              {t(group.kind === 'service' ? 'servicesHint' : 'packagesHint')}
+            </p>
+            {group.kind === 'service' && group.items.length > 1 && (
+              <Button variant="outline" size="sm" icon="check" onClick={onSelectAll}>
+                {t('allServices')}
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
             {group.items.map((o) => {
               const description = localizedText(locale, o.descriptionAr, o.descriptionEn);

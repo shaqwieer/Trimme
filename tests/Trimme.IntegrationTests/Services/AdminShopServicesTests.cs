@@ -87,4 +87,49 @@ public sealed class AdminShopServicesTests(PostgresFixture postgres)
         var audit = await db.Set<AuditEntry>().AsNoTracking().Where(e => e.EntityId == id.ToString()).OrderBy(e => e.Sequence).ToListAsync(ct);
         audit.Select(a => a.Action).ShouldBe(["service.admin_created", "service.admin_updated", "service.admin_updated"]);
     }
+
+    [Fact]
+    public async Task Admin_AddsAndEditsAShopsPackage_OfItsOwnServices_Published_AndAudited()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "pkg_admin_build", ct);
+        using var support = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.Support, ct);
+        using var anonymous = ApiSession.Create(w.Factory);
+        var shopA = w.Shops.A.ShopId;
+        object Body(decimal price, IEnumerable<Guid> serviceIds, uint version = 0) => new
+        {
+            nameAr = "باقة الشعر واللحية",
+            nameEn = "Hair and beard",
+            descriptionAr = (string?)null,
+            descriptionEn = (string?)null,
+            price,
+            durationMinutes = 50,
+            serviceIds,
+            version,
+        };
+
+        (await support.PostAsync($"/api/v1/admin/shops/{shopA}/packages", Body(70m, [w.Haircut, w.Beard]), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        await FailsAsync(w.Admin.PostAsync($"/api/v1/admin/shops/{shopA}/packages", Body(70m, [w.Haircut, w.ServiceB]), ct), HttpStatusCode.BadRequest, "serviceIds", ct);
+
+        var created = await OkAsync(w.Admin.PostAsync($"/api/v1/admin/shops/{shopA}/packages", Body(70m, [w.Haircut, w.Beard]), ct), ct, HttpStatusCode.Created);
+        created.GetProperty("shopId").GetGuid().ShouldBe(shopA);
+        var package = created.GetProperty("package");
+        var id = package.GetProperty("id").GetGuid();
+        package.GetProperty("price").GetDecimal().ShouldBe(70m);
+        package.GetProperty("items").GetArrayLength().ShouldBe(2);
+
+        var published = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/packages", ct), ct);
+        published.EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldContain(id);
+
+        var read = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/packages/{id}", ct), ct);
+        var version = read.GetProperty("package").GetProperty("version").GetUInt32();
+        await FailsAsync(w.Admin.PutAsync($"/api/v1/admin/packages/{id}", Body(75m, [w.Haircut, w.Beard], version + 1), ct), HttpStatusCode.Conflict, null, ct);
+        var edited = await OkAsync(w.Admin.PutAsync($"/api/v1/admin/packages/{id}", Body(75m, [w.Haircut, w.Beard], version), ct), ct);
+        edited.GetProperty("package").GetProperty("price").GetDecimal().ShouldBe(75m);
+
+        await using var scope = w.Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<TrimmeDbContext>();
+        var audit = await db.Set<AuditEntry>().AsNoTracking().Where(e => e.EntityId == id.ToString()).OrderBy(e => e.Sequence).ToListAsync(ct);
+        audit.Select(a => a.Action).ShouldBe(["package.admin_created", "package.admin_updated"]);
+    }
 }

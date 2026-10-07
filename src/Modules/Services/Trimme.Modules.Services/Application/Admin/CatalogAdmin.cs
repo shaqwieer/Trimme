@@ -89,6 +89,9 @@ public sealed record AdminPackageListItem(
     ModerationState Moderation,
     string? ModerationReason);
 
+/// <summary>One shop's package for the admin who manages that shop's catalogue (D-130).</summary>
+public sealed record AdminPackageResponse(Guid ShopId, ShopPackageResponse Package);
+
 public sealed record ProfessionalServiceOption(
     Guid ServiceId,
     string NameAr,
@@ -171,6 +174,30 @@ internal sealed record AdminUpdateServiceCommand(
     IReadOnlyList<Guid>? ProfessionalIds,
     uint Version) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
 
+/// <summary>A package an admin adds to a shop (D-130): the shop's own price and duration, of that shop's services.</summary>
+internal sealed record AdminCreatePackageCommand(
+    Guid ShopId,
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    decimal Price,
+    int DurationMinutes,
+    IReadOnlyList<Guid> ServiceIds) : ICommand<Result<AdminPackageResponse>>, ICatalogTextFields;
+
+internal sealed record AdminUpdatePackageCommand(
+    Guid PackageId,
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    decimal Price,
+    int DurationMinutes,
+    IReadOnlyList<Guid> ServiceIds,
+    uint Version) : ICommand<Result<AdminPackageResponse>>, ICatalogTextFields;
+
+internal sealed record GetAdminPackageQuery(Guid PackageId) : IQuery<AdminPackageResponse?>;
+
 internal sealed record ListAdminPackagesQuery(PageRequest Page, Guid? ShopId, CatalogStateFilter? State, string? Search)
     : IQuery<PagedResponse<AdminPackageListItem>>;
 
@@ -224,6 +251,16 @@ internal sealed class OverrideServiceValidator : AbstractValidator<OverrideServi
         RuleFor(c => c.Reason).Must(r => (r?.Trim().Length ?? 0) >= 5).WithErrorCode("validation.reason_required")
             .MaximumLength(500).WithErrorCode("validation.too_long");
     }
+}
+
+internal sealed class AdminCreatePackageValidator : AbstractValidator<AdminCreatePackageCommand>
+{
+    public AdminCreatePackageValidator() => Include(new CatalogTextRules<AdminCreatePackageCommand>());
+}
+
+internal sealed class AdminUpdatePackageValidator : AbstractValidator<AdminUpdatePackageCommand>
+{
+    public AdminUpdatePackageValidator() => Include(new CatalogTextRules<AdminUpdatePackageCommand>());
 }
 
 internal sealed class AdminCreateServiceValidator : AbstractValidator<AdminCreateServiceCommand>
@@ -641,6 +678,104 @@ internal sealed class AdminUpdateServiceHandler(
             changes.Count == 0 ? "No changes" : string.Join("; ", changes)));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
+    }
+}
+
+/// <summary>An admin's package work for one shop (D-130): items are that shop's own non-archived services.</summary>
+internal static class AdminPackages
+{
+    public static async Task<Result<IReadOnlyList<ShopServiceId>>> ItemsAsync(
+        TrimmeDbContext db, ShopId shopId, IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
+    {
+        var requested = ids.Select(id => new ShopServiceId(id)).ToList();
+        var found = await db.Set<ShopService>()
+            .CountAsync(s => requested.Contains(s.Id) && s.ShopId == shopId && !s.IsArchived, cancellationToken);
+        return found == requested.Distinct().Count() ? requested : CatalogErrors.ItemsNotInShop();
+    }
+
+    public static async Task<AdminPackageResponse> ReadAsync(TrimmeDbContext db, ServicePackage package, CancellationToken cancellationToken) =>
+        new(package.ShopId.Value, CatalogMapping.ToResponse(package, await CatalogMapping.ServicesOfAsync(db, [package], cancellationToken)));
+}
+
+internal sealed class GetAdminPackageHandler(TrimmeDbContext db, IAdminDataScope scope) : IQueryHandler<GetAdminPackageQuery, AdminPackageResponse?>
+{
+    public async Task<AdminPackageResponse?> Handle(GetAdminPackageQuery query, CancellationToken cancellationToken)
+    {
+        using var _ = scope.Begin();
+        var id = new ServicePackageId(query.PackageId);
+        var package = await db.Set<ServicePackage>().AsNoTracking().Include(p => p.Items).SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
+        return package is null ? null : await AdminPackages.ReadAsync(db, package, cancellationToken);
+    }
+}
+
+/// <summary>An admin adds a package to a shop (D-130), next in its order, audited.</summary>
+internal sealed class AdminCreatePackageHandler(TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IAuditLog audit, TimeProvider clock)
+    : ICommandHandler<AdminCreatePackageCommand, Result<AdminPackageResponse>>
+{
+    public async Task<Result<AdminPackageResponse>> Handle(AdminCreatePackageCommand command, CancellationToken cancellationToken)
+    {
+        using var _ = scope.Begin();
+        var shopId = new ShopId(command.ShopId);
+        if (await shops.FindAsync(shopId, cancellationToken) is null)
+        {
+            return Error.NotFound("shop.not_found", "The shop was not found.");
+        }
+
+        var items = await AdminPackages.ItemsAsync(db, shopId, command.ServiceIds ?? [], cancellationToken);
+        if (items.IsFailure)
+        {
+            return items.Error;
+        }
+
+        var order = (await db.Set<ServicePackage>().Where(p => p.ShopId == shopId).MaxAsync(p => (int?)p.DisplayOrder, cancellationToken) ?? 0) + 1;
+        var created = ServicePackage.Create(
+            EntityId.New<ServicePackageId>(), shopId, CatalogMapping.Text(command), command.Price, command.DurationMinutes, items.Value, order, clock.GetUtcNow());
+        if (created.IsFailure)
+        {
+            return created.Error;
+        }
+
+        db.Add(created.Value);
+        audit.Record(new AuditRecord(
+            "package.admin_created", nameof(ServicePackage), created.Value.Id.ToString(), shopId,
+            string.Create(CultureInfo.InvariantCulture, $"{created.Value.Price:0.00} {created.Value.Currency}, {created.Value.DurationMinutes} min, {items.Value.Count} services")));
+        await db.SaveChangesAsync(cancellationToken);
+        return await AdminPackages.ReadAsync(db, created.Value, cancellationToken);
+    }
+}
+
+/// <summary>An admin edits a shop's package (D-130): optimistic concurrency, audited.</summary>
+internal sealed class AdminUpdatePackageHandler(TrimmeDbContext db, IAdminDataScope scope, IAuditLog audit, TimeProvider clock)
+    : ICommandHandler<AdminUpdatePackageCommand, Result<AdminPackageResponse>>
+{
+    public async Task<Result<AdminPackageResponse>> Handle(AdminUpdatePackageCommand command, CancellationToken cancellationToken)
+    {
+        using var _ = scope.Begin();
+        var id = new ServicePackageId(command.PackageId);
+        if (await db.Set<ServicePackage>().Include(p => p.Items).SingleOrDefaultAsync(p => p.Id == id, cancellationToken) is not { } package)
+        {
+            return CatalogErrors.PackageNotFound();
+        }
+
+        var items = await AdminPackages.ItemsAsync(db, package.ShopId, command.ServiceIds ?? [], cancellationToken);
+        if (items.IsFailure)
+        {
+            return items.Error;
+        }
+
+        var before = (package.Price, package.DurationMinutes);
+        db.Entry(package).Property(p => p.Version).OriginalValue = command.Version;
+        var updated = package.Update(CatalogMapping.Text(command), command.Price, command.DurationMinutes, items.Value, clock.GetUtcNow());
+        if (updated.IsFailure)
+        {
+            return updated.Error;
+        }
+
+        audit.Record(new AuditRecord(
+            "package.admin_updated", nameof(ServicePackage), package.Id.ToString(), package.ShopId,
+            string.Create(CultureInfo.InvariantCulture, $"Price {before.Price:0.00} → {package.Price:0.00}; duration {before.DurationMinutes} → {package.DurationMinutes} min; {items.Value.Count} services")));
+        await db.SaveChangesAsync(cancellationToken);
+        return await AdminPackages.ReadAsync(db, package, cancellationToken);
     }
 }
 

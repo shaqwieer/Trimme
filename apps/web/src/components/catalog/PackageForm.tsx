@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
-import { browserApi } from '@/lib/api/client';
-import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
+import { useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
 import { FormTextareaField, FormTextField, useValidationMessage, useZodForm } from '@/lib/forms/fields';
@@ -19,7 +18,11 @@ import { requiredText, withParams } from '@/lib/forms/validation';
 import { formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 
-type Service = components['schemas']['ShopServiceResponse'];
+/** The services a package can hold: the shop's own (its own list, or the admin's list of that shop). */
+type Service = Pick<
+  components['schemas']['ShopServiceResponse'],
+  'id' | 'nameAr' | 'nameEn' | 'price' | 'currency' | 'durationMinutes' | 'isArchived'
+>;
 type Package = components['schemas']['ShopPackageResponse'];
 
 const optionalText = (max: number) =>
@@ -53,8 +56,31 @@ const FIELDS = [
 ] as const;
 const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 
-/** A package of the shop's own services (D-020): own price and total duration; items kept in the list's order. */
-export function PackageForm({ services, pkg }: { services: Service[]; pkg?: Package }) {
+/** The body a package save sends (create or edit). */
+export type PackageBody = {
+  nameAr: string;
+  nameEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  price: number;
+  durationMinutes: number;
+  serviceIds: string[];
+};
+
+/**
+ * A package of the shop's own services (D-020): own price and total duration; items kept in the list's order. The admin
+ * building a shop's catalogue (D-130) saves through `onSubmitValues`.
+ */
+export function PackageForm({
+  services,
+  pkg,
+  onSubmitValues,
+}: {
+  services: Service[];
+  pkg?: Package;
+  /** The save (the admin's, D-130); resolve to `'navigated'` when it moved to another page. */
+  onSubmitValues: (body: PackageBody) => Promise<void | 'navigated'>;
+}) {
   const t = useTranslations('shopServices.form');
   const tServices = useTranslations('shopServices');
   const locale = useLocale();
@@ -94,18 +120,9 @@ export function PackageForm({ services, pkg }: { services: Service[]; pkg?: Pack
       serviceIds,
     };
     try {
-      if (pkg) {
-        ensureOk(
-          await browserApi.PUT('/api/v1/shop/packages/{packageId}', {
-            params: { path: { packageId: pkg.id } },
-            body: { ...body, version: pkg.version },
-          }),
-        );
+      if ((await onSubmitValues(body)) !== 'navigated') {
         setSaved(true);
         router.refresh();
-      } else {
-        ensureOk(await browserApi.POST('/api/v1/shop/packages', { body }));
-        router.push('/shop/services?tab=packages');
       }
     } catch (error) {
       if (error instanceof ApiError && error.isValidation)

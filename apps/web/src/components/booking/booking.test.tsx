@@ -337,6 +337,26 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     });
   });
 
+  it('"All services" picks every service one specialist does, so the set can be booked (D-130)', async () => {
+    const user = userEvent.setup();
+    availability();
+    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'] };
+    renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'all-services' }}
+        offers={[SERVICE, BEARD, COLOR]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'كل الخدمات' }));
+    // Majed does the beard and the colour; Omar the cut and the beard: a tie keeps the first specialist, Omar.
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /تهذيب لحية/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /صبغة/ })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeEnabled();
+  });
+
   it('says when no single specialist does every chosen service', async () => {
     const user = userEvent.setup();
     availability();
@@ -608,6 +628,12 @@ describe('HourMinutePicker (D-125)', () => {
     expect(screen.getByText('اختر ساعة لعرض الدقائق المتاحة فيها.')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /١١ ص/ }));
     expect(screen.queryByRole('radio', { name: /١٠:٣٠/ })).not.toBeInTheDocument();
+    // Every 5 minutes of the hour is shown (D-130); the taken ones are greyed out and cannot be picked.
+    const minutesGroup = screen.getByRole('group', { name: 'اختر الدقيقة' });
+    expect(minutesGroup.querySelectorAll('label, [aria-disabled="true"]')).toHaveLength(12);
+    expect(within(minutesGroup).getAllByRole('radio')).toHaveLength(1);
+    const taken = [...minutesGroup.querySelectorAll('[aria-disabled="true"]')];
+    expect(taken.some((el) => el.textContent?.includes('١١:٢٠'))).toBe(true);
     await user.click(screen.getByRole('radio', { name: /١١:١٥/ }));
     expect(onValueChange).toHaveBeenCalledWith('2026-10-01T08:15:00Z');
     await expectNoAxeViolations(container);

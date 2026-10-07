@@ -56,7 +56,7 @@ async function signUp(page: Page, name: string) {
   await page.getByLabel('الاسم الكامل').fill(name);
   await page.getByLabel(/أوافق على/).check();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
-  await expect(page).toHaveURL(/\/ar\/account$/);
+  await expect(page).toHaveURL(/\/ar\/discover$/);
 }
 
 /** YYYY-MM-DD in Riyadh, `days` from today. */

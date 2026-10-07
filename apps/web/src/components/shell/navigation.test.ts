@@ -7,7 +7,7 @@ describe('navigation config', () => {
     const hrefs = shopNav.map((item) => item.href);
     expect(activeHref('/shop', hrefs)).toBe('/shop');
     expect(activeHref('/shop/calendar', hrefs)).toBe('/shop/calendar');
-    expect(activeHref('/shop/services/123', hrefs)).toBe('/shop/services');
+    expect(activeHref('/shop/qr/123/poster', hrefs)).toBe('/shop/qr');
     expect(activeHref('/shopping', hrefs)).toBeUndefined();
   });
 

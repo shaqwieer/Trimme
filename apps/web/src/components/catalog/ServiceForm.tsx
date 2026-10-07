@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField, Switch } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
-import { browserApi } from '@/lib/api/client';
-import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
+import { useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
 import { FormTextareaField, FormTextField, useValidationMessage, useZodForm } from '@/lib/forms/fields';
@@ -74,10 +73,10 @@ export function ServiceForm({
   service?: Service | components['schemas']['AdminServiceResponse'];
   submitLabel?: string;
   /**
-   * Custom save (admin). Defaults to the shop's own create/update. Resolve to `'navigated'` when it moved to another
-   * page, so the form does not refresh this one.
+   * The save (the admin's, D-127/D-130). Resolve to `'navigated'` when it moved to another page, so the form does not
+   * refresh this one.
    */
-  onSubmitValues?: (
+  onSubmitValues: (
     body: components['schemas']['UpdateShopServiceRequest'],
     reason: string,
     professionalIds: string[],
@@ -134,20 +133,7 @@ export function ServiceForm({
       version: service?.version ?? 0,
     };
     try {
-      if (onSubmitValues) {
-        if ((await onSubmitValues(body, values.reason, values.professionalIds)) === 'navigated') return;
-      } else if (service) {
-        ensureOk(
-          await browserApi.PUT('/api/v1/shop/services/{serviceId}', {
-            params: { path: { serviceId: service.id } },
-            body,
-          }),
-        );
-      } else {
-        const created = ensureOk(await browserApi.POST('/api/v1/shop/services', { body }));
-        router.push(`/shop/services/${created.id}`);
-        return;
-      }
+      if ((await onSubmitValues(body, values.reason, values.professionalIds)) === 'navigated') return;
       setSaved(true);
       router.refresh();
     } catch (error) {

@@ -51,12 +51,17 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'appointments', href: '/shop/appointments', icon: List, permission: 'Shop.Bookings.Read' },
   { key: 'walkIn', href: '/shop/walk-in', icon: Plus, permission: 'Shop.Bookings.CreateWalkIn' },
   { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Schedule.Read' },
-  { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
   { key: 'subscription', href: '/shop/subscription', icon: CreditCard, permission: 'Shop.Subscription.Read' },
   { key: 'qr', href: '/shop/qr', icon: QrCode, permission: 'Shop.Qr.View' },
   { key: 'notifications', href: '/shop/notifications', icon: Bell },
   { key: 'settings', href: '/shop/settings', icon: Settings, permission: 'Shop.Profile.Edit' },
 ];
+
+/**
+ * The shop's four everyday tabs, as a bottom bar on phones and tablets (D-130), in reading order: the operational
+ * overview first (right in Arabic), then hours and breaks, walk-in, and the appointments (left in Arabic).
+ */
+export const shopTabKeys = ['overview', 'schedule', 'walkIn', 'appointments'] as const;
 
 export const adminNav: NavItem<'admin'>[] = [
   { key: 'overview', href: '/admin', icon: BarChart3, permission: 'Admin.Dashboard.View' },

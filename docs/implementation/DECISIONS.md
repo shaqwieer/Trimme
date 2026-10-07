@@ -1222,3 +1222,24 @@ This refines D-126.
 - **Slots every 15 minutes.** The platform setting `SlotStepMinutes` was set to 15 on the demo deployment (it was 5), so each hour offers :00/:15/:30/:45.
   - The count still differs from hour to hour, by design: existing bookings, the service's duration (it must end before closing or the next booking) and the minimum lead time remove starts.
   - The code default is unchanged (CI and the seed keep 5).
+
+## D-130 — Every minute shown, "all services", the catalogue is the admin's, a shop tab bar, a two-part customer home — Accepted (Session 15, after Phase 17, at the client's request)
+- **Every 5 minutes, unavailable ones greyed.** In the wizard each hour shows :00 to :55. The free starts can be picked; the others are greyed out, struck through and marked «غير متاح». The slot API still returns only bookable starts (D-009), and the grid is filled in on the web. The demo's `SlotStepMinutes` goes back to 5 (D-129 had set 15).
+- **«كل الخدمات».** A button on the services step selects every service one specialist does: the chosen specialist's, or, with "any", the specialist who does the most (first on a tie), so the set stays bookable back to back with one specialist. Choosing services by hand still warns when no one specialist does them all. Splitting one visit across several specialists was not chosen.
+- **The catalogue is the admin's only.**
+  - The shop dashboard no longer has «الخدمات»: the nav item is gone, and `/shop/services*` and `/shop/packages*` are deleted (404), with the shop's catalogue list component.
+  - The admin adds and edits a shop's services (D-127) and now its packages:
+    - `POST /admin/shops/{id}/packages`, `GET`/`PUT /admin/packages/{id}`;
+    - `Admin.ShopServices.Manage`, the shop's own non-archived services only, optimistic concurrency, audited (`package.admin_created|updated`);
+    - from the shop's Services tab, with `/admin/packages/new?shopId=` and `/admin/packages/{id}`.
+  - `ServiceForm` and `PackageForm` now always save through the admin.
+  - The shop's catalogue API and its `Shop.Services.Manage` permission remain (the owner role still holds it), so API clients and the existing tests keep working; nothing in the shop UI reaches it.
+- **The shop's bottom tab bar.**
+  - Below `lg`, the shop dashboard has an app-style bar with its four everyday pages. In Arabic, from the right: النظرة التشغيلية، الدوام والبريكات، حجز حضوري، المواعيد. Each tab shows only with its permission.
+  - The drawer keeps everything else (calendar, settings, QR, subscription, notifications).
+  - The schedule's navigation label is «الدوام والبريكات» ("Hours & breaks").
+- **A two-part customer home.**
+  - `/discover` (the «الرئيسية» tab) is the TRIMME logo centred and larger, with «حدد موقعك لعرض الأقرب إليك» (or the chosen place to change) right under it, then the salons: «الصالونات الأعلى تقييماً», or the nearest once a location is set, with «كل الصالونات».
+  - The search box, category chips, popular services and top specialists are removed.
+  - Signing in, or completing the profile, without a `returnTo` now lands there instead of `/account`.
+- **QR.** Checked on the demo: codes are active from creation and encode `https://trimme.net/q/{code}`; a scan opens the code's salon page. No change.

@@ -145,6 +145,8 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/services`, `GET /api/v1/admin/services/{id}`, `GET /api/v1/admin/packages` | `Admin.ShopServices.View` · paged |
 | `POST /api/v1/admin/services/{id}/moderation`, `POST /api/v1/admin/packages/{id}/moderation` | `Admin.ShopServices.Moderate` · hide needs a reason · audited |
 | `PUT /api/v1/admin/services/{id}/override` | `Admin.ShopServices.SupportOverride` · reason required · audited before → after |
+| `POST /api/v1/admin/shops/{shopId}/packages`, `PUT /api/v1/admin/packages/{id}` | `Admin.ShopServices.Manage` · the shop's own non-archived services only (D-130) · audited |
+| `GET /api/v1/admin/packages/{id}` | `Admin.ShopServices.View` |
 | `POST /api/v1/admin/shops/{shopId}/services`, `PUT /api/v1/admin/services/{id}` | `Admin.ShopServices.Manage` · the admin builds the shop's catalogue for it (D-127): the shop's own price and duration, the shop's own barbers only (`professionalIds`) · audited |
 | `GET /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.View` |
 | `PUT /api/v1/admin/professionals/{id}/services` | `Admin.Professionals.AssignServices` · the professional's own shop's services only · audited |

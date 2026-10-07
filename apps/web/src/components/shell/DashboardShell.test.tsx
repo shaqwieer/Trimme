@@ -20,6 +20,38 @@ describe('DashboardShell', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'التقويم' })).toBeInTheDocument();
   });
 
+  it('gives the shop a bottom tab bar with its four everyday pages, in reading order (D-130)', () => {
+    setPathname('/ar/shop/walk-in');
+    renderWithIntl(
+      <DashboardShell
+        variant="shop"
+        title="حجز حضوري"
+        permissions={['Shop.Bookings.Read', 'Shop.Bookings.CreateWalkIn', 'Shop.Schedule.Read']}
+      >
+        <p>content</p>
+      </DashboardShell>,
+    );
+    const bar = screen.getByTestId('shop-tab-bar');
+    const links = within(bar).getAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual([
+      'النظرة التشغيلية',
+      'الدوام والبريكات',
+      'حجز حضوري',
+      'المواعيد',
+    ]);
+    expect(within(bar).getByRole('link', { name: 'حجز حضوري' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('has no tab bar on the admin dashboard', () => {
+    renderWithIntl(
+      <DashboardShell variant="admin" title="Overview">
+        <p>content</p>
+      </DashboardShell>,
+      { locale: 'en' },
+    );
+    expect(screen.queryByTestId('shop-tab-bar')).not.toBeInTheDocument();
+  });
+
   it('opens an accessible navigation drawer, traps focus and closes on Escape', async () => {
     const user = userEvent.setup();
     renderWithIntl(

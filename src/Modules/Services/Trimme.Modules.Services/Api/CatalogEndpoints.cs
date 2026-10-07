@@ -81,6 +81,17 @@ public sealed record OverrideServiceRequest(
 
 public sealed record ProfessionalServicesRequest(IReadOnlyList<Guid> ServiceIds);
 
+/// <summary>An admin's package for a shop (D-130): the shop's own price and duration, of that shop's services.</summary>
+public sealed record AdminPackageRequest(
+    string NameAr,
+    string? NameEn,
+    string? DescriptionAr,
+    string? DescriptionEn,
+    decimal Price,
+    int DurationMinutes,
+    IReadOnlyList<Guid> ServiceIds,
+    uint Version = 0);
+
 /// <summary>
 /// An admin's service for a shop (D-127): the shop's own name, price and duration, and the shop's barbers who do it.
 /// On an edit, <c>ProfessionalIds</c> null keeps them and <c>Version</c> is the one read.
@@ -271,7 +282,24 @@ internal static class CatalogEndpoints
             .WithName("AdminCreateService").WithSummary("Adds a service to a shop with the shop's own price and duration, and the shop's barbers who do it (audited).")
             .Produces<AdminServiceResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
 
+        api.MapPost("/admin/shops/{shopId:guid}/packages", async (Guid shopId, AdminPackageRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminCreatePackageCommand(shopId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.Price, r.DurationMinutes, r.ServiceIds ?? []), ct))
+                    .ToHttpResult(p => TypedResults.Created($"/api/v1/admin/packages/{p.Package.Id}", p)))
+            .RequirePermission(ServicesManage).WithTags("Admin: services")
+            .WithName("AdminCreatePackage").WithSummary("Adds a package of a shop's own services to that shop, with its own price and duration (audited).")
+            .Produces<AdminPackageResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+
         var packages = api.MapGroup("/admin/packages").WithTags("Admin: services");
+        packages.MapGet("/{packageId:guid}", async (Guid packageId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetAdminPackageQuery(packageId), ct) is { } package ? TypedResults.Ok(package) : CatalogErrors.PackageNotFound().ToProblem())
+            .RequirePermission(ServicesView)
+            .WithName("AdminGetPackage").WithSummary("One shop package with its services.")
+            .Produces<AdminPackageResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        packages.MapPut("/{packageId:guid}", async (Guid packageId, AdminPackageRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminUpdatePackageCommand(packageId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.Price, r.DurationMinutes, r.ServiceIds ?? [], r.Version), ct)).ToHttpResult())
+            .RequirePermission(ServicesManage)
+            .WithName("AdminUpdatePackage").WithSummary("Edits a shop's package (optimistic concurrency, audited).")
+            .Produces<AdminPackageResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         packages.MapGet("/", async (int? page, int? pageSize, Guid? shopId, CatalogStateFilter? state, string? search, IDispatcher d, CancellationToken ct) =>
                 TypedResults.Ok(await d.Send(new ListAdminPackagesQuery(new PageRequest(page, pageSize), shopId, state, search), ct)))
             .RequirePermission(ServicesView)

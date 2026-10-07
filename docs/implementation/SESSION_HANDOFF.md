@@ -23,6 +23,13 @@
   - Creating a shop lands on its Services tab.
   - An existing OperationsManager role needs the permission granted by hand.
 - **Gap to raise:** admins cannot set a shop's opening hours.
+- **Fifth request (D-130):**
+  - The wizard shows every 5 minutes, with unavailable ones greyed; demo `SlotStepMinutes` is back to 5.
+  - «كل الخدمات» on the services step.
+  - The shop's catalogue pages are removed; the admin manages packages through the new endpoints and pages.
+  - The shop dashboard has a bottom tab bar on phones, and the schedule label is «الدوام والبريكات».
+  - `/discover` is the logo with the location, then the salons; sign-in lands there.
+  - QR was checked and works on the demo.
 - **Fourth request (D-129):**
   - Customer wording changed from «حلاق / محل» to «صالون / مختص» (dashboards unchanged).
   - The wizard has four steps: the day's times show under the days.

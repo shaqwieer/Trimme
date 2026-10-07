@@ -125,6 +125,25 @@ export function combineOffers(items: WizardOffer[]): WizardOffer | undefined {
 }
 
 /**
+ * "All services" (D-130): every service one specialist does, so the whole set can be booked with them back to back —
+ * the chosen specialist's, or (with "any") the specialist who does the most services, the first one on a tie.
+ */
+export function allServicesFor<P extends WizardProfessional>(
+  offers: WizardOffer[],
+  pros: P[],
+  pro: string,
+): WizardOffer[] {
+  const services = offers.filter((o) => o.kind === 'service');
+  const candidates = pro === ANY_PROFESSIONAL ? pros.map((p) => p.id) : [pro];
+  let best: WizardOffer[] = [];
+  for (const id of candidates) {
+    const theirs = services.filter((s) => s.professionalIds.includes(id));
+    if (theirs.length > best.length) best = theirs;
+  }
+  return best.slice(0, MAX_SERVICES);
+}
+
+/**
  * The selection with these items. The professional stays when they do all of them (else "any"); the date and time stay
  * too, and the availability answers say whether they still fit (D-125).
  */

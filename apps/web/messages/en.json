@@ -33,7 +33,8 @@
     "search": "Search",
     "account": "Account",
     "shopEyebrow": "BUSINESS",
-    "adminEyebrow": "PLATFORM ADMIN"
+    "adminEyebrow": "PLATFORM ADMIN",
+    "shopTabs": "Main salon pages"
   },
   "nav": {
     "customer": {
@@ -48,8 +49,7 @@
       "calendar": "Calendar",
       "appointments": "Appointments",
       "walkIn": "Walk-in",
-      "schedule": "Hours & time off",
-      "services": "Services",
+      "schedule": "Hours & breaks",
       "subscription": "Subscription",
       "notifications": "Notifications",
       "settings": "Shop settings",
@@ -131,7 +131,8 @@
       "hour": "Choose the hour",
       "minute": "Choose the minutes",
       "pickHour": "Choose an hour to see its free minutes.",
-      "minutesCount": "{count, plural, one {1 time} other {# times}}"
+      "minutesCount": "{count, plural, one {1 time} other {# times}}",
+      "taken": "Unavailable"
     },
     "calendar": {
       "previousMonth": "Previous month",
@@ -597,7 +598,10 @@
       "body": "Every shop has its own services, prices and durations. Add its services here and pick the barbers who do each one.",
       "add": "Add a service to this shop",
       "empty": "This shop has no services yet",
-      "emptyBody": "Add the first service so customers can book."
+      "emptyBody": "Add the first service so customers can book.",
+      "packagesTitle": "The salon's packages",
+      "noPackages": "No packages yet.",
+      "addPackage": "Add a package"
     }
   },
   "shopCategory": {
@@ -956,7 +960,10 @@
       "editBody": "The price and duration change for this shop only. The edit is recorded in the activity log.",
       "create": "Add the service",
       "save": "Save changes",
-      "noShop": "Open the shop first, then add the service from its Services tab."
+      "noShop": "Open the shop first, then add the service from its Services tab.",
+      "newPackageTitle": "New package",
+      "editPackageTitle": "Edit the package",
+      "packageNotFound": "Package not found"
     },
     "categories": {
       "caption": "Service categories",
@@ -1488,15 +1495,7 @@
     "currentLocation": "My current location",
     "setLocation": "Use my location",
     "changeLocation": "Change location: {label}",
-    "search": {
-      "label": "Search for a salon or service",
-      "placeholder": "Search for a salon",
-      "submit": "Search"
-    },
-    "categories": "Categories",
-    "all": "All",
-    "nearYou": "Near you",
-    "map": "Map",
+    "nearYou": "Salons near you",
     "nearEmpty": {
       "title": "No salons nearby",
       "body": "There are no salons within {km} km. Widen the search or change the district.",
@@ -1507,15 +1506,8 @@
       "body": "We sort salons by distance from the place you choose, and we don't keep it on our servers.",
       "cta": "Set location"
     },
-    "popular": {
-      "title": "Popular services",
-      "from": "From {price}",
-      "shops": "{count, plural, one {# salon} other {# salons}}"
-    },
-    "topPros": {
-      "title": "Highly rated specialists"
-    },
-    "topRated": "Top rated"
+    "topRatedSalons": "Top-rated salons",
+    "allSalons": "All salons"
   },
   "search": {
     "meta": {
@@ -1853,7 +1845,8 @@
       "minutes": "{count, plural, one {1 minute} other {# minutes}}"
     },
     "signInNote": "When you confirm we ask for your mobile number and send a code on WhatsApp, then bring you back to this step.",
-    "customersOnly": "Only customer accounts can book. Sign in with a customer account."
+    "customersOnly": "Only customer accounts can book. Sign in with a customer account.",
+    "allServices": "All services"
   },
   "bookings": {
     "title": "My appointments",
@@ -2716,7 +2709,9 @@
       "review_shop_contacted": "Shop contacted about a review",
       "whatsapp_dispatch_retried": "WhatsApp message retried",
       "whatsapp_template_activated": "WhatsApp template version activated",
-      "whatsapp_template_test_sent": "WhatsApp template test sent"
+      "whatsapp_template_test_sent": "WhatsApp template test sent",
+      "package_admin_created": "Package added by an admin",
+      "package_admin_updated": "Package edited by an admin"
     }
   },
   "notifications": {
