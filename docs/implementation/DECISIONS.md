@@ -1234,6 +1234,7 @@ This refines D-126.
     - from the shop's Services tab, with `/admin/packages/new?shopId=` and `/admin/packages/{id}`.
   - `ServiceForm` and `PackageForm` now always save through the admin.
   - The shop's catalogue API and its `Shop.Services.Manage` permission remain (the owner role still holds it), so API clients and the existing tests keep working; nothing in the shop UI reaches it.
+  - The admin's shop-invite form describes the owner role as «الدوام والإعدادات والمواعيد» ("Hours, settings and appointments"); it said services, which the owner no longer manages.
 - **The shop's bottom tab bar.**
   - Below `lg`, the shop dashboard has an app-style bar with its four everyday pages. In Arabic, from the right: النظرة التشغيلية، الدوام والبريكات، حجز حضوري، المواعيد. Each tab shows only with its permission.
   - The drawer keeps everything else (calendar, settings, QR, subscription, notifications).

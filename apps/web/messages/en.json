@@ -557,7 +557,7 @@
         "email": "Email",
         "role": "Role",
         "owner": "Shop owner",
-        "ownerHint": "Services, hours and settings",
+        "ownerHint": "Hours, settings and appointments",
         "staff": "Reception staff",
         "staffHint": "Appointments and walk-ins only",
         "submit": "Send invitation",
