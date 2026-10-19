@@ -10,6 +10,7 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -110,8 +111,8 @@ export default async function AdminProfessionalsPage({
                       key: 'name',
                       header: t('columns.name'),
                       cell: (row) => {
-                        const name = lang === 'ar' ? row.nameAr : row.nameEn;
-                        const specialty = lang === 'ar' ? row.specialtyAr : row.specialtyEn;
+                        const name = localizedName(lang, row.nameAr, row.nameEn);
+                        const specialty = localizedName(lang, row.specialtyAr ?? '', row.specialtyEn);
                         return (
                           <span className="flex items-center gap-3">
                             <Avatar name={name} src={row.avatarUrl} size="sm" />
@@ -138,7 +139,7 @@ export default async function AdminProfessionalsPage({
                           href={`/admin/shops/${row.shopId}`}
                           className="text-text-primary hover:underline"
                         >
-                          {lang === 'ar' ? row.shopNameAr : row.shopNameEn}
+                          {localizedName(lang, row.shopNameAr, row.shopNameEn)}
                         </Link>
                       ),
                     },

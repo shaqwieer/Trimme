@@ -20,6 +20,7 @@ internal static class Locales
 {
     public const string Arabic = "ar";
     public const string English = "en";
+    public const string Turkish = "tr";
 
-    public static bool IsSupported(string? locale) => locale is Arabic or English;
+    public static bool IsSupported(string? locale) => locale is Arabic or English or Turkish;
 }

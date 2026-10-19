@@ -64,7 +64,7 @@ export default async function AdminPackagesPage({
                       header: t('columns.shop'),
                       cell: (row) => (
                         <Link href={`/admin/shops/${row.shopId}`} className="hover:underline">
-                          {lang === 'ar' ? row.shopNameAr : row.shopNameEn}
+                          {localizedName(lang, row.shopNameAr, row.shopNameEn)}
                         </Link>
                       ),
                     },

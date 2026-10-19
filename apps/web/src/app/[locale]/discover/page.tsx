@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { Logo } from '@/components/brand/Logo';
+import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { LocationSheetButton } from '@/components/discovery/LocationSheetButton';
 import { ShopListCard } from '@/components/discovery/ShopCards';
 import { CustomerShell } from '@/components/shell/CustomerShell';
@@ -49,6 +50,7 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
       <div className="mx-auto flex max-w-[720px] flex-col gap-6 px-4 py-6 md:px-6">
         <header className="flex flex-col items-center gap-4 text-center">
           <Logo height={72} priority />
+          <SaudiBadge />
           {location ? (
             <LocationSheetButton label={label} areas={areas?.areas ?? []} />
           ) : (

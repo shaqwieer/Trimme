@@ -39,6 +39,7 @@ describe('shop board helpers (D-100)', () => {
     expect(hourLabel(18, 'ar')).toBe('6');
     expect(hourLabel(12, 'ar')).toBe('12');
     expect(hourLabel(9, 'en')).toBe('09');
+    expect(hourLabel(18, 'tr')).toBe('18');
   });
 
   it('finds local midnight and a shared axis that runs past 24:00 for windows after midnight', () => {

@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/icons';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -52,7 +53,7 @@ export default async function AdminCategoriesPage({
                     cell: (row) => (
                       <span className="flex items-center gap-2">
                         <Icon name={row.icon as 'tag'} className="size-4 text-brand-700" />
-                        <span className="font-bold">{lang === 'ar' ? row.nameAr : row.nameEn}</span>
+                        <span className="font-bold">{localizedName(lang, row.nameAr, row.nameEn)}</span>
                       </span>
                     ),
                   },

@@ -194,6 +194,13 @@ Phase 16 (D-114).
 - **QrVisit** is one scan: code, shop, time, device class, page language and a 32-character visitor hash (keyed HMAC of the UTC day and the IP address). No IP address and no user agent are kept. It is a platform log on the tenancy allow-list; shops read it only through their own codes.
 - A booking credited to a scan keeps the code and the visit (see Bookings); conversion counts scans that led to a booking.
 
+## Loyalty (`loyalty`)
+
+Session 16 (D-132).
+- **LoyaltyProgram** is shop-owned, one per shop: on or off, the visits a card needs (2–20), the reward kind (free service or a 1–100 % discount), its Arabic and optional English title, an optional validity in days, and `xmin`. Only platform admins set it (`Admin.Loyalty.Manage`); the public page shows it when it is on.
+- **LoyaltyStamp** is shop- and customer-owned: one per completed online booking (unique booking id), earned from the booking outbox. A stamp is on the open card until it is turned into a reward (`reward_id`).
+- **LoyaltyReward** is shop- and customer-owned: an 8-character code, the programme's terms snapshotted, Available → Held (by one booking) → Redeemed (that booking completed); a cancelled or no-show booking releases it. An optional expiry. A booking keeps the held reward's id and titles (see Bookings); prices are unchanged and the shop applies the reward at the visit.
+
 ## Discovery (read side, no tables of its own)
 
 Discovery (D-090, D-091) combines the shop's location (PostGIS), visibility (`IShopBookability`), published offers (Services), ratings (Reviews) and opening status and a bounded slot probe (Availability), through building-block contracts inside one read-only public scope for the candidate shops. Public responses are cached by the API and evicted when public content changes (D-093).

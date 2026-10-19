@@ -67,11 +67,14 @@ internal sealed partial class DispatchFactory(
             return null;
         }
 
+        // The recipient's language first; a language without templates (Turkish, D-132) falls back to English, then Arabic.
+        string[] locales = recipient.Value.Locale is "ar" or "en" ? [recipient.Value.Locale, "ar"] : [recipient.Value.Locale, "en", "ar"];
         var templates = await db.Set<WhatsAppTemplate>().Include(t => t.Versions)
-            .Where(t => t.Event == @event && t.Audience == audience && (t.Locale == recipient.Value.Locale || t.Locale == "ar"))
+            .Where(t => t.Event == @event && t.Audience == audience && locales.Contains(t.Locale))
             .ToListAsync(cancellationToken);
-        var template = templates.FirstOrDefault(t => t.Locale == recipient.Value.Locale && t.ActiveVersion is not null)
-                       ?? templates.FirstOrDefault(t => t.Locale == "ar" && t.ActiveVersion is not null);
+        var template = locales
+            .Select(locale => templates.FirstOrDefault(t => t.Locale == locale && t.ActiveVersion is not null))
+            .FirstOrDefault(t => t is not null);
         if (template?.ActiveVersion is not { } version)
         {
             LogNoTemplate(logger, @event, audience, recipient.Value.Locale);

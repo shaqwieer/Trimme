@@ -1,0 +1,3166 @@
+{
+  "metadata": {
+    "appName": "Groom Here",
+    "title": "Groom Here — Sonraki saç kesiminiz için randevu alın",
+    "description": "Yakındaki uzmanları ve salonları keşfedin, birkaç saniyede gerçekten müsait bir randevu alın."
+  },
+  "common": {
+    "skipToContent": "İçeriğe geç",
+    "loading": "Yükleniyor…",
+    "languageSwitch": {
+      "label": "Dil",
+      "ar": "العربية",
+      "en": "English",
+      "tr": "Türkçe",
+      "short": "TR"
+    },
+    "brand": {
+      "logoAlt": "Groom Here",
+      "saudi": "%100 Suudi web sitesi"
+    },
+    "theme": {
+      "label": "Tema",
+      "menuLabel": "Tema: {value}",
+      "system": "Sistem",
+      "light": "Açık",
+      "dark": "Koyu",
+      "systemHint": "Sistem, cihazınızın ayarını izler ve onunla birlikte değişir."
+    }
+  },
+  "shell": {
+    "mainNavigation": "Ana gezinme",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "notifications": "Bildirimler",
+    "search": "Ara",
+    "account": "Hesap",
+    "shopEyebrow": "İŞLETME",
+    "adminEyebrow": "PLATFORM YÖNETİMİ",
+    "shopTabs": "Ana salon sayfaları"
+  },
+  "nav": {
+    "customer": {
+      "home": "Ana sayfa",
+      "explore": "Keşfet",
+      "appointments": "Randevular",
+      "favorites": "Favoriler",
+      "account": "Hesap"
+    },
+    "shop": {
+      "overview": "Genel bakış",
+      "calendar": "Takvim",
+      "appointments": "Randevular",
+      "walkIn": "Randevusuz kayıt",
+      "schedule": "Çalışma saatleri ve molalar",
+      "subscription": "Abonelik",
+      "notifications": "Bildirimler",
+      "settings": "Salon ayarları",
+      "qr": "QR kodlar"
+    },
+    "admin": {
+      "overview": "Genel bakış",
+      "shops": "Salonlar",
+      "professionals": "Uzmanlar ve hizmetler",
+      "services": "Hizmetler ve kategoriler",
+      "bookings": "Randevular",
+      "customers": "Müşteriler",
+      "subscriptions": "Abonelikler",
+      "plans": "Abonelik planları",
+      "reviews": "Değerlendirmeler",
+      "qr": "QR kodlar",
+      "whatsapp": "WhatsApp",
+      "roles": "Roller ve yetkiler",
+      "audit": "Denetim kaydı",
+      "settings": "Platform ayarları"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Sayfa bulunamadı",
+      "body": "Sayfa taşınmış olabilir veya bağlantı hatalı.",
+      "backHome": "Ana sayfaya dön"
+    }
+  },
+  "ui": {
+    "optional": "(isteğe bağlı)",
+    "loading": "Yükleniyor…",
+    "close": "Kapat",
+    "cancel": "Vazgeç",
+    "confirm": "Onayla",
+    "retry": "Tekrar dene",
+    "moreActions": "Diğer seçenekler",
+    "actions": "İşlemler",
+    "pagination": {
+      "label": "Sayfalandırma",
+      "previous": "Önceki sayfa",
+      "next": "Sonraki sayfa",
+      "page": "Sayfa {page}",
+      "summary": "Gösterilen: {from}–{to} / {total}"
+    },
+    "breadcrumb": "Gezinti yolu",
+    "phone": {
+      "countryCode": "Ülke kodu",
+      "placeholder": "5X XXX XXXX"
+    },
+    "otp": {
+      "hint": "{length} haneli kodu girin"
+    },
+    "search": {
+      "placeholder": "Salon veya hizmet arayın",
+      "clear": "Aramayı temizle"
+    },
+    "rating": {
+      "value": "Puan: 5 üzerinden {value}",
+      "count": "({count, plural, one {{count} değerlendirme} other {{count} değerlendirme}})",
+      "input": "Puanınızı seçin",
+      "stars": "5 üzerinden {value}"
+    },
+    "upload": {
+      "prompt": "Kapak görselini buraya sürükleyin veya bir dosya seçin",
+      "constraints": "JPG/PNG/WebP · {width}×{height} · en fazla {maxMb} MB",
+      "choose": "Dosya seç",
+      "typeError": "Desteklenmeyen dosya — JPG, PNG veya WebP görsel seçin",
+      "sizeError": "En fazla {maxMb}MB boyutunda bir görsel seçin",
+      "selected": "{name} seçildi"
+    },
+    "slots": {
+      "morning": "Sabah",
+      "afternoon": "Öğleden sonra",
+      "evening": "Akşam",
+      "emptyPeriod": "Bu zaman diliminde müsait saat yok",
+      "emptyDay": "Bu günde müsait saat yok — başka bir gün deneyin",
+      "label": "Müsait saatler",
+      "hour": "Saati seçin",
+      "minute": "Dakikayı seçin",
+      "pickHour": "Boş dakikalarını görmek için bir saat seçin.",
+      "minutesCount": "{count, plural, one {1 seçenek} other {# seçenek}}",
+      "taken": "Müsait değil"
+    },
+    "calendar": {
+      "previousMonth": "Önceki ay",
+      "nextMonth": "Sonraki ay",
+      "selected": "Seçili",
+      "available": "Müsait",
+      "closed": "Kapalı"
+    },
+    "dateStrip": {
+      "label": "Bir gün seçin",
+      "today": "Bugün",
+      "closed": "Kapalı"
+    },
+    "stepper": {
+      "label": "Randevu adımları",
+      "progress": "Adım {current}/{total}",
+      "state": {
+        "done": "Tamamlandı:",
+        "current": "Geçerli adım:",
+        "todo": "Yapılacak:"
+      }
+    },
+    "toast": {
+      "region": "Bildirimler",
+      "dismiss": "Bildirimi kapat"
+    },
+    "shopCard": {
+      "verified": "Doğrulanmış salon",
+      "addFavorite": "Favorilere ekle",
+      "removeFavorite": "Favorilerden çıkar",
+      "from": "Başlangıç: {price}"
+    },
+    "professional": {
+      "unavailable": "İzinde"
+    },
+    "states": {
+      "error": {
+        "title": "Bir sorun oluştu",
+        "body": "Hiçbir şey kaydedilmedi. Bağlantınızı kontrol edip tekrar deneyin."
+      },
+      "permissionDenied": {
+        "title": "Bu sayfa hesabınız için kullanılamıyor",
+        "body": "Bu içeriğe erişiminiz yok. Bunun bir hata olduğunu düşünüyorsanız yöneticiyle iletişime geçin.",
+        "action": "Ana sayfaya dön"
+      },
+      "expiredSession": {
+        "title": "Oturumunuz sona erdi",
+        "body": "Hesabınızı korumak için oturumunuzu kapattık. Kaldığınız yerden devam etmek için giriş yapın.",
+        "action": "Giriş yap"
+      },
+      "offline": {
+        "title": "İnternet bağlantısı yok",
+        "body": "Bağlantınızı kontrol edin — otomatik olarak yeniden deneyeceğiz."
+      }
+    },
+    "chart": {
+      "table": "Grafik verileri",
+      "peak": "Zirve"
+    },
+    "qr": {
+      "download": "İndir",
+      "share": "Paylaş",
+      "code": "{name} için QR kod"
+    },
+    "ratingDistribution": {
+      "label": "Puan dağılımı",
+      "row": "{stars} yıldız: {count, plural, one {{count} değerlendirme} other {{count} değerlendirme}}"
+    }
+  },
+  "status": {
+    "booking": {
+      "Pending": "Onay bekliyor",
+      "Confirmed": "Onaylandı",
+      "Arrived": "Geldi",
+      "Completed": "Tamamlandı",
+      "CancelledByCustomer": "Müşteri iptal etti",
+      "CancelledByShop": "Salon iptal etti",
+      "NoShow": "Gelmedi"
+    },
+    "subscription": {
+      "Active": "Aktif",
+      "ExpiringSoon": "Yakında sona eriyor",
+      "Expired": "Süresi doldu",
+      "Suspended": "Askıya alındı",
+      "None": "Abonelik yok"
+    }
+  },
+  "validation": {
+    "required": "Bu alan zorunludur",
+    "invalid": "Bu değeri kontrol edin",
+    "generic": "Bu değeri kontrol edin",
+    "phoneIncomplete": "+966’dan sonraki 9 haneyi girin",
+    "phoneInvalid": "5 ile başlayan bir Suudi cep telefonu numarası girin",
+    "otpIncomplete": "6 haneli kodu girin",
+    "tooLong": "Metni en fazla {max} karakter olacak şekilde kısaltın",
+    "emailInvalid": "Geçerli bir e-posta adresi girin",
+    "form": "Kaydedilemedi — işaretli alanları gözden geçirip tekrar deneyin",
+    "termsRequired": "Devam etmek için koşulları ve gizlilik politikasını kabul edin",
+    "passwordTooShort": "En az 10 karakter kullanın",
+    "passwordTooWeak": "Daha çeşitli karakterler içeren daha güçlü bir şifre seçin",
+    "passwordMismatch": "Şifreler eşleşmiyor",
+    "otpIncorrect": "Kod hatalı",
+    "slugInvalid": "Küçük Latin harfleri, rakamlar ve tire kullanın (3 ila 60 karakter)",
+    "slugTaken": "Bu bağlantıyı başka bir salon kullanıyor",
+    "coordinateInvalid": "Geçerli koordinatlar girin",
+    "imageType": "JPG, PNG veya WebP görsel seçin",
+    "imageTooLarge": "En fazla 5 MB boyutunda bir görsel seçin",
+    "imageTooSmall": "Görsel çok küçük — daha büyük bir görsel seçin",
+    "galleryFull": "Galeri dolu (en fazla 12 görsel)",
+    "whatsappTaken": "Bu numara başka bir uzmana ait",
+    "whatsappRequired": "Bildirimleri açmak için bir WhatsApp numarası girin",
+    "reasonRequired": "Açık bir gerekçe yazın (en az 5 karakter)",
+    "tooShort": "En az 2 karakter yazın",
+    "businessPhoneInvalid": "Geçerli bir salon telefon numarası girin",
+    "priceInvalid": "0 ile 100.000 arasında, en fazla iki ondalık basamaklı bir fiyat girin",
+    "durationInvalid": "5 dakikalık adımlarla, en fazla 8 saatlik bir süre seçin",
+    "packageItems": "2 ila 10 farklı hizmet seçin",
+    "orderMismatch": "Liste değişti — sayfayı yenileyip yeniden sıralayın",
+    "dateInPast": "Bugünü veya daha sonraki bir tarihi seçin",
+    "dateInFuture": "Başlangıç tarihi gelecekte olamaz",
+    "priceDateTaken": "Bu tarihte başlayan bir fiyat sürümü zaten var",
+    "planNotOffered": "Bu plan burada kullanılamaz",
+    "planNoPrice": "Planın bu başlangıç tarihinde fiyatı yok",
+    "periodOverlap": "Bu, mevcut dönemle çakışıyor; dönem bittikten sonra başlatın",
+    "periodGap": "Mevcut bitiş tarihinden sonraki gün ya da en geç bugün başlatın",
+    "periodNotLatest": "Yalnızca en son dönemin bitiş tarihi değiştirilebilir",
+    "outOfRange": "Bu değer aralığın dışında",
+    "tooMany": "Çok fazla öğe var",
+    "hoursInvalid": "Saatleri kontrol edin (5 dakikalık adımlar, en fazla 24 saat)",
+    "hoursOverlap": "Aralıklar çakışıyor; gece yarısından sonraki saatler de dahil",
+    "rangeInvalid": "Bitiş başlangıçtan önce ya da aralık bir yıldan uzun",
+    "breakDays": "Hafta günlerini veya tek bir tarih seçin",
+    "immutable": "Bu değer değiştirilemez",
+    "roleNameTaken": "Bu adı zaten başka bir rol kullanıyor."
+  },
+  "auth": {
+    "meta": {
+      "title": "Giriş yap"
+    },
+    "back": "Geri",
+    "phoneLabel": "Cep telefonu numarası",
+    "signUp": {
+      "title": "Groom Here’a hoş geldiniz",
+      "subtitle": "Cep telefonu numaranızı girin, size WhatsApp’tan bir doğrulama kodu gönderelim",
+      "terms": "<terms>Kullanım Koşulları</terms>’nı ve <privacy>Gizlilik Politikası</privacy>’nı kabul ediyorum",
+      "submit": "Kodu gönder",
+      "haveAccount": "Zaten hesabınız var mı?",
+      "signIn": "Giriş yap"
+    },
+    "signIn": {
+      "title": "Giriş yap",
+      "subtitle": "Cep telefonu numaranızı girin, giriş kodunuzu WhatsApp’tan gönderelim",
+      "submit": "Kodu gönder",
+      "noAccount": "Groom Here’da yeni misiniz?",
+      "signUp": "Hesap oluştur",
+      "staff": "Salon ve yönetim ekibi girişi"
+    },
+    "verify": {
+      "title": "Doğrulama kodunu girin",
+      "sentTo": "{length} haneli kodu WhatsApp’tan şu numaraya gönderdik:",
+      "codeLabel": "Doğrulama kodu",
+      "resendIn": "{time} sonra yeniden gönderilebilir",
+      "resend": "Yeniden gönder",
+      "resent": "Size yeni bir kod gönderdik",
+      "help": "Kod gelmedi mi? Bu numarada WhatsApp’ın etkin olduğundan emin olun, ardından sayaç bitince yeni bir kod isteyin.",
+      "submit": "Doğrula",
+      "attemptsLeft": "Kod hatalı — {count, plural, one {# deneme hakkınız kaldı} other {# deneme hakkınız kaldı}}",
+      "restart": "Yeni kod iste"
+    },
+    "completeProfile": {
+      "title": "Profilinizi tamamlayın",
+      "subtitle": "Size nasıl hitap edelim? Salonlar randevularınızda adınızı görür.",
+      "nameLabel": "Ad soyad",
+      "languageLabel": "Uygulama ve mesaj dili",
+      "arabic": "العربية",
+      "english": "English",
+      "turkish": "Türkçe",
+      "terms": "<strong>Kullanım Koşulları</strong>’nı ve <strong>Gizlilik Politikası</strong>’nı kabul ediyorum",
+      "submit": "Kaydet ve devam et"
+    },
+    "staffSignIn": {
+      "title": "Ekip girişi",
+      "subtitle": "Salon hesapları ve platform yöneticileri için",
+      "email": "E-posta",
+      "password": "Şifre",
+      "submit": "Giriş yap",
+      "forgot": "Şifrenizi mi unuttunuz?",
+      "customer": "Müşteri misiniz? Cep telefonunuzla giriş yapın"
+    },
+    "forgot": {
+      "title": "Şifremi unuttum",
+      "subtitle": "E-posta adresinizi girin, yeni şifre belirlemeniz için size bir bağlantı gönderelim.",
+      "submit": "Bağlantı gönder",
+      "sentTitle": "E-postanızı kontrol edin",
+      "sentBody": "Bu e-posta kayıtlıysa birkaç dakika içinde bir mesaj gelecek. Bağlantı bir saat geçerlidir.",
+      "backToSignIn": "Girişe dön"
+    },
+    "reset": {
+      "title": "Yeni şifre belirleyin",
+      "newPassword": "Yeni şifre",
+      "confirmPassword": "Şifreyi onaylayın",
+      "passwordHint": "En az 10 karakter. Hatırladığınız kısa bir cümle iyi bir seçimdir.",
+      "submit": "Şifreyi kaydet",
+      "doneTitle": "Şifre değiştirildi",
+      "doneBody": "Hesabınızı korumak için tüm cihazlarda oturumunuzu kapattık. Yeni şifrenizle giriş yapın.",
+      "invalidTitle": "Bu bağlantı geçerli değil",
+      "invalidBody": "Bağlantının süresi dolmuş veya daha önce kullanılmış. Yeni bir bağlantı isteyin.",
+      "requestNew": "Yeni bağlantı iste"
+    },
+    "acceptInvite": {
+      "title": "Davetinizi kabul edin",
+      "subtitle": "Katılımı tamamlamak için Groom Here hesabınızı oluşturun.",
+      "nameLabel": "Ad soyad",
+      "submit": "Hesap oluştur",
+      "invalidTitle": "Bu davet geçerli değil",
+      "invalidBody": "Davetin süresi dolmuş veya daha önce kullanılmış. Bir platform yöneticisinden yeni bir davet isteyin."
+    },
+    "session": {
+      "restoring": "Oturumunuz geri yükleniyor…"
+    },
+    "signOut": "Çıkış yap"
+  },
+  "account": {
+    "title": "Hesabım",
+    "phone": "Cep telefonu numarası",
+    "name": "Ad",
+    "security": "Güvenlik ve oturumlar",
+    "securityDescription": "Hesabınızda oturumu açık olan cihazlar",
+    "sessions": {
+      "title": "Oturumu açık cihazlar",
+      "current": "Bu cihaz",
+      "lastActive": "Son etkinlik: {date}",
+      "revoke": "Çıkış yap",
+      "revokeLabel": "{device} cihazında çıkış yap",
+      "revokeOthers": "Diğer cihazlarda çıkış yap",
+      "revokeOthersTitle": "Diğer cihazlarda çıkış yapılsın mı?",
+      "revokeOthersBody": "Diğer tüm cihazlarda yeniden giriş yapılması gerekecek. Bu cihazda oturumunuz açık kalır.",
+      "revokedOthers": "{count, plural, one {# cihazda çıkış yapıldı} other {# cihazda çıkış yapıldı}}",
+      "revoked": "Cihazda çıkış yapıldı",
+      "onlyThisDevice": "Başka cihazda açık oturum yok."
+    },
+    "editProfile": "Kişisel bilgileri düzenle",
+    "groups": {
+      "preferences": "Tercihler",
+      "account": "Hesap",
+      "support": "Destek",
+      "appearance": "Görünüm"
+    },
+    "rows": {
+      "language": "Dil",
+      "notifications": "WhatsApp bildirimleri",
+      "notificationsValue": "WhatsApp ve uygulama içi",
+      "personal": "Kişisel bilgiler",
+      "bookings": "Randevularım",
+      "favorites": "Favoriler",
+      "payment": "Ödeme",
+      "paymentValue": "Salonda",
+      "privacy": "Gizlilik ve veriler",
+      "terms": "Kullanım koşulları"
+    },
+    "profile": {
+      "title": "Kişisel bilgiler",
+      "nameLabel": "Ad soyad",
+      "languageLabel": "Uygulama ve mesaj dili",
+      "arabic": "العربية",
+      "english": "English",
+      "turkish": "Türkçe",
+      "save": "Değişiklikleri kaydet",
+      "saved": "Bilgileriniz kaydedildi."
+    }
+  },
+  "shopHome": {
+    "title": "Genel bakış",
+    "body": "Salon paneli kullanıma açıldığında bugünkü randevular ve salonunuzun göstergeleri burada görünecek.",
+    "statusLabel": "Salon durumu",
+    "draftTitle": "Salonunuz kuruluyor",
+    "draftBody": "Platform ekibi etkinleştirene kadar müşteriler salonunuzu görmeyecek.",
+    "suspendedTitle": "Salonunuz askıya alındı",
+    "suspendedBody": "Salon verilerine şu anda erişilemiyor. Yeniden etkinleştirmek için platform ekibiyle iletişime geçin."
+  },
+  "apiErrors": {
+    "generic": "İstek tamamlanamadı. Lütfen tekrar deneyin.",
+    "form": "İşaretli alanları gözden geçirip tekrar deneyin.",
+    "otp_resend_cooldown": "Yeni kod istemeden önce {seconds} saniye bekleyin.",
+    "otp_too_many_requests": "Bu numara için çok fazla kod istendi. {minutes} dakika sonra tekrar deneyin.",
+    "otp_delivery_unavailable": "Kod şu anda gönderilemedi. Biraz sonra tekrar deneyin.",
+    "otp_challenge_invalid": "Bu kod artık geçerli değil. Yeni bir kod isteyin.",
+    "otp_expired": "Kodun süresi doldu. Yeni bir kod isteyin.",
+    "otp_attempts_exhausted": "Çok fazla hatalı deneme yapıldı. Yeni bir kod isteyin.",
+    "auth_invalid_credentials": "E-posta veya şifre hatalı.",
+    "auth_locked_out": "Çok fazla denemeden sonra giriş geçici olarak durduruldu. {minutes} dakika sonra tekrar deneyin veya şifrenizi sıfırlayın.",
+    "auth_account_disabled": "Bu hesap devre dışı. Platform yöneticileriyle iletişime geçin.",
+    "auth_csrf_invalid": "Bu sayfanın süresi doldu. Sayfayı yenileyip tekrar deneyin.",
+    "auth_reset_invalid": "Bu sıfırlama bağlantısı geçersiz veya süresi dolmuş.",
+    "invitation_invalid": "Bu davet geçersiz veya süresi dolmuş.",
+    "invitation_email_registered": "Bu e-postayla kayıtlı bir hesap zaten var.",
+    "rate_limit_exceeded": "Kısa sürede çok fazla istek yapıldı. Biraz bekleyip tekrar deneyin.",
+    "server_unexpected": "Bir sorun oluştu. Lütfen tekrar deneyin.",
+    "shop_not_found": "Salon bulunamadı.",
+    "shop_invalid_transition": "Salon bu duruma geçirilemez.",
+    "shop_profile_field_locked": "Platform yöneticisi bu alanı kilitledi.",
+    "resource_concurrency_conflict": "Bunu az önce başka biri değiştirdi. Sayfayı yenileyip yeniden düzenleyin.",
+    "shop_gallery_image_not_found": "Görsel bu salonun galerisinde yok.",
+    "professional_not_found": "Uzman bulunamadı.",
+    "professional_invalid_transition": "Uzmanın durumu bu şekilde değiştirilemez.",
+    "professional_no_whatsapp": "Bu uzmanın WhatsApp numarası yok.",
+    "geo_not_found": "Bu noktada adres bulunamadı.",
+    "request_too_large": "Dosya izin verilen boyuttan büyük (5 MB).",
+    "auth_forbidden": "Bu işlem için yetkiniz yok.",
+    "service_not_found": "Hizmet bulunamadı.",
+    "package_not_found": "Paket bulunamadı.",
+    "service_category_not_found": "Kategori bulunamadı.",
+    "catalog_archived": "Arşivlenmiş bir öğe değiştirilemez.",
+    "service_in_use": "Hizmet bir pakette veya randevu geçmişinde kullanılıyor — silmek yerine arşivleyin.",
+    "plan_not_found": "Plan bulunamadı.",
+    "plan_archived": "Bu plan arşivlendi ve değiştirilemez.",
+    "plan_no_price": "Planı yayımlamadan önce bir fiyat ekleyin.",
+    "subscription_not_found": "Bu salonun henüz aboneliği yok.",
+    "subscription_already_assigned": "Bu salonun zaten bir aboneliği var. Bunun yerine aboneliği yenileyin.",
+    "resource_conflict": "Başka biri aynı anda kaydetti. Sayfayı yenileyip tekrar deneyin.",
+    "subscription_custom_pricing_required": "Özel bir süre veya geçmiş bir başlangıç tarihi için toplam fiyat ve gerekçe içeren bir süper yönetici istisnası gerekir.",
+    "schedule_closure_not_found": "Kapalı gün bulunamadı.",
+    "schedule_break_not_found": "Mola bulunamadı.",
+    "schedule_time_off_not_found": "İzin bulunamadı.",
+    "shop_online_booking_already_paused": "Çevrimiçi randevu alımı zaten duraklatılmış.",
+    "shop_online_booking_not_paused": "Çevrimiçi randevu alımı duraklatılmamış.",
+    "availability_offer_not_found": "Bu hizmet sunulmuyor.",
+    "availability_offer_not_online_bookable": "Bu hizmet için çevrimiçi randevu alınamaz.",
+    "availability_professional_not_eligible": "Bu uzman bu hizmeti sunmuyor.",
+    "booking_slot_unavailable": "Bu saat az önce alındı. Başka bir saat seçin.",
+    "booking_not_found": "Randevu bulunamadı.",
+    "booking_cancellation_cutoff_passed": "Çevrimiçi değişiklik süresi doldu. Groom Here ekibiyle iletişime geçin.",
+    "booking_not_reschedulable": "Bu randevu şu anda değiştirilemez.",
+    "booking_invalid_transition": "Bu randevunun durumu şu anda değiştirilemez.",
+    "booking_shop_not_accepting": "Salon şu anda çevrimiçi randevu kabul etmiyor.",
+    "booking_offer_not_found": "Bu hizmet artık sunulmuyor.",
+    "booking_offer_not_online_bookable": "Bu hizmet için çevrimiçi randevu alınamaz.",
+    "booking_professional_not_eligible": "Bu uzman bu hizmeti sunmuyor.",
+    "booking_profile_incomplete": "Randevu almadan önce profilinize adınızı ekleyin.",
+    "idempotency_key_reused": "İstek gönderilirken değişti. Tekrar deneyin.",
+    "review_already_exists": "Bu ziyareti zaten puanladınız.",
+    "review_window_closed": "Bu ziyareti puanlama süresi geçti.",
+    "review_booking_not_completed": "Ziyaret tamamlandığında puanlayabilirsiniz.",
+    "favorites_limit_reached": "Favori sınırına ulaştınız.",
+    "booking_too_early": "Bu durum için henüz çok erken; randevu saatine yakın tekrar deneyin.",
+    "idempotency_key_required": "İstek güvenli şekilde gönderilemedi. Sayfayı yenileyip tekrar deneyin.",
+    "auth_user_not_found": "Hesap bulunamadı.",
+    "review_not_found": "Değerlendirme bulunamadı.",
+    "review_not_published": "Yalnızca yayımlanmış bir değerlendirme şikâyet edilebilir.",
+    "review_already_flagged": "Bu değerlendirme zaten şikâyet edildi.",
+    "review_already_hidden": "Bu değerlendirme zaten gizli.",
+    "review_nothing_to_publish": "Bu değerlendirme zaten yayında ve hakkında şikâyet yok.",
+    "role_not_found": "Rol bulunamadı.",
+    "role_managed": "Bu rol platform tarafından yönetiliyor ve değiştirilemez.",
+    "role_in_use": "Bu rol hâlâ bazı personele atanmış. Önce onlardan kaldırın.",
+    "role_permission_not_grantable": "Bu yetkilerden bazıları bu role verilemez.",
+    "role_escalation": "Yalnızca kendinizde olan yetkileri verebilirsiniz.",
+    "role_superadmin_only": "Süper yönetici rolünü yalnızca bir süper yönetici verebilir veya geri alabilir.",
+    "role_last_superadmin": "Platformda en az bir aktif süper yönetici kalmalıdır.",
+    "role_not_assignable": "Bu roller platform personeline verilemez.",
+    "staff_self": "Kendi rollerinizi değiştiremez veya kendi hesabınızı devre dışı bırakamazsınız.",
+    "template_not_found": "Şablon bulunamadı.",
+    "template_version_not_found": "Şablon sürümü bulunamadı.",
+    "template_not_a_draft": "Yalnızca bir taslak etkinleştirilebilir.",
+    "template_no_active_version": "Bu şablonun etkin sürümü yok.",
+    "dispatch_not_found": "Mesaj bulunamadı.",
+    "dispatch_not_retryable": "Yalnızca başarısız mesajlar yeniden denenebilir.",
+    "dispatch_content_purged": "Mesaj metni saklama süresinden sonra silindi; yeniden gönderilemez.",
+    "whatsapp_test_recipient_is_customer": "Bu numara kayıtlı bir müşteriye ait. Ayrı bir test numarası kullanın.",
+    "notification_not_found": "Bildirim bulunamadı.",
+    "qr_not_found": "QR kod bulunamadı.",
+    "qr_already_active": "Kod zaten aktif.",
+    "qr_already_inactive": "Kod zaten kapalı.",
+    "invitation_role_invalid": "Bu rol, davet edilen hesap türüne uygun değil.",
+    "loyalty_reward_unavailable": "Bu kupon kullanılamıyor: kullanılmış, süresi dolmuş ya da başka bir salona ait."
+  },
+  "shopStatus": {
+    "Draft": "Taslak",
+    "Active": "Aktif",
+    "Suspended": "Askıya alındı"
+  },
+  "adminShops": {
+    "title": "Salonlar",
+    "add": "Salon ekle",
+    "search": "Ad veya bağlantıyla arayın",
+    "searchSubmit": "Ara",
+    "caption": "Salonlar",
+    "columns": {
+      "name": "Salon",
+      "slug": "Bağlantı",
+      "status": "Durum",
+      "created": "Oluşturulma",
+      "district": "Semt",
+      "verified": "Doğrulama"
+    },
+    "empty": {
+      "title": "Henüz salon yok",
+      "body": "İlk salonu ekleyin, ardından kurulumu tamamlaması için salon sahibini davet edin."
+    },
+    "create": {
+      "title": "Yeni salon ekle",
+      "nameAr": "Arapça salon adı",
+      "nameEn": "İngilizce salon adı",
+      "slug": "Salon sayfası bağlantısı",
+      "slugHelper": "Küçük Latin harfler, rakamlar ve tireler; ör. al-asala",
+      "draftNote": "Salon taslak olarak başlar ve etkinleştirilene kadar müşterilerden gizli kalır.",
+      "submit": "Salon oluştur"
+    },
+    "detail": {
+      "back": "Tüm salonlar",
+      "timeZone": "Saat dilimi",
+      "created": "Oluşturulma",
+      "activate": "Salonu etkinleştir",
+      "suspend": "Salonu askıya al",
+      "suspendTitle": "Bu salon askıya alınsın mı?",
+      "suspendBody": "Salonun hesapları salon verilerine erişimini hemen kaybeder. Hiçbir randevu silinmez.",
+      "reason": "Neden (isteğe bağlı)",
+      "activated": "Salon etkinleştirildi",
+      "suspended": "Salon askıya alındı",
+      "notFoundTitle": "Salon bulunamadı",
+      "notFoundBody": "Bağlantı hatalı olabilir veya salon artık mevcut değil.",
+      "invite": {
+        "title": "Salon hesabı davet edin",
+        "body": "Davet edilen kişiye şifre belirlemesi için e-postayla bir bağlantı gönderilir. Bağlantı 7 gün geçerlidir.",
+        "email": "E-posta",
+        "role": "Rol",
+        "owner": "Salon sahibi",
+        "ownerHint": "Çalışma saatleri, ayarlar ve randevular",
+        "staff": "Resepsiyon personeli",
+        "staffHint": "Yalnızca randevular ve randevusuz müşteriler",
+        "submit": "Davet gönder",
+        "sent": "Davet gönderildi."
+      },
+      "bookings": "Bu salondaki randevular"
+    },
+    "verifiedBadge": "Doğrulanmış",
+    "tabs": {
+      "label": "Salon bölümleri",
+      "profile": "Profil ve görseller",
+      "location": "Konum",
+      "users": "Hesaplar",
+      "professionals": "Uzmanlar",
+      "services": "Hizmetler",
+      "subscription": "Abonelik",
+      "loyalty": "Sadakat"
+    },
+    "sections": {
+      "profile": "Salon profili",
+      "images": "Salon görselleri",
+      "policy": "Salon düzenleme yetkileri",
+      "location": "Salonun haritadaki konumu"
+    },
+    "policy": {
+      "title": "Salonun kendisinin düzenlediği alanlar",
+      "body": "Salon sahibinin ayarlarında neleri değiştirebileceğini seçin. Doğrulama ve sayfa bağlantısı yöneticide kalır.",
+      "save": "Yetkileri kaydet",
+      "saved": "Düzenleme yetkileri kaydedildi."
+    },
+    "professionals": {
+      "title": "Salonun uzmanları",
+      "body": "Her uzman yalnızca bu salona aittir.",
+      "add": "Bu salona uzman ekle",
+      "empty": "Bu salonda henüz uzman yok"
+    },
+    "services": {
+      "title": "Salonun hizmetleri",
+      "body": "Her salonun kendi hizmetleri, fiyatları ve süreleri vardır. Hizmetlerini buradan ekleyin ve her birini yapan berberleri seçin.",
+      "add": "Bu salona hizmet ekle",
+      "empty": "Bu salonun henüz hizmeti yok",
+      "emptyBody": "Müşterilerin randevu alabilmesi için ilk hizmeti ekleyin.",
+      "packagesTitle": "Salonun paketleri",
+      "noPackages": "Henüz paket yok.",
+      "addPackage": "Paket ekle"
+    }
+  },
+  "shopCategory": {
+    "Barbershop": "Erkek berberi",
+    "Salon": "Güzellik salonu",
+    "Unisex": "Unisex"
+  },
+  "amenity": {
+    "Parking": "Otopark",
+    "WiFi": "Wi-Fi",
+    "KidsFriendly": "Çocuk dostu",
+    "WheelchairAccessible": "Tekerlekli sandalyeye uygun",
+    "WaitingArea": "Bekleme alanı",
+    "PrayerArea": "Mescit"
+  },
+  "profileField": {
+    "Name": "Salon adı",
+    "Description": "Açıklama",
+    "Category": "Salon türü",
+    "PublicPhone": "Salon telefonu",
+    "Amenities": "Olanaklar",
+    "Logo": "Logo",
+    "Cover": "Kapak görseli",
+    "Gallery": "Galeri",
+    "Location": "Harita konumu"
+  },
+  "locationSource": {
+    "Manual": "Elle belirlendi",
+    "Geocoded": "Aramadan",
+    "Device": "Cihaz konumu"
+  },
+  "shopProfile": {
+    "nameAr": "Arapça salon adı",
+    "nameEn": "İngilizce salon adı",
+    "descriptionAr": "Arapça açıklama",
+    "descriptionEn": "İngilizce açıklama",
+    "category": "Salon türü",
+    "publicPhone": "Salon telefon numarası",
+    "publicPhoneHelper": "Salonun kendi numarası; müşterilere salon sayfasında gösterilir",
+    "amenities": "Olanaklar",
+    "verified": "Doğrulanmış salon",
+    "verifiedHint": "Ticaret sicili ve salon belgeleri kontrol edildikten sonra",
+    "save": "Profili kaydet",
+    "saved": "Salon profili kaydedildi.",
+    "locked": "Yönetici tarafından kilitlendi",
+    "lockedHint": "Salonun hangi alanları düzenleyebileceğine platform yöneticisi karar verir.",
+    "images": {
+      "title": "Görseller",
+      "logo": "Logo",
+      "cover": "Kapak görseli",
+      "gallery": "Galeri",
+      "galleryHint": "En fazla 12 görsel. Daha yüksek kalite, keşifte daha iyi görünürlük sağlar.",
+      "uploadLogo": "Logoyu buraya bırakın veya bir dosya seçin",
+      "uploadCover": "Kapak görselini buraya bırakın veya bir dosya seçin",
+      "uploadGallery": "Bir galeri görselini buraya bırakın veya bir dosya seçin",
+      "remove": "Kaldır",
+      "removeImage": "{index}. görseli kaldır",
+      "uploading": "Yükleniyor…",
+      "uploaded": "Görsel kaydedildi.",
+      "removed": "Görsel kaldırıldı.",
+      "empty": "Görsel yok",
+      "galleryEmpty": "Henüz galeri görseli yok",
+      "galleryImage": "Galeri görseli {index}"
+    }
+  },
+  "locationPicker": {
+    "title": "Harita konumu",
+    "search": "Adres veya semt arayın",
+    "searchSubmit": "Ara",
+    "searching": "Aranıyor…",
+    "noResults": "Sonuç yok. Semt veya sokak adını deneyin.",
+    "results": "Arama sonuçları",
+    "useMyLocation": "Mevcut konumumu kullan",
+    "locating": "Konumunuz bulunuyor…",
+    "locationDenied": "Konum izni reddedildi. Adresi arayın veya elle girin.",
+    "locationUnavailable": "Konumunuz şu anda bulunamadı.",
+    "dragHint": "İğneyi salon girişinin tam üzerine sürükleyin",
+    "mapLabel": "Salonu yerleştirmek için harita. Koordinatları klavyeyle girmek için aşağıdaki alanları kullanın.",
+    "mapUnavailable": "Harita bu cihazda kullanılamıyor. Koordinatları ve adresi elle girin.",
+    "mapLoading": "Harita yükleniyor…",
+    "pin": "Salon konum iğnesi",
+    "resolved": "Seçilen adres",
+    "resolving": "Adres aranıyor…",
+    "unresolved": "Bu nokta için adres bulunamadı — elle girin.",
+    "coordinates": "Koordinatlar",
+    "manual": "Adresi ve koordinatları elle girin",
+    "latitude": "Enlem",
+    "longitude": "Boylam",
+    "addressLine": "Sokak ve bina",
+    "district": "Semt",
+    "city": "Şehir",
+    "formattedAddress": "Tam adres",
+    "changeWarning": "Konumu değiştirmek, arama sonuçlarında gösterilen mesafeyi değiştirir.",
+    "confirm": "Konumu onayla",
+    "saved": "Konum kaydedildi.",
+    "notSet": "Salon konumu henüz belirlenmedi.",
+    "source": "Belirlenme şekli",
+    "confirmedAt": "Son onay",
+    "readOnlyTitle": "Konum kilitli",
+    "readOnlyBody": "Salon konumunu platform yöneticisi belirler. Değiştirmek için yöneticiyle iletişime geçin.",
+    "attribution": "Harita verileri © OpenStreetMap katkıda bulunanlar",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "toggleAttribution": "Harita kaynaklarını göster"
+  },
+  "adminProfessionals": {
+    "title": "Uzmanlar ve hizmetleri",
+    "add": "Uzman ekle",
+    "search": "Ada göre arayın",
+    "searchSubmit": "Ara",
+    "caption": "Uzmanlar",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "columns": {
+      "name": "Uzman",
+      "shop": "Salon",
+      "whatsapp": "WhatsApp",
+      "status": "Durum"
+    },
+    "noNumber": "Numara yok",
+    "notificationsOff": "Bildirimler kapalı",
+    "empty": {
+      "title": "Henüz uzman yok",
+      "body": "Bir uzman ekleyin ve çalıştığı salonu seçin."
+    },
+    "status": {
+      "Active": "Aktif",
+      "Disabled": "Devre dışı"
+    },
+    "create": {
+      "title": "Uzman ekle",
+      "shop": "Salon",
+      "shopPlaceholder": "Salonu seçin",
+      "shopHelper": "Salon, uzman eklenirken belirlenir ve sonradan değişmez.",
+      "nameAr": "Arapça ad",
+      "nameEn": "İngilizce ad",
+      "slug": "Profil bağlantısı",
+      "slugHelper": "İsteğe bağlı — boş bırakılırsa İngilizce addan oluşturulur",
+      "specialtyAr": "Arapça uzmanlık alanı",
+      "specialtyEn": "İngilizce uzmanlık alanı",
+      "bioAr": "Arapça biyografi",
+      "bioEn": "İngilizce biyografi",
+      "whatsapp": "Uzmanın WhatsApp numarası",
+      "whatsappHelper": "Randevu ve hatırlatma bildirimlerini alır. Müşterilere veya diğer salonlara asla gösterilmez.",
+      "notifications": "Bu uzmana WhatsApp bildirimleri gönder",
+      "submit": "Uzman ekle"
+    },
+    "detail": {
+      "back": "Tüm uzmanlar",
+      "notFoundTitle": "Uzman bulunamadı",
+      "notFoundBody": "Bağlantı hatalı olabilir.",
+      "shop": "Salon",
+      "shopFixed": "Salon yalnızca uzman eklenirken belirlenir.",
+      "profileTitle": "Uzman profili",
+      "save": "Profili kaydet",
+      "saved": "Profil kaydedildi.",
+      "photo": "Fotoğraf",
+      "uploadPhoto": "Uzmanın fotoğrafını buraya bırakın veya bir dosya seçin",
+      "removePhoto": "Fotoğrafı kaldır",
+      "photoSaved": "Fotoğraf kaydedildi.",
+      "statusTitle": "Durum",
+      "disable": "Uzmanı devre dışı bırak",
+      "enable": "Yeniden etkinleştir",
+      "disableTitle": "Bu uzman devre dışı bırakılsın mı?",
+      "disableBody": "Yeni randevular için sunulmaz. Mevcut randevular olduğu gibi kalır.",
+      "reason": "Neden (isteğe bağlı)",
+      "disabled": "Uzman devre dışı bırakıldı.",
+      "enabled": "Uzman yeniden etkinleştirildi."
+    },
+    "whatsapp": {
+      "title": "WhatsApp ve bildirimler",
+      "number": "Numara",
+      "none": "Kayıtlı numara yok",
+      "verification": {
+        "Unverified": "Henüz doğrulanmadı",
+        "Verified": "Doğrulandı",
+        "Failed": "Gönderim başarısız"
+      },
+      "notificationsOn": "Bildirimler açık",
+      "notificationsOff": "Bildirimler kapalı",
+      "edit": "Numarayı veya bildirimleri değiştir",
+      "newNumber": "Yeni WhatsApp numarası",
+      "newNumberHelper": "Numarayı kaldırmak için boş bırakın.",
+      "keepNumber": "Mevcut numarayı koru",
+      "save": "Kaydet",
+      "saved": "WhatsApp ayarları kaydedildi.",
+      "reveal": "Numaranın tamamını göster",
+      "revealTitle": "Uzmanın numarasını göster",
+      "revealBody": "Her gösterim, neden ve adınızla birlikte denetim kaydına işlenir.",
+      "reason": "Gösterme nedeni",
+      "revealSubmit": "Göster",
+      "revealed": "Numaranın tamamı",
+      "hide": "Gizle"
+    }
+  },
+  "shopSettings": {
+    "title": "Salon ayarları",
+    "tabs": {
+      "label": "Ayar bölümleri",
+      "profile": "Salon profili",
+      "location": "Konum"
+    },
+    "profile": "Salon profili",
+    "images": "Salon görselleri",
+    "location": "Salon konumu",
+    "unavailableTitle": "Ayarlar şu anda kullanılamıyor",
+    "unavailableBody": "Salon askıya alındı. Platform yöneticisiyle iletişime geçin."
+  },
+  "catalog": {
+    "currency": "SAR",
+    "moderation": {
+      "Visible": "Görünür",
+      "Hidden": "Yönetici tarafından gizlendi"
+    },
+    "status": {
+      "active": "Açık",
+      "inactive": "Kapalı",
+      "archived": "Arşivlendi",
+      "hidden": "Yönetici tarafından gizlendi"
+    },
+    "hiddenReason": "Platform tarafından gizlendi: {reason}",
+    "unbookable": "Randevuya açık değil: hizmetlerinden biri kapalı, arşivlenmiş veya gizli",
+    "noCategory": "Kategori yok",
+    "durationOption": "{minutes} dk",
+    "icons": {
+      "scissors": "Makas",
+      "user": "Kişi",
+      "users": "Kişiler",
+      "star": "Yıldız",
+      "heart": "Kalp",
+      "layers": "Katmanlar",
+      "tag": "Etiket",
+      "coffee": "Fincan"
+    }
+  },
+  "shopServices": {
+    "title": "Hizmetler",
+    "tabs": {
+      "label": "Hizmet bölümleri",
+      "services": "Hizmetler",
+      "packages": "Paketler"
+    },
+    "intro": "Kendi hizmetlerinizi, fiyatlarınızı ve sürelerinizi belirleyin. Açtığınız hizmet salon sayfanızda hemen görünür.",
+    "add": "Hizmet ekle",
+    "addPackage": "Paket ekle",
+    "showArchived": "Arşivlenenleri göster",
+    "hideArchived": "Arşivlenenleri gizle",
+    "empty": {
+      "title": "Henüz hizmet yok",
+      "body": "İlk hizmetinizi kendi fiyatınız ve sürenizle ekleyin."
+    },
+    "emptyPackages": {
+      "title": "Henüz paket yok",
+      "body": "İki veya daha fazla hizmeti kendi fiyatı ve süresi olan bir pakette birleştirin."
+    },
+    "active": "Randevuya açık",
+    "moveUp": "{name} öğesini yukarı taşı",
+    "moveDown": "{name} öğesini aşağı taşı",
+    "moved": "{name}, {position}. sıraya taşındı",
+    "edit": "Düzenle",
+    "archive": "Arşivle",
+    "archiveTitle": "{name} arşivlensin mi?",
+    "archiveBody": "Artık müşterilere sunulmaz; randevu geçmişinde ve raporlarda kalır. Bu işlem geri alınamaz.",
+    "delete": "Sil",
+    "deleteTitle": "{name} silinsin mi?",
+    "deleteBody": "Yalnızca hiçbir pakette veya randevuda kullanılmamış bir hizmet silinebilir.",
+    "archived": "Arşivlendi.",
+    "deleted": "Hizmet silindi.",
+    "saved": "Değişiklikler kaydedildi.",
+    "assigned": "{count, plural, one {# uzman atandı} other {# uzman atandı}}",
+    "items": "{count, plural, one {# hizmet} other {# hizmet}}",
+    "form": {
+      "newTitle": "Yeni hizmet",
+      "editTitle": "Hizmeti düzenle",
+      "newPackageTitle": "Yeni paket",
+      "editPackageTitle": "Paketi düzenle",
+      "back": "Tüm hizmetler",
+      "nameAr": "Arapça hizmet adı",
+      "nameEn": "İngilizce hizmet adı",
+      "nameEnHelper": "İsteğe bağlı — boş bırakılırsa Arapça ad gösterilir",
+      "descriptionAr": "Arapça açıklama",
+      "descriptionEn": "İngilizce açıklama",
+      "category": "Kategori",
+      "price": "Fiyat (SAR)",
+      "priceHelper": "Salonunuzun kendi fiyatı — en fazla iki ondalık basamak",
+      "duration": "Süre",
+      "onlineBookable": "Çevrimiçi randevuya açık",
+      "onlineBookableHint": "Kapalıyken yine de randevusuz kayıt olarak alınabilir",
+      "packageServices": "Paketteki hizmetler",
+      "packageServicesHint": "Hizmetlerinizden 2 ila 10 tanesini seçin. Paketin kendi fiyatı ve süresi vardır.",
+      "packageDuration": "Toplam paket süresi",
+      "create": "Hizmet oluştur",
+      "createPackage": "Paket oluştur",
+      "save": "Değişiklikleri kaydet",
+      "professionals": "Bu hizmeti yapan berberler",
+      "professionalsHint": "Bu hizmet için yalnızca seçilen berberlerle randevu alınabilir.",
+      "noShopProfessionals": "Bu salonda henüz berber yok. Onları “Uzmanlar” sekmesinden ekleyin, ardından burada seçin.",
+      "noProfessionalsPicked": "Berber seçilmedi: en az bir berber seçilene kadar bu hizmet için saat gösterilmez."
+    },
+    "activeFor": "{name}: randevuya açık",
+    "editItem": "{name} öğesini düzenle",
+    "archiveItem": "{name} öğesini arşivle",
+    "deleteItem": "{name} öğesini sil"
+  },
+  "adminServices": {
+    "title": "Hizmetler ve kategoriler",
+    "tabs": {
+      "label": "Hizmet bölümleri",
+      "services": "Salon hizmetleri",
+      "categories": "Kategoriler",
+      "packages": "Paketler"
+    },
+    "intro": "Her salon kendi hizmetlerini, fiyatlarını ve sürelerini belirler. Bunları buradan inceleyin, kurallara aykırı olanları gizleyin ve salonun isteği üzerine bir hizmeti düzeltin.",
+    "search": "Hizmet adıyla arayın",
+    "searchSubmit": "Ara",
+    "stateFilter": "Durum",
+    "allStates": "Tüm durumlar",
+    "states": {
+      "Active": "Açık",
+      "Inactive": "Kapalı",
+      "Archived": "Arşivlendi",
+      "Hidden": "Gizli"
+    },
+    "caption": "Salon hizmetleri",
+    "columns": {
+      "service": "Hizmet",
+      "shop": "Salon",
+      "price": "Fiyat",
+      "duration": "Süre",
+      "status": "Durum",
+      "items": "Hizmetler"
+    },
+    "empty": {
+      "title": "Hizmet yok",
+      "body": "Henüz hiçbir salon hizmet eklemedi veya aramayla eşleşen bir sonuç yok."
+    },
+    "detail": {
+      "back": "Salon hizmetleri",
+      "moderationTitle": "Moderasyon",
+      "moderationBody": "Bir hizmeti gizlemek, onu silmeden müşterilerden saklar. İşlem, nedeniyle birlikte kaydedilir.",
+      "hide": "Müşterilerden gizle",
+      "unhide": "Müşterilere göster",
+      "reason": "Neden",
+      "hidden": "Hizmet gizlendi.",
+      "unhidden": "Hizmet yeniden görünür.",
+      "overrideTitle": "Destek düzeltmesi",
+      "overrideBody": "Yalnızca bu salonun hizmetinde, açık bir nedenle yapılan istisnai düzenleme. Değişen her şey öncesi ve sonrasıyla kaydedilir.",
+      "overrideReason": "Düzeltme nedeni",
+      "overrideSubmit": "Düzeltmeyi kaydet",
+      "overridden": "Düzeltme kaydedildi ve denetim kaydına işlendi.",
+      "assignedCount": "Atanan uzmanlar"
+    },
+    "manage": {
+      "newTitle": "Yeni hizmet",
+      "editTitle": "Hizmeti düzenle",
+      "editBody": "Fiyat ve süre yalnızca bu salon için değişir. Düzenleme denetim kaydına işlenir.",
+      "create": "Hizmeti ekle",
+      "save": "Değişiklikleri kaydet",
+      "noShop": "Önce salonu açın, ardından hizmeti salonun “Hizmetler” sekmesinden ekleyin.",
+      "newPackageTitle": "Yeni paket",
+      "editPackageTitle": "Paketi düzenle",
+      "packageNotFound": "Paket bulunamadı"
+    },
+    "categories": {
+      "caption": "Hizmet kategorileri",
+      "add": "Kategori ekle",
+      "nameAr": "Arapça ad",
+      "nameEn": "İngilizce ad",
+      "icon": "Simge",
+      "order": "Sıra",
+      "services": "Hizmetler",
+      "edit": "Düzenle",
+      "editTitle": "Kategoriyi düzenle",
+      "save": "Kaydet",
+      "create": "Ekle",
+      "activate": "Aç",
+      "deactivate": "Kapat",
+      "saved": "Kategori kaydedildi.",
+      "empty": "Henüz kategori yok"
+    },
+    "packages": {
+      "caption": "Salon paketleri",
+      "empty": {
+        "title": "Paket yok",
+        "body": "Henüz hiçbir salon paket oluşturmadı."
+      },
+      "hideTitle": "Bu paket gizlensin mi?"
+    },
+    "professionalServices": {
+      "title": "Atanan hizmetler",
+      "body": "Yalnızca bu uzmanın kendi salonunun hizmetleri, o salonun fiyat ve süreleriyle.",
+      "empty": "Bu uzmanın salonunda henüz hizmet yok",
+      "save": "Atamayı kaydet",
+      "saved": "Hizmet ataması kaydedildi.",
+      "inactive": "Kapalı"
+    }
+  },
+  "billing": {
+    "Month": "{count, plural, one {# ay} other {# ay}}",
+    "Day": "{count, plural, one {# gün} other {# gün}}"
+  },
+  "subscriptionPlans": {
+    "title": "Abonelik planları",
+    "intro": "Planlar, fiyatlar ve süreler yalnızca buradan yönetilir. Yeni bir fiyat, kendi tarihinde veya sonrasında başlayan etkinleştirme ve yenilemelere uygulanır; kayıtlı abonelikler asla değişmez.",
+    "add": "Yeni plan",
+    "caption": "Abonelik planları",
+    "columns": {
+      "plan": "Plan",
+      "price": "Güncel fiyat",
+      "interval": "Faturalama dönemi",
+      "status": "Durum",
+      "newShops": "Yeni salonlar",
+      "subscriptions": "Salonlar",
+      "order": "Sıra"
+    },
+    "upcoming": "{date} tarihinden itibaren {price}",
+    "noPrice": "Fiyat yok",
+    "offered": "Sunuluyor",
+    "notOffered": "Sunulmuyor",
+    "moveUp": "{name} öğesini yukarı taşı",
+    "moveDown": "{name} öğesini aşağı taşı",
+    "moved": "Sıra kaydedildi.",
+    "empty": {
+      "title": "Henüz plan yok",
+      "body": "İlk planı oluşturun, bir fiyat belirleyin ve yayımlayın."
+    },
+    "statuses": {
+      "Draft": "Taslak",
+      "Published": "Yayımlandı",
+      "Inactive": "Sunulmuyor",
+      "Archived": "Arşivlendi"
+    },
+    "form": {
+      "nameAr": "Arapça plan adı",
+      "nameEn": "İngilizce plan adı",
+      "descriptionAr": "Arapça açıklama",
+      "descriptionEn": "İngilizce açıklama",
+      "features": "Özellikler",
+      "featuresHelper": "Her iki dilde, en fazla 12 satır.",
+      "featureAr": "Arapça özellik {n}",
+      "featureEn": "İngilizce özellik {n}",
+      "addFeature": "Özellik ekle",
+      "removeFeature": "{n}. özelliği kaldır",
+      "intervalUnit": "Faturalama birimi",
+      "intervalCount": "Faturalama süresi",
+      "units": {
+        "Month": "Ay",
+        "Day": "Gün"
+      },
+      "maxProfessionals": "En fazla uzman",
+      "maxServices": "En fazla hizmet",
+      "limitHelper": "Sınır olmaması için boş bırakın.",
+      "trialDays": "Deneme günleri",
+      "graceDays": "Ek süre günleri",
+      "trialGraceHelper": "Planla birlikte saklanır; v1 bunları otomatik olarak uygulamaz.",
+      "availableToNewShops": "Yeni salonlara sun",
+      "initialPrice": "Fiyat (SAR)",
+      "initialPriceHelper": "Bugünden itibaren fiyat sürümü 1 olur. Daha sonra da ekleyebilirsiniz.",
+      "create": "Plan oluştur",
+      "save": "Değişiklikleri kaydet",
+      "saved": "Değişiklikler kaydedildi."
+    },
+    "detail": {
+      "back": "Abonelik planları",
+      "detailsTitle": "Plan ayrıntıları",
+      "actionsTitle": "Kullanılabilirlik",
+      "actionsBody": "Yalnızca yayımlanmış planlarla yeni abonelik başlatılabilir. Sunulmayan bir plan, mevcut salonları için yenilenmeye devam edebilir.",
+      "publish": "Yayımla",
+      "deactivate": "Sunmayı durdur",
+      "archive": "Arşivle",
+      "archiveTitle": "{name} arşivlensin mi?",
+      "archiveBody": "Arşivlenen bir plan artık düzenlenemez, fiyatlandırılamaz veya atanamaz. Mevcut abonelikler geçmişlerini korur.",
+      "stateChanged": "Plan güncellendi.",
+      "pricesTitle": "Fiyat geçmişi",
+      "pricesBody": "Sürümler asla düzenlenmez veya silinmez. Her biri, kendi tarihinde veya sonrasında başlayan dönemlere uygulanır.",
+      "version": "Sürüm {number}: {price}",
+      "effective": "{date} tarihinden itibaren",
+      "current": "Yürürlükte",
+      "scheduled": "İleri tarihli",
+      "past": "Önceki",
+      "noPrices": "Henüz fiyat yok.",
+      "addPrice": "Fiyat sürümü ekle",
+      "amount": "Yeni fiyat (SAR)",
+      "effectiveFrom": "Geçerlilik başlangıcı",
+      "priceAdded": "Fiyat sürümü eklendi."
+    }
+  },
+  "adminSubscriptions": {
+    "title": "Abonelikler",
+    "intro": "Platform ekibi etkinleştirmeleri ve yenilemeleri buraya kaydeder; çevrimiçi ödeme yoktur. Durum, bitiş tarihine ve yakında sona erme eşiğine ({days} gün) göre belirlenir.",
+    "kpis": {
+      "Active": "Aktif",
+      "ExpiringSoon": "Yakında sona erecek",
+      "Expired": "Süresi doldu",
+      "Suspended": "Askıya alındı",
+      "None": "Abonelik yok"
+    },
+    "search": "Salon adına göre ara",
+    "searchSubmit": "Ara",
+    "statusFilter": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "caption": "Salon abonelikleri",
+    "columns": {
+      "shop": "Salon",
+      "plan": "Plan",
+      "ends": "Bitiş tarihi",
+      "remaining": "Kalan gün",
+      "status": "Durum",
+      "amount": "Tutar",
+      "action": "İşlem"
+    },
+    "manage": "Yönet",
+    "empty": {
+      "title": "Abonelik yok",
+      "body": "Eşleşen salon yok veya henüz plan atanmadı."
+    },
+    "panel": {
+      "none": "Bu salonun aboneliği yok. Keşifte görünmesi ve çevrimiçi randevuları platformun yaptırım ayarına bağlıdır.",
+      "plan": "Plan",
+      "period": "Mevcut dönem",
+      "ends": "Bitiş tarihi",
+      "remaining": "Kalan gün",
+      "amount": "Tutar",
+      "suspendedBecause": "Askıya alındı: {reason}",
+      "assignTitle": "Etkinleştirmeyi kaydet",
+      "renewTitle": "Yenilemeyi kaydet",
+      "assignBody": "Planı ve başlangıç tarihini seçin. Başlangıç tarihinde geçerli olan fiyat, dönemle birlikte kaydedilir.",
+      "renewBody": "Yenileme, mevcut bitişin ertesi günü veya süre dolmuşsa bugün başlar. Önceki dönemler hiçbir zaman değişmez.",
+      "planLabel": "Plan",
+      "startDate": "Başlangıç tarihi",
+      "duration": "Süre",
+      "durationPlan": "Plan dönemi ({interval})",
+      "durationDays": "Özel gün sayısı",
+      "days": "Gün sayısı",
+      "endPreview": "Bitiş tarihi: {date}",
+      "pricePreview": "Kaydedilen fiyat: {price} (sürüm {version})",
+      "noPricePreview": "Bu planın başlangıç tarihinde fiyatı yok.",
+      "noPlans": "Kullanılabilir plan yok. Önce bir plan yayımlayın.",
+      "notes": "Notlar",
+      "notesHelper": "İsteğe bağlı, örneğin sözleşme referansı.",
+      "assign": "Etkinleştirmeyi kaydet",
+      "renew": "Yenilemeyi onayla",
+      "assigned": "Abonelik şu tarihe kadar aktif: {date}.",
+      "renewed": "Şu tarihe kadar yenilendi: {date}.",
+      "suspendTitle": "Askıya alma",
+      "suspendBody": "Askıya alınan abonelik salonu gizler ve yeni çevrimiçi randevuları durdurur. Mevcut randevular değişmez.",
+      "suspend": "Aboneliği askıya al",
+      "reinstate": "Aboneliği yeniden etkinleştir",
+      "reason": "Neden",
+      "suspended": "Abonelik askıya alındı.",
+      "reinstated": "Abonelik yeniden etkinleştirildi.",
+      "overrideTitle": "İstisnai düzenleme (Süper Yönetici)",
+      "overrideBody": "Geçerli dönem için bu salona özel bir fiyat ve/veya bitiş tarihi, bir nedenle birlikte. Önceki değerler geçmişte kalır.",
+      "overridePrice": "Bu dönemin fiyatı (SAR)",
+      "overrideEnd": "Yeni bitiş tarihi",
+      "overrideReason": "Düzenlemenin nedeni",
+      "overrideSubmit": "Düzenlemeyi kaydet",
+      "overridden": "Düzenleme kaydedildi.",
+      "historyTitle": "Geçmiş",
+      "periodTitle": "{plan}: {start} ile {end} arası",
+      "periodMeta": "{kind} · {price}",
+      "kinds": {
+        "Assigned": "Etkinleştirme",
+        "Renewed": "Yenileme"
+      },
+      "priceVersion": "fiyat sürümü {version}",
+      "overriddenTag": "düzenlendi",
+      "overrideEntry": "İstisnai düzenleme: {changes}",
+      "overrideMeta": "{reason} · {date}",
+      "changePrice": "fiyat {from} → {to}",
+      "changeEnd": "bitiş {from} → {to}",
+      "customNotAllowed": "Özel süreler ve geçmiş başlangıç tarihleri için Süper Yönetici düzenlemesi gerekir.",
+      "customTitle": "Özel dönem (Süper Yönetici düzenlemesi)",
+      "customBody": "Özel bir süre veya geçmiş bir başlangıç tarihi yalnızca açık bir toplam fiyat ve bir nedenle kaydedilir. Plan fiyatı karşılaştırma için saklanır ve kayıt denetim günlüğüne alınır.",
+      "customTotal": "Bu dönemin toplam fiyatı (SAR)",
+      "customReason": "Özel dönemin nedeni",
+      "customPlanPrice": "Bir standart dönem için plan fiyatı: {price}",
+      "customEntry": "Süper Yönetici özel fiyatı ({reason}; plan fiyatı {standard})"
+    },
+    "manageLabel": "{name} için aboneliği yönet"
+  },
+  "shopSubscription": {
+    "title": "Abonelik",
+    "eyebrow": "Abonelik",
+    "none": "Salonunuzun henüz platform aboneliği yok. Etkinleştirmek için platform ekibiyle iletişime geçin.",
+    "ends": "Bitiş tarihi: {date} · {days, plural, one {# gün} other {# gün}} kaldı",
+    "ended": "Sona erme tarihi: {date}",
+    "progress": "Mevcut dönemin %{percent} kadarı kullanıldı",
+    "start": "Başlangıç",
+    "end": "Bitiş",
+    "note": "Yenilemeleri platform ekibi kaydeder. Çevrimiçi ödeme yoktur.",
+    "warning": {
+      "ExpiringSoon": "Aboneliğiniz {days, plural, one {# gün} other {# gün}} içinde sona eriyor",
+      "Expired": "Aboneliğinizin süresi doldu",
+      "Suspended": "Aboneliğiniz askıya alındı",
+      "None": "Aktif abonelik yok",
+      "hiddenBody": "Salonunuz keşifte gizlendi ve yeni çevrimiçi randevu almıyor. Mevcut randevular geçerliliğini korur.",
+      "soonBody": "Süre dolduğunda salonunuz keşifte gizlenir. Mevcut randevular geçerliliğini korur.",
+      "contact": "Yenilemek için platform ekibiyle iletişime geçin."
+    },
+    "historyTitle": "Yenileme geçmişi",
+    "historyEmpty": "Henüz dönem yok.",
+    "historyItem": "{start} – {end}",
+    "historyPlan": "{plan} · {price}"
+  },
+  "platformSettings": {
+    "title": "Platform ayarları",
+    "intro": "Bu değerler tüm salonlar için geçerlidir ve her değişiklik etkinlik günlüğüne kaydedilir. Bölge değerleri v1’de sabittir.",
+    "sections": {
+      "booking": "Randevu politikası",
+      "notifications": "Hatırlatmalar",
+      "subscriptions": "Abonelikler",
+      "discovery": "Keşif",
+      "map": "Harita varsayılanları",
+      "regional": "Bölge (v1’de sabit)"
+    },
+    "fields": {
+      "minLeadTimeMinutes": "En az önceden bildirim süresi (dakika)",
+      "bookingHorizonDays": "En ileri randevu süresi (gün)",
+      "slotStepMinutes": "Saat aralığı (dakika)",
+      "cancellationCutoffMinutes": "Çevrimiçi iptal için son süre (dakika)",
+      "reviewWindowDays": "Değerlendirme süresi (gün)",
+      "reminderOffsetMinutes": "Randevudan önce hatırlatma (dakika)",
+      "expiringSoonThresholdDays": "Yakında sona erme eşiği (gün)",
+      "expiredSubscriptionEnforcement": "Abonelik geçerli olmadığında",
+      "hidePausedShopsFromDiscovery": "Çevrimiçi randevuyu duraklatan salonları gizle",
+      "mapDefaultLatitude": "Harita merkezi enlemi",
+      "mapDefaultLongitude": "Harita merkezi boylamı",
+      "mapDefaultZoom": "Harita yakınlaştırma düzeyi",
+      "defaultLocale": "Varsayılan dil",
+      "currency": "Para birimi",
+      "timeZone": "Saat dilimi",
+      "countryCode": "Ülke"
+    },
+    "enforcement": {
+      "HideAndBlockNewOnlineBookings": "Salonu gizle ve yeni çevrimiçi randevuları engelle",
+      "None": "Yalnızca uyarı göster"
+    },
+    "enforcementHelper": "Mevcut randevular hiçbir zaman değişmez ve salonlar randevusuz müşterileri kaydetmeye devam edebilir.",
+    "save": "Ayarları kaydet",
+    "saved": "Ayarlar kaydedildi.",
+    "readOnly": "Bu ayarları görüntüleyebilirsiniz ancak değiştiremezsiniz.",
+    "descriptions": {
+      "booking": "Müşterilerin çevrimiçi randevu alma kuralları: ne kadar ileriye, en geç ne kadar önce, hangi saat aralığıyla, bir randevuyu ne zamana kadar iptal edip taşıyabilecekleri ve bir ziyareti ne kadar süre içinde değerlendirebilecekleri.",
+      "notifications": "Müşteriye ve berbere giden WhatsApp hatırlatmalarının randevudan ne kadar önce gönderileceği.",
+      "subscriptions": "Bir salonun aboneliğinin ne zaman yakında sona erecek sayılacağı ve geçerli abonelik yokken ne olacağı. Mevcut randevular hiçbir zaman değişmez.",
+      "discovery": "Çevrimiçi randevuyu duraklatan salonların aramada ve haritada görünmeye devam edip etmeyeceği. Sayfalarına bağlantıyla erişilmeye devam edilir.",
+      "map": "Henüz konum yokken haritaların nerede açılacağı (salon konum seçici ve arama).",
+      "regional": "Dil, para birimi, saat dilimi ve ülke. Bunları değiştirmek bir taşıma planı gerektirdiğinden v1’de sabittir."
+    },
+    "range": "{min} ile {max} arası",
+    "discard": "Değişikliklerden vazgeç",
+    "unsaved": "Kaydedilmemiş değişiklikleriniz var.",
+    "upToDate": "Tüm değişiklikler kaydedildi.",
+    "recent": {
+      "title": "Son değişiklikler",
+      "all": "Tüm geçmiş",
+      "empty": "Henüz kayıtlı değişiklik yok.",
+      "changed": "Ayarlar değiştirildi"
+    }
+  },
+  "shopSchedule": {
+    "title": "Çalışma saatleri, molalar ve izinler",
+    "days": {
+      "Sunday": "Pazar",
+      "Monday": "Pazartesi",
+      "Tuesday": "Salı",
+      "Wednesday": "Çarşamba",
+      "Thursday": "Perşembe",
+      "Friday": "Cuma",
+      "Saturday": "Cumartesi"
+    },
+    "openOn": "{day} günü açık",
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "closed": "Kapalı",
+    "nextDay": "(ertesi gün)",
+    "addRange": "+ Başka bir aralık ekle",
+    "removeRange": "{day} gününden bir aralığı kaldır",
+    "invalidTimes": "{day} günündeki saatleri kontrol edin (5 dakikalık adımlarla)",
+    "save": "Kaydet",
+    "saveAnyway": "Yine de kaydet",
+    "cancel": "İptal",
+    "edit": "Düzenle: {name}",
+    "delete": "Sil: {name}",
+    "deleteTitle": "{name} silinsin mi?",
+    "deleteBody": "Bu süre yeniden randevuya açılır. Onaylanmış randevular etkilenmez.",
+    "deleteConfirm": "Sil",
+    "hours": {
+      "title": "Salonun haftalık çalışma saatleri",
+      "side": "Uzmanların çalışma saatleri için dış sınır",
+      "body": "Değişiklikler yalnızca sonraki günlere uygulanır ve onaylanmış randevuları asla iptal etmez.",
+      "save": "Çalışma saatlerini kaydet",
+      "saved": "Salonun çalışma saatleri kaydedildi"
+    },
+    "pros": {
+      "title": "Uzmanların çalışma saatleri",
+      "body": "Her uzman, salonun çalışma saatleri içinde çalışır. Salon yalnızca saatleri düzenler, profili asla düzenlemez.",
+      "none": "Salonunuzda henüz uzman yok.",
+      "select": "Uzman",
+      "disabled": "devre dışı",
+      "follows": "Salonun çalışma saatlerini izler",
+      "save": "Uzmanın çalışma saatlerini kaydet",
+      "saved": "Uzmanın çalışma saatleri kaydedildi"
+    },
+    "breaks": {
+      "title": "Tekrarlanan molalar",
+      "body": "Seçilen her günde randevu alınabilir saatlerden çıkarılır.",
+      "empty": "Mola yok.",
+      "add": "Mola ekle",
+      "addTitle": "Mola ekle",
+      "editTitle": "Molayı düzenle",
+      "label": "Mola adı",
+      "labelRequired": "Molaya bir ad verin",
+      "appliesTo": "Kimler için geçerli",
+      "everyone": "Tüm uzmanlar",
+      "repeat": "Tekrar",
+      "weekly": "Haftalık",
+      "once": "Bir kez",
+      "days": "Günler",
+      "daysRequired": "En az bir gün seçin",
+      "date": "Tarih",
+      "everyDay": "Her gün",
+      "timesInvalid": "Başlangıçtan sonra bir bitiş saati seçin (5 dakikalık adımlarla)"
+    },
+    "timeOff": {
+      "title": "İzinler ve kapalı günler",
+      "body": "Bir uzmanın izni yalnızca onun saatlerini kaldırır; salonun kapalı günü tüm günü kapatır.",
+      "empty": "Yaklaşan izin veya kapalı gün yok.",
+      "add": "İzin kaydet",
+      "addClosure": "Salonu kapat",
+      "addTitle": "İzin kaydet",
+      "editTitle": "İzni düzenle",
+      "professional": "Uzman",
+      "professionalRequired": "Uzmanı seçin",
+      "kindLabel": "Tür",
+      "kind": {
+        "Vacation": "Tatil",
+        "Sick": "Hastalık izni",
+        "Other": "Diğer"
+      },
+      "startDate": "Başlangıç tarihi",
+      "endDate": "Bitiş tarihi",
+      "allDay": "Tam günler",
+      "startTime": "Başlangıç saati",
+      "endTime": "Bitiş saati",
+      "note": "Not",
+      "wholeShop": "Tüm salon",
+      "state": {
+        "Active": "Şu an geçerli",
+        "Scheduled": "Planlandı"
+      },
+      "effect": "Bu uzmanın saatleri kaldırılır; diğer uzmanlar her zamanki gibi çalışır.",
+      "closureEffect": "Gün tamamen kapalıdır ve randevu alınmaz."
+    },
+    "closures": {
+      "addTitle": "Salonu kapat",
+      "editTitle": "Kapalı günü düzenle",
+      "body": "Salon seçilen günlerde kapalıdır; o günün gece yarısından sonraki çalışma saatleri de buna dahildir.",
+      "startDate": "Başlangıç tarihi",
+      "endDate": "Bitiş tarihi",
+      "reason": "Neden"
+    },
+    "conflicts": {
+      "title": "{count, plural, one {# mevcut randevu çakışıyor} other {# mevcut randevu çakışıyor}}",
+      "body": "Hiçbir randevu iptal edilmez ve müşterilere otomatik mesaj gönderilmez. Gerekirse onlarla iletişime geçin veya randevuyu kendiniz yeniden planlayın."
+    },
+    "pause": {
+      "liveTitle": "Çevrimiçi randevuyu duraklat",
+      "liveBody": "Aşırı yoğunlukta veya acil bir durumda kullanın. Onaylanmış randevular asla iptal edilmez ve salon, siz sürdürene kadar arama sonuçlarında görünmez.",
+      "pausedTitle": "Çevrimiçi randevu duraklatıldı",
+      "pausedBody": "Yeni çevrimiçi randevu alınmaz ve salon keşifte gizlenir. Onaylanmış randevular geçerliliğini korur.",
+      "since": "{date}, {time} itibarıyla",
+      "pause": "Duraklat",
+      "resume": "Çevrimiçi randevuyu sürdür",
+      "confirmTitle": "Çevrimiçi randevu duraklatılsın mı?",
+      "confirmBody": "Salon, siz sürdürene kadar yeni çevrimiçi randevu almaz. Onaylanmış randevular etkilenmez.",
+      "reason": "Neden (yalnızca salon için)",
+      "confirm": "Şimdi duraklat",
+      "cancel": "Geri dön",
+      "pausedToast": "Çevrimiçi randevu duraklatıldı",
+      "resumedToast": "Çevrimiçi randevu yeniden açık"
+    }
+  },
+  "publicNav": {
+    "label": "Ana gezinme",
+    "home": "Ana sayfa",
+    "shops": "Salonlar",
+    "discover": "Yakındakiler",
+    "signIn": "Giriş yap",
+    "findBarber": "Salon bul"
+  },
+  "footer": {
+    "label": "Site bağlantıları",
+    "tagline": "Size yakın bir salonda gerçekten müsait bir randevu alın, onaylar WhatsApp’tan gelsin.",
+    "shops": "Salonlar",
+    "terms": "Kullanım koşulları",
+    "privacy": "Gizlilik politikası",
+    "rights": "© {year} Groom Here. Tüm hakları saklıdır."
+  },
+  "opening": {
+    "openUntil": "{time} saatine kadar açık",
+    "opensAt": "Açılış {time}",
+    "opensOn": "Açılış {day} {time}",
+    "closed": "Kapalı",
+    "open": "Açık",
+    "openNow": "Şu an açık",
+    "closesAt": "Kapanış {time}"
+  },
+  "landing": {
+    "meta": {
+      "title": "Bir sonraki saç kesiminiz için bir dakikada randevu alın",
+      "description": "Yakındaki salonları bulun, gerçekten müsait saatleri karşılaştırın ve seçtiğiniz uzmanla randevu alın. Onay ve hatırlatmalar WhatsApp’tan gelir.",
+      "heroImageAlt": "Modern bir salonda müşterisinin saç kesimini tamamlayan bir uzman"
+    },
+    "badge": "Artık {city} şehrinde kullanılabilir",
+    "badgeGeneric": "Size yakın, randevuya hazır salonlar",
+    "title": "Bir sonraki saç kesiminiz için bir dakikada randevu alın.",
+    "lead": "Gerçekten müsait saatleri görün, istediğiniz uzmanı seçin ve aramadan ya da yanıt beklemeden ziyaretinizi onaylayın.",
+    "search": {
+      "label": "Hizmet veya salon arayın",
+      "placeholder": "Salon arayın",
+      "location": "Konumunuz",
+      "locationUnset": "Konumumu kullan",
+      "submit": "Hemen randevu al"
+    },
+    "browse": "En yüksek puanlı salonlara göz atın",
+    "heroCard": {
+      "title": "Randevunuz onaylandı",
+      "body": "Ayrıntılar ve hatırlatma WhatsApp’tan gelir"
+    },
+    "heroImageAlt": "Modern bir salonda müşterisinin saç kesimini tamamlayan bir uzman",
+    "topRated": {
+      "eyebrow": "Yakınınızda popüler",
+      "title": "Göz atmaya değer en yüksek puanlı salonlar",
+      "titleCity": "{city} şehrindeki en yüksek puanlı salonlar",
+      "body": "Puanları, hizmetleri ve fiyatları karşılaştırın, ardından gününüze uyan randevuyu seçin.",
+      "viewAll": "Yakındaki tüm salonları görüntüle",
+      "empty": "Bu görünümde henüz yayımlanmış salon yok. Aramaya devam etmek için tüm salonlara göz atın."
+    },
+    "faq": {
+      "eyebrow": "Bilmekte fayda var",
+      "title": "Randevu almadan önce sorularınız mı var?",
+      "body": "Ayrıntılarda boğulmadan, en önemli bilgiler.",
+      "cost": {
+        "question": "Randevu almak müşteri için ücretli mi?",
+        "answer": "Groom Here, seçim yapmadan önce her salonun kendi hizmet fiyatlarını gösterir. Varsa ödeme koşulları salon ve randevu ayrıntılarında gösterilir."
+      },
+      "download": {
+        "question": "Bir uygulama indirmem gerekiyor mu?",
+        "answer": "Hayır. Salonları keşfedebilir ve randevunuzu telefonunuzdan web sitesi üzerinden tamamlayabilirsiniz."
+      },
+      "barber": {
+        "question": "Belirli bir uzman seçebilir miyim?",
+        "answer": "Evet, salon bu seçeneği sunuyorsa. Müsait bir uzman seçebilir veya daha fazla saat görmek için herhangi bir müsait uzmanı tercih edebilirsiniz."
+      },
+      "confirmation": {
+        "question": "Randevunun onaylandığını nasıl anlarım?",
+        "answer": "Onayladıktan sonra randevu Groom Here’a kaydedilir ve ayrıntıları, salonun ayarladığı bildirim kanalıyla (etkinse WhatsApp dahil) gönderilir."
+      },
+      "changes": {
+        "question": "Randevumu iptal edebilir veya yeniden planlayabilir miyim?",
+        "answer": "Mevcut iptal veya yeniden planlama seçeneklerini ve salonun politikasını görmek için randevuyu hesabınızda açın."
+      }
+    },
+    "finalCta": {
+      "title": "Daha iyi bir randevu yöntemine hazır mısınız?",
+      "body": "Yakındaki bir salonu bulun, doğru uzmanı seçin ve gerçekten boş olan bir saati belirleyin.",
+      "cta": "Bir sonraki randevumu bul"
+    }
+  },
+  "shopsList": {
+    "meta": {
+      "title": "Salonlar",
+      "titleCity": "{city} şehrindeki salonlar",
+      "description": "Groom Here üzerindeki salonlara göz atın, puanları ve fiyatları karşılaştırın ve müsait bir randevu alın."
+    },
+    "title": "Salonlar",
+    "titleCity": "{city} şehrindeki salonlar",
+    "intro": "Listelenen her salon, kendi fiyatları ve süreleriyle Groom Here üzerinden randevu kabul eder.",
+    "cities": "Şehirler",
+    "allCities": "Tüm şehirler",
+    "empty": "Bu şehirde henüz yayımlanmış salon yok.",
+    "count": "{count, plural, =0 {Salon yok} one {# salon} other {# salon}}"
+  },
+  "discover": {
+    "meta": {
+      "title": "Yakındaki salonları keşfedin"
+    },
+    "yourLocation": "Konumunuz",
+    "currentLocation": "Mevcut konumum",
+    "setLocation": "Konumumu kullan",
+    "changeLocation": "Konumu değiştir: {label}",
+    "nearYou": "Size yakın salonlar",
+    "nearEmpty": {
+      "title": "Yakınınızda salon yok",
+      "body": "{km} km içinde salon yok. Aramayı genişletin veya semti değiştirin.",
+      "cta": "Aramayı {km} km’ye genişlet"
+    },
+    "noLocation": {
+      "title": "En yakınları görmek için konumunuzu belirleyin",
+      "body": "Salonları seçtiğiniz yere olan uzaklığa göre sıralarız ve bu konumu sunucularımızda saklamayız.",
+      "cta": "Konum belirle"
+    },
+    "topRatedSalons": "En yüksek puanlı salonlar",
+    "allSalons": "Tüm salonlar"
+  },
+  "search": {
+    "meta": {
+      "title": "Arama sonuçları"
+    },
+    "back": "Geri",
+    "label": "Salon veya hizmet arayın",
+    "placeholder": "Salon arayın",
+    "submit": "Ara",
+    "filters": "Filtreler",
+    "filtersCount": "Filtreler · {count}",
+    "quick": "Hızlı filtreler",
+    "nearest": "En yakın",
+    "openNow": "Şu an açık",
+    "results": "{km} km içinde {count, plural, =0 {sonuç yok} one {# sonuç} other {# sonuç}}",
+    "resultsAll": "{count, plural, =0 {Sonuç yok} one {# sonuç} other {# sonuç}}",
+    "noLocation": "Konum olmadan sonuçlar puana göre sıralanır.",
+    "setLocation": "Konumumu kullan",
+    "earliest": "En erken {time}",
+    "tomorrow": "Yarın {time}",
+    "notBookable": "Çevrimiçi randevu duraklatıldı",
+    "matched": "{service} · {price} · {duration}",
+    "showMap": "Haritayı göster",
+    "showList": "Listeyi göster",
+    "view": "Görünüm",
+    "list": "Liste",
+    "mapTab": "Harita",
+    "empty": {
+      "title": "Eşleşen salon yok",
+      "body": "Başka kelimeler deneyin, bazı filtreleri kaldırın veya aramayı genişletin.",
+      "widen": "Aramayı {km} km’ye genişlet",
+      "clear": "Filtreleri temizle"
+    },
+    "more": "Daha fazla göster",
+    "page": "Sayfa {page}",
+    "book": "Randevu al",
+    "map": {
+      "label": "Sonuç haritası",
+      "pin": "{shop}, başlangıç fiyatı {price}",
+      "you": "Konumunuz",
+      "selected": "Seçilen salon",
+      "close": "Kapat",
+      "open": "Salonu görüntüle"
+    }
+  },
+  "filters": {
+    "open": "Filtreleri aç",
+    "title": "Filtrele ve sırala",
+    "close": "Kapat",
+    "sort": "Sıralama",
+    "sortNearest": "En yakın",
+    "sortRating": "En yüksek puanlı",
+    "sortEarliest": "En erken müsait",
+    "service": "Hizmet",
+    "anyService": "Tüm hizmetler",
+    "price": "Fiyat",
+    "priceRange": "{min} — {max}",
+    "minPrice": "En düşük fiyat",
+    "maxPrice": "En yüksek fiyat",
+    "openNow": "Yalnızca şu an açık olanlar",
+    "verified": "Yalnızca doğrulanmış salonlar",
+    "today": "Bugün randevu kabul edenler",
+    "clear": "Temizle",
+    "apply": "{count, plural, =0 {Sonuç yok} one {# sonucu göster} other {# sonucu göster}}",
+    "applyPending": "Sonuçları göster",
+    "counting": "Sonuçlar sayılıyor…"
+  },
+  "location": {
+    "meta": {
+      "title": "Konumunuzu belirleyin"
+    },
+    "title": "En yakınları görmek için konumu açın",
+    "body": "Konumunuzu salonları uzaklığa göre sıralamak için kullanırız. Konumunuz cihazınızda kalır ve istediğiniz zaman değiştirebilirsiniz.",
+    "allow": "Konum erişimine izin ver",
+    "manual": "Semtinizi girin",
+    "locating": "Konumunuz bulunuyor…",
+    "denied": "Konumunuza erişemedik. Bunun yerine semtinizi seçin.",
+    "unavailable": "Tarayıcınız konum paylaşamıyor. Bunun yerine semtinizi seçin.",
+    "manualTitle": "Semtinizi seçin",
+    "filter": "Semt ara",
+    "areasLabel": "Mevcut semtler",
+    "noAreas": "Eşleşen semt yok.",
+    "areaShops": "{count, plural, one {# salon} other {# salon}}",
+    "skip": "Şimdilik atla",
+    "mapPreview": "Harita önizlemesi",
+    "sheetTitle": "Konumunuz",
+    "areaLabel": "{district}, {city}"
+  },
+  "shopPage": {
+    "meta": {
+      "description": "{name}, {area}. Hizmetleri, fiyatları, uzmanları ve değerlendirmeleri görün, müsait bir randevu alın.",
+      "descriptionNoArea": "{name}. Hizmetleri, fiyatları, uzmanları ve değerlendirmeleri görün, müsait bir randevu alın."
+    },
+    "breadcrumb": {
+      "home": "Ana sayfa",
+      "shops": "Salonlar"
+    },
+    "back": "Geri",
+    "gallery": "Salon fotoğrafları",
+    "galleryImage": "Fotoğraf {index}/{total}",
+    "logoAlt": "{name} logosu",
+    "verified": "Doğrulandı",
+    "verifiedHint": "Groom Here bu salonun bilgilerini kontrol etti",
+    "noReviews": "Henüz değerlendirme yok",
+    "distance": "{km} uzaklıkta",
+    "address": "Adres",
+    "directions": "Yol tarifi",
+    "mapLabel": "Haritada {name}",
+    "tabs": {
+      "label": "Salon bölümleri",
+      "services": "Hizmetler",
+      "professionals": "Uzmanlar",
+      "reviews": "Değerlendirmeler",
+      "about": "Hakkında"
+    },
+    "services": {
+      "title": "Hizmetler",
+      "empty": "Şu anda yayınlanmış hizmet yok.",
+      "book": "Randevu al",
+      "bookLabel": "{name} için randevu al",
+      "packages": "Paketler",
+      "includes": "İçerik: {items}",
+      "walkInOnly": "Yalnızca salonda"
+    },
+    "pros": {
+      "title": "Uzmanlar",
+      "empty": "Şu anda yayınlanmış uzman yok.",
+      "today": "Bugün {time}",
+      "tomorrow": "Yarın {time}",
+      "none": "Yakında müsait saat yok",
+      "profile": "Profil: {name}"
+    },
+    "about": {
+      "description": "Salon hakkında",
+      "hours": "Çalışma saatleri",
+      "closed": "Kapalı",
+      "noHours": "Salon henüz çalışma saatlerini belirlemedi.",
+      "policies": "Politikalar",
+      "cancel": "Randevudan {duration} öncesine kadar ücretsiz iptal",
+      "payAtShop": "Ödeme salonda",
+      "amenities": "Olanaklar",
+      "category": "Tür"
+    },
+    "footer": {
+      "book": "Hemen randevu al",
+      "unavailable": "Online randevu şu anda durduruldu"
+    },
+    "paused": {
+      "title": "Online randevu durduruldu",
+      "body": "Salon online randevuyu şimdilik durdurdu. Onaylanmış randevular geçerliliğini korur."
+    },
+    "notListed": {
+      "title": "Online randevu şu anda kullanılamıyor",
+      "body": "Bu salon şu anda Groom Here üzerinden yeni randevu kabul etmiyor."
+    },
+    "duration": {
+      "hours": "{count, plural, one {# saat} other {# saat}}",
+      "minutes": "{count, plural, one {# dakika} other {# dakika}}"
+    }
+  },
+  "proPage": {
+    "meta": {
+      "title": "{name} — {shop}",
+      "description": "{name}, {shop} salonunda {specialty}. Hizmetleri, değerlendirmeleri ve en yakın müsait saatleri görün, randevu alın."
+    },
+    "back": "Salona dön",
+    "heading": "Uzman",
+    "worksAt": "Çalıştığı salon: {shop}",
+    "next": {
+      "title": "En yakın müsait saatler",
+      "titleToday": "Bugünkü en yakın müsait saatler",
+      "titleOn": "En yakın müsait saatler: {day}",
+      "more": "+{count} daha",
+      "none": "Önümüzdeki hafta müsait saat yok.",
+      "unavailable": "Bu salon online randevuyu durdurdu.",
+      "slot": "{time} için randevu al"
+    },
+    "services": {
+      "title": "Sunduğu hizmetler",
+      "empty": "Bu uzman için yayınlanmış hizmet yok."
+    },
+    "reviews": {
+      "title": "Son değerlendirmeler",
+      "all": "Tüm değerlendirmeler"
+    },
+    "book": "{name} ile randevu al"
+  },
+  "reviewsList": {
+    "title": "Değerlendirmeler",
+    "average": "5 üzerinden {value}",
+    "basedOn": "{count, plural, one {# değerlendirme} other {# değerlendirme}}",
+    "empty": {
+      "title": "Henüz değerlendirme yok",
+      "body": "Değerlendirmeler ilk tamamlanan ziyaretten sonra görünür."
+    },
+    "pages": "Değerlendirme sayfaları",
+    "note": "Değerlendirmeler ziyaretini tamamlamış müşterilerden gelir ve yalnızca ilk adlarıyla gösterilir."
+  },
+  "legal": {
+    "draft": "Taslak; lansmandan önce hukuki incelemeyi bekliyor.",
+    "terms": {
+      "title": "Kullanım koşulları",
+      "description": "Salon randevusu almak için Groom Here platformunu kullanma koşulları.",
+      "sections": {
+        "service": {
+          "title": "Hizmet",
+          "body": "Groom Here, katılımcı salonlardaki müsait saatleri gösterir ve randevunuzu kaydeder. Hizmeti salon sunar ve kendi fiyatlarını ve sürelerini kendisi belirler."
+        },
+        "account": {
+          "title": "Hesabınız",
+          "body": "Cep telefonu numaranız ve WhatsApp üzerinden gönderilen bir kodla giriş yaparsınız. Bilgilerinizden ve hesabınızdan yapılan randevulardan siz sorumlusunuz."
+        },
+        "bookings": {
+          "title": "Randevular ve iptal",
+          "body": "Bir randevuyu, randevudan önce belirtilen süreye kadar iptal edebilir veya değiştirebilirsiniz. Bu süreden sonra Groom Here ekibiyle iletişime geçin. Bu sürümde platform üzerinden ödeme yapılmaz; ödemeyi salonda yaparsınız."
+        },
+        "reviews": {
+          "title": "Değerlendirmeler",
+          "body": "Tamamlanmış bir ziyareti bir kez değerlendirebilirsiniz. Değerlendirmelerde adınız ve soyadınızın baş harfi gösterilir; kurallara aykırı değerlendirmeler gizlenebilir."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Gizlilik politikası",
+      "description": "Kişisel verilerinizin Groom Here tarafından nasıl işlendiği.",
+      "sections": {
+        "data": {
+          "title": "Topladığımız veriler",
+          "body": "Cep telefonu numaranız, adınız, randevularınız ve değerlendirmeleriniz. Salonlar cep telefonu numaranızı asla görmez."
+        },
+        "location": {
+          "title": "Konumunuz",
+          "body": "Seçtiğiniz konum, salonları uzaklığa göre sıralamak için yalnızca cihazınızda saklanır. Bu konumu sunucularımızda saklamayız."
+        },
+        "messages": {
+          "title": "Mesajlar",
+          "body": "Doğrulama kodlarını, randevu onaylarını ve hatırlatmaları WhatsApp üzerinden yalnızca sizin numaranıza göndeririz."
+        },
+        "cookies": {
+          "title": "Çerezler",
+          "body": "Yalnızca Groom Here platformunun kendi çerezlerini kullanırız (reklam veya üçüncü taraf çerezi kullanmayız): oturum açma ve güvenlik çerezleri, site dili ve bir salonun QR kodunu taradıktan sonra, bu koddan yapılan bir randevunun o ziyarete atfedilmesi için o ziyaretin numarasını 7 gün boyunca saklayan bir çerez. Bir kodu tarayan hiç kimsenin IP adresini saklamayız."
+        },
+        "rights": {
+          "title": "Haklarınız",
+          "body": "Hesap sayfanızdan bilgilerinizi düzenleyebilir ve oturumlarınızı sonlandırabilir, destek ekibinden hesabınızın silinmesini isteyebilirsiniz."
+        }
+      }
+    }
+  },
+  "booking": {
+    "meta": {
+      "title": "Randevu al: {shop}"
+    },
+    "phases": {
+      "shop": "Salon",
+      "service": "Hizmet",
+      "time": "Saat",
+      "confirm": "Onay"
+    },
+    "titles": {
+      "service": "Hizmetlerinizi seçin",
+      "professional": "Uzmanı seçin",
+      "date": "Gün ve saati seçin",
+      "review": "Randevunuzu gözden geçirin"
+    },
+    "back": "Önceki adım",
+    "backToShop": "Salona dön",
+    "next": "İleri",
+    "confirm": "Randevuyu onayla",
+    "loading": "Saatler yükleniyor…",
+    "retry": "Tekrar dene",
+    "services": "Hizmetler",
+    "packages": "Paketler",
+    "servicesHint": "Aynı ziyaret için bir veya daha fazla hizmet seçin.",
+    "packagesHint": "Paket için ayrı randevu alınır.",
+    "selectedCount": "{count, plural, one {1 hizmet} other {# hizmet}}",
+    "noCommonProfessional": "Bu hizmetlerin tümünü birlikte sunan tek bir uzman yok. Birini kaldırın veya ayrı bir ziyaret olarak randevu alın.",
+    "today": "Bugün",
+    "nearest": {
+      "title": "En yakın müsait saat",
+      "book": "Bu saate randevu al",
+      "orPick": "Veya size uygun gün ve saati seçin"
+    },
+    "noServices": "Bu salonda şu anda online randevu alınabilecek hizmet yok.",
+    "any": {
+      "title": "Herhangi bir müsait uzman",
+      "body": "Sizin için en erken müsait olanı seçeriz",
+      "tag": "Daha fazla saat"
+    },
+    "noProfessionals": "Şu anda bu hizmeti sunan uzman yok.",
+    "timeZoneNote": "Saatler Riyad saatine göredir",
+    "slotCount": "{count, plural, =0 {Müsait saat yok} one {1 müsait saat} other {# müsait saat}}",
+    "noDates": "Önümüzdeki günlerde müsait saat yok.",
+    "tryAny": "Daha fazla saat görmek için “Herhangi bir müsait uzman” seçeneğini seçin.",
+    "durationNote": "{service} {duration} sürer — yalnızca buna uygun saatler gösterilir",
+    "loadError": "Saatler yüklenemedi — hiçbir randevu alınmadı. Bağlantınızı kontrol edip tekrar deneyin.",
+    "blocked": {
+      "paused": "Salon online randevuyu durdurdu. Daha sonra tekrar deneyin.",
+      "other": "Bu salon şu anda online randevu kabul etmiyor."
+    },
+    "notices": {
+      "timeGone": {
+        "title": "Bu saat artık müsait değil",
+        "body": "Şu anda müsait olanlardan başka bir saat seçin."
+      },
+      "dateGone": {
+        "title": "Bu gün artık müsait değil",
+        "body": "Başka bir gün seçin."
+      },
+      "conflict": {
+        "title": "Bu saat az önce alındı",
+        "body": "Başka bir müşteri bu saati sizden önce aldı. Saatleri yeniledik — başka bir saat seçin."
+      }
+    },
+    "summary": {
+      "service": "Hizmet",
+      "services": "Hizmetler",
+      "professional": "Uzman",
+      "anyAssigned": "Herhangi bir müsait uzman — onayladığınızda atanır",
+      "date": "Tarih",
+      "time": "Saat",
+      "duration": "Süre",
+      "total": "Toplam (salonda ödenir)"
+    },
+    "note": {
+      "label": "Uzmana not",
+      "placeholder": "ör. yanlar kısa fade"
+    },
+    "policy": {
+      "title": "İptal ve ödeme",
+      "body": "Randevunuzdan {window} öncesine kadar ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Ödemeyi salonda yaparsınız — Groom Here üzerinden ödeme yoktur."
+    },
+    "window": {
+      "hours": "{count, plural, one {1 saat} other {# saat}}",
+      "minutes": "{count, plural, one {1 dakika} other {# dakika}}"
+    },
+    "signInNote": "Onayladığınızda cep telefonu numaranızı ister ve WhatsApp üzerinden bir kod göndeririz, ardından sizi bu adıma geri getiririz.",
+    "customersOnly": "Yalnızca müşteri hesapları randevu alabilir. Bir müşteri hesabıyla giriş yapın.",
+    "allServices": "Tüm hizmetler"
+  },
+  "bookings": {
+    "title": "Randevularım",
+    "tabsLabel": "Randevular",
+    "tabs": {
+      "upcoming": "Yaklaşan",
+      "past": "Geçmiş"
+    },
+    "empty": {
+      "title": "Programınız boş",
+      "body": "Bir sonraki tıraşınız için favori salonlarınızdan iki dokunuşla randevu alın.",
+      "pastTitle": "Henüz geçmiş randevu yok",
+      "pastBody": "Ziyaretleriniz tamamlandıktan sonra burada görünür.",
+      "cta": "Salonları keşfedin"
+    },
+    "actions": {
+      "details": "Ayrıntılar",
+      "detailsLabel": "{service} randevusunun ayrıntıları",
+      "reschedule": "Saatini değiştir",
+      "review": "Ziyareti değerlendir",
+      "rated": "Değerlendirildi ★ {rating}",
+      "rebook": "Yeniden randevu al"
+    },
+    "bookNext": {
+      "title": "Bir sonraki randevunuzu alın",
+      "body": "Aynı salon, aynı uzman, iki dokunuş"
+    },
+    "detail": {
+      "title": "Randevu ayrıntıları",
+      "addToCalendar": "Takvime ekle",
+      "directions": "Yol tarifi",
+      "rows": {
+        "shop": "Salon",
+        "service": "Hizmet",
+        "professional": "Uzman",
+        "duration": "Süre",
+        "reference": "Randevu numarası",
+        "note": "Notunuz",
+        "cancellationReason": "İptal nedeni"
+      },
+      "total": "Toplam (salonda ödenir)",
+      "policy": {
+        "title": "İptal politikası",
+        "before": "Groom Here üzerinden ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Son tarih: {time}.",
+        "after": "Online iptal ve saat değiştirme süresi sona erdi (randevudan {window} önce). Değiştirmek için Groom Here ekibiyle iletişime geçin."
+      },
+      "window": {
+        "hours": "{count, plural, one {1 saat} other {# saat}}",
+        "minutes": "{count, plural, one {1 dakika} other {# dakika}}"
+      },
+      "created": {
+        "confirmed": {
+          "title": "Randevunuz onaylandı",
+          "body": "Ayrıntıları size WhatsApp üzerinden göndeririz. Randevunuzu istediğiniz zaman “Randevularım” bölümünden yönetebilirsiniz."
+        },
+        "pending": {
+          "title": "Randevu talebiniz gönderildi",
+          "body": "Salon kısa süre içinde onaylayacak ve size bir WhatsApp mesajı gelecek."
+        }
+      },
+      "rescheduled": "Randevunuzun saati değiştirildi.",
+      "cancelled": "Randevu iptal edildi ve salona bildirildi.",
+      "reviewed": "Değerlendirmeniz yayınlandı — teşekkürler."
+    },
+    "cancel": {
+      "open": "Randevuyu iptal et",
+      "title": "{when} tarihli randevu iptal edilsin mi?",
+      "body": "Salona hemen bildirilir ve saat başkalarına açılır. Bu işlem geri alınamaz.",
+      "reasonLabel": "Neden (isteğe bağlı)",
+      "reasons": {
+        "emergency": "Acil bir durum",
+        "timeChanged": "Planlarım değişti",
+        "bookLater": "Daha sonra randevu alacağım"
+      },
+      "confirm": "Evet, iptal et",
+      "keep": "Randevuyu koru"
+    },
+    "reschedule": {
+      "title": "Saatini değiştir",
+      "currentTitle": "Yenisini onaylayana kadar mevcut randevunuz geçerli kalır",
+      "current": "Mevcut randevu: {when}. Yenisini onaylayana kadar bu randevu ayrılmış kalır.",
+      "blocked": "Salon şu anda online değişiklik kabul etmiyor.",
+      "pickDate": "Yeni bir tarih seçin",
+      "pickTime": "Müsait saatler — {date}",
+      "pickPrompt": "Yeni bir tarih ve saat seçin",
+      "new": "Yeni: {when}",
+      "confirm": "Yeni saati onayla",
+      "loading": "Saatler yükleniyor…",
+      "taken": "Bu saat az önce alındı — yenilenen saatlerden başka birini seçin.",
+      "notAllowed": "Bu randevu şu anda Groom Here üzerinden değiştirilemez.",
+      "backToBooking": "Randevuya dön"
+    }
+  },
+  "review": {
+    "title": "Ziyareti değerlendir",
+    "heading": "{name} ile ziyaretiniz nasıldı?",
+    "starsLegend": "Puanınız",
+    "stars": {
+      "0": "Puanınızı seçin",
+      "1": "Kötü",
+      "2": "Orta",
+      "3": "İyi",
+      "4": "Mükemmel",
+      "5": "Olağanüstü"
+    },
+    "tagsLegend": "Neyi beğendiniz?",
+    "tags": {
+      "Punctuality": "Dakiklik",
+      "Quality": "Kesim kalitesi",
+      "Cleanliness": "Temizlik",
+      "Manners": "İlgi",
+      "Price": "Fiyat"
+    },
+    "commentLabel": "Yorum",
+    "commentPlaceholder": "Başkalarına yardımcı olmak için ayrıntıları paylaşın",
+    "privacy": "Değerlendirmenizde yalnızca adınız ve soyadınızın baş harfi gösterilir; yayınlandıktan sonra düzenlenemez.",
+    "submitIdle": "Önce yıldızları seçin",
+    "submit": "Değerlendirmeyi gönder",
+    "done": {
+      "title": "Değerlendirmeniz için teşekkürler",
+      "body": "Değerlendirmeniz yayınlandı — teşekkürler."
+    },
+    "backToBooking": "Randevuya dön",
+    "unavailable": {
+      "reviewed": "Bu ziyareti zaten değerlendirdiniz.",
+      "closed": "Bu ziyareti değerlendirme süresi doldu.",
+      "notCompleted": "Ziyaret tamamlandıktan sonra değerlendirebilirsiniz."
+    }
+  },
+  "favorites": {
+    "title": "Favoriler",
+    "count": "{shops, plural, one {{shopsText} salon} other {{shopsText} salon}} · {pros, plural, one {{prosText} uzman} other {{prosText} uzman}}",
+    "shops": "Salonlar",
+    "professionals": "Uzmanlar",
+    "empty": {
+      "title": "Henüz favori yok",
+      "body": "Burada hızlıca bulmak için herhangi bir salon veya uzmandaki kalp simgesine dokunun.",
+      "cta": "Salonları keşfedin"
+    },
+    "add": "Favorilere ekle: {name}",
+    "remove": "Favorilerden çıkar: {name}",
+    "signInToSave": "Favorilere kaydetmek için giriş yapın: {name}",
+    "book": "Randevu al",
+    "bookWith": "{name} ile randevu al"
+  },
+  "shopBoard": {
+    "live": {
+      "connecting": "Bağlanıyor…",
+      "live": "Canlı",
+      "offline": "Yeniden bağlanıyor…"
+    },
+    "banners": {
+      "paused": {
+        "title": "Online randevu durduruldu",
+        "body": "Salonunuz uygulamada yeni randevu kabul etmiyor; mevcut randevular geçerliliğini korur. Randevusuz kayıtlar hâlâ yapılabilir.",
+        "action": "Durdurmayı yönet"
+      },
+      "expiring": {
+        "title": "{days, plural, one {Aboneliğiniz 1 gün içinde sona eriyor} other {Aboneliğiniz # gün içinde sona eriyor}}",
+        "body": "Sona erdiğinde salon keşif sonuçlarından kaldırılır; mevcut randevular geçerliliğini korur. Yenilemek için platform ekibiyle iletişime geçin."
+      },
+      "none": {
+        "title": "Salonunuzun aboneliği yok"
+      },
+      "expired": {
+        "title": "Aboneliğiniz sona erdi"
+      },
+      "suspended": {
+        "title": "Aboneliğiniz askıya alındı"
+      },
+      "hiddenBody": "Salonunuz keşif sonuçlarında gizlidir ve yeni online randevu kabul etmiyor. Mevcut randevular geçerliliğini korur.",
+      "visibleBody": "Aboneliği düzenlemek için platform ekibiyle iletişime geçin. Mevcut randevular geçerliliğini korur."
+    },
+    "overview": {
+      "noAccess": "Salonun randevularına erişiminiz yok.",
+      "kpis": {
+        "total": "Bugünkü randevular",
+        "vsYesterday": "Düne göre %{percent}",
+        "pending": "Onay bekliyor",
+        "needsAction": "Hemen işlem gerekiyor",
+        "completed": "Bugün tamamlanan",
+        "outOf": "toplam {total} içinden",
+        "noShow": "Gelmeyenler",
+        "share": "Günlük oran: %{percent}",
+        "free": "Boş kapasite",
+        "freeValue": "{hours} sa {minutes} dk",
+        "cancelled": "{count, plural, =0 {İptal yok} one {1 iptal} other {# iptal}}"
+      },
+      "upcoming": {
+        "title": "Bugünün yaklaşan programı",
+        "calendar": "Takvimi görüntüle",
+        "empty": "Bugün başka randevu yok."
+      },
+      "load": {
+        "title": "Berberlerin bugünkü yoğunluğu",
+        "onLeave": "İzinli",
+        "off": "Bugün çalışmıyor",
+        "value": "{bookings, plural, =0 {Randevu yok} one {1 randevu} other {# randevu}} · %{percent}"
+      },
+      "hourly": {
+        "title": "Saatlere göre randevular",
+        "subtitle": "Son 7 gün",
+        "hour": "Saat",
+        "count": "Randevular"
+      }
+    },
+    "drawer": {
+      "title": "Randevu ayrıntıları",
+      "close": "Ayrıntıları kapat",
+      "loading": "Randevu yükleniyor…",
+      "notFound": "Randevu bulunamadı.",
+      "when": "Zaman",
+      "outsideSchedule": "Bu randevu artık berberin çalışma programına uymuyor (izin, mola veya kapanış). Hiçbir şey iptal edilmedi — gerekirse müşteriyle iletişime geçin.",
+      "rows": {
+        "customer": "Müşteri",
+        "service": "Hizmet",
+        "professional": "Berber",
+        "source": "Kaynak",
+        "amount": "Tutar",
+        "note": "Müşteri notu",
+        "cancellationReason": "İptal nedeni"
+      },
+      "amount": "{price} — salonda ödenir",
+      "channel": {
+        "Online": "Müşteri uygulaması",
+        "WalkIn": "Randevusuz müşteri",
+        "Qr": "QR kod"
+      },
+      "noPhone": {
+        "title": "Müşterinin numarası mevcut değil",
+        "body": "Müşteriye platformun WhatsApp hattı üzerinden otomatik olarak mesaj gönderilir; numarası salona asla gösterilmez."
+      },
+      "changeStatus": "Durumu değiştir",
+      "actions": {
+        "Pending": "Onay bekliyor",
+        "Confirmed": "Onayla",
+        "Arrived": "Müşteri geldi",
+        "Completed": "Tamamlandı",
+        "NoShow": "Gelmedi",
+        "CancelledByShop": "İptal et",
+        "CancelledByCustomer": "Müşteri iptal etti"
+      },
+      "stale": "Randevu az önce değişti — yeniledik; kontrol edip tekrar deneyin.",
+      "notes": {
+        "title": "Dahili notlar",
+        "add": "Yeni not",
+        "internal": "Müşteriye asla gösterilmez.",
+        "save": "Not ekle"
+      },
+      "history": {
+        "title": "Geçmiş",
+        "created": "Randevu oluşturuldu",
+        "rescheduled": "Saat değiştirildi",
+        "status": "Durum: {status}"
+      },
+      "actor": {
+        "Customer": "Müşteri",
+        "ShopUser": "Salon",
+        "PlatformAdmin": "Platform ekibi",
+        "System": "Sistem"
+      },
+      "cancel": {
+        "title": "Randevu iptal edilsin mi?",
+        "body": "Müşteriye bildirilir ve saat serbest bırakılır. Bu işlem geri alınamaz.",
+        "reason": "Neden",
+        "confirm": "Evet, iptal et",
+        "keep": "Randevuyu koru"
+      }
+    },
+    "appointments": {
+      "title": "Randevular",
+      "loading": "Randevular yükleniyor…",
+      "loadError": "Randevular yüklenemedi. Tekrar deneyin.",
+      "empty": "Bu filtrelere uyan randevu yok.",
+      "statusFilter": "Duruma göre filtrele",
+      "chips": {
+        "all": "Tümü",
+        "pending": "Beklemede",
+        "confirmed": "Onaylandı",
+        "arrived": "Geldi",
+        "completed": "Tamamlandı",
+        "cancelled": "İptal edildi",
+        "noShow": "Gelmedi"
+      },
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "professional": "Berber",
+      "allProfessionals": "Tüm berberler",
+      "search": "Randevularda ara",
+      "searchPlaceholder": "Müşteri adı veya randevu numarasıyla arayın",
+      "caption": "Salonun randevuları",
+      "columns": {
+        "time": "Saat",
+        "customer": "Müşteri ve hizmet",
+        "professional": "Berber",
+        "status": "Durum",
+        "source": "Kaynak",
+        "actions": "İşlemler"
+      },
+      "open": "Randevu ayrıntıları: {name}",
+      "details": "Ayrıntılar",
+      "paging": "Randevu sayfaları",
+      "summary": "Toplam {total} kayıttan {from}–{to} arası gösteriliyor",
+      "previous": "Önceki",
+      "next": "Sonraki"
+    },
+    "walkIn": {
+      "title": "Randevusuz kayıt",
+      "noServices": "Aktif hizmet yok. Önce bir hizmet ekleyin.",
+      "intro": "Saat hemen ayrılır ve müşterilerin uygulamada gördüğü saatlerden kalkar.",
+      "steps": {
+        "service": "1. Hizmet",
+        "professional": "2. Berber",
+        "time": "3. Saat",
+        "customer": "4. Müşteri"
+      },
+      "date": "Gün",
+      "loading": "Saatler yükleniyor…",
+      "loadError": "Saatler yüklenemedi.",
+      "noProfessionals": "Bu hizmeti sunan aktif berber yok.",
+      "freeNow": "Şu anda müsait",
+      "freeAt": "Müsait: {time}",
+      "noTimes": "Bu gün müsait saat yok",
+      "startNow": "Hemen başla {time}",
+      "name": "Müşterinin adı",
+      "nameTooLong": "Ad çok uzun.",
+      "note": "Not",
+      "notePlaceholder": "ör. kısa fade",
+      "noPhone": "Resepsiyonda müşterinin cep telefonu numarası sorulmaz. WhatsApp hatırlatmaları istiyorsa, onu uygulamayı yükleyip salonun kodunu taramaya davet edin.",
+      "summary": {
+        "title": "Randevu özeti",
+        "service": "Hizmet",
+        "professional": "Berber",
+        "starts": "Başlangıç",
+        "ends": "Bitiş",
+        "total": "Toplam"
+      },
+      "submit": "Randevuyu kaydet",
+      "blocksOnline": "Bu saat online randevuya hemen kapatılır.",
+      "taken": "Bu saat artık müsait değil — saatleri yeniledik; başka birini seçin.",
+      "done": {
+        "title": "Randevusuz kayıt oluşturuldu",
+        "body": "Randevu {reference}. Saat uygulamada kapatıldı.",
+        "view": "Randevuyu görüntüle",
+        "another": "Yeni randevusuz kayıt"
+      }
+    },
+    "calendar": {
+      "title": "Günlük ve haftalık takvim",
+      "loading": "Takvim yükleniyor…",
+      "loadError": "Takvim yüklenemedi.",
+      "view": "Görünüm",
+      "day": "Gün",
+      "week": "Hafta",
+      "previous": "Önceki",
+      "next": "Sonraki",
+      "today": "Bugün",
+      "weekOf": "{from} — {to}",
+      "professional": "Berber",
+      "allProfessionals": "Tüm berberler",
+      "legend": "Renk açıklaması",
+      "legendItems": {
+        "Confirmed": "Onaylandı",
+        "Pending": "Beklemede",
+        "Arrived": "Geldi",
+        "Completed": "Tamamlandı",
+        "break": "Mola / kapalı"
+      },
+      "noProfessionals": "Salonda aktif berber yok.",
+      "closed": "Salon bu gün kapalı.",
+      "closedShort": "Kapalı",
+      "count": "{count, plural, =0 {Randevu yok} one {1 randevu} other {# randevu}}",
+      "offShift": "Mesai dışı",
+      "break": "Mola",
+      "timeOff": "İzin",
+      "walkIn": "Randevusuz müşteri",
+      "walkInAt": "{name} ile randevusuz müşteri, saat {time}",
+      "open": "Randevu — {name}: {item}, {time}",
+      "density": "Randevu yoğunluğu",
+      "parts": {
+        "morning": "Sabah",
+        "noon": "Öğleden sonra",
+        "evening": "Akşam",
+        "night": "Gece"
+      },
+      "closedCell": "Kapalı"
+    }
+  },
+  "adminOverview": {
+    "title": "Platforma genel bakış",
+    "subtitle": "Groom Here platformu · {date}",
+    "kpis": "Platform göstergeleri",
+    "period": {
+      "label": "Dönem",
+      "d1": "Bugün",
+      "d7": "Son 7 gün",
+      "d30": "Son 30 gün"
+    },
+    "kpi": {
+      "appointmentsToday": "Bugünkü randevular",
+      "completionRate": "Tamamlanma oranı",
+      "cancellationRate": "İptal oranı",
+      "noShowRate": "Gelmeme oranı",
+      "activeShops": "Aktif salonlar",
+      "expiringSubscriptions": "Yakında sona erecek abonelikler",
+      "activeProfessionals": "Aktif uzmanlar",
+      "newCustomers": "Yeni müşteriler"
+    },
+    "delta": {
+      "vsYesterday": "Düne göre {change}",
+      "percent": "{sign}%{value}",
+      "points": "Önceki döneme göre {sign}{value} puan",
+      "noBase": "Karşılaştırılacak önceki veri yok",
+      "ofTotal": "Şu ana kadarki {count} randevu içinde",
+      "ofShops": "Toplam {total} salon içinde",
+      "endedOrSuspended": "{count} sona ermiş veya askıya alınmış",
+      "added": "Bu dönemde +{count} eklendi"
+    },
+    "trend": {
+      "title": "14 günlük randevular",
+      "completed": "Tamamlandı",
+      "cancelledOrNoShow": "İptal edildi veya gelmedi",
+      "other": "Yaklaşan veya devam eden",
+      "table": "Günlük randevular",
+      "date": "Tarih"
+    },
+    "popular": {
+      "title": "En çok randevu alınan kategoriler",
+      "empty": "Bu dönemde henüz randevu yok.",
+      "Packages": "Paketler",
+      "Uncategorised": "Kategorisiz"
+    },
+    "topShops": {
+      "title": "En yoğun salonlar",
+      "empty": "Bu dönemde henüz randevu yok.",
+      "shop": "Salon",
+      "bookings": "Randevular",
+      "cancellation": "İptaller",
+      "rating": "Puan"
+    },
+    "followUp": {
+      "title": "Takip edilecek abonelikler",
+      "all": "Tüm abonelikler",
+      "empty": "Yakında sona erecek abonelik yok.",
+      "ends": "Bitiş: {date}",
+      "expired": "{count, plural, =0 {Sona eren abonelik yok} one {# sona erdi} other {# sona erdi}}",
+      "suspended": "{count, plural, =0 {askıya alınan yok} one {# askıya alındı} other {# askıya alındı}}"
+    }
+  },
+  "adminBookings": {
+    "title": "Randevular",
+    "detailTitle": "Randevu ayrıntıları",
+    "notFound": "Randevu bulunamadı.",
+    "filters": "Randevuları filtrele",
+    "search": "Ara",
+    "searchPlaceholder": "Müşteri adı veya randevu numarası",
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "channel": "Kaynak",
+    "allChannels": "Tüm kaynaklar",
+    "apply": "Uygula",
+    "clear": "Filtreleri temizle",
+    "scopedShop": "Tek bir salonun randevuları gösteriliyor.",
+    "scopedCustomer": "Tek bir müşterinin randevuları gösteriliyor.",
+    "statusFilter": "Duruma göre filtrele",
+    "caption": "Tüm salonlardaki randevular",
+    "empty": {
+      "title": "Bu filtrelere uyan randevu yok",
+      "body": "Tarihleri, durumu veya aramayı değiştirin."
+    },
+    "columns": {
+      "when": "Saat",
+      "customer": "Müşteri ve hizmet",
+      "shop": "Salon ve berber",
+      "status": "Durum",
+      "source": "Kaynak",
+      "reference": "Numara"
+    },
+    "rows": {
+      "shop": "Salon"
+    },
+    "noPhone": "Müşterinin numarası randevunun bir parçası değildir. Destek ekibi, gerekçe belirterek numarayı müşteri profilinden görüntüleyebilir; her görüntüleme kaydedilir.",
+    "noNotes": "Dahili not yok.",
+    "history": {
+      "rescheduled": "Saat değiştirildi (önceki: {from})",
+      "reason": "Gerekçe: {reason}"
+    },
+    "intervene": {
+      "heading": "Müdahale et",
+      "title": "Salon adına: {action}",
+      "rescheduleTitle": "Randevunun saatini değiştir",
+      "auditNote": "Salon ve müşteri değişikliği görür. Gerekçe zorunludur ve denetim kaydına yazılır.",
+      "reason": "Gerekçe",
+      "submit": "Onayla",
+      "reschedule": "Saati değiştir",
+      "rescheduleSubmit": "Yeni saati onayla",
+      "date": "Tarih",
+      "professional": "Berber",
+      "time": "Boş saatler",
+      "noSlots": "Bu berberin bu gün boş saati yok.",
+      "none": "Bu randevu için yapılabilecek bir işlem yok.",
+      "changed": "Randevu güncellendi.",
+      "rescheduled": "Randevunun saati değiştirildi."
+    }
+  },
+  "adminCustomers": {
+    "title": "Müşteriler",
+    "detailTitle": "Müşteri profili",
+    "notFound": "Müşteri bulunamadı.",
+    "search": "Müşterilerde ara",
+    "searchPlaceholder": "Ada göre ara",
+    "searchSubmit": "Ara",
+    "privacy": "Müşteri numaraları yalnızca platform ekibine, destek amacıyla görünür ve her görüntüleme denetim kaydına yazılır.",
+    "caption": "Müşteriler",
+    "empty": {
+      "title": "Müşteri bulunamadı",
+      "body": "Başka bir ad deneyin."
+    },
+    "columns": {
+      "name": "Müşteri",
+      "bookings": "Randevular",
+      "upcoming": "Yaklaşan",
+      "last": "Son randevu",
+      "registered": "Kayıt tarihi"
+    },
+    "noName": "Henüz ad yok",
+    "disabled": "Devre dışı",
+    "since": "{date} tarihinden beri müşteri",
+    "stats": "Randevu rakamları",
+    "kpi": {
+      "bookings": "Randevular",
+      "completed": "Tamamlanan",
+      "cancelled": "İptaller",
+      "noShows": "Gelmedi"
+    },
+    "upcoming": "Yaklaşan randevular",
+    "previous": "Geçmiş randevular",
+    "noUpcoming": "Yaklaşan randevu yok.",
+    "noPrevious": "Geçmiş randevu yok.",
+    "allBookings": "Tüm randevular",
+    "contact": {
+      "none": "Numara yok",
+      "reveal": "Numarayı göster",
+      "hide": "Gizle",
+      "privacy": "Yalnızca platform ekibine, destek amacıyla görünür. Her görüntüleme kaydedilir.",
+      "title": "Müşterinin numarası gösterilsin mi?",
+      "body": "Neden ihtiyacınız olduğunu belirtin. Görüntüleme, adınız ve gerekçeyle birlikte denetim kaydına yazılır.",
+      "reason": "Gerekçe",
+      "submit": "Numarayı göster"
+    }
+  },
+  "adminReviews": {
+    "title": "Değerlendirmeler",
+    "queues": "Değerlendirme listeleri",
+    "queue": {
+      "NeedsReview": "İnceleme bekliyor",
+      "Published": "Yayında",
+      "Hidden": "Gizli",
+      "All": "Tümü"
+    },
+    "flagFilter": "Nedene göre filtrele",
+    "flag": {
+      "any": "Tüm nedenler",
+      "Reported": "Şikâyet edildi",
+      "LowRating": "Düşük puan",
+      "ContainsPhone": "Telefon numarası içeriyor"
+    },
+    "search": "Ad veya metne göre ara",
+    "searchSubmit": "Ara",
+    "list": "Değerlendirmeler",
+    "empty": {
+      "title": "Burada değerlendirme yok",
+      "body": "Listeyi veya filtreyi değiştirin.",
+      "queue": "Moderasyon bekleyen bir şey yok."
+    },
+    "hidden": "Gizli",
+    "item": "Hizmet: {name}",
+    "booking": "Randevuyu görüntüle",
+    "reportedFor": "Şikâyet: {reason}",
+    "hiddenFor": "Gizlendi: {reason}",
+    "actions": {
+      "flag": "Şikâyet et",
+      "hide": "Gizle",
+      "publish": "Yayınla",
+      "reason": "Gerekçe",
+      "flagTitle": "Bu değerlendirme şikâyet edilsin mi?",
+      "flagBody": "Yayında kalır; kararı bir moderatör verir. Gerekçeniz kaydedilir.",
+      "hideTitle": "Bu değerlendirme gizlensin mi?",
+      "hideBody": "Salonun sayfasından ve puanından çıkarılır. Silinmez, saklanır ve gerekçe kaydedilir.",
+      "publishTitle": "Bu değerlendirme yayınlansın mı?",
+      "publishBody": "Salonun sayfasına geri döner ve yeniden puanına dahil edilir.",
+      "clearBody": "Yayında kalır ve moderasyon kuyruğundan çıkar; şikâyet kaldırılır."
+    },
+    "contact": {
+      "open": "Salonla iletişime geç",
+      "title": "Salona mesaj",
+      "body": "Mesaj, salonun bildirimlerinde görünür. Müşterinin iletişim bilgilerini eklemeyin.",
+      "message": "Mesaj",
+      "send": "Gönder",
+      "sent": "Mesaj salona gönderildi.",
+      "length": "5 ile 500 karakter arasında bir mesaj yazın.",
+      "failed": "Mesaj gönderilemedi."
+    }
+  },
+  "permissions": {
+    "areas": {
+      "Dashboard": "Genel bakış",
+      "Shops": "Salonlar",
+      "Professionals": "Uzmanlar",
+      "ServiceCategories": "Hizmet kategorileri",
+      "ShopServices": "Salon hizmetleri",
+      "Packages": "Paketler",
+      "Bookings": "Randevular",
+      "Customers": "Müşteriler",
+      "Reviews": "Değerlendirmeler",
+      "Subscriptions": "Abonelikler",
+      "Qr": "QR kodlar",
+      "WhatsApp": "WhatsApp",
+      "Roles": "Roller",
+      "Staff": "Platform personeli",
+      "Audit": "Denetim kaydı",
+      "Settings": "Platform ayarları",
+      "SuperAdmin": "Yalnızca süper yönetici",
+      "Jobs": "Arka plan işleri",
+      "Loyalty": "Sadakat"
+    },
+    "codes": {
+      "Admin_Dashboard_View": "Platforma genel bakışı görüntüle",
+      "Admin_Shops_View": "Salonları görüntüle",
+      "Admin_Shops_Create": "Salon oluştur",
+      "Admin_Shops_Edit": "Salon profillerini ve konumlarını düzenle",
+      "Admin_Shops_Suspend": "Salonları etkinleştir ve askıya al",
+      "Admin_Shops_ManageAccount": "Salon hesaplarını davet et",
+      "Admin_Professionals_View": "Uzmanları görüntüle",
+      "Admin_Professionals_Create": "Uzman oluştur",
+      "Admin_Professionals_Edit": "Uzmanları düzenle",
+      "Admin_Professionals_Disable": "Uzmanları devre dışı bırak ve etkinleştir",
+      "Admin_Professionals_AssignServices": "Uzmanlara hizmet ata",
+      "Admin_Professionals_ManageWhatsApp": "Uzmanların WhatsApp numaralarını yönet",
+      "Admin_Professionals_RevealWhatsApp": "Uzmanların WhatsApp numaralarını göster",
+      "Admin_ServiceCategories_Manage": "Hizmet kategorilerini yönet",
+      "Admin_ShopServices_View": "Salon hizmetlerini görüntüle",
+      "Admin_ShopServices_Moderate": "Salon hizmetlerini gizle ve geri getir",
+      "Admin_ShopServices_SupportOverride": "Bir salon hizmetini düzelt (destek müdahalesi)",
+      "Admin_ShopServices_Manage": "Salonların hizmetlerini ekle ve düzenle",
+      "Admin_Packages_Manage": "Platform paketlerini yönet",
+      "Admin_Bookings_View": "Randevuları görüntüle",
+      "Admin_Bookings_Intervene": "Randevuları güncelle ve saatlerini değiştir",
+      "Admin_Customers_View": "Müşterileri görüntüle",
+      "Admin_Customers_ViewContact": "Müşteri numaralarını göster",
+      "Admin_Reviews_View": "Değerlendirmeleri görüntüle",
+      "Admin_Reviews_Moderate": "Değerlendirmeleri gizle ve yayınla",
+      "Admin_Reviews_Flag": "Değerlendirmeleri şikâyet et",
+      "Admin_Subscriptions_View": "Abonelikleri görüntüle",
+      "Admin_Subscriptions_Assign": "Abonelikleri etkinleştir",
+      "Admin_Subscriptions_Renew": "Abonelikleri yenile",
+      "Admin_Subscriptions_Suspend": "Abonelikleri askıya al ve yeniden etkinleştir",
+      "Admin_Qr_View": "QR kodları görüntüle",
+      "Admin_Qr_Manage": "QR kodları yönet",
+      "Admin_WhatsApp_View": "WhatsApp mesajlarını görüntüle",
+      "Admin_WhatsApp_Templates_Edit": "WhatsApp şablonlarını düzenle",
+      "Admin_WhatsApp_Templates_Activate": "WhatsApp şablonlarını etkinleştir",
+      "Admin_WhatsApp_TestSend": "WhatsApp test mesajları gönder",
+      "Admin_WhatsApp_Dispatches_Retry": "WhatsApp mesajlarını yeniden gönder",
+      "Admin_Roles_View": "Rolleri ve personeli görüntüle",
+      "Admin_Roles_Manage": "Rolleri ve yetkilerini yönet",
+      "Admin_Staff_Manage": "Personel davet et ve rollerini ata",
+      "Admin_Audit_View": "Denetim kaydını görüntüle",
+      "Admin_Settings_View": "Platform ayarlarını görüntüle",
+      "Admin_Settings_Edit": "Platform ayarlarını düzenle",
+      "SuperAdmin_SubscriptionPlans_Manage": "Abonelik planlarını ve fiyatlarını yönet",
+      "SuperAdmin_Subscriptions_Override": "Bir salonun aboneliğini istisnai olarak değiştir",
+      "Admin_Jobs_View": "Arka plan işleri panelini görüntüle",
+      "Admin_Loyalty_Manage": "Salonların sadakat programlarını belirle"
+    }
+  },
+  "adminRoles": {
+    "title": "Roller ve yetkiler",
+    "notFound": "Rol bulunamadı.",
+    "sections": "Roller ve personel",
+    "tabs": {
+      "roles": "Yetki matrisi",
+      "staff": "Platform personeli"
+    },
+    "intro": "Daha özel olan yetki önceliklidir. Her değişiklik denetim kaydına yazılır ve hesabın bir sonraki isteğinden itibaren geçerli olur.",
+    "matrix": "Yetki matrisi",
+    "permission": "Yetki",
+    "granted": "İzin verildi",
+    "notGranted": "İzin verilmedi",
+    "managedRole": "Platform tarafından yönetilir",
+    "roleNames": {
+      "SuperAdmin": "Süper yönetici",
+      "OperationsManager": "Operasyon yöneticisi",
+      "Support": "Destek"
+    },
+    "create": {
+      "title": "Yeni rol",
+      "name": "Rol adı",
+      "submit": "Rol oluştur"
+    },
+    "editor": {
+      "title": "Rol yetkileri",
+      "managed": "Bu rol platform tarafından yönetilir ve burada değiştirilemez.",
+      "readOnly": "Bu rolü görüntüleyebilirsiniz ancak değiştiremezsiniz.",
+      "name": "Rol adı",
+      "rename": "Yeniden adlandır",
+      "delete": "Rolü sil",
+      "deleteTitle": "Bu rol silinsin mi?",
+      "deleteBody": "Yalnızca kimseye atanmamış bir rol silinebilir. Bu işlem geri alınamaz.",
+      "notHeld": "Bu yetkiye sahip olmadığınız için onu veremezsiniz.",
+      "save": "Yetkileri kaydet",
+      "saved": "Yetkiler kaydedildi.",
+      "renamed": "Rol yeniden adlandırıldı.",
+      "auditNote": "Denetim kaydına yazılır."
+    },
+    "staff": {
+      "title": "Platform personeli",
+      "search": "Ad veya e-postaya göre ara",
+      "searchSubmit": "Ara",
+      "caption": "Platform personeli",
+      "empty": "Personel bulunamadı.",
+      "columns": {
+        "name": "Ad",
+        "roles": "Roller",
+        "status": "Erişim",
+        "since": "Katılım"
+      },
+      "active": "Aktif",
+      "disabled": "Devre dışı",
+      "you": "Siz",
+      "edit": "Roller",
+      "editFor": "{name} kullanıcısının rollerini değiştir",
+      "editTitle": "{name} kullanıcısının rolleri",
+      "editBody": "En az bir rol seçin. Yalnızca yetkilerine sahip olduğunuz rolleri atayabilirsiniz.",
+      "roles": "Roller",
+      "save": "Rolleri kaydet",
+      "disable": "Devre dışı bırak",
+      "enable": "Etkinleştir",
+      "disableFor": "{name} kullanıcısını devre dışı bırak",
+      "enableFor": "{name} kullanıcısını etkinleştir",
+      "disableTitle": "{name} kullanıcısı devre dışı bırakılsın mı?",
+      "disableBody": "Bir sonraki isteğinde oturumu kapatılır ve yeniden etkinleştirilene kadar giriş yapamaz.",
+      "enableTitle": "{name} kullanıcısı etkinleştirilsin mi?",
+      "enableBody": "Rolleriyle yeniden giriş yapabilir."
+    },
+    "invite": {
+      "title": "Personel davet et",
+      "email": "E-posta",
+      "role": "Rol",
+      "submit": "Davet gönder",
+      "sent": "Davet {email} adresine gönderildi."
+    }
+  },
+  "adminAudit": {
+    "title": "Denetim kaydı",
+    "filters": "Denetim kaydını filtrele",
+    "action": "İşlem",
+    "allActions": "Tüm işlemler",
+    "entityType": "Kayıt",
+    "allEntities": "Tüm kayıtlar",
+    "entityId": "Kayıt kimliği",
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "apply": "Uygula",
+    "filtered": "Filtrelenmiş görünüm.",
+    "clear": "Tümünü göster",
+    "entries": "Girdiler",
+    "empty": "Bu filtrelere uyan işlem yok.",
+    "reason": "Gerekçe: {reason}",
+    "open": "{type} kaydını aç",
+    "history": "Bu kaydın geçmişi",
+    "byActor": "Bu kişinin tüm işlemleri",
+    "newest": "En yeni girdiler",
+    "older": "Daha eski girdiler",
+    "actorType": {
+      "PlatformAdmin": "Platform ekibi",
+      "ShopUser": "Salon",
+      "Customer": "Müşteri",
+      "System": "Sistem"
+    },
+    "entities": {
+      "Shop": "salon",
+      "Professional": "uzman",
+      "Booking": "randevu",
+      "Customer": "müşteri",
+      "Review": "değerlendirme",
+      "Role": "rol",
+      "User": "personel",
+      "Invitation": "davet",
+      "ShopService": "hizmet",
+      "ServicePackage": "paket",
+      "ServiceCategory": "kategori",
+      "SubscriptionPlan": "plan",
+      "ShopSubscription": "abonelik",
+      "PlatformSettings": "ayarlar",
+      "QrCodeLink": "QR kod",
+      "WhatsAppTemplate": "WhatsApp şablonu",
+      "WhatsAppDispatch": "WhatsApp mesajı"
+    },
+    "actions": {
+      "shop_created": "Salon oluşturuldu",
+      "shop_activated": "Salon etkinleştirildi",
+      "shop_suspended": "Salon askıya alındı",
+      "shop_profile_updated": "Salon profili düzenlendi",
+      "shop_location_set": "Salon konumu belirlendi",
+      "shop_editable_policy_set": "Salon düzenleme yetkileri değiştirildi",
+      "shop_image_changed": "Salon görseli değiştirildi",
+      "shop_online_booking_paused": "Çevrimiçi randevu duraklatıldı",
+      "shop_online_booking_resumed": "Çevrimiçi randevu yeniden başlatıldı",
+      "shop_user_invited": "Salon hesabı davet edildi",
+      "professional_created": "Uzman oluşturuldu",
+      "professional_updated": "Uzman düzenlendi",
+      "professional_disabled": "Uzman devre dışı bırakıldı",
+      "professional_enabled": "Uzman etkinleştirildi",
+      "professional_avatar_changed": "Uzman fotoğrafı değiştirildi",
+      "professional_services_assigned": "Hizmetler atandı",
+      "professional_whatsapp_changed": "WhatsApp ayarları değiştirildi",
+      "professional_whatsapp_revealed": "Uzmanın numarası görüntülendi",
+      "service_hidden": "Hizmet gizlendi",
+      "service_unhidden": "Hizmet geri getirildi",
+      "service_support_override": "Hizmet destek tarafından düzeltildi",
+      "service_admin_created": "Hizmet bir yönetici tarafından eklendi",
+      "service_admin_updated": "Hizmet bir yönetici tarafından düzenlendi",
+      "package_hidden": "Paket gizlendi",
+      "package_unhidden": "Paket geri getirildi",
+      "service_category_created": "Kategori oluşturuldu",
+      "service_category_updated": "Kategori düzenlendi",
+      "service_category_activated": "Kategori etkinleştirildi",
+      "service_category_deactivated": "Kategori devre dışı bırakıldı",
+      "plan_created": "Plan oluşturuldu",
+      "plan_updated": "Plan düzenlendi",
+      "plan_published": "Plan yayınlandı",
+      "plan_deactivated": "Plan geri çekildi",
+      "plan_archived": "Plan arşivlendi",
+      "plan_reordered": "Planlar yeniden sıralandı",
+      "plan_price_added": "Plan fiyat sürümü eklendi",
+      "subscription_assigned": "Abonelik etkinleştirildi",
+      "subscription_renewed": "Abonelik yenilendi",
+      "subscription_overridden": "Abonelik istisnai olarak değiştirildi",
+      "subscription_suspended": "Abonelik askıya alındı",
+      "subscription_reinstated": "Abonelik yeniden etkinleştirildi",
+      "platform_settings_updated": "Platform ayarları değiştirildi",
+      "booking_cancelled_by_admin": "Randevu platform tarafından iptal edildi",
+      "booking_status_changed_by_admin": "Randevu durumu platform tarafından değiştirildi",
+      "booking_rescheduled_by_admin": "Randevunun saati platform tarafından değiştirildi",
+      "customer_contact_revealed": "Müşterinin numarası görüntülendi",
+      "review_flagged": "Değerlendirme şikâyet edildi",
+      "review_hidden": "Değerlendirme gizlendi",
+      "review_published": "Değerlendirme yayınlandı",
+      "review_report_cleared": "Değerlendirme şikâyeti kaldırıldı",
+      "role_created": "Rol oluşturuldu",
+      "role_renamed": "Rol yeniden adlandırıldı",
+      "role_deleted": "Rol silindi",
+      "role_permissions_changed": "Rol yetkileri değiştirildi",
+      "staff_invited": "Personel davet edildi",
+      "staff_roles_changed": "Personel rolleri değiştirildi",
+      "staff_disabled": "Personel devre dışı bırakıldı",
+      "staff_enabled": "Personel etkinleştirildi",
+      "qr_created": "QR kod oluşturuldu",
+      "qr_activated": "QR kod açıldı",
+      "qr_deactivated": "QR kod kapatıldı",
+      "review_shop_contacted": "Bir değerlendirme hakkında salonla iletişime geçildi",
+      "whatsapp_dispatch_retried": "WhatsApp mesajı yeniden gönderildi",
+      "whatsapp_template_activated": "WhatsApp şablon sürümü etkinleştirildi",
+      "whatsapp_template_test_sent": "WhatsApp şablon testi gönderildi",
+      "package_admin_created": "Paket bir yönetici tarafından eklendi",
+      "package_admin_updated": "Paket bir yönetici tarafından düzenlendi"
+    }
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "bell": "Bildirimler",
+    "bellUnread": "Bildirimler, {count, plural, one {# okunmamış} other {# okunmamış}}",
+    "unreadCount": "{count, plural, =0 {Okunmamış bildirim yok} one {# okunmamış bildirim} other {# okunmamış bildirim}}",
+    "unread": "Yeni",
+    "markRead": "Okundu olarak işaretle",
+    "markAllRead": "Tümünü okundu olarak işaretle",
+    "open": "Ayrıntıları görüntüle",
+    "loading": "Yükleniyor…",
+    "failed": "Değişiklik kaydedilemedi. Tekrar deneyin.",
+    "adminEmpty": "Yeni uyarı yok",
+    "empty": {
+      "title": "Henüz bildirim yok",
+      "body": "Randevu güncellemeleri ve önemli uyarılar burada görünecek."
+    },
+    "kinds": {
+      "generic": "Yeni güncelleme",
+      "shop": {
+        "booking_created": "{customer} adlı müşteriden yeni randevu: {professional} ile {item}, {date} saat {time}",
+        "booking_pending": "{customer} adlı müşteriden onayınızı bekleyen randevu talebi: {item}, {date} saat {time}",
+        "booking_confirmed": "{customer} adlı müşterinin randevusu onaylandı: {item}, {date} saat {time}",
+        "booking_rescheduled": "{customer} randevusunu taşıdı: {date} saat {time} ({professional} ile {item})",
+        "booking_cancelled": "{customer}, {date} saat {time} tarihli randevusunu iptal etti ({item})",
+        "subscription_expiring": "Salonun aboneliği {days, plural, one {# gün} other {# gün}} sonra, {endDate} tarihinde sona eriyor",
+        "subscription_expired": "Salonun aboneliği {endDate} tarihinde sona erdi. Yenilemek için Groom Here ekibiyle iletişime geçin",
+        "admin_message": "Groom Here ekibinden mesaj: {message}"
+      },
+      "customer": {
+        "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
+        "booking_rescheduled": "{shop} salonundaki randevunuz taşındı: {date} saat {time}",
+        "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi"
+      },
+      "admin": {
+        "whatsapp_dispatch_failed": "Bir WhatsApp mesajı gönderilemedi ({event})",
+        "subscription_expiring": "{shop} salonunun aboneliği {days, plural, one {# gün} other {# gün}} sonra, {endDate} tarihinde sona eriyor",
+        "subscription_expired": "{shop} salonunun aboneliği {endDate} tarihinde sona erdi",
+        "outbox_dead_lettered": "Giden kutusundaki bir mesaj tekrarlanan hatalar nedeniyle durduruldu"
+      }
+    }
+  },
+  "adminWhatsApp": {
+    "title": "WhatsApp mesajları",
+    "tabs": {
+      "label": "WhatsApp bölümleri",
+      "templates": "Şablonlar",
+      "dispatches": "Mesaj kaydı"
+    },
+    "event": {
+      "BookingConfirmed": "Randevu onaylandı",
+      "BookingPending": "Onay bekleyen talep",
+      "BookingRescheduled": "Randevu taşındı",
+      "BookingCancelled": "Randevu iptal edildi",
+      "BookingReminder": "Randevu öncesi hatırlatma"
+    },
+    "audience": {
+      "Customer": "Müşteri",
+      "Professional": "Uzman"
+    },
+    "locale": {
+      "ar": "Arapça",
+      "en": "İngilizce"
+    },
+    "templates": {
+      "intro": "Her olayın müşteri ve uzman için, Arapça ve İngilizce ayrı şablonu vardır. Düzenlemeler yalnızca gelecekteki mesajlara uygulanır.",
+      "list": "Mesaj şablonları",
+      "slot": "{audience} · {locale}",
+      "active": "Sürüm {number} etkin",
+      "noActive": "Etkin sürüm yok",
+      "hasDraft": "Taslak",
+      "edit": "Düzenle",
+      "editorTitle": "Şablon: {event}",
+      "breadcrumb": "Şablonlar"
+    },
+    "editor": {
+      "text": "Mesaj metni",
+      "draftBadge": "Taslak · sürüm {number}",
+      "activeBadge": "Etkin · sürüm {number}",
+      "body": "Metin",
+      "length": "{used} / {max} karakter",
+      "insert": "Değişken ekle",
+      "buttons": "Butonlar (en fazla iki)",
+      "buttonLabel": "Buton metni",
+      "buttonTarget": "Açılacak sayfa",
+      "target": {
+        "ManageBooking": "Randevu yönetim sayfası",
+        "ShopPage": "Salon sayfası ve yol tarifi"
+      },
+      "removeButton": "Butonu kaldır",
+      "addButton": "Buton ekle",
+      "providerName": "Onaylı Meta şablon adı",
+      "providerNameHelp": "Küçük harfler, rakamlar ve alt çizgiler. Gerçek gönderimden önce Meta tarafından onaylanmış metinle eşleşmelidir.",
+      "preview": "Önizleme",
+      "previewHelp": "Yalnızca sabit örnek veriler; hiçbir gerçek müşterinin verisi kullanılmaz.",
+      "saveDraft": "Taslağı kaydet",
+      "activate": "Etkinleştir",
+      "activateTitle": "Bu sürüm etkinleştirilsin mi?",
+      "activateBody": "Gelecekteki mesajlar bu sürümü kullanır; daha önce gönderilmiş mesajlar kendi orijinal sürümünü korur. Etkinleştirme kayda alınır.",
+      "saved": "Taslak kaydedildi.",
+      "activated": "Sürüm {number} artık etkin.",
+      "restored": "Metin taslağa kopyalandı. Yayına almak için etkinleştirin.",
+      "failed": "İşlem tamamlanamadı.",
+      "history": "Sürüm geçmişi",
+      "versionNumber": "Sürüm {number}",
+      "status": {
+        "Draft": "Taslak",
+        "Active": "Etkin",
+        "Archived": "Arşivlendi"
+      },
+      "activatedBy": "Etkinleştiren: {name} · {date}",
+      "editedBy": "Düzenleyen: {name} · {date}",
+      "system": "Sistem",
+      "restore": "Taslağa geri yükle"
+    },
+    "issues": {
+      "template_body_required": "Mesaj metnini yazın.",
+      "template_body_too_long": "Metin izin verilen uzunluğu aşıyor (1024 karakter).",
+      "template_unknown_placeholder": "{name} değişkeni tanınmıyor.",
+      "template_placeholder_not_allowed": "{name} değişkeni bu hedef kitle için kullanılamaz.",
+      "template_malformed_placeholder": "Süslü parantezleri kontrol edin: değişkenleri '{{customer_name}}' biçiminde yazın.",
+      "template_too_many_buttons": "En fazla iki buton.",
+      "template_button_label_invalid": "Buton metni zorunludur (en fazla 25 karakter).",
+      "template_button_not_allowed": "Randevu yönetimi butonu yalnızca müşteri mesajları içindir.",
+      "template_duplicate_button": "İki buton için aynı hedefi kullanmayın.",
+      "template_provider_name_invalid": "Şablon adı geçerli değil."
+    },
+    "placeholders": {
+      "customer_name": "Müşteri adı",
+      "professional_name": "Uzman adı",
+      "shop_name": "Salon adı",
+      "service_name": "Hizmet",
+      "booking_date": "Tarih",
+      "booking_time": "Saat",
+      "time_remaining": "Kalan süre",
+      "duration": "Süre",
+      "amount": "Tutar",
+      "address": "Adres",
+      "booking_reference": "Randevu referansı",
+      "manage_url": "Randevu yönetim bağlantısı"
+    },
+    "testSend": {
+      "open": "Test gönderimi",
+      "title": "Test gönderimi",
+      "body": "Bu iş için ayrılmış bir test numarası girin. Mesajda örnek veriler kullanılır ve kayıtlı bir müşterinin numarası reddedilir.",
+      "recipient": "Test numarası",
+      "confirm": "Bunun bir müşteri numarası değil, test numarası olduğunu onaylıyorum.",
+      "send": "Gönder",
+      "sent": "Test mesajı {recipient} numarasına gönderildi.",
+      "failedSend": "Gönderilmedi: {error}",
+      "failed": "Mesaj gönderilemedi."
+    },
+    "dispatches": {
+      "stats": "Son 24 saat: {count, plural, =0 {mesaj yok} one {# mesaj} other {# mesaj}} · teslim oranı {rate}",
+      "filters": "Kaydı filtrele",
+      "status": {
+        "all": "Tümü",
+        "Queued": "Sırada",
+        "Sent": "Gönderildi",
+        "Delivered": "Teslim edildi",
+        "Read": "Okundu",
+        "Failed": "Başarısız"
+      },
+      "anyAudience": "Tüm hedef kitleler",
+      "anyEvent": "Tüm olaylar",
+      "apply": "Uygula",
+      "list": "Mesajlar",
+      "columns": {
+        "time": "Saat",
+        "event": "Olay",
+        "audience": "Alıcı",
+        "recipient": "Numara",
+        "version": "Şablon sürümü",
+        "status": "Durum",
+        "attempts": "Denemeler"
+      },
+      "kind": {
+        "Lifecycle": "Randevu olayı",
+        "Reminder": "Hatırlatma",
+        "Test": "Test"
+      },
+      "versionShort": "v{number}",
+      "empty": {
+        "title": "Burada mesaj yok",
+        "body": "Filtreyi değiştirin veya ilk randevuyu bekleyin."
+      },
+      "detailTitle": "Mesaj ayrıntıları",
+      "content": "Gönderilen metin",
+      "contentPurged": "Metin, saklama süresi dolduktan sonra silindi; içerik özeti ve şablon sürümü korunuyor.",
+      "hash": "İçerik özeti",
+      "error": "Son hata",
+      "attempts": "{count, plural, one {# deneme} other {# deneme}}",
+      "template": "Şablon: {event} · {audience} · sürüm {number}",
+      "providerId": "Sağlayıcı kimliği",
+      "retry": "Yeniden dene",
+      "retryTitle": "Bu mesaj yeniden gönderilsin mi?",
+      "retryBody": "Kayıtlı aynı metin yeniden gönderilir. İşlem kayda alınır.",
+      "retried": "Mesaj yeniden sıraya alındı.",
+      "booking": "Randevuyu görüntüle",
+      "back": "Mesaj kaydı"
+    },
+    "booking": {
+      "heading": "WhatsApp mesajları",
+      "none": "Bu randevu için henüz mesaj yok.",
+      "reminders": "Planlanmış hatırlatmalar",
+      "noReminders": "Hatırlatma yok.",
+      "reminderStatus": {
+        "Scheduled": "Planlandı",
+        "Cancelled": "İptal edildi",
+        "Sent": "Gönderildi",
+        "Skipped": "Gönderilmedi"
+      },
+      "due": "{audience} · {date} saat {time}",
+      "openLog": "Kaydı aç"
+    }
+  },
+  "qrLanding": {
+    "meta": {
+      "title": "{name} — QR kod ile randevu al"
+    },
+    "badge": {
+      "Shop": "Salonun koduyla geldiniz",
+      "Professional": "Uzmanın koduyla geldiniz"
+    },
+    "intro": {
+      "Shop": "Doğrudan bu salonun sayfasındasınız. Hizmetinizi seçin, ardından randevuyu tamamlamak için cep telefonu numaranızı girin.",
+      "Professional": "Doğrudan {name} adlı uzmanın sayfasındasınız. Hizmetinizi seçin, ardından randevuyu tamamlamak için cep telefonu numaranızı girin."
+    },
+    "times": {
+      "today": "Bugünün en erken saatleri",
+      "on": "{day} tarihindeki en erken saatler",
+      "none": "Önümüzdeki hafta boş saat yok.",
+      "slot": "Saat {time} için randevu al"
+    },
+    "services": {
+      "title": "Hizmetler",
+      "empty": "Şu anda randevu alınabilecek hizmet yok."
+    },
+    "cta": {
+      "book": "Hemen randevu al",
+      "caption": "Cep telefonu numaranız yalnızca onay adımında istenir",
+      "unavailable": "Bu salonda şu anda çevrimiçi randevu alınamıyor."
+    },
+    "worksAt": "Çalıştığı salon: {shop}",
+    "fullPage": "Tam sayfa"
+  },
+  "adminQr": {
+    "kpi": {
+      "visits": "Taramalar",
+      "bookings": "Kodlardan gelen randevular",
+      "conversion": "Taramadan randevuya dönüşüm",
+      "window": "Randevu, taramadan sonraki {days} gün içinde alınırsa sayılır."
+    },
+    "target": {
+      "Shop": "Salon sayfası",
+      "Professional": "Uzman sayfası: {name}"
+    },
+    "status": {
+      "active": "Etkin",
+      "inactive": "Devre dışı"
+    },
+    "figures": "{visits} tarama · {bookings} randevu",
+    "download": {
+      "label": "İndir",
+      "format": "{code} kodunu {format} olarak indir",
+      "poster": "A5 afiş"
+    },
+    "imageAlt": "{name} sayfasını açan QR kod",
+    "privacy": "IP adresi veya cihaz parmak izi saklamıyoruz: yalnızca tarama zamanını, cihaz türünü ve sayfa dilini, ayrıca taramadan sonraki 7 gün içinde alınan randevuyu ilişkilendiren, kendimize ait bir Groom Here çerezini saklıyoruz.",
+    "materials": {
+      "title": "Baskı malzemeleri",
+      "Shop": "Her salon için bir kod",
+      "ShopBody": "Salonun sayfasını hizmetleri ve boş saatleriyle birlikte açar.",
+      "Professional": "Her berber için bir kod",
+      "ProfessionalBody": "Berberin sayfasını doğrudan açar — koltuk aynası için tasarlandı.",
+      "counted": "Her tarama sayılır",
+      "countedBody": "Taramadan randevuya dönüşüm burada ölçülür."
+    },
+    "title": "QR kodlar",
+    "subtitle": "{from} ile {to} arası",
+    "period": {
+      "label": "Dönem",
+      "d7": "Son 7 gün",
+      "d30": "Son 30 gün",
+      "d90": "Son 90 gün"
+    },
+    "byShop": {
+      "title": "Salona göre taramalar",
+      "empty": "Bu dönemde tarama yok.",
+      "label": "Salon başına taramalar"
+    },
+    "filter": {
+      "label": "Kod durumu",
+      "all": "Tümü",
+      "active": "Etkin",
+      "inactive": "Devre dışı"
+    },
+    "codes": {
+      "title": "Kodlar",
+      "caption": "Dönem içindeki taramaları ve randevularıyla QR kodlar",
+      "empty": "Henüz kod yok.",
+      "code": "Kod",
+      "shop": "Salon",
+      "visits": "Taramalar",
+      "bookings": "Randevular",
+      "status": "Durum",
+      "files": "Dosyalar"
+    },
+    "toggle": {
+      "deactivate": "Devre dışı bırak",
+      "activate": "Etkinleştir",
+      "deactivateTitle": "{code} kodu devre dışı bırakılsın mı?",
+      "deactivateBody": "Basılı kod artık hiçbir sayfayı açmayacak. Geçmiş taramaları ve randevuları analizlerde kalır.",
+      "activateTitle": "{code} kodu etkinleştirilsin mi?",
+      "activateBody": "Basılı kod, sayfasını yeniden açacak.",
+      "cancel": "Geri dön"
+    },
+    "create": {
+      "open": "Yeni kod",
+      "title": "QR kod oluştur",
+      "shop": "Salon",
+      "target": "Kodun açacağı sayfa",
+      "Shop": "Salon sayfası",
+      "Professional": "Bir berberin sayfası",
+      "professional": "Berber",
+      "choose": "Seçin",
+      "noProfessionals": "Bu salonda etkin berber yok.",
+      "label": "Kullanıldığı yer (isteğe bağlı)",
+      "labelHelper": "Örneğin: salon girişi, koltuk aynası 2",
+      "submit": "Kod oluştur",
+      "created": "{code} kodu oluşturuldu.",
+      "required": "Salonu ve berberi seçin."
+    }
+  },
+  "shopQr": {
+    "kpi": {
+      "visits": "Taramalar",
+      "bookings": "Kodlardan gelen randevular",
+      "conversion": "Taramadan randevuya dönüşüm",
+      "window": "Randevu, taramadan sonraki {days} gün içinde alınırsa sayılır."
+    },
+    "target": {
+      "Shop": "Salon sayfası",
+      "Professional": "Uzman sayfası: {name}"
+    },
+    "status": {
+      "active": "Etkin",
+      "inactive": "Devre dışı"
+    },
+    "figures": "{visits} tarama · {bookings} randevu",
+    "download": {
+      "label": "İndir",
+      "format": "{code} kodunu {format} olarak indir",
+      "poster": "A5 afiş"
+    },
+    "imageAlt": "{name} sayfasını açan QR kod",
+    "privacy": "IP adresi veya cihaz parmak izi saklamıyoruz: yalnızca tarama zamanını, cihaz türünü ve sayfa dilini, ayrıca taramadan sonraki 7 gün içinde alınan randevuyu ilişkilendiren, kendimize ait bir Groom Here çerezini saklıyoruz.",
+    "materials": {
+      "title": "Baskı malzemeleri",
+      "Shop": "Her salon için bir kod",
+      "ShopBody": "Salonun sayfasını hizmetleri ve boş saatleriyle birlikte açar.",
+      "Professional": "Her berber için bir kod",
+      "ProfessionalBody": "Berberin sayfasını doğrudan açar — koltuk aynası için tasarlandı.",
+      "counted": "Her tarama sayılır",
+      "countedBody": "Taramadan randevuya dönüşüm burada ölçülür."
+    },
+    "title": "QR kodlar",
+    "intro": "Salonunuzun ve berberlerinizin baskıya hazır kodları. Kodları Groom Here ekibi oluşturur; siz indirip yazdırabilirsiniz.",
+    "period": "Son 30 gün ({from} – {to})",
+    "empty": "Salonunuzun henüz kodu yok. Oluşturmak için Groom Here ekibiyle iletişime geçin.",
+    "list": "Salonun kodları"
+  },
+  "qrPoster": {
+    "title": "A5 afiş",
+    "scan": "Kodu tarayın ve sıranızı ayırtın",
+    "print": "Yazdır",
+    "hint": "Kenar boşluğu olmadan A5 kâğıda yazdırın veya yazdırma penceresinde \"PDF olarak kaydet\" seçeneğini belirleyin.",
+    "back": "Kodlara dön",
+    "qrAlt": "{name} için QR kod"
+  },
+  "loyalty": {
+    "title": "Sadakat kartları",
+    "intro": "Sadakat programı olan bir salonda Groom Here üzerinden tamamladığınız her randevu kartınızdaki bir daireyi yeşile boyar. Kart dolduğunda aynı salondaki bir sonraki randevunuzda seçebileceğiniz bir kupon kazanırsınız.",
+    "programTitle": "Sadakat programı",
+    "offer": "{visits, plural, one {{visitsText} ziyaret} other {{visitsText} ziyaret}} tamamlayın, kazanın: {reward}",
+    "anyProfessional": "Salondaki herhangi bir uzmanla yaptığınız ziyaretler sayılır.",
+    "stampsLabel": "{requiredText} ziyaretten {filledText} tanesi tamamlandı",
+    "remaining": "{left, plural, one {Kupona {leftText} ziyaret kaldı} other {Kupona {leftText} ziyaret kaldı}}",
+    "useWhenBooking": "Kuponu bu salondaki bir sonraki randevunuzun onay adımında seçin.",
+    "signIn": "Ziyaretlerinizi takip etmek için giriş yapın",
+    "code": "Kupon kodu:",
+    "expires": "{date} tarihine kadar geçerli",
+    "noExpiry": "Son kullanma tarihi yok",
+    "ready": "Kullanıma hazır",
+    "held": "Yaklaşan randevunuz için ayrıldı",
+    "viewBooking": "Randevuyu görüntüle",
+    "programEnded": "Salon sadakat programını durdurdu; kazandığınız kuponlar hâlâ geçerli.",
+    "bookToUse": "Randevu alın ve kuponu kullanın",
+    "empty": {
+      "title": "Henüz sadakat kartınız yok",
+      "body": "Sadakat programı olan bir salonda randevunuzu tamamladığınızda kartınız burada görünür.",
+      "cta": "Salonlara göz atın"
+    },
+    "wizard": {
+      "title": "Sadakat kuponu",
+      "use": "Kuponu kullan: {reward}",
+      "none": "Şimdi kullanmak istemiyorum",
+      "hint": "Salon kuponu ziyaretinizde uygular; gösterilen tutar kupon öncesidir."
+    },
+    "applied": "Sadakat kuponu: {reward}",
+    "chip": "Kupon",
+    "admin": {
+      "title": "Sadakat programı",
+      "intro": "Salonla anlaşılarak belirlenir. Salonun herhangi bir uzmanıyla tamamlanan her çevrim içi randevu müşterinin kartındaki bir daireyi doldurur; dolan kart, müşterinin randevu alırken seçtiği ve salonun ziyarette uyguladığı bir kupon kazandırır.",
+      "active": "Program açık",
+      "requiredVisits": "Ödül için gereken ziyaret sayısı",
+      "rewardKind": "Ödül türü",
+      "kinds": {
+        "FreeService": "Ücretsiz hizmet",
+        "Discount": "Yüzde indirim"
+      },
+      "discountPercent": "İndirim (%)",
+      "rewardTitleAr": "Ödülün Arapça adı",
+      "rewardTitleArHint": "Örneğin: حلاقة مجانية",
+      "rewardTitleEn": "Ödülün İngilizce adı (isteğe bağlı)",
+      "validityDays": "Kupon geçerliliği, gün (isteğe bağlı)",
+      "validityHint": "Süresiz kupon için boş bırakın ya da {min}–{max} gün girin",
+      "range": "{min} ile {max} arası",
+      "save": "Programı kaydet",
+      "saved": "Sadakat programı kaydedildi.",
+      "readOnly": "Sadakat programını değiştirme yetkiniz yok.",
+      "notSet": "Bu salon için henüz sadakat programı belirlenmedi.",
+      "stats": {
+        "title": "Kullanım",
+        "members": "Ziyareti olan müşteriler",
+        "openStamps": "Açık kartlardaki ziyaretler",
+        "issued": "Verilen kuponlar",
+        "available": "Kullanılabilir veya ayrılmış kuponlar",
+        "redeemed": "Kullanılan kuponlar"
+      }
+    }
+  }
+}

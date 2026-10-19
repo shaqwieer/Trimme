@@ -19,9 +19,9 @@ import { localizedName } from '@/lib/i18n/localized';
 
 export const shopHref = (slug: string) => `/shops/${slug}`;
 
-/** The shop's name in the page language (English is always set for shops). */
+/** The shop's name in the page's content language (English is always set for shops). */
 function shopName(shop: ShopSearchItem, locale: AppLocale): string {
-  return locale === 'en' ? shop.nameEn || shop.nameAr : shop.nameAr;
+  return localizedName(locale, shop.nameAr, shop.nameEn);
 }
 
 /** Grid card (landing "top rated", `/shops`): the design-system ShopCard fed with discovery data. */

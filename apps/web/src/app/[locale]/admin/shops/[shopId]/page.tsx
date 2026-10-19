@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
+import { LoyaltyProgramForm } from '@/components/admin/LoyaltyProgramForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { InviteShopUserForm, ShopStatusActions } from '@/components/admin/ShopForms';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
@@ -21,12 +22,20 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
-import { formatDate, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
+import { formatDate, formatDurationMinutes, formatNumber, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const TABS = ['profile', 'location', 'users', 'professionals', 'services', 'subscription'] as const;
+const TABS = [
+  'profile',
+  'location',
+  'users',
+  'professionals',
+  'services',
+  'subscription',
+  'loyalty',
+] as const;
 type Tab = (typeof TABS)[number];
 
 function Card({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
@@ -43,8 +52,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 
 /**
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
- * exact location (pin picker), accounts, the shop's professionals, its services (added and edited here, D-127) and its
- * subscription. Tab state lives in the URL (`?tab=`).
+ * exact location (pin picker), accounts, the shop's professionals, its services (added and edited here, D-127), its
+ * subscription and its loyalty programme (D-132). Tab state lives in the URL (`?tab=`).
  */
 export default async function AdminShopPage({
   params,
@@ -76,7 +85,7 @@ export default async function AdminShopPage({
         }
         if (!shop) return <ErrorState />;
 
-        const name = lang === 'ar' ? shop.nameAr : shop.nameEn;
+        const name = localizedName(lang, shop.nameAr, shop.nameEn);
         const canEdit = me.permissions.includes('Admin.Shops.Edit');
         const mode = { kind: 'admin' as const, shopId: shop.id };
         const tabHref = (target: Tab) => `/admin/shops/${shop.id}?tab=${target}`;
@@ -115,6 +124,43 @@ export default async function AdminShopPage({
           );
         } else if (tab === 'subscription') {
           content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
+        } else if (tab === 'loyalty') {
+          const { data: loyalty } = await api.GET('/api/v1/admin/shops/{shopId}/loyalty', {
+            params: { path: { shopId: shop.id } },
+          });
+          const tl = await getTranslations({ locale: lang, namespace: 'loyalty.admin' });
+          content = loyalty ? (
+            <>
+              <Card title={tl('title')} testId="shop-loyalty-card">
+                <p className="text-caption text-text-secondary">{tl('intro')}</p>
+                <LoyaltyProgramForm
+                  shopId={shop.id}
+                  loyalty={loyalty}
+                  canEdit={me.permissions.includes('Admin.Loyalty.Manage')}
+                />
+              </Card>
+              <Card title={tl('stats.title')}>
+                <dl className="grid gap-3 text-caption sm:grid-cols-5">
+                  {(
+                    [
+                      ['members', loyalty.stats.members],
+                      ['openStamps', loyalty.stats.openStamps],
+                      ['issued', loyalty.stats.rewardsIssued],
+                      ['available', loyalty.stats.rewardsAvailable],
+                      ['redeemed', loyalty.stats.rewardsRedeemed],
+                    ] as const
+                  ).map(([key, value]) => (
+                    <div key={key}>
+                      <dt className="text-helper text-text-tertiary">{tl(`stats.${key}`)}</dt>
+                      <dd className="text-h3 font-bold text-text-primary">{formatNumber(value, lang)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Card>
+            </>
+          ) : (
+            <ErrorState />
+          );
         } else if (tab === 'services') {
           const canView = me.permissions.includes('Admin.ShopServices.View');
           const [{ data: services }, { data: packages }] = canView
@@ -217,7 +263,7 @@ export default async function AdminShopPage({
               {professionals && professionals.items.length > 0 ? (
                 <ul className="flex flex-col divide-y divide-border-row">
                   {professionals.items.map((pro) => {
-                    const proName = lang === 'ar' ? pro.nameAr : pro.nameEn;
+                    const proName = localizedName(lang, pro.nameAr, pro.nameEn);
                     return (
                       <li key={pro.id} className="flex items-center gap-3 py-3">
                         <Avatar name={proName} src={pro.avatarUrl ?? undefined} size="sm" />

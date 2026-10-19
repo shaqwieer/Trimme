@@ -12,6 +12,7 @@ import { Link } from '@/i18n/navigation';
 import type { ShopSearchItem } from '@/lib/api/public-types';
 import { isTomorrow } from '@/lib/discovery/opening';
 import { type AppLocale, formatDistanceKm, formatPrice, formatTime } from '@/lib/i18n/format';
+import { localizedName } from '@/lib/i18n/localized';
 import { DEFAULT_CENTER, DEFAULT_ZOOM, mapLibreLocale, TILE_URL } from '@/lib/map/config';
 
 /** Probed once per page load: each probe creates a WebGL context, and browsers keep only a few alive. */
@@ -124,7 +125,7 @@ export function ResultsMap({
           element.setAttribute(
             'aria-label',
             messages('map.pin', {
-              shop: lang === 'en' ? shop.nameEn : shop.nameAr,
+              shop: localizedName(lang, shop.nameAr, shop.nameEn),
               price: formatPrice(shop.pinPrice, lang, shop.currency),
             }),
           );
@@ -178,7 +179,7 @@ export function ResultsMap({
   }, [selectedId]);
 
   const selected = items.find((item) => item.id === selectedId) ?? null;
-  const name = selected ? (locale === 'en' ? selected.nameEn : selected.nameAr) : '';
+  const name = selected ? localizedName(locale, selected.nameAr, selected.nameEn) : '';
 
   if (unavailable) {
     return <InlineAlert tone="info" title={tPicker('mapUnavailable')} />;

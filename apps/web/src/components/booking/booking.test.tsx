@@ -214,8 +214,37 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
       professionalId: null,
       startsAt: '2026-10-01T07:30:00Z',
       note: 'تدريج',
+      loyaltyRewardId: null,
     });
   }, 15_000);
+
+  it('offers the customer their loyalty coupon on the review step and sends the chosen one (D-132)', async () => {
+    const user = userEvent.setup();
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+        rewards={[{ id: 'reward-1', titleAr: 'حلاقة مجانية', titleEn: 'Free haircut' }]}
+      />,
+    );
+
+    const picker = await screen.findByTestId('loyalty-picker');
+    expect(within(picker).getByRole('radio', { name: /لا أريد استخدامه الآن/ })).toBeChecked();
+    await user.click(within(picker).getByRole('radio', { name: /استخدم الكوبون: حلاقة مجانية/ }));
+    const confirm = screen.getByRole('button', { name: 'تأكيد الحجز' });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
+    await waitFor(() => expect(api.POST).toHaveBeenCalled());
+    expect(api.POST.mock.calls[0]![1].body.loyaltyRewardId).toBe('reward-1');
+  });
 
   it('sends a time taken meanwhile back to fresh slots with the "just taken" notice, and keeps the key on a plain retry', async () => {
     const user = userEvent.setup();

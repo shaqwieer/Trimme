@@ -62,7 +62,7 @@ export default async function AdminServicePage({
                   <dt className="text-helper text-text-tertiary">{t('columns.shop')}</dt>
                   <dd className="font-semibold">
                     <Link href={`/admin/shops/${service.shopId}`} className="text-text-link hover:underline">
-                      {lang === 'ar' ? service.shopNameAr : service.shopNameEn}
+                      {localizedName(lang, service.shopNameAr, service.shopNameEn)}
                     </Link>
                   </dd>
                 </div>
@@ -111,7 +111,7 @@ export default async function AdminServicePage({
                   categories={categories ?? []}
                   professionals={(professionals?.items ?? [])
                     .filter((pro) => pro.status === 'Active' || service.professionalIds.includes(pro.id))
-                    .map((pro) => ({ id: pro.id, name: lang === 'ar' ? pro.nameAr : pro.nameEn }))}
+                    .map((pro) => ({ id: pro.id, name: localizedName(lang, pro.nameAr, pro.nameEn) }))}
                 />
               </section>
             )}

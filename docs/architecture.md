@@ -32,6 +32,7 @@ flowchart TB
     subgraph modules["src/Modules (one project each)"]
       m1["Identity"]; m2["Shops"]; m3["Services"]; m4["Professionals"]; m5["Availability"]; m6["Bookings"]
       m7["Customers"]; m8["Reviews"]; m9["Subscriptions"]; m10["Notifications"]; m11["QrAnalytics"]; m12["Administration"]
+      m13["Loyalty"]
     end
     subgraph bb["src/BuildingBlocks"]
       web["Web<br/>IModule, problem details, middleware"] --> infra["Infrastructure<br/>TrimmeDbContext, redaction"]

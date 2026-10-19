@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
-import { formatDate } from '@/lib/i18n/format';
+import { type AppLocale, formatDate } from '@/lib/i18n/format';
 import { formatCoordinates } from '@/lib/map/config';
 import { type EditorMode, type ShopLocation, shopApi } from './shopApi';
 
@@ -13,7 +13,7 @@ type ShopLocationEditorProps = {
   location: ShopLocation | null;
   /** False when the admin policy (or a missing permission) keeps the location read-only for this user. */
   canEdit: boolean;
-  locale: 'ar' | 'en';
+  locale: AppLocale;
 };
 
 /** The pin picker for the admin (any shop) or the shop itself (only when its policy opens the location). */

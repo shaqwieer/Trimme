@@ -267,18 +267,31 @@ export function wizardPath(
  * What a booking request is about; a new idempotency key is used whenever any of it changes. For the wizard,
  * `offerId` is {@link offerKey} of every booked item.
  */
-export type BookingIntent = { offerId: string; pro: string; startsAt: string; note: string };
+/** What a submission asks for; `rewardId` is the loyalty coupon chosen on the review step (D-132), if any. */
+export type BookingIntent = {
+  offerId: string;
+  pro: string;
+  startsAt: string;
+  note: string;
+  rewardId?: string;
+};
 
 export type KeyedIntent = { intent: BookingIntent; key: string };
 
 function sameIntent(a: BookingIntent, b: BookingIntent): boolean {
-  return a.offerId === b.offerId && a.pro === b.pro && a.startsAt === b.startsAt && a.note === b.note;
+  return (
+    a.offerId === b.offerId &&
+    a.pro === b.pro &&
+    a.startsAt === b.startsAt &&
+    a.note === b.note &&
+    (a.rewardId ?? '') === (b.rewardId ?? '')
+  );
 }
 
 /**
  * The idempotency key for a submission (R-BKG-05): the same key while the request is the same (a double click or a
- * retry after a network error replays the first booking), a new one as soon as the offer, professional, time or note
- * changes (the API refuses a reused key with another body).
+ * retry after a network error replays the first booking), a new one as soon as the offer, professional, time, note or
+ * chosen coupon changes (the API refuses a reused key with another body).
  */
 export function keyFor(
   previous: KeyedIntent | undefined,

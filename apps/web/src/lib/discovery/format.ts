@@ -1,4 +1,4 @@
-import { type AppLocale, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatTime, RELATIVE_TIME_LOCALE } from '@/lib/i18n/format';
 
 /** A time of day from minutes after midnight ("٩:٠٠ ص"); minutes past 24:00 wrap to the next day (D-082). */
 export function minuteOfDay(minute: number, locale: AppLocale): string {
@@ -6,12 +6,10 @@ export function minuteOfDay(minute: number, locale: AppLocale): string {
   return formatTime(new Date(Date.UTC(2000, 0, 1, Math.floor(wrapped / 60), wrapped % 60)), locale, 'UTC');
 }
 
-const RELATIVE_LOCALE: Record<AppLocale, string> = { ar: 'ar-SA-u-nu-arab', en: 'en' };
-
 /** "قبل ٣ أيام" / "3 days ago" (clock-style digits in Arabic, D-040). */
 export function relativeTime(instant: string, locale: AppLocale, now: Date = new Date()): string {
   const seconds = Math.round((new Date(instant).getTime() - now.getTime()) / 1000);
-  const format = new Intl.RelativeTimeFormat(RELATIVE_LOCALE[locale], { numeric: 'auto' });
+  const format = new Intl.RelativeTimeFormat(RELATIVE_TIME_LOCALE[locale], { numeric: 'auto' });
   const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
     ['year', 365 * 24 * 3600],
     ['month', 30 * 24 * 3600],

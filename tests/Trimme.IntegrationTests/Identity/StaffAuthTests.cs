@@ -189,6 +189,27 @@ public sealed partial class StaffAuthTests(PostgresFixture postgres, MailpitFixt
     }
 
     [Fact]
+    public async Task Invitation_InTurkish_HasTurkishCopyAndTurkishLink()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "invite-tr", ct, settings: mailpit.SmtpSettings);
+        using var superAdmin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
+        var invitee = IdentityTestData.NewEmail("invitee-tr");
+
+        using (var invite = await superAdmin.PostAsync(
+                   "/api/v1/admin/staff/invitations", new { email = invitee, role = SystemRoles.Support, locale = "tr" }, ct))
+        {
+            invite.StatusCode.ShouldBe(HttpStatusCode.Created);
+        }
+
+        var message = await mailpit.WaitForMessageAsync(invitee, ct);
+        message.Subject.ShouldBe("Groom Here’a davet edildiniz");
+        message.Html.ShouldContain("dir=\"ltr\"");
+        message.Text.ShouldContain("destek olarak");
+        LinkPattern().Match(message.Text).Value.ShouldStartWith("https://app.trimme.test/tr/auth/accept-invite?token=");
+    }
+
+    [Fact]
     public async Task Admin_InvitesStaffUser_WhoAcceptsAndSignsIn()
     {
         var ct = TestContext.Current.CancellationToken;

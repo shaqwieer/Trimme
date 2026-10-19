@@ -47,6 +47,7 @@
 | `Admin.Subscriptions.Suspend` | ✓ | ✓ | — |
 | `Admin.Qr.View` | ✓ | ✓ | ✓ |
 | `Admin.Qr.Manage` | ✓ | ✓ | — |
+| `Admin.Loyalty.Manage` | ✓ | ✓ (new roles; an existing role is granted it by hand, as in D-127) | — |
 | `Admin.WhatsApp.View` | ✓ | ✓ | ✓ |
 | `Admin.WhatsApp.Templates.Edit` | ✓ | ✓ | — |
 | `Admin.WhatsApp.Templates.Activate` | ✓ | ✓ | — |
@@ -174,6 +175,10 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/audit`, `GET /api/v1/admin/audit/facets` | `Admin.Audit.View` · keyset cursor · actor names only (D-104) |
 | `GET /api/v1/admin/qr/codes`, `GET .../{id}`, `GET .../{id}/image`, `GET /api/v1/admin/qr/analytics` | `Admin.Qr.View` · every shop's codes and figures; period ≤ 366 days (D-114) |
 | `POST /api/v1/admin/qr/codes`, `POST .../{id}/deactivate|activate` | `Admin.Qr.Manage` · a professional code only for an active professional of the same shop · version-checked · audited · no delete (D-114) |
+| `GET /api/v1/admin/shops/{id}/loyalty` · `PUT` same | `Admin.Shops.View` to read · `Admin.Loyalty.Manage` to set the terms · version-checked · audited (D-132) |
+| `GET /api/v1/shop/loyalty` | `Shop.Bookings.Read` · the shop's own programme, read-only (D-132) |
+| `GET /api/v1/me/loyalty`, `GET /api/v1/me/loyalty/shops/{slug}` | Customer only · their own stamps and rewards (D-132) |
+| `GET /api/v1/public/shops/{slug}/loyalty` | Anonymous · a published shop's terms only (D-132) |
 | `GET /api/v1/shop/qr/codes`, `GET .../{id}`, `GET .../{id}/image` | `Shop.Qr.View` · the shop's own codes and their own scans and bookings only; another shop's id → 404 · read-only (D-114) |
 | `GET /api/v1/public/qr/{code}`, `POST /api/v1/public/qr/{code}/visits` | anonymous · rate-limited (`qr`) · the visit keeps no IP address and sets the HttpOnly attribution cookie (D-114) |
 

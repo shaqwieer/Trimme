@@ -19,6 +19,7 @@ import {
   Skeleton,
   SkeletonList,
 } from '@/components/ui/states';
+import { asLocale } from '@/i18n/routing';
 
 export const metadata: Metadata = { title: 'Server components', robots: { index: false, follow: false } };
 
@@ -29,7 +30,8 @@ export const metadata: Metadata = { title: 'Server components', robots: { index:
  */
 export default async function ServerComponentsPage({ params }: PageProps<'/[locale]/dev/components/server'>) {
   const { locale } = await params;
-  const ar = locale !== 'en';
+  // Sample text is Arabic or English; the Turkish page shows the English samples.
+  const ar = asLocale(locale) === 'ar';
   const tx = (a: string, e: string) => (ar ? a : e);
   const rows = [
     { id: '1', name: tx('صالون الأصالة', 'Al Asala Salon'), district: tx('الملقا', 'Al Malqa') },

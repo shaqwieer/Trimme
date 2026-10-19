@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
+import { asLocale, LANGUAGE_NAME_KEY, routing } from '@/i18n/routing';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
@@ -18,7 +19,7 @@ import { AuthCard } from './AuthCard';
 
 const schema = z.object({
   displayName: requiredText(60),
-  preferredLocale: z.enum(['ar', 'en']),
+  preferredLocale: z.enum(routing.locales),
   termsAccepted: z.boolean().refine((accepted) => accepted, { error: 'termsRequired' }),
 });
 
@@ -36,7 +37,7 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
   const form = useZodForm(schema, {
     defaultValues: {
       displayName: initialName ?? '',
-      preferredLocale: locale === 'en' ? 'en' : 'ar',
+      preferredLocale: asLocale(locale),
       termsAccepted: false,
     },
   });
@@ -67,13 +68,13 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
         />
         <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="pb-2 text-label font-bold text-text-strong">{t('languageLabel')}</legend>
-          <div className="grid grid-cols-2 gap-3">
-            <RadioCard {...form.register('preferredLocale')} value="ar">
-              <span lang="ar">{t('arabic')}</span>
-            </RadioCard>
-            <RadioCard {...form.register('preferredLocale')} value="en">
-              <span lang="en">{t('english')}</span>
-            </RadioCard>
+          {/* One per row: three names side by side do not fit the narrow sign-in card. */}
+          <div className="grid gap-3">
+            {routing.locales.map((option) => (
+              <RadioCard key={option} {...form.register('preferredLocale')} value={option}>
+                <span lang={option}>{t(LANGUAGE_NAME_KEY[option])}</span>
+              </RadioCard>
+            ))}
           </div>
         </fieldset>
         <div className="flex flex-col gap-1">

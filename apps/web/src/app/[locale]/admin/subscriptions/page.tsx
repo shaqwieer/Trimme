@@ -118,7 +118,7 @@ export default async function AdminSubscriptionsPage({
                       mobile: 'primary',
                       cell: (row) => (
                         <span className="font-bold text-text-primary">
-                          {lang === 'ar' ? row.shopNameAr : row.shopNameEn}
+                          {localizedName(lang, row.shopNameAr, row.shopNameEn)}
                         </span>
                       ),
                     },
@@ -151,7 +151,7 @@ export default async function AdminSubscriptionsPage({
                           href={`/admin/shops/${row.shopId}?tab=subscription`}
                           className="font-bold text-text-link hover:underline"
                           aria-label={t('manageLabel', {
-                            name: lang === 'ar' ? row.shopNameAr : row.shopNameEn,
+                            name: localizedName(lang, row.shopNameAr, row.shopNameEn),
                           })}
                         >
                           {t('manage')}

@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { LoyaltyChip } from '@/components/loyalty/LoyaltyChip';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SearchField, SelectField, TextField } from '@/components/ui/inputs';
@@ -206,7 +207,10 @@ export function AppointmentsBoard({
                     </span>
                   </td>
                   <td className="border-t border-border-row px-4 py-3">
-                    <span className="block font-bold text-text-primary">{b.customerName}</span>
+                    <span className="flex flex-wrap items-center gap-2 font-bold text-text-primary">
+                      {b.customerName}
+                      {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
+                    </span>
                     <span className="text-helper text-text-secondary">
                       {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
                       {formatDurationMinutes(b.item.durationMinutes, locale)}
@@ -250,7 +254,10 @@ export function AppointmentsBoard({
                   </span>
                   <StatusBadge kind="booking" status={b.status} size="sm" />
                 </div>
-                <span className="text-label font-bold text-text-primary">{b.customerName}</span>
+                <span className="flex flex-wrap items-center gap-2 text-label font-bold text-text-primary">
+                  {b.customerName}
+                  {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
+                </span>
                 <span className="text-helper text-text-secondary">
                   {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
                   {localizedName(locale, b.professional.nameAr, b.professional.nameEn)}

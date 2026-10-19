@@ -28,10 +28,10 @@ public sealed class ArchitectureRules
     public static TheoryData<string> ModuleNames => new(ModuleCatalog.All.Select(m => m.Name));
 
     [Fact]
-    public void All_twelve_modules_are_registered_and_non_empty()
+    public void All_thirteen_modules_are_registered_and_non_empty()
     {
-        ModuleCatalog.All.Count.ShouldBe(12);
-        ModuleCatalog.All.Select(m => m.Schema).Distinct().Count().ShouldBe(12, "Every module owns a distinct schema.");
+        ModuleCatalog.All.Count.ShouldBe(13);
+        ModuleCatalog.All.Select(m => m.Schema).Distinct().Count().ShouldBe(13, "Every module owns a distinct schema.");
         ModuleCatalog.All.ShouldAllBe(m => m.Assembly.GetTypes().Length > 0);
     }
 

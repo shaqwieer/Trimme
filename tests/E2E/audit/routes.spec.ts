@@ -203,7 +203,7 @@ async function auditPage(
       if (head.robots.includes('noindex')) problems.push('public page is noindex');
       const expected = new URL(url.split('?')[0]!, origin).toString();
       if (head.canonical !== expected) problems.push(`canonical ${head.canonical} ≠ ${expected}`);
-      for (const lang of ['ar', 'en', 'x-default']) {
+      for (const lang of ['ar', 'en', 'tr', 'x-default']) {
         if (head.hreflang.filter((h) => h === lang).length !== 1) problems.push(`hreflang ${lang} missing`);
       }
       if (head.ogImage === 0) problems.push('no og:image');

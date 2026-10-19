@@ -11,7 +11,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { calendarDaysUntil, timeUntil } from '@/lib/booking/format';
-import type { AppLocale } from '@/lib/i18n/format';
+import { type AppLocale, RELATIVE_TIME_LOCALE } from '@/lib/i18n/format';
 
 /**
  * "In 2 days" / "بعد يومين" until the appointment (c-appointments 1760: the countdown reduces forgetting). Computed in
@@ -23,9 +23,7 @@ export function Countdown({ startsAt, timeZone }: { startsAt: string; timeZone?:
   const [text, setText] = useState<string>();
 
   useEffect(() => {
-    const format = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar-SA-u-nu-arab' : 'en-GB', {
-      numeric: 'auto',
-    });
+    const format = new Intl.RelativeTimeFormat(RELATIVE_TIME_LOCALE[locale], { numeric: 'auto' });
     const update = () => {
       if (new Date(startsAt).getTime() <= Date.now()) {
         setText(undefined);

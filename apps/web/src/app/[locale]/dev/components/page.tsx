@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { PublicShell } from '@/components/shell/PublicShell';
+import { asLocale } from '@/i18n/routing';
 import { ComponentGallery } from './ComponentGallery';
 
 export const metadata: Metadata = { title: 'Component gallery', robots: { index: false, follow: false } };
@@ -12,7 +13,7 @@ export default async function ComponentsPage({ params }: PageProps<'/[locale]/de
   const { locale } = await params;
   return (
     <PublicShell>
-      <ComponentGallery locale={locale === 'en' ? 'en' : 'ar'} />
+      <ComponentGallery locale={asLocale(locale)} />
     </PublicShell>
   );
 }

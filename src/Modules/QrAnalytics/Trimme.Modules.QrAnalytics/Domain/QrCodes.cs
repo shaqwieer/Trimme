@@ -191,13 +191,13 @@ public sealed class QrVisit : Entity<QrVisitId>
 
     public QrDeviceClass Device { get; private set; }
 
-    /// <summary><c>ar</c> or <c>en</c>: the landing page's language.</summary>
+    /// <summary><c>ar</c>, <c>en</c> or <c>tr</c>: the landing page's language.</summary>
     public string Locale { get; private set; }
 
     public static QrVisit Record(QrVisitId id, QrCodeLink link, DateTimeOffset now, string visitorHash, QrDeviceClass device, string? locale)
     {
         ArgumentNullException.ThrowIfNull(link);
-        return new QrVisit(id, link.Id, link.ShopId, now, visitorHash, device, locale == "en" ? "en" : "ar");
+        return new QrVisit(id, link.Id, link.ShopId, now, visitorHash, device, locale is "en" or "tr" ? locale : "ar");
     }
 
     /// <summary>A visit restored by the development seed.</summary>

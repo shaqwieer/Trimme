@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { DiscoveryShopCard } from '@/components/discovery/ShopCards';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
@@ -76,10 +77,13 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
         />
         <div className="relative mx-auto grid max-w-[1280px] items-center gap-9 px-4 py-6 md:px-6 md:py-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14 lg:py-14 xl:px-10">
           <div className="flex flex-col items-start gap-5">
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-brand-100 px-3 py-1.5 text-helper font-bold text-brand-700">
-              <Icon name="pin" className="size-4" />
-              {city ? t('badge', { city }) : t('badgeGeneric')}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-brand-100 px-3 py-1.5 text-helper font-bold text-brand-700">
+                <Icon name="pin" className="size-4" />
+                {city ? t('badge', { city }) : t('badgeGeneric')}
+              </span>
+              <SaudiBadge />
+            </div>
             <div className="flex max-w-[650px] flex-col gap-4">
               <h1 className="text-[2.25rem] leading-[1.18] font-extrabold tracking-[-0.025em] text-navy-900 md:text-[3.25rem] lg:text-[3.55rem] rtl:tracking-normal">
                 {t('title')}

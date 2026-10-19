@@ -28,6 +28,9 @@
   <Folder Name="/src/Modules/Identity/">
     <Project Path="src/Modules/Identity/Trimme.Modules.Identity/Trimme.Modules.Identity.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Loyalty/">
+    <Project Path="src/Modules/Loyalty/Trimme.Modules.Loyalty/Trimme.Modules.Loyalty.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Notifications/">
     <Project Path="src/Modules/Notifications/Trimme.Modules.Notifications/Trimme.Modules.Notifications.csproj" />
   </Folder>

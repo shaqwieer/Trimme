@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ar from '@messages/ar.json';
 import en from '@messages/en.json';
+import tr from '@messages/tr.json';
 
 /**
  * Phase 17 route audit: the roles pages showed raw keys for `Admin.Jobs.View`, a permission added without its label.
- * Every platform permission in the API's catalogue needs a label and an area label in both languages.
+ * Every platform permission in the API's catalogue needs a label and an area label in every language.
  */
 const catalogue = readFileSync(
   join(__dirname, '../../../../../src/Modules/Identity/Trimme.Modules.Identity/Domain/Permissions.cs'),
@@ -25,6 +26,7 @@ describe('permission labels', () => {
   it.each([
     ['ar', ar.permissions],
     ['en', en.permissions],
+    ['tr', tr.permissions],
   ])('every platform permission has a label and an area label in %s', (_locale, messages) => {
     const codes = messages.codes as Record<string, string>;
     const areas = messages.areas as Record<string, string>;

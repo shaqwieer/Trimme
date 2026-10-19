@@ -480,6 +480,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/shops/{slug}/loyalty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A published shop's loyalty offer (visits needed and the reward), or a null programme when it runs none. */
+        get: operations["GetPublicShopLoyalty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/loyalty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's loyalty at each shop where they have stamps or rewards: the programme, the stamps on the open card and the usable or held rewards. */
+        get: operations["ListMyLoyalty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/loyalty/shops/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's loyalty at one published shop (the booking page offers its usable rewards). */
+        get: operations["GetMyShopLoyalty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/loyalty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's loyalty programme as the platform set it (read-only) and how it is used. */
+        get: operations["GetShopLoyalty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/subscriptions": {
         parameters: {
             query?: never;
@@ -2801,6 +2869,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/loyalty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A shop's loyalty programme (null before it is first set) and its use. */
+        get: operations["AdminGetShopLoyalty"];
+        /** Creates or replaces a shop's loyalty terms, agreed with the shop (versioned; audited). */
+        put: operations["AdminSaveShopLoyalty"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/favorites": {
         parameters: {
             query?: never;
@@ -3797,6 +3883,13 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A shop's programme as the admin edits it (null before the first save; send `Version` back) and its use. */
+        AdminShopLoyaltyResponse: {
+            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            /** Format: uint32 */
+            version: null | number;
+            stats: components["schemas"]["LoyaltyStatsResponse"];
+        };
         /** @description A shop in the admin list. */
         AdminShopResponse: {
             /** Format: uuid */
@@ -4046,6 +4139,13 @@ export interface components {
             durationMinutes: number;
             packageItems: components["schemas"]["BookedPackageItemResponse"][];
         };
+        /** @description The loyalty reward chosen for the booking (D-132): the shop applies it at the visit. */
+        BookingLoyaltyRewardResponse: {
+            /** Format: uuid */
+            id: string;
+            titleAr: string;
+            titleEn: null | string;
+        };
         BookingNoteRequest: {
             text: string;
         };
@@ -4223,7 +4323,8 @@ export interface components {
         /**
          * @description A customer's online booking of a published service, several services booked together (`ServiceIds`, one
          *     professional back to back) or a package: services or a package, never both. Without a professional the server picks a
-         *     free one (D-012). The start must be one of the offered slots.
+         *     free one (D-012). The start must be one of the offered slots. `LoyaltyRewardId` uses one of the customer's
+         *     rewards at this shop (D-132); a reward that is not usable is 422 `loyalty.reward_unavailable`.
          */
         CreateBookingRequest: {
             shopSlug: string;
@@ -4237,6 +4338,8 @@ export interface components {
             startsAt: string;
             note: null | string;
             serviceIds?: null | string[];
+            /** Format: uuid */
+            loyaltyRewardId?: null | string;
         };
         /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
         CreatePlanRequest: {
@@ -4348,6 +4451,7 @@ export interface components {
             reviewRating: null | number;
             /** Format: date-time */
             reviewDeadline: null | string;
+            loyaltyReward: null | components["schemas"]["BookingLoyaltyRewardResponse"];
             /** Format: uint32 */
             version: number;
         };
@@ -4606,6 +4710,46 @@ export interface components {
          * @enum {unknown}
          */
         LocationSource: "Manual" | "Geocoded" | "Device";
+        /** @description A shop's loyalty terms (D-132): after `RequiredVisits` completed bookings, the reward named by the title. */
+        LoyaltyProgramResponse: {
+            isActive: boolean;
+            /** Format: int32 */
+            requiredVisits: number;
+            rewardKind: components["schemas"]["LoyaltyRewardKind"];
+            /** Format: int32 */
+            discountPercent: null | number;
+            rewardTitleAr: string;
+            rewardTitleEn: null | string;
+            /** Format: int32 */
+            rewardValidityDays: null | number;
+        };
+        /**
+         * @description What a full card gives: a free service, or a percentage off; the title says which (e.g. «حلاقة مجانية»).
+         * @enum {unknown}
+         */
+        LoyaltyRewardKind: "FreeService" | "Discount";
+        /** @enum {unknown} */
+        LoyaltyRewardStatus: "Available" | "Held" | "Redeemed";
+        LoyaltyShopResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+        };
+        /** @description How the programme is used at one shop: customers with a stamp, stamps on open cards, and rewards by state. */
+        LoyaltyStatsResponse: {
+            /** Format: int32 */
+            members: number;
+            /** Format: int32 */
+            openStamps: number;
+            /** Format: int32 */
+            rewardsIssued: number;
+            /** Format: int32 */
+            rewardsAvailable: number;
+            /** Format: int32 */
+            rewardsRedeemed: number;
+        };
         /**
          * @description The signed-in user (`GET /api/v1/me`). `UserType` is `Customer`, `ShopUser` or
          *     `PlatformAdmin`. A customer sees only their own number, masked. `ShopId` is set for shop users from
@@ -4654,6 +4798,27 @@ export interface components {
          * @enum {unknown}
          */
         ModerationState: "Visible" | "Hidden";
+        MyLoyaltyResponse: {
+            items: components["schemas"]["MyShopLoyaltyResponse"][];
+        };
+        /** @description A reward as its customer sees it: available (until `ExpiresAt`) or held for `BookingId`. */
+        MyLoyaltyRewardResponse: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            kind: components["schemas"]["LoyaltyRewardKind"];
+            /** Format: int32 */
+            discountPercent: null | number;
+            titleAr: string;
+            titleEn: null | string;
+            status: components["schemas"]["LoyaltyRewardStatus"];
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            expiresAt: null | string;
+            /** Format: uuid */
+            bookingId: null | string;
+        };
         /** @description The review the customer just published (shown to them; the public list shows first name + initial only). */
         MyReviewResponse: {
             /** Format: uuid */
@@ -4666,6 +4831,17 @@ export interface components {
             comment: null | string;
             /** Format: date-time */
             createdAt: string;
+        };
+        /**
+         * @description The customer's card at one shop: the active programme (null when the shop has none now), the stamps on the open card
+         *     and the rewards they can still use or have chosen for an upcoming booking.
+         */
+        MyShopLoyaltyResponse: {
+            shop: components["schemas"]["LoyaltyShopResponse"];
+            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            /** Format: int32 */
+            stamps: number;
+            rewards: components["schemas"]["MyLoyaltyRewardResponse"][];
         };
         /** @description A bookable start: the instant and its local time (`HH:mm`, shop time zone). */
         NextSlotResponse: {
@@ -5152,6 +5328,10 @@ export interface components {
         };
         /** @enum {unknown} */
         ProfessionalStatus: "Active" | "Disabled";
+        /** @description A published shop's loyalty offer, shown on its page; `Program` is null when it has none running. */
+        PublicLoyaltyResponse: {
+            program: null | components["schemas"]["LoyaltyProgramResponse"];
+        };
         PublicPackageItemResponse: {
             /** Format: uuid */
             serviceId: string;
@@ -5586,6 +5766,25 @@ export interface components {
             managed: boolean;
             permissions: string[];
         };
+        /**
+         * @description A shop's loyalty terms (D-132). `RewardTitleAr` is what the customer gets («حلاقة مجانية»); a discount needs
+         *     `DiscountPercent` 1–100. `RewardValidityDays` (7–365) limits how long a reward stays usable; null keeps it.
+         *     Send the `Version` read, except for the first save.
+         */
+        SaveLoyaltyProgramRequest: {
+            isActive: boolean;
+            /** Format: int32 */
+            requiredVisits: number;
+            rewardKind: components["schemas"]["LoyaltyRewardKind"];
+            /** Format: int32 */
+            discountPercent: null | number;
+            rewardTitleAr: null | string;
+            rewardTitleEn: null | string;
+            /** Format: int32 */
+            rewardValidityDays: null | number;
+            /** Format: uint32 */
+            version: null | number;
+        };
         /** @description The professional's shop (a professional belongs to exactly one shop). */
         SaveProfessionalFavoriteRequest: {
             /** Format: uuid */
@@ -5698,6 +5897,7 @@ export interface components {
             cancellationReason: null | string;
             allowedTransitions: components["schemas"]["BookingStatus"][];
             outsideSchedule: boolean;
+            loyaltyReward: null | components["schemas"]["BookingLoyaltyRewardResponse"];
             /** Format: uint32 */
             version: number;
         };
@@ -5755,6 +5955,11 @@ export interface components {
             source: components["schemas"]["LocationSource"];
             /** Format: date-time */
             confirmedAt: string;
+        };
+        /** @description The shop's own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none. */
+        ShopLoyaltyResponse: {
+            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            stats: components["schemas"]["LoyaltyStatsResponse"];
         };
         ShopOverviewKpis: {
             /**
@@ -7463,6 +7668,117 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPublicShopLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLoyaltyResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyLoyaltyResponse"];
+                };
+            };
+        };
+    };
+    GetMyShopLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyShopLoyaltyResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopLoyaltyResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13620,6 +13936,90 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminGetShopLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopLoyaltyResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSaveShopLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveLoyaltyProgramRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopLoyaltyResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

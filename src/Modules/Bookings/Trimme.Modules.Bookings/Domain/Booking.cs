@@ -276,6 +276,16 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// <summary>The scan (QR visit) the booking is credited to; it counts that scan as converted.</summary>
     public Guid? QrVisitId { get; private set; }
 
+    /// <summary>
+    /// The loyalty reward the customer chose for this online booking (D-132), with its title snapshotted: the shop applies
+    /// it at the visit (the price and amount due are unchanged). Set once, when the booking is made.
+    /// </summary>
+    public Guid? LoyaltyRewardId { get; private set; }
+
+    public string? LoyaltyRewardTitleAr { get; private set; }
+
+    public string? LoyaltyRewardTitleEn { get; private set; }
+
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public uint Version { get; private set; }
@@ -333,6 +343,18 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
         booking.CancellationReason = BookingRules.IsCancelled(booking.Status) ? reason : null;
         return booking;
+    }
+
+    public void UseLoyaltyReward(Guid rewardId, string titleAr, string? titleEn)
+    {
+        if (LoyaltyRewardId is not null || Channel != BookingChannel.Online)
+        {
+            throw new InvalidOperationException("A loyalty reward is chosen once, when an online booking is made.");
+        }
+
+        LoyaltyRewardId = rewardId;
+        LoyaltyRewardTitleAr = titleAr;
+        LoyaltyRewardTitleEn = titleEn;
     }
 
     public bool IsActive => BookingRules.IsActive(Status);

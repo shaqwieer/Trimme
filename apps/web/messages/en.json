@@ -11,10 +11,12 @@
       "label": "Language",
       "ar": "العربية",
       "en": "English",
-      "switchTo": "العربية"
+      "tr": "Türkçe",
+      "short": "EN"
     },
     "brand": {
-      "logoAlt": "Groom Here"
+      "logoAlt": "Groom Here",
+      "saudi": "100% Saudi website"
     },
     "theme": {
       "label": "Theme",
@@ -309,6 +311,7 @@
       "languageLabel": "App and message language",
       "arabic": "العربية",
       "english": "English",
+      "turkish": "Türkçe",
       "terms": "I agree to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong>",
       "submit": "Save and continue"
     },
@@ -398,6 +401,7 @@
       "languageLabel": "Language of the app and messages",
       "arabic": "العربية",
       "english": "English",
+      "turkish": "Türkçe",
       "save": "Save changes",
       "saved": "Your details were saved."
     }
@@ -504,7 +508,8 @@
     "qr_not_found": "The QR code was not found.",
     "qr_already_active": "The code is already active.",
     "qr_already_inactive": "The code is already switched off.",
-    "invitation_role_invalid": "That role does not fit the kind of account being invited."
+    "invitation_role_invalid": "That role does not fit the kind of account being invited.",
+    "loyalty_reward_unavailable": "This coupon isn’t available: it was used, has expired or belongs to another salon."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -573,7 +578,8 @@
       "users": "Accounts",
       "professionals": "Professionals",
       "services": "Services",
-      "subscription": "Subscription"
+      "subscription": "Subscription",
+      "loyalty": "Loyalty"
     },
     "sections": {
       "profile": "Shop profile",
@@ -2470,7 +2476,8 @@
       "Audit": "Activity log",
       "Settings": "Platform settings",
       "SuperAdmin": "SuperAdmin only",
-      "Jobs": "Background jobs"
+      "Jobs": "Background jobs",
+      "Loyalty": "Loyalty"
     },
     "codes": {
       "Admin_Dashboard_View": "View the platform overview",
@@ -2518,7 +2525,8 @@
       "Admin_Settings_Edit": "Edit platform settings",
       "SuperAdmin_SubscriptionPlans_Manage": "Manage subscription plans and prices",
       "SuperAdmin_Subscriptions_Override": "Override a shop's subscription",
-      "Admin_Jobs_View": "View the background jobs dashboard"
+      "Admin_Jobs_View": "View the background jobs dashboard",
+      "Admin_Loyalty_Manage": "Set salons’ loyalty programmes"
     }
   },
   "adminRoles": {
@@ -3092,5 +3100,67 @@
     "hint": "Print on A5 paper without margins, or choose \"Save as PDF\" in the print window.",
     "back": "Back to the codes",
     "qrAlt": "QR code for {name}"
+  },
+  "loyalty": {
+    "title": "Loyalty cards",
+    "intro": "Every appointment you complete through Groom Here at a salon with a loyalty programme fills a green circle on your card. A full card gives you a coupon to choose on your next booking at the same salon.",
+    "programTitle": "Loyalty programme",
+    "offer": "Complete {visits, plural, one {{visitsText} visit} other {{visitsText} visits}} and get: {reward}",
+    "anyProfessional": "Visits with any specialist at the salon count.",
+    "stampsLabel": "{filledText} of {requiredText} visits completed",
+    "remaining": "{left, plural, one {{leftText} more visit} other {{leftText} more visits}} to your coupon",
+    "useWhenBooking": "Choose the coupon on the confirm step of your next booking at this salon.",
+    "signIn": "Sign in to track your visits",
+    "code": "Coupon code:",
+    "expires": "Valid until {date}",
+    "noExpiry": "No expiry date",
+    "ready": "Ready to use",
+    "held": "Reserved for your upcoming appointment",
+    "viewBooking": "View appointment",
+    "programEnded": "The salon has stopped its loyalty programme; coupons you earned are still valid.",
+    "bookToUse": "Book and use the coupon",
+    "empty": {
+      "title": "No loyalty cards yet",
+      "body": "When you complete an appointment at a salon with a loyalty programme, your card appears here.",
+      "cta": "Browse salons"
+    },
+    "wizard": {
+      "title": "Loyalty coupon",
+      "use": "Use the coupon: {reward}",
+      "none": "Don’t use it now",
+      "hint": "The salon applies it at your visit; the amount shown is before it."
+    },
+    "applied": "Loyalty coupon: {reward}",
+    "chip": "Coupon",
+    "admin": {
+      "title": "Loyalty programme",
+      "intro": "Agreed with the salon. Every completed online appointment with any of the salon’s specialists fills a circle on the customer’s card; a full card gives a coupon they choose when booking and the salon applies at the visit.",
+      "active": "Programme on",
+      "requiredVisits": "Visits needed for the reward",
+      "rewardKind": "Reward type",
+      "kinds": {
+        "FreeService": "Free service",
+        "Discount": "Percentage discount"
+      },
+      "discountPercent": "Discount (%)",
+      "rewardTitleAr": "Reward name in Arabic",
+      "rewardTitleArHint": "For example: حلاقة مجانية",
+      "rewardTitleEn": "Reward name in English (optional)",
+      "validityDays": "Coupon validity in days (optional)",
+      "validityHint": "Leave empty for a coupon that never expires, or {min} to {max} days",
+      "range": "{min} to {max}",
+      "save": "Save programme",
+      "saved": "The loyalty programme is saved.",
+      "readOnly": "You can’t change the loyalty programme.",
+      "notSet": "No loyalty programme is set for this salon yet.",
+      "stats": {
+        "title": "Use",
+        "members": "Customers with visits",
+        "openStamps": "Visits on open cards",
+        "issued": "Coupons issued",
+        "available": "Coupons available or reserved",
+        "redeemed": "Coupons used"
+      }
+    }
   }
 }

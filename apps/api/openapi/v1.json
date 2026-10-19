@@ -1416,6 +1416,140 @@
         }
       }
     },
+    "/api/v1/public/shops/{slug}/loyalty": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "A published shop\u0027s loyalty offer (visits needed and the reward), or a null programme when it runs none.",
+        "operationId": "GetPublicShopLoyalty",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLoyaltyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/loyalty": {
+      "get": {
+        "tags": [
+          "Customer: loyalty"
+        ],
+        "summary": "The customer\u0027s loyalty at each shop where they have stamps or rewards: the programme, the stamps on the open card and the usable or held rewards.",
+        "operationId": "ListMyLoyalty",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyLoyaltyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/loyalty/shops/{slug}": {
+      "get": {
+        "tags": [
+          "Customer: loyalty"
+        ],
+        "summary": "The customer\u0027s loyalty at one published shop (the booking page offers its usable rewards).",
+        "operationId": "GetMyShopLoyalty",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyShopLoyaltyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/loyalty": {
+      "get": {
+        "tags": [
+          "Shop: loyalty"
+        ],
+        "summary": "The shop\u0027s loyalty programme as the platform set it (read-only) and how it is used.",
+        "operationId": "GetShopLoyalty",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopLoyaltyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/subscriptions": {
       "get": {
         "tags": [
@@ -10030,6 +10164,118 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/loyalty": {
+      "get": {
+        "tags": [
+          "Admin: loyalty"
+        ],
+        "summary": "A shop\u0027s loyalty programme (null before it is first set) and its use.",
+        "operationId": "AdminGetShopLoyalty",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopLoyaltyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: loyalty"
+        ],
+        "summary": "Creates or replaces a shop\u0027s loyalty terms, agreed with the shop (versioned; audited).",
+        "operationId": "AdminSaveShopLoyalty",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLoyaltyProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopLoyaltyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/favorites": {
       "get": {
         "tags": [
@@ -13405,6 +13651,37 @@
         },
         "description": "A shop with its full profile, location and shop-edit policy, as the platform admin edits it."
       },
+      "AdminShopLoyaltyResponse": {
+        "required": [
+          "program",
+          "version",
+          "stats"
+        ],
+        "type": "object",
+        "properties": {
+          "program": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyProgramResponse"
+              }
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/LoyaltyStatsResponse"
+          }
+        },
+        "description": "A shop\u0027s programme as the admin edits it (null before the first save; send \u0060Version\u0060 back) and its use."
+      },
       "AdminShopResponse": {
         "required": [
           "id",
@@ -14266,6 +14543,30 @@
         },
         "description": "What was booked, as it was at booking time (R-BKG-01)."
       },
+      "BookingLoyaltyRewardResponse": {
+        "required": [
+          "id",
+          "titleAr",
+          "titleEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titleAr": {
+            "type": "string"
+          },
+          "titleEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The loyalty reward chosen for the booking (D-132): the shop applies it at the visit."
+      },
       "BookingNoteRequest": {
         "required": [
           "text"
@@ -14921,9 +15222,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "loyaltyRewardId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
-        "description": "A customer\u0027s online booking of a published service, several services booked together (\u0060ServiceIds\u0060, one\nprofessional back to back) or a package: services or a package, never both. Without a professional the server picks a\nfree one (D-012). The start must be one of the offered slots."
+        "description": "A customer\u0027s online booking of a published service, several services booked together (\u0060ServiceIds\u0060, one\nprofessional back to back) or a package: services or a package, never both. Without a professional the server picks a\nfree one (D-012). The start must be one of the offered slots. \u0060LoyaltyRewardId\u0060 uses one of the customer\u0027s\nrewards at this shop (D-132); a reward that is not usable is 422 \u0060loyalty.reward_unavailable\u0060."
       },
       "CreatePlanRequest": {
         "required": [
@@ -15282,6 +15590,7 @@
           "cancellationCutoffMinutes",
           "reviewRating",
           "reviewDeadline",
+          "loyaltyReward",
           "version"
         ],
         "type": "object",
@@ -15358,6 +15667,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "loyaltyReward": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BookingLoyaltyRewardResponse"
+              }
+            ]
           },
           "version": {
             "type": "integer",
@@ -16215,6 +16534,125 @@
         ],
         "description": "How the location point was chosen in the picker."
       },
+      "LoyaltyProgramResponse": {
+        "required": [
+          "isActive",
+          "requiredVisits",
+          "rewardKind",
+          "discountPercent",
+          "rewardTitleAr",
+          "rewardTitleEn",
+          "rewardValidityDays"
+        ],
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "requiredVisits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardKind": {
+            "$ref": "#/components/schemas/LoyaltyRewardKind"
+          },
+          "discountPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rewardTitleAr": {
+            "type": "string"
+          },
+          "rewardTitleEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rewardValidityDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A shop\u0027s loyalty terms (D-132): after \u0060RequiredVisits\u0060 completed bookings, the reward named by the title."
+      },
+      "LoyaltyRewardKind": {
+        "enum": [
+          "FreeService",
+          "Discount"
+        ],
+        "description": "What a full card gives: a free service, or a percentage off; the title says which (e.g. \u00AB\u062D\u0644\u0627\u0642\u0629 \u0645\u062C\u0627\u0646\u064A\u0629\u00BB)."
+      },
+      "LoyaltyRewardStatus": {
+        "enum": [
+          "Available",
+          "Held",
+          "Redeemed"
+        ]
+      },
+      "LoyaltyShopResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          }
+        }
+      },
+      "LoyaltyStatsResponse": {
+        "required": [
+          "members",
+          "openStamps",
+          "rewardsIssued",
+          "rewardsAvailable",
+          "rewardsRedeemed"
+        ],
+        "type": "object",
+        "properties": {
+          "members": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openStamps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardsIssued": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardsAvailable": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardsRedeemed": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How the programme is used at one shop: customers with a stamp, stamps on open cards, and rewards by state."
+      },
       "MeResponse": {
         "required": [
           "id",
@@ -16352,6 +16790,85 @@
         ],
         "description": "Platform moderation of a shop\u0027s service or package (DV-S02). A hidden item is never published."
       },
+      "MyLoyaltyResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyShopLoyaltyResponse"
+            }
+          }
+        }
+      },
+      "MyLoyaltyRewardResponse": {
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "discountPercent",
+          "titleAr",
+          "titleEn",
+          "status",
+          "issuedAt",
+          "expiresAt",
+          "bookingId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoyaltyRewardKind"
+          },
+          "discountPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "titleAr": {
+            "type": "string"
+          },
+          "titleEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoyaltyRewardStatus"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "bookingId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A reward as its customer sees it: available (until \u0060ExpiresAt\u0060) or held for \u0060BookingId\u0060."
+      },
       "MyReviewResponse": {
         "required": [
           "id",
@@ -16393,6 +16910,41 @@
           }
         },
         "description": "The review the customer just published (shown to them; the public list shows first name \u002B initial only)."
+      },
+      "MyShopLoyaltyResponse": {
+        "required": [
+          "shop",
+          "program",
+          "stamps",
+          "rewards"
+        ],
+        "type": "object",
+        "properties": {
+          "shop": {
+            "$ref": "#/components/schemas/LoyaltyShopResponse"
+          },
+          "program": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyProgramResponse"
+              }
+            ]
+          },
+          "stamps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyLoyaltyRewardResponse"
+            }
+          }
+        },
+        "description": "The customer\u0027s card at one shop: the active programme (null when the shop has none now), the stamps on the open card\nand the rewards they can still use or have chosen for an upcoming booking."
       },
       "NextSlotResponse": {
         "required": [
@@ -17880,6 +18432,25 @@
           "Disabled"
         ]
       },
+      "PublicLoyaltyResponse": {
+        "required": [
+          "program"
+        ],
+        "type": "object",
+        "properties": {
+          "program": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyProgramResponse"
+              }
+            ]
+          }
+        },
+        "description": "A published shop\u0027s loyalty offer, shown on its page; \u0060Program\u0060 is null when it has none running."
+      },
       "PublicPackageItemResponse": {
         "required": [
           "serviceId",
@@ -19322,6 +19893,65 @@
           }
         }
       },
+      "SaveLoyaltyProgramRequest": {
+        "required": [
+          "isActive",
+          "requiredVisits",
+          "rewardKind",
+          "discountPercent",
+          "rewardTitleAr",
+          "rewardTitleEn",
+          "rewardValidityDays",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "requiredVisits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rewardKind": {
+            "$ref": "#/components/schemas/LoyaltyRewardKind"
+          },
+          "discountPercent": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rewardTitleAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rewardTitleEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rewardValidityDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          }
+        },
+        "description": "A shop\u0027s loyalty terms (D-132). \u0060RewardTitleAr\u0060 is what the customer gets (\u00AB\u062D\u0644\u0627\u0642\u0629 \u0645\u062C\u0627\u0646\u064A\u0629\u00BB); a discount needs\n\u0060DiscountPercent\u0060 1\u2013100. \u0060RewardValidityDays\u0060 (7\u2013365) limits how long a reward stays usable; null keeps it.\nSend the \u0060Version\u0060 read, except for the first save."
+      },
       "SaveProfessionalFavoriteRequest": {
         "required": [
           "shopId"
@@ -19606,6 +20236,7 @@
           "cancellationReason",
           "allowedTransitions",
           "outsideSchedule",
+          "loyaltyReward",
           "version"
         ],
         "type": "object",
@@ -19663,6 +20294,16 @@
           },
           "outsideSchedule": {
             "type": "boolean"
+          },
+          "loyaltyReward": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BookingLoyaltyRewardResponse"
+              }
+            ]
           },
           "version": {
             "type": "integer",
@@ -19861,6 +20502,29 @@
           }
         },
         "description": "The confirmed shop entrance. Coordinates are WGS 84 decimal degrees."
+      },
+      "ShopLoyaltyResponse": {
+        "required": [
+          "program",
+          "stats"
+        ],
+        "type": "object",
+        "properties": {
+          "program": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyProgramResponse"
+              }
+            ]
+          },
+          "stats": {
+            "$ref": "#/components/schemas/LoyaltyStatsResponse"
+          }
+        },
+        "description": "The shop\u0027s own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none."
       },
       "ShopOverviewKpis": {
         "required": [
@@ -22393,6 +23057,12 @@
       "name": "Customer: bookings"
     },
     {
+      "name": "Customer: loyalty"
+    },
+    {
+      "name": "Shop: loyalty"
+    },
+    {
       "name": "Admin: subscriptions"
     },
     {
@@ -22433,6 +23103,9 @@
     },
     {
       "name": "Admin: reviews"
+    },
+    {
+      "name": "Admin: loyalty"
     },
     {
       "name": "Customer: favorites"

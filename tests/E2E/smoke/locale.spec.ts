@@ -17,6 +17,12 @@ test.describe('locales (R-WEB-04)', () => {
     );
   });
 
+  test('locale_tr_is_ltr', async ({ page }) => {
+    await page.goto('/tr');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'tr');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  });
+
   // The browser locale drives the navigation Accept-Language header (extraHTTPHeaders do not override it).
   for (const browserLocale of ['fr-FR', 'ar-SA']) {
     test(`root redirects to Arabic for a ${browserLocale} browser`, async ({ browser }) => {
@@ -28,18 +34,39 @@ test.describe('locales (R-WEB-04)', () => {
     });
   }
 
-  test('root honours an English Accept-Language', async ({ browser }) => {
-    const context = await browser.newContext({ locale: 'en-US' });
-    const page = await context.newPage();
-    await page.goto('/');
-    await expect(page).toHaveURL(/\/en$/);
-    await context.close();
-  });
+  for (const [browserLocale, locale] of [
+    ['en-US', 'en'],
+    ['tr-TR', 'tr'],
+  ] as const) {
+    test(`root honours a ${browserLocale} Accept-Language`, async ({ browser }) => {
+      const context = await browser.newContext({ locale: browserLocale });
+      const page = await context.newPage();
+      await page.goto('/');
+      await expect(page).toHaveURL(new RegExp(`/${locale}$`));
+      await context.close();
+    });
+  }
 
-  test('language switch keeps the page and flips direction', async ({ page }) => {
-    await page.goto('/ar');
-    await page.getByRole('link', { name: /English/ }).click();
-    await expect(page).toHaveURL(/\/en$/);
+  test('language menu keeps the page and flips direction', async ({ page }) => {
+    // The menu is a client button: retried, so a click that lands before hydration does not fail the test.
+    const choose = async (current: RegExp, language: string) => {
+      const link = page.getByRole('link', { name: language, exact: true });
+      await expect(async () => {
+        if (!(await link.isVisible())) await page.getByTestId('language-menu').click();
+        await expect(link).toBeVisible({ timeout: 1_000 });
+      }).toPass();
+      await expect(page.getByTestId('language-menu')).toHaveAccessibleName(current);
+      await link.click();
+    };
+
+    await page.goto('/ar/terms');
+    await choose(/العربية/, 'English');
+    await expect(page).toHaveURL(/\/en\/terms$/);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+
+    await choose(/English/, 'Türkçe');
+    await expect(page).toHaveURL(/\/tr\/terms$/);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'tr');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   });
 

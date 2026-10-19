@@ -7,6 +7,7 @@ import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { homeFor } from '@/lib/auth/paths';
 import { type Me, requireUser } from '@/lib/auth/server';
+import { localizedName } from '@/lib/i18n/localized';
 import { LiveIndicator, OperationsLiveProvider } from './live/OperationsLive';
 import { ShopBanners } from './ShopBanners';
 
@@ -39,7 +40,7 @@ export async function ShopFrame({ locale, path, title, children }: ShopFrameProp
       ? api.GET('/api/v1/shop/subscription').then((r) => r.data ?? null)
       : Promise.resolve(null),
   ]);
-  const name = shop ? (asLocale(locale) === 'ar' ? shop.nameAr : shop.nameEn) : '';
+  const name = shop ? localizedName(asLocale(locale), shop.nameAr, shop.nameEn) : '';
   const status = shop?.status ?? 'Suspended';
   const operable = Boolean(shop) && status !== 'Suspended';
   const live = operable && me.permissions.includes('Shop.Bookings.Read');

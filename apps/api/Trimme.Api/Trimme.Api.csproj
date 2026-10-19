@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\..\src\Modules\Bookings\Trimme.Modules.Bookings\Trimme.Modules.Bookings.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Customers\Trimme.Modules.Customers\Trimme.Modules.Customers.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Reviews\Trimme.Modules.Reviews\Trimme.Modules.Reviews.csproj" />
+    <ProjectReference Include="..\..\..\src\Modules\Loyalty\Trimme.Modules.Loyalty\Trimme.Modules.Loyalty.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Subscriptions\Trimme.Modules.Subscriptions\Trimme.Modules.Subscriptions.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\Notifications\Trimme.Modules.Notifications\Trimme.Modules.Notifications.csproj" />
     <ProjectReference Include="..\..\..\src\Modules\QrAnalytics\Trimme.Modules.QrAnalytics\Trimme.Modules.QrAnalytics.csproj" />

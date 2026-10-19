@@ -25,6 +25,9 @@ public sealed record BookingProfessionalResponse(Guid Id, string NameAr, string 
 
 public sealed record BookingShopResponse(Guid Id, string Slug, string NameAr, string NameEn);
 
+/// <summary>The loyalty reward chosen for the booking (D-132): the shop applies it at the visit.</summary>
+public sealed record BookingLoyaltyRewardResponse(Guid Id, string TitleAr, string? TitleEn);
+
 public sealed record BookingHistoryResponse(
     BookingEventKind Kind,
     BookingStatus? FromStatus,
@@ -68,6 +71,7 @@ public sealed record CustomerBookingResponse(
     int CancellationCutoffMinutes,
     int? ReviewRating,
     DateTimeOffset? ReviewDeadline,
+    BookingLoyaltyRewardResponse? LoyaltyReward,
     uint Version);
 
 /// <summary>
@@ -91,6 +95,7 @@ public sealed record ShopBookingResponse(
     string? CancellationReason,
     IReadOnlyList<BookingStatus> AllowedTransitions,
     bool OutsideSchedule,
+    BookingLoyaltyRewardResponse? LoyaltyReward,
     uint Version);
 
 public sealed record BookingNoteResponse(Guid Id, string Text, DateTimeOffset CreatedAt);
@@ -156,7 +161,7 @@ internal static class BookingMapping
 
     public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule) =>
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
-            b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, b.Version);
+            b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), b.Version);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
     {
@@ -171,8 +176,11 @@ internal static class BookingMapping
         }
 
         return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
-            b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, b.Version);
+            b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version);
     }
+
+    public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>
+        b.LoyaltyRewardId is { } id ? new(id, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn) : null;
 
     public static BookedItem Snapshot(BookableOffer offer) =>
         new(offer.IsPackage ? null : offer.Id, offer.IsPackage ? offer.Id : null, offer.NameAr, offer.NameEn, offer.Price, offer.Currency,

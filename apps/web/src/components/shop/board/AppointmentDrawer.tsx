@@ -58,6 +58,7 @@ export function AppointmentDrawer({
 }) {
   const t = useTranslations('shopBoard.drawer');
   const tStatus = useTranslations('status.booking');
+  const tLoyalty = useTranslations('loyalty');
   const locale = useLocale() as AppLocale;
   const queryClient = useQueryClient();
   const apiMessage = useApiErrorMessage();
@@ -191,6 +192,14 @@ export function AppointmentDrawer({
               <StatusBadge kind="booking" status={booking.status} className="mt-1 self-start" />
             </div>
             {booking.outsideSchedule && <InlineAlert tone="warning" title={t('outsideSchedule')} />}
+            {booking.loyaltyReward && (
+              <InlineAlert
+                tone="success"
+                title={tLoyalty('applied', {
+                  reward: localizedName(locale, booking.loyaltyReward.titleAr, booking.loyaltyReward.titleEn),
+                })}
+              />
+            )}
             <dl className="flex flex-col divide-y divide-border-row">
               {[
                 [t('rows.customer'), booking.customerName],

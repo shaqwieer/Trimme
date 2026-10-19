@@ -260,7 +260,7 @@ test.describe('public discovery (Phase 11)', () => {
     const index = await (await request.get('/sitemap.xml')).text();
     expect(index).toContain('<sitemapindex');
     const files = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]!).pathname);
-    expect(files).toEqual(['/sitemaps/ar.xml', '/sitemaps/en.xml']);
+    expect(files).toEqual(['/sitemaps/ar.xml', '/sitemaps/en.xml', '/sitemaps/tr.xml']);
 
     const sitemap = await (await request.get('/sitemaps/ar.xml')).text();
     expect(sitemap).toContain(`/ar/shops/${BARBER_HOUSE}</loc>`);

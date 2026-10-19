@@ -51,10 +51,19 @@ describe('structured data (R-WEB-11)', () => {
 });
 
 describe('public_pages_have_hreflang_and_canonical (R-WEB-10)', () => {
-  it('points the canonical at the page locale and lists both locales with Arabic as x-default', () => {
+  it('points the canonical at the page locale and lists every locale with Arabic as x-default', () => {
     expect(localizedAlternates('/shops/al-asala', 'en')).toEqual({
       canonical: '/en/shops/al-asala',
-      languages: { ar: '/ar/shops/al-asala', en: '/en/shops/al-asala', 'x-default': '/ar/shops/al-asala' },
+      languages: {
+        ar: '/ar/shops/al-asala',
+        en: '/en/shops/al-asala',
+        tr: '/tr/shops/al-asala',
+        'x-default': '/ar/shops/al-asala',
+      },
+    });
+    expect(localizedAlternates('/', 'tr')).toEqual({
+      canonical: '/tr',
+      languages: { ar: '/ar', en: '/en', tr: '/tr', 'x-default': '/ar' },
     });
     expect(localizedAlternates('/', 'ar').canonical).toBe('/ar');
   });
@@ -67,6 +76,7 @@ describe('sitemaps (R-WEB-10, Phase 17)', () => {
     expect(index).toContain('<sitemapindex');
     expect(index).toContain('/sitemaps/ar.xml</loc>');
     expect(index).toContain('/sitemaps/en.xml</loc>');
+    expect(index).toContain('/sitemaps/tr.xml</loc>');
   });
 
   it('a locale sitemap lists that locale with every alternate and the Arabic x-default, escaped', async () => {
@@ -80,6 +90,7 @@ describe('sitemaps (R-WEB-10, Phase 17)', () => {
       '<loc>http://localhost:3000/en/shops/a&amp;b</loc><lastmod>2026-09-30T10:00:00Z</lastmod>',
     );
     expect(xml).toContain('hreflang="ar" href="http://localhost:3000/ar/shops/a&amp;b"');
+    expect(xml).toContain('hreflang="tr" href="http://localhost:3000/tr/shops/a&amp;b"');
     expect(xml).toContain('hreflang="x-default" href="http://localhost:3000/ar"');
     expect(xml).not.toContain('a&b');
   });

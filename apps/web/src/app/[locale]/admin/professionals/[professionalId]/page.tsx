@@ -15,6 +15,7 @@ import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -64,8 +65,8 @@ export default async function AdminProfessionalPage({
         const { data: services } = await api.GET('/api/v1/admin/professionals/{professionalId}/services', {
           params: { path: { professionalId } },
         });
-        const name = lang === 'ar' ? professional.nameAr : professional.nameEn;
-        const shopName = lang === 'ar' ? professional.shopNameAr : professional.shopNameEn;
+        const name = localizedName(lang, professional.nameAr, professional.nameEn);
+        const shopName = localizedName(lang, professional.shopNameAr, professional.shopNameEn);
         const canEdit = me.permissions.includes('Admin.Professionals.Edit');
 
         return (

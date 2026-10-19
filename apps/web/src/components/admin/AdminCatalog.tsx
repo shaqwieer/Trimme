@@ -9,6 +9,7 @@ import { Checkbox, SelectField, TextareaField, TextField } from '@/components/ui
 import { Dialog } from '@/components/ui/overlays';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
+import { asLocale } from '@/i18n/routing';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
@@ -395,7 +396,7 @@ export function ProfessionalServicesForm({
 }) {
   const t = useTranslations('adminServices.professionalServices');
   const locale = useLocale();
-  const lang = locale === 'en' ? 'en' : 'ar';
+  const lang = asLocale(locale);
   const router = useRouter();
   const { notice, ok, fail, clear } = useNotice();
   const [selected, setSelected] = useState(() =>

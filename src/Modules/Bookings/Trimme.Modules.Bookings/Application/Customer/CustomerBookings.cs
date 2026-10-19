@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Bookings;
 using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Loyalty;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Application.Platform;
@@ -29,7 +30,7 @@ public enum BookingsTab
 /// <summary><c>QrVisitId</c> is the scan in the browser's attribution cookie, if any (R-QR-02); it never makes the booking fail.</summary>
 internal sealed record CreateOnlineBookingCommand(
     string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, string IdempotencyKey,
-    Guid? QrVisitId = null, IReadOnlyList<Guid>? ServiceIds = null)
+    Guid? QrVisitId = null, IReadOnlyList<Guid>? ServiceIds = null, Guid? LoyaltyRewardId = null)
     : ICommand<Result<CustomerBookingResult>>;
 
 internal sealed record RescheduleMyBookingCommand(Guid BookingId, DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version, string IdempotencyKey)
@@ -133,7 +134,8 @@ internal sealed class CreateOnlineBookingHandler(
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
     ProfessionalPicker picker,
-    IQrAttributionResolver qr)
+    IQrAttributionResolver qr,
+    ILoyaltyRewardHolder loyalty)
     : ICommandHandler<CreateOnlineBookingCommand, Result<CustomerBookingResult>>
 {
     private const string Scope = "bookings.create";
@@ -236,6 +238,19 @@ internal sealed class CreateOnlineBookingHandler(
         var booking = Booking.CreateOnline(
             EntityId.New<BookingId>(), shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer), command.StartsAt,
             shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId));
+
+        // A loyalty reward the customer chose is held in the same transaction, so it is used by this booking or not at all (D-132).
+        if (command.LoyaltyRewardId is { } rewardId)
+        {
+            var held = await loyalty.HoldAsync(rewardId, shop.Id, booking.Id.Value, now, cancellationToken);
+            if (held.IsFailure)
+            {
+                return held.Error;
+            }
+
+            booking.UseLoyaltyReward(held.Value.RewardId, held.Value.TitleAr, held.Value.TitleEn);
+        }
+
         db.Add(booking);
         record!.Complete(booking.Id.Value);
         BookingEvents.Add(db, BookingEvents.Created, booking, now);

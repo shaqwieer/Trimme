@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { type Locale, routing } from '@/i18n/routing';
 
 /**
  * The public site's absolute origin (canonical URLs, hreflang, Open Graph, sitemap, R-WEB-10). Set
@@ -18,14 +19,17 @@ export function absoluteUrl(path: string): string {
 }
 
 /**
- * Canonical and `hreflang` alternates for a public page that exists in both locales. `path` is the locale-free path
+ * Canonical and `hreflang` alternates for a public page that exists in every locale. `path` is the locale-free path
  * with its query, for example `/shops/al-asala` or `/shops?city=…`; Arabic is the `x-default` (spec §6, D-029).
  */
 export function localizedAlternates(path: string, locale: string): NonNullable<Metadata['alternates']> {
   const suffix = path === '/' ? '' : path;
   return {
     canonical: `/${locale}${suffix}`,
-    languages: { ar: `/ar${suffix}`, en: `/en${suffix}`, 'x-default': `/ar${suffix}` },
+    languages: {
+      ...Object.fromEntries(routing.locales.map((other) => [other, `/${other}${suffix}`])),
+      'x-default': `/${routing.defaultLocale}${suffix}`,
+    },
   };
 }
 
@@ -33,7 +37,7 @@ export function localizedAlternates(path: string, locale: string): NonNullable<M
 export const OG_IMAGE = { url: '/brand/groomhere-og.png', width: 1200, height: 630 } as const;
 
 /** Open Graph locale names. */
-export const OG_LOCALE: Record<string, string> = { ar: 'ar_SA', en: 'en_US' };
+export const OG_LOCALE: Record<Locale, string> = { ar: 'ar_SA', en: 'en_US', tr: 'tr_TR' };
 
 /** Private or personalised pages: never indexed (R-NEG-10). */
 export const NO_INDEX: Metadata['robots'] = { index: false, follow: false };

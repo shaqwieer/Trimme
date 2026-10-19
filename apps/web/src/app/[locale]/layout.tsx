@@ -24,10 +24,11 @@ const tajawal = Tajawal({
 /**
  * Inter is listed first in the font stack so Latin letters and Latin digits render in Inter while Arabic
  * glyphs fall through to Tajawal. Its automatic metric-adjusted fallback (Arial) is disabled because Arial
- * contains Arabic glyphs and would otherwise capture Arabic text before Tajawal.
+ * contains Arabic glyphs and would otherwise capture Arabic text before Tajawal. `latin-ext` carries Turkish
+ * letters (ğ, ş, İ, ı).
  */
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-inter',
   display: 'swap',

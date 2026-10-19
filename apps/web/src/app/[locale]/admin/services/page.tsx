@@ -117,7 +117,7 @@ export default async function AdminServicesPage({
                           href={`/admin/shops/${row.shopId}`}
                           className="text-text-primary hover:underline"
                         >
-                          {lang === 'ar' ? row.shopNameAr : row.shopNameEn}
+                          {localizedName(lang, row.shopNameAr, row.shopNameEn)}
                         </Link>
                       ),
                     },

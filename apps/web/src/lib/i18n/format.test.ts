@@ -4,6 +4,7 @@ import {
   formatDayNumber,
   formatDistanceKm,
   formatDurationMinutes,
+  formatHour,
   formatNumber,
   formatPhone,
   formatPrice,
@@ -57,5 +58,25 @@ describe('formatters_ar_en (R-WEB-06, D-040)', () => {
   it('groups Saudi E.164 mobiles for display and leaves other numbers unchanged', () => {
     expect(formatPhone('+966512345678')).toBe('+966 51 234 5678');
     expect(formatPhone('+971501234567')).toBe('+971501234567');
+  });
+});
+
+describe('formatters_tr', () => {
+  it('uses the 24-hour clock with Latin digits', () => {
+    expect(formatTime(appointment, 'tr')).toBe('17:30');
+    expect(formatTime('2026-09-18T06:05:00Z', 'tr')).toBe('09:05');
+    expect(formatHour(appointment, 'tr')).toBe('17');
+  });
+
+  it('writes Gregorian dates in Turkish', () => {
+    expect(formatDate(appointment, 'tr')).toBe('18 Eylül Cuma');
+  });
+
+  it('puts the number first, with the Turkish decimal comma and the SAR label', () => {
+    expect(formatPrice(85, 'tr')).toBe('85 SAR');
+    expect(formatPrice(62.5, 'tr')).toBe('62,5 SAR');
+    expect(formatPrice(2400, 'tr')).toBe('2.400 SAR');
+    expect(formatDistanceKm(2.44, 'tr')).toBe('2,4 km');
+    expect(formatDurationMinutes(30, 'tr')).toBe('30 dk');
   });
 });

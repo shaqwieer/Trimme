@@ -22,9 +22,9 @@ export function trimHours<T extends { hour: number; count: number }>(
   return hours.filter((h) => h.hour >= from && h.hour <= to);
 }
 
-/** "9" … "12" … "8" in Arabic (12-hour clock, design 2215), "09"… "20" in English. */
+/** "9" … "12" … "8" in Arabic (12-hour clock, design 2215), "09"… "20" in English and Turkish. */
 export function hourLabel(hour: number, locale: AppLocale): string {
-  if (locale === 'en') return String(hour).padStart(2, '0');
+  if (locale !== 'ar') return String(hour).padStart(2, '0');
   const twelve = hour % 12 === 0 ? 12 : hour % 12;
   return String(twelve);
 }

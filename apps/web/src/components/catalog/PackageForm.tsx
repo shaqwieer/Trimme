@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
+import { asLocale } from '@/i18n/routing';
 import { useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
@@ -84,7 +85,7 @@ export function PackageForm({
   const t = useTranslations('shopServices.form');
   const tServices = useTranslations('shopServices');
   const locale = useLocale();
-  const lang = locale === 'en' ? 'en' : 'ar';
+  const lang = asLocale(locale);
   const router = useRouter();
   const message = useValidationMessage();
   const apiMessage = useApiErrorMessage();

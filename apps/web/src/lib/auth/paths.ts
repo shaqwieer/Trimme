@@ -1,3 +1,5 @@
+import { routing } from '@/i18n/routing';
+
 /**
  * Auth routing helpers shared by server guards and client pages. Paths are locale-less (`/account/security`);
  * the next-intl navigation helpers add the locale prefix.
@@ -6,7 +8,7 @@
 export type UserType = 'Customer' | 'ShopUser' | 'PlatformAdmin';
 
 const MAX_RETURN_TO = 512;
-const LOCALE_PREFIX = /^\/(ar|en)(?=\/|\?|#|$)/;
+const LOCALE_PREFIX = new RegExp(`^/(${routing.locales.join('|')})(?=/|\\?|#|$)`);
 
 /**
  * Accepts only a same-origin relative path, so `returnTo` can never become an open redirect

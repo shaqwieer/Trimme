@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Logo } from '@/components/brand/Logo';
+import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
 import { ThemeMenu } from '@/components/theme/ThemeSelector';
@@ -92,6 +93,7 @@ function SiteFooter() {
         <div className="flex flex-col gap-2">
           <Logo height={30} />
           <p className="max-w-[46ch] text-helper text-text-secondary">{t('tagline')}</p>
+          <SaudiBadge className="self-start" />
         </div>
         <nav aria-label={t('label')}>
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-helper">

@@ -29,10 +29,7 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/accou
     <div className="mx-auto flex max-w-[560px] flex-col gap-5 px-4 py-6 md:px-6">
       <Breadcrumb items={[{ label: tAccount('title'), href: '/account' }, { label: t('title') }]} />
       <h1 className="text-page-title font-bold text-navy-900">{t('title')}</h1>
-      <ProfileForm
-        displayName={me.displayName ?? ''}
-        preferredLocale={me.preferredLocale === 'en' ? 'en' : 'ar'}
-      />
+      <ProfileForm displayName={me.displayName ?? ''} preferredLocale={asLocale(me.preferredLocale)} />
     </div>
   );
 }

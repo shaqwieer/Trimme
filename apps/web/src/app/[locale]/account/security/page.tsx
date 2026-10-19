@@ -1,12 +1,13 @@
 import { getTranslations } from 'next-intl/server';
 import { SessionsList } from '@/components/auth/SessionsList';
+import { asLocale } from '@/i18n/routing';
 import { requireUser } from '@/lib/auth/server';
 
 /** Security and sessions (spec §9 revoke-all, R-AUTH-05). Available to every signed-in user type. */
 export default async function AccountSecurityPage({ params }: PageProps<'/[locale]/account/security'>) {
   const { locale } = await params;
   await requireUser(locale, '/account/security');
-  const t = await getTranslations({ locale: locale === 'en' ? 'en' : 'ar', namespace: 'account' });
+  const t = await getTranslations({ locale: asLocale(locale), namespace: 'account' });
 
   return (
     <div className="mx-auto flex max-w-[720px] flex-col gap-6 px-4 py-6 md:px-6">

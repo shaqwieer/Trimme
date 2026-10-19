@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -36,7 +37,7 @@ export default async function NewProfessionalPage({
         if (!data) return <ErrorState />;
         const shops = data.items.map((shop) => ({
           id: shop.id,
-          name: lang === 'ar' ? shop.nameAr : shop.nameEn,
+          name: localizedName(lang, shop.nameAr, shop.nameEn),
         }));
 
         return (

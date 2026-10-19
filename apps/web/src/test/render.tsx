@@ -4,8 +4,12 @@ import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { type Locale, localeDirection } from '@/i18n/routing';
 import ar from '../../messages/ar.json';
 import en from '../../messages/en.json';
+import tr from '../../messages/tr.json';
+
+const MESSAGES = { ar, en, tr };
 
 /** Current pathname returned by the mocked Next.js router (set per test with setPathname). */
 let currentPathname = '/ar';
@@ -65,14 +69,14 @@ vi.mock(import('next/navigation'), async (importOriginal) => {
 /** Renders UI inside next-intl with the real message catalogs, in a document of the right direction. */
 export function renderWithIntl(
   ui: ReactElement,
-  { locale = 'ar', ...options }: { locale?: 'ar' | 'en' } & RenderOptions = {},
+  { locale = 'ar', ...options }: { locale?: Locale } & RenderOptions = {},
 ) {
   document.documentElement.lang = locale;
-  document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = localeDirection[locale];
   return render(
-    <NextIntlClientProvider locale={locale} messages={locale === 'ar' ? ar : en} timeZone="Asia/Riyadh">
+    <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]} timeZone="Asia/Riyadh">
       <ThemeProvider initial="system">
-        <DirectionProvider dir={locale === 'ar' ? 'rtl' : 'ltr'}>{ui}</DirectionProvider>
+        <DirectionProvider dir={localeDirection[locale]}>{ui}</DirectionProvider>
       </ThemeProvider>
     </NextIntlClientProvider>,
     options,

@@ -10,6 +10,12 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 16, second request: Turkish, the loyalty card, «موقع سعودي ١٠٠٪» (D-132)
+- **Turkish (`tr`)**: `/tr` routes, `messages/tr.json` (translated; `messages.test.ts` checks parity with ar/en), a three-language menu, Turkish emails; WhatsApp and the sign-in code use the English templates for Turkish speakers (no Turkish templates are approved).
+- **Loyalty**: new module `src/Modules/Loyalty` (schema `loyalty`, migration `20261019200939_LoyaltyProgramme`, additive). Admin tab «الولاء» on the shop page (`Admin.Loyalty.Manage`); salon page card; `/account/loyalty`; the coupon picker on the wizard's review step; «كوبون» chips on the salon's appointments. Tests: `LoyaltyTests` (integration), `loyalty.test.tsx`, the wizard coupon test.
+- **To do on a real deployment**: grant `Admin.Loyalty.Manage` to an existing OperationsManager role by hand if needed; set each salon's programme from its «الولاء» tab (none is set by the seed).
+- **Open**: `tests/E2E/audit/routes.spec.ts` still audits ar and en only (Turkish not yet in the a11y route audit).
+
 ## Session 16: Groom Here (D-131)
 - The product name is **Groom Here** in both locales, the page metadata and the emails. The logo, Open Graph image and favicon come from the client's `public/brand/new-logo.jpeg`.
 - Internal names (cookies, `TRIMME_*` variables, namespaces, the API title) are unchanged on purpose.

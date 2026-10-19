@@ -61,6 +61,9 @@ public static class Permissions
         public const string SubscriptionsSuspend = "Admin.Subscriptions.Suspend";
         public const string QrView = "Admin.Qr.View";
         public const string QrManage = "Admin.Qr.Manage";
+
+        /// <summary>Set a shop's loyalty programme, agreed with the shop (D-132).</summary>
+        public const string LoyaltyManage = "Admin.Loyalty.Manage";
         public const string WhatsAppView = "Admin.WhatsApp.View";
         public const string WhatsAppTemplatesEdit = "Admin.WhatsApp.Templates.Edit";
         public const string WhatsAppTemplatesActivate = "Admin.WhatsApp.Templates.Activate";

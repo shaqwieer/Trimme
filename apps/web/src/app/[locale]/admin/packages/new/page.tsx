@@ -7,6 +7,7 @@ import { EmptyState, ErrorState } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -38,7 +39,7 @@ export default async function AdminNewPackagePage({
         if (response.status === 404 || response.status === 400)
           return <EmptyState icon="store" title={tShops('detail.notFoundTitle')} body={t('noShop')} />;
         if (!shop) return <ErrorState />;
-        const shopName = lang === 'ar' ? shop.nameAr : shop.nameEn;
+        const shopName = localizedName(lang, shop.nameAr, shop.nameEn);
         return (
           <div className="flex max-w-[900px] flex-col gap-5">
             <Breadcrumb

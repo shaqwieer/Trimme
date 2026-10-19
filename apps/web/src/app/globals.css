@@ -16,7 +16,9 @@
     line-height: 1.8;
   }
 
-  html[lang='en'] body {
+  /* The Latin-script locales. */
+  html[lang='en'] body,
+  html[lang='tr'] body {
     font-family: var(--font-latin);
     line-height: 1.6;
   }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import { ShopLoyaltyCard } from '@/components/loyalty/ShopLoyaltyCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { ShopDistance } from '@/components/shops/public/ShopDistance';
@@ -29,13 +30,14 @@ import { optional } from '@/lib/api/safe';
 import { openingLabel } from '@/lib/discovery/opening';
 import { bookHref, directionsUrl, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatTime } from '@/lib/i18n/format';
+import { contentLanguage, localizedName } from '@/lib/i18n/localized';
 import { aggregateRatingLd, breadcrumbLd, openingHoursLd } from '@/lib/seo/jsonld';
 import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
 
 const TABS = ['services', 'professionals', 'reviews', 'about'] as const;
 
 function shopName(shop: { nameAr: string; nameEn: string }, locale: AppLocale) {
-  return locale === 'en' ? shop.nameEn || shop.nameAr : shop.nameAr;
+  return localizedName(locale, shop.nameAr, shop.nameEn);
 }
 
 const separator = (locale: AppLocale) => (locale === 'ar' ? '، ' : ', ');
@@ -150,7 +152,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const api = await getPublicApi();
   const signedIn = await mayBeSignedIn();
   const path = { params: { path: { slug: shop.slug } } };
-  const [services, packages, professionals, reviews] = await Promise.all([
+  const [services, packages, professionals, reviews, loyalty] = await Promise.all([
     optional(() => api.GET('/api/v1/public/shops/{slug}/services', path), 'services'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/packages', path), 'packages'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/professionals', path), 'professionals'),
@@ -161,6 +163,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
         }),
       'reviews',
     ),
+    optional(() => api.GET('/api/v1/public/shops/{slug}/loyalty', path), 'loyalty'),
   ]);
 
   const name = shopName(shop, locale);
@@ -183,7 +186,8 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
             url,
             image: [shop.coverUrl, ...gallery].filter(Boolean).map((u) => absoluteUrl(u!)),
             logo: shop.logoUrl ? absoluteUrl(shop.logoUrl) : undefined,
-            description: (locale === 'en' ? shop.descriptionEn : shop.descriptionAr) ?? undefined,
+            description:
+              (contentLanguage(locale) === 'en' ? shop.descriptionEn : shop.descriptionAr) ?? undefined,
             address: shop.location
               ? {
                   '@type': 'PostalAddress',
@@ -323,6 +327,10 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
                 ))}
               </ul>
             </section>
+          )}
+
+          {loyalty?.program && (
+            <ShopLoyaltyCard slug={shop.slug} program={loyalty.program} mayBeSignedIn={signedIn} />
           )}
 
           <ShopTabs

@@ -219,6 +219,12 @@ describe('idempotency key per booking request (R-BKG-05)', () => {
     expect(keyFor(first, { ...intent }, generate).key).toBe(first.key);
   });
 
+  it('uses a new key when the chosen loyalty coupon changes (D-132)', () => {
+    const first = keyFor(undefined, intent, generate);
+    expect(keyFor(first, { ...intent, rewardId: '' }, generate).key).toBe(first.key);
+    expect(keyFor(first, { ...intent, rewardId: 'reward-1' }, generate).key).not.toBe(first.key);
+  });
+
   it('uses a new key when the offer, professional, time or note changes', () => {
     const first = keyFor(undefined, intent, generate);
     const keys = new Set([

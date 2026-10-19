@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField, Switch } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
+import { asLocale } from '@/i18n/routing';
 import { useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
@@ -220,7 +221,7 @@ export function ServiceForm({
             >
               {DURATION_OPTIONS.map((minutes) => (
                 <option key={minutes} value={minutes}>
-                  {formatDurationMinutes(minutes, locale === 'en' ? 'en' : 'ar')}
+                  {formatDurationMinutes(minutes, asLocale(locale))}
                 </option>
               ))}
             </SelectField>

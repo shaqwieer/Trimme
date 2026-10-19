@@ -92,7 +92,9 @@ internal sealed partial class WhatsAppOtpSender(IWhatsAppAuthenticationSender wh
     public async Task<bool> TrySendAsync(OtpMessage message, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(message);
-        var sent = await whatsApp.TrySendCodeAsync(message.PhoneE164, message.Code, message.Locale, cancellationToken);
+        // The authentication template is approved in Arabic and English only; Turkish speakers get English (D-132).
+        var locale = message.Locale == Locales.Turkish ? Locales.English : message.Locale;
+        var sent = await whatsApp.TrySendCodeAsync(message.PhoneE164, message.Code, locale, cancellationToken);
         if (!sent)
         {
             LogNotSent(logger);

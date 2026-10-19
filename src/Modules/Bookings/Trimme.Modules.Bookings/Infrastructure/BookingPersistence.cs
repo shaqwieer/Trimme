@@ -56,6 +56,8 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.PaymentStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(b => b.CustomerNote).HasMaxLength(BookingRules.MaxNoteLength);
         builder.Property(b => b.CancellationReason).HasMaxLength(BookingRules.MaxReasonLength);
+        builder.Property(b => b.LoyaltyRewardTitleAr).HasMaxLength(BookingRules.MaxNameLength);
+        builder.Property(b => b.LoyaltyRewardTitleEn).HasMaxLength(BookingRules.MaxNameLength);
         builder.Property<NpgsqlRange<DateTime>>("During").HasColumnName(BookingModel.DuringColumn)
             .HasComputedColumnSql("tstzrange(starts_at, ends_at, '[)')", stored: true);
 

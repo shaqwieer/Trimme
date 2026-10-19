@@ -19,10 +19,12 @@ namespace Trimme.Modules.Bookings.Api;
 /// <summary>
 /// A customer's online booking of a published service, several services booked together (<c>ServiceIds</c>, one
 /// professional back to back) or a package: services or a package, never both. Without a professional the server picks a
-/// free one (D-012). The start must be one of the offered slots.
+/// free one (D-012). The start must be one of the offered slots. <c>LoyaltyRewardId</c> uses one of the customer's
+/// rewards at this shop (D-132); a reward that is not usable is 422 <c>loyalty.reward_unavailable</c>.
 /// </summary>
 public sealed record CreateBookingRequest(
-    string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, IReadOnlyList<Guid>? ServiceIds = null);
+    string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, IReadOnlyList<Guid>? ServiceIds = null,
+    Guid? LoyaltyRewardId = null);
 
 /// <summary>Moves the booking to another offered start (and optionally another eligible professional). Send the version read.</summary>
 public sealed record RescheduleBookingRequest(DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version);
@@ -74,7 +76,7 @@ internal static class BookingEndpoints
         api.MapPost("/bookings", async ([FromHeader(Name = IdempotencyHeader)] string? key, CreateBookingRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
                 KeyError(key) is { } missing
                     ? missing.ToProblem()
-                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds), ct)))
+                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds, r.LoyaltyRewardId), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking).WithTags("Customer: bookings")
             .WithName("CreateBooking")
             .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken.")

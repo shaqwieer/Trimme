@@ -6,6 +6,9 @@ describe('returnTo is same-origin only (open-redirect guard)', () => {
     ['/account/security', '/account/security'],
     ['/ar/account', '/account'],
     ['/en', '/'],
+    ['/tr/account?tab=past', '/account?tab=past'],
+    ['/tr', '/'],
+    ['/track', '/track'],
     ['/shops/abc?step=review', '/shops/abc?step=review'],
   ])('keeps the relative path %s', (input, expected) => {
     expect(safeReturnTo(input, '/fallback')).toBe(expected);

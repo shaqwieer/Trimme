@@ -10,6 +10,7 @@ import { browserApi } from '@/lib/api/client';
 import { useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
+import { contentLanguage } from '@/lib/i18n/localized';
 import {
   DEFAULT_CENTER,
   formatCoordinates,
@@ -81,7 +82,8 @@ export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibre
   const t = useTranslations('locationPicker');
   const tv = useTranslations('validation');
   const apiMessage = useApiErrorMessage();
-  const lang = useLocale();
+  // Addresses come back in the shop data's languages only (Arabic or English), so a Turkish page asks for English.
+  const lang = contentLanguage(useLocale());
   const [point, setPoint] = useState<LatLng | null>(
     initial ? { lat: initial.latitude, lng: initial.longitude } : null,
   );

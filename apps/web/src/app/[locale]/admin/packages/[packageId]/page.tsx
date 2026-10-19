@@ -38,7 +38,7 @@ export default async function AdminPackagePage({
           api.GET('/api/v1/admin/shops/{shopId}', { params: { path: { shopId: data.shopId } } }),
           api.GET('/api/v1/admin/services', { params: { query: { shopId: data.shopId, pageSize: 100 } } }),
         ]);
-        const shopName = shop ? (lang === 'ar' ? shop.nameAr : shop.nameEn) : '';
+        const shopName = shop ? localizedName(lang, shop.nameAr, shop.nameEn) : '';
         return (
           <div className="flex max-w-[900px] flex-col gap-5">
             <Breadcrumb

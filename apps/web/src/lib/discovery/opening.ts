@@ -1,4 +1,4 @@
-import { type AppLocale, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatTime, TIME_LOCALE } from '@/lib/i18n/format';
 
 /** The opening status the API computes (the engine's rules, D-091); the web only words it. */
 export type OpenStatus = {
@@ -41,10 +41,9 @@ export function openingLabel(
     if (localDay(status.nextOpensAt, timeZone) === localDay(now, timeZone)) {
       return t('opensAt', { time });
     }
-    const day = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB', {
-      weekday: 'long',
-      timeZone,
-    }).format(new Date(status.nextOpensAt));
+    const day = new Intl.DateTimeFormat(TIME_LOCALE[locale], { weekday: 'long', timeZone }).format(
+      new Date(status.nextOpensAt),
+    );
     return t('opensOn', { day, time });
   }
   return t('closed');

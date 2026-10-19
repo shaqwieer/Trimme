@@ -1,4 +1,5 @@
 import { useLocale } from 'next-intl';
+import { LoyaltyChip } from '@/components/loyalty/LoyaltyChip';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Link } from '@/i18n/navigation';
 import type { components } from '@/lib/api/schema';
@@ -57,6 +58,7 @@ export function BookingRow({
         <span className="flex flex-wrap items-center gap-2">
           <span className="truncate text-label font-bold text-text-primary">{booking.customerName}</span>
           <StatusBadge kind="booking" status={booking.status} size="sm" />
+          {booking.loyaltyReward && <LoyaltyChip reward={booking.loyaltyReward} />}
         </span>
         <span className="block truncate text-helper text-text-secondary">
           {localizedName(locale, booking.item.nameAr, booking.item.nameEn)} · {professional.split(' ')[0]}

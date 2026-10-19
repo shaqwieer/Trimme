@@ -36,9 +36,8 @@ import {
 import { Tabs } from '@/components/ui/Tabs';
 import { ToastProvider, useToast } from '@/components/ui/Toast';
 import { UploadDropZone } from '@/components/ui/UploadDropZone';
+import type { Locale } from '@/i18n/routing';
 import { formatPrice } from '@/lib/i18n/format';
-
-type Locale = 'ar' | 'en';
 
 /** Section card: white, radius 16, padding 22, E1 — like the design's component board. */
 function Section({
@@ -76,6 +75,7 @@ export function ComponentGallery({ locale }: { locale: Locale }) {
 }
 
 function Gallery({ locale }: { locale: Locale }) {
+  // Sample text is Arabic or English; the Turkish gallery shows the English samples.
   const tx = (ar: string, en: string) => (locale === 'ar' ? ar : en);
   const { show } = useToast();
   const [phone, setPhone] = useState('');

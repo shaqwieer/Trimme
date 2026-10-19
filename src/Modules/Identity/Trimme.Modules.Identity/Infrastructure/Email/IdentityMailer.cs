@@ -7,8 +7,8 @@ using Trimme.Modules.Identity.Domain;
 namespace Trimme.Modules.Identity.Infrastructure.Email;
 
 /// <summary>
-/// Composes the Identity emails in Arabic (RTL) or English. Links point at the web app; tokens appear only in the
-/// link and are never logged.
+/// Composes the Identity emails in Arabic (RTL), English or Turkish (D-132). Links point at the web app; tokens appear
+/// only in the link and are never logged.
 /// </summary>
 internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOptions> web, TimeProvider clock) : IIdentityMailer
 {
@@ -16,54 +16,69 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
     {
         ArgumentNullException.ThrowIfNull(ticket);
 
-        var arabic = ticket.PreferredLocale != Locales.English;
-        var link = Link(ticket.PreferredLocale, "auth/reset-password", ("uid", ticket.UserId.ToString()), ("token", ticket.Token));
-        var greeting = string.IsNullOrWhiteSpace(ticket.DisplayName)
-            ? (arabic ? "مرحباً،" : "Hello,")
-            : (arabic ? $"مرحباً {ticket.DisplayName}،" : $"Hello {ticket.DisplayName},");
+        var lang = Language(ticket.PreferredLocale);
+        var link = Link(lang, "auth/reset-password", ("uid", ticket.UserId.ToString()), ("token", ticket.Token));
+        var named = !string.IsNullOrWhiteSpace(ticket.DisplayName);
 
-        var message = arabic
-            ? Compose(
-                ticket.Email, "ar", "إعادة تعيين كلمة المرور في Groom Here", greeting,
-                "طلبت إعادة تعيين كلمة المرور لحسابك في Groom Here. الرابط صالح لمدة ساعة واحدة.",
-                "تعيين كلمة مرور جديدة", link,
-                "إذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغير شيء في حسابك.")
-            : Compose(
-                ticket.Email, "en", "Reset your Groom Here password", greeting,
+        var message = lang switch
+        {
+            Locales.English => Compose(
+                ticket.Email, lang, "Reset your Groom Here password", named ? $"Hello {ticket.DisplayName}," : "Hello,",
                 "You asked to reset the password of your Groom Here account. The link is valid for one hour.",
                 "Set a new password", link,
-                "If you did not ask for this, ignore this email and nothing will change.");
+                "If you did not ask for this, ignore this email and nothing will change."),
+            Locales.Turkish => Compose(
+                ticket.Email, lang, "Groom Here şifrenizi sıfırlayın", named ? $"Merhaba {ticket.DisplayName}," : "Merhaba,",
+                "Groom Here hesabınızın şifresini sıfırlamak istediniz. Bağlantı bir saat geçerlidir.",
+                "Yeni şifre belirleyin", link,
+                "Bunu siz istemediyseniz bu e-postayı yok sayın; hesabınızda hiçbir şey değişmez."),
+            _ => Compose(
+                ticket.Email, lang, "إعادة تعيين كلمة المرور في Groom Here", named ? $"مرحباً {ticket.DisplayName}،" : "مرحباً،",
+                "طلبت إعادة تعيين كلمة المرور لحسابك في Groom Here. الرابط صالح لمدة ساعة واحدة.",
+                "تعيين كلمة مرور جديدة", link,
+                "إذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغير شيء في حسابك."),
+        };
 
         return sender.SendAsync(message, cancellationToken);
     }
 
     public Task SendInvitationAsync(string email, string locale, string roleName, string token, DateTimeOffset expiresAt, CancellationToken cancellationToken)
     {
-        var arabic = locale != Locales.English;
-        var link = Link(locale, "auth/accept-invite", ("token", token));
-        var days = Math.Max(1, (int)Math.Round((expiresAt - clock.GetUtcNow()).TotalDays));
+        var lang = Language(locale);
+        var link = Link(lang, "auth/accept-invite", ("token", token));
+        var days = Math.Max(1, (int)Math.Round((expiresAt - clock.GetUtcNow()).TotalDays)).ToString(CultureInfo.InvariantCulture);
+        var role = RoleLabel(roleName, lang);
 
-        var message = arabic
-            ? Compose(
-                email, "ar", "دعوة للانضمام إلى Groom Here", "مرحباً،",
-                $"تمت دعوتك للانضمام إلى Groom Here بصلاحية «{RoleLabel(roleName, arabic: true)}». الدعوة صالحة لمدة {days.ToString(CultureInfo.InvariantCulture)} أيام.",
-                "قبول الدعوة وإنشاء الحساب", link,
-                "إذا لم تكن تتوقع هذه الدعوة فتجاهل هذه الرسالة.")
-            : Compose(
-                email, "en", "You're invited to Groom Here", "Hello,",
-                $"You have been invited to join Groom Here as {RoleLabel(roleName, arabic: false)}. The invitation is valid for {days.ToString(CultureInfo.InvariantCulture)} days.",
+        var message = lang switch
+        {
+            Locales.English => Compose(
+                email, lang, "You're invited to Groom Here", "Hello,",
+                $"You have been invited to join Groom Here as {role}. The invitation is valid for {days} days.",
                 "Accept and create your account", link,
-                "If you were not expecting this invitation, ignore this email.");
+                "If you were not expecting this invitation, ignore this email."),
+            Locales.Turkish => Compose(
+                email, lang, "Groom Here’a davet edildiniz", "Merhaba,",
+                $"Groom Here’a {role} olarak katılmaya davet edildiniz. Davet {days} gün geçerlidir.",
+                "Daveti kabul edin ve hesabınızı oluşturun", link,
+                "Bu daveti beklemiyorsanız bu e-postayı yok sayın."),
+            _ => Compose(
+                email, lang, "دعوة للانضمام إلى Groom Here", "مرحباً،",
+                $"تمت دعوتك للانضمام إلى Groom Here بصلاحية «{role}». الدعوة صالحة لمدة {days} أيام.",
+                "قبول الدعوة وإنشاء الحساب", link,
+                "إذا لم تكن تتوقع هذه الدعوة فتجاهل هذه الرسالة."),
+        };
 
         return sender.SendAsync(message, cancellationToken);
     }
 
-    private string Link(string locale, string path, params (string Name, string Value)[] query)
+    /// <summary>The email's language: the account's or request's supported locale, otherwise Arabic.</summary>
+    private static string Language(string? locale) => Locales.IsSupported(locale) ? locale! : Locales.Arabic;
+
+    private string Link(string lang, string path, params (string Name, string Value)[] query)
     {
         var baseUrl = web.Value.PublicBaseUrl.TrimEnd('/');
-        var segment = locale == Locales.English ? Locales.English : Locales.Arabic;
         var queryString = string.Join('&', query.Select(q => $"{q.Name}={Uri.EscapeDataString(q.Value)}"));
-        return $"{baseUrl}/{segment}/{path}?{queryString}";
+        return $"{baseUrl}/{lang}/{path}?{queryString}";
     }
 
     private static EmailMessage Compose(string to, string lang, string subject, string greeting, string body, string action, string link, string footer)
@@ -88,18 +103,23 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
 
     private static string Encode(string value) => WebUtility.HtmlEncode(value);
 
-    private static string RoleLabel(string roleName, bool arabic) => (roleName, arabic) switch
+    private static string RoleLabel(string roleName, string lang) => (roleName, lang) switch
     {
-        (SystemRoles.SuperAdmin, true) => "مدير عام",
-        (SystemRoles.SuperAdmin, false) => "a super admin",
-        (SystemRoles.OperationsManager, true) => "مدير عمليات",
-        (SystemRoles.OperationsManager, false) => "an operations manager",
-        (SystemRoles.Support, true) => "دعم",
-        (SystemRoles.Support, false) => "support",
-        (SystemRoles.ShopOwner, true) => "مالك المحل",
-        (SystemRoles.ShopOwner, false) => "the shop owner",
-        (SystemRoles.ShopStaff, true) => "موظف المحل",
-        (SystemRoles.ShopStaff, false) => "shop staff",
+        (SystemRoles.SuperAdmin, Locales.Arabic) => "مدير عام",
+        (SystemRoles.SuperAdmin, Locales.Turkish) => "süper yönetici",
+        (SystemRoles.SuperAdmin, _) => "a super admin",
+        (SystemRoles.OperationsManager, Locales.Arabic) => "مدير عمليات",
+        (SystemRoles.OperationsManager, Locales.Turkish) => "operasyon yöneticisi",
+        (SystemRoles.OperationsManager, _) => "an operations manager",
+        (SystemRoles.Support, Locales.Arabic) => "دعم",
+        (SystemRoles.Support, Locales.Turkish) => "destek",
+        (SystemRoles.Support, _) => "support",
+        (SystemRoles.ShopOwner, Locales.Arabic) => "مالك المحل",
+        (SystemRoles.ShopOwner, Locales.Turkish) => "salon sahibi",
+        (SystemRoles.ShopOwner, _) => "the shop owner",
+        (SystemRoles.ShopStaff, Locales.Arabic) => "موظف المحل",
+        (SystemRoles.ShopStaff, Locales.Turkish) => "salon personeli",
+        (SystemRoles.ShopStaff, _) => "shop staff",
         _ => roleName,
     };
 }

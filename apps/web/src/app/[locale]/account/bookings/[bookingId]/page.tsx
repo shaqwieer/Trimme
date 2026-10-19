@@ -67,9 +67,10 @@ export default async function BookingDetailPage({
   if (response.status === 404 || response.status === 400) notFound();
   if (!booking) throw new Error(`GET /api/v1/me/bookings/{id} failed with status ${response.status}`);
 
-  const [t, tList, shop] = await Promise.all([
+  const [t, tList, tLoyalty, shop] = await Promise.all([
     getTranslations({ locale, namespace: 'bookings.detail' }),
     getTranslations({ locale, namespace: 'bookings' }),
+    getTranslations({ locale, namespace: 'loyalty' }),
     getPublicShop(booking.shop.slug),
   ]);
   const timeZone = shop?.timeZone;
@@ -145,6 +146,13 @@ export default async function BookingDetailPage({
         {booking.note && (
           <Row icon="msg" label={t('rows.note')}>
             {booking.note}
+          </Row>
+        )}
+        {booking.loyaltyReward && (
+          <Row icon="tag" label={tLoyalty('wizard.title')}>
+            <span className="text-success-700">
+              {localizedName(locale, booking.loyaltyReward.titleAr, booking.loyaltyReward.titleEn)}
+            </span>
           </Row>
         )}
         {booking.cancellationReason && (

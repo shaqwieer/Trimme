@@ -10,6 +10,7 @@ import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
 import { formatDate } from '@/lib/i18n/format';
+import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -82,7 +83,7 @@ export default async function AdminShopsPage({ params, searchParams }: PageProps
                           href={`/admin/shops/${shop.id}`}
                           className="font-bold text-brand-700 hover:underline"
                         >
-                          {lang === 'ar' ? shop.nameAr : shop.nameEn}
+                          {localizedName(lang, shop.nameAr, shop.nameEn)}
                         </Link>
                       ),
                     },

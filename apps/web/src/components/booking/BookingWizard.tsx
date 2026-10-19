@@ -71,6 +71,9 @@ export type WizardPro = {
 /** Who is looking: a guest confirms after signing in (D-096); staff accounts cannot book. */
 export type WizardViewer = 'guest' | 'customer' | 'staff';
 
+/** A loyalty coupon the customer can use at this shop (D-132), offered on the review step. */
+export type WizardReward = { id: string; titleAr: string; titleEn: string | null };
+
 const NOTE_MAX = 500;
 
 /** The customer's view of the steps (D-125): the shop is already chosen; service and professional, then date and time. */
@@ -115,13 +118,16 @@ export function BookingWizard({
   offers,
   professionals,
   viewer,
+  rewards = [],
 }: {
   shop: WizardShop;
   offers: WizardOffer[];
   professionals: WizardPro[];
   viewer: WizardViewer;
+  rewards?: WizardReward[];
 }) {
   const t = useTranslations('booking');
+  const tl = useTranslations('loyalty.wizard');
   const locale = useLocale() as AppLocale;
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -138,6 +144,7 @@ export function BookingWizard({
 
   const notice = wizardNotice(query);
   const [note, setNote] = useState('');
+  const [rewardId, setRewardId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const keyed = useRef<KeyedIntent | undefined>(undefined);
@@ -318,7 +325,7 @@ export function BookingWizard({
     const trimmed = note.trim();
     keyed.current = keyFor(
       keyed.current,
-      { offerId: itemsKey, pro, startsAt, note: trimmed },
+      { offerId: itemsKey, pro, startsAt, note: trimmed, rewardId },
       newIdempotencyKey,
     );
     const target = offerQuery(items, pro);
@@ -335,6 +342,7 @@ export function BookingWizard({
             professionalId: target.professionalId ?? null,
             startsAt,
             note: trimmed || null,
+            loyaltyRewardId: rewardId || null,
           },
         }),
       );
@@ -468,7 +476,7 @@ export function BookingWizard({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {eligible.map((p) => {
                   const name = localizedName(locale, p.nameAr, p.nameEn);
-                  const specialty = locale === 'en' ? (p.specialtyEn ?? p.specialtyAr) : p.specialtyAr;
+                  const specialty = localizedName(locale, p.specialtyAr ?? '', p.specialtyEn) || null;
                   return (
                     <ProfessionalOption
                       key={p.id}
@@ -652,6 +660,34 @@ export function BookingWizard({
                 {formatPrice(offer.price, locale, offer.currency)}
               </span>
             </div>
+            {viewer === 'customer' && rewards.length > 0 && (
+              <fieldset className="flex flex-col gap-2" data-testid="loyalty-picker">
+                <legend className="mb-1 flex items-center gap-2 text-label font-bold text-success-700">
+                  <Icon name="tag" className="size-4" />
+                  {tl('title')}
+                </legend>
+                {rewards.map((reward) => (
+                  <RadioCard
+                    key={reward.id}
+                    name="loyaltyReward"
+                    value={reward.id}
+                    checked={rewardId === reward.id}
+                    onChange={() => setRewardId(reward.id)}
+                  >
+                    {tl('use', { reward: localizedName(locale, reward.titleAr, reward.titleEn) })}
+                  </RadioCard>
+                ))}
+                <RadioCard
+                  name="loyaltyReward"
+                  value=""
+                  checked={rewardId === ''}
+                  onChange={() => setRewardId('')}
+                >
+                  {tl('none')}
+                </RadioCard>
+                <p className="text-helper text-text-secondary">{tl('hint')}</p>
+              </fieldset>
+            )}
             <TextareaField
               label={t('note.label')}
               optional

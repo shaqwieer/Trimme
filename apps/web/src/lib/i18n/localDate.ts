@@ -1,16 +1,11 @@
 import { OPERATING_TIME_ZONE } from './config';
-import type { AppLocale } from './format';
+import { type AppLocale, TIME_LOCALE } from './format';
 
 /**
  * A calendar day in the shop's time zone, as "YYYY-MM-DD". Booking UIs work with these strings
  * (never Date objects) so a day can never shift when the browser or test runner is in another zone.
  */
 export type LocalDate = string;
-
-const TIME_LOCALE: Record<AppLocale, string> = {
-  ar: 'ar-SA-u-nu-arab-ca-gregory',
-  en: 'en-GB-u-nu-latn-ca-gregory',
-};
 
 export function parseLocalDate(value: LocalDate): { year: number; month: number; day: number } {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);

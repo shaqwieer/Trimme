@@ -6,7 +6,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Icon, type DesignIconName } from '@/components/ui/icons';
 import { InlineAlert, PermissionDenied } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
-import { asLocale } from '@/i18n/routing';
+import { asLocale, LANGUAGE_NAME_KEY } from '@/i18n/routing';
 import { firstParam } from '@/lib/auth/paths';
 import { requireCustomer } from '@/lib/auth/server';
 
@@ -53,7 +53,10 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
   const locale = asLocale(raw);
   const me = await requireCustomer(locale, '/account');
   if (!me) return <PermissionDenied homeHref="/" />;
-  const t = await getTranslations({ locale, namespace: 'account' });
+  const [t, tLoyalty] = await Promise.all([
+    getTranslations({ locale, namespace: 'account' }),
+    getTranslations({ locale, namespace: 'loyalty' }),
+  ]);
   const name = me.displayName ?? '';
 
   const groups: Array<{ title: string; rows: SettingsRow[] }> = [
@@ -63,8 +66,8 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
         {
           icon: 'msg',
           label: t('rows.language'),
-          value: me.preferredLocale === 'en' ? t('profile.english') : t('profile.arabic'),
-          valueLang: me.preferredLocale === 'en' ? 'en' : 'ar',
+          value: t(`profile.${LANGUAGE_NAME_KEY[asLocale(me.preferredLocale)]}`),
+          valueLang: asLocale(me.preferredLocale),
           href: '/account/profile',
         },
         {
@@ -81,6 +84,7 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
         { icon: 'user', label: t('rows.personal'), href: '/account/profile' },
         { icon: 'calendar', label: t('rows.bookings'), href: '/account/bookings' },
         { icon: 'heart', label: t('rows.favorites'), href: '/account/favorites' },
+        { icon: 'tag', label: tLoyalty('title'), href: '/account/loyalty' },
         { icon: 'card', label: t('rows.payment'), value: t('rows.paymentValue') },
         { icon: 'shield', label: t('security'), href: '/account/security' },
         { icon: 'eyeOff', label: t('rows.privacy'), href: '/privacy' },

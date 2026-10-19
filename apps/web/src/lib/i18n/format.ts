@@ -1,3 +1,4 @@
+import type { Locale } from '@/i18n/routing';
 import { OPERATING_CURRENCY, OPERATING_TIME_ZONE } from './config';
 
 /**
@@ -6,45 +7,67 @@ import { OPERATING_CURRENCY, OPERATING_TIME_ZONE } from './config';
  * Numeral rule from the design (design/analysis/01 §1.5):
  * - Clock times and date text: Arabic-Indic digits in Arabic, 12-hour clock ("٥:٣٠ م").
  * - Measurable quantities (price, distance, rating, counts, phone): Latin digits ("85 ر.س", "2.4 كم").
- * - English uses Latin digits everywhere.
+ * - English and Turkish use Latin digits everywhere; Turkish keeps its 24-hour clock ("17:30") and decimal comma.
  * The Gregorian calendar is always forced: plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar.
  */
-export type AppLocale = 'ar' | 'en';
+export type AppLocale = Locale;
 
-const TIME_LOCALE: Record<AppLocale, string> = {
+/** Clock times and date text. */
+export const TIME_LOCALE: Record<AppLocale, string> = {
   ar: 'ar-SA-u-nu-arab-ca-gregory',
   en: 'en-GB-u-nu-latn-ca-gregory',
+  tr: 'tr-TR-u-nu-latn-ca-gregory',
+};
+
+/** Relative times ("قبل ٣ أيام" / "3 days ago" / "3 gün önce"), clock-style digits in Arabic. */
+export const RELATIVE_TIME_LOCALE: Record<AppLocale, string> = {
+  ar: 'ar-SA-u-nu-arab',
+  en: 'en-GB',
+  tr: 'tr-TR',
 };
 
 const QUANTITY_LOCALE: Record<AppLocale, string> = {
   ar: 'ar-SA-u-nu-latn',
   en: 'en-US-u-nu-latn',
+  tr: 'tr-TR-u-nu-latn',
 };
 
 const CURRENCY_LABEL: Record<AppLocale, Record<string, string>> = {
   ar: { SAR: 'ر.س' },
   en: { SAR: 'SAR' },
+  tr: { SAR: 'SAR' },
+};
+
+/** The hour part of a clock time: 12-hour in Arabic and English (the design), 24-hour in Turkish. */
+const CLOCK: Record<AppLocale, Pick<Intl.DateTimeFormatOptions, 'hour' | 'hour12' | 'hourCycle'>> = {
+  ar: { hour: 'numeric', hour12: true },
+  en: { hour: 'numeric', hour12: true },
+  tr: { hour: '2-digit', hourCycle: 'h23' },
+};
+
+/** Word order and unit of the small quantities: Arabic and Turkish put the number first ("85 ر.س", "85 SAR"). */
+const UNITS: Record<AppLocale, { numberFirst: boolean; km: string; minutes: string }> = {
+  ar: { numberFirst: true, km: 'كم', minutes: 'دقيقة' },
+  en: { numberFirst: false, km: 'km', minutes: 'min' },
+  tr: { numberFirst: true, km: 'km', minutes: 'dk' },
 };
 
 type DateInput = Date | string | number;
 
 const toDate = (value: DateInput): Date => (value instanceof Date ? value : new Date(value));
 
-/** "٥:٣٠ م" (ar) · "5:30 pm" (en) */
+/** "٥:٣٠ م" (ar) · "5:30 pm" (en) · "17:30" (tr) */
 export function formatTime(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
   return new Intl.DateTimeFormat(TIME_LOCALE[locale], {
-    hour: 'numeric',
+    ...CLOCK[locale],
     minute: '2-digit',
-    hour12: true,
     timeZone,
   }).format(toDate(value));
 }
 
-/** "٥ م" (ar) · "5 pm" (en): the hour of a time, for the hour-then-minutes time picker. */
+/** "٥ م" (ar) · "5 pm" (en) · "17" (tr): the hour of a time, for the hour-then-minutes time picker. */
 export function formatHour(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
-  return new Intl.DateTimeFormat(TIME_LOCALE[locale], { hour: 'numeric', hour12: true, timeZone }).format(
-    toDate(value),
-  );
+  return new Intl.DateTimeFormat(TIME_LOCALE[locale], { ...CLOCK[locale], timeZone }).format(toDate(value));
 }
 
 /** "الجمعة ١٨ سبتمبر" (ar) · "Friday 18 September" (en); `withYear` appends the year. */
@@ -87,7 +110,7 @@ export function formatNumber(value: number, locale: AppLocale, maximumFractionDi
   }).format(value);
 }
 
-/** "85 ر.س" (ar) · "SAR 85" (en). Prices are informational only — there is no payment in v1. */
+/** "85 ر.س" (ar) · "SAR 85" (en) · "85 SAR" (tr). Prices are informational only — there is no payment in v1. */
 export function formatPrice(
   amount: number,
   locale: AppLocale,
@@ -95,13 +118,12 @@ export function formatPrice(
 ): string {
   const number = formatNumber(amount, locale, 2);
   const label = CURRENCY_LABEL[locale][currency] ?? currency;
-  return locale === 'ar' ? `${number} ${label}` : `${label} ${number}`;
+  return UNITS[locale].numberFirst ? `${number} ${label}` : `${label} ${number}`;
 }
 
-/** "2.4 كم" (ar) · "2.4 km" (en) */
+/** "2.4 كم" (ar) · "2.4 km" (en) · "2,4 km" (tr) */
 export function formatDistanceKm(kilometres: number, locale: AppLocale): string {
-  const number = formatNumber(kilometres, locale, 1);
-  return locale === 'ar' ? `${number} كم` : `${number} km`;
+  return `${formatNumber(kilometres, locale, 1)} ${UNITS[locale].km}`;
 }
 
 /** "4.8" — always one decimal, Latin digits. */
@@ -112,10 +134,9 @@ export function formatRating(value: number, locale: AppLocale): string {
   }).format(value);
 }
 
-/** Service duration follows the clock-time digit rule: "٣٠ دقيقة" (ar) · "30 min" (en). */
+/** Service duration follows the clock-time digit rule: "٣٠ دقيقة" (ar) · "30 min" (en) · "30 dk" (tr). */
 export function formatDurationMinutes(minutes: number, locale: AppLocale): string {
-  const number = new Intl.NumberFormat(TIME_LOCALE[locale]).format(minutes);
-  return locale === 'ar' ? `${number} دقيقة` : `${number} min`;
+  return `${new Intl.NumberFormat(TIME_LOCALE[locale]).format(minutes)} ${UNITS[locale].minutes}`;
 }
 
 /**

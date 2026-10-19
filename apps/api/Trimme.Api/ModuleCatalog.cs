@@ -4,6 +4,7 @@ using Trimme.Modules.Availability;
 using Trimme.Modules.Bookings;
 using Trimme.Modules.Customers;
 using Trimme.Modules.Identity;
+using Trimme.Modules.Loyalty;
 using Trimme.Modules.Notifications;
 using Trimme.Modules.Professionals;
 using Trimme.Modules.QrAnalytics;
@@ -32,6 +33,7 @@ public static class ModuleCatalog
         new QrAnalyticsModule(),
         new BookingsModule(),
         new ReviewsModule(),
+        new LoyaltyModule(),
         new CustomersModule(),
         new SubscriptionsModule(),
         new NotificationsModule(),

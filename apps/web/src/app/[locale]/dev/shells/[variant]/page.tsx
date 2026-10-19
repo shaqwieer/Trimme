@@ -2,7 +2,9 @@ import { notFound } from 'next/navigation';
 import { CustomerShell } from '@/components/shell/CustomerShell';
 import { DashboardShell } from '@/components/shell/DashboardShell';
 import { Ltr } from '@/components/text/Ltr';
+import { asLocale } from '@/i18n/routing';
 import { formatDate, formatDistanceKm, formatPrice, formatRating, formatTime } from '@/lib/i18n/format';
+import { contentLanguage } from '@/lib/i18n/localized';
 
 const SAMPLE_INSTANT = '2026-09-18T14:30:00Z';
 const variants = ['customer', 'shop', 'admin'] as const;
@@ -16,7 +18,7 @@ export default async function ShellPreview({ params }: PageProps<'/[locale]/dev/
   if (!isVariant(variant)) {
     notFound();
   }
-  const lang = locale === 'en' ? 'en' : 'ar';
+  const lang = asLocale(locale);
 
   const sample = (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -53,7 +55,7 @@ export default async function ShellPreview({ params }: PageProps<'/[locale]/dev/
   } as const;
 
   return (
-    <DashboardShell variant={variant} title={titles[variant][lang]}>
+    <DashboardShell variant={variant} title={titles[variant][contentLanguage(lang)]}>
       {sample}
     </DashboardShell>
   );

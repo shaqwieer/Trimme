@@ -1258,3 +1258,21 @@ This refines D-126.
   - QR codes encode `{Web:PublicBaseUrl}/q/{code}` at request time, so every code now points at groomhere.sa. Any code printed earlier with a trimme.net address stops resolving.
   - The bootstrap admin's sign-in email (`admin@trimme.net`) was left as it is: it is an account, not an address on the site.
 - **Dependencies.** New advisories against `System.Security.Cryptography.Pkcs` 10.0.0 (MimeKit's transitive dependency; GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7) and `Microsoft.AspNetCore.SignalR.Common` 10.0.12 (GHSA-334f-vvp4-7g6p) failed restore, because warnings are errors. Pkcs is now pinned to 10.0.13, and the test-only `Microsoft.AspNetCore.SignalR.Client` is at 10.0.13.
+
+## D-132 — Turkish, a loyalty card per salon, and «موقع سعودي ١٠٠٪» — Accepted (Session 16, after Phase 17, at the client's request)
+- **Turkish (`tr`) is a third language.** Many customers are Turkish speakers who read neither Arabic nor English.
+  - The web app has `/tr` routes (left to right), a complete Turkish catalogue (validated: same keys, same ICU arguments as English), Turkish date and number formats, and a three-language switcher in every shell. The Inter font loads `latin-ext` for ğ, ş and İ.
+  - Salons, services and specialists have Arabic and English data only. Turkish pages show the English text, falling back to Arabic when it is empty (`contentLanguage` in `lib/i18n/localized.ts`: Arabic pages read Arabic data, every other locale English).
+  - The header's language toggle (ar ↔ en) is now a small menu with the three languages, each named in its own language. Browsers that ask for Turkish land on `/tr`.
+  - Turkish times are 24-hour ("17:30"), as in Türkiye; prices put the number first ("85 SAR"), and minutes read "dk".
+  - The API accepts `tr` wherever a language is sent (sign-in code, profile, forgot-password, invitations, QR visits). The password-reset and invitation emails have Turkish copy.
+  - WhatsApp templates are approved in Arabic and English only, so a Turkish speaker gets the English template (then Arabic), and the sign-in code is sent with the English authentication template.
+- **The loyalty card (the client's chat with the shop owner).** A new `Loyalty` module (schema `loyalty`; see `docs/domain-model.md`).
+  - The platform agrees the terms with each salon, so only admins set them, on the shop's «الولاء» tab (`Admin.Loyalty.Manage`, new; SuperAdmin has it; an existing OperationsManager role needs it granted by hand, as in D-127). The salon reads them (`GET /shop/loyalty`).
+  - The card belongs to the salon, not to a specialist: completed online bookings with any of its specialists count. Walk-ins have no customer, so they never count.
+  - Stamps come from the booking outbox (`booking.status_changed` Completed). A full card turns its oldest stamps into a coupon with the terms of that moment. Seeded demo bookings write no outbox message, so they never earn stamps.
+  - The customer chooses the coupon on the booking's confirm step (`loyaltyRewardId`). It is held in the booking's transaction, shown to the salon on the appointment, redeemed when the salon completes the visit (which earns no stamp), and released by a cancellation or a no-show.
+  - Prices and the amount due are unchanged: v1 has no payments, and the salon applies the free service or discount at the visit.
+  - The customer sees green circles for completed visits and empty ones for what is left, on the salon page and on «بطاقات الولاء» in the account.
+- **«موقع سعودي ١٠٠٪».** A green badge on the landing hero, under the logo on the customer home, and in the site footer.
+- **Dependencies.** None added.

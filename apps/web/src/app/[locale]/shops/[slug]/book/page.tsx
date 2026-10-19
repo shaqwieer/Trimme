@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
-import { BookingWizard, type WizardViewer } from '@/components/booking/BookingWizard';
+import { BookingWizard, type WizardReward, type WizardViewer } from '@/components/booking/BookingWizard';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { SkeletonList } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { dataOrNull, getPublicApi } from '@/lib/api/public';
+import { getServerApi } from '@/lib/api/server';
 import { getMe } from '@/lib/auth/server';
 import type { WizardOffer } from '@/lib/booking/wizard';
 import { getPublicShop } from '@/lib/discovery/shop-data';
@@ -81,6 +82,15 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
   ];
 
   const viewer: WizardViewer = !me ? 'guest' : me.userType === 'Customer' ? 'customer' : 'staff';
+  // The customer's usable loyalty coupons at this shop (D-132), offered on the review step.
+  const rewards: WizardReward[] =
+    viewer === 'customer'
+      ? ((
+          await (await getServerApi()).GET('/api/v1/me/loyalty/shops/{slug}', { params: { path: { slug } } })
+        ).data?.rewards
+          .filter((r) => r.status === 'Available')
+          .map((r) => ({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn ?? null })) ?? [])
+      : [];
   const area = [shop.location?.district, shop.location?.city]
     .filter(Boolean)
     .join(locale === 'ar' ? '، ' : ', ');
@@ -111,6 +121,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
               reviewCount: p.reviewCount,
             }))}
             viewer={viewer}
+            rewards={rewards}
           />
         </Suspense>
       </QueryProvider>
