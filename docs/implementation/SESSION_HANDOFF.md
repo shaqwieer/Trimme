@@ -15,6 +15,9 @@
 - **Loyalty**: new module `src/Modules/Loyalty` (schema `loyalty`, migration `20261019200939_LoyaltyProgramme`, additive). Admin tab «الولاء» on the shop page (`Admin.Loyalty.Manage`); salon page card; `/account/loyalty`; the coupon picker on the wizard's review step; «كوبون» chips on the salon's appointments. Tests: `LoyaltyTests` (integration), `loyalty.test.tsx`, the wizard coupon test.
 - **To do on a real deployment**: grant `Admin.Loyalty.Manage` to an existing OperationsManager role by hand if needed; set each salon's programme from its «الولاء» tab (none is set by the seed).
 - **Open**: `tests/E2E/audit/routes.spec.ts` still audits ar and en only (Turkish not yet in the a11y route audit).
+- **Dependencies**: Next.js and eslint-config-next 16.3.8 (GHSA-cjq9-62q9-8jv4, high). `pnpm audit` locally still lists `braces@3.0.3` (no fixed release exists; it was in the lockfile before); CI's audit step passed.
+- **Verified**: web gates (459 unit tests), production build and bundle budgets; .NET unit (429), architecture (69) and loyalty/auth integration tests locally (a full local run hit 9 Postgres connection timeouts that passed on re-run); CI run 39322851392 on `7f99b05` green on all four jobs, including the Docker stack + Playwright smoke, flows and route audit.
+- **Deployed**: `7f99b05` on groomhere.sa; migration `LoyaltyProgramme` applied; database backup taken first at `/root/backups/trimme-before-loyalty-20261019-225202.sql.gz` on the VPS. No salon has a loyalty programme yet (set it on the shop's «الولاء» tab).
 
 ## Session 16: Groom Here (D-131)
 - The product name is **Groom Here** in both locales, the page metadata and the emails. The logo, Open Graph image and favicon come from the client's `public/brand/new-logo.jpeg`.
