@@ -1,14 +1,21 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-04 (Session 15: simpler customer booking, after Phase 17)
+- **Updated:** 2026-10-19 (Session 16: rebrand to Groom Here at groomhere.sa, after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Pushed: everything, including Session 15's booking changes, at the user's request.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - The `api` and `web` services were rebuilt from this session's tree. The database was not touched.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
-- **Demo deployment:** trimme.net (VPS, demo mode) was redeployed from `main`: `git pull` in `/opt/trimme`, then build, migrate (no new migration) and `up -d` in `/opt/trimme-deploy`.
+- **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 16: Groom Here (D-131)
+- The product name is **Groom Here** in both locales, the page metadata and the emails. The logo, Open Graph image and favicon come from the client's `public/brand/new-logo.jpeg`.
+- Internal names (cookies, `TRIMME_*` variables, namespaces, the API title) are unchanged on purpose.
+- The demo moved to groomhere.sa. On the VPS, `compose.yml` (CORS, `Web__PublicBaseUrl`, `TRIMME_SITE_URL`, mail sender) and the `Caddyfile` were changed; backups sit next to them as `*.bak-trimme-net`.
+- Pinned `System.Security.Cryptography.Pkcs` 10.0.13 and `Microsoft.AspNetCore.SignalR.Client` 10.0.13 after new advisories failed restore.
+- Open: an Arabic spelling of the name, if the client wants one; the user guides in `docs/guides/` still say TRIMME.
 
 ## Session 15, second request: short home page (D-126) and admin services (D-127)
 - **Home page:** only the hero (search, «استخدم موقعي», the figures, browse link), the photo (16:10 on phones) and the top-rated salons.

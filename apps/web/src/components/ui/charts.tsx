@@ -165,7 +165,7 @@ export function BarChart({
 
 type QrCardProps = {
   name: string;
-  /** Public short link, e.g. trimme.sa/s/alasalah-malqa (shown LTR). */
+  /** Public short link, e.g. groomhere.sa/s/alasalah-malqa (shown LTR). */
   url: string;
   downloadHref: string;
   /** Rendered QR image (Phase 16); until then the design's navy QR tile is shown. */

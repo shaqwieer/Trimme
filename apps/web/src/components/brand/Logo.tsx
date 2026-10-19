@@ -2,9 +2,12 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
 
-/** Intrinsic size of public/brand/trimme-logo.png (source logo with only its transparent margin removed, D-042). */
-export const LOGO_WIDTH = 371;
-export const LOGO_HEIGHT = 177;
+/**
+ * Intrinsic size of public/brand/groomhere-logo.png: the Groom Here logo (new-logo.jpeg) with its background made transparent,
+ * cropped to the artwork and set in the brand blue so it reads on light and dark surfaces (D-131).
+ */
+export const LOGO_WIDTH = 866;
+export const LOGO_HEIGHT = 296;
 
 type LogoProps = {
   /** Rendered height in CSS pixels; width follows the intrinsic aspect ratio (never stretched). */
@@ -15,14 +18,14 @@ type LogoProps = {
   className?: string;
 };
 
-/** The TRIMME logo, rendered from the official PNG without redrawing, recolouring or distortion. */
+/** The Groom Here logo, rendered from the derived PNG without redrawing or distortion. */
 export function Logo({ height = 32, tone = 'default', priority = false, className }: LogoProps) {
   const t = useTranslations('common.brand');
   const width = Math.round((height * LOGO_WIDTH) / LOGO_HEIGHT);
 
   return (
     <Image
-      src="/brand/trimme-logo.png"
+      src="/brand/groomhere-logo.png"
       alt={t('logoAlt')}
       width={width}
       height={height}

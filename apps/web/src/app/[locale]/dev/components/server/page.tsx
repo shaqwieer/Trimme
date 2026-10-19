@@ -123,7 +123,7 @@ export default async function ServerComponentsPage({ params }: PageProps<'/[loca
             />
             <QrCard
               name={tx('باربر هاوس', 'Barber House')}
-              url="trimme.sa/s/barber-house"
+              url="groomhere.sa/s/barber-house"
               downloadHref="/dev/components"
             />
           </Block>

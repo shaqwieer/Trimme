@@ -99,7 +99,7 @@ public sealed partial class StaffAuthTests(PostgresFixture postgres, MailpitFixt
         }
 
         var message = await mailpit.WaitForMessageAsync(email, ct);
-        message.Subject.ShouldBe("إعادة تعيين كلمة المرور في تريمي"); // the account's saved language (ar) wins
+        message.Subject.ShouldBe("إعادة تعيين كلمة المرور في Groom Here"); // the account's saved language (ar) wins
         var link = LinkPattern().Match(message.Text);
         link.Success.ShouldBeTrue(message.Text);
         link.Value.ShouldStartWith("https://app.trimme.test/ar/auth/reset-password?uid=");
@@ -204,7 +204,7 @@ public sealed partial class StaffAuthTests(PostgresFixture postgres, MailpitFixt
         }
 
         var message = await mailpit.WaitForMessageAsync(invitee, ct);
-        message.Subject.ShouldBe("You're invited to TRIMME");
+        message.Subject.ShouldBe("You're invited to Groom Here");
         message.Html.ShouldContain("dir=\"ltr\"");
         var link = LinkPattern().Match(message.Text);
         link.Value.ShouldStartWith("https://app.trimme.test/en/auth/accept-invite?token=");

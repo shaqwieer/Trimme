@@ -126,7 +126,7 @@ function Gallery({ locale }: { locale: Locale }) {
     <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
       <header className="flex flex-col gap-1">
         <p className="font-latin text-eyebrow font-bold tracking-[0.16em] text-text-tertiary">
-          TRIMME · DESIGN SYSTEM
+          GROOM HERE · DESIGN SYSTEM
         </p>
         <h1 className="text-h1 font-bold text-navy-900">{tx('مكتبة المكونات', 'Component library')}</h1>
       </header>
@@ -525,7 +525,7 @@ function Gallery({ locale }: { locale: Locale }) {
           </div>
           <QrCard
             name={tx('صالون الأصالة — الملقا', 'Al Asala — Al Malqa')}
-            url="trimme.sa/s/alasalah-malqa"
+            url="groomhere.sa/s/alasalah-malqa"
             downloadHref="/dev/components"
             share={
               <Button size="xs" variant="outline">

@@ -1244,3 +1244,17 @@ This refines D-126.
   - The search box, category chips, popular services and top specialists are removed.
   - Signing in, or completing the profile, without a `returnTo` now lands there instead of `/account`.
 - **QR.** Checked on the demo: codes are active from creation and encode `https://trimme.net/q/{code}`; a scan opens the code's salon page. No change.
+
+## D-131 — The product is Groom Here, at groomhere.sa — Accepted (Session 16, after Phase 17, at the client's request)
+- **Name.** Every user-visible "TRIMME" / «تريمي» is now **Groom Here**: both message catalogues (the app name, page titles and metadata, the footer, legal pages, booking and QR texts) and the password-reset and invitation emails (subjects, bodies and the sender name).
+  - Arabic keeps the Latin wordmark «Groom Here», as the logo does; there is no Arabic transliteration yet (the client can choose one later). Sentences whose verb agreed with «تريمي» say «منصة Groom Here».
+- **Logo.** `public/brand/groomhere-logo.png` (866×296) is derived from the client's `new-logo.jpeg`, which stays in `public/brand/` as the source.
+  - The JPEG is light blue on an opaque near-black background, so it cannot sit on the white headers. The background was made transparent: alpha comes from the blue channel, and JPEG noise below 6% is cleared. The result is cropped to the artwork plus 6 px and set in the old logo's brand blue `#6C9ECF`.
+  - This is the one recolouring, and it partly replaces D-042 ("never recoloured"): the native light blue is about 1.6:1 on white. On navy surfaces the existing `onDark` lightening brings it back close to the original light blue.
+  - The new aspect ratio is about 2.9:1 (it was 2.1:1). The `Logo` component keeps its heights, so the logo is wider at the same height.
+- **Other brand assets.** The Open Graph image (`groomhere-og.png`, 1200×630) is the logo in its native light blue on the source's navy. The favicon is a serif "G" in the same colours. The old `trimme-logo.png` and `trimme-og.png` were removed.
+- **Unchanged, because they are internal.** Cookie names (`trimme-access`, `trimme-csrf`, `trimme-theme`, `trimme-location`), so nobody is signed out and saved themes are kept. Also the `TRIMME_*` environment variables, the package and namespace names, the WhatsApp provider template names, and the "TRIMME API" OpenAPI title, which the smoke test asserts.
+- **Domain.** The demo deployment moved from trimme.net to **groomhere.sa**; www.groomhere.sa redirects to the apex. trimme.net and www.trimme.net are no longer served, at the client's request. The deployment's `Web__PublicBaseUrl`, CORS origin, `TRIMME_SITE_URL` and mail sender now use groomhere.sa.
+  - QR codes encode `{Web:PublicBaseUrl}/q/{code}` at request time, so every code now points at groomhere.sa. Any code printed earlier with a trimme.net address stops resolving.
+  - The bootstrap admin's sign-in email (`admin@trimme.net`) was left as it is: it is an account, not an address on the site.
+- **Dependencies.** New advisories against `System.Security.Cryptography.Pkcs` 10.0.0 (MimeKit's transitive dependency; GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7) and `Microsoft.AspNetCore.SignalR.Common` 10.0.12 (GHSA-334f-vvp4-7g6p) failed restore, because warnings are errors. Pkcs is now pinned to 10.0.13, and the test-only `Microsoft.AspNetCore.SignalR.Client` is at 10.0.13.

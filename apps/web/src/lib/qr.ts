@@ -13,7 +13,7 @@ export function qrImageUrl(scope: QrScope, codeId: string, format: QrFormat, siz
   return `/api/v1/${scope}/qr/codes/${codeId}/image?${query.toString()}`;
 }
 
-/** The printed URL without its scheme, as the cards show it (`trimme.sa/q/aswn7qkd`). */
+/** The printed URL without its scheme, as the cards show it (`groomhere.sa/q/aswn7qkd`). */
 export function displayUrl(url: string): string {
   return url.replace(/^https?:\/\//, '');
 }

@@ -59,7 +59,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
     <PublicShell variant="landing">
       <JsonLd
         data={[
-          organizationLd(absoluteUrl('/'), absoluteUrl('/brand/trimme-logo.png'), app('appName')),
+          organizationLd(absoluteUrl('/'), absoluteUrl('/brand/groomhere-logo.png'), app('appName')),
           websiteLd(
             absoluteUrl(`/${locale}`),
             app('appName'),

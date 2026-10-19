@@ -25,7 +25,7 @@ internal sealed class SmtpOptions
 
     public string FromAddress { get; set; } = "no-reply@trimme.local";
 
-    public string FromName { get; set; } = "TRIMME";
+    public string FromName { get; set; } = "Groom Here";
 }
 
 internal sealed record EmailMessage(string To, string Subject, string TextBody, string HtmlBody);

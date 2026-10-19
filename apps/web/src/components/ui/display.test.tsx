@@ -272,9 +272,11 @@ describe('charts (dataviz rules)', () => {
   });
 
   it('QrCard shows an LTR short link and a download action', () => {
-    renderWithIntl(<QrCard name="صالون الأصالة" url="trimme.sa/s/alasalah" downloadHref="/admin/qr/1.png" />);
+    renderWithIntl(
+      <QrCard name="صالون الأصالة" url="groomhere.sa/s/alasalah" downloadHref="/admin/qr/1.png" />,
+    );
     expect(screen.getByRole('img', { name: 'رمز QR لـ صالون الأصالة' })).toBeInTheDocument();
-    expect(screen.getByText('trimme.sa/s/alasalah')).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByText('groomhere.sa/s/alasalah')).toHaveAttribute('dir', 'ltr');
     expect(screen.getByRole('link', { name: 'تنزيل' })).toHaveAttribute('href', '/ar/admin/qr/1.png');
   });
 });

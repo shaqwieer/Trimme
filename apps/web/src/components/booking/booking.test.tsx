@@ -550,7 +550,7 @@ describe('booking page parts (DV-S13, DV-S10)', () => {
     const { unmount } = renderWithIntl(
       <BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange />,
     );
-    expect(screen.getByText(/مجاني عبر تريمي حتى/)).toHaveTextContent('٣:٠٠');
+    expect(screen.getByText(/مجاني عبر Groom Here حتى/)).toHaveTextContent('٣:٠٠');
     expect(screen.queryByTestId('cutoff-passed')).not.toBeInTheDocument();
     unmount();
 

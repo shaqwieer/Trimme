@@ -24,13 +24,13 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
 
         var message = arabic
             ? Compose(
-                ticket.Email, "ar", "إعادة تعيين كلمة المرور في تريمي", greeting,
-                "طلبت إعادة تعيين كلمة المرور لحسابك في تريمي. الرابط صالح لمدة ساعة واحدة.",
+                ticket.Email, "ar", "إعادة تعيين كلمة المرور في Groom Here", greeting,
+                "طلبت إعادة تعيين كلمة المرور لحسابك في Groom Here. الرابط صالح لمدة ساعة واحدة.",
                 "تعيين كلمة مرور جديدة", link,
                 "إذا لم تطلب ذلك فتجاهل هذه الرسالة، ولن يتغير شيء في حسابك.")
             : Compose(
-                ticket.Email, "en", "Reset your TRIMME password", greeting,
-                "You asked to reset the password of your TRIMME account. The link is valid for one hour.",
+                ticket.Email, "en", "Reset your Groom Here password", greeting,
+                "You asked to reset the password of your Groom Here account. The link is valid for one hour.",
                 "Set a new password", link,
                 "If you did not ask for this, ignore this email and nothing will change.");
 
@@ -45,13 +45,13 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
 
         var message = arabic
             ? Compose(
-                email, "ar", "دعوة للانضمام إلى تريمي", "مرحباً،",
-                $"تمت دعوتك للانضمام إلى تريمي بصلاحية «{RoleLabel(roleName, arabic: true)}». الدعوة صالحة لمدة {days.ToString(CultureInfo.InvariantCulture)} أيام.",
+                email, "ar", "دعوة للانضمام إلى Groom Here", "مرحباً،",
+                $"تمت دعوتك للانضمام إلى Groom Here بصلاحية «{RoleLabel(roleName, arabic: true)}». الدعوة صالحة لمدة {days.ToString(CultureInfo.InvariantCulture)} أيام.",
                 "قبول الدعوة وإنشاء الحساب", link,
                 "إذا لم تكن تتوقع هذه الدعوة فتجاهل هذه الرسالة.")
             : Compose(
-                email, "en", "You're invited to TRIMME", "Hello,",
-                $"You have been invited to join TRIMME as {RoleLabel(roleName, arabic: false)}. The invitation is valid for {days.ToString(CultureInfo.InvariantCulture)} days.",
+                email, "en", "You're invited to Groom Here", "Hello,",
+                $"You have been invited to join Groom Here as {RoleLabel(roleName, arabic: false)}. The invitation is valid for {days.ToString(CultureInfo.InvariantCulture)} days.",
                 "Accept and create your account", link,
                 "If you were not expecting this invitation, ignore this email.");
 
@@ -69,7 +69,7 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
     private static EmailMessage Compose(string to, string lang, string subject, string greeting, string body, string action, string link, string footer)
     {
         var dir = lang == "ar" ? "rtl" : "ltr";
-        var text = $"{greeting}\n\n{body}\n\n{action}:\n{link}\n\n{footer}\n\nTRIMME";
+        var text = $"{greeting}\n\n{body}\n\n{action}:\n{link}\n\n{footer}\n\nGroom Here";
         var html = $"""
             <!doctype html>
             <html lang="{lang}" dir="{dir}">

@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-10-04 (Session 15: simpler customer booking, after Phase 17)
+- **Updated:** 2026-10-19 (Session 16: rebrand to Groom Here at groomhere.sa, after Phase 17)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -26,6 +26,7 @@
   - Then (D-130): every 5 minutes shown with unavailable ones greyed; «كل الخدمات»; services and packages managed by the admin only; a four-tab bottom bar for the shop on phones; the customer home is the logo with the location, then the salons.
   - Then (D-129): «صالون / مختص» wording for customers; the day's times under the days on one step; the month on date chips; no salon phone for customers; 15-minute slots on the demo.
   - Then (D-128): no salon starting prices or platform figures for customers; «احجز الآن» on the search and the shop page's centred bar; the FAQ and closing call to action are back on the home page.
+- **Session 16 (D-131): the product is Groom Here.** New name in both locales and in the emails, the client's new logo, Open Graph image and favicon, and the demo now runs at https://groomhere.sa (www redirects to it; trimme.net is no longer served).
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

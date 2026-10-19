@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "appName": "TRIMME",
-    "title": "TRIMME — Book your next haircut",
+    "appName": "Groom Here",
+    "title": "Groom Here — Book your next haircut",
     "description": "Discover nearby specialists and salons and book a real available appointment in seconds."
   },
   "common": {
@@ -14,7 +14,7 @@
       "switchTo": "العربية"
     },
     "brand": {
-      "logoAlt": "TRIMME"
+      "logoAlt": "Groom Here"
     },
     "theme": {
       "label": "Theme",
@@ -275,7 +275,7 @@
     "back": "Back",
     "phoneLabel": "Mobile number",
     "signUp": {
-      "title": "Welcome to TRIMME",
+      "title": "Welcome to Groom Here",
       "subtitle": "Enter your mobile number and we'll send you a verification code on WhatsApp",
       "terms": "I agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>",
       "submit": "Send code",
@@ -286,7 +286,7 @@
       "title": "Sign in",
       "subtitle": "Enter your mobile number and we'll send your sign-in code on WhatsApp",
       "submit": "Send code",
-      "noAccount": "New to TRIMME?",
+      "noAccount": "New to Groom Here?",
       "signUp": "Create an account",
       "staff": "Shop and admin team sign-in"
     },
@@ -343,7 +343,7 @@
     },
     "acceptInvite": {
       "title": "Accept your invitation",
-      "subtitle": "Create your TRIMME account to finish joining.",
+      "subtitle": "Create your Groom Here account to finish joining.",
       "nameLabel": "Full name",
       "submit": "Create account",
       "invalidTitle": "This invitation is not valid",
@@ -462,7 +462,7 @@
     "availability_professional_not_eligible": "This professional does not provide this service.",
     "booking_slot_unavailable": "That time was just booked. Pick another one.",
     "booking_not_found": "The appointment was not found.",
-    "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the TRIMME team.",
+    "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the Groom Here team.",
     "booking_not_reschedulable": "This appointment can't be changed now.",
     "booking_invalid_transition": "This appointment's status can't change now.",
     "booking_shop_not_accepting": "The salon isn't taking online bookings right now.",
@@ -1400,7 +1400,7 @@
     "shops": "Salons",
     "terms": "Terms of use",
     "privacy": "Privacy policy",
-    "rights": "© {year} TRIMME. All rights reserved."
+    "rights": "© {year} Groom Here. All rights reserved."
   },
   "opening": {
     "openUntil": "Open until {time}",
@@ -1448,7 +1448,7 @@
       "body": "The essentials, without the fine print.",
       "cost": {
         "question": "Does it cost the customer to book?",
-        "answer": "TRIMME shows each salon's own service prices before you choose. Any payment terms are shown as part of the salon and booking details."
+        "answer": "Groom Here shows each salon's own service prices before you choose. Any payment terms are shown as part of the salon and booking details."
       },
       "download": {
         "question": "Do I need to download an app?",
@@ -1460,7 +1460,7 @@
       },
       "confirmation": {
         "question": "How do I know the booking is confirmed?",
-        "answer": "After you confirm, the appointment is recorded in TRIMME and its details are sent through the salon's configured notification channel, including WhatsApp when enabled."
+        "answer": "After you confirm, the appointment is recorded in Groom Here and its details are sent through the salon's configured notification channel, including WhatsApp when enabled."
       },
       "changes": {
         "question": "Can I cancel or reschedule?",
@@ -1477,11 +1477,11 @@
     "meta": {
       "title": "Salons",
       "titleCity": "Salons in {city}",
-      "description": "Browse the salons on TRIMME, compare ratings and prices, and book an available appointment."
+      "description": "Browse the salons on Groom Here, compare ratings and prices, and book an available appointment."
     },
     "title": "Salons",
     "titleCity": "Salons in {city}",
-    "intro": "Every salon listed takes bookings on TRIMME, with its own prices and durations.",
+    "intro": "Every salon listed takes bookings on Groom Here, with its own prices and durations.",
     "cities": "Cities",
     "allCities": "All cities",
     "empty": "No salons are published in this city yet.",
@@ -1610,7 +1610,7 @@
     "galleryImage": "Photo {index} of {total}",
     "logoAlt": "{name} logo",
     "verified": "Verified",
-    "verifiedHint": "TRIMME has checked this salon's details",
+    "verifiedHint": "Groom Here has checked this salon's details",
     "noReviews": "No reviews yet",
     "distance": "{km} away",
     "address": "Address",
@@ -1661,7 +1661,7 @@
     },
     "notListed": {
       "title": "Online booking isn't available right now",
-      "body": "This salon isn't taking new bookings through TRIMME at the moment."
+      "body": "This salon isn't taking new bookings through Groom Here at the moment."
     },
     "duration": {
       "hours": "{count, plural, one {# hour} other {# hours}}",
@@ -1710,11 +1710,11 @@
     "draft": "Draft, pending legal review before launch.",
     "terms": {
       "title": "Terms of use",
-      "description": "The terms for using TRIMME to book salon appointments.",
+      "description": "The terms for using Groom Here to book salon appointments.",
       "sections": {
         "service": {
           "title": "The service",
-          "body": "TRIMME shows the times that are free at participating salons and records your booking. The salon provides the service and sets its own prices and durations."
+          "body": "Groom Here shows the times that are free at participating salons and records your booking. The salon provides the service and sets its own prices and durations."
         },
         "account": {
           "title": "Your account",
@@ -1722,7 +1722,7 @@
         },
         "bookings": {
           "title": "Bookings and cancellation",
-          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the TRIMME team. There are no payments through the platform in this version; you pay at the salon."
+          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the Groom Here team. There are no payments through the platform in this version; you pay at the salon."
         },
         "reviews": {
           "title": "Reviews",
@@ -1732,7 +1732,7 @@
     },
     "privacy": {
       "title": "Privacy policy",
-      "description": "How TRIMME handles your personal data.",
+      "description": "How Groom Here handles your personal data.",
       "sections": {
         "data": {
           "title": "What we collect",
@@ -1748,7 +1748,7 @@
         },
         "cookies": {
           "title": "Cookies",
-          "body": "We use TRIMME's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a salon's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
+          "body": "We use Groom Here's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a salon's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
         },
         "rights": {
           "title": "Your rights",
@@ -1838,7 +1838,7 @@
     },
     "policy": {
       "title": "Cancelling and payment",
-      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the salon — there is no payment in TRIMME."
+      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the salon — there is no payment in Groom Here."
     },
     "window": {
       "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -1890,8 +1890,8 @@
       "total": "Total (paid at the salon)",
       "policy": {
         "title": "Cancellation policy",
-        "before": "You can cancel or reschedule in TRIMME for free until {time}.",
-        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the TRIMME team."
+        "before": "You can cancel or reschedule in Groom Here for free until {time}.",
+        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the Groom Here team."
       },
       "window": {
         "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -1936,7 +1936,7 @@
       "confirm": "Confirm new time",
       "loading": "Loading times…",
       "taken": "That time was just booked — pick another from the refreshed times.",
-      "notAllowed": "This appointment can't be changed in TRIMME now.",
+      "notAllowed": "This appointment can't be changed in Groom Here now.",
       "backToBooking": "Back to the appointment"
     }
   },
@@ -2237,7 +2237,7 @@
   },
   "adminOverview": {
     "title": "Platform overview",
-    "subtitle": "TRIMME platform · {date}",
+    "subtitle": "Groom Here platform · {date}",
     "kpis": "Platform indicators",
     "period": {
       "label": "Period",
@@ -2739,8 +2739,8 @@
         "booking_rescheduled": "{customer} moved their booking to {date} at {time} ({item} with {professional})",
         "booking_cancelled": "{customer} cancelled their booking on {date} at {time} ({item})",
         "subscription_expiring": "The shop's subscription ends in {days, plural, one {# day} other {# days}}, on {endDate}",
-        "subscription_expired": "The shop's subscription ended on {endDate}. Contact the TRIMME team to renew",
-        "admin_message": "Message from the TRIMME team: {message}"
+        "subscription_expired": "The shop's subscription ended on {endDate}. Contact the Groom Here team to renew",
+        "admin_message": "Message from the Groom Here team: {message}"
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
@@ -2981,7 +2981,7 @@
       "poster": "A5 poster"
     },
     "imageAlt": "QR code that opens {name}",
-    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a TRIMME-only cookie that credits a booking made within 7 days of the scan.",
+    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a Groom Here cookie of our own that credits a booking made within 7 days of the scan.",
     "materials": {
       "title": "Print materials",
       "Shop": "One code per shop",
@@ -3069,7 +3069,7 @@
       "poster": "A5 poster"
     },
     "imageAlt": "QR code that opens {name}",
-    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a TRIMME-only cookie that credits a booking made within 7 days of the scan.",
+    "privacy": "We keep no IP address and no device fingerprint: only the time of the scan, the kind of device and the page language, plus a Groom Here cookie of our own that credits a booking made within 7 days of the scan.",
     "materials": {
       "title": "Print materials",
       "Shop": "One code per shop",
@@ -3080,9 +3080,9 @@
       "countedBody": "Scan-to-booking conversion is measured here."
     },
     "title": "QR codes",
-    "intro": "Your shop's and barbers' codes, ready to print. The TRIMME team creates them; you can download and print them.",
+    "intro": "Your shop's and barbers' codes, ready to print. The Groom Here team creates them; you can download and print them.",
     "period": "Last 30 days ({from} – {to})",
-    "empty": "Your shop has no codes yet. Contact the TRIMME team to create them.",
+    "empty": "Your shop has no codes yet. Contact the Groom Here team to create them.",
     "list": "The shop's codes"
   },
   "qrPoster": {

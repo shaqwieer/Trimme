@@ -307,7 +307,7 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     await expect(page).toHaveURL(/\/ar\/auth\/sign-in\?returnTo=%2Fshops%2Fbarber-house/);
     await page.getByRole('link', { name: 'أنشئ حساباً' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/sign-up\?returnTo=%2Fshops%2Fbarber-house/);
-    await expect(page.getByRole('heading', { name: 'أهلاً بك في تريمي' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'أهلاً بك في Groom Here' })).toBeVisible();
     const national = newPhone();
     await page.getByLabel('رقم الجوال').fill(national);
     await page.getByLabel(/أوافق على/).check();

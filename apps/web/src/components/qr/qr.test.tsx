@@ -27,7 +27,7 @@ const ok = <T,>(data: T, status = 200) => ({ data, response: new Response(null, 
 const code = (overrides: Partial<QrCode> = {}): QrCode => ({
   id: 'c1',
   code: 'aswn7qkd',
-  url: 'https://trimme.sa/q/aswn7qkd',
+  url: 'https://groomhere.sa/q/aswn7qkd',
   shopId: 's1',
   shopSlug: 'al-asala',
   shopNameAr: 'صالون الأصالة',
@@ -56,7 +56,7 @@ describe('QR helpers', () => {
   it('builds same-origin file URLs, strips the scheme for display, and picks a known period', () => {
     expect(qrImageUrl('shop', 'c1', 'pdf')).toBe('/api/v1/shop/qr/codes/c1/image?format=pdf');
     expect(qrImageUrl('admin', 'c1', 'png', 20)).toBe('/api/v1/admin/qr/codes/c1/image?format=png&size=20');
-    expect(displayUrl('https://trimme.sa/q/aswn7qkd')).toBe('trimme.sa/q/aswn7qkd');
+    expect(displayUrl('https://groomhere.sa/q/aswn7qkd')).toBe('groomhere.sa/q/aswn7qkd');
     expect(lastDays('2026-10-02', 7)).toEqual({ from: '2026-09-26', to: '2026-10-02' });
     expect(qrPeriod('90')).toBe(90);
     expect(qrPeriod('45')).toBe(30);
@@ -114,7 +114,7 @@ describe('QR components', () => {
       <QrCodeCard scope="shop" code={code()} posterHref="/shop/qr/c1/poster" />,
     );
     expect(screen.getByRole('heading', { name: 'صفحة سلطان الحربي' })).toBeInTheDocument();
-    expect(screen.getByText('trimme.sa/q/aswn7qkd')).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByText('groomhere.sa/q/aswn7qkd')).toHaveAttribute('dir', 'ltr');
     expect(screen.getByText('42 مسح · 7 حجز')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'رمز QR يفتح صفحة سلطان الحربي' })).toBeInTheDocument();
     const pdf = screen.getByRole('link', { name: 'تنزيل الرمز aswn7qkd بصيغة PDF' });
