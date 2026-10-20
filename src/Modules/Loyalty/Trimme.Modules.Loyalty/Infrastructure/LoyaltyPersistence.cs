@@ -17,6 +17,7 @@ internal sealed class LoyaltyProgramConfiguration : IEntityTypeConfiguration<Loy
         {
             t.HasCheckConstraint("ck_programs_required_visits", $"required_visits BETWEEN {LoyaltyProgram.MinVisits} AND {LoyaltyProgram.MaxVisits}");
             t.HasCheckConstraint("ck_programs_discount_percent", "discount_percent IS NULL OR discount_percent BETWEEN 1 AND 100");
+            t.HasCheckConstraint("ck_programs_first_visit_stamps", "first_visit_stamps >= 1 AND first_visit_stamps < required_visits");
         });
         builder.HasKey(p => p.Id);
         builder.HasIndex(p => p.ShopId).IsUnique();
@@ -30,12 +31,13 @@ internal sealed class LoyaltyStampConfiguration : IEntityTypeConfiguration<Loyal
 {
     public void Configure(EntityTypeBuilder<LoyaltyStamp> builder)
     {
-        builder.ToTable("stamps");
+        builder.ToTable("stamps", t => t.HasCheckConstraint("ck_stamps_number", "number >= 1"));
         builder.HasKey(s => s.Id);
 
-        // One stamp per completed booking. The booking's key type belongs to the Bookings module, so this is a unique
-        // column rather than a foreign key (as for reviews, D-092).
-        builder.HasIndex(s => s.BookingId).IsUnique();
+        // A completed booking's stamps are numbered from 1 (more than one on a first visit, D-133), so a booking is
+        // stamped once. The booking's key type belongs to the Bookings module, so this is a unique index rather than a
+        // foreign key (as for reviews, D-092).
+        builder.HasIndex(s => new { s.BookingId, s.Number }).IsUnique();
         builder.HasIndex(s => new { s.ShopId, s.CustomerId, s.RewardId });
         builder.HasIndex(s => s.CustomerId);
         builder.HasOne<LoyaltyReward>().WithMany().HasForeignKey(s => s.RewardId).OnDelete(DeleteBehavior.Restrict);

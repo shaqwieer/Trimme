@@ -8,6 +8,7 @@ import { LoyaltyStamps } from './LoyaltyStamps';
 const program = {
   isActive: true,
   requiredVisits: 6,
+  firstVisitStamps: 1,
   rewardKind: 'FreeService' as const,
   discountPercent: null,
   rewardTitleAr: 'حلاقة مجانية',
@@ -41,6 +42,28 @@ describe('loyalty card (D-132)', () => {
     );
     expect(screen.getByText(/حلاقة مجانية/)).toBeInTheDocument();
     expect(screen.getByText(/باقي زيارتان/)).toBeInTheDocument();
+    expect(screen.queryByTestId('loyalty-first-visit')).not.toBeInTheDocument();
+  });
+
+  it('with a first-visit bonus, counts circles and says what the first visit fills (D-133)', () => {
+    const bonus = { ...program, firstVisitStamps: 3 };
+    const { unmount } = renderWithIntl(
+      <>
+        <LoyaltyOffer program={bonus} />
+        <LoyaltyProgress program={bonus} stamps={0} />
+      </>,
+    );
+    expect(screen.getByText(/^اجمع .* دوائر واحصل على: حلاقة مجانية$/)).toBeInTheDocument();
+    expect(screen.getByTestId('loyalty-first-visit')).toHaveTextContent(
+      /أول زيارة لك تملأ .* دوائر، ثم دائرة مع كل زيارة/,
+    );
+    // An empty card may be a newcomer's, whose first visit fills three: no visit count is guessed.
+    expect(screen.queryByText(/باقي/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithIntl(<LoyaltyProgress program={bonus} stamps={3} />, { locale: 'en' });
+    expect(screen.getByText('3 more visits to your coupon')).toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAccessibleName('3 of 6 circles filled');
   });
 
   it('uses the English title in Turkish and names the coupon code', () => {

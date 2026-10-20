@@ -1677,20 +1677,12 @@
   "proPage": {
     "meta": {
       "title": "{name} — {shop}",
-      "description": "{name}, {shop} salonunda {specialty}. Hizmetleri, değerlendirmeleri ve en yakın müsait saatleri görün, randevu alın."
+      "description": "{name}, {shop} salonunda {specialty}. Hizmetleri ve değerlendirmeleri görün, randevu alın."
     },
     "back": "Salona dön",
     "heading": "Uzman",
     "worksAt": "Çalıştığı salon: {shop}",
-    "next": {
-      "title": "En yakın müsait saatler",
-      "titleToday": "Bugünkü en yakın müsait saatler",
-      "titleOn": "En yakın müsait saatler: {day}",
-      "more": "+{count} daha",
-      "none": "Önümüzdeki hafta müsait saat yok.",
-      "unavailable": "Bu salon online randevuyu durdurdu.",
-      "slot": "{time} için randevu al"
-    },
+    "unavailable": "Bu salon online randevuyu durdurdu.",
     "services": {
       "title": "Sunduğu hizmetler",
       "empty": "Bu uzman için yayınlanmış hizmet yok."
@@ -1852,7 +1844,12 @@
     },
     "signInNote": "Onayladığınızda cep telefonu numaranızı ister ve WhatsApp üzerinden bir kod göndeririz, ardından sizi bu adıma geri getiririz.",
     "customersOnly": "Yalnızca müşteri hesapları randevu alabilir. Bir müşteri hesabıyla giriş yapın.",
-    "allServices": "Tüm hizmetler"
+    "allServices": "Tüm hizmetler",
+    "withPro": {
+      "title": "{name} ile randevu",
+      "body": "Yalnızca sunduğu hizmetler gösteriliyor.",
+      "change": "Uzmanı değiştir"
+    }
   },
   "bookings": {
     "title": "Randevularım",
@@ -2949,12 +2946,6 @@
       "Shop": "Doğrudan bu salonun sayfasındasınız. Hizmetinizi seçin, ardından randevuyu tamamlamak için cep telefonu numaranızı girin.",
       "Professional": "Doğrudan {name} adlı uzmanın sayfasındasınız. Hizmetinizi seçin, ardından randevuyu tamamlamak için cep telefonu numaranızı girin."
     },
-    "times": {
-      "today": "Bugünün en erken saatleri",
-      "on": "{day} tarihindeki en erken saatler",
-      "none": "Önümüzdeki hafta boş saat yok.",
-      "slot": "Saat {time} için randevu al"
-    },
     "services": {
       "title": "Hizmetler",
       "empty": "Şu anda randevu alınabilecek hizmet yok."
@@ -3106,8 +3097,10 @@
     "intro": "Sadakat programı olan bir salonda Groom Here üzerinden tamamladığınız her randevu kartınızdaki bir daireyi yeşile boyar. Kart dolduğunda aynı salondaki bir sonraki randevunuzda seçebileceğiniz bir kupon kazanırsınız.",
     "programTitle": "Sadakat programı",
     "offer": "{visits, plural, one {{visitsText} ziyaret} other {{visitsText} ziyaret}} tamamlayın, kazanın: {reward}",
+    "offerCircles": "{visits, plural, one {{visitsText} daire} other {{visitsText} daire}} toplayın, kazanın: {reward}",
+    "firstVisit": "{count, plural, one {İlk ziyaretiniz {countText} daire doldurur} other {İlk ziyaretiniz {countText} daire doldurur}}, sonra her ziyaret bir daire.",
     "anyProfessional": "Salondaki herhangi bir uzmanla yaptığınız ziyaretler sayılır.",
-    "stampsLabel": "{requiredText} ziyaretten {filledText} tanesi tamamlandı",
+    "stampsLabel": "{requiredText} daireden {filledText} tanesi dolu",
     "remaining": "{left, plural, one {Kupona {leftText} ziyaret kaldı} other {Kupona {leftText} ziyaret kaldı}}",
     "useWhenBooking": "Kuponu bu salondaki bir sonraki randevunuzun onay adımında seçin.",
     "signIn": "Ziyaretlerinizi takip etmek için giriş yapın",
@@ -3137,6 +3130,8 @@
       "intro": "Salonla anlaşılarak belirlenir. Salonun herhangi bir uzmanıyla tamamlanan her çevrim içi randevu müşterinin kartındaki bir daireyi doldurur; dolan kart, müşterinin randevu alırken seçtiği ve salonun ziyarette uyguladığı bir kupon kazandırır.",
       "active": "Program açık",
       "requiredVisits": "Ödül için gereken ziyaret sayısı",
+      "firstVisitStamps": "İlk ziyaret puanı",
+      "firstVisitHint": "Müşterinin salondaki ilk tamamlanan ziyaretinin dolduracağı daire sayısı; sonraki her ziyaret bir daire doldurur. Ek puan vermemek için 1 girin. {min} ile {max} arası",
       "rewardKind": "Ödül türü",
       "kinds": {
         "FreeService": "Ücretsiz hizmet",
@@ -3156,7 +3151,7 @@
       "stats": {
         "title": "Kullanım",
         "members": "Ziyareti olan müşteriler",
-        "openStamps": "Açık kartlardaki ziyaretler",
+        "openStamps": "Açık kartlardaki dolu daireler",
         "issued": "Verilen kuponlar",
         "available": "Kullanılabilir veya ayrılmış kuponlar",
         "redeemed": "Kullanılan kuponlar"

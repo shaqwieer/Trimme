@@ -82,7 +82,7 @@ internal sealed class SaveShopLoyaltyHandler(TrimmeDbContext db, IAdminDataScope
 
         audit.Record(new AuditRecord(
             "loyalty.program_saved", nameof(LoyaltyProgram), program.Id.ToString(), shopId,
-            $"{(program.IsActive ? "active" : "inactive")}: {program.RequiredVisits} visits → {program.RewardKind}{(program.DiscountPercent is { } p ? $" {p}%" : string.Empty)}"));
+            $"{(program.IsActive ? "active" : "inactive")}: {program.RequiredVisits} visits (first visit {program.FirstVisitStamps}) → {program.RewardKind}{(program.DiscountPercent is { } p ? $" {p}%" : string.Empty)}"));
         await db.SaveChangesAsync(cancellationToken);
         return new AdminShopLoyaltyResponse(LoyaltyMapping.Program(program), program.Version, await LoyaltyStats.ForShopAsync(db, shopId, now, cancellationToken));
     }

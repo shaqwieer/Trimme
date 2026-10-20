@@ -194,7 +194,7 @@ test.describe('public discovery (Phase 11)', () => {
     await expectNoSeriousAxe(page, `/ar/shops/${BARBER_HOUSE}`);
   });
 
-  test('professional profile: services, next free times and reviews, in English too', async ({ page }) => {
+  test('professional profile: services and reviews, in English too', async ({ page }) => {
     await page.goto(`/en/shops/${BARBER_HOUSE}/professionals/omar`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Omar Al-Salem');
     await expect(page.getByRole('link', { name: /Works at Barber House/ })).toHaveAttribute(
@@ -202,6 +202,12 @@ test.describe('public discovery (Phase 11)', () => {
       `/en/shops/${BARBER_HOUSE}`,
     );
     await expect(page.getByRole('heading', { name: 'Services offered' })).toBeVisible();
+    // The customer picks the service, then the time (D-133): no time chips that pick a service for them.
+    await expect(page.getByRole('heading', { name: /Earliest available times/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /^Book (?!with)/ }).first()).toHaveAttribute(
+      'href',
+      //en/shops/barber-house/book?pro=.*&(service|package)=/,
+    );
     await expect(page.getByRole('link', { name: 'Book with Omar' })).toHaveAttribute(
       'href',
       /\/en\/shops\/barber-house\/book\?pro=/,

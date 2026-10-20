@@ -15,14 +15,20 @@ namespace Trimme.IntegrationTests.Loyalty;
 /// <summary>
 /// The shop's stamp card (D-132): the admin sets the terms; every completed online booking at the shop, with any of its
 /// professionals, earns a stamp; a full card becomes a reward the customer chooses when booking; it is released by a
-/// cancellation and redeemed by the completed visit, which earns no stamp itself.
+/// cancellation and redeemed by the completed visit, which earns no stamp itself. The first visit can fill several
+/// circles (D-133), and every salon keeps its own card.
 /// </summary>
 public sealed class LoyaltyTests(PostgresFixture postgres)
 {
     private static DateOnly Target => TodayAt(DateTimeOffset.UtcNow).AddDays(2);
 
-    private static object Terms(bool active = true, int visits = 2, string kind = "FreeService", int? percent = null, string? titleAr = "حلاقة مجانية", uint? version = null) =>
-        new { isActive = active, requiredVisits = visits, rewardKind = kind, discountPercent = percent, rewardTitleAr = titleAr, rewardTitleEn = "Free haircut", rewardValidityDays = (int?)null, version };
+    private static object Terms(
+        bool active = true, int visits = 2, string kind = "FreeService", int? percent = null, string? titleAr = "حلاقة مجانية", uint? version = null, int? firstVisit = null) =>
+        new
+        {
+            isActive = active, requiredVisits = visits, firstVisitStamps = firstVisit, rewardKind = kind, discountPercent = percent, rewardTitleAr = titleAr,
+            rewardTitleEn = "Free haircut", rewardValidityDays = (int?)null, version,
+        };
 
     private static async Task ProcessOutboxAsync(TrimmeApiFactory factory, CancellationToken ct)
     {
@@ -33,10 +39,10 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         }
     }
 
-    private static async Task CompleteAsync(BookingWorld w, FakeTimeProvider clock, Guid bookingId, DateTimeOffset start, CancellationToken ct)
+    private static async Task CompleteAsync(BookingWorld w, FakeTimeProvider clock, Guid bookingId, DateTimeOffset start, CancellationToken ct, string? staffEmail = null)
     {
         clock.SetUtcNow(start.AddMinutes(40).ToUniversalTime());
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct);
+        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, staffEmail ?? w.Shops.A.StaffEmail, ct);
         foreach (var to in new[] { "Arrived", "Completed" })
         {
             var current = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
@@ -138,6 +144,64 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task FirstVisit_FillsTheBonusCircles_ThenOnePerVisit_AndEachSalonKeepsItsOwnCard()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var w = await ArrangeAsync(postgres, "loyalty_bonus", ct, clock);
+        // Salon A: four circles, and the first visit fills three of them. Salon B: three circles, no bonus.
+        await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty", Terms(visits: 4, firstVisit: 3), ct), ct);
+        await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}/loyalty", Terms(visits: 3), ct), ct);
+        var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
+        (await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{w.SlugA}/loyalty", ct), ct))
+            .GetProperty("program").GetProperty("firstVisitStamps").GetInt32().ShouldBe(3);
+        (await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{slugB}/loyalty", ct), ct))
+            .GetProperty("program").GetProperty("firstVisitStamps").GetInt32().ShouldBe(1);
+
+        var (noura, nouraPhone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
+        // In time order, as the fake clock only moves forward.
+        var first = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        var atB = (await OkAsync(BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 11), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        var second = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        var third = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 13), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        noura.Dispose();
+
+        async Task<JsonElement> CardsAsync()
+        {
+            using var session = await IdentityTestData.SignInCustomerAsync(w.Factory, nouraPhone, ct);
+            return (await OkAsync(session.GetAsync("/api/v1/me/loyalty", ct), ct)).GetProperty("items");
+        }
+
+        int Stamps(JsonElement cards, string slug) =>
+            cards.EnumerateArray().Single(c => c.GetProperty("shop").GetProperty("slug").GetString() == slug).GetProperty("stamps").GetInt32();
+
+        // The first visit at A fills three circles; the first at B fills one: two salons, two cards.
+        await CompleteAsync(w, clock, first, At(Target, 10), ct);
+        Stamps(await CardsAsync(), w.SlugA).ShouldBe(3);
+        await CompleteAsync(w, clock, atB, At(Target, 11), ct, w.Shops.B.OwnerEmail);
+        var cards = await CardsAsync();
+        cards.GetArrayLength().ShouldBe(2);
+        Stamps(cards, w.SlugA).ShouldBe(3);
+        Stamps(cards, slugB).ShouldBe(1);
+
+        // The second visit at A fills the fourth circle: the card becomes a coupon and starts again.
+        await CompleteAsync(w, clock, second, At(Target, 12), ct);
+        cards = await CardsAsync();
+        Stamps(cards, w.SlugA).ShouldBe(0);
+        cards.EnumerateArray().Single(c => c.GetProperty("shop").GetProperty("slug").GetString() == w.SlugA)
+            .GetProperty("rewards").EnumerateArray().ShouldHaveSingleItem().GetProperty("status").GetString().ShouldBe("Available");
+
+        // Only the very first visit gets the bonus: the next card fills one circle per visit.
+        await CompleteAsync(w, clock, third, At(Target, 13), ct);
+        Stamps(await CardsAsync(), w.SlugA).ShouldBe(1);
+        using var admin = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.SuperAdmin, ct);
+        var stats = (await OkAsync(admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty", ct), ct)).GetProperty("stats");
+        stats.GetProperty("members").GetInt32().ShouldBe(1);
+        stats.GetProperty("openStamps").GetInt32().ShouldBe(1);
+        stats.GetProperty("rewardsIssued").GetInt32().ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Programme_IsSetByTheAdminOnly_Validated_AndReadOnlyForTheShop()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -152,6 +216,12 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         invalid.ShouldContain("requiredVisits");
         invalid.ShouldContain("discountPercent");
         invalid.ShouldContain("rewardTitleAr");
+
+        // The first visit can fill fewer circles than the card has, never all of them (D-133).
+        foreach (var firstVisit in new[] { 0, 5 })
+        {
+            (await FailsAsync(w.Admin.PutAsync(url, Terms(visits: 5, firstVisit: firstVisit), ct), HttpStatusCode.BadRequest, null, ct)).ShouldContain("firstVisitStamps");
+        }
 
         var saved = await OkAsync(w.Admin.PutAsync(url, Terms(active: false, visits: 5, kind: "Discount", percent: 20), ct), ct);
         var version = saved.GetProperty("version").GetUInt32();

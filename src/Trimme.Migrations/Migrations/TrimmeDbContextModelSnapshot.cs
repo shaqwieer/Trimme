@@ -1576,6 +1576,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("discount_percent");
 
+                    b.Property<int>("FirstVisitStamps")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_visit_stamps");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -1629,6 +1633,8 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("programs", "loyalty", t =>
                         {
                             t.HasCheckConstraint("ck_programs_discount_percent", "discount_percent IS NULL OR discount_percent BETWEEN 1 AND 100");
+
+                            t.HasCheckConstraint("ck_programs_first_visit_stamps", "first_visit_stamps >= 1 AND first_visit_stamps < required_visits");
 
                             t.HasCheckConstraint("ck_programs_required_visits", "required_visits BETWEEN 2 AND 20");
                         });
@@ -1742,6 +1748,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("earned_at");
 
+                    b.Property<int>("Number")
+                        .HasColumnType("integer")
+                        .HasColumnName("number");
+
                     b.Property<Guid?>("RewardId")
                         .HasColumnType("uuid")
                         .HasColumnName("reward_id");
@@ -1753,20 +1763,23 @@ namespace Trimme.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_stamps");
 
-                    b.HasIndex("BookingId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_stamps_booking_id");
-
                     b.HasIndex("CustomerId")
                         .HasDatabaseName("ix_stamps_customer_id");
 
                     b.HasIndex("RewardId")
                         .HasDatabaseName("ix_stamps_reward_id");
 
+                    b.HasIndex("BookingId", "Number")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stamps_booking_id_number");
+
                     b.HasIndex("ShopId", "CustomerId", "RewardId")
                         .HasDatabaseName("ix_stamps_shop_id_customer_id_reward_id");
 
-                    b.ToTable("stamps", "loyalty");
+                    b.ToTable("stamps", "loyalty", t =>
+                        {
+                            t.HasCheckConstraint("ck_stamps_number", "number >= 1");
+                        });
                 });
 
             modelBuilder.Entity("Trimme.Modules.Notifications.Domain.ReminderSchedule", b =>

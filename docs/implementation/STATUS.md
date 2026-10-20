@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-10-19 (Session 16: Groom Here at groomhere.sa; Turkish, the loyalty card and «موقع سعودي ١٠٠٪»)
+- **Updated:** 2026-10-21 (Session 17: service before time from a barber's page or code; first-visit loyalty points)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -28,6 +28,7 @@
   - Then (D-128): no salon starting prices or platform figures for customers; «احجز الآن» on the search and the shop page's centred bar; the FAQ and closing call to action are back on the home page.
 - **Session 16 (D-131): the product is Groom Here.** New name in both locales and in the emails, the client's new logo, Open Graph image and favicon, and the demo now runs at https://groomhere.sa (www redirects to it; trimme.net is no longer served).
 - **Session 16, second request (D-132):** Turkish as a third language (UI, emails; WhatsApp falls back to English); a loyalty card per salon (new `Loyalty` module and migration `LoyaltyProgramme`: the admin sets the visits and the reward, completed online visits with any specialist fill green circles, a full card becomes a coupon chosen when booking); «موقع سعودي ١٠٠٪» on the landing page, the customer home and the footer.
+- **Session 17 (D-133), at the client's request:** from a barber's page or QR code the customer now picks the service, then the time, then confirms; the time chips that booked a service for them are gone, and the wizard keeps the barber and lists only their services. Loyalty: one card per salon was already the rule (now tested with two salons); the admin can make the first visit fill several circles (e.g. 3 of 6), then one per visit (migration `LoyaltyFirstVisitStamps`).
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

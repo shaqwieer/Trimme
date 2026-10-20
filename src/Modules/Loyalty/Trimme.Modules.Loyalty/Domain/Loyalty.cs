@@ -45,7 +45,10 @@ public enum LoyaltyRewardStatus
     Redeemed,
 }
 
-/// <summary>The terms the platform agreed with the shop (D-132), as an admin enters them.</summary>
+/// <summary>
+/// The terms the platform agreed with the shop (D-132), as an admin enters them. <c>FirstVisitStamps</c> (D-133) is how
+/// many circles the customer's first visit fills; every later visit fills one.
+/// </summary>
 public sealed record LoyaltyTerms(
     bool IsActive,
     int RequiredVisits,
@@ -53,12 +56,14 @@ public sealed record LoyaltyTerms(
     int? DiscountPercent,
     string? RewardTitleAr,
     string? RewardTitleEn,
-    int? RewardValidityDays);
+    int? RewardValidityDays,
+    int FirstVisitStamps = 1);
 
 /// <summary>
 /// A shop's loyalty programme (D-132): after <see cref="RequiredVisits"/> completed online bookings at the shop, with any
-/// of its professionals, the customer earns a reward. One per shop; the platform admin sets it after agreeing the terms
-/// with the shop. Switching it off stops new stamps; rewards already earned stay usable.
+/// of its professionals, the customer earns a reward. The first visit can fill more than one circle
+/// (<see cref="FirstVisitStamps"/>, D-133). One per shop; the platform admin sets it after agreeing the terms with the
+/// shop. Switching it off stops new stamps; rewards already earned stay usable.
 /// </summary>
 public sealed class LoyaltyProgram : AggregateRoot<LoyaltyProgramId>, IShopOwned, IPublicContent, IConcurrencyVersioned
 {
@@ -86,6 +91,12 @@ public sealed class LoyaltyProgram : AggregateRoot<LoyaltyProgramId>, IShopOwned
     public bool IsActive { get; private set; }
 
     public int RequiredVisits { get; private set; }
+
+    /// <summary>
+    /// The circles the customer's first completed visit at the shop fills (D-133), at least 1 and fewer than
+    /// <see cref="RequiredVisits"/>, so a first visit never fills the card on its own. Every later visit fills one.
+    /// </summary>
+    public int FirstVisitStamps { get; private set; } = 1;
 
     public LoyaltyRewardKind RewardKind { get; private set; }
 
@@ -124,6 +135,7 @@ public sealed class LoyaltyProgram : AggregateRoot<LoyaltyProgramId>, IShopOwned
 
         IsActive = terms.IsActive;
         RequiredVisits = terms.RequiredVisits;
+        FirstVisitStamps = terms.FirstVisitStamps;
         RewardKind = terms.RewardKind;
         DiscountPercent = terms.RewardKind == LoyaltyRewardKind.Discount ? terms.DiscountPercent : null;
         RewardTitleAr = terms.RewardTitleAr!.Trim();
@@ -139,6 +151,10 @@ public sealed class LoyaltyProgram : AggregateRoot<LoyaltyProgramId>, IShopOwned
         if (terms.RequiredVisits is < MinVisits or > MaxVisits)
         {
             errors["requiredVisits"] = ["validation.out_of_range"];
+        }
+        else if (terms.FirstVisitStamps < 1 || terms.FirstVisitStamps >= terms.RequiredVisits)
+        {
+            errors["firstVisitStamps"] = ["validation.out_of_range"];
         }
 
         if (!Enum.IsDefined(terms.RewardKind))
@@ -174,18 +190,20 @@ public sealed class LoyaltyProgram : AggregateRoot<LoyaltyProgramId>, IShopOwned
 }
 
 /// <summary>
-/// One circle on a customer's card at a shop: a completed online booking (D-132). A card is the shop's open stamps (no
-/// <see cref="RewardId"/>); when there are enough, the oldest ones turn into a reward together. Walk-ins have no customer,
-/// so they never earn one; a visit that used a reward earns none either.
+/// One circle on a customer's card at a shop, earned by a completed online booking (D-132). A booking earns one, or the
+/// programme's <see cref="LoyaltyProgram.FirstVisitStamps"/> when it is the customer's first at the shop (D-133), numbered
+/// from 1. A card is the shop's open stamps (no <see cref="RewardId"/>); when there are enough, the oldest ones turn into
+/// a reward together. Walk-ins have no customer, so they never earn one; a visit that used a reward earns none either.
 /// </summary>
 public sealed class LoyaltyStamp : Entity<LoyaltyStampId>, ICustomerOwned
 {
-    private LoyaltyStamp(LoyaltyStampId id, ShopId shopId, Guid customerId, Guid bookingId, DateTimeOffset earnedAt)
+    private LoyaltyStamp(LoyaltyStampId id, ShopId shopId, Guid customerId, Guid bookingId, int number, DateTimeOffset earnedAt)
         : base(id)
     {
         ShopId = shopId;
         CustomerId = customerId;
         BookingId = bookingId;
+        Number = number;
         EarnedAt = earnedAt;
     }
 
@@ -197,16 +215,19 @@ public sealed class LoyaltyStamp : Entity<LoyaltyStampId>, ICustomerOwned
 
     public Guid? CustomerId { get; private set; }
 
-    /// <summary>The completed booking; one stamp per booking.</summary>
+    /// <summary>The completed booking that earned it.</summary>
     public Guid BookingId { get; private set; }
+
+    /// <summary>Which of the booking's stamps this is (1 to the first-visit stamps); unique per booking.</summary>
+    public int Number { get; private set; }
 
     public DateTimeOffset EarnedAt { get; private set; }
 
     /// <summary>The reward this stamp was turned into; null while it is on the open card.</summary>
     public LoyaltyRewardId? RewardId { get; private set; }
 
-    public static LoyaltyStamp Earn(LoyaltyStampId id, ShopId shopId, Guid customerId, Guid bookingId, DateTimeOffset now) =>
-        new(id, shopId, customerId, bookingId, now);
+    public static LoyaltyStamp Earn(LoyaltyStampId id, ShopId shopId, Guid customerId, Guid bookingId, int number, DateTimeOffset now) =>
+        new(id, shopId, customerId, bookingId, number, now);
 
     public void TurnInto(LoyaltyRewardId rewardId) => RewardId ??= rewardId;
 }
@@ -312,6 +333,16 @@ public sealed class LoyaltyReward : AggregateRoot<LoyaltyRewardId>, ICustomerOwn
 public static class LoyaltyCard
 {
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    /// <summary>
+    /// How many stamps a completed visit earns (D-133): the programme's first-visit stamps when the customer has never had
+    /// a stamp at the shop (not even one already turned into a reward), else one.
+    /// </summary>
+    public static int StampsFor(LoyaltyProgram program, bool firstVisit)
+    {
+        ArgumentNullException.ThrowIfNull(program);
+        return firstVisit ? program.FirstVisitStamps : 1;
+    }
 
     /// <summary>The stamps that fill a card: the oldest <paramref name="requiredVisits"/> open ones, once there are enough.</summary>
     public static IReadOnlyList<LoyaltyStamp>? Filling(IReadOnlyCollection<LoyaltyStamp> open, int requiredVisits) =>

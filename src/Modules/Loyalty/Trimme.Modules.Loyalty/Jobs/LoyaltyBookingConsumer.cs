@@ -16,7 +16,8 @@ internal sealed record LoyaltyBookingEvent(Guid BookingId, Guid ShopId, Guid? Cu
 /// message run once per consumer):
 /// <list type="bullet">
 /// <item>Completed with a held reward: the reward is redeemed and the visit earns no stamp.</item>
-/// <item>Completed otherwise, while the shop's programme is active: one stamp (unique per booking); when the open card is
+/// <item>Completed otherwise, while the shop's programme is active: one stamp, or the programme's first-visit stamps for
+/// the customer's first stamped visit at the shop (D-133), each unique per booking and number; when the open card is
 /// full, its oldest stamps turn into a reward with the programme's current terms.</item>
 /// <item>Cancelled or no-show: a reward held for the booking is released.</item>
 /// </list>
@@ -65,12 +66,17 @@ internal sealed class LoyaltyBookingConsumer(TrimmeDbContext db, TimeProvider cl
             return;
         }
 
-        var stamp = LoyaltyStamp.Earn(EntityId.New<LoyaltyStampId>(), shopId, customerId, change.BookingId, now);
-        db.Add(stamp);
+        var firstVisit = !await db.Set<LoyaltyStamp>().AnyAsync(s => s.ShopId == shopId && s.CustomerId == customerId, cancellationToken);
         var open = await db.Set<LoyaltyStamp>()
             .Where(s => s.ShopId == shopId && s.CustomerId == customerId && s.RewardId == null)
             .ToListAsync(cancellationToken);
-        open.Add(stamp);
+        for (var number = 1; number <= LoyaltyCard.StampsFor(program, firstVisit); number++)
+        {
+            var stamp = LoyaltyStamp.Earn(EntityId.New<LoyaltyStampId>(), shopId, customerId, change.BookingId, number, now);
+            db.Add(stamp);
+            open.Add(stamp);
+        }
+
         if (LoyaltyCard.Filling(open, program.RequiredVisits) is { } filled)
         {
             var reward = LoyaltyReward.Issue(EntityId.New<LoyaltyRewardId>(), program, customerId, LoyaltyCard.NewCode(), now);

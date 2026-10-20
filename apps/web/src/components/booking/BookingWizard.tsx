@@ -27,6 +27,7 @@ import {
   newIdempotencyKey,
   nextStep,
   offerKey,
+  offersFor,
   previousStep,
   readWizardQuery,
   resolveStart,
@@ -107,11 +108,12 @@ function recall(slug: string): string | undefined {
 
 /**
  * The booking wizard (c-booking, spec §12, D-028, D-096, D-125): one or more services or a package → professional or
- * "any" → date (with the nearest free time offered first) → hour, then minutes → review → confirmation. Only bookable
- * dates and slots are offered (server-computed, D-009). Going back never drops a choice. Guests review everything and
- * sign in when they confirm; the wizard URL (with the review step) is the `returnTo`, so they come back to the same
- * choice, which is checked again. The submit carries an idempotency key, and a time taken meanwhile sends the customer
- * back to fresh slots.
+ * "any" → date (with the nearest free time offered first) → hour, then minutes → review → confirmation. Opened from a
+ * professional's page or QR code, it lists only their services and goes from the services to the time (D-133). Only
+ * bookable dates and slots are offered (server-computed, D-009). Going back never drops a choice. Guests review
+ * everything and sign in when they confirm; the wizard URL (with the review step) is the `returnTo`, so they come back
+ * to the same choice, which is checked again. The submit carries an idempotency key, and a time taken meanwhile sends
+ * the customer back to fresh slots.
  */
 export function BookingWizard({
   shop,
@@ -286,7 +288,7 @@ export function BookingWizard({
       (step === 'date' && dateOk && Boolean(startsAt)));
 
   const goNext = () => {
-    const to = nextStep(step);
+    const to = nextStep(step, pro);
     if (to) go(selection, to);
   };
 
@@ -430,8 +432,29 @@ export function BookingWizard({
 
         {step === 'service' && (
           <>
+            {chosenPro && (
+              <div
+                className="flex items-center gap-3 rounded-card border border-border bg-surface p-3"
+                data-testid="wizard-chosen-pro"
+              >
+                <Avatar name={proName} src={chosenPro.avatarUrl} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-label font-bold text-text-primary">
+                    {t('withPro.title', { name: proName })}
+                  </p>
+                  <p className="text-helper text-text-secondary">{t('withPro.body')}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => go({ ...selection, pro: ANY_PROFESSIONAL }, 'service', 'replace')}
+                >
+                  {t('withPro.change')}
+                </Button>
+              </div>
+            )}
             <ServiceStep
-              offers={offers}
+              offers={offersFor(offers, pro)}
               value={items}
               onToggle={toggle}
               onSelectAll={() => {

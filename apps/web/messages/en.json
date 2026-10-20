@@ -1677,20 +1677,12 @@
   "proPage": {
     "meta": {
       "title": "{name} — {shop}",
-      "description": "{name}, {specialty} at {shop}. See services, reviews and the earliest free times, and book."
+      "description": "{name}, {specialty} at {shop}. See services and reviews, and book."
     },
     "back": "Back to the salon",
     "heading": "Specialist",
     "worksAt": "Works at {shop}",
-    "next": {
-      "title": "Earliest available times",
-      "titleToday": "Earliest available times today",
-      "titleOn": "Earliest available times on {day}",
-      "more": "+{count} more",
-      "none": "No free times in the coming week.",
-      "unavailable": "This salon has paused online booking.",
-      "slot": "Book {time}"
-    },
+    "unavailable": "This salon has paused online booking.",
     "services": {
       "title": "Services offered",
       "empty": "No published services for this specialist."
@@ -1852,7 +1844,12 @@
     },
     "signInNote": "When you confirm we ask for your mobile number and send a code on WhatsApp, then bring you back to this step.",
     "customersOnly": "Only customer accounts can book. Sign in with a customer account.",
-    "allServices": "All services"
+    "allServices": "All services",
+    "withPro": {
+      "title": "Booking with {name}",
+      "body": "Only the services they offer are shown.",
+      "change": "Change specialist"
+    }
   },
   "bookings": {
     "title": "My appointments",
@@ -2949,12 +2946,6 @@
       "Shop": "You're on this salon's page directly. Choose your service, then enter your mobile number to complete the booking.",
       "Professional": "You're on {name}'s page directly. Choose your service, then enter your mobile number to complete the booking."
     },
-    "times": {
-      "today": "Earliest times today",
-      "on": "Earliest times on {day}",
-      "none": "No free times in the coming week.",
-      "slot": "Book at {time}"
-    },
     "services": {
       "title": "Services",
       "empty": "No services can be booked right now."
@@ -3106,8 +3097,10 @@
     "intro": "Every appointment you complete through Groom Here at a salon with a loyalty programme fills a green circle on your card. A full card gives you a coupon to choose on your next booking at the same salon.",
     "programTitle": "Loyalty programme",
     "offer": "Complete {visits, plural, one {{visitsText} visit} other {{visitsText} visits}} and get: {reward}",
+    "offerCircles": "Collect {visits, plural, one {{visitsText} circle} other {{visitsText} circles}} and get: {reward}",
+    "firstVisit": "{count, plural, one {Your first visit fills {countText} circle} other {Your first visit fills {countText} circles}}, then one circle per visit.",
     "anyProfessional": "Visits with any specialist at the salon count.",
-    "stampsLabel": "{filledText} of {requiredText} visits completed",
+    "stampsLabel": "{filledText} of {requiredText} circles filled",
     "remaining": "{left, plural, one {{leftText} more visit} other {{leftText} more visits}} to your coupon",
     "useWhenBooking": "Choose the coupon on the confirm step of your next booking at this salon.",
     "signIn": "Sign in to track your visits",
@@ -3137,6 +3130,8 @@
       "intro": "Agreed with the salon. Every completed online appointment with any of the salon’s specialists fills a circle on the customer’s card; a full card gives a coupon they choose when booking and the salon applies at the visit.",
       "active": "Programme on",
       "requiredVisits": "Visits needed for the reward",
+      "firstVisitStamps": "First-visit points",
+      "firstVisitHint": "How many circles the customer's first completed visit at the salon fills; every later visit fills one. Enter 1 for no bonus. {min} to {max}",
       "rewardKind": "Reward type",
       "kinds": {
         "FreeService": "Free service",
@@ -3156,7 +3151,7 @@
       "stats": {
         "title": "Use",
         "members": "Customers with visits",
-        "openStamps": "Visits on open cards",
+        "openStamps": "Filled circles on open cards",
         "issued": "Coupons issued",
         "available": "Coupons available or reserved",
         "redeemed": "Coupons used"

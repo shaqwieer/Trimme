@@ -197,8 +197,8 @@ Phase 16 (D-114).
 ## Loyalty (`loyalty`)
 
 Session 16 (D-132).
-- **LoyaltyProgram** is shop-owned, one per shop: on or off, the visits a card needs (2–20), the reward kind (free service or a 1–100 % discount), its Arabic and optional English title, an optional validity in days, and `xmin`. Only platform admins set it (`Admin.Loyalty.Manage`); the public page shows it when it is on.
-- **LoyaltyStamp** is shop- and customer-owned: one per completed online booking (unique booking id), earned from the booking outbox. A stamp is on the open card until it is turned into a reward (`reward_id`).
+- **LoyaltyProgram** is shop-owned, one per shop: on or off, the visits a card needs (2–20), the circles a customer's first visit fills (1 to the visits − 1, D-133), the reward kind (free service or a 1–100 % discount), its Arabic and optional English title, an optional validity in days, and `xmin`. Only platform admins set it (`Admin.Loyalty.Manage`); the public page shows it when it is on.
+- **LoyaltyStamp** is shop- and customer-owned: one circle, earned from the booking outbox by a completed online booking. A booking earns one, or the programme's first-visit circles when the customer has no stamp at the shop yet (D-133); they are numbered from 1 and unique per booking and number. A stamp is on the open card until it is turned into a reward (`reward_id`). A customer has one card per shop, however many shops.
 - **LoyaltyReward** is shop- and customer-owned: an 8-character code, the programme's terms snapshotted, Available → Held (by one booking) → Redeemed (that booking completed); a cancelled or no-show booking releases it. An optional expiry. A booking keeps the held reward's id and titles (see Bookings); prices are unchanged and the shop applies the reward at the visit.
 
 ## Discovery (read side, no tables of its own)

@@ -11,19 +11,18 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
 import { RatingStars } from '@/components/ui/Rating';
-import { EmptyState, Skeleton } from '@/components/ui/states';
+import { EmptyState } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getPublicApi } from '@/lib/api/public';
 import { optional } from '@/lib/api/safe';
-import { bookHref, getPublicProfessional, getPublicShop } from '@/lib/discovery/shop-data';
 import {
-  type AppLocale,
-  formatDate,
-  formatDurationMinutes,
-  formatPrice,
-  formatTime,
-} from '@/lib/i18n/format';
+  bookHref,
+  getPublicProfessional,
+  getPublicShop,
+  getPublicShopStatus,
+} from '@/lib/discovery/shop-data';
+import { type AppLocale, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { mayBeSignedIn } from '@/lib/auth/session.server';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 import { breadcrumbLd } from '@/lib/seo/jsonld';
@@ -58,79 +57,22 @@ export async function generateMetadata({
   };
 }
 
-/** "Earliest available times today" (c-shop 1386–1392): live, never cached; each chip opens the wizard at that time. */
-async function NextSlots({
-  slug,
-  proSlug,
-  proId,
-  locale,
-  timeZone,
-}: {
-  slug: string;
-  proSlug: string;
-  proId: string;
-  locale: AppLocale;
-  timeZone: string;
-}) {
-  const t = await getTranslations({ locale, namespace: 'proPage.next' });
-  const api = await getPublicApi();
-  const next = await optional(
-    () =>
-      api.GET('/api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots', {
-        params: { path: { slug, professionalSlug: proSlug } },
-      }),
-    'next slots',
-  );
-  if (!next) return null;
-  if (!next.bookable) return <p className="text-helper text-text-secondary">{t('unavailable')}</p>;
-  if (!next.date || next.slots.length === 0 || !next.offer)
-    return <p className="text-helper text-text-secondary">{t('none')}</p>;
-
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
-  const title =
-    next.date === today
-      ? t('titleToday')
-      : t('titleOn', { day: formatDate(`${next.date}T12:00:00Z`, locale, { timeZone: 'UTC' }) });
-  const offer = next.offer;
-  return (
-    <section aria-labelledby="next-heading" className="flex flex-col gap-3">
-      <h2 id="next-heading" className="text-h3 font-bold text-navy-900">
-        {title}
-      </h2>
-      <ul className="flex flex-wrap gap-2">
-        {next.slots.map((slot) => {
-          const time = formatTime(slot.startsAt, locale, timeZone);
-          return (
-            <li key={slot.startsAt}>
-              <Link
-                href={bookHref(slug, {
-                  pro: proId,
-                  [offer.isPackage ? 'package' : 'service']: offer.id,
-                  date: next.date ?? undefined,
-                  time: slot.localTime,
-                })}
-                aria-label={t('slot', { time })}
-                className="inline-flex min-h-11 items-center rounded-field border border-border bg-surface px-4 text-label font-bold text-navy-900 hover:border-brand-500"
-              >
-                {time}
-              </Link>
-            </li>
-          );
-        })}
-        {next.remainingCount > 0 && (
-          <li className="inline-flex min-h-11 items-center rounded-field border border-dashed border-border-dashed px-4 text-label text-text-secondary">
-            {t('more', { count: next.remainingCount })}
-          </li>
-        )}
-      </ul>
-    </section>
-  );
+/** Said only while the salon has paused online booking: the wizard would refuse the booking anyway. */
+async function BookingPaused({ slug, locale }: { slug: string; locale: AppLocale }) {
+  const [t, status] = await Promise.all([
+    getTranslations({ locale, namespace: 'proPage' }),
+    getPublicShopStatus(slug),
+  ]);
+  if (!status || status.acceptsOnlineBookings) return null;
+  return <p className="text-helper font-bold text-text-secondary">{t('unavailable')}</p>;
 }
 
 /**
  * A professional's public profile within their shop (c-shop "PROFESSIONAL PROFILE" 1365–1418). No phone or WhatsApp
- * number anywhere (spec §8). The design's "completed appointments" and "punctuality" figures are not shown: there is no
- * agreed definition yet, and invented numbers are not allowed (spec §6).
+ * number anywhere (spec §8). The design's "earliest available times" chips are not shown (D-133): they booked a service
+ * the customer had not chosen, so the customer picks a service first and the wizard then offers the nearest free time.
+ * The design's "completed appointments" and "punctuality" figures are not shown either: there is no agreed definition
+ * yet, and invented numbers are not allowed (spec §6).
  */
 export default async function ProfessionalPage({
   params,
@@ -221,14 +163,8 @@ export default async function ProfessionalPage({
           </Link>
         </section>
 
-        <Suspense fallback={<Skeleton className="h-20 w-full" />}>
-          <NextSlots
-            slug={pro.shopSlug}
-            proSlug={pro.slug}
-            proId={pro.id}
-            locale={locale}
-            timeZone={shop.timeZone}
-          />
+        <Suspense fallback={null}>
+          <BookingPaused slug={pro.shopSlug} locale={locale} />
         </Suspense>
 
         <section aria-labelledby="pro-services" className="flex flex-col gap-3">

@@ -219,6 +219,17 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await waitForScan(landing, `/en/q/${SULTAN_CODE}`);
     expect((await codeFigures(page, SULTAN_CODE)).visits).toBe(before.visits + 1);
 
+    // Service first, then the time, then the confirmation (D-133): no time chips that book a service for the customer;
+    // the wizard keeps the barber, lists only his services and skips the specialist step.
+    await expect(landing.getByTestId('qr-times')).toHaveCount(0);
+    await landing.getByRole('link', { name: 'Book now' }).click();
+    await expect(landing.getByTestId('wizard-title')).toHaveText('Choose your services');
+    await expect(landing.getByTestId('wizard-chosen-pro')).toContainText('Booking with Sultan Al-Harbi');
+    await landing.locator('label:has(input[name="services"])').first().click();
+    await landing.getByRole('button', { name: 'Next' }).click();
+    await expect(landing.getByTestId('wizard-title')).toHaveText('Choose the day and time');
+    await expect(landing).toHaveURL(/pro=0199a0de-5a10-7000-8000-000000000102.*step=date/);
+
     const retired = await landing.goto(`/ar/q/${RETIRED_CODE}`);
     expect(retired?.status()).toBe(404);
     await expect(landing.getByRole('heading', { level: 1 })).toHaveText('الصفحة غير موجودة');

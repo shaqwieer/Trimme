@@ -8,7 +8,7 @@ import { PublicShell } from '@/components/shell/PublicShell';
 import { Avatar, ImagePlaceholder } from '@/components/ui/Avatar';
 import { ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
-import { EmptyState, InlineAlert, Skeleton } from '@/components/ui/states';
+import { EmptyState, InlineAlert } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { dataOrNull, getPublicApi } from '@/lib/api/public';
@@ -20,15 +20,8 @@ import {
   getPublicShop,
   getPublicShopStatus,
 } from '@/lib/discovery/shop-data';
-import {
-  type AppLocale,
-  formatDate,
-  formatDurationMinutes,
-  formatPrice,
-  formatTime,
-} from '@/lib/i18n/format';
+import { type AppLocale, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
-import { earliestSlots } from '@/lib/qr';
 import { NO_INDEX } from '@/lib/seo/site';
 
 /** The scanned code, resolved once per request (shared by the metadata and the page); never cached (D-114). */
@@ -58,95 +51,6 @@ export async function generateMetadata({ params }: PageProps<'/[locale]/q/[code]
     robots: NO_INDEX,
     alternates: { canonical: `/${locale}${canonicalPath(target)}` },
   };
-}
-
-/** «أقرب الأوقات اليوم»: live, never cached; each time opens the wizard at that professional, offer, day and time. */
-async function EarliestTimes({
-  target,
-  locale,
-  timeZone,
-}: {
-  target: Target;
-  locale: AppLocale;
-  timeZone: string;
-}) {
-  const [t, status] = await Promise.all([
-    getTranslations({ locale, namespace: 'qrLanding.times' }),
-    getPublicShopStatus(target.shopSlug),
-  ]);
-  if (!status?.acceptsOnlineBookings) return null;
-
-  const api = await getPublicApi();
-  const slug = target.shopSlug;
-  const professionals =
-    target.targetType === 'Professional' && target.professionalId && target.professionalSlug
-      ? [{ id: target.professionalId, slug: target.professionalSlug }]
-      : (
-          (await optional(
-            () => api.GET('/api/v1/public/shops/{slug}/professionals', { params: { path: { slug } } }),
-            'professionals',
-          )) ?? []
-        )
-          .slice(0, 8)
-          .map((p) => ({ id: p.id, slug: p.slug }));
-  const next = await Promise.all(
-    professionals.map(async (p) => {
-      const result = await optional(
-        () =>
-          api.GET('/api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots', {
-            params: { path: { slug, professionalSlug: p.slug } },
-          }),
-        'next slots',
-      );
-      return {
-        professionalId: p.id,
-        date: result?.bookable ? result.date : null,
-        slots: result?.slots ?? [],
-        offer: result?.offer ?? null,
-      };
-    }),
-  );
-  const { date, slots } = earliestSlots(next);
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
-
-  return (
-    <section aria-labelledby="qr-times" className="flex flex-col gap-2.5" data-testid="qr-times">
-      <h2 id="qr-times" className="text-h3 font-bold text-navy-900">
-        {!date || date === today
-          ? t('today')
-          : t('on', { day: formatDate(`${date}T12:00:00Z`, locale, { timeZone: 'UTC' }) })}
-      </h2>
-      {slots.length === 0 ? (
-        <p className="text-helper text-text-secondary">{t('none')}</p>
-      ) : (
-        <ul className="flex flex-wrap gap-2">
-          {slots.map((slot, index) => {
-            const time = formatTime(slot.startsAt, locale, timeZone);
-            return (
-              <li key={slot.startsAt}>
-                <Link
-                  href={bookHref(slug, {
-                    pro: slot.professionalId,
-                    [slot.isPackage ? 'package' : 'service']: slot.offerId,
-                    date: date ?? undefined,
-                    time: slot.localTime,
-                  })}
-                  aria-label={t('slot', { time })}
-                  className={
-                    index === 0
-                      ? 'inline-flex min-h-11 items-center rounded-field bg-navy-900 px-4 text-label font-bold text-on-navy hover:bg-navy-800'
-                      : 'inline-flex min-h-11 items-center rounded-field border-[1.5px] border-border bg-surface px-4 text-label font-bold text-text-strong hover:border-brand-500'
-                  }
-                >
-                  {time}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
 }
 
 /** The sticky «احجز الآن» bar with the design's caption; the reason instead while online booking is off. */
@@ -181,9 +85,12 @@ async function BookBar({ target, locale }: { target: Target; locale: AppLocale }
 
 /**
  * The QR landing (c-qr 2041–2082, R-CUS-13, DV-A14): "you came in with the shop's code", the shop's identity and live
- * opening, the intro callout, the earliest free times, the services with their prices, and the booking bar. A barber's
- * code opens the same page about that barber (the design describes it without drawing it). The scan is counted from
- * the browser, without tracking; the page is never indexed and points to the shop or barber page as canonical.
+ * opening, the intro callout, the services with their prices, and the booking bar. A barber's code opens the same page
+ * about that barber (the design describes it without drawing it). The customer chooses the service first, then the
+ * time, then confirms (D-133): each service books that service (with the barber, for a barber's code), and the bar
+ * opens the wizard's services. The design's earliest free times are not shown, as they booked a service the customer
+ * had not chosen. The scan is counted from the browser, without tracking; the page is never indexed and points to the
+ * shop or barber page as canonical.
  */
 export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[code]'>) {
   const { locale: raw, code } = await params;
@@ -296,10 +203,6 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
 
           <InlineAlert tone="info" title={t(`intro.${kind}`, { name: title })} />
 
-          <Suspense fallback={<Skeleton className="h-20 w-full" />}>
-            <EarliestTimes target={target} locale={locale} timeZone={shop.timeZone} />
-          </Suspense>
-
           <section aria-labelledby="qr-services" className="flex flex-col gap-2.5">
             <h2 id="qr-services" className="text-h3 font-bold text-navy-900">
               {t('services.title')}
@@ -308,24 +211,38 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
               <EmptyState icon="scissors" title={t('services.empty')} />
             ) : (
               <ul className="flex flex-col gap-2" data-testid="qr-services">
-                {offers.map((offer) => (
-                  <li
-                    key={offer.id}
-                    className="flex items-center gap-3 rounded-button border border-border bg-surface px-3.5 py-3"
-                  >
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-label font-bold text-text-primary">
-                        {localizedName(locale, offer.nameAr, offer.nameEn)}
+                {offers.map((offer) => {
+                  const offerName = localizedName(locale, offer.nameAr, offer.nameEn);
+                  return (
+                    <li
+                      key={offer.id}
+                      className="flex items-center gap-3 rounded-button border border-border bg-surface px-3.5 py-3"
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-label font-bold text-text-primary">{offerName}</span>
+                        <span className="text-helper text-text-secondary">
+                          {formatDurationMinutes(offer.durationMinutes, locale)}
+                        </span>
+                      </div>
+                      <span className="font-latin text-label font-extrabold text-navy-900">
+                        {formatPrice(offer.price, locale, offer.currency)}
                       </span>
-                      <span className="text-helper text-text-secondary">
-                        {formatDurationMinutes(offer.durationMinutes, locale)}
-                      </span>
-                    </div>
-                    <span className="font-latin text-label font-extrabold text-navy-900">
-                      {formatPrice(offer.price, locale, offer.currency)}
-                    </span>
-                  </li>
-                ))}
+                      {status?.acceptsOnlineBookings && (
+                        <ButtonLink
+                          href={bookHref(shop.slug, {
+                            pro: target.professionalId ?? undefined,
+                            [offer.isPackage ? 'package' : 'service']: offer.id,
+                          })}
+                          variant="secondary"
+                          size="xs"
+                          aria-label={tShop('services.bookLabel', { name: offerName })}
+                        >
+                          {tShop('services.book')}
+                        </ButtonLink>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

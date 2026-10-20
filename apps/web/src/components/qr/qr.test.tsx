@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { bookingSource } from '@/lib/booking/format';
-import { displayUrl, earliestSlots, lastDays, qrImageUrl, qrPeriod } from '@/lib/qr';
+import { displayUrl, lastDays, qrImageUrl, qrPeriod } from '@/lib/qr';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { CreateQrCodeDialog, QrCodeToggle } from './QrAdminActions';
@@ -61,44 +61,6 @@ describe('QR helpers', () => {
     expect(qrPeriod('90')).toBe(90);
     expect(qrPeriod('45')).toBe(30);
     expect(qrPeriod(undefined)).toBe(30);
-  });
-
-  it('merges the earliest day across professionals into its first three distinct times', () => {
-    const offer = { id: 'svc', isPackage: false };
-    const result = earliestSlots([
-      {
-        professionalId: 'a',
-        date: '2026-10-01',
-        offer,
-        slots: [
-          { startsAt: '2026-10-01T14:00:00Z', localTime: '17:00' },
-          { startsAt: '2026-10-01T16:00:00Z', localTime: '19:00' },
-        ],
-      },
-      {
-        professionalId: 'b',
-        date: '2026-10-01',
-        offer,
-        slots: [
-          { startsAt: '2026-10-01T13:00:00Z', localTime: '16:00' },
-          { startsAt: '2026-10-01T14:00:00Z', localTime: '17:00' },
-        ],
-      },
-      {
-        professionalId: 'c',
-        date: '2026-10-02',
-        offer,
-        slots: [{ startsAt: '2026-10-02T06:00:00Z', localTime: '09:00' }],
-      },
-      { professionalId: 'd', date: null, offer: null, slots: [] },
-    ]);
-    expect(result.date).toBe('2026-10-01');
-    expect(result.slots.map((s) => [s.localTime, s.professionalId])).toEqual([
-      ['16:00', 'b'],
-      ['17:00', 'a'],
-      ['19:00', 'a'],
-    ]);
-    expect(earliestSlots([])).toEqual({ date: null, slots: [] });
   });
 
   it('labels an online booking credited to a scan as a QR booking, never a walk-in', () => {

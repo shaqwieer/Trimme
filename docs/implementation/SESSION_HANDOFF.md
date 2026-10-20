@@ -1,14 +1,33 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-19 (Session 16: rebrand to Groom Here at groomhere.sa, after Phase 17)
+- **Updated:** 2026-10-21 (Session 17: service before time from a barber's page or code, first-visit loyalty points; after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Pushed: everything, including Session 15's booking changes, at the user's request.
-- **Working tree:** clean after the commit.
+  - Session 17's commit is local only; it is not pushed and not deployed.
+- **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before this session and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - The `api` and `web` services were rebuilt from this session's tree. The database was not touched.
+  - The `api` and `web` images were rebuilt from this session's tree, and `migrate` applied `LoyaltyFirstVisitStamps` to the local volume.
+  - The local volume is several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows fail on it. Run E2E on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 17: service before time from a barber's page or code; first-visit points (D-133)
+- **The client's three points:**
+  1. **Two salons, two cards?** Yes, already: a card belongs to the salon and the customer, and `/me/loyalty` lists one per salon with no set limit. Now tested with two salons.
+  2. **After scanning a barber's code, the service was skipped.** The «أقرب الأوقات» chips (barber page and QR page) opened the wizard on the review with a service the system had picked. Also, the barber's own «احجز» link lost the barber until a service was chosen.
+     - The chips are removed (DV-T24). The QR page's services each have «احجز».
+     - The wizard keeps `pro` without a service and lists only that barber's services, under «الحجز مع …» with «تغيير المختص».
+     - With a barber chosen, the services lead straight to the day and time. Back still reaches the specialist step.
+     - Order now: scan → service → time → confirm.
+  3. **First-visit points:** «نقاط أول زيارة» on the admin's «الولاء» tab (1 to visits − 1). A customer's first completed visit at the salon fills that many circles; every later visit fills one. Read as a programme rule from the client's example, not a manual grant to one customer: confirm with the client.
+- **Backend:** `LoyaltyProgram.FirstVisitStamps`, a stamp row per circle (`stamps.number`, unique (`booking_id`, `number`)), migration `20261020205012_LoyaltyFirstVisitStamps` (additive; defaults 1; check constraints). The request field is optional (null = 1).
+- **Evidence:**
+  - .NET: unit 429/429, architecture 69/69. Integration: a full run under a parallel Docker build was 195/206; the 11 failing tests (`BookingTests`, `NotificationsTests`, `QueryCountTests`, `SessionTests`, `NotificationsHubTests`) then passed 41/41 alone. `LoyaltyTests` 3/3 (new: first-visit circles, two salons → two cards, validation), `MigrationTests` (applies from empty, no pending model changes) and `OpenApiContractTests` 4/4 without regeneration.
+  - Web: `lint`, `typecheck`, `format:check`, `openapi:check`, `build`, `bundle:check` pass; `pnpm test` 48 files, 462 tests.
+  - E2E on a **fresh** separate stack (`-p trimme-verify`, ports 3310/8090/5444/8335, the same images; removed afterwards), `--retries=0`: `qr` + `public-discovery` 11/11 (including the new barber path), `customer-booking` 5/5, `a11y` route audit + keyboard 13/13.
+  - The same specs on the long-lived local volume failed 8/11, on pages this change does not touch, because Barber House's seeded subscription has lapsed there.
+  - Screenshots at 390 px (ar): the barber QR page (no chips, «احجز» per service), the wizard (banner, Sultan's two services only), the day-and-time step straight after; the admin form with «نقاط أول زيارة» = 3; the salon card «اجمع 6 دوائر…» / «أول زيارة لك تملأ 3 دوائر…».
+- **To deploy (not done):** pull, build, run `migrate` (applies `LoyaltyFirstVisitStamps`), `up -d`. Take a database backup first, as for D-132.
 
 ## Session 16, second request: Turkish, the loyalty card, «موقع سعودي ١٠٠٪» (D-132)
 - **Turkish (`tr`)**: `/tr` routes, `messages/tr.json` (translated; `messages.test.ts` checks parity with ar/en), a three-language menu, Turkish emails; WhatsApp and the sign-in code use the English templates for Turkish speakers (no Turkish templates are approved).
@@ -198,6 +217,7 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
+- Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied to the local compose volume, a fresh verification volume and from empty in the integration tests. **Not applied on groomhere.sa.**
 - Created and applied locally: `20261001082134_PerformanceIndexes` (index-only), on the compose volume and from empty in the integration tests.
 - No production migration was run.
 
@@ -231,6 +251,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
+0. Session 17 (D-133): push and deploy to groomhere.sa when the user asks (the deploy must run `migrate`; back up first). Confirm with the client that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant, and not points an admin adds to one customer by hand.
 1. Done: dark mode pushed to `origin/main`. Watch its CI run: `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests), so keep an eye on the 45-minute stack job.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.

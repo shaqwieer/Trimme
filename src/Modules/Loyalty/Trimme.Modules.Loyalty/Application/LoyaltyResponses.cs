@@ -3,10 +3,14 @@ using Trimme.Modules.Loyalty.Domain;
 
 namespace Trimme.Modules.Loyalty.Application;
 
-/// <summary>A shop's loyalty terms (D-132): after <c>RequiredVisits</c> completed bookings, the reward named by the title.</summary>
+/// <summary>
+/// A shop's loyalty terms (D-132): after <c>RequiredVisits</c> circles, the reward named by the title. The first visit
+/// fills <c>FirstVisitStamps</c> circles (1 when there is no welcome bonus, D-133), every later visit one.
+/// </summary>
 public sealed record LoyaltyProgramResponse(
     bool IsActive,
     int RequiredVisits,
+    int FirstVisitStamps,
     LoyaltyRewardKind RewardKind,
     int? DiscountPercent,
     string RewardTitleAr,
@@ -46,7 +50,7 @@ public sealed record MyLoyaltyResponse(IReadOnlyList<MyShopLoyaltyResponse> Item
 internal static class LoyaltyMapping
 {
     public static LoyaltyProgramResponse Program(LoyaltyProgram p) =>
-        new(p.IsActive, p.RequiredVisits, p.RewardKind, p.DiscountPercent, p.RewardTitleAr, p.RewardTitleEn, p.RewardValidityDays);
+        new(p.IsActive, p.RequiredVisits, p.FirstVisitStamps, p.RewardKind, p.DiscountPercent, p.RewardTitleAr, p.RewardTitleEn, p.RewardValidityDays);
 
     public static LoyaltyShopResponse Shop(ShopSummary s) => new(s.Id.Value, s.Slug, s.NameAr, s.NameEn);
 

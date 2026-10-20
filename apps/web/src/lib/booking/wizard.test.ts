@@ -8,7 +8,9 @@ import {
   currentStep,
   eligibleProfessionals,
   keyFor,
+  nextStep,
   offerKey,
+  offersFor,
   readWizardQuery,
   resolveStart,
   restoreSelection,
@@ -61,15 +63,27 @@ describe('booking wizard URL state (D-028, D-096)', () => {
     expect(selection.pro).toBe(ANY_PROFESSIONAL);
   });
 
-  it('keeps a professional preselected from their page, and asks for the service first', () => {
+  it('keeps a professional preselected from their page or QR code, and asks for the service first (D-133)', () => {
     const { selection, step } = parse('pro=omar');
     expect(step).toBe('service');
-    // The professional only becomes valid once an offer they do is chosen.
-    expect(selection.pro).toBe(ANY_PROFESSIONAL);
-    expect(parse(`pro=omar&service=${HAIRCUT.id}`).selection.pro).toBe('omar');
+    expect(selection.pro).toBe('omar');
+    expect(wizardPath('x', selection, 'service')).toBe('/shops/x/book?pro=omar&step=service');
+    // Choosing nothing yet, or clearing the choice, keeps them; an unknown professional is "any".
+    expect(withItems(selection, [], PROS).pro).toBe('omar');
+    expect(parse('pro=nobody').selection.pro).toBe(ANY_PROFESSIONAL);
   });
 
-  it('opens a time chip link (pro, service, date and local time) on the review step', () => {
+  it('with the professional chosen, goes from the services straight to the day and time (D-133)', () => {
+    expect(parse(`pro=omar&service=${HAIRCUT.id}`).step).toBe('date');
+    expect(nextStep('service', 'omar')).toBe('date');
+    expect(nextStep('service')).toBe('professional');
+    expect(nextStep('professional', 'omar')).toBe('date');
+    // Only their services are offered; "any" sees the whole shop.
+    expect(offersFor(OFFERS, 'sultan')).toEqual([BEARD]);
+    expect(offersFor(OFFERS, ANY_PROFESSIONAL)).toEqual(OFFERS);
+  });
+
+  it('opens a full link (pro, service, date and local time, as the sign-in round trip keeps it) on the review step', () => {
     const { selection, step } = parse(`pro=omar&service=${HAIRCUT.id}&date=2026-10-01&time=17:30`);
     expect(step).toBe('review');
     expect(selection).toMatchObject({ pro: 'omar', date: '2026-10-01', time: '17:30' });

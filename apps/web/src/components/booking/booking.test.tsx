@@ -246,6 +246,55 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(api.POST.mock.calls[0]![1].body.loyaltyRewardId).toBe('reward-1');
   });
 
+  it("from a barber's page or QR code: only their services, then straight to the day and time (D-133)", async () => {
+    const user = userEvent.setup();
+    availability();
+    const COLOUR: WizardOffer = {
+      ...SERVICE,
+      id: 'svc-3',
+      nameAr: 'صبغة',
+      nameEn: 'Colour',
+      professionalIds: ['majed'],
+    };
+    window.history.replaceState(null, '', '/ar/shops/barber-house/book?pro=omar');
+    renderWizard(
+      <BookingWizard shop={SHOP} offers={[SERVICE, BEARD, COLOUR]} professionals={PROS} viewer="customer" />,
+    );
+
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الخدمات');
+    expect(screen.getByTestId('wizard-chosen-pro')).toHaveTextContent('الحجز مع عمر السالم');
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /صبغة/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /تهذيب لحية/ }));
+    expect(window.location.search).toContain('pro=omar');
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    // No specialist step: the barber is already chosen.
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر اليوم والوقت');
+    expect(window.location.search).toContain('step=date');
+    await waitFor(() =>
+      expect(api.GET).toHaveBeenCalledWith(
+        '/api/v1/public/shops/{slug}/availability/dates',
+        expect.objectContaining({
+          params: expect.objectContaining({ query: expect.objectContaining({ professionalId: 'omar' }) }),
+        }),
+      ),
+    );
+
+    // Back reaches the specialist step, where the barber can still be changed.
+    await user.click(screen.getByRole('button', { name: 'الخطوة السابقة' }));
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر المختص');
+    expect(screen.getByRole('radio', { name: /عمر السالم/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'الخطوة السابقة' }));
+
+    // «تغيير المختص» shows the whole salon again, with the specialist step after the services.
+    await user.click(screen.getByRole('button', { name: 'تغيير المختص' }));
+    expect(screen.queryByTestId('wizard-chosen-pro')).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /صبغة/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر المختص');
+  });
+
   it('sends a time taken meanwhile back to fresh slots with the "just taken" notice, and keeps the key on a plain retry', async () => {
     const user = userEvent.setup();
     availability();

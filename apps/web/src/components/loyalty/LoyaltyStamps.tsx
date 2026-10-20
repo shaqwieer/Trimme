@@ -4,8 +4,8 @@ import { type AppLocale, formatNumber } from '@/lib/i18n/format';
 import { cn } from '@/lib/cn';
 
 /**
- * The stamp card (D-132): one circle per visit the programme needs. A completed visit fills its circle green with a
- * check; the rest stay empty, so the customer sees at a glance how many visits are left before the coupon.
+ * The stamp card (D-132): the programme's circles. A completed visit fills a circle green with a check (the first one
+ * can fill several, D-133); the rest stay empty, so the customer sees at a glance how far the coupon is.
  */
 export function LoyaltyStamps({
   required,

@@ -4710,11 +4710,16 @@ export interface components {
          * @enum {unknown}
          */
         LocationSource: "Manual" | "Geocoded" | "Device";
-        /** @description A shop's loyalty terms (D-132): after `RequiredVisits` completed bookings, the reward named by the title. */
+        /**
+         * @description A shop's loyalty terms (D-132): after `RequiredVisits` circles, the reward named by the title. The first visit
+         *     fills `FirstVisitStamps` circles (1 when there is no welcome bonus, D-133), every later visit one.
+         */
         LoyaltyProgramResponse: {
             isActive: boolean;
             /** Format: int32 */
             requiredVisits: number;
+            /** Format: int32 */
+            firstVisitStamps: number;
             rewardKind: components["schemas"]["LoyaltyRewardKind"];
             /** Format: int32 */
             discountPercent: null | number;
@@ -5769,12 +5774,15 @@ export interface components {
         /**
          * @description A shop's loyalty terms (D-132). `RewardTitleAr` is what the customer gets («حلاقة مجانية»); a discount needs
          *     `DiscountPercent` 1–100. `RewardValidityDays` (7–365) limits how long a reward stays usable; null keeps it.
-         *     Send the `Version` read, except for the first save.
+         *     `FirstVisitStamps` (D-133) is how many circles the first visit fills, from 1 to `RequiredVisits` − 1; null
+         *     means 1. Send the `Version` read, except for the first save.
          */
         SaveLoyaltyProgramRequest: {
             isActive: boolean;
             /** Format: int32 */
             requiredVisits: number;
+            /** Format: int32 */
+            firstVisitStamps: null | number;
             rewardKind: components["schemas"]["LoyaltyRewardKind"];
             /** Format: int32 */
             discountPercent: null | number;

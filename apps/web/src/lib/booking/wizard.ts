@@ -1,8 +1,9 @@
 /**
  * Booking wizard state (D-028, D-096, D-125). The URL is the source of truth, so a step survives a reload, the back
  * button and the sign-in round trip: one or more `service` (booked together, back to back) or one `package`, `pro` (a
- * professional id or `any`), `date` (YYYY-MM-DD in the shop's time zone), `time` (local HH:mm, as the professional
- * page's time chips link it) and `step`. Everything here is pure; the wizard component fetches the data and calls these.
+ * professional id or `any`), `date` (YYYY-MM-DD in the shop's time zone), `time` (local HH:mm) and `step`. A
+ * professional's page and QR code link `pro` alone, so the customer picks the service, then the time (D-133).
+ * Everything here is pure; the wizard component fetches the data and calls these.
  */
 
 /** The day and its times are one step (D-129): the times show under the days as soon as a day is tapped. */
@@ -91,6 +92,24 @@ export function readWizardQuery(params: Params): WizardQuery {
   };
 }
 
+/**
+ * The professional a selection keeps: one who does every chosen item, or, before anything is chosen, any of the shop's
+ * (a link from their page or QR code, D-133). Anyone else becomes "any".
+ */
+function keptProfessional(
+  pro: string | undefined,
+  offer: WizardOffer | undefined,
+  pros: WizardProfessional[],
+): string {
+  const candidates = offer ? eligibleProfessionals(offer, pros) : pros;
+  return pro && candidates.some((p) => p.id === pro) ? pro : ANY_PROFESSIONAL;
+}
+
+/** The offers the service step lists: with a professional already chosen, only theirs (D-133). */
+export function offersFor(offers: WizardOffer[], pro: string): WizardOffer[] {
+  return pro === ANY_PROFESSIONAL ? offers : offers.filter((o) => o.professionalIds.includes(pro));
+}
+
 /** The professionals who can do the offer, in the shop's order. */
 export function eligibleProfessionals<P extends WizardProfessional>(
   offer: WizardOffer | undefined,
@@ -144,8 +163,8 @@ export function allServicesFor<P extends WizardProfessional>(
 }
 
 /**
- * The selection with these items. The professional stays when they do all of them (else "any"); the date and time stay
- * too, and the availability answers say whether they still fit (D-125).
+ * The selection with these items. The professional stays when they do all of them, or while nothing is chosen (else
+ * "any"); the date and time stay too, and the availability answers say whether they still fit (D-125).
  */
 export function withItems<P extends WizardProfessional>(
   selection: WizardSelection,
@@ -153,9 +172,7 @@ export function withItems<P extends WizardProfessional>(
   pros: P[],
 ): WizardSelection {
   const offer = combineOffers(items);
-  const pro = eligibleProfessionals(offer, pros).some((p) => p.id === selection.pro)
-    ? selection.pro
-    : ANY_PROFESSIONAL;
+  const pro = keptProfessional(selection.pro, offer, pros);
   return {
     items,
     offer,
@@ -167,8 +184,8 @@ export function withItems<P extends WizardProfessional>(
 
 /**
  * Keeps only what is valid for this shop: known offers (one package, or services without repeats), a professional who
- * does them all (else "any"), a well-formed date and time. Whether the date and time are still free is checked against
- * the availability answers later.
+ * does them all, or any of the shop's before an offer is chosen (else "any"), a well-formed date and time. Whether the
+ * date and time are still free is checked against the availability answers later.
  */
 export function selectionFrom(
   query: WizardQuery,
@@ -183,10 +200,7 @@ export function selectionFrom(
         .filter((o): o is WizardOffer => Boolean(o))
         .slice(0, MAX_SERVICES);
   const offer = combineOffers(items);
-  const pro =
-    query.pro && eligibleProfessionals(offer, pros).some((p) => p.id === query.pro)
-      ? query.pro
-      : ANY_PROFESSIONAL;
+  const pro = keptProfessional(query.pro, offer, pros);
   const date = offer && query.date && DATE.test(query.date) ? query.date : undefined;
   const time = date && query.time && TIME.test(query.time) ? query.time : undefined;
   return { items, offer, pro, date, time };
@@ -225,15 +239,16 @@ export function firstIncompleteStep(selection: WizardSelection): WizardStep {
 /**
  * The step to show. An explicit `step` is honoured up to the first incomplete one; without it (links from the shop and
  * professional pages) the wizard opens at the furthest step the link implies: a service goes to the professional step
- * ("any" preselected), a service with a date to the day-and-time step, a full link to the review. An old `step=time`
- * link opens the day-and-time step.
+ * ("any" preselected), or straight to the day-and-time step when the link names the professional (D-133); a service
+ * with a date goes to the day-and-time step, a full link to the review. An old `step=time` link opens the day-and-time
+ * step.
  */
 export function currentStep(query: WizardQuery, selection: WizardSelection): WizardStep {
   const limit = WIZARD_STEPS.indexOf(firstIncompleteStep(selection));
   const asked = WIZARD_STEPS.indexOf((query.step === 'time' ? 'date' : query.step) as WizardStep);
   if (asked >= 0) return WIZARD_STEPS[Math.min(asked, limit)]!;
   if (!selection.offer) return 'service';
-  if (!selection.date) return 'professional';
+  if (!selection.date) return selection.pro === ANY_PROFESSIONAL ? 'professional' : 'date';
   return WIZARD_STEPS[limit]!;
 }
 
@@ -242,7 +257,12 @@ export function previousStep(step: WizardStep): WizardStep | undefined {
   return index > 0 ? WIZARD_STEPS[index - 1] : undefined;
 }
 
-export function nextStep(step: WizardStep): WizardStep | undefined {
+/**
+ * The step after this one. With the professional already chosen (their page or QR code, or an earlier pass), the
+ * services lead straight to the day and time (D-133); going back still reaches the professional step to change them.
+ */
+export function nextStep(step: WizardStep, pro: string = ANY_PROFESSIONAL): WizardStep | undefined {
+  if (step === 'service' && pro !== ANY_PROFESSIONAL) return 'date';
   return WIZARD_STEPS[WIZARD_STEPS.indexOf(step) + 1];
 }
 
@@ -255,7 +275,7 @@ export function wizardPath(
 ): string {
   const params = new URLSearchParams();
   for (const item of selection.items) params.append(item.kind, item.id);
-  if (selection.offer && selection.pro !== ANY_PROFESSIONAL) params.set('pro', selection.pro);
+  if (selection.pro !== ANY_PROFESSIONAL) params.set('pro', selection.pro);
   if (selection.date) params.set('date', selection.date);
   if (selection.time) params.set('time', selection.time);
   params.set('step', step);

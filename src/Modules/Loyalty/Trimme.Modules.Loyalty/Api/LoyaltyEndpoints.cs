@@ -18,11 +18,13 @@ namespace Trimme.Modules.Loyalty.Api;
 /// <summary>
 /// A shop's loyalty terms (D-132). <c>RewardTitleAr</c> is what the customer gets («حلاقة مجانية»); a discount needs
 /// <c>DiscountPercent</c> 1–100. <c>RewardValidityDays</c> (7–365) limits how long a reward stays usable; null keeps it.
-/// Send the <c>Version</c> read, except for the first save.
+/// <c>FirstVisitStamps</c> (D-133) is how many circles the first visit fills, from 1 to <c>RequiredVisits</c> − 1; null
+/// means 1. Send the <c>Version</c> read, except for the first save.
 /// </summary>
 public sealed record SaveLoyaltyProgramRequest(
     bool IsActive,
     int RequiredVisits,
+    int? FirstVisitStamps,
     LoyaltyRewardKind RewardKind,
     int? DiscountPercent,
     string? RewardTitleAr,
@@ -80,7 +82,8 @@ internal static class LoyaltyEndpoints
             .Produces<AdminShopLoyaltyResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         admin.MapPut("/", async (Guid shopId, SaveLoyaltyProgramRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new SaveShopLoyaltyCommand(
-                    shopId, new LoyaltyTerms(r.IsActive, r.RequiredVisits, r.RewardKind, r.DiscountPercent, r.RewardTitleAr, r.RewardTitleEn, r.RewardValidityDays),
+                    shopId, new LoyaltyTerms(
+                        r.IsActive, r.RequiredVisits, r.RewardKind, r.DiscountPercent, r.RewardTitleAr, r.RewardTitleEn, r.RewardValidityDays, r.FirstVisitStamps ?? 1),
                     r.Version), ct)).ToHttpResult())
             .RequirePermission(AdminManage)
             .WithName("AdminSaveShopLoyalty")

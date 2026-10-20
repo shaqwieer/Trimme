@@ -23,12 +23,19 @@ const PERCENT: [number, number] = [1, 100];
 const VALIDITY: [number, number] = [7, 365];
 const KINDS: RewardKind[] = ['FreeService', 'Discount'];
 
-type Field = 'requiredVisits' | 'discountPercent' | 'rewardTitleAr' | 'rewardTitleEn' | 'rewardValidityDays';
+type Field =
+  | 'requiredVisits'
+  | 'firstVisitStamps'
+  | 'discountPercent'
+  | 'rewardTitleAr'
+  | 'rewardTitleEn'
+  | 'rewardValidityDays';
 
 /**
  * A shop's loyalty terms (D-132), agreed between the platform and the shop: on or off, how many completed visits fill
- * the card (with any of the shop's professionals), and the reward. Saving replaces the terms for the next completed
- * visits; earned coupons keep theirs. A stale version answers 409.
+ * the card (with any of the shop's professionals), how many circles the customer's first visit fills (D-133), and the
+ * reward. Saving replaces the terms for the next completed visits; earned coupons keep theirs. A stale version answers
+ * 409.
  */
 export function LoyaltyProgramForm({
   shopId,
@@ -47,6 +54,7 @@ export function LoyaltyProgramForm({
   const program = loyalty.program;
   const [active, setActive] = useState(program?.isActive ?? true);
   const [visits, setVisits] = useState(String(program?.requiredVisits ?? 6));
+  const [firstVisit, setFirstVisit] = useState(String(program?.firstVisitStamps ?? 1));
   const [kind, setKind] = useState<RewardKind>(program?.rewardKind ?? 'FreeService');
   const [percent, setPercent] = useState(program?.discountPercent ? String(program.discountPercent) : '');
   const [titleAr, setTitleAr] = useState(program?.rewardTitleAr ?? '');
@@ -65,6 +73,8 @@ export function LoyaltyProgramForm({
     const number = Number(value);
     return value.trim() === '' || !Number.isInteger(number) || number < min || number > max;
   };
+  // The first visit fills fewer circles than the card has, so it never fills the card on its own.
+  const firstVisitRange: [number, number] = [1, outside(visits, VISITS) ? VISITS[1] - 1 : Number(visits) - 1];
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -72,6 +82,7 @@ export function LoyaltyProgramForm({
     setFailure(undefined);
     const local: Partial<Record<Field, string>> = {};
     if (outside(visits, VISITS)) local.requiredVisits = tv('outOfRange');
+    else if (outside(firstVisit, firstVisitRange)) local.firstVisitStamps = tv('outOfRange');
     if (kind === 'Discount' && outside(percent, PERCENT)) local.discountPercent = tv('outOfRange');
     if (titleAr.trim() === '') local.rewardTitleAr = tv('required');
     if (validity.trim() !== '' && outside(validity, VALIDITY)) local.rewardValidityDays = tv('outOfRange');
@@ -86,6 +97,7 @@ export function LoyaltyProgramForm({
           body: {
             isActive: active,
             requiredVisits: Number(visits),
+            firstVisitStamps: Number(firstVisit),
             rewardKind: kind,
             discountPercent: kind === 'Discount' ? Number(percent) : null,
             rewardTitleAr: titleAr.trim(),
@@ -134,6 +146,20 @@ export function LoyaltyProgramForm({
         readOnly={!canEdit}
         helper={range(VISITS)}
         error={errors.requiredVisits}
+      />
+      <TextField
+        label={t('firstVisitStamps')}
+        value={firstVisit}
+        onChange={(e) => setFirstVisit(e.target.value)}
+        dir="ltr"
+        inputMode="numeric"
+        autoComplete="off"
+        readOnly={!canEdit}
+        helper={t('firstVisitHint', {
+          min: formatNumber(firstVisitRange[0], locale),
+          max: formatNumber(firstVisitRange[1], locale),
+        })}
+        error={errors.firstVisitStamps}
       />
       <fieldset className="flex flex-col gap-2" disabled={!canEdit}>
         <legend className="mb-1 text-label font-bold text-text-strong">{t('rewardKind')}</legend>
