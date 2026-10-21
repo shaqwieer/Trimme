@@ -112,6 +112,25 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     expect(await within(drawer).findByRole('button', { name: 'انتهت الخدمة' })).toBeInTheDocument();
   });
 
+  it('asks before «انتهت الخدمة» and only then finishes the visit (D-136)', async () => {
+    const user = userEvent.setup();
+    api.GET.mockResolvedValue(ok(detail('Arrived', ['Completed'])));
+    api.POST.mockResolvedValue(ok({}));
+    renderWithQuery(<AppointmentDrawer bookingId="b1" timeZone="Asia/Riyadh" canUpdate onClose={() => {}} />);
+    const drawer = await screen.findByTestId('appointment-drawer');
+
+    await user.click(await within(drawer).findByRole('button', { name: 'انتهت الخدمة' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'انتهت خدمة عبدالله الشمري؟' });
+    expect(api.POST).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'نعم، انتهت الخدمة' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
+        params: { path: { bookingId: 'b1' } },
+        body: { to: 'Completed', reason: null, version: 4 },
+      }),
+    );
+  });
+
   it('rolls back and says so when the booking changed meanwhile (409)', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(detail()));

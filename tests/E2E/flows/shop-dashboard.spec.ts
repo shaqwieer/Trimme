@@ -90,21 +90,19 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     });
     await expectNoSeriousAxe(page, 'overview');
 
-    // A second screen (the owner) watching the appointments two days ahead.
+    // A second screen (the owner) watching this week's appointments (the simple list, D-136).
     const date = riyadhDate(2);
     const watcherContext = await browser.newContext();
     const watcher = await watcherContext.newPage();
     const watcherTraffic = recordTraffic(watcher);
     await staffSignIn(watcher, OWNER);
-    await watcher.goto(`/ar/shop/appointments?from=${date}&to=${date}&professional=${OMAR}`);
+    await watcher.goto('/ar/shop/appointments');
     await expect(watcher.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
     });
-    // Count only once the list has loaded (rows or the empty state): an earlier run's walk-ins may already be listed.
-    await expect(
-      watcher.getByTestId('appointment-row').first().or(watcher.getByText('لا مواعيد بهذه الفلاتر.')),
-    ).toBeVisible();
-    const rowsBefore = await watcher.getByTestId('appointment-row').count();
+    await expect(watcher.getByTestId('coming-later')).toBeVisible();
+    const watched = watcher.getByTestId('coming-appointment').filter({ hasText: customer });
+    await expect(watched).toHaveCount(0);
 
     // Walk-in at the desk: service, barber, first free time that day, the name and the mobile (D-134).
     await page.goto('/ar/shop/walk-in');
@@ -126,8 +124,7 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(page.locator('main')).not.toContainText(/551 ?000|٥٥١/);
 
     // The other screen shows it without a reload (live, R-SD-10).
-    await expect(watcher.getByTestId('appointment-row')).toHaveCount(rowsBefore + 1, { timeout: 15_000 });
-    await expect(watcher.getByTestId('appointments-board')).toContainText(customer);
+    await expect(watched).toHaveCount(1, { timeout: 15_000 });
     await expectNoSeriousAxe(watcher, 'appointments');
 
     // The drawer: details without a phone, an internal note, then cancel with a reason.
@@ -160,9 +157,8 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await dialog.getByLabel('سبب الإلغاء').fill('طلب العميل تأجيله');
     await dialog.getByRole('button', { name: 'نعم، ألغِ الموعد' }).click();
     await expect(drawer).toContainText('ألغاه الصالون');
-    await expect(watcher.getByTestId('appointments-board')).toContainText('ألغاه الصالون', {
-      timeout: 15_000,
-    });
+    // The simple list has no cancellations: the walk-in leaves the other screen live.
+    await expect(watched).toHaveCount(0, { timeout: 15_000 });
 
     // Another shop's booking is simply not found (tenant from the session, R-TEN-06).
     const foreign = await page.request.get(`/api/v1/shop/bookings/${AL_ASALA_BOOKING}`);

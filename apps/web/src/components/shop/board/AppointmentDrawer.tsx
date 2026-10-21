@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Timeline, type TimelineItem } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
 import { TextareaField } from '@/components/ui/inputs';
-import { Dialog, Sheet } from '@/components/ui/overlays';
+import { ConfirmDialog, Dialog, Sheet } from '@/components/ui/overlays';
 import { InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
@@ -66,6 +66,7 @@ export function AppointmentDrawer({
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState<Status | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -100,6 +101,7 @@ export function AppointmentDrawer({
         }),
       );
       setCancelOpen(false);
+      setFinishOpen(false);
       setReason('');
     } catch (failure) {
       queryClient.setQueryData<Detail>(key, current);
@@ -259,7 +261,13 @@ export function AppointmentDrawer({
                       variant={actionVariant[to] ?? 'outline'}
                       loading={pending === to}
                       disabled={pending !== null}
-                      onClick={() => (to === 'CancelledByShop' ? setCancelOpen(true) : void transition(to))}
+                      onClick={() =>
+                        to === 'CancelledByShop'
+                          ? setCancelOpen(true)
+                          : to === 'Completed'
+                            ? setFinishOpen(true)
+                            : void transition(to)
+                      }
                     >
                       {t(`actions.${to}`)}
                     </Button>
@@ -316,6 +324,20 @@ export function AppointmentDrawer({
           </>
         )}
       </div>
+
+      {booking && (
+        <ConfirmDialog
+          open={finishOpen}
+          onOpenChange={setFinishOpen}
+          tone="default"
+          title={t('finish.title', { name: booking.customerName })}
+          body={t('finish.body')}
+          confirmLabel={t('finish.confirm')}
+          cancelLabel={t('finish.keep')}
+          loading={pending === 'Completed'}
+          onConfirm={() => void transition('Completed')}
+        />
+      )}
 
       <Dialog
         open={cancelOpen}

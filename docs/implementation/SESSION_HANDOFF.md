@@ -11,7 +11,7 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
-## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135)
+## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135); the client's answers and the deploy (D-136)
 - **The client's points** (screenshots of the desk account on groomhere.sa):
   1. **The desk saw the shop's and barbers' hours, time off and closures** on «الدوام والبريكات» (read-only since Phase 09, but it looked editable). The client asked why: there was no strong reason (the desk could see who works when). The desk now sees only «البريكات», and `GET /shop/schedule` answers 403 to it.
   2. **Breaks with no fixed times or reasons:** each barber's day as 24 hour cells; one tap makes an hour a break and another frees it; «استراحة طوال اليوم» and «إلغاء كل الاستراحات». Booked hours, the owner's breaks and time off cannot be changed there. New `Shop.Breaks.Manage` and `GET/PUT /shop/schedule/barber-day`. Break names are optional, and the owner's form has no name field. The demo's prayer and lunch breaks are no longer seeded, and the seeder deletes them, so groomhere.sa loses them on the next deploy. The owner's page keeps everything and gets the same day view.
@@ -31,7 +31,8 @@
   - The online **minimum lead time** (`MinLeadTimeMinutes`, 60 by default, admin settings) still stops people at home from booking time freed in the next hour. The walk-in page shows the barber free at once. Lowering it (for example to 10–15 minutes) is the client's call.
   - New or returning customers: `Shop.Insights.View` (owner only). `ShopBookingResponse.Visit` on the owner's board and drawer; the owner's overview tile with the last 30 days' new customers and returning visits. The desk gets null.
   - The walk-in mobile became optional (D-134 updated). No migration.
-- **To ask the client:** will each barber get their own login (a separate feature)? Should the owner's appointments page be simplified too? Should the online minimum lead time be shorter, so time freed by «انتهت الخدمة» can be booked from home?
+- **Then, D-136 (the client's answers):** online minimum lead time 15 minutes on groomhere.sa (a setting, set by SQL after the deploy's backup; the code default stays 60); «انتهت الخدمة» asks for a confirmation on the list and in the drawer; the owner has the same simple appointments list (with the new or returning badges); the full board is removed. Web 474 tests; E2E on a fresh stack with the final web image 102/102.
+- **To ask the client:** will each barber get their own login (a separate feature)?
 
 ## Session 17: service before time from a barber's page or code; first-visit points (D-133)
 - **The client's three points:**
@@ -276,7 +277,7 @@ The rest is recorded in DV-C11 and DV-T14.
 ## Exact next action
 0. Sessions 17 and 18 (D-133, D-134, D-135): push and deploy to groomhere.sa when the user asks. The deploy must run `migrate`; take a backup first. Confirm with the client:
    - that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant;
-   - per-barber logins, the owner's appointments page, and a shorter online minimum lead time (see Session 18).
+   - per-barber logins (see Session 18).
 1. Done: dark mode pushed to `origin/main`. Watch its CI run: `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests), so keep an eye on the 45-minute stack job.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.

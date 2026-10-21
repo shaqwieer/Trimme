@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { LoyaltyChip } from '@/components/loyalty/LoyaltyChip';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button, IconButton } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/overlays';
 import { EmptyState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
@@ -17,6 +18,7 @@ import { addDays, formatLocalDate, type LocalDate, todayLocal } from '@/lib/i18n
 import { localizedName } from '@/lib/i18n/localized';
 import { useOperationsEvents } from '../live/OperationsLive';
 import { AppointmentDrawer, BOARD_KEY } from './AppointmentDrawer';
+import { CustomerVisitBadge } from './CustomerVisitBadge';
 
 type Booking = components['schemas']['ShopBookingResponse'];
 
@@ -43,11 +45,12 @@ async function comingBetween(from: LocalDate, to: LocalDate): Promise<Booking[]>
 }
 
 /**
- * The desk's appointments, kept simple at the client's request (D-134): today's bookings, then the coming days of the
- * week, each with the time, the customer's name, the service and the barber. A week at a time, with next and previous
- * week; nothing cancelled, finished or missed. Tapping one opens its details. A visit under way has «انتهت الخدمة» on
- * its row (D-135): one tap finishes it, so the rest of the booked time is free at once for the desk and online. Counts
- * and other figures stay on the overview.
+ * The shop's appointments, kept simple at the client's request, for the desk (D-134) and the owner (D-136): today's
+ * bookings, then the coming days of the week, each with the time, the customer's name, the service and the barber, and
+ * for the owner whether the customer is new or returning (D-135). A week at a time, with next and previous week;
+ * nothing cancelled, finished or missed. Tapping one opens its details. A visit under way has «انتهت الخدمة» on its row
+ * (D-135); after a confirmation it finishes the visit, so the rest of the booked time is free at once for the desk and
+ * online. Counts and other figures stay on the overview.
  */
 export function SimpleAppointments({
   today,
@@ -67,6 +70,7 @@ export function SimpleAppointments({
   const [start, setStart] = useState(today);
   const [bookingId, setBookingId] = useState(params.get('booking'));
   const [finishing, setFinishing] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<Booking | null>(null);
   const [finished, setFinished] = useState<string>();
   const [error, setError] = useState<string>();
   const end = addDays(start, WEEK - 1);
@@ -94,6 +98,7 @@ export function SimpleAppointments({
       setError(apiMessage(failure instanceof ApiError ? failure : 'server.unexpected'));
     } finally {
       setFinishing(null);
+      setConfirming(null);
       await queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
     }
   };
@@ -138,6 +143,7 @@ export function SimpleAppointments({
               <span className="flex flex-wrap items-center gap-2 text-body font-bold text-text-primary">
                 {b.customerName}
                 {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
+                <CustomerVisitBadge visit={b.visit} />
               </span>
               <span className="text-helper text-text-secondary">
                 {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
@@ -154,7 +160,7 @@ export function SimpleAppointments({
               loading={finishing === b.id}
               disabled={finishing !== null}
               aria-label={t('finishLabel', { name: b.customerName })}
-              onClick={() => void finish(b)}
+              onClick={() => setConfirming(b)}
             >
               {t('finish')}
             </Button>
@@ -256,6 +262,18 @@ export function SimpleAppointments({
           </section>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(open) => !open && finishing === null && setConfirming(null)}
+        tone="default"
+        title={t('finishTitle', { name: confirming?.customerName ?? '' })}
+        body={t('finishBody')}
+        confirmLabel={t('finishConfirm')}
+        cancelLabel={t('finishKeep')}
+        loading={finishing !== null}
+        onConfirm={() => confirming && void finish(confirming)}
+      />
 
       <AppointmentDrawer
         bookingId={bookingId}

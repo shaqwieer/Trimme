@@ -31,7 +31,7 @@ const booking = (id: string, name: string, startsAt: string, status = 'Confirmed
 // 2026-10-21 is today in Riyadh (UTC+3).
 const week = [
   booking('1', 'سعود الرشيد', '2026-10-21T07:00:00Z', 'Arrived'),
-  booking('2', 'ناصر العتيبي', '2026-10-21T15:30:00Z'),
+  { ...booking('2', 'ناصر العتيبي', '2026-10-21T15:30:00Z'), visit: 'Returning' },
   booking('3', 'فهد الدوسري', '2026-10-22T09:00:00Z', 'Pending'),
   booking('4', 'ماجد القحطاني', '2026-10-24T13:00:00Z'),
 ];
@@ -120,15 +120,24 @@ describe('SimpleAppointments (D-134)', () => {
     expect(window.location.search).toContain('booking=1');
   });
 
-  it('finishes a visit under way with one tap, freeing the rest of its time (D-135)', async () => {
+  it('finishes a visit under way after a confirmation, freeing the rest of its time (D-135, D-136)', async () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValue(ok({ ...week[0], status: 'Completed' }));
     renderList();
     await screen.findByTestId('coming-today');
+    expect(screen.getByText('زبون عائد')).toBeInTheDocument();
 
-    // Only the visit under way offers it; the coming ones do not.
+    // Only the visit under way offers it; the coming ones do not. «تراجع» sends nothing.
     expect(screen.getAllByRole('button', { name: /^انتهت خدمة/ })).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'انتهت خدمة سعود الرشيد' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'انتهت خدمة سعود الرشيد؟' });
+    await user.click(within(dialog).getByRole('button', { name: 'تراجع' }));
+    expect(api.POST).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'انتهت خدمة سعود الرشيد' }));
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'نعم، انتهت الخدمة' }),
+    );
     await waitFor(() =>
       expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
         params: { path: { bookingId: '1' } },

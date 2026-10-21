@@ -2142,15 +2142,18 @@
         "reason": "Neden",
         "confirm": "Evet, iptal et",
         "keep": "Randevuyu koru"
+      },
+      "finish": {
+        "title": "{name} için hizmet bitti mi?",
+        "body": "Randevu şimdi bitmiş olarak kaydedilir ve berberin kalan zamanı rezervasyona açılır. Geri alınamaz.",
+        "confirm": "Evet, hizmet bitti",
+        "keep": "Vazgeç"
       }
     },
     "appointments": {
       "title": "Randevular",
-      "simpleTitle": "Randevular",
       "loading": "Randevular yükleniyor…",
       "loadError": "Randevular yüklenemedi. Tekrar deneyin.",
-      "empty": "Bu filtrelere uyan randevu yok.",
-      "statusFilter": "Duruma göre filtrele",
       "chips": {
         "all": "Tümü",
         "pending": "Beklemede",
@@ -2160,27 +2163,7 @@
         "cancelled": "İptal edildi",
         "noShow": "Gelmedi"
       },
-      "from": "Başlangıç",
-      "to": "Bitiş",
-      "professional": "Berber",
-      "allProfessionals": "Tüm berberler",
-      "search": "Randevularda ara",
-      "searchPlaceholder": "Müşteri adı veya randevu numarasıyla arayın",
-      "caption": "Salonun randevuları",
-      "columns": {
-        "time": "Saat",
-        "customer": "Müşteri ve hizmet",
-        "professional": "Berber",
-        "status": "Durum",
-        "source": "Kaynak",
-        "actions": "İşlemler"
-      },
-      "open": "Randevu ayrıntıları: {name}",
-      "details": "Ayrıntılar",
-      "paging": "Randevu sayfaları",
-      "summary": "Toplam {total} kayıttan {from}–{to} arası gösteriliyor",
-      "previous": "Önceki",
-      "next": "Sonraki"
+      "open": "Randevu ayrıntıları: {name}"
     },
     "simple": {
       "thisWeek": "Bu hafta",
@@ -2194,7 +2177,11 @@
       "noneUpcoming": "Bu günlerde yaklaşan randevu yok.",
       "finish": "Hizmet bitti",
       "finishLabel": "{name} için hizmet bitti",
-      "finished": "{name} için hizmet bitti; berberin zamanı yeniden boş."
+      "finished": "{name} için hizmet bitti; berberin zamanı yeniden boş.",
+      "finishTitle": "{name} için hizmet bitti mi?",
+      "finishBody": "Randevu şimdi bitmiş olarak kaydedilir ve berberin kalan zamanı rezervasyona açılır. Geri alınamaz.",
+      "finishConfirm": "Evet, hizmet bitti",
+      "finishKeep": "Vazgeç"
     },
     "visit": {
       "New": "Yeni müşteri",

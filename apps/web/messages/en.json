@@ -2142,15 +2142,18 @@
         "reason": "Reason",
         "confirm": "Yes, cancel it",
         "keep": "Keep it"
+      },
+      "finish": {
+        "title": "Is {name}'s service finished?",
+        "body": "The visit is recorded as finished now, and the rest of the barber's time becomes free to book. This can't be undone.",
+        "confirm": "Yes, service finished",
+        "keep": "Go back"
       }
     },
     "appointments": {
       "title": "Appointments",
-      "simpleTitle": "Appointments",
       "loading": "Loading appointments…",
       "loadError": "Couldn't load the appointments. Try again.",
-      "empty": "No appointments match these filters.",
-      "statusFilter": "Filter by status",
       "chips": {
         "all": "All",
         "pending": "Pending",
@@ -2160,27 +2163,7 @@
         "cancelled": "Cancelled",
         "noShow": "No-show"
       },
-      "from": "From",
-      "to": "To",
-      "professional": "Barber",
-      "allProfessionals": "All barbers",
-      "search": "Search appointments",
-      "searchPlaceholder": "Search by customer name or booking number",
-      "caption": "The shop's appointments",
-      "columns": {
-        "time": "Time",
-        "customer": "Customer & service",
-        "professional": "Barber",
-        "status": "Status",
-        "source": "Source",
-        "actions": "Actions"
-      },
-      "open": "Details of {name}'s appointment",
-      "details": "Details",
-      "paging": "Appointment pages",
-      "summary": "Showing {from}–{to} of {total}",
-      "previous": "Previous",
-      "next": "Next"
+      "open": "Details of {name}'s appointment"
     },
     "simple": {
       "thisWeek": "This week",
@@ -2194,7 +2177,11 @@
       "noneUpcoming": "No appointments coming up on these days.",
       "finish": "Service finished",
       "finishLabel": "Service finished for {name}",
-      "finished": "{name}'s service is finished; the barber's time is free again."
+      "finished": "{name}'s service is finished; the barber's time is free again.",
+      "finishTitle": "Is {name}'s service finished?",
+      "finishBody": "The visit is recorded as finished now, and the rest of the barber's time becomes free to book. This can't be undone.",
+      "finishConfirm": "Yes, service finished",
+      "finishKeep": "Go back"
     },
     "visit": {
       "New": "New customer",
