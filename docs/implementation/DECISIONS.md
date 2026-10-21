@@ -427,6 +427,7 @@ The user asked in Session 4 to store media such as photos in the database. This 
 
 ## D-069 — Phase 06 test infrastructure and gates — Accepted (Phase 06)
 - **Test PostgreSQL connections.** The Testcontainers PostgreSQL runs with `max_connections=400`. Every test database has its own Npgsql pool, and the Phase 06 suites exhausted the default 100 ("too many clients").
+  - Updated after Session 18: the test connection strings also set `Connection Idle Lifetime=10` (pruning every 5 s). About 80 tests create their own database, and Npgsql keeps idle connections for 300 s, longer than the whole run, so finished tests held theirs until the 400 ran out. CI failed on it from `60bb98e`.
 - **Authorization matrix.** The endpoint matrix sends multipart requests to multipart endpoints. Those match only multipart at routing, so a JSON probe got 415 before authorization.
 - **No-transfer grep gate.** Tests assert absence, so the gate excludes test files: `rg -i "transfer(Professional|Barber|Shop)|(professional|barber)\s*transfer|نقل حلاق|تنفيذ النقل" apps src -g '!**/*.test.*' -g '!**/node_modules/**'`. The unrefined gate already matched a Phase 05 test. Product code and comments avoid the term altogether (D-011).
 - **E2E.** Map tiles are stubbed with a blank PNG, and the pin is dragged only after it stops moving.
