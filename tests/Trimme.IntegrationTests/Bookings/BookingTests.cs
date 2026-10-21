@@ -229,7 +229,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = "guess", version }, ct), HttpStatusCode.NotFound, null, ct);
         await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "x" }, ct), HttpStatusCode.NotFound, null, ct);
         (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/bookings", ct), ct)).GetProperty("total").GetInt32().ShouldBe(0);
-        await FailsAsync(w.OwnerB.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "x" }, ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(w.OwnerB.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "x", customerPhone = "0501234567" }, ct), HttpStatusCode.NotFound, null, ct);
 
         // Customers and shops cannot use each other's endpoints.
         (await noura.GetAsync("/api/v1/shop/bookings", ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -260,20 +260,20 @@ public sealed class BookingTests(PostgresFixture postgres)
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
         using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct);
 
-        var now = await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر" }, ct), ct, HttpStatusCode.Created);
+        var now = await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
         now.GetProperty("status").GetString().ShouldBe("Arrived", "a walk-in starting now (D-035)");
         now.GetProperty("channel").GetString().ShouldBe("WalkIn");
         now.GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldBe(["Completed"]);
 
         // R-BKG-07: an overlapping walk-in is refused; an off-grid one after it is fine.
-        await FailsAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 10, 10), customerName = "آخر" }, ct),
+        await FailsAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 10, 10), customerName = "آخر", customerPhone = "0501234567" }, ct),
             HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
-        var later = await OkAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 10, 32), customerName = "آخر" }, ct),
+        var later = await OkAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 10, 32), customerName = "آخر", customerPhone = "0501234567" }, ct),
             ct, HttpStatusCode.Created);
         later.GetProperty("status").GetString().ShouldBe("Confirmed");
-        await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 9), customerName = "x" }, ct),
+        await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 9), customerName = "x", customerPhone = "0501234567" }, ct),
             HttpStatusCode.BadRequest, "validation.date_in_past", ct);
-        await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 21), customerName = "x" }, ct),
+        await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 21), customerName = "x", customerPhone = "0501234567" }, ct),
             HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
 
         // Transitions (R-BKG-02): complete the arrived one; refuse what the machine forbids; time rules; reason required.
@@ -308,6 +308,126 @@ public sealed class BookingTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task WalkIns_TakeTheCustomersMobile_ForThePlatformTeamOnly()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "bkg_walkin_phone", ct);
+        var walkIn = new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 12), customerName = "زائر", customerPhone = "٠٥٥١٢٣٤٥٦٧" };
+        const string Digits = "551234567";
+
+        // D-134: the mobile is optional (some customers will not give it); when given it must be a mobile number
+        // (Arabic-Indic digits are fine). The name is required.
+        await FailsAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerName = " " }, ct), HttpStatusCode.BadRequest, "customerName", ct);
+        await FailsAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerPhone = "0112345678" }, ct), HttpStatusCode.BadRequest, "validation.phone_invalid", ct);
+        var anonymous = await OkAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { startsAt = At(Target, 16), customerName = "م", customerPhone = " " }, ct),
+            ct, HttpStatusCode.Created);
+        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/bookings/{anonymous.GetProperty("id").GetGuid()}", ct), ct))
+            .GetProperty("walkInPhoneMasked").ValueKind.ShouldBe(JsonValueKind.Null, "no number given, none stored");
+        using var created = await w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn, ct);
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var body = await created.Content.ReadAsStringAsync(ct);
+        var id = JsonDocument.Parse(body).RootElement.GetProperty("id").GetGuid();
+
+        // It never goes back to the shop: not in the answer, the booking, the list or the outbox event.
+        string[] shopViews =
+        [
+            body,
+            await (await w.StaffA.GetAsync($"/api/v1/shop/bookings/{id}", ct)).Content.ReadAsStringAsync(ct),
+            await (await w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}", ct)).Content.ReadAsStringAsync(ct),
+            .. await OutboxAsync(w.Factory, ct),
+        ];
+        shopViews.ShouldAllBe(view => !view.Contains(Digits) && !view.Contains("١٢٣٤٥٦٧"));
+
+        // Stored encrypted, with a masked copy for the admin page.
+        await using (var scope = w.Factory.Services.CreateAsyncScope())
+        {
+            using var system = scope.ServiceProvider.GetRequiredService<ISystemDataScope>().Begin();
+            var row = await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<WalkInContact>().AsNoTracking()
+                .SingleAsync(c => c.BookingId == new BookingId(id), ct);
+            row.ProtectedPhone.ShouldNotContain(Digits);
+            row.PhoneMasked.ShouldBe("+966 5•• ••• •67");
+        }
+
+        // The platform team sees it masked on the booking and reveals it with a reason, audited without the number.
+        var detail = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/bookings/{id}", ct), ct);
+        detail.GetProperty("walkInPhoneMasked").GetString().ShouldBe("+966 5•• ••• •67");
+        var reveal = $"/api/v1/admin/bookings/{id}/walk-in-contact/reveal";
+        await FailsAsync(w.Admin.PostAsync(reveal, new { reason = "x" }, ct), HttpStatusCode.BadRequest, "validation.reason_required", ct);
+        await FailsAsync(w.OwnerA.PostAsync(reveal, new { reason = "متابعة العميل" }, ct), HttpStatusCode.Forbidden, null, ct);
+        (await OkAsync(w.Admin.PostAsync(reveal, new { reason = "متابعة العميل" }, ct), ct)).GetProperty("phone").GetString().ShouldBe("+966" + Digits);
+        await using (var scope = w.Factory.Services.CreateAsyncScope())
+        {
+            var audit = await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<AuditEntry>().AsNoTracking()
+                .Where(e => e.EntityId == id.ToString()).ToListAsync(ct);
+            audit.Select(a => a.Action).ShouldBe(["booking.walk_in_contact_revealed"]);
+            audit[0].Reason.ShouldBe("متابعة العميل");
+            JsonSerializer.Serialize(audit).ShouldNotContain(Digits);
+        }
+
+        // An online booking has no walk-in number.
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        var online = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 14), ct), ct, HttpStatusCode.Created);
+        var onlineId = online.GetProperty("id").GetGuid();
+        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/bookings/{onlineId}", ct), ct)).GetProperty("walkInPhoneMasked").ValueKind.ShouldBe(JsonValueKind.Null);
+        await FailsAsync(w.Admin.PostAsync($"/api/v1/admin/bookings/{onlineId}/walk-in-contact/reveal", new { reason = "متابعة العميل" }, ct), HttpStatusCode.NotFound, null, ct);
+    }
+
+    [Fact]
+    public async Task FinishingEarly_FreesTheRestAtOnce_AndTheOwnerSeesNewAndReturningCustomers()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var w = await ArrangeAsync(postgres, "bkg_finish", ct, clock);
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        var first = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
+        var again = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target.AddDays(1), 12), ct), ct, HttpStatusCode.Created);
+        var other = await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Omar, At(Target.AddDays(1), 13), ct), ct, HttpStatusCode.Created);
+
+        // 12:10 on the target day: the 30-minute haircut is under way, so Faisal is busy until 12:30.
+        clock.SetUtcNow(At(Target, 12, 10).ToUniversalTime());
+        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct);
+        using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
+        bool FreeNow(JsonElement options) =>
+            options.GetProperty("professionals").EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == w.Faisal).GetProperty("freeNow").GetBoolean();
+        var walkInOptions = $"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}";
+        FreeNow(await OkAsync(staff.GetAsync(walkInOptions, ct), ct)).ShouldBeFalse();
+
+        // «انتهت الخدمة» (D-135): finished from Confirmed in one step; the visit ends now and Faisal is free at once.
+        var id = first.GetProperty("id").GetGuid();
+        var detail = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct);
+        detail.GetProperty("booking").GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldContain("Completed");
+        var finished = await OkAsync(staff.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
+            new { to = "Completed", version = detail.GetProperty("booking").GetProperty("version").GetUInt32() }, ct), ct);
+        finished.GetProperty("status").GetString().ShouldBe("Completed");
+        finished.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 12, 10));
+        FreeNow(await OkAsync(staff.GetAsync(walkInOptions, ct), ct)).ShouldBeTrue();
+        await OkAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر" }, ct),
+            ct, HttpStatusCode.Created);
+
+        // A later booking can't be finished before it starts.
+        await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{again.GetProperty("id").GetGuid()}/transitions",
+            new { to = "Completed", version = again.GetProperty("version").GetUInt32() }, ct), HttpStatusCode.UnprocessableEntity, "booking.too_early", ct);
+
+        // The owner sees who is new and who is returning; the desk does not (D-135).
+        var list = $"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target.AddDays(1))}";
+        var visits = (await OkAsync(owner.GetAsync(list, ct), ct)).GetProperty("items").EnumerateArray()
+            .ToDictionary(b => b.GetProperty("id").GetGuid(), b => b.GetProperty("visit").ValueKind == JsonValueKind.Null ? null : b.GetProperty("visit").GetString());
+        visits[id].ShouldBe("New", "Noura's first visit");
+        visits[again.GetProperty("id").GetGuid()].ShouldBe("Returning", "Noura has been before");
+        visits[other.GetProperty("id").GetGuid()].ShouldBe("New");
+        visits.Values.Count(v => v is null).ShouldBe(1, "the walk-in has no customer account");
+        (await OkAsync(staff.GetAsync(list, ct), ct)).GetProperty("items").EnumerateArray()
+            .ShouldAllBe(b => b.GetProperty("visit").ValueKind == JsonValueKind.Null);
+
+        var mix = (await OkAsync(owner.GetAsync("/api/v1/shop/dashboard/overview", ct), ct)).GetProperty("customers");
+        mix.GetProperty("days").GetInt32().ShouldBe(30);
+        mix.GetProperty("newCustomers").GetInt32().ShouldBe(1);
+        mix.GetProperty("returningVisits").GetInt32().ShouldBe(0);
+        (await OkAsync(staff.GetAsync("/api/v1/shop/dashboard/overview", ct), ct)).GetProperty("customers").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
     public async Task PauseAndExpiry_NeverTouchExistingBookings_ButBlockNewOnesAndReschedules()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -330,7 +450,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         var kept = await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct);
         kept.GetProperty("status").GetString().ShouldBe("Confirmed");
         kept.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 13));
-        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 16), customerName = "زائر" }, ct), ct, HttpStatusCode.Created);
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 16), customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
 
         // Cancelling stays possible for the customer.
         await OkAsync(noura.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { version = kept.GetProperty("version").GetUInt32() }, ct), ct);
@@ -388,7 +508,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         var longNote = new string('x', 501);
         await FailsAsync(noura.SendAsync(HttpMethod.Post, "/api/v1/bookings", new { shopSlug = w.SlugA, serviceId = w.Haircut, startsAt = At(Target, 10), note = longNote }, ct, headers: Key()),
             HttpStatusCode.BadRequest, "validation.too_long", ct);
-        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 12), customerName = "x", note = longNote }, ct),
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 12), customerName = "x", customerPhone = "0501234567", note = longNote }, ct),
             HttpStatusCode.BadRequest, "validation.too_long", ct);
         (await OutboxAsync(w.Factory, ct)).ShouldBeEmpty("a refused booking writes nothing");
 

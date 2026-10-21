@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import { BookingIntervention } from '@/components/admin/ops/BookingIntervention';
+import { CustomerContact } from '@/components/admin/ops/CustomerContact';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/cards';
 import { Breadcrumb, Timeline, type TimelineItem } from '@/components/ui/data';
@@ -20,8 +21,9 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * One booking for the platform team (DV-A09, R-AD-05): what was booked (the snapshot), who and where, the full history
- * with actors and reasons, the shop's internal notes (read-only here), and the intervention panel. No phone number is
- * part of the booking; the customer's profile page has the audited reveal.
+ * with actors and reasons, the shop's internal notes (read-only here), and the intervention panel. An online booking
+ * carries no phone number (the customer's profile page has the audited reveal); a walk-in shows the number the desk
+ * took, masked, with the same audited reveal (D-134).
  */
 export default async function AdminBookingPage({
   params,
@@ -143,9 +145,20 @@ export default async function AdminBookingPage({
                     <Row label={tDrawer('rows.cancellationReason')}>{booking.cancellationReason}</Row>
                   )}
                 </dl>
-                <p className="rounded-button bg-bg-subtle p-3 text-helper text-text-secondary">
-                  {t('noPhone')}
-                </p>
+                {data.walkInPhoneMasked ? (
+                  <div className="flex flex-col gap-1.5" data-testid="walk-in-contact">
+                    <h3 className="text-label font-bold text-text-strong">{t('walkInPhone')}</h3>
+                    <CustomerContact
+                      walkInBookingId={booking.id}
+                      masked={data.walkInPhoneMasked}
+                      canReveal={me.permissions.includes('Admin.Customers.ViewContact')}
+                    />
+                  </div>
+                ) : (
+                  <p className="rounded-button bg-bg-subtle p-3 text-helper text-text-secondary">
+                    {t('noPhone')}
+                  </p>
+                )}
               </Card>
 
               <div className="flex flex-col gap-4">

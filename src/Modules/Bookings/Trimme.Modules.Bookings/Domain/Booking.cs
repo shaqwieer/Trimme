@@ -152,13 +152,17 @@ public static class BookingRules
         });
 }
 
-/// <summary>The allowed transitions (D-016). Anything else is refused with 409 <c>booking.invalid_transition</c>.</summary>
+/// <summary>
+/// The allowed transitions (D-016). Anything else is refused with 409 <c>booking.invalid_transition</c>. A confirmed visit
+/// can be finished in one step once it has started («انتهت الخدمة», D-135), without marking the arrival first.
+/// </summary>
 public static class BookingStateMachine
 {
     private static readonly Dictionary<BookingStatus, BookingStatus[]> Allowed = new()
     {
         [BookingStatus.Pending] = [BookingStatus.Confirmed, BookingStatus.CancelledByCustomer, BookingStatus.CancelledByShop],
-        [BookingStatus.Confirmed] = [BookingStatus.Arrived, BookingStatus.NoShow, BookingStatus.CancelledByCustomer, BookingStatus.CancelledByShop],
+        [BookingStatus.Confirmed] =
+            [BookingStatus.Arrived, BookingStatus.Completed, BookingStatus.NoShow, BookingStatus.CancelledByCustomer, BookingStatus.CancelledByShop],
         [BookingStatus.Arrived] = [BookingStatus.Completed],
     };
 
@@ -366,8 +370,9 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             : null;
 
     /// <summary>
-    /// A shop's transition (D-016, D-087): confirm, mark arrived (from an hour before the start), complete, mark a no-show
-    /// (once the start has passed) or cancel (with a reason). Admins cancel through the same rule with their own actor.
+    /// A shop's transition (D-016, D-087): confirm, mark arrived (from an hour before the start), complete (a confirmed
+    /// visit once it has started, D-135), mark a no-show (once the start has passed) or cancel (with a reason). Admins cancel
+    /// through the same rule with their own actor. A visit finished before its booked end ends then (<see cref="FinishAt"/>).
     /// </summary>
     public Result ApplyShopTransition(BookingStatus to, BookingActor actor, string? reason, DateTimeOffset now)
     {
@@ -380,6 +385,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         {
             case BookingStatus.Arrived when now < StartsAt - BookingRules.ArrivalWindow:
             case BookingStatus.NoShow when now < StartsAt:
+            case BookingStatus.Completed when Status == BookingStatus.Confirmed && now < StartsAt:
                 return BookingErrors.TooEarly(to);
             case BookingStatus.CancelledByShop when string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 3:
                 return BookingErrors.ReasonRequired();
@@ -391,6 +397,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         }
 
         Move(to, actor, Clean(reason), now);
+        if (to == BookingStatus.Completed)
+        {
+            FinishAt(now);
+        }
+
         return Result.Success();
     }
 
@@ -449,12 +460,27 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             BookingStatus.CancelledByCustomer => false,
             BookingStatus.Arrived => now >= StartsAt - BookingRules.ArrivalWindow,
             BookingStatus.NoShow => now >= StartsAt,
+            BookingStatus.Completed => Status == BookingStatus.Arrived || now >= StartsAt,
             _ => true,
         }),
     ];
 
     public bool CustomerCanChange(DateTimeOffset now, int cutoffMinutes) =>
         Status is BookingStatus.Pending or BookingStatus.Confirmed && now <= StartsAt.AddMinutes(-cutoffMinutes);
+
+    /// <summary>
+    /// A visit marked finished before its booked end ends at that minute (D-135): the calendar, the history and the
+    /// customer's booking show when it really ended. The rest of the time is free either way, because only active bookings
+    /// hold a professional's time. A visit finished before its start (arrived early) keeps its times.
+    /// </summary>
+    private void FinishAt(DateTimeOffset now)
+    {
+        var minute = now.ToUniversalTime().AddTicks(-(now.Ticks % TimeSpan.TicksPerMinute));
+        if (minute > StartsAt && minute < EndsAt)
+        {
+            EndsAt = minute;
+        }
+    }
 
     private void Move(BookingStatus to, BookingActor actor, string? reason, DateTimeOffset now)
     {
@@ -502,6 +528,43 @@ public sealed class BookingNote : IShopOwned
     public string Text { get; private set; }
 
     public Guid AuthorId { get; private set; }
+
+    public DateTimeOffset CreatedAt { get; private set; }
+}
+
+/// <summary>
+/// The mobile number the desk took for a walk-in (D-134): written once with the booking, stored encrypted, and read
+/// only by the platform team, masked or through an audited reveal. No shop response, event or notification carries it.
+/// </summary>
+public sealed class WalkInContact : IShopOwned
+{
+    public WalkInContact(BookingId bookingId, ShopId shopId, string protectedPhone, string phoneLookupHash, string phoneMasked, DateTimeOffset now)
+    {
+        BookingId = bookingId;
+        ShopId = shopId;
+        ProtectedPhone = protectedPhone;
+        PhoneLookupHash = phoneLookupHash;
+        PhoneMasked = phoneMasked;
+        CreatedAt = now;
+    }
+
+    private WalkInContact()
+    {
+        ProtectedPhone = PhoneLookupHash = PhoneMasked = string.Empty;
+    }
+
+    public BookingId BookingId { get; private set; }
+
+    public ShopId ShopId { get; private set; }
+
+    /// <summary>Data Protection ciphertext of the E.164 number (purpose <c>trimme.walk-in-phone</c>).</summary>
+    public string ProtectedPhone { get; private set; }
+
+    /// <summary>Keyed hash of the E.164 number, to find a customer's walk-ins later without decrypting.</summary>
+    public string PhoneLookupHash { get; private set; }
+
+    /// <summary>For the admin booking page: <c>+966 5•• ••• •30</c>.</summary>
+    public string PhoneMasked { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
 }

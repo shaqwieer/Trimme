@@ -84,7 +84,10 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
               </InlineAlert>
             )}
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-testid="shop-kpis">
+            <div
+              className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${data.customers ? 'xl:grid-cols-6' : 'xl:grid-cols-5'}`}
+              data-testid="shop-kpis"
+            >
               <KpiTile
                 label={t('kpis.total')}
                 value={formatNumber(kpis.total, locale)}
@@ -139,6 +142,19 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
                 icon="users"
                 delta={{ text: t('kpis.cancelled', { count: kpis.cancelled }), tone: 'neutral' }}
               />
+              {data.customers && (
+                <KpiTile
+                  label={t('kpis.newCustomers', { days: data.customers.days })}
+                  value={formatNumber(data.customers.newCustomers, locale)}
+                  icon="user"
+                  delta={{
+                    text: t('kpis.returningVisits', {
+                      count: formatNumber(data.customers.returningVisits, locale),
+                    }),
+                    tone: 'good',
+                  }}
+                />
+              )}
             </div>
 
             <div className="grid items-start gap-5 xl:grid-cols-[1.5fr_1fr]">

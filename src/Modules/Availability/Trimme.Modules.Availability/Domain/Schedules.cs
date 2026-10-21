@@ -305,7 +305,8 @@ public sealed class ShopClosure : AggregateRoot<ShopClosureId>, IShopOwned, ICon
 
 /// <summary>
 /// A break (s-hours "الاستراحات المتكررة", DV-A04): weekly on some weekdays, or once on a date. It applies to one
-/// professional or, when <see cref="ProfessionalId"/> is <see langword="null"/>, to everyone (prayer breaks).
+/// professional or, when <see cref="ProfessionalId"/> is <see langword="null"/>, to everyone. The label is optional: a
+/// break needs no reason (D-134).
 /// </summary>
 public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, IConcurrencyVersioned
 {
@@ -345,7 +346,7 @@ public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, 
     public uint Version { get; private set; }
 
     public static Result<ScheduleBreak> Create(
-        ScheduleBreakId id, ShopId shopId, ProfessionalId? professionalId, string label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date,
+        ScheduleBreakId id, ShopId shopId, ProfessionalId? professionalId, string? label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date,
         int startMinute, int endMinute, DateOnly today, DateTimeOffset now)
     {
         var entry = new ScheduleBreak(id, shopId, now);
@@ -354,7 +355,7 @@ public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, 
     }
 
     public Result Update(
-        ProfessionalId? professionalId, string label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date, int startMinute, int endMinute, DateOnly today, DateTimeOffset now)
+        ProfessionalId? professionalId, string? label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date, int startMinute, int endMinute, DateOnly today, DateTimeOffset now)
     {
         var set = Apply(professionalId, label, weekdays, date, startMinute, endMinute, today);
         if (set.IsSuccess)
@@ -366,15 +367,11 @@ public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, 
     }
 
     private Result Apply(
-        ProfessionalId? professionalId, string label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date, int startMinute, int endMinute, DateOnly today)
+        ProfessionalId? professionalId, string? label, IReadOnlyCollection<DayOfWeek> weekdays, DateOnly? date, int startMinute, int endMinute, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(weekdays);
-        if (string.IsNullOrWhiteSpace(label))
-        {
-            return ScheduleRules.Field("label", "validation.required");
-        }
-
-        if (label.Trim().Length > ScheduleRules.MaxLabelLength)
+        label = label?.Trim() ?? string.Empty;
+        if (label.Length > ScheduleRules.MaxLabelLength)
         {
             return ScheduleRules.Field("label", "validation.too_long");
         }
@@ -395,7 +392,7 @@ public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, 
         }
 
         ProfessionalId = professionalId;
-        Label = label.Trim();
+        Label = label;
         Weekdays = [.. weekdays.Distinct().Order()];
         Date = date;
         StartMinute = startMinute;

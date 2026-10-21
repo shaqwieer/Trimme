@@ -1271,6 +1271,7 @@
   },
   "shopSchedule": {
     "title": "Hours, breaks and time off",
+    "staffTitle": "Breaks",
     "days": {
       "Sunday": "Sunday",
       "Monday": "Monday",
@@ -1320,8 +1321,6 @@
       "add": "Add break",
       "addTitle": "Add break",
       "editTitle": "Edit break",
-      "label": "Break name",
-      "labelRequired": "Name the break",
       "appliesTo": "Applies to",
       "everyone": "All professionals",
       "repeat": "Repeat",
@@ -1332,6 +1331,30 @@
       "date": "Date",
       "everyDay": "Every day",
       "timesInvalid": "Choose an end time after the start (5-minute steps)"
+    },
+    "barberDay": {
+      "title": "Barbers' breaks",
+      "body": "Choose the barber and the day, then tap any hour to make it a break; tap it again to undo. No reason is needed, and no appointment is cancelled.",
+      "barber": "Barber",
+      "today": "Today",
+      "previous": "Previous day",
+      "next": "Next day",
+      "loading": "Loading the day…",
+      "loadError": "Couldn't load the day. Try again.",
+      "noBarbers": "There are no barbers in the shop.",
+      "dayOff": "The barber doesn't work on this day.",
+      "cell": "{from} – {to}: {state}",
+      "state": {
+        "free": "Free",
+        "break": "Break",
+        "shopBreak": "Shop break",
+        "booked": "Booked",
+        "off": "Off",
+        "outside": "Not working"
+      },
+      "wholeDay": "Break all day",
+      "clear": "Clear all breaks",
+      "saved": "Saved"
     },
     "timeOff": {
       "title": "Time off and closures",
@@ -2036,7 +2059,9 @@
         "share": "{percent}% of the day",
         "free": "Free capacity",
         "freeValue": "{hours} h {minutes} min",
-        "cancelled": "{count, plural, =0 {No cancellations} one {1 cancellation} other {# cancellations}}"
+        "cancelled": "{count, plural, =0 {No cancellations} one {1 cancellation} other {# cancellations}}",
+        "newCustomers": "New customers · last {days} days",
+        "returningVisits": "Returning visits: {count}"
       },
       "upcoming": {
         "title": "Today's upcoming schedule",
@@ -2087,7 +2112,7 @@
         "Pending": "Awaiting confirmation",
         "Confirmed": "Confirm",
         "Arrived": "Customer arrived",
-        "Completed": "Completed",
+        "Completed": "Service finished",
         "NoShow": "No-show",
         "CancelledByShop": "Cancel",
         "CancelledByCustomer": "Cancelled by customer"
@@ -2121,6 +2146,7 @@
     },
     "appointments": {
       "title": "Appointments",
+      "simpleTitle": "Appointments",
       "loading": "Loading appointments…",
       "loadError": "Couldn't load the appointments. Try again.",
       "empty": "No appointments match these filters.",
@@ -2156,6 +2182,24 @@
       "previous": "Previous",
       "next": "Next"
     },
+    "simple": {
+      "thisWeek": "This week",
+      "week": "{from} to {to}",
+      "previousWeek": "Previous week",
+      "nextWeek": "Next week",
+      "today": "Today's bookings",
+      "upcoming": "Coming up",
+      "tomorrow": "Tomorrow",
+      "noneToday": "No more bookings today.",
+      "noneUpcoming": "No appointments coming up on these days.",
+      "finish": "Service finished",
+      "finishLabel": "Service finished for {name}",
+      "finished": "{name}'s service is finished; the barber's time is free again."
+    },
+    "visit": {
+      "New": "New customer",
+      "Returning": "Returning customer"
+    },
     "walkIn": {
       "title": "Walk-in booking",
       "noServices": "No active services. Add a service first.",
@@ -2176,9 +2220,10 @@
       "startNow": "Start now {time}",
       "name": "Customer's name",
       "nameTooLong": "The name is too long.",
+      "phone": "Customer's mobile",
+      "phonePrivacy": "The number goes to the Groom Here team only and is not shown to the shop once the booking is saved.",
       "note": "Note",
       "notePlaceholder": "e.g. short fade",
-      "noPhone": "The customer's mobile number isn't asked for at the desk. If they want WhatsApp reminders, invite them to install the app and scan the shop's code.",
       "summary": {
         "title": "Booking summary",
         "service": "Service",
@@ -2332,6 +2377,7 @@
       "shop": "Shop"
     },
     "noPhone": "The customer's number is not part of a booking. Support can reveal it from the customer's profile, with a reason; every view is recorded.",
+    "walkInPhone": "Customer's mobile (walk-in)",
     "noNotes": "No internal notes.",
     "history": {
       "rescheduled": "Time changed (was {from})",

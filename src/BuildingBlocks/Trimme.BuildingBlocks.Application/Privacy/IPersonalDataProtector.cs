@@ -22,6 +22,10 @@ public static class PersonalDataPurposes
 
     /// <summary>A professional's WhatsApp number (Phase 06); readable by authorized admin commands and the notification worker.</summary>
     public const string ProfessionalWhatsApp = "trimme.professional-whatsapp";
+
+    /// <summary>The mobile number the desk takes for a walk-in (D-134); readable only by an audited admin reveal.</summary>
+    public const string WalkInPhone = "trimme.walk-in-phone";
+
     public const string IpAddress = "trimme.ip-address";
     public const string OtpCode = "trimme.otp-code";
 

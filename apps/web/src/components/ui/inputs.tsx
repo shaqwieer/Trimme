@@ -87,6 +87,8 @@ type PhoneFieldProps = CommonFieldProps & {
   disabled?: boolean;
   required?: boolean;
   autoFocus?: boolean;
+  /** "tel-national" for the user's own number; "off" where someone else's is typed (the walk-in desk, D-134). */
+  autoComplete?: 'tel-national' | 'off';
 };
 
 /**
@@ -108,6 +110,7 @@ export function PhoneField({
   disabled,
   required,
   autoFocus,
+  autoComplete = 'tel-national',
 }: PhoneFieldProps) {
   const t = useTranslations('ui.phone');
   const id = useId();
@@ -149,7 +152,7 @@ export function PhoneField({
             name={name}
             type="tel"
             inputMode="numeric"
-            autoComplete="tel-national"
+            autoComplete={autoComplete}
             dir="ltr"
             placeholder={t('placeholder')}
             value={groupSaudiMobile(national)}

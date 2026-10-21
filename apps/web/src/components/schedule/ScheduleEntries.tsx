@@ -136,10 +136,10 @@ function EntryRow({
 
 /* ------------------------------------------------------------------ Breaks */
 
+/** A break has no name or reason (D-134): who it is for, when, and how often. */
 type BreakDraft = {
   id?: string;
   version?: number;
-  label: string;
   professionalId: string;
   mode: 'weekly' | 'once';
   weekdays: Weekday[];
@@ -192,7 +192,7 @@ export function BreaksCard({
               key={b.id}
               testId={`break-${b.id}`}
               icon="coffee"
-              title={b.label}
+              title={nameOf(b.professionalId)}
               when={
                 <>
                   {days(b)} ·{' '}
@@ -201,18 +201,16 @@ export function BreaksCard({
                   </span>
                 </>
               }
-              detail={nameOf(b.professionalId)}
               actions={
                 canManage && (
                   <>
                     <IconButton
                       icon="edit"
-                      label={t('edit', { name: b.label })}
+                      label={t('edit', { name: nameOf(b.professionalId) })}
                       onClick={() =>
                         setDraft({
                           id: b.id,
                           version: b.version,
-                          label: b.label,
                           professionalId: b.professionalId ?? '',
                           mode: b.date ? 'once' : 'weekly',
                           weekdays: b.weekdays,
@@ -224,7 +222,7 @@ export function BreaksCard({
                     />
                     <IconButton
                       icon="trash"
-                      label={t('delete', { name: b.label })}
+                      label={t('delete', { name: nameOf(b.professionalId) })}
                       onClick={() => setRemoving(b)}
                     />
                   </>
@@ -241,7 +239,6 @@ export function BreaksCard({
           className="self-start border-dashed"
           onClick={() =>
             setDraft({
-              label: '',
               professionalId: '',
               mode: 'weekly',
               weekdays: [...WEEK],
@@ -263,7 +260,7 @@ export function BreaksCard({
         />
       )}
       <DeleteDialog
-        target={removing ? { name: removing.label } : null}
+        target={removing ? { name: nameOf(removing.professionalId) } : null}
         onClose={() => setRemoving(null)}
         remove={async () =>
           ensureOk(
@@ -301,11 +298,10 @@ function BreakDialog({
     event.preventDefault();
     const start = toMinutes(draft.start);
     const end = toMinutes(draft.end === '00:00' ? '' : draft.end) ?? (draft.end === '00:00' ? 1440 : null);
-    if (!draft.label.trim()) return save.fail(t('breaks.labelRequired'));
     if (start === null || end === null || end <= start) return save.fail(t('breaks.timesInvalid'));
     if (draft.mode === 'weekly' && draft.weekdays.length === 0) return save.fail(t('breaks.daysRequired'));
     const body = {
-      label: draft.label.trim(),
+      label: null,
       professionalId: draft.professionalId || null,
       weekdays: draft.mode === 'weekly' ? draft.weekdays : [],
       date: draft.mode === 'once' ? draft.date : null,
@@ -342,12 +338,6 @@ function BreakDialog({
         className="flex flex-col gap-4"
         data-testid="break-form"
       >
-        <TextField
-          label={t('breaks.label')}
-          value={draft.label}
-          maxLength={60}
-          onChange={(e) => set({ label: e.target.value })}
-        />
         <SelectField
           label={t('breaks.appliesTo')}
           value={draft.professionalId}

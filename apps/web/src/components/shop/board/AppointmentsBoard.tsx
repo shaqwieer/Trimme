@@ -25,6 +25,7 @@ import { localizedName } from '@/lib/i18n/localized';
 import { chipOf, STATUS_CHIPS, type StatusChip, statusesOf } from '@/lib/shop/board';
 import { useOperationsEvents } from '../live/OperationsLive';
 import { AppointmentDrawer, BOARD_KEY } from './AppointmentDrawer';
+import { CustomerVisitBadge } from './CustomerVisitBadge';
 import { bookingSource } from '@/lib/booking/format';
 
 type Counts = components['schemas']['ShopBookingCounts'];
@@ -210,6 +211,7 @@ export function AppointmentsBoard({
                     <span className="flex flex-wrap items-center gap-2 font-bold text-text-primary">
                       {b.customerName}
                       {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
+                      <CustomerVisitBadge visit={b.visit} />
                     </span>
                     <span className="text-helper text-text-secondary">
                       {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
@@ -257,6 +259,7 @@ export function AppointmentsBoard({
                 <span className="flex flex-wrap items-center gap-2 text-label font-bold text-text-primary">
                   {b.customerName}
                   {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
+                  <CustomerVisitBadge visit={b.visit} />
                 </span>
                 <span className="text-helper text-text-secondary">
                   {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}

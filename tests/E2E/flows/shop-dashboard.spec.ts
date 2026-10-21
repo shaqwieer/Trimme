@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
  * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in made by staff and seen live on the
  * owner's screen, the calendar, the appointment drawer (note, cancel with a reason), all with the staff role's
  * permissions; no access to another shop's bookings, no customer phone anywhere in the dashboard's API responses or live
- * messages, and no export (R-NEG-03).
+ * messages (not even the mobile the desk typed for the walk-in, D-134), and no export (R-NEG-03).
  * Barber House with Omar, two days ahead: the customer flows use him 3–13 days ahead, Majed is on seeded time off, and
  * Al Asala's Faisal is kept for the schedule flow. Each run cancels its walk-in, so reruns find free time again.
  */
@@ -15,7 +15,9 @@ const OWNER = 'owner@barber-house.trimme.local';
 const STAFF = 'staff@barber-house.trimme.local';
 const OMAR = '0199a0de-5a10-7000-8000-000000000201';
 const AL_ASALA_BOOKING = '0199a0de-5a10-7000-8000-000000000a12';
-const CUSTOMER_PHONES = ['500100301', '500100302', '500100303'];
+/** The mobile the desk takes for the walk-in (D-134): it goes to the platform team only. */
+const WALK_IN_PHONE = '551000777';
+const CUSTOMER_PHONES = ['500100301', '500100302', '500100303', WALK_IN_PHONE];
 
 async function staffSignIn(page: Page, email: string) {
   await page.goto('/ar/auth/staff/sign-in');
@@ -104,10 +106,10 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     ).toBeVisible();
     const rowsBefore = await watcher.getByTestId('appointment-row').count();
 
-    // Walk-in at the desk: service, barber, first free time that day, the name only (no phone field).
+    // Walk-in at the desk: service, barber, first free time that day, the name and the mobile (D-134).
     await page.goto('/ar/shop/walk-in');
     await expect(page.getByTestId('walk-in')).toBeVisible();
-    await expect(page.locator('input[type="tel"]')).toHaveCount(0);
+    await expect(page.getByTestId('walk-in-phone-privacy')).toContainText('لا يظهر للمحل');
     await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
     await page.getByLabel('اليوم', { exact: true }).fill(date);
     await page.locator('label').filter({ hasText: 'عمر السالم' }).click();
@@ -117,9 +119,11 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(time).toBeAttached();
     await page.locator('[data-testid="walk-in-times"] label').last().click();
     await page.getByLabel('اسم العميل').fill(customer);
+    await page.getByLabel('جوال العميل').fill(`0${WALK_IN_PHONE}`);
     await expectNoSeriousAxe(page, 'walk-in');
     await page.getByRole('button', { name: 'تسجيل الحجز' }).click();
     await expect(page.getByText('سُجل الحجز الحضوري')).toBeVisible();
+    await expect(page.locator('main')).not.toContainText(/551 ?000|٥٥١/);
 
     // The other screen shows it without a reload (live, R-SD-10).
     await expect(watcher.getByTestId('appointment-row')).toHaveCount(rowsBefore + 1, { timeout: 15_000 });

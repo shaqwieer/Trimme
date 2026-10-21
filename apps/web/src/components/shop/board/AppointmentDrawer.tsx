@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Timeline, type TimelineItem } from '@/components/ui/data';
@@ -23,6 +23,7 @@ import {
 } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 import { bookingSource } from '@/lib/booking/format';
+import { CustomerVisitBadge } from './CustomerVisitBadge';
 
 type Detail = components['schemas']['ShopBookingDetailResponse'];
 type Status = components['schemas']['BookingStatus'];
@@ -201,23 +202,31 @@ export function AppointmentDrawer({
               />
             )}
             <dl className="flex flex-col divide-y divide-border-row">
-              {[
-                [t('rows.customer'), booking.customerName],
-                [t('rows.service'), localizedName(locale, booking.item.nameAr, booking.item.nameEn)],
+              {(
                 [
-                  t('rows.professional'),
-                  localizedName(locale, booking.professional.nameAr, booking.professional.nameEn),
-                ],
-                [t('rows.source'), t(`channel.${bookingSource(booking)}`)],
-                [
-                  t('rows.amount'),
-                  t('amount', { price: formatPrice(booking.item.price, locale, booking.item.currency) }),
-                ],
-                ...(booking.note ? [[t('rows.note'), booking.note]] : []),
-                ...(booking.cancellationReason
-                  ? [[t('rows.cancellationReason'), booking.cancellationReason]]
-                  : []),
-              ].map(([label, value]) => (
+                  [
+                    t('rows.customer'),
+                    <span key="customer" className="inline-flex flex-wrap items-center justify-end gap-2">
+                      {booking.customerName}
+                      <CustomerVisitBadge visit={booking.visit} />
+                    </span>,
+                  ],
+                  [t('rows.service'), localizedName(locale, booking.item.nameAr, booking.item.nameEn)],
+                  [
+                    t('rows.professional'),
+                    localizedName(locale, booking.professional.nameAr, booking.professional.nameEn),
+                  ],
+                  [t('rows.source'), t(`channel.${bookingSource(booking)}`)],
+                  [
+                    t('rows.amount'),
+                    t('amount', { price: formatPrice(booking.item.price, locale, booking.item.currency) }),
+                  ],
+                  ...(booking.note ? [[t('rows.note'), booking.note]] : []),
+                  ...(booking.cancellationReason
+                    ? [[t('rows.cancellationReason'), booking.cancellationReason]]
+                    : []),
+                ] as Array<[string, ReactNode]>
+              ).map(([label, value]) => (
                 <div key={label} className="flex items-start justify-between gap-3 py-2.5">
                   <dt className="text-helper text-text-secondary">{label}</dt>
                   <dd className="text-end text-label font-bold text-text-primary">{value}</dd>

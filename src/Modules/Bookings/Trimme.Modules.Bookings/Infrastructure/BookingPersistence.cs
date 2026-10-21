@@ -86,6 +86,20 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
     }
 }
 
+internal sealed class WalkInContactConfiguration : IEntityTypeConfiguration<WalkInContact>
+{
+    public void Configure(EntityTypeBuilder<WalkInContact> builder)
+    {
+        builder.ToTable("walk_in_contacts");
+        builder.HasKey(c => c.BookingId);
+        builder.Property(c => c.ProtectedPhone).HasMaxLength(1000);
+        builder.Property(c => c.PhoneLookupHash).HasMaxLength(64);
+        builder.Property(c => c.PhoneMasked).HasMaxLength(32);
+        builder.HasShopScopedReference<WalkInContact, Booking>(nameof(WalkInContact.BookingId), DeleteBehavior.Cascade);
+        builder.HasIndex(c => c.PhoneLookupHash);
+    }
+}
+
 internal sealed class BookingNoteConfiguration : IEntityTypeConfiguration<BookingNote>
 {
     public void Configure(EntityTypeBuilder<BookingNote> builder)

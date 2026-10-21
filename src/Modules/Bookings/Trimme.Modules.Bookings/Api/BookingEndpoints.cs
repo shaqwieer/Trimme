@@ -33,9 +33,13 @@ public sealed record CancelBookingRequest(string? Reason, uint Version);
 
 /// <summary>
 /// A walk-in (D-035): without <c>StartsAt</c> it starts now and is marked Arrived; otherwise it is Confirmed. The
-/// customer's name only. An <c>Idempotency-Key</c> header is honoured when sent.
+/// customer's name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned
+/// to the shop. An <c>Idempotency-Key</c> header is honoured when sent.
 /// </summary>
-public sealed record WalkInRequest(Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? Note);
+public sealed record WalkInRequest(Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note);
+
+/// <summary>Why the admin needs the walk-in's number (5–300 characters); audited.</summary>
+public sealed record RevealWalkInContactRequest(string? Reason);
 
 /// <summary>Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read.</summary>
 public sealed record BookingTransitionRequest(BookingStatus To, string? Reason, uint Version);
@@ -58,6 +62,7 @@ internal static class BookingEndpoints
     private const string ShopWalkIn = "Shop.Bookings.CreateWalkIn";
     private const string AdminView = "Admin.Bookings.View";
     private const string AdminIntervene = "Admin.Bookings.Intervene";
+    private const string AdminViewContact = "Admin.Customers.ViewContact";
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -144,7 +149,9 @@ internal static class BookingEndpoints
             .WithName("GetShopBooking").WithSummary("One of the shop's bookings with its history and internal notes; never the customer's phone.")
             .Produces<ShopBookingDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/walk-in", async ([FromHeader(Name = IdempotencyHeader)] string? key, WalkInRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new CreateWalkInCommand(r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.CustomerName ?? string.Empty, r.Note, string.IsNullOrWhiteSpace(key) ? null : key), ct))
+                (await d.Send(new CreateWalkInCommand(
+                        r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.CustomerName ?? string.Empty, r.CustomerPhone, r.Note,
+                        string.IsNullOrWhiteSpace(key) ? null : key), ct))
                     .ToHttpResult(b => TypedResults.Created($"/api/v1/shop/bookings/{b.Id}", b)))
             .RequirePermission(ShopWalkIn)
             .WithName("CreateWalkIn").WithSummary("Records a walk-in with the same collision checks as online bookings (R-BKG-07).")
@@ -193,8 +200,14 @@ internal static class BookingEndpoints
         group.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetAdminBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(AdminView)
-            .WithName("AdminGetBooking").WithSummary("One booking with its history and the shop's internal notes (read-only).")
+            .WithName("AdminGetBooking").WithSummary("One booking with its history and the shop's internal notes (read-only); a walk-in's number masked.")
             .Produces<AdminBookingDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPost("/{bookingId:guid}/walk-in-contact/reveal", async (Guid bookingId, RevealWalkInContactRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new RevealWalkInContactCommand(bookingId, r.Reason), ct)).ToHttpResult())
+            .RequirePermission(AdminViewContact)
+            .WithName("AdminRevealWalkInContact")
+            .WithSummary("The mobile number the desk took for a walk-in (D-134); a reason of at least 5 characters is required and the view is audited (never cached).")
+            .Produces<WalkInContactResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/{bookingId:guid}/transitions", async (Guid bookingId, BookingTransitionRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new AdminTransitionBookingCommand(bookingId, r.To, r.Reason, r.Version), ct)).ToHttpResult())
             .RequirePermission(AdminIntervene)

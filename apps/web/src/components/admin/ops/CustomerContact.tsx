@@ -12,17 +12,21 @@ import { ApiError } from '@/lib/api/problem';
 
 export const MIN_REVEAL_REASON = 5;
 
+/** Whose number: a customer account's, or the one the desk took for a walk-in booking (D-134). */
+type ContactSource =
+  { customerId: string; walkInBookingId?: never } | { walkInBookingId: string; customerId?: never };
+
 /**
  * The customer's mobile, masked, with «إظهار الرقم» for admins who hold `Admin.Customers.ViewContact` (DV-S17, D-105).
  * The reveal needs a reason, is audited by the API and is never cached; the number lives only in this component's state
- * until the admin hides it or leaves the page.
+ * until the admin hides it or leaves the page. The same for a walk-in's number, on its booking (D-134).
  */
 export function CustomerContact({
   customerId,
+  walkInBookingId,
   masked,
   canReveal,
-}: {
-  customerId: string;
+}: ContactSource & {
   masked: string | null;
   canReveal: boolean;
 }) {
@@ -45,10 +49,15 @@ export function CustomerContact({
     setBusy(true);
     try {
       const result = ensureOk(
-        await browserApi.POST('/api/v1/admin/customers/{customerId}/contact/reveal', {
-          params: { path: { customerId } },
-          body: { reason: reason.trim() },
-        }),
+        walkInBookingId
+          ? await browserApi.POST('/api/v1/admin/bookings/{bookingId}/walk-in-contact/reveal', {
+              params: { path: { bookingId: walkInBookingId } },
+              body: { reason: reason.trim() },
+            })
+          : await browserApi.POST('/api/v1/admin/customers/{customerId}/contact/reveal', {
+              params: { path: { customerId: customerId! } },
+              body: { reason: reason.trim() },
+            }),
       );
       setRevealed(result.phone);
       setOpen(false);

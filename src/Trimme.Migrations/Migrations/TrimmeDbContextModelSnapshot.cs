@@ -1056,6 +1056,50 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("booking_notes", "bookings");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>
+                {
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("PhoneLookupHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("phone_lookup_hash");
+
+                    b.Property<string>("PhoneMasked")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("phone_masked");
+
+                    b.Property<string>("ProtectedPhone")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("protected_phone");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("BookingId")
+                        .HasName("pk_walk_in_contacts");
+
+                    b.HasIndex("PhoneLookupHash")
+                        .HasDatabaseName("ix_walk_in_contacts_phone_lookup_hash");
+
+                    b.HasIndex("ShopId", "BookingId")
+                        .HasDatabaseName("ix_walk_in_contacts_shop_id_booking_id");
+
+                    b.ToTable("walk_in_contacts", "bookings");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Customers.Domain.Favorite", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3940,6 +3984,24 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_booking_notes_bookings_shop_id_booking_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_walk_in_contacts_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Bookings.Domain.Booking", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "BookingId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_walk_in_contacts_bookings_shop_id_booking_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Customers.Domain.Favorite", b =>

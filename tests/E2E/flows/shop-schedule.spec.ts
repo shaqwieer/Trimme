@@ -4,16 +4,18 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 09 flow (spec §19 E2, schedule part; R-AVL-02/03): the shop edits a professional's hours, records time off and
- * pauses online booking in /shop/schedule, and the public slot API follows each change. Staff see the schedule
- * read-only. Every change is undone, so the flow can run again on the same stack. Demo data: Al Asala (DemoData),
- * Faisal does the haircut.
+ * pauses online booking in /shop/schedule, and the public slot API follows each change. Staff see none of that: only
+ * each barber's day by the hour, where they set breaks with no reason (D-134). Every change is undone, so the flow can
+ * run again on the same stack. Demo data: Al Asala (DemoData), Faisal does the haircut, Sultan the beard trim.
  */
 const DEMO_PASSWORD = process.env.E2E_DEMO_PASSWORD ?? 'trimme local demo';
 const OWNER = 'owner@al-asala.trimme.local';
 const STAFF = 'staff@al-asala.trimme.local';
 const SLUG = 'al-asala';
 const FAISAL = '0199a0de-5a10-7000-8000-000000000101';
+const SULTAN = '0199a0de-5a10-7000-8000-000000000102';
 const HAIRCUT = '0199a0de-5a10-7000-8000-000000000401';
+const BEARD_TRIM = '0199a0de-5a10-7000-8000-000000000402';
 /**
  * A save from a dialog is two API calls (conflict preview, then save) plus a page refresh. Under the parallel E2E load
  * one call alone has taken 3.4 s on this machine, so these waits allow 15 s instead of the default 5 s.
@@ -49,9 +51,9 @@ async function csrf(context: BrowserContext, request: APIRequestContext): Promis
   return (await context.cookies()).find((c) => c.name === 'trimme-csrf')!.value;
 }
 
-async function slots(request: APIRequestContext, date: string, professionalId?: string) {
+async function slots(request: APIRequestContext, date: string, professionalId?: string, serviceId = HAIRCUT) {
   const response = await request.get(
-    `/api/v1/public/shops/${SLUG}/availability/slots?serviceId=${HAIRCUT}&date=${date}${professionalId ? `&professionalId=${professionalId}` : ''}`,
+    `/api/v1/public/shops/${SLUG}/availability/slots?serviceId=${serviceId}&date=${date}${professionalId ? `&professionalId=${professionalId}` : ''}`,
   );
   expect(response.status()).toBe(200);
   return (await response.json()) as {
@@ -89,7 +91,7 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     const before = await slots(page.request, target.iso, FAISAL);
     expect(before.bookable).toBe(true);
     expect(before.slots.length).toBeGreaterThan(50);
-    expect(before.slots.map((s) => s.localTime)).not.toContain('15:30'); // Asr prayer break
+    expect(before.slots.map((s) => s.localTime)).toContain('15:30'); // the demo sets no fixed breaks (D-134)
 
     await page.goto('/en/shop/schedule');
     await expect(page.getByTestId('opening-hours')).toBeVisible();
@@ -157,17 +159,67 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     expect((await slots(page.request, target.iso)).bookable).toBe(true);
   });
 
-  test('staff see the schedule read-only, in Arabic RTL with LTR times, without horizontal scroll on a phone', async ({
+  test("staff set a barber's breaks by the hour with no reason, and see nothing else of the schedule (D-134)", async ({
     page,
+    context,
   }) => {
+    const target = targetDate();
     await staffSignIn(page, STAFF);
+    const headers = { 'X-CSRF-Token': await csrf(context, page.request) };
+    const clear = { professionalId: SULTAN, date: target.iso, breaks: [] };
+    expect(
+      (await page.request.put('/api/v1/shop/schedule/barber-day', { headers, data: clear })).status(),
+    ).toBe(200);
+    expect((await page.request.get('/api/v1/shop/schedule')).status()).toBe(403);
+
+    // Only the barbers' days: no shop hours, barbers' hours, fixed breaks, time off, closures or pause.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/ar/shop/schedule');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.getByRole('heading', { name: 'دوام المحل الأسبوعي' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'حفظ الدوام' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'إيقاف مؤقت' })).toHaveCount(0);
-    await expect(page.getByTestId('shop-hours-Sunday').getByLabel('من')).toHaveAttribute('dir', 'ltr');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('البريكات');
+    const card = page.getByTestId('barber-day');
+    await expect(card).toBeVisible();
+    for (const testId of ['opening-hours', 'professional-hours', 'breaks', 'pause-card'])
+      await expect(page.getByTestId(testId)).toHaveCount(0);
+    await expect(page.getByText('الإجازات والتعطيل')).toHaveCount(0);
+
+    // Sultan, on the target day: 24 hours, he works noon to 10 PM.
+    await card.getByLabel('الحلاق').selectOption(SULTAN);
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
+    const ahead = Math.round((Date.parse(target.iso) - Date.parse(today)) / 86_400_000);
+    for (let day = 0; day < ahead; day++) {
+      const waiting = page.waitForResponse(
+        (r) => r.url().includes('/barber-day') && r.request().method() === 'GET',
+      );
+      await card.getByRole('button', { name: 'اليوم التالي' }).click();
+      await waiting;
+    }
+    const hours = card.getByTestId('barber-day-hours');
+    await expect(hours.locator('[data-hour]')).toHaveCount(24);
+    await expect(hours.locator('[data-hour="10"]')).toHaveAttribute('data-state', 'outside');
+    const one = hours.locator('[data-hour="16"]');
+    await expect(one).toHaveAttribute('data-state', 'free');
+    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+    expect(
+      axe.violations
+        .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+        .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`),
+    ).toEqual([]);
+
+    // One tap: 4–5 PM is a break (a seeded booking holds 1 PM two days ahead), and the public times follow; another tap
+    // undoes it.
+    await one.click();
+    await expect(one).toHaveAttribute('aria-pressed', 'true', SAVE);
+    const during = (await slots(page.request, target.iso, SULTAN, BEARD_TRIM)).slots.map((s) => s.localTime);
+    expect(during).not.toContain('16:00');
+    expect(during).not.toContain('15:45'); // a 20-minute beard trim from 15:45 runs into the break
+    expect(during).toContain('17:00');
+    await one.click();
+    await expect(one).toHaveAttribute('aria-pressed', 'false', SAVE);
+    expect(
+      (await slots(page.request, target.iso, SULTAN, BEARD_TRIM)).slots.map((s) => s.localTime),
+    ).toContain('16:00');
+
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

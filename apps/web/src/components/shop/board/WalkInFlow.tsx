@@ -5,7 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
-import { TextareaField, TextField } from '@/components/ui/inputs';
+import { isValidSaudiMobile, toE164 } from '@/components/ui/digits';
+import { PhoneField, TextareaField, TextField } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
 import { EmptyState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
@@ -33,9 +34,11 @@ const NOTE_MAX = 500;
 
 /**
  * Walk-in booking (s-walkin 2397–2459, D-035, D-088): service → professional (free now, busy until…, next free time) →
- * time ("start now" or one of the day's free starts, from the same rules as the command) → the customer's name and an
- * optional note, with a live summary. There is no phone field: walk-ins never collect one (spec §7). The time is
- * blocked from online booking at once.
+ * time ("start now" or one of the day's free starts, from the same rules as the command) → the customer's name
+ * (required), their mobile if they give it, and an optional note, with a summary. The mobile goes one way, to the
+ * platform team, at the client's request (D-134): the shop never sees it again, and it is cleared once the booking is
+ * saved. The time is blocked from online booking at once. On a phone the summary follows the form; it stays in view
+ * beside it from `lg` up.
  */
 export function WalkInFlow({
   offers,
@@ -53,6 +56,7 @@ export function WalkInFlow({
   initialDate?: string;
 }) {
   const t = useTranslations('shopBoard.walkIn');
+  const tv = useTranslations('validation');
   const locale = useLocale() as AppLocale;
   const apiMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
@@ -61,6 +65,8 @@ export function WalkInFlow({
   const [professionalId, setProfessionalId] = useState(initialProfessionalId ?? '');
   const [start, setStart] = useState(initialStart ?? '');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -89,7 +95,9 @@ export function WalkInFlow({
   const startsAt = start === NOW ? options.data?.now : start || undefined;
   const nameError =
     name.trim().length === 0 ? undefined : name.trim().length > NAME_MAX ? t('nameTooLong') : undefined;
-  const ready = Boolean(offer && professional && startsAt && name.trim() && !nameError);
+  const phoneValid = phone === '' || isValidSaudiMobile(phone);
+  const phoneError = phoneTouched && !phoneValid ? tv('phoneInvalid') : undefined;
+  const ready = Boolean(offer && professional && startsAt && name.trim() && !nameError && phoneValid);
 
   if (offers.length === 0) {
     return <EmptyState icon="tag" title={t('noServices')} />;
@@ -105,11 +113,17 @@ export function WalkInFlow({
       professionalId: professional.id,
       startsAt: start === NOW ? null : start,
       customerName: name.trim(),
+      customerPhone: phone ? toE164(phone) : null,
       note: note.trim() || null,
     };
     keyed.current = keyFor(
       keyed.current,
-      { offerId: offer.id, pro: professional.id, startsAt: start, note: `${name.trim()}|${note.trim()}` },
+      {
+        offerId: offer.id,
+        pro: professional.id,
+        startsAt: start,
+        note: `${name.trim()}|${phone}|${note.trim()}`,
+      },
       newIdempotencyKey,
     );
     try {
@@ -120,6 +134,8 @@ export function WalkInFlow({
         }),
       );
       setCreated({ id: booking.id, reference: booking.reference });
+      setPhone('');
+      setPhoneTouched(false);
       await queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
     } catch (failure) {
       if (failure instanceof ApiError && failure.errorCode === 'booking.slot_unavailable') {
@@ -308,6 +324,22 @@ export function WalkInFlow({
             error={nameError}
             onChange={(e) => setName(e.target.value)}
           />
+          <PhoneField
+            label={t('phone')}
+            optional
+            autoComplete="off"
+            value={phone}
+            error={phoneError}
+            onValueChange={(national) => setPhone(national)}
+            onBlur={() => setPhoneTouched(true)}
+          />
+          <p
+            className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
+            data-testid="walk-in-phone-privacy"
+          >
+            <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
+            {t('phonePrivacy')}
+          </p>
           <TextareaField
             label={t('note')}
             optional
@@ -317,18 +349,11 @@ export function WalkInFlow({
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
-          <p
-            className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
-            data-testid="walk-in-no-phone"
-          >
-            <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
-            {t('noPhone')}
-          </p>
         </fieldset>
       </div>
 
       <aside
-        className="sticky bottom-0 flex flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-e2 lg:top-24"
+        className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-e1 lg:sticky lg:top-24"
         aria-labelledby="walk-in-summary"
       >
         <h2 id="walk-in-summary" className="text-h3 font-bold text-navy-900">

@@ -119,6 +119,22 @@ describe('CustomerContact', () => {
     expect(api.POST.mock.calls[0]?.[1].body).toEqual({ reason: 'Complaint #12' });
   });
 
+  it("reveals the number the desk took for a walk-in through the booking's own endpoint (D-134)", async () => {
+    api.POST.mockResolvedValue(ok({ phone: '+966551234567' }));
+    renderWithIntl(<CustomerContact walkInBookingId="b9" masked="+966 5•• ••• •67" canReveal />, {
+      locale: 'en',
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Show number' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Reason'), 'Customer complaint');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Show number' }));
+    await waitFor(() => expect(screen.getByTestId('customer-phone')).toHaveTextContent('+966551234567'));
+    expect(api.POST).toHaveBeenCalledWith('/api/v1/admin/bookings/{bookingId}/walk-in-contact/reveal', {
+      params: { path: { bookingId: 'b9' } },
+      body: { reason: 'Customer complaint' },
+    });
+  });
+
   it('offers no reveal without the permission', () => {
     renderWithIntl(<CustomerContact customerId="c1" masked="+966 5•• ••• •03" canReveal={false} />, {
       locale: 'en',

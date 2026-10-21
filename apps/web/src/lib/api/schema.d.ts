@@ -2204,6 +2204,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/schedule/barber-day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One barber's date, 00:00–24:00 in minutes: working time, own one-off breaks, the shop's breaks, booked time and time off. */
+        get: operations["GetBarberDay"];
+        /** Replaces the barber's own one-off breaks on the date (no reason needed); bookings are never cancelled. */
+        put: operations["SetBarberDayBreaks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/schedule/time-off": {
         parameters: {
             query?: never;
@@ -2706,10 +2724,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One booking with its history and the shop's internal notes (read-only). */
+        /** One booking with its history and the shop's internal notes (read-only); a walk-in's number masked. */
         get: operations["AdminGetBooking"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/bookings/{bookingId}/walk-in-contact/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The mobile number the desk took for a walk-in (D-134); a reason of at least 5 characters is required and the view is audited (never cached). */
+        post: operations["AdminRevealWalkInContact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3491,10 +3526,14 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
-        /** @description One booking for an admin: the shop's view, its history and internal notes (read-only here). */
+        /**
+         * @description One booking for an admin: the shop's view, its history and internal notes (read-only here), and for a walk-in the
+         *     number the desk took, masked (`+966 5•• ••• •30`; null when none was taken).
+         */
         AdminBookingDetailResponse: {
             booking: components["schemas"]["AdminBookingResponse"];
             notes: components["schemas"]["BookingNoteResponse"][];
+            walkInPhoneMasked: null | string;
         };
         /** @description A page of bookings across shops, with the status chips' counts (every filter but the status applied). */
         AdminBookingListResponse: {
@@ -4101,6 +4140,35 @@ export interface components {
             blockedReason: null | string;
             slots: components["schemas"]["AvailabilitySlotResponse"][];
         };
+        /** @description A barber's own one-off breaks on one date, replacing the ones saved before (D-134). Empty clears them. */
+        BarberDayBreaksRequest: {
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date */
+            date: string;
+            breaks: null | components["schemas"]["MinuteWindowDto"][];
+        };
+        /**
+         * @description One barber's calendar date in minutes (D-134). `Working` includes the part of the previous business day that
+         *     runs past midnight. `Breaks` are the barber's own one-off breaks on the date, the only ones the page edits;
+         *     `ShopBreaks` are the owner's (weekly, or for everyone). `PassedMinutes` is how much of the date is
+         *     already over: 0 for a future date, 1440 for a past one.
+         */
+        BarberDayResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: date */
+            date: string;
+            /** Format: date */
+            today: string;
+            /** Format: int32 */
+            passedMinutes: number;
+            working: components["schemas"]["MinuteWindowDto"][];
+            breaks: components["schemas"]["MinuteWindowDto"][];
+            shopBreaks: components["schemas"]["MinuteWindowDto"][];
+            booked: components["schemas"]["MinuteWindowDto"][];
+            timeOff: components["schemas"]["MinuteWindowDto"][];
+        };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
         BookedPackageItemResponse: {
@@ -4189,12 +4257,13 @@ export interface components {
         };
         /**
          * @description A break for one professional or everyone (`ProfessionalId` null): weekly on `Weekdays`, or once on
-         *     `Date` (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps.
+         *     `Date` (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps. The label is
+         *     optional (D-134).
          */
         BreakRequest: {
             /** Format: uuid */
             professionalId: null | string;
-            label: string;
+            label: null | string;
             weekdays: null | components["schemas"]["DayOfWeek"][];
             /** Format: date */
             date: null | string;
@@ -4459,6 +4528,8 @@ export interface components {
         CustomerContactResponse: {
             phone: string;
         };
+        /** @enum {unknown} */
+        CustomerVisit: "New" | "Returning" | null;
         /** @enum {unknown} */
         DayOfWeek: "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
         /**
@@ -4785,6 +4856,13 @@ export interface components {
          * @enum {unknown}
          */
         MessageEvent: "BookingConfirmed" | "BookingPending" | "BookingRescheduled" | "BookingCancelled" | "BookingReminder";
+        /** @description Minutes from the local midnight of one calendar date, end exclusive (0–1440). */
+        MinuteWindowDto: {
+            /** Format: int32 */
+            startMinute: number;
+            /** Format: int32 */
+            endMinute: number;
+        };
         /** @description A reason (5–300 characters) for a report or a hide; send the version read. */
         ModerateReviewRequest: {
             reason: null | string;
@@ -5739,6 +5817,10 @@ export interface components {
         RevealProfessionalWhatsAppRequest: {
             reason: string;
         };
+        /** @description Why the admin needs the walk-in's number (5–300 characters); audited. */
+        RevealWalkInContactRequest: {
+            reason: null | string;
+        };
         /**
          * @description Why a review is in the moderation queue (D-102).
          * @enum {unknown}
@@ -5885,7 +5967,8 @@ export interface components {
          * @description A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). `AllowedTransitions` is
          *     what the UI may offer (DV-S08); `ViaQr` marks an online booking credited to a QR scan (the design's «رمز QR» source);
          *     `OutsideSchedule` flags an active booking that no longer fits the professional's
-         *     hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically.
+         *     hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. `Visit` says whether an
+         *     online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
          */
         ShopBookingResponse: {
             /** Format: uuid */
@@ -5906,6 +5989,7 @@ export interface components {
             allowedTransitions: components["schemas"]["BookingStatus"][];
             outsideSchedule: boolean;
             loyaltyReward: null | components["schemas"]["BookingLoyaltyRewardResponse"];
+            visit: null | components["schemas"]["CustomerVisit"];
             /** Format: uint32 */
             version: number;
         };
@@ -5933,6 +6017,18 @@ export interface components {
             draft: number;
             /** Format: int32 */
             suspended: number;
+        };
+        /**
+         * @description The owner's figures for the last Days days: completed visits by customers coming for the first time
+         *     (each one a new customer) and by customers who had been before.
+         */
+        ShopCustomerMix: {
+            /** Format: int32 */
+            days: number;
+            /** Format: int32 */
+            newCustomers: number;
+            /** Format: int32 */
+            returningVisits: number;
         };
         ShopImageResponse: {
             /** Format: uuid */
@@ -6008,7 +6104,8 @@ export interface components {
         };
         /**
          * @description The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
-         *     last seven days by starting hour (local time; cancellations left out).
+         *     last seven days by starting hour (local time; cancellations left out). `Customers`, for the owner only, counts
+         *     the last 30 days' new customers and returning visits (D-135); it is null for the desk.
          */
         ShopOverviewResponse: {
             /** Format: date */
@@ -6021,6 +6118,7 @@ export interface components {
             professionals: components["schemas"]["ProfessionalLoadResponse"][];
             hourly: components["schemas"]["HourCountResponse"][];
             onlineBookingPaused: boolean;
+            customers: null | components["schemas"]["ShopCustomerMix"];
         };
         /**
          * @description The signed-in shop's own profile, for its settings screen (s-settings). IReadOnlyList&lt;ShopProfileField&gt; ShopOwnProfileResponse.EditableFields is the admin
@@ -6662,6 +6760,10 @@ export interface components {
             challengeId: string;
             code: string;
         };
+        /** @description A walk-in's full mobile number, once, for the platform team (D-134). */
+        WalkInContactResponse: {
+            phone: string;
+        };
         /** @description Walk-in choices for a service or package on one shop-local date (s-walkin). */
         WalkInOptionsResponse: {
             /** Format: date */
@@ -6691,7 +6793,8 @@ export interface components {
         };
         /**
          * @description A walk-in (D-035): without `StartsAt` it starts now and is marked Arrived; otherwise it is Confirmed. The
-         *     customer's name only. An `Idempotency-Key` header is honoured when sent.
+         *     customer's name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned
+         *     to the shop. An `Idempotency-Key` header is honoured when sent.
          */
         WalkInRequest: {
             /** Format: uuid */
@@ -6703,6 +6806,7 @@ export interface components {
             /** Format: date-time */
             startsAt: null | string;
             customerName: string;
+            customerPhone: null | string;
             note: null | string;
         };
         /**
@@ -12196,6 +12300,89 @@ export interface operations {
             };
         };
     };
+    GetBarberDay: {
+        parameters: {
+            query: {
+                professionalId: string;
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberDayResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetBarberDayBreaks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BarberDayBreaksRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberDayResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CreateTimeOff: {
         parameters: {
             query?: never;
@@ -13480,6 +13667,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminBookingDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRevealWalkInContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevealWalkInContactRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalkInContactResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */

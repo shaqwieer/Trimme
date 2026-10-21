@@ -4,6 +4,7 @@ using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
+using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Tenancy;
@@ -16,13 +17,20 @@ namespace Trimme.Modules.Bookings.Application.Admin;
 
 // Platform admins read bookings across shops and intervene on the shop's behalf (a-appointments, spec §14, R-AD-05,
 // D-103): any state-machine transition or a reschedule, always with a reason, audited, through the same outbox as the
-// shop's own changes. The customer's phone is never part of a booking response.
+// shop's own changes. The customer's phone is never part of a booking response; a walk-in's number, taken by the desk,
+// is shown masked and revealed only on request, with a reason, audited (D-134).
 
 /// <summary>A page of bookings across shops, with the status chips' counts (every filter but the status applied).</summary>
 public sealed record AdminBookingListResponse(IReadOnlyList<AdminBookingResponse> Items, int Page, int PageSize, int Total, ShopBookingCounts Counts);
 
-/// <summary>One booking for an admin: the shop's view, its history and internal notes (read-only here).</summary>
-public sealed record AdminBookingDetailResponse(AdminBookingResponse Booking, IReadOnlyList<BookingNoteResponse> Notes);
+/// <summary>
+/// One booking for an admin: the shop's view, its history and internal notes (read-only here), and for a walk-in the
+/// number the desk took, masked (<c>+966 5•• ••• •30</c>; null when none was taken).
+/// </summary>
+public sealed record AdminBookingDetailResponse(AdminBookingResponse Booking, IReadOnlyList<BookingNoteResponse> Notes, string? WalkInPhoneMasked);
+
+/// <summary>A walk-in's full mobile number, once, for the platform team (D-134).</summary>
+public sealed record WalkInContactResponse(string Phone);
 
 public sealed record AdminRescheduleProfessional(Guid Id, string NameAr, string NameEn);
 
@@ -42,6 +50,8 @@ internal sealed record ListAdminBookingsQuery(
     : IQuery<AdminBookingListResponse>;
 
 internal sealed record GetAdminBookingQuery(Guid BookingId) : IQuery<AdminBookingDetailResponse?>;
+
+internal sealed record RevealWalkInContactCommand(Guid BookingId, string? Reason) : ICommand<Result<WalkInContactResponse>>;
 
 internal sealed record AdminTransitionBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version) : ICommand<Result<AdminBookingResponse>>;
 
@@ -135,7 +145,43 @@ internal sealed class GetAdminBookingHandler(TrimmeDbContext db, IAdminDataScope
 
         var notes = await db.Set<BookingNote>().AsNoTracking().Where(n => n.BookingId == booking.Id).OrderBy(n => n.CreatedAt)
             .Select(n => new BookingNoteResponse(n.Id, n.Text, n.CreatedAt)).ToListAsync(cancellationToken);
-        return new AdminBookingDetailResponse(await mapper.MapOneAsync(booking, cancellationToken), notes);
+        var masked = await db.Set<WalkInContact>().AsNoTracking().Where(c => c.BookingId == booking.Id)
+            .Select(c => c.PhoneMasked).SingleOrDefaultAsync(cancellationToken);
+        return new AdminBookingDetailResponse(await mapper.MapOneAsync(booking, cancellationToken), notes, masked);
+    }
+}
+
+/// <summary>
+/// The full number the desk took for a walk-in (D-134), like the customer contact reveal: a reason of 5–300 characters,
+/// an audit entry (never the number itself), and nothing cached.
+/// </summary>
+internal sealed class RevealWalkInContactHandler(TrimmeDbContext db, IAdminDataScope scope, IPersonalDataProtector protector, IAuditLog audit)
+    : ICommandHandler<RevealWalkInContactCommand, Result<WalkInContactResponse>>
+{
+    public const int MinReasonLength = 5;
+
+    public async Task<Result<WalkInContactResponse>> Handle(RevealWalkInContactCommand command, CancellationToken cancellationToken)
+    {
+        var reason = command.Reason?.Trim() ?? string.Empty;
+        if (reason.Length < MinReasonLength || reason.Length > BookingRules.MaxReasonLength)
+        {
+            return Error.Validation("validation.failed", "A reason is required.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal)
+                {
+                    ["reason"] = [reason.Length < MinReasonLength ? "validation.reason_required" : "validation.too_long"],
+                });
+        }
+
+        using var _ = scope.Begin();
+        var id = new BookingId(command.BookingId);
+        if (await db.Set<WalkInContact>().AsNoTracking().SingleOrDefaultAsync(c => c.BookingId == id, cancellationToken) is not { } contact)
+        {
+            return BookingErrors.NotFound();
+        }
+
+        audit.Record(new AuditRecord("booking.walk_in_contact_revealed", "Booking", command.BookingId.ToString(), contact.ShopId, "Walk-in mobile number viewed", reason));
+        await db.SaveChangesAsync(cancellationToken);
+        return new WalkInContactResponse(protector.Unprotect(contact.ProtectedPhone, PersonalDataPurposes.WalkInPhone));
     }
 }
 

@@ -50,6 +50,9 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         }
     }
 
+    private static (int Start, int End)[] Windows(JsonElement day, string name) =>
+        [.. day.GetProperty(name).EnumerateArray().Select(w => (w.GetProperty("startMinute").GetInt32(), w.GetProperty("endMinute").GetInt32()))];
+
     private static async Task<string[]> SlotTimesAsync(ApiSession session, string slug, Guid serviceId, DateOnly date, CancellationToken ct, Guid? professionalId = null)
     {
         var json = await SlotsAsync(session, slug, $"serviceId={serviceId}", date, ct, professionalId);
@@ -67,9 +70,10 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         await using var s = await ArrangeAsync("avl_flow", ct);
         using var anonymous = ApiSession.Create(s.Factory);
 
-        // No hours yet: the shop is closed. Staff read the schedule but cannot change it (R-AVL-03).
+        // No hours yet: the shop is closed. The hours are the owner's: staff neither read nor change them (R-AVL-03, D-134).
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBeEmpty();
-        var schedule = await OkAsync(s.StaffA.GetAsync("/api/v1/shop/schedule", ct), ct);
+        await FailsAsync(s.StaffA.GetAsync("/api/v1/shop/schedule", ct), HttpStatusCode.Forbidden, null, ct);
+        var schedule = await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct);
         schedule.GetProperty("openingHours").GetProperty("version").ValueKind.ShouldBe(JsonValueKind.Null);
         schedule.GetProperty("timeZone").GetString().ShouldBe("Asia/Riyadh");
         schedule.GetProperty("professionals")[0].GetProperty("followsShopHours").GetBoolean().ShouldBeTrue();
@@ -92,8 +96,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         await OkAsync(s.OwnerA.PutAsync($"/api/v1/shop/professionals/{s.ProA}/working-hours", new { followsShopHours = false, intervals = EveryDay(600, 660) }, ct), ct);
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBe(["10:00", "10:05", "10:10", "10:15", "10:20", "10:25", "10:30"]);
 
-        // A break for everyone on the target weekday, 10:15–10:30.
-        var breakBody = new { label = "صلاة", weekdays = new[] { Target.DayOfWeek.ToString() }, startMinute = 615, endMinute = 630 };
+        // A break for everyone on the target weekday, 10:15–10:30, with no reason given (D-134).
+        var breakBody = new { weekdays = new[] { Target.DayOfWeek.ToString() }, startMinute = 615, endMinute = 630 };
         var created = await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", breakBody, ct), ct, HttpStatusCode.Created);
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBe(["10:30"]);
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target.AddDays(1), ct)).Length.ShouldBe(7, "other weekdays keep their slots");
@@ -131,7 +135,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         var settings = await OkAsync(s.Admin.GetAsync("/api/v1/admin/settings", ct), ct);
         await OkAsync(s.Admin.PutAsync("/api/v1/admin/settings", SettingsBody(settings, hidePaused: false), ct), ct);
         (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, true, "shop.paused"));
-        (await OkAsync(s.StaffA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("onlineBookingPaused").GetBoolean().ShouldBeTrue();
+        (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("onlineBookingPaused").GetBoolean().ShouldBeTrue();
         await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
 
         // Removing the time off and the closure brings the slots back.
@@ -282,6 +286,71 @@ public sealed class ScheduleTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Staff_SetABarbersBreaksForOneDay_ByTheHour_WithoutAReason()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var s = await ArrangeAsync("avl_barber_day", ct);
+        using var anonymous = ApiSession.Create(s.Factory);
+        var day = $"/api/v1/shop/schedule/barber-day?professionalId={s.ProA}&date={Iso(Target)}";
+
+        // Open 09:00–12:00 every day; the owner keeps a weekly break for everyone (10:15–10:30) and gives the barber
+        // a labelled one-off break on the date (09:00–09:15). A booking holds 11:00–11:30.
+        await OkAsync(s.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), ct);
+        await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", new { weekdays = new[] { Target.DayOfWeek.ToString() }, startMinute = 615, endMinute = 630 }, ct), ct, HttpStatusCode.Created);
+        await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, label = "موعد", date = Iso(Target), startMinute = 540, endMinute = 555 }, ct), ct, HttpStatusCode.Created);
+        var eleven = new DateTimeOffset(Target.ToDateTime(new TimeOnly(11, 0)), TimeSpan.FromHours(3));
+        s.Bookings.Appointments.Add(new BookedAppointment(Guid.NewGuid(), new ProfessionalId(s.ProA), eleven, eleven.AddMinutes(30), "Test Customer", "حلاقة", "Haircut"));
+
+        // The barber's date, in minutes: the desk sees when they work, what is booked and whose breaks are whose.
+        var read = await OkAsync(s.StaffA.GetAsync(day, ct), ct);
+        Windows(read, "working").ShouldBe([(540, 720)]);
+        Windows(read, "breaks").ShouldBe([(540, 555)]);
+        Windows(read, "shopBreaks").ShouldBe([(615, 630)]);
+        Windows(read, "booked").ShouldBe([(660, 690)]);
+        Windows(read, "timeOff").ShouldBeEmpty();
+        read.GetProperty("passedMinutes").GetInt32().ShouldBe(0, "the date is ahead");
+
+        // Two hours as breaks (10:00–11:00 and 11:00–12:00 join), no reason; the owner's break of the date goes, the
+        // weekly one for everyone stays, and the public slots follow.
+        var saved = await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", new
+        {
+            professionalId = s.ProA,
+            date = Iso(Target),
+            breaks = new[] { new { startMinute = 600, endMinute = 660 }, new { startMinute = 660, endMinute = 720 } },
+        }, ct), ct);
+        Windows(saved, "breaks").ShouldBe([(600, 720)]);
+        Windows(saved, "shopBreaks").ShouldBe([(615, 630)]);
+        (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBe(
+            [.. Enumerable.Range(0, 7).Select(i => $"09:{i * 5:00}")], "09:00–09:30 is free again and 10:00–12:00 is a break");
+        var breaks = (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("breaks").EnumerateArray().ToList();
+        breaks.Count.ShouldBe(2);
+        breaks.Single(b => b.GetProperty("date").ValueKind != JsonValueKind.Null).GetProperty("label").GetString().ShouldBe(string.Empty);
+
+        // The whole day, then nothing: an empty list clears the barber's breaks of that date only.
+        var whole = new { professionalId = s.ProA, date = Iso(Target), breaks = new[] { new { startMinute = 0, endMinute = 1440 } } };
+        Windows(await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", whole, ct), ct), "breaks").ShouldBe([(0, 1440)]);
+        (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBeEmpty();
+        var none = new { professionalId = s.ProA, date = Iso(Target), breaks = Array.Empty<object>() };
+        Windows(await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none, ct), ct), "breaks").ShouldBeEmpty();
+        (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("breaks").GetArrayLength().ShouldBe(1, "the weekly break stays");
+
+        // Rules: not a past date, whole 5-minute steps within the day, the shop's own barber only.
+        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none with { date = Iso(Today.AddDays(-1)) }, ct),
+            HttpStatusCode.BadRequest, "validation.date_in_past", ct);
+        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", whole with { breaks = new[] { new { startMinute = 600, endMinute = 603 } } }, ct),
+            HttpStatusCode.BadRequest, "validation.hours_invalid", ct);
+        await FailsAsync(s.StaffA.GetAsync($"/api/v1/shop/schedule/barber-day?professionalId={s.ProB}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none with { professionalId = s.ProB }, ct), HttpStatusCode.NotFound, null, ct);
+
+        // Staff manage breaks only: hours, weekly breaks, time off and closures stay with the owner.
+        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, date = Iso(Target), startMinute = 600, endMinute = 660 }, ct),
+            HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/time-off", new { professionalId = s.ProA, kind = "Vacation", startDate = Iso(Target), endDate = Iso(Target) }, ct),
+            HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/closures", new { startDate = Iso(Target), endDate = Iso(Target) }, ct), HttpStatusCode.Forbidden, null, ct);
+    }
+
+    [Fact]
     public async Task DemoSeed_GivesTheDemoShopsHoursBreaksAndBookableSlots()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -300,16 +369,15 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         dates.GetProperty("bookable").GetBoolean().ShouldBeTrue();
         dates.GetProperty("dates").EnumerateArray().Count(d => d.GetProperty("slotCount").GetInt32() > 0).ShouldBeGreaterThanOrEqualTo(10, "open six days a week");
 
-        // Asr prayer (15:30–16:00) is never offered at Al Asala.
+        // The demo sets no breaks (D-134): Sunday's afternoon is bookable throughout.
         var sunday = Enumerable.Range(1, 7).Select(Today.AddDays).First(d => d.DayOfWeek == DayOfWeek.Sunday);
         var times = await SlotTimesAsync(anonymous, DemoData.AlAsala.Slug, haircut, sunday, ct);
-        times.ShouldNotContain("15:30");
-        times.ShouldNotContain("15:10", "a 30-minute haircut from 15:10 runs into the prayer break");
+        times.ShouldContain("15:30");
         times.ShouldContain("16:00");
 
         using var owner = await IdentityTestData.SignInStaffAsync(factory, DemoData.AlAsala.OwnerEmail, ct, DemoData.DefaultPassword);
         var schedule = await OkAsync(owner.GetAsync("/api/v1/shop/schedule", ct), ct);
-        schedule.GetProperty("breaks").GetArrayLength().ShouldBe(3);
+        schedule.GetProperty("breaks").GetArrayLength().ShouldBe(0);
         schedule.GetProperty("professionals").EnumerateArray().Count(p => !p.GetProperty("followsShopHours").GetBoolean()).ShouldBe(1, "Sultan has his own hours");
     }
 

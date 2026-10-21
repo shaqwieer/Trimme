@@ -1,15 +1,37 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-21 (Session 17: service before time from a barber's page or code, first-visit loyalty points; after Phase 17)
+- **Updated:** 2026-10-21 (Session 18: the desk's pages — breaks by the hour, the walk-in's mobile, a simple appointments list (D-134); «انتهت الخدمة» and new or returning customers (D-135); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Session 17's commit is local only; it is not pushed and not deployed.
-- **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before this session and are left alone.
+  - Sessions 17 and 18 are local commits; neither is pushed or deployed.
+- **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - The `api` and `web` images were rebuilt from this session's tree, and `migrate` applied `LoyaltyFirstVisitStamps` to the local volume.
+  - The `trimme-api:dev` and `trimme-web:dev` images were rebuilt from Session 18's tree, but the `trimme` stack on 3300 was **not** restarted or migrated. It still runs Session 17's containers against a volume without `WalkInContacts`. Run `up -d` (which runs `migrate` and the seed) when memory allows.
   - The local volume is several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows fail on it. Run E2E on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135)
+- **The client's points** (screenshots of the desk account on groomhere.sa):
+  1. **The desk saw the shop's and barbers' hours, time off and closures** on «الدوام والبريكات» (read-only since Phase 09, but it looked editable). The client asked why: there was no strong reason (the desk could see who works when). The desk now sees only «البريكات», and `GET /shop/schedule` answers 403 to it.
+  2. **Breaks with no fixed times or reasons:** each barber's day as 24 hour cells; one tap makes an hour a break and another frees it; «استراحة طوال اليوم» and «إلغاء كل الاستراحات». Booked hours, the owner's breaks and time off cannot be changed there. New `Shop.Breaks.Manage` and `GET/PUT /shop/schedule/barber-day`. Break names are optional, and the owner's form has no name field. The demo's prayer and lunch breaks are no longer seeded, and the seeder deletes them, so groomhere.sa loses them on the next deploy. The owner's page keeps everything and gets the same day view.
+  3. **Walk-in:** the summary no longer hangs mid-screen on a phone (it follows the form; it stays beside it from `lg`). The desk asks for the customer's mobile, which is optional (the client changed it from required); the name is required. A given mobile is stored encrypted (`bookings.walk_in_contacts`, purpose `trimme.walk-in-phone`), never returned to the shop, and shown to admins masked on the booking page, with an audited reveal (`Admin.Customers.ViewContact`).
+  4. **Appointments for the desk:** «حجوزات اليوم» and «المواعيد القادمة» by day, a week at a time, Pending, Confirmed and Arrived only. Tapping opens the drawer. The owner keeps the full board.
+- **A desk login is not a barber.** ShopStaff is not linked to a professional, so the break page asks which barber. Per-barber logins would be a separate feature.
+- **Evidence (D-134 and D-135 together, final tree):**
+  - .NET: unit 430/430, architecture 69/69.
+  - Integration: **209/209**, run in six batches of classes (the single full run had been stopped by Claude Code for low memory at 19/0). New: `Staff_SetABarbersBreaksForOneDay_ByTheHour_WithoutAReason`, `WalkIns_TakeTheCustomersMobile_ForThePlatformTeamOnly`, `FinishingEarly_FreesTheRestAtOnce_AndTheOwnerSeesNewAndReturningCustomers`. `ShopFacingContractTests`, `MigrationTests` and `OpenApiContractTests` (regenerated) pass.
+  - Web: `lint`, `typecheck`, `format:check`, `openapi:check`, `build`, `bundle:check` pass; `pnpm test` 51 files, 473 tests (new: `barberDay.test.ts`, `BarberDayCard.test.tsx`, `SimpleAppointments.test.tsx` with «انتهت الخدمة», the optional walk-in mobile, the admin walk-in reveal, the drawer's «زبون عائد»).
+  - E2E on a **fresh** stack (`-p trimme-verify`, ports 3310/8090/5444/8335, removed afterwards), `CI=1 --workers=4 --retries=0`, images built from the final tree: **102/102** (smoke, flows, a11y, a11y-dark). An earlier run on the D-134 tree was also 102/102.
+  - Screenshots in the session scratchpad (`shots-d134/`): as the desk at 390 px, the break grid, the walk-in, the appointments list; the owner's schedule at 1440 px; the owner's KPI tiles («زبائن جدد · آخر 30 يوماً» 2, «زيارات العائدين: 2») and the board with «زبون جديد» / «زبون عائد» on the demo's completed visits.
+- **Walk-in autofill:** the mobile field has `autocomplete="off"`, so the desk's browser should not offer earlier customers' numbers (best effort).
+- **To deploy (not done):** back up the database, pull, build, run `migrate` (applies `LoyaltyFirstVisitStamps` and `WalkInContacts`, resets the managed roles, and the demo seed removes the prayer and lunch breaks), `up -d`. Permissions are read per request, so desk users follow at once.
+- **Then, D-135 (same session, a second message from the client):**
+  - «انتهت الخدمة»: a confirmed visit can be finished once it has started (state machine Confirmed → Completed), and a visit finished early ends at that minute. Completed bookings already freed their time (only Pending, Confirmed and Arrived hold it), but completing took two steps in the drawer. The desk's list has the button on each visit under way; the drawer's action reads «انتهت الخدمة».
+  - The online **minimum lead time** (`MinLeadTimeMinutes`, 60 by default, admin settings) still stops people at home from booking time freed in the next hour. The walk-in page shows the barber free at once. Lowering it (for example to 10–15 minutes) is the client's call.
+  - New or returning customers: `Shop.Insights.View` (owner only). `ShopBookingResponse.Visit` on the owner's board and drawer; the owner's overview tile with the last 30 days' new customers and returning visits. The desk gets null.
+  - The walk-in mobile became optional (D-134 updated). No migration.
+- **To ask the client:** will each barber get their own login (a separate feature)? Should the owner's appointments page be simplified too? Should the online minimum lead time be shorter, so time freed by «انتهت الخدمة» can be booked from home?
 
 ## Session 17: service before time from a barber's page or code; first-visit points (D-133)
 - **The client's three points:**
@@ -217,6 +239,7 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
+- Session 18: `20261021064349_WalkInContacts` (additive), applied to a fresh verification volume (since removed) and from empty in the integration tests. Not yet on the local compose volume. **Not applied on groomhere.sa.**
 - Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied to the local compose volume, a fresh verification volume and from empty in the integration tests. **Not applied on groomhere.sa.**
 - Created and applied locally: `20261001082134_PerformanceIndexes` (index-only), on the compose volume and from empty in the integration tests.
 - No production migration was run.
@@ -251,7 +274,9 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-0. Session 17 (D-133): push and deploy to groomhere.sa when the user asks (the deploy must run `migrate`; back up first). Confirm with the client that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant, and not points an admin adds to one customer by hand.
+0. Sessions 17 and 18 (D-133, D-134, D-135): push and deploy to groomhere.sa when the user asks. The deploy must run `migrate`; take a backup first. Confirm with the client:
+   - that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant;
+   - per-barber logins, the owner's appointments page, and a shorter online minimum lead time (see Session 18).
 1. Done: dark mode pushed to `origin/main`. Watch its CI run: `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests), so keep an eye on the 45-minute stack job.
 2. Run the NVDA checklist (`docs/accessibility.md` §3) and record it in the Phase 17 file. That restores the remaining 2 points.
 3. All phases are complete. Any further work, such as production deployment or the items above, needs a new plan agreed with the user.

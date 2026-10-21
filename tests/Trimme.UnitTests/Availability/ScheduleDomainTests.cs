@@ -64,13 +64,15 @@ public sealed class ScheduleDomainTests
     [Fact]
     public void Breaks_AreWeeklyOrOnce_WithinADay()
     {
-        ScheduleBreak Create(DayOfWeek[] days, DateOnly? date, int start = 930, int end = 960, string label = "صلاة العصر") =>
+        ScheduleBreak Create(DayOfWeek[] days, DateOnly? date, int start = 930, int end = 960, string? label = "صلاة العصر") =>
             ScheduleBreak.Create(EntityId.New<ScheduleBreakId>(), Shop, null, label, days, date, start, end, Today, Now) is { IsSuccess: true } ok
                 ? ok.Value
                 : throw new ShouldAssertException("expected success");
 
         Create([DayOfWeek.Friday, DayOfWeek.Friday, DayOfWeek.Monday], null).Weekdays.ShouldBe([DayOfWeek.Monday, DayOfWeek.Friday]);
         Create([], Today).ToRule().AppliesOn(Today).ShouldBeTrue();
+        Create([], Today, label: null).Label.ShouldBe(string.Empty, "a break needs no reason (D-134)");
+        Create([], Today, label: "  ").Label.ShouldBe(string.Empty);
 
         string? Error(DayOfWeek[] days, DateOnly? date, int start = 930, int end = 960, string label = "x") =>
             FieldError(ScheduleBreak.Create(EntityId.New<ScheduleBreakId>(), Shop, null, label, days, date, start, end, Today, Now).Error);
@@ -79,7 +81,6 @@ public sealed class ScheduleDomainTests
         Error([DayOfWeek.Monday], Today).ShouldBe("weekdays:validation.break_days", "weekly or once, not both");
         Error([], Today.AddDays(-1)).ShouldBe("date:validation.date_in_past");
         Error([DayOfWeek.Monday], null, 1400, 1450).ShouldBe("endMinute:validation.hours_invalid", "a break stays within its day");
-        Error([DayOfWeek.Monday], null, label: " ").ShouldBe("label:validation.required");
         Error([DayOfWeek.Monday], null, label: new string('x', 61)).ShouldBe("label:validation.too_long");
     }
 

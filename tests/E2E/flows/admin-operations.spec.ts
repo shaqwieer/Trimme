@@ -78,6 +78,7 @@ test.describe('admin operations (Phase 14)', () => {
         professionalId: professional.id,
         startsAt: professional.starts.at(-1),
         customerName,
+        customerPhone: '0501234567',
       },
     });
     expect(walkIn.status()).toBe(201);
@@ -97,14 +98,15 @@ test.describe('admin operations (Phase 14)', () => {
     await expect(page).toHaveURL(/\/en\/admin\?days=7$/);
     await expect(page.getByRole('link', { name: 'Last 7 days' })).toHaveAttribute('aria-current', 'page');
 
-    // Global search by the customer's name finds the walk-in; the detail has no phone.
+    // Global search by the customer's name finds the walk-in; the detail shows the mobile the desk took, masked (D-134).
     await page.goto(`/en/admin/bookings?q=${encodeURIComponent(customerName)}`);
     await expect(page.getByText(customerName).first()).toBeVisible();
     await expectNoSeriousAxeViolations(page);
     await page.getByRole('link', { name: /\d/ }).filter({ hasText: /am|pm/ }).first().click();
     await expect(page).toHaveURL(new RegExp(`/en/admin/bookings/${bookingId}$`));
     await expect(page.getByText(customerName).first()).toBeVisible();
-    await expect(page.getByText('+966')).toHaveCount(0);
+    await expect(page.getByTestId('walk-in-contact')).toContainText('+966 5•• ••• •67');
+    await expect(page.getByText('+966501234567')).toHaveCount(0);
     await expectNoSeriousAxeViolations(page);
 
     // Reschedule to the next day's first free time, with a reason.

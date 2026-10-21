@@ -73,7 +73,7 @@ public sealed class RealtimeTests(PostgresFixture postgres)
     }
 
     private static async Task<JsonElement> WalkInAsync(ApiSession owner, Guid serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct) =>
-        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر" }, ct), ct, HttpStatusCode.Created);
+        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
 
     [Fact]
     public async Task EachShop_ReceivesOnlyItsOwnBookings_AdminsReceiveAll_AndMessagesCarryNoCustomerData()

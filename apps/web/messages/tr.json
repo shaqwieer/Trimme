@@ -1271,6 +1271,7 @@
   },
   "shopSchedule": {
     "title": "Çalışma saatleri, molalar ve izinler",
+    "staffTitle": "Molalar",
     "days": {
       "Sunday": "Pazar",
       "Monday": "Pazartesi",
@@ -1320,8 +1321,6 @@
       "add": "Mola ekle",
       "addTitle": "Mola ekle",
       "editTitle": "Molayı düzenle",
-      "label": "Mola adı",
-      "labelRequired": "Molaya bir ad verin",
       "appliesTo": "Kimler için geçerli",
       "everyone": "Tüm uzmanlar",
       "repeat": "Tekrar",
@@ -1332,6 +1331,30 @@
       "date": "Tarih",
       "everyDay": "Her gün",
       "timesInvalid": "Başlangıçtan sonra bir bitiş saati seçin (5 dakikalık adımlarla)"
+    },
+    "barberDay": {
+      "title": "Berberlerin molaları",
+      "body": "Berberi ve günü seçin, ardından bir saate dokunarak mola yapın; geri almak için tekrar dokunun. Sebep gerekmez ve hiçbir randevu iptal edilmez.",
+      "barber": "Berber",
+      "today": "Bugün",
+      "previous": "Önceki gün",
+      "next": "Sonraki gün",
+      "loading": "Gün yükleniyor…",
+      "loadError": "Gün yüklenemedi. Tekrar deneyin.",
+      "noBarbers": "Salonda berber yok.",
+      "dayOff": "Berber bu gün çalışmıyor.",
+      "cell": "{from} – {to}: {state}",
+      "state": {
+        "free": "Boş",
+        "break": "Mola",
+        "shopBreak": "Salon molası",
+        "booked": "Dolu",
+        "off": "İzinli",
+        "outside": "Mesai dışı"
+      },
+      "wholeDay": "Tüm gün mola",
+      "clear": "Tüm molaları kaldır",
+      "saved": "Kaydedildi"
     },
     "timeOff": {
       "title": "İzinler ve kapalı günler",
@@ -2036,7 +2059,9 @@
         "share": "Günlük oran: %{percent}",
         "free": "Boş kapasite",
         "freeValue": "{hours} sa {minutes} dk",
-        "cancelled": "{count, plural, =0 {İptal yok} one {1 iptal} other {# iptal}}"
+        "cancelled": "{count, plural, =0 {İptal yok} one {1 iptal} other {# iptal}}",
+        "newCustomers": "Yeni müşteriler · son {days} gün",
+        "returningVisits": "Tekrar gelen ziyaretler: {count}"
       },
       "upcoming": {
         "title": "Bugünün yaklaşan programı",
@@ -2087,7 +2112,7 @@
         "Pending": "Onay bekliyor",
         "Confirmed": "Onayla",
         "Arrived": "Müşteri geldi",
-        "Completed": "Tamamlandı",
+        "Completed": "Hizmet bitti",
         "NoShow": "Gelmedi",
         "CancelledByShop": "İptal et",
         "CancelledByCustomer": "Müşteri iptal etti"
@@ -2121,6 +2146,7 @@
     },
     "appointments": {
       "title": "Randevular",
+      "simpleTitle": "Randevular",
       "loading": "Randevular yükleniyor…",
       "loadError": "Randevular yüklenemedi. Tekrar deneyin.",
       "empty": "Bu filtrelere uyan randevu yok.",
@@ -2156,6 +2182,24 @@
       "previous": "Önceki",
       "next": "Sonraki"
     },
+    "simple": {
+      "thisWeek": "Bu hafta",
+      "week": "{from} – {to}",
+      "previousWeek": "Önceki hafta",
+      "nextWeek": "Sonraki hafta",
+      "today": "Bugünün randevuları",
+      "upcoming": "Yaklaşan randevular",
+      "tomorrow": "Yarın",
+      "noneToday": "Bugün başka randevu yok.",
+      "noneUpcoming": "Bu günlerde yaklaşan randevu yok.",
+      "finish": "Hizmet bitti",
+      "finishLabel": "{name} için hizmet bitti",
+      "finished": "{name} için hizmet bitti; berberin zamanı yeniden boş."
+    },
+    "visit": {
+      "New": "Yeni müşteri",
+      "Returning": "Tekrar gelen müşteri"
+    },
     "walkIn": {
       "title": "Randevusuz kayıt",
       "noServices": "Aktif hizmet yok. Önce bir hizmet ekleyin.",
@@ -2176,9 +2220,10 @@
       "startNow": "Hemen başla {time}",
       "name": "Müşterinin adı",
       "nameTooLong": "Ad çok uzun.",
+      "phone": "Müşterinin cep telefonu",
+      "phonePrivacy": "Numara yalnızca Groom Here ekibine gider; randevu kaydedildikten sonra salona gösterilmez.",
       "note": "Not",
       "notePlaceholder": "ör. kısa fade",
-      "noPhone": "Resepsiyonda müşterinin cep telefonu numarası sorulmaz. WhatsApp hatırlatmaları istiyorsa, onu uygulamayı yükleyip salonun kodunu taramaya davet edin.",
       "summary": {
         "title": "Randevu özeti",
         "service": "Hizmet",
@@ -2332,6 +2377,7 @@
       "shop": "Salon"
     },
     "noPhone": "Müşterinin numarası randevunun bir parçası değildir. Destek ekibi, gerekçe belirterek numarayı müşteri profilinden görüntüleyebilir; her görüntüleme kaydedilir.",
+    "walkInPhone": "Müşterinin cep telefonu (salona gelen)",
     "noNotes": "Dahili not yok.",
     "history": {
       "rescheduled": "Saat değiştirildi (önceki: {from})",

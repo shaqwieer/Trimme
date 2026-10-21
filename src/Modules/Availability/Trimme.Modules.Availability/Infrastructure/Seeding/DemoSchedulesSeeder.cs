@@ -10,15 +10,15 @@ using Trimme.Modules.Availability.Domain.Engine;
 namespace Trimme.Modules.Availability.Infrastructure.Seeding;
 
 /// <summary>
-/// Opening hours, a professional's own hours, prayer and lunch breaks, a closure and time off for the demo shops
-/// (spec §20; s-hours sample data). Idempotent by fixed ids; development only. Dates of the closure and time off are
-/// relative to the day the seed first runs, so the demo always shows one "in force now" and one scheduled entry.
+/// Opening hours, a professional's own hours, a closure and time off for the demo shops (spec §20; s-hours sample
+/// data). Idempotent by fixed ids; development only. Dates of the closure and time off are relative to the day the seed
+/// first runs, so the demo always shows one "in force now" and one scheduled entry. The demo has no fixed breaks: the
+/// client asked for breaks without set times or reasons (D-134), so the prayer and lunch breaks seeded before are
+/// removed where they still exist.
 /// </summary>
 internal sealed class DemoSchedulesSeeder : IDevSeeder
 {
     private const int Hour = 60;
-
-    private static readonly DayOfWeek[] EveryDay = Enum.GetValues<DayOfWeek>();
 
     private static readonly DayOfWeek[] SundayToThursday = [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday];
 
@@ -38,12 +38,13 @@ internal sealed class DemoSchedulesSeeder : IDevSeeder
         new(DayOfWeek.Friday, 16 * Hour, 23 * Hour),
     ];
 
-    private static readonly (Guid Id, ShopId Shop, string Label, DayOfWeek[] Days, int Start, int End)[] Breaks =
+    /// <summary>The prayer and lunch breaks the demo used to seed (until D-134).</summary>
+    private static readonly ScheduleBreakId[] RemovedBreaks =
     [
-        (Guid.Parse("0199a0de-5a10-7000-8000-000000000701"), DemoData.AlAsala.Id, "استراحة صلاة العصر", EveryDay, (15 * Hour) + 30, 16 * Hour),
-        (Guid.Parse("0199a0de-5a10-7000-8000-000000000702"), DemoData.AlAsala.Id, "استراحة الغداء", SundayToThursday, 13 * Hour, (13 * Hour) + 45),
-        (Guid.Parse("0199a0de-5a10-7000-8000-000000000703"), DemoData.AlAsala.Id, "صلاة المغرب", EveryDay, (18 * Hour) + 5, (18 * Hour) + 25),
-        (Guid.Parse("0199a0de-5a10-7000-8000-000000000711"), DemoData.BarberHouse.Id, "صلاة المغرب", EveryDay, (18 * Hour) + 10, (18 * Hour) + 30),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000701")),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000702")),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000703")),
+        new(Guid.Parse("0199a0de-5a10-7000-8000-000000000711")),
     ];
 
     private static readonly Guid SultanId = Guid.Parse("0199a0de-5a10-7000-8000-000000000102");
@@ -73,13 +74,7 @@ internal sealed class DemoSchedulesSeeder : IDevSeeder
                 [.. SundayToThursday.Select(d => new WeeklyInterval(d, 12 * Hour, 22 * Hour))], now).Value);
         }
 
-        foreach (var (id, shop, label, days, start, end) in Breaks)
-        {
-            if (!await db.Set<ScheduleBreak>().AnyAsync(b => b.Id == new ScheduleBreakId(id), cancellationToken))
-            {
-                db.Add(ScheduleBreak.Create(new ScheduleBreakId(id), shop, null, label, days, null, start, end, DateOnly.MinValue, now).Value);
-            }
-        }
+        await db.Set<ScheduleBreak>().Where(b => RemovedBreaks.Contains(b.Id)).ExecuteDeleteAsync(cancellationToken);
 
         var clock = new ShopClock(TimeZoneInfo.FindSystemTimeZoneById("Asia/Riyadh"));
         var today = clock.Date(now);

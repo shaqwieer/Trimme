@@ -22,9 +22,13 @@ public sealed record ClosureRequest(DateOnly StartDate, DateOnly EndDate, string
 
 /// <summary>
 /// A break for one professional or everyone (<c>ProfessionalId</c> null): weekly on <c>Weekdays</c>, or once on
-/// <c>Date</c> (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps.
+/// <c>Date</c> (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps. The label is
+/// optional (D-134).
 /// </summary>
-public sealed record BreakRequest(Guid? ProfessionalId, string Label, IReadOnlyList<DayOfWeek>? Weekdays, DateOnly? Date, int StartMinute, int EndMinute, uint? Version);
+public sealed record BreakRequest(Guid? ProfessionalId, string? Label, IReadOnlyList<DayOfWeek>? Weekdays, DateOnly? Date, int StartMinute, int EndMinute, uint? Version);
+
+/// <summary>A barber's own one-off breaks on one date, replacing the ones saved before (D-134). Empty clears them.</summary>
+public sealed record BarberDayBreaksRequest(Guid ProfessionalId, DateOnly Date, IReadOnlyList<MinuteWindowDto>? Breaks);
 
 /// <summary>
 /// Time off from <c>StartDate</c> to <c>EndDate</c> (inclusive, shop-local). Without minutes it covers whole days;
@@ -37,6 +41,7 @@ internal static class AvailabilityEndpoints
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
     private const string ScheduleRead = "Shop.Schedule.Read";
     private const string ScheduleManage = "Shop.Schedule.Manage";
+    private const string BreaksManage = "Shop.Breaks.Manage";
     private const string WalkIn = "Shop.Bookings.CreateWalkIn";
 
     public static void Map(IEndpointRouteBuilder api)
@@ -109,6 +114,20 @@ internal static class AvailabilityEndpoints
             .RequirePermission(ScheduleManage)
             .WithName("PreviewScheduleBreak").WithSummary("Upcoming bookings (within the booking horizon) the break would overlap.")
             .Produces<ConflictPreviewResponse>().ProducesProblem(StatusCodes.Status400BadRequest);
+
+        var barberDay = schedule.MapGroup("/barber-day");
+        barberDay.MapGet("/", async (Guid professionalId, DateOnly date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetBarberDayQuery(professionalId, date), ct)).ToHttpResult())
+            .RequirePermission(BreaksManage)
+            .WithName("GetBarberDay")
+            .WithSummary("One barber's date, 00:00–24:00 in minutes: working time, own one-off breaks, the shop's breaks, booked time and time off.")
+            .Produces<BarberDayResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        barberDay.MapPut("/", async (BarberDayBreaksRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new SetBarberDayBreaksCommand(r.ProfessionalId, r.Date, r.Breaks ?? []), ct)).ToHttpResult())
+            .RequirePermission(BreaksManage)
+            .WithName("SetBarberDayBreaks")
+            .WithSummary("Replaces the barber's own one-off breaks on the date (no reason needed); bookings are never cancelled.")
+            .Produces<BarberDayResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
 
         var timeOff = schedule.MapGroup("/time-off");
         timeOff.MapPost("/", async (TimeOffRequest r, IDispatcher d, CancellationToken ct) =>

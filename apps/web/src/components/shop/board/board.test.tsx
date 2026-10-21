@@ -49,6 +49,7 @@ const detail = (
     cancellationReason: null,
     allowedTransitions,
     outsideSchedule: false,
+    visit: 'Returning',
     version: 4,
   },
   history: [
@@ -85,6 +86,7 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
 
     const drawer = await screen.findByTestId('appointment-drawer');
     await within(drawer).findByText('عبدالله الشمري');
+    expect(drawer).toHaveTextContent('زبون عائد');
     expect(drawer).toHaveTextContent('85 ر.س — يُدفع في المحل');
     expect(within(drawer).getByTestId('no-phone-note')).toHaveTextContent('رقم العميل غير متاح');
     expect(drawer.textContent).not.toMatch(/\+966|05\d{8}/);
@@ -93,7 +95,7 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
         .getAllByRole('button')
         .map((b) => b.textContent),
     ).toEqual(expect.arrayContaining(['حضر العميل', 'لم يحضر', 'إلغاء الموعد']));
-    expect(within(drawer).queryByRole('button', { name: 'مكتمل' })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', { name: 'انتهت الخدمة' })).not.toBeInTheDocument();
     await expectNoAxeViolations(drawer);
 
     await user.click(within(drawer).getByRole('button', { name: 'حضر العميل' }));
@@ -107,7 +109,7 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
         body: { to: 'Arrived', reason: null, version: 4 },
       }),
     );
-    expect(await within(drawer).findByRole('button', { name: 'مكتمل' })).toBeInTheDocument();
+    expect(await within(drawer).findByRole('button', { name: 'انتهت الخدمة' })).toBeInTheDocument();
   });
 
   it('rolls back and says so when the booking changed meanwhile (409)', async () => {
@@ -197,8 +199,8 @@ const options = {
   ],
 };
 
-describe('WalkInFlow (s-walkin, D-035)', () => {
-  it('has no phone field, starts now with the free professional, and sends an idempotent walk-in', async () => {
+describe('WalkInFlow (s-walkin, D-035, D-134)', () => {
+  it('takes the mobile for the platform only, starts now with the free professional, and sends an idempotent walk-in', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(options));
     api.POST.mockResolvedValue(ok({ id: 'w1', reference: 'TR-1001', version: 1 }, 201));
@@ -206,18 +208,26 @@ describe('WalkInFlow (s-walkin, D-035)', () => {
       <WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />,
     );
 
-    expect(container.querySelector('input[type="tel"], input[autocomplete="tel"]')).toBeNull();
-    expect(screen.queryByLabelText(/جوال|هاتف/)).not.toBeInTheDocument();
-    expect(screen.getByTestId('walk-in-no-phone')).toHaveTextContent('لا يُطلب رقم جوال العميل');
+    expect(screen.getByTestId('walk-in-phone-privacy')).toHaveTextContent('لا يظهر للمحل');
 
     await user.click(await screen.findByRole('radio', { name: /سلطان الحربي/ }));
     expect(screen.getByRole('radio', { name: /ابدأ الآن/ })).toBeChecked();
     expect(screen.getByRole('button', { name: 'تسجيل الحجز' })).toBeDisabled();
     await user.type(screen.getByLabelText('اسم العميل'), 'سعود الرشيد');
+    expect(screen.getByRole('button', { name: 'تسجيل الحجز' })).toBeEnabled();
+    const mobile = screen.getByLabelText(/جوال العميل/);
+    expect(mobile).toHaveAttribute('autocomplete', 'off');
+    await user.type(mobile, '412');
+    await user.tab();
+    expect(await screen.findByText('أدخل رقم جوال سعودياً يبدأ بـ 5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'تسجيل الحجز' })).toBeDisabled();
+    await user.clear(mobile);
+    await user.type(mobile, '٠٥٥١٢٣٤٥٦٧');
     await expectNoAxeViolations(container);
     await user.click(screen.getByRole('button', { name: 'تسجيل الحجز' }));
 
     expect(await screen.findByText('سُجل الحجز الحضوري')).toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/551|٥٥١/);
     const [, init] = api.POST.mock.calls[0]!;
     expect(init.body).toEqual({
       serviceId: 's1',
@@ -225,9 +235,19 @@ describe('WalkInFlow (s-walkin, D-035)', () => {
       professionalId: 'p2',
       startsAt: null,
       customerName: 'سعود الرشيد',
+      customerPhone: '+966551234567',
       note: null,
     });
     expect(init.params.header['Idempotency-Key']).toMatch(/[0-9a-f-]{32,36}/);
+
+    // Another walk-in starts with an empty mobile field, and the mobile is optional (D-134).
+    await user.click(screen.getByRole('button', { name: 'حجز حضوري آخر' }));
+    expect(screen.getByLabelText(/جوال العميل/)).toHaveValue('');
+    await user.click(screen.getByRole('radio', { name: /ابدأ الآن/ }));
+    await user.type(screen.getByLabelText('اسم العميل'), 'م');
+    await user.click(screen.getByRole('button', { name: 'تسجيل الحجز' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(2));
+    expect(api.POST.mock.calls[1]![1].body).toMatchObject({ customerName: 'م', customerPhone: null });
   });
 
   it('lists a busy professional by their next free time, and a taken time sends the desk back to fresh times', async () => {

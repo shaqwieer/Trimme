@@ -26,7 +26,7 @@ describe('DashboardShell', () => {
       <DashboardShell
         variant="shop"
         title="حجز حضوري"
-        permissions={['Shop.Bookings.Read', 'Shop.Bookings.CreateWalkIn', 'Shop.Schedule.Read']}
+        permissions={['Shop.Bookings.Read', 'Shop.Bookings.CreateWalkIn', 'Shop.Breaks.Manage']}
       >
         <p>content</p>
       </DashboardShell>,

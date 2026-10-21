@@ -16,6 +16,10 @@ public static class Permissions
         public const string BookingsResendNotification = "Shop.Bookings.ResendNotification";
         public const string ScheduleRead = "Shop.Schedule.Read";
         public const string ScheduleManage = "Shop.Schedule.Manage";
+
+        /// <summary>A barber's one-off breaks on a day, with no reason asked (D-134): the desk's «البريكات» page.</summary>
+        public const string BreaksManage = "Shop.Breaks.Manage";
+
         public const string OnlineBookingPause = "Shop.OnlineBooking.Pause";
         public const string ServicesManage = "Shop.Services.Manage";
         public const string ProfileEdit = "Shop.Profile.Edit";
@@ -25,6 +29,9 @@ public static class Permissions
 
         /// <summary>The shop's own QR codes: download and poster, and their scans and bookings (read-only, D-114).</summary>
         public const string QrView = "Shop.Qr.View";
+
+        /// <summary>The owner's view of their customers: whether each one is new or returning, and the month's figures (D-135).</summary>
+        public const string InsightsView = "Shop.Insights.View";
     }
 
     public static class Admin

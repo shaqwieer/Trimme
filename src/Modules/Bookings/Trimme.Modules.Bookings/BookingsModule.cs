@@ -35,6 +35,7 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<CustomerBookingSupport>();
         services.AddScoped<RescheduleAvailability>();
         services.AddScoped<ProfessionalPicker>();
+        services.AddScoped<CustomerVisits>();
         services.AddScoped<ShopBookingReader>();
         services.AddScoped<ShopBoardLoader>();
         services.AddScoped<AdminBookingMapper>();

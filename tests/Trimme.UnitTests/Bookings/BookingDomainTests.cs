@@ -46,6 +46,7 @@ public sealed class BookingDomainTests
             (BookingStatus.Pending, BookingStatus.CancelledByCustomer),
             (BookingStatus.Pending, BookingStatus.CancelledByShop),
             (BookingStatus.Confirmed, BookingStatus.Arrived),
+            (BookingStatus.Confirmed, BookingStatus.Completed),
             (BookingStatus.Confirmed, BookingStatus.NoShow),
             (BookingStatus.Confirmed, BookingStatus.CancelledByCustomer),
             (BookingStatus.Confirmed, BookingStatus.CancelledByShop),
@@ -99,6 +100,26 @@ public sealed class BookingDomainTests
     }
 
     [Fact]
+    public void FinishingEarly_EndsTheVisitThen_InOneStepFromConfirmed()
+    {
+        // «انتهت الخدمة» (D-135): a 30-minute visit finished after 20½ minutes ends at the 20th minute.
+        var early = Online();
+        early.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(20).AddSeconds(30)).IsSuccess.ShouldBeTrue();
+        early.Status.ShouldBe(BookingStatus.Completed);
+        early.EndsAt.ShouldBe(Start.AddMinutes(20));
+        early.DurationMinutes.ShouldBe(30, "the booked service keeps its duration");
+
+        // Finished late, or before the start after an early arrival: the booked times stay.
+        var late = Online();
+        late.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(45)).IsSuccess.ShouldBeTrue();
+        late.EndsAt.ShouldBe(Start.AddMinutes(30));
+        var arrivedEarly = Online();
+        arrivedEarly.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start.AddMinutes(-40)).IsSuccess.ShouldBeTrue();
+        arrivedEarly.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(-5)).IsSuccess.ShouldBeTrue();
+        arrivedEarly.EndsAt.ShouldBe(Start.AddMinutes(30));
+    }
+
+    [Fact]
     public void OnlineBookings_StartConfirmed_OrPendingUnderManualConfirmation()
     {
         var auto = Online();
@@ -130,7 +151,8 @@ public sealed class BookingDomainTests
         booking.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start.AddMinutes(-61)).Error!.Code.ShouldBe("booking.too_early");
         booking.ApplyShopTransition(BookingStatus.NoShow, ShopUser, null, Start.AddMinutes(-1)).Error!.Code.ShouldBe("booking.too_early");
         booking.AllowedShopTransitions(Start.AddMinutes(-90)).ShouldBe([BookingStatus.CancelledByShop]);
-        booking.AllowedShopTransitions(Start).ShouldBe([BookingStatus.Arrived, BookingStatus.NoShow, BookingStatus.CancelledByShop]);
+        booking.AllowedShopTransitions(Start).ShouldBe([BookingStatus.Arrived, BookingStatus.Completed, BookingStatus.NoShow, BookingStatus.CancelledByShop]);
+        booking.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(-1)).Error!.Code.ShouldBe("booking.too_early");
         booking.ApplyShopTransition(BookingStatus.CancelledByShop, ShopUser, " ", Now).Error!.Code.ShouldBe("validation.failed");
 
         booking.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start.AddMinutes(-60)).IsSuccess.ShouldBeTrue();

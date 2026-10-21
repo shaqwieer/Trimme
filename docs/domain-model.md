@@ -154,7 +154,7 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 - **ShopOpeningHours.** One row per shop; the week is a JSON list of intervals (weekday, start and end minute from local midnight; the end may pass midnight, at most 24 h later; no overlaps in the week). No row means closed.
 - **ProfessionalWorkingHours.** One row per professional: either follows the shop's hours (the default) or has its own week, always intersected with the shop's.
 - **ShopClosure.** Whole local days, inclusive. It closes each business day's windows, including the hours after midnight.
-- **ScheduleBreak.** A label, weekly on some weekdays or once on a date, and a time range within one day. It applies to one professional, or to everyone when the professional is null.
+- **ScheduleBreak.** Weekly on some weekdays or once on a date, and a time range within one day, with an optional label (a break needs no reason, D-134). It applies to one professional, or to everyone when the professional is null. The desk sets a barber's one-off breaks for a date as a whole (`barber-day`).
 - **ProfessionalTimeOff.** Kind (Vacation, Sick, Other), UTC start and end, whole days or times, and a note. The professional is fixed once recorded.
 - The **availability engine** (pure) turns these, the booking policy, the item's duration and the existing bookings into bookable slots (see `docs/availability-and-booking.md`).
 
@@ -165,6 +165,8 @@ All rows are `IShopOwned` with an `xmin` version, and the professional reference
 - Start and end (UTC), a generated `during` range, status (D-016), channel (Online/WalkIn), the QR code and scan an online booking is credited to (`qr_link_id` with a same-shop composite key, `qr_visit_id`; D-114), the customer's note, the cancellation reason, `PaymentStatus = NotApplicable` and `AmountDue` (payment seam), an 8-character reference, `xmin`.
 - **History** (owned, `booking_history`): every creation, status change and reschedule, with actor and time.
 - **BookingNote**: the shop's internal notes.
+- **Finishing early** (D-135): a Confirmed booking can be completed once it has started, and a visit completed before its booked end ends at that minute; only Pending, Confirmed and Arrived bookings hold a professional's time, so the rest is free at once. Whether a customer is new or returning is derived from their completed visits at the shop (for the owner only), not stored.
+- **WalkInContact**: the customer's mobile the desk took for a walk-in, when given (optional, D-134), encrypted, with a keyed hash and a masked copy. Only the platform team reads it (masked, or revealed with a reason, audited); no shop response carries it.
 - The exclusion constraint refuses two overlapping active bookings (Pending, Confirmed, Arrived) of one professional.
 
 **Outbox and idempotency** (`infra`): `outbox_messages` (events written in the booking's transaction, ids only; since Phase 15 with attempts, the next attempt time and a dead-letter time, D-108), `processed_messages` (one row per message and consumer that succeeded) and `idempotency_records` (user + operation + key → the booking produced, 24 h).

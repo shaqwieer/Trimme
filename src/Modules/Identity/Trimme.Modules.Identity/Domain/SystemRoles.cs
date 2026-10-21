@@ -48,7 +48,9 @@ public static class SystemRoles
             Permissions.Shop.BookingsUpdateStatus,
             Permissions.Shop.BookingsCreateWalkIn,
             Permissions.Shop.BookingsResendNotification,
-            Permissions.Shop.ScheduleRead,
+
+            // Breaks only: the shop's and the barbers' hours, closures and time off are the owner's (D-134).
+            Permissions.Shop.BreaksManage,
         ]),
         new(Customer, UserType.Customer, Managed: true, []),
     ];

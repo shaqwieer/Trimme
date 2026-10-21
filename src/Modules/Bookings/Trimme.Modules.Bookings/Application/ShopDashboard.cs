@@ -37,7 +37,8 @@ public sealed record HourCountResponse(int Hour, int Count);
 
 /// <summary>
 /// The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
-/// last seven days by starting hour (local time; cancellations left out).
+/// last seven days by starting hour (local time; cancellations left out). <c>Customers</c>, for the owner only, counts
+/// the last 30 days' new customers and returning visits (D-135); it is null for the desk.
 /// </summary>
 public sealed record ShopOverviewResponse(
     DateOnly Date,
@@ -47,7 +48,8 @@ public sealed record ShopOverviewResponse(
     IReadOnlyList<ShopBookingResponse> Upcoming,
     IReadOnlyList<ProfessionalLoadResponse> Professionals,
     IReadOnlyList<HourCountResponse> Hourly,
-    bool OnlineBookingPaused);
+    bool OnlineBookingPaused,
+    ShopCustomerMix? Customers);
 
 public sealed record TimeWindowResponse(DateTimeOffset Start, DateTimeOffset End);
 
@@ -136,7 +138,7 @@ internal sealed record ShopBoard(ShopSummary Shop, TimeZoneInfo Zone, IReadOnlyL
 /// The overview (s-overview, D-100). Load is minutes-based: booked minutes against the professional's available minutes
 /// (working time outside breaks and time off); free capacity is what remains, never below zero per professional.
 /// </summary>
-internal sealed class GetShopOverviewHandler(TrimmeDbContext db, ShopBoardLoader loader, ShopBookingReader reader, TimeProvider clock)
+internal sealed class GetShopOverviewHandler(TrimmeDbContext db, ShopBoardLoader loader, ShopBookingReader reader, CustomerVisits visits, TimeProvider clock)
     : IQueryHandler<GetShopOverviewQuery, Result<ShopOverviewResponse>>
 {
     public const int UpcomingLimit = 8;
@@ -182,9 +184,11 @@ internal sealed class GetShopOverviewHandler(TrimmeDbContext db, ShopBoardLoader
             .Select(hour => new HourCountResponse(hour, kept.Count(b => TimeZoneInfo.ConvertTime(b.StartsAt, board.Zone).Hour == hour)))
             .ToList();
 
+        var customers = await visits.MixAsync(
+            BusinessDays.StartOf(date.AddDays(-(CustomerVisits.MixDays - 1)), zone), BusinessDays.StartOf(date.AddDays(1), zone), cancellationToken);
         return new ShopOverviewResponse(
             date, board.Shop.TimeZone, now, kpis, await reader.MapAsync(board.Shop.Id, upcoming, cancellationToken), load, hourly,
-            board.Shop.OnlineBookingPaused);
+            board.Shop.OnlineBookingPaused, customers);
     }
 }
 

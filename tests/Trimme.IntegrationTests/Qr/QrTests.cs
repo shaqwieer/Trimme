@@ -187,7 +187,7 @@ public sealed class QrTests(PostgresFixture postgres)
         // A walk-in by a staff browser carrying the cookie is never credited.
         w.StaffA.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
         var walkIn = await OkAsync(w.StaffA.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
-            new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "زائر" }, ct, headers: Key()), ct, HttpStatusCode.Created);
+            new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "زائر", customerPhone = "0501234567" }, ct, headers: Key()), ct, HttpStatusCode.Created);
         (await InDbAsync(w.Factory, db => db.Set<Booking>().AsNoTracking().SingleAsync(b => b.Id == new BookingId(walkIn.GetProperty("id").GetGuid()), ct))).QrLinkId.ShouldBeNull();
 
         // The shop's own view: its code with one scan and one booking; another shop sees nothing of it; staff have no access.

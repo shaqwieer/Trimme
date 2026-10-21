@@ -17,7 +17,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
     private static DateOnly Target => TodayAt(DateTimeOffset.UtcNow).AddDays(2);
 
     private static async Task<JsonElement> WalkInAsync(ApiSession owner, Guid serviceId, Guid professionalId, DateTimeOffset? start, CancellationToken ct) =>
-        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر الحي" }, ct), ct, HttpStatusCode.Created);
+        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر الحي", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
 
     private static async Task CancelAsync(ApiSession owner, JsonElement booking, CancellationToken ct) =>
         await OkAsync(owner.PostAsync($"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/transitions",

@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
+using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
+using Trimme.BuildingBlocks.Domain.Privacy;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -14,7 +16,8 @@ using Trimme.Modules.Bookings.Domain;
 namespace Trimme.Modules.Bookings.Application;
 
 // The shop's own bookings (spec §13). The shop comes from ICurrentTenant; the tenant filter scopes every read, so another
-// shop's booking id is 404. Responses carry the customer's name only, never a phone number (R-NEG-04).
+// shop's booking id is 404. Responses carry the customer's name only, never a phone number (R-NEG-04): the mobile the
+// desk takes for a walk-in goes one way, into an encrypted row only the platform team reads (D-134).
 
 internal sealed record ListShopBookingsQuery(
     DateOnly? From, DateOnly? To, IReadOnlyCollection<BookingStatus>? Statuses, Guid? ProfessionalId, string? Search, PageRequest Page)
@@ -23,23 +26,28 @@ internal sealed record ListShopBookingsQuery(
 internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingDetailResponse?>;
 
 internal sealed record CreateWalkInCommand(
-    Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? Note, string? IdempotencyKey)
-    : ICommand<Result<ShopBookingResponse>>;
+    Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note, string? IdempotencyKey)
+    : ICommand<Result<ShopBookingResponse>>
+{
+    /// <summary>Never print the number (records list every member by default).</summary>
+    public override string ToString() => $"{nameof(CreateWalkInCommand)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt} }}";
+}
 
 internal sealed record TransitionShopBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version) : ICommand<Result<ShopBookingResponse>>;
 
 internal sealed record AddBookingNoteCommand(Guid BookingId, string Text) : ICommand<Result<BookingNoteResponse>>;
 
 /// <summary>Shared queries of the shop's booking views.</summary>
-internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker availability, TimeProvider clock)
+internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker availability, CustomerVisits visits, TimeProvider clock)
 {
-    /// <summary>Maps bookings, flagging the active ones that no longer fit the schedule (DV-S22).</summary>
+    /// <summary>Maps bookings, flagging the active ones that no longer fit the schedule (DV-S22); for the owner, new or returning customers (D-135).</summary>
     public async Task<IReadOnlyList<ShopBookingResponse>> MapAsync(ShopId shopId, IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         var active = bookings.Where(b => b.IsActive && b.EndsAt > now).Select(b => new ScheduledTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt)).ToList();
         var outside = await availability.OutsideScheduleAsync(shopId, active, cancellationToken);
-        return [.. bookings.Select(b => BookingMapping.ToShop(b, now, outside.Contains(b.Id.Value)))];
+        var labels = await visits.LabelsAsync(bookings, cancellationToken);
+        return [.. bookings.Select(b => BookingMapping.ToShop(b, now, outside.Contains(b.Id.Value), labels.TryGetValue(b.Id, out var visit) ? visit : null))];
     }
 
     public async Task<ShopBookingDetailResponse> DetailAsync(Booking booking, CancellationToken cancellationToken)
@@ -141,7 +149,10 @@ internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant t
 /// <summary>
 /// A walk-in (spec §11, R-BKG-07): the same collision checks as an online booking (hours, breaks, time off, closures,
 /// bookings, and the exclusion constraint), at any minute and starting now if no start is given (D-035, D-088). The
-/// subscription and pause gate does not apply (D-014). The customer's name only; no phone field in v1.
+/// subscription and pause gate does not apply (D-014). The customer's name, and their mobile if they give it (optional,
+/// D-134): the mobile is stored encrypted in <see cref="WalkInContact"/> and is not in the response, the outbox event or
+/// any notification. The request hash for the idempotency key uses the number's keyed hash, so no plain hash of it is
+/// stored either.
 /// </summary>
 internal sealed class CreateWalkInHandler(
     TrimmeDbContext db,
@@ -152,6 +163,7 @@ internal sealed class CreateWalkInHandler(
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
     ShopBookingReader reader,
+    IPersonalDataProtector protector,
     TimeProvider clock)
     : ICommandHandler<CreateWalkInCommand, Result<ShopBookingResponse>>
 {
@@ -173,6 +185,13 @@ internal sealed class CreateWalkInHandler(
                 new Dictionary<string, string[]>(StringComparer.Ordinal) { ["customerName"] = ["validation.required"] });
         }
 
+        PhoneNumber? phone = null;
+        if (!string.IsNullOrWhiteSpace(command.CustomerPhone) && !PhoneNumber.TryParseMobile(command.CustomerPhone, out phone))
+        {
+            return Error.Validation("validation.failed", "The customer's mobile number is invalid.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["customerPhone"] = ["validation.phone_invalid"] });
+        }
+
         if (BookingRules.TooLong(command.Note, BookingRules.MaxNoteLength, "note") is { } tooLong)
         {
             return tooLong;
@@ -186,7 +205,8 @@ internal sealed class CreateWalkInHandler(
             return BookingErrors.StartInPast();
         }
 
-        var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = null, StartsAt = command.StartsAt });
+        var phoneHash = phone is null ? null : protector.LookupHash(phone.E164, PersonalDataPurposes.WalkInPhone);
+        var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = null, StartsAt = command.StartsAt, CustomerPhone = phoneHash });
         if (command.IdempotencyKey is { } earlierKey && await idempotency.ReplayAsync(userId, Scope, earlierKey, hash, cancellationToken) is { } replay)
         {
             return replay.IsFailure ? replay.Error : await ExistingAsync(shopId, replay.Value, cancellationToken);
@@ -234,6 +254,11 @@ internal sealed class CreateWalkInHandler(
             EntityId.New<BookingId>(), shopId, command.CustomerName, new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn),
             BookingMapping.Snapshot(offer), start, startsNow, command.Note, new BookingActor(userId, ActorType.ShopUser), now);
         db.Add(booking);
+        if (phone is not null)
+        {
+            db.Add(new WalkInContact(booking.Id, shopId, protector.Protect(phone.E164, PersonalDataPurposes.WalkInPhone), phoneHash!, phone.Masked, now));
+        }
+
         record?.Complete(booking.Id.Value);
         BookingEvents.Add(db, BookingEvents.Created, booking, now);
         try

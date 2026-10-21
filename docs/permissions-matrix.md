@@ -71,8 +71,9 @@
 | `Shop.Bookings.UpdateStatus` | ✓ | ✓ |
 | `Shop.Bookings.CreateWalkIn` | ✓ | ✓ |
 | `Shop.Bookings.ResendNotification` | ✓ | ✓ |
-| `Shop.Schedule.Read` | ✓ | ✓ |
+| `Shop.Schedule.Read` | ✓ | — (D-134) |
 | `Shop.Schedule.Manage` | ✓ | — |
+| `Shop.Breaks.Manage` | ✓ | ✓ |
 | `Shop.OnlineBooking.Pause` | ✓ | — |
 | `Shop.Services.Manage` | ✓ | — |
 | `Shop.Profile.Edit` | ✓ | — |
@@ -80,6 +81,7 @@
 | `Shop.Subscription.Read` | ✓ | — |
 | `Shop.Notifications.Manage` | ✓ | — |
 | `Shop.Qr.View` | ✓ | — |
+| `Shop.Insights.View` | ✓ | — (D-135) |
 
 ## Customer
 
@@ -161,7 +163,11 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/shop/subscription` | `Shop.Subscription.Read` · own shop only (tenant from claims) · no override reasons |
 | `GET /api/v1/admin/settings` / `PUT /api/v1/admin/settings` | `Admin.Settings.View` / `Admin.Settings.Edit` · version-checked · audited with the changed fields (D-076) |
 | `GET /api/v1/admin/dashboard/overview` | `Admin.Dashboard.View` · SQL aggregates on the platform calendar (D-101) |
-| `GET /api/v1/admin/bookings`, `GET /api/v1/admin/bookings/{id}` | `Admin.Bookings.View` · search by name or reference only; detail with history and notes; no phone |
+| `GET /api/v1/admin/bookings`, `GET /api/v1/admin/bookings/{id}` | `Admin.Bookings.View` · search by name or reference only; detail with history and notes; no customer phone, a walk-in's number masked only (D-134) |
+| `POST /api/v1/admin/bookings/{id}/walk-in-contact/reveal` | `Admin.Customers.ViewContact` · the number the desk took for a walk-in (D-134) · reason required (5–300) · audited · `no-store` |
+| `GET /api/v1/shop/schedule/barber-day`, `PUT /api/v1/shop/schedule/barber-day` | `Shop.Breaks.Manage` · one of the shop's own barbers, one date: working time, own one-off breaks (replaced as a whole, no reason), the shop's breaks, booked time and time off; never a past date for the PUT (D-134) |
+| `POST /api/v1/shop/bookings/walk-in` | `Shop.Bookings.CreateWalkIn` · the customer's name, and the mobile if the customer gives it; the mobile is stored encrypted and never returned to the shop (D-134) |
+| `GET /api/v1/shop/bookings`, `GET .../{id}`, `GET /api/v1/shop/dashboard/overview` | `Shop.Bookings.Read`; with `Shop.Insights.View` (the owner) each online booking also says whether the customer is new or returning, and the overview adds the last 30 days' new customers and returning visits (D-135) |
 | `POST /api/v1/admin/bookings/{id}/transitions`, `POST .../cancel` | `Admin.Bookings.Intervene` · reason required (5–300) · the shop's state machine · audited (D-103) |
 | `GET /api/v1/admin/bookings/{id}/reschedule/options`, `POST .../reschedule` | `Admin.Bookings.Intervene` · reschedule: `Idempotency-Key`, reason, collision rules, not in the past · audited (D-103) |
 | `GET /api/v1/admin/customers`, `GET /api/v1/admin/customers/{id}` | `Admin.Customers.View` · name search only; list without contact data; detail with the masked mobile (D-105) |

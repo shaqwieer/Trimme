@@ -406,7 +406,7 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
         public async Task<Guid> CompletedVisitAsync(CancellationToken ct)
         {
             var walkIn = await OkAsync(
-                OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = W.Haircut, professionalId = W.Faisal, customerName = "سعد العتيبي" }, ct),
+                OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = W.Haircut, professionalId = W.Faisal, customerName = "سعد العتيبي", customerPhone = "0501234567" }, ct),
                 ct, HttpStatusCode.Created);
             var id = walkIn.GetProperty("id").GetGuid();
             await OkAsync(OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "Completed", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);

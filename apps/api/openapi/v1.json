@@ -7440,6 +7440,116 @@
         }
       }
     },
+    "/api/v1/shop/schedule/barber-day": {
+      "get": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "One barber\u0027s date, 00:00\u201324:00 in minutes: working time, own one-off breaks, the shop\u0027s breaks, booked time and time off.",
+        "operationId": "GetBarberDay",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberDayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Replaces the barber\u0027s own one-off breaks on the date (no reason needed); bookings are never cancelled.",
+        "operationId": "SetBarberDayBreaks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BarberDayBreaksRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberDayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/schedule/time-off": {
       "post": {
         "tags": [
@@ -9459,7 +9569,7 @@
         "tags": [
           "Admin: bookings"
         ],
-        "summary": "One booking with its history and the shop\u0027s internal notes (read-only).",
+        "summary": "One booking with its history and the shop\u0027s internal notes (read-only); a walk-in\u0027s number masked.",
         "operationId": "AdminGetBooking",
         "parameters": [
           {
@@ -9479,6 +9589,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminBookingDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/bookings/{bookingId}/walk-in-contact/reveal": {
+      "post": {
+        "tags": [
+          "Admin: bookings"
+        ],
+        "summary": "The mobile number the desk took for a walk-in (D-134); a reason of at least 5 characters is required and the view is audited (never cached).",
+        "operationId": "AdminRevealWalkInContact",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevealWalkInContactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalkInContactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -12299,7 +12471,8 @@
       "AdminBookingDetailResponse": {
         "required": [
           "booking",
-          "notes"
+          "notes",
+          "walkInPhoneMasked"
         ],
         "type": "object",
         "properties": {
@@ -12311,9 +12484,15 @@
             "items": {
               "$ref": "#/components/schemas/BookingNoteResponse"
             }
+          },
+          "walkInPhoneMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "One booking for an admin: the shop\u0027s view, its history and internal notes (read-only here)."
+        "description": "One booking for an admin: the shop\u0027s view, its history and internal notes (read-only here), and for a walk-in the\nnumber the desk took, masked (\u0060\u002B966 5\u2022\u2022 \u2022\u2022\u2022 \u202230\u0060; null when none was taken)."
       },
       "AdminBookingListResponse": {
         "required": [
@@ -14395,6 +14574,97 @@
         },
         "description": "Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force\u2026),\n\u0060Bookable\u0060 is false, \u0060BlockedReason\u0060 says why and there are no slots (D-013, D-078)."
       },
+      "BarberDayBreaksRequest": {
+        "required": [
+          "professionalId",
+          "date",
+          "breaks"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "breaks": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          }
+        },
+        "description": "A barber\u0027s own one-off breaks on one date, replacing the ones saved before (D-134). Empty clears them."
+      },
+      "BarberDayResponse": {
+        "required": [
+          "professionalId",
+          "date",
+          "today",
+          "passedMinutes",
+          "working",
+          "breaks",
+          "shopBreaks",
+          "booked",
+          "timeOff"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "passedMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "working": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          },
+          "breaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          },
+          "shopBreaks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          },
+          "booked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          },
+          "timeOff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinuteWindowDto"
+            }
+          }
+        },
+        "description": "One barber\u0027s calendar date in minutes (D-134). \u0060Working\u0060 includes the part of the previous business day that\nruns past midnight. \u0060Breaks\u0060 are the barber\u0027s own one-off breaks on the date, the only ones the page edits;\n\u0060ShopBreaks\u0060 are the owner\u0027s (weekly, or for everyone). \u0060PassedMinutes\u0060 is how much of the date is\nalready over: 0 for a future date, 1440 for a past one."
+      },
       "BillingIntervalUnit": {
         "enum": [
           "Day",
@@ -14727,7 +14997,10 @@
             "format": "uuid"
           },
           "label": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "weekdays": {
             "type": [
@@ -14761,7 +15034,7 @@
             "format": "uint32"
           }
         },
-        "description": "A break for one professional or everyone (\u0060ProfessionalId\u0060 null): weekly on \u0060Weekdays\u0060, or once on\n\u0060Date\u0060 (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps."
+        "description": "A break for one professional or everyone (\u0060ProfessionalId\u0060 null): weekly on \u0060Weekdays\u0060, or once on\n\u0060Date\u0060 (exactly one of the two). Minutes from local midnight, within the day, on 5-minute steps. The label is\noptional (D-134)."
       },
       "BreakResponse": {
         "required": [
@@ -15696,6 +15969,13 @@
           }
         },
         "description": "The customer\u0027s full mobile in E.164, returned once to an authorized admin (never cached, never logged)."
+      },
+      "CustomerVisit": {
+        "enum": [
+          "New",
+          "Returning",
+          null
+        ]
       },
       "DayOfWeek": {
         "enum": [
@@ -16742,6 +17022,24 @@
           "BookingReminder"
         ],
         "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109). Customers get all five; professionals get\nconfirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request."
+      },
+      "MinuteWindowDto": {
+        "required": [
+          "startMinute",
+          "endMinute"
+        ],
+        "type": "object",
+        "properties": {
+          "startMinute": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endMinute": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Minutes from the local midnight of one calendar date, end exclusive (0\u20131440)."
       },
       "ModerateReviewRequest": {
         "required": [
@@ -19791,6 +20089,21 @@
           }
         }
       },
+      "RevealWalkInContactRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Why the admin needs the walk-in\u0027s number (5\u2013300 characters); audited."
+      },
       "ReviewFlag": {
         "enum": [
           "Reported",
@@ -20250,6 +20563,7 @@
           "allowedTransitions",
           "outsideSchedule",
           "loyaltyReward",
+          "visit",
           "version"
         ],
         "type": "object",
@@ -20318,12 +20632,22 @@
               }
             ]
           },
+          "visit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerVisit"
+              }
+            ]
+          },
           "version": {
             "type": "integer",
             "format": "uint32"
           }
         },
-        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n\u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically."
+        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n\u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\nonline booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135)."
       },
       "ShopCalendarResponse": {
         "required": [
@@ -20395,6 +20719,29 @@
             "format": "int32"
           }
         }
+      },
+      "ShopCustomerMix": {
+        "required": [
+          "days",
+          "newCustomers",
+          "returningVisits"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "newCustomers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "returningVisits": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The owner\u0027s figures for the last Days days: completed visits by customers coming for the first time\n(each one a new customer) and by customers who had been before."
       },
       "ShopImageResponse": {
         "required": [
@@ -20597,7 +20944,8 @@
           "upcoming",
           "professionals",
           "hourly",
-          "onlineBookingPaused"
+          "onlineBookingPaused",
+          "customers"
         ],
         "type": "object",
         "properties": {
@@ -20635,9 +20983,19 @@
           },
           "onlineBookingPaused": {
             "type": "boolean"
+          },
+          "customers": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopCustomerMix"
+              }
+            ]
           }
         },
-        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out)."
+        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135); it is null for the desk."
       },
       "ShopOwnProfileResponse": {
         "required": [
@@ -22873,6 +23231,18 @@
           }
         }
       },
+      "WalkInContactResponse": {
+        "required": [
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          }
+        },
+        "description": "A walk-in\u0027s full mobile number, once, for the platform team (D-134)."
+      },
       "WalkInOptionsResponse": {
         "required": [
           "date",
@@ -22960,6 +23330,7 @@
           "professionalId",
           "startsAt",
           "customerName",
+          "customerPhone",
           "note"
         ],
         "type": "object",
@@ -22992,6 +23363,12 @@
           "customerName": {
             "type": "string"
           },
+          "customerPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "note": {
             "type": [
               "null",
@@ -22999,7 +23376,7 @@
             ]
           }
         },
-        "description": "A walk-in (D-035): without \u0060StartsAt\u0060 it starts now and is marked Arrived; otherwise it is Confirmed. The\ncustomer\u0027s name only. An \u0060Idempotency-Key\u0060 header is honoured when sent."
+        "description": "A walk-in (D-035): without \u0060StartsAt\u0060 it starts now and is marked Arrived; otherwise it is Confirmed. The\ncustomer\u0027s name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned\nto the shop. An \u0060Idempotency-Key\u0060 header is honoured when sent."
       },
       "WhatsAppVerification": {
         "enum": [

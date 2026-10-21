@@ -78,7 +78,8 @@ public sealed record CustomerBookingResponse(
 /// A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). <c>AllowedTransitions</c> is
 /// what the UI may offer (DV-S08); <c>ViaQr</c> marks an online booking credited to a QR scan (the design's «رمز QR» source);
 /// <c>OutsideSchedule</c> flags an active booking that no longer fits the professional's
-/// hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically.
+/// hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. <c>Visit</c> says whether an
+/// online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
 /// </summary>
 public sealed record ShopBookingResponse(
     Guid Id,
@@ -96,6 +97,7 @@ public sealed record ShopBookingResponse(
     IReadOnlyList<BookingStatus> AllowedTransitions,
     bool OutsideSchedule,
     BookingLoyaltyRewardResponse? LoyaltyReward,
+    CustomerVisit? Visit,
     uint Version);
 
 public sealed record BookingNoteResponse(Guid Id, string Text, DateTimeOffset CreatedAt);
@@ -159,9 +161,9 @@ internal static class BookingMapping
             .Select(h => new BookingHistoryResponse(h.Kind, h.FromStatus, h.ToStatus, h.PreviousStartsAt, h.ActorType, h.Reason, h.OccurredAt)),
     ];
 
-    public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule) =>
+    public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null) =>
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
-            b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), b.Version);
+            b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), visit, b.Version);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
     {

@@ -15,7 +15,8 @@ type ShopFrameProps = {
   locale: string;
   /** This page's locale-less path, used as `returnTo` when the session must be restored. */
   path: string;
-  title: string;
+  /** The page heading, or one chosen by the signed-in user's permissions (the desk and the owner see different pages). */
+  title: string | ((me: Me) => string);
   children: (me: Me, shop: { status: string; name: string; timeZone: string }) => ReactNode;
 };
 
@@ -25,11 +26,12 @@ type ShopFrameProps = {
  * pause and subscription banners on every page (the subscription page shows its own), and — with `Shop.Bookings.Read`
  * — the live connection (D-099).
  */
-export async function ShopFrame({ locale, path, title, children }: ShopFrameProps) {
+export async function ShopFrame({ locale, path, title: titleFor, children }: ShopFrameProps) {
   const me = await requireUser(locale, path);
   if (me.userType !== 'ShopUser') {
     return <PermissionDenied homeHref={homeFor(me.userType)} />;
   }
+  const title = typeof titleFor === 'function' ? titleFor(me) : titleFor;
 
   const api = await getServerApi();
   // One round of reads: the shop, its pause state and (with the permission) its subscription.

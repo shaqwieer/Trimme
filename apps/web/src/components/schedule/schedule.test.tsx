@@ -201,7 +201,7 @@ describe('BreaksCard (DV-A04 conflict preview, DV-S22)', () => {
     renderWithIntl(<BreaksCard breaks={[]} professionals={[faisal]} canManage today="2026-10-04" />);
     await userEvent.click(screen.getByRole('button', { name: 'إضافة استراحة' }));
     const form = screen.getByTestId('break-form');
-    await userEvent.type(within(form).getByLabelText('اسم الاستراحة'), 'صلاة العصر');
+    expect(within(form).queryByLabelText('اسم الاستراحة')).not.toBeInTheDocument();
     await userEvent.click(within(form).getByRole('button', { name: 'حفظ' }));
 
     const affected = await screen.findByTestId('affected-bookings');
@@ -209,7 +209,7 @@ describe('BreaksCard (DV-A04 conflict preview, DV-S22)', () => {
     expect(screen.getByText(/لن تُرسل رسائل تلقائية/)).toBeInTheDocument();
     expect(api.POST).toHaveBeenCalledTimes(1);
     expect(api.POST.mock.calls[0]![1].body).toMatchObject({
-      label: 'صلاة العصر',
+      label: null,
       professionalId: null,
       weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
       date: null,
@@ -231,7 +231,6 @@ describe('BreaksCard (DV-A04 conflict preview, DV-S22)', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: 'Add break' }));
     const form = screen.getByTestId('break-form');
-    await userEvent.type(within(form).getByLabelText('Break name'), 'Lunch');
     const to = within(form).getByLabelText('To');
     await userEvent.clear(to);
     await userEvent.type(to, '12:00');
