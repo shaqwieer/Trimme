@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-10-21 (Session 18: the desk's pages — breaks by the hour, the walk-in's mobile, a simple appointments list (D-134); «انتهت الخدمة» and new or returning customers (D-135); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Sessions 17 and 18 are local commits; neither is pushed or deployed.
+  - Sessions 17 and 18 are pushed (`60bb98e`) and deployed on groomhere.sa (2026-10-21).
 - **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - The `trimme-api:dev` and `trimme-web:dev` images were rebuilt from Session 18's tree, but the `trimme` stack on 3300 was **not** restarted or migrated. It still runs Session 17's containers against a volume without `WalkInContacts`. Run `up -d` (which runs `migrate` and the seed) when memory allows.
@@ -25,7 +25,11 @@
   - E2E on a **fresh** stack (`-p trimme-verify`, ports 3310/8090/5444/8335, removed afterwards), `CI=1 --workers=4 --retries=0`, images built from the final tree: **102/102** (smoke, flows, a11y, a11y-dark). An earlier run on the D-134 tree was also 102/102.
   - Screenshots in the session scratchpad (`shots-d134/`): as the desk at 390 px, the break grid, the walk-in, the appointments list; the owner's schedule at 1440 px; the owner's KPI tiles («زبائن جدد · آخر 30 يوماً» 2, «زيارات العائدين: 2») and the board with «زبون جديد» / «زبون عائد» on the demo's completed visits.
 - **Walk-in autofill:** the mobile field has `autocomplete="off"`, so the desk's browser should not offer earlier customers' numbers (best effort).
-- **To deploy (not done):** back up the database, pull, build, run `migrate` (applies `LoyaltyFirstVisitStamps` and `WalkInContacts`, resets the managed roles, and the demo seed removes the prayer and lunch breaks), `up -d`. Permissions are read per request, so desk users follow at once.
+- **Deployed 2026-10-21 (`60bb98e`):**
+  - Backup first: `/root/backups/trimme-before-d133-d136-20261021-091514.sql.gz` on the VPS (complete dump).
+  - `git pull`, `docker compose build api web`, `docker compose run --rm migrate` (applied `LoyaltyFirstVisitStamps` and `WalkInContacts`; reference data and the managed roles synchronized), `up -d`; api and web healthy. Permissions are read per request, so desk users follow at once.
+  - The demo seed was **not** re-run: it would re-create any demo row the client deleted, by fixed id. Instead, in one transaction: the four seeded prayer and lunch breaks were deleted by id (they were the only breaks), and `administration.platform_settings.min_lead_time_minutes` was set to 15 (`updated_at` stamped; not in the audit log).
+  - Checked from the VPS: `/ar`, `/api/v1/meta`, the Al Asala page, the staff sign-in and the public shop API answer 200. At 12:20 Riyadh the first open time at Al Asala was 12:40 (15-minute lead time on the 5-minute grid). Curl from this Windows machine to groomhere.sa fails (exit 43), so check from the VPS.
 - **Then, D-135 (same session, a second message from the client):**
   - «انتهت الخدمة»: a confirmed visit can be finished once it has started (state machine Confirmed → Completed), and a visit finished early ends at that minute. Completed bookings already freed their time (only Pending, Confirmed and Arrived hold it), but completing took two steps in the drawer. The desk's list has the button on each visit under way; the drawer's action reads «انتهت الخدمة».
   - The online **minimum lead time** (`MinLeadTimeMinutes`, 60 by default, admin settings) still stops people at home from booking time freed in the next hour. The walk-in page shows the barber free at once. Lowering it (for example to 10–15 minutes) is the client's call.
@@ -240,10 +244,11 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
-- Session 18: `20261021064349_WalkInContacts` (additive), applied to a fresh verification volume (since removed) and from empty in the integration tests. Not yet on the local compose volume. **Not applied on groomhere.sa.**
-- Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied to the local compose volume, a fresh verification volume and from empty in the integration tests. **Not applied on groomhere.sa.**
+- Session 18: `20261021064349_WalkInContacts` (additive), applied on groomhere.sa (2026-10-21), on fresh verification volumes and from empty in the integration tests. Not yet on the local compose volume.
+- Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied on groomhere.sa (2026-10-21), the local compose volume, fresh verification volumes and from empty in the integration tests.
+- groomhere.sa data changes by SQL (2026-10-21, after the backup): the four seeded breaks deleted; online minimum lead time 15 minutes.
 - Created and applied locally: `20261001082134_PerformanceIndexes` (index-only), on the compose volume and from empty in the integration tests.
-- No production migration was run.
+- There is no production (non-demo) database yet; groomhere.sa is the demo.
 
 ## Decisions added
 - D-117: nonce CSP.
@@ -275,7 +280,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-0. Sessions 17 and 18 (D-133, D-134, D-135): push and deploy to groomhere.sa when the user asks. The deploy must run `migrate`; take a backup first. Confirm with the client:
+0. Done: Sessions 17 and 18 pushed and deployed. Confirm with the client:
    - that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant;
    - per-barber logins (see Session 18).
 1. Done: dark mode pushed to `origin/main`. Watch its CI run: `pnpm e2e` now also runs the `a11y-dark` project (8 more audit tests), so keep an eye on the 45-minute stack job.
