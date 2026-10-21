@@ -37,6 +37,10 @@
   - The walk-in mobile became optional (D-134 updated). No migration.
 - **Then, D-136 (the client's answers):** online minimum lead time 15 minutes on groomhere.sa (a setting, set by SQL after the deploy's backup; the code default stays 60); «انتهت الخدمة» asks for a confirmation on the list and in the drawer; the owner has the same simple appointments list (with the new or returning badges); the full board is removed. Web 474 tests; E2E on a fresh stack with the final web image 102/102.
 - **To ask the client:** will each barber get their own login (a separate feature)?
+- **CI follow-up (after the push):** CI failed on `60bb98e` and `fbc176f`, on two causes, both fixed (`40c890f`, `1bf427a`, not pushed yet):
+  - Web: `pnpm audit` found vite 8.3.1 (GHSA-587h-7wmj-h5pm, high), the implicit peer of vitest. `apps/web` now declares vite 8.3.4 itself (`docs/security.md`). The "1 high" pnpm still prints is the muted `braces` CVE; the audit exits 0.
+  - Backend: 4 integration tests failed with `53300: sorry, too many clients already`. This is the same failure earlier sessions reran as a parallel-load flake, and it is not one: about 80 tests each create a database, and their idle connections stayed for 300 s. The test connection strings now close idle connections after 10 s (D-069 updated). A full local run went from 10 failures to 209/209, peaking at 68 of 400 connections. **If `53300` comes back, treat it as a bug.**
+  - Locally, every other CI step passes (unit 430, architecture 69, NuGet audit, no pending model changes, web lint, typecheck, format, 474 tests, OpenAPI drift, build, bundle budgets). The stack job has not run on CI since `8ac7d9a`; the local fresh-stack E2E above was 102/102.
 
 ## Session 17: service before time from a barber's page or code; first-visit points (D-133)
 - **The client's three points:**

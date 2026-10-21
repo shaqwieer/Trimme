@@ -28,7 +28,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// every test class opens pools at once (seen as rare "The operation has timed out" in Phase 16), so allow 60 s.
     /// Each test database keeps its own pool for the whole run, and Npgsql only closes idle connections after 300 s,
     /// longer than the run, so finished tests held theirs until the 400 ran out ("53300: sorry, too many clients
-    /// already" on CI after Session 17). Idle connections are closed after 10 s instead.
+    /// already" on CI in Session 18). Idle connections are closed after 10 s instead.
     /// </summary>
     public string ConnectionString => new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
     {
