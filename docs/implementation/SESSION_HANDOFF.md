@@ -40,6 +40,7 @@
   - `git pull` (from `60bb98e`), `docker compose build api web`, `docker compose run --rm migrate` ("Database is up to date (18 migrations applied in total)"; reference data synchronized), `up -d`; api and web healthy. The seed was not run.
   - Checked from the VPS: `/ar`, `/api/v1/meta`, the Al Asala page and the staff sign-in answer 200; `/ar/shop/services` answers 307 to the sign-in (it was 404 before). The live API's OpenAPI document (read from inside the web container; Caddy does not expose it) has `professionalIds` on `CreateShopServiceRequest` and `ShopServiceResponse`.
   - Not checked signed in: the demo owner's password on groomhere.sa is not the local demo one (401), and no credential was looked up. The client's own check covers the signed-in pages.
+- **CI:** run 39753014541 on `7c66103` (the deployed code plus the deploy notes) passed all four jobs: web, backend (integration included), gitleaks, and the Docker stack with Playwright smoke, flows and route audit. The run on `eb044ec` was cancelled by that newer push.
 - **To tell the client:** packages are still added by the platform team. The owner's own service changes are not in the audit log; the platform team's are.
 
 ## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135); the client's answers and the deploy (D-136)
