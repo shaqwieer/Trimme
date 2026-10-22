@@ -6,6 +6,7 @@ using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
+using Trimme.Modules.Services.Application.Admin;
 using Trimme.Modules.Services.Domain;
 
 namespace Trimme.Modules.Services.Application;
@@ -26,7 +27,8 @@ internal sealed record CreateShopServiceCommand(
     Guid? CategoryId,
     decimal Price,
     int DurationMinutes,
-    bool OnlineBookable) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
+    bool OnlineBookable,
+    IReadOnlyList<Guid>? ProfessionalIds = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
 
 internal sealed record UpdateShopServiceCommand(
     Guid ServiceId,
@@ -38,7 +40,8 @@ internal sealed record UpdateShopServiceCommand(
     decimal Price,
     int DurationMinutes,
     bool OnlineBookable,
-    uint Version) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
+    uint Version,
+    IReadOnlyList<Guid>? ProfessionalIds = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
 
 internal enum CatalogStateChange
 {
@@ -106,8 +109,11 @@ internal sealed class ShopCatalogReader(TrimmeDbContext db)
 {
     public async Task<ShopServiceResponse> ServiceAsync(ShopService service, CancellationToken cancellationToken)
     {
-        var assigned = await db.Set<ProfessionalServiceAssignment>().CountAsync(a => a.ServiceId == service.Id, cancellationToken);
-        return CatalogMapping.ToResponse(service, assigned);
+        var assigned = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+            .Where(a => a.ServiceId == service.Id)
+            .Select(a => a.ProfessionalId)
+            .ToListAsync(cancellationToken);
+        return CatalogMapping.ToResponse(service, [.. assigned.Select(id => id.Value)]);
     }
 
     public async Task<IReadOnlyList<ShopServiceResponse>> ServicesAsync(bool includeArchived, CancellationToken cancellationToken)
@@ -116,11 +122,11 @@ internal sealed class ShopCatalogReader(TrimmeDbContext db)
             .Where(s => includeArchived || !s.IsArchived)
             .OrderBy(s => s.IsArchived).ThenBy(s => s.DisplayOrder).ThenBy(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
-        var counts = await db.Set<ProfessionalServiceAssignment>()
-            .GroupBy(a => a.ServiceId)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
-        return [.. services.Select(s => CatalogMapping.ToResponse(s, counts.GetValueOrDefault(s.Id)))];
+        var assignments = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+            .Select(a => new { a.ServiceId, a.ProfessionalId })
+            .ToListAsync(cancellationToken);
+        var byService = assignments.ToLookup(a => a.ServiceId, a => a.ProfessionalId.Value);
+        return [.. services.Select(s => CatalogMapping.ToResponse(s, [.. byService[s.Id]]))];
     }
 
     public async Task<ShopPackageResponse> PackageAsync(ServicePackage package, CancellationToken cancellationToken) =>
@@ -174,7 +180,8 @@ internal sealed class GetShopServiceHandler(TrimmeDbContext db, ICurrentTenant t
     }
 }
 
-internal sealed class CreateShopServiceHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopCatalogReader reader, TimeProvider clock)
+internal sealed class CreateShopServiceHandler(
+    TrimmeDbContext db, ICurrentTenant tenant, ShopCatalogReader reader, IProfessionalDirectory professionals, TimeProvider clock)
     : ICommandHandler<CreateShopServiceCommand, Result<ShopServiceResponse>>
 {
     public async Task<Result<ShopServiceResponse>> Handle(CreateShopServiceCommand command, CancellationToken cancellationToken)
@@ -190,21 +197,30 @@ internal sealed class CreateShopServiceHandler(TrimmeDbContext db, ICurrentTenan
             return category.Error;
         }
 
+        var now = clock.GetUtcNow();
         var created = ShopService.Create(
             EntityId.New<ShopServiceId>(), shopId, CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes,
-            command.OnlineBookable, await reader.NextServiceOrderAsync(cancellationToken), clock.GetUtcNow());
+            command.OnlineBookable, await reader.NextServiceOrderAsync(cancellationToken), now);
         if (created.IsFailure)
         {
             return created.Error;
         }
 
         db.Add(created.Value);
+        // The owner picks who does it (D-137): the shop's own barbers only, as for the admin (D-127).
+        var assigned = await ServiceChanges.AssignAsync(db, professionals, created.Value, command.ProfessionalIds ?? [], now, cancellationToken);
+        if (assigned.IsFailure)
+        {
+            return assigned.Error;
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return await reader.ServiceAsync(created.Value, cancellationToken);
     }
 }
 
-internal sealed class UpdateShopServiceHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopCatalogReader reader, TimeProvider clock)
+internal sealed class UpdateShopServiceHandler(
+    TrimmeDbContext db, ICurrentTenant tenant, ShopCatalogReader reader, IProfessionalDirectory professionals, TimeProvider clock)
     : ICommandHandler<UpdateShopServiceCommand, Result<ShopServiceResponse>>
 {
     public async Task<Result<ShopServiceResponse>> Handle(UpdateShopServiceCommand command, CancellationToken cancellationToken)
@@ -224,10 +240,20 @@ internal sealed class UpdateShopServiceHandler(TrimmeDbContext db, ICurrentTenan
 
         // Optimistic concurrency: a stale version makes the save fail with 409.
         db.Entry(service).Property(s => s.Version).OriginalValue = command.Version;
-        var updated = service.Update(CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes, command.OnlineBookable, clock.GetUtcNow());
+        var now = clock.GetUtcNow();
+        var updated = service.Update(CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes, command.OnlineBookable, now);
         if (updated.IsFailure)
         {
             return updated.Error;
+        }
+
+        if (command.ProfessionalIds is { } professionalIds)
+        {
+            var assigned = await ServiceChanges.AssignAsync(db, professionals, service, professionalIds, now, cancellationToken);
+            if (assigned.IsFailure)
+            {
+                return assigned.Error;
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);

@@ -1659,7 +1659,7 @@ export interface paths {
         /** The shop's own services in display order (archived ones on request). */
         get: operations["ListShopServices"];
         put?: never;
-        /** Creates a service with the shop's own name, price and duration. */
+        /** Creates a service with the shop's own name, price and duration, and the shop's own barbers who do it. */
         post: operations["CreateShopService"];
         delete?: never;
         options?: never;
@@ -1676,7 +1676,7 @@ export interface paths {
         };
         /** One of the shop's own services; another shop's id is 404. */
         get: operations["GetShopService"];
-        /** Edits the shop's own service (optimistic concurrency). */
+        /** Edits the shop's own service and, when given, who of its barbers does it (optimistic concurrency). */
         put: operations["UpdateShopService"];
         post?: never;
         /** Deletes a service nothing uses yet; otherwise 409 service.in_use (archive instead). */
@@ -4472,7 +4472,10 @@ export interface components {
             nameEn: string;
             timeZone: null | string;
         };
-        /** @description A new service of the signed-in shop. Price in SAR (≤ 2 decimals); duration a multiple of 5 minutes. */
+        /**
+         * @description A new service of the signed-in shop. Price in SAR (≤ 2 decimals); duration a multiple of 5 minutes.
+         *     `ProfessionalIds` are the shop's own barbers who do it (D-137); null or empty assigns none.
+         */
         CreateShopServiceRequest: {
             nameAr: string;
             nameEn: null | string;
@@ -4485,6 +4488,7 @@ export interface components {
             /** Format: int32 */
             durationMinutes: number;
             onlineBookable: boolean;
+            professionalIds?: null | string[];
         };
         CsrfTokenResponse: {
             token: string;
@@ -6330,6 +6334,7 @@ export interface components {
             assignedProfessionalCount: number;
             /** Format: uint32 */
             version: number;
+            professionalIds: string[];
         };
         /** @enum {unknown} */
         ShopStatus: "Draft" | "Active" | "Suspended" | null;
@@ -6739,7 +6744,10 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
-        /** @description Edit of the shop's own service; a stale `Version` answers 409. */
+        /**
+         * @description Edit of the shop's own service; a stale `Version` answers 409. `ProfessionalIds` null keeps who does it;
+         *     a list makes exactly those of the shop's own barbers do it (D-137).
+         */
         UpdateShopServiceRequest: {
             nameAr: string;
             nameEn: null | string;
@@ -6754,6 +6762,7 @@ export interface components {
             onlineBookable: boolean;
             /** Format: uint32 */
             version: number;
+            professionalIds?: null | string[];
         };
         VerifyOtpRequest: {
             /** Format: uuid */

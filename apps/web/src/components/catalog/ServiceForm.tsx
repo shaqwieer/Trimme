@@ -53,13 +53,13 @@ const FIELDS = [
 
 const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 
-/** A barber who can be picked to do the service (the admin's form, D-127). */
+/** A barber who can be picked to do the service (the admin's form, D-127, and the owner's, D-137). */
 export type ServiceFormProfessional = { id: string; name: string };
 
 /**
  * The shop's own service form (DV-A01, DV-S03): Arabic name required, English optional, the shop's own price and a
- * duration in 5-minute steps. Also used by the admin's support override (with a reason) and by the admin building a
- * shop's catalogue (D-127, with the shop's barbers to pick) through `onSubmitValues`.
+ * duration in 5-minute steps, and the shop's barbers who do it. Saved through `onSubmitValues`: by the owner (D-137),
+ * by the admin's support override (with a reason) and by the admin building a shop's catalogue (D-127).
  */
 export function ServiceForm({
   categories,
@@ -69,13 +69,14 @@ export function ServiceForm({
   reasonLabel,
   professionals,
   assignedIds,
+  barbersAddedBy = 'admin',
 }: {
   categories: Category[];
   service?: Service | components['schemas']['AdminServiceResponse'];
   submitLabel?: string;
   /**
-   * The save (the admin's, D-127/D-130). Resolve to `'navigated'` when it moved to another page, so the form does not
-   * refresh this one.
+   * The save (the owner's, D-137, or the admin's, D-127/D-130). Resolve to `'navigated'` when it moved to another page,
+   * so the form does not refresh this one.
    */
   onSubmitValues: (
     body: components['schemas']['UpdateShopServiceRequest'],
@@ -84,8 +85,10 @@ export function ServiceForm({
   ) => Promise<void | 'navigated'>;
   /** Label of a required reason field (admin support override). */
   reasonLabel?: string;
-  /** The shop's barbers, to pick who does the service (admin, D-127). Without it the field is not shown. */
+  /** The shop's barbers, to pick who does the service (D-127, D-137). Without it the field is not shown. */
   professionals?: ServiceFormProfessional[];
+  /** Who adds barbers when the shop has none: the admin from the shop's tab (default), or the platform team (owner). */
+  barbersAddedBy?: 'admin' | 'platform';
   /** The barbers who do it now; a new service starts with every barber picked. */
   assignedIds?: string[];
 }) {
@@ -247,7 +250,12 @@ export function ServiceForm({
               <legend className="pb-1 text-label font-bold text-text-strong">{t('professionals')}</legend>
               <p className="text-helper text-text-tertiary">{t('professionalsHint')}</p>
               {professionals.length === 0 ? (
-                <InlineAlert tone="info" title={t('noShopProfessionals')} />
+                <InlineAlert
+                  tone="info"
+                  title={t(
+                    barbersAddedBy === 'platform' ? 'noShopProfessionalsOwner' : 'noShopProfessionals',
+                  )}
+                />
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {professionals.map((professional) => (

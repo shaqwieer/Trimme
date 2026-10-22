@@ -142,7 +142,7 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/public/service-categories` | Anonymous · active categories |
 | `GET /api/v1/public/shops/{slug}/services`, `.../packages` | Anonymous · active shop; active, visible, non-archived items; packages only when every item is available |
 | `GET /api/v1/shop/services`, `GET /api/v1/shop/services/{id}`, `GET /api/v1/shop/packages`, `GET /api/v1/shop/packages/{id}` | User type ShopUser (owner and staff) · own shop only; 404 while suspended |
-| `POST/PUT /api/v1/shop/services(/{id})`, `POST .../{id}/activate|deactivate|archive`, `DELETE .../{id}`, `PUT .../order` | `Shop.Services.Manage` · same for `/shop/packages` (no delete) · another shop's id → 404 |
+| `POST/PUT /api/v1/shop/services(/{id})`, `POST .../{id}/activate|deactivate|archive`, `DELETE .../{id}`, `PUT .../order` | `Shop.Services.Manage` (the owner; the owner's pages are back, D-137) · `professionalIds` on create and edit: the shop's own barbers only (D-137) · same for `/shop/packages` (no delete; no shop UI, D-130) · another shop's id → 404 |
 | `GET /api/v1/admin/service-categories` | `Admin.ShopServices.View` |
 | `POST /api/v1/admin/service-categories`, `PUT .../{id}`, `POST .../{id}/activate|deactivate` | `Admin.ServiceCategories.Manage` · audited |
 | `GET /api/v1/admin/services`, `GET /api/v1/admin/services/{id}`, `GET /api/v1/admin/packages` | `Admin.ShopServices.View` · paged |

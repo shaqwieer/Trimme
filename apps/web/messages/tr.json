@@ -52,6 +52,7 @@
       "appointments": "Randevular",
       "walkIn": "Randevusuz kayıt",
       "schedule": "Çalışma saatleri ve molalar",
+      "services": "Hizmetler",
       "subscription": "Abonelik",
       "notifications": "Bildirimler",
       "settings": "Salon ayarları",
@@ -562,7 +563,7 @@
         "email": "E-posta",
         "role": "Rol",
         "owner": "Salon sahibi",
-        "ownerHint": "Çalışma saatleri, ayarlar ve randevular",
+        "ownerHint": "Hizmetler, çalışma saatleri, ayarlar ve randevular",
         "staff": "Resepsiyon personeli",
         "staffHint": "Yalnızca randevular ve randevusuz müşteriler",
         "submit": "Davet gönder",
@@ -905,6 +906,7 @@
       "professionals": "Bu hizmeti yapan berberler",
       "professionalsHint": "Bu hizmet için yalnızca seçilen berberlerle randevu alınabilir.",
       "noShopProfessionals": "Bu salonda henüz berber yok. Onları “Uzmanlar” sekmesinden ekleyin, ardından burada seçin.",
+      "noShopProfessionalsOwner": "Salonunuzda henüz berber yok. Groom Here ekibi ekler; ardından burada seçin.",
       "noProfessionalsPicked": "Berber seçilmedi: en az bir berber seçilene kadar bu hizmet için saat gösterilmez."
     },
     "activeFor": "{name}: randevuya açık",
@@ -1334,7 +1336,7 @@
     },
     "barberDay": {
       "title": "Berberlerin molaları",
-      "body": "Berberi ve günü seçin, ardından bir saate dokunarak mola yapın; geri almak için tekrar dokunun. Sebep gerekmez ve hiçbir randevu iptal edilmez.",
+      "body": "Berberi ve günü seçin, bir saate dokunun ve molanın dakikalarını 5’er dakika seçin, ardından onaylayın. Sebep gerekmez ve hiçbir randevu iptal edilmez.",
       "barber": "Berber",
       "today": "Bugün",
       "previous": "Önceki gün",
@@ -1350,11 +1352,50 @@
         "shopBreak": "Salon molası",
         "booked": "Dolu",
         "off": "İzinli",
-        "outside": "Mesai dışı"
+        "outside": "Mesai dışı",
+        "partBreak": "Mola {duration}",
+        "partFree": "Kısmen boş"
       },
       "wholeDay": "Tüm gün mola",
       "clear": "Tüm molaları kaldır",
-      "saved": "Kaydedildi"
+      "minutesHint": "Mola yapmak için boş dakikaları seçin veya iptal etmek için bir molaya dokunun.",
+      "slot": "{time}: {state}",
+      "selected": "Seçildi",
+      "range": "{from} – {to}",
+      "wholeHour": "Tüm saat",
+      "clearSelection": "Seçimi temizle",
+      "confirmBreak": "Molayı onayla",
+      "closeHour": "Dakikaları kapat",
+      "confirm": {
+        "back": "Geri dön",
+        "add": {
+          "title": "{barber} için {when} mola olsun mu?",
+          "body": "Bu zaman mola olur ve randevu alınamaz. Daha sonra iptal edebilirsiniz.",
+          "action": "Molayı onayla"
+        },
+        "remove": {
+          "title": "{when} molası iptal edilsin mi?",
+          "body": "Bu zaman yeniden randevuya açılır.",
+          "action": "Molayı iptal et"
+        },
+        "wholeDay": {
+          "title": "{barber} için tüm gün mola olsun mu?",
+          "body": "Bu gündeki tüm boş zamanlar mola olur. Alınmış randevular olduğu gibi kalır.",
+          "action": "Molayı onayla"
+        },
+        "clear": {
+          "title": "{barber} için tüm molalar iptal edilsin mi?",
+          "body": "Bu gündeki molalar şu andan itibaren iptal edilir ve zaman yeniden randevuya açılır.",
+          "action": "Molaları iptal et"
+        }
+      },
+      "done": {
+        "add": "{when}, {barber} için mola olarak ayrıldı.",
+        "remove": "{when} molası iptal edildi; zaman randevuya açık.",
+        "wholeDay": "Tüm gün {barber} için mola oldu.",
+        "clear": "{barber} için bu günün molaları şu andan itibaren iptal edildi."
+      },
+      "tooMany": "Bir günde en fazla 48 ayrı mola olabilir. Yan yana dakikaları seçin."
     },
     "timeOff": {
       "title": "İzinler ve kapalı günler",

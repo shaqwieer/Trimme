@@ -159,7 +159,7 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     expect((await slots(page.request, target.iso)).bookable).toBe(true);
   });
 
-  test("staff set a barber's breaks by the hour with no reason, and see nothing else of the schedule (D-134)", async ({
+  test("staff set a barber's breaks every 5 minutes with a confirmation and no reason, and see nothing else of the schedule (D-134, D-137)", async ({
     page,
     context,
   }) => {
@@ -199,6 +199,12 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     await expect(hours.locator('[data-hour="10"]')).toHaveAttribute('data-state', 'outside');
     const one = hours.locator('[data-hour="16"]');
     await expect(one).toHaveAttribute('data-state', 'free');
+
+    // The hour opens its twelve 5-minute slots, as the booking does (D-137).
+    await one.click();
+    await expect(one).toHaveAttribute('aria-expanded', 'true');
+    const minutes = card.getByTestId('barber-day-minutes');
+    await expect(minutes.locator('[data-minute]')).toHaveCount(12);
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(
       axe.violations
@@ -206,16 +212,24 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
         .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(' | ')}`),
     ).toEqual([]);
 
-    // One tap: 4–5 PM is a break (a seeded booking holds 1 PM two days ahead), and the public times follow; another tap
-    // undoes it.
-    await one.click();
-    await expect(one).toHaveAttribute('aria-pressed', 'true', SAVE);
+    // 4:00–4:15 PM picked and confirmed is a break (a seeded booking holds 1 PM two days ahead); the page says so and
+    // the public times follow. Cancelling it, after its own confirmation, frees it again.
+    for (const minute of [960, 965, 970]) await minutes.locator(`[data-minute="${minute}"]`).click();
+    await expect(minutes.locator('[aria-pressed="true"]')).toHaveCount(3);
+    await minutes.getByRole('button', { name: 'تأكيد الاستراحة' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'تأكيد الاستراحة' }).click();
+    await expect(card.getByText(/^تم حجز .* استراحة لـ /)).toBeVisible(SAVE);
+    await expect(one).toHaveAttribute('data-state', 'partBreak');
     const during = (await slots(page.request, target.iso, SULTAN, BEARD_TRIM)).slots.map((s) => s.localTime);
     expect(during).not.toContain('16:00');
     expect(during).not.toContain('15:45'); // a 20-minute beard trim from 15:45 runs into the break
+    expect(during).toContain('16:15');
     expect(during).toContain('17:00');
-    await one.click();
-    await expect(one).toHaveAttribute('aria-pressed', 'false', SAVE);
+
+    await minutes.locator('[data-minute="965"]').click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'إلغاء الاستراحة' }).click();
+    await expect(card.getByText(/^أُلغيت استراحة /)).toBeVisible(SAVE);
+    await expect(one).toHaveAttribute('data-state', 'free');
     expect(
       (await slots(page.request, target.iso, SULTAN, BEARD_TRIM)).slots.map((s) => s.localTime),
     ).toContain('16:00');

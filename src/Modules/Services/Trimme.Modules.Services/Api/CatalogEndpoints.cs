@@ -15,7 +15,10 @@ using Trimme.Modules.Services.Domain;
 
 namespace Trimme.Modules.Services.Api;
 
-/// <summary>A new service of the signed-in shop. Price in SAR (≤ 2 decimals); duration a multiple of 5 minutes.</summary>
+/// <summary>
+/// A new service of the signed-in shop. Price in SAR (≤ 2 decimals); duration a multiple of 5 minutes.
+/// <c>ProfessionalIds</c> are the shop's own barbers who do it (D-137); null or empty assigns none.
+/// </summary>
 public sealed record CreateShopServiceRequest(
     string NameAr,
     string? NameEn,
@@ -24,9 +27,13 @@ public sealed record CreateShopServiceRequest(
     Guid? CategoryId,
     decimal Price,
     int DurationMinutes,
-    bool OnlineBookable);
+    bool OnlineBookable,
+    IReadOnlyList<Guid>? ProfessionalIds = null);
 
-/// <summary>Edit of the shop's own service; a stale <c>Version</c> answers 409.</summary>
+/// <summary>
+/// Edit of the shop's own service; a stale <c>Version</c> answers 409. <c>ProfessionalIds</c> null keeps who does it;
+/// a list makes exactly those of the shop's own barbers do it (D-137).
+/// </summary>
 public sealed record UpdateShopServiceRequest(
     string NameAr,
     string? NameEn,
@@ -36,7 +43,8 @@ public sealed record UpdateShopServiceRequest(
     decimal Price,
     int DurationMinutes,
     bool OnlineBookable,
-    uint Version);
+    uint Version,
+    IReadOnlyList<Guid>? ProfessionalIds = null);
 
 /// <summary>A package of 2–10 of the shop's own services, with its own price and total duration.</summary>
 public sealed record CreateShopPackageRequest(
@@ -150,15 +158,15 @@ internal static class CatalogEndpoints
             .WithName("GetShopService").WithSummary("One of the shop's own services; another shop's id is 404.")
             .Produces<ShopServiceResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/", async (CreateShopServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new CreateShopServiceCommand(r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable), ct))
+                (await d.Send(new CreateShopServiceCommand(r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds), ct))
                     .ToHttpResult(s => TypedResults.Created($"/api/v1/shop/services/{s.Id}", s)))
             .RequirePermission(ShopManage)
-            .WithName("CreateShopService").WithSummary("Creates a service with the shop's own name, price and duration.")
+            .WithName("CreateShopService").WithSummary("Creates a service with the shop's own name, price and duration, and the shop's own barbers who do it.")
             .Produces<ShopServiceResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest);
         group.MapPut("/{serviceId:guid}", async (Guid serviceId, UpdateShopServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new UpdateShopServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.Version), ct)).ToHttpResult())
+                (await d.Send(new UpdateShopServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.Version, r.ProfessionalIds), ct)).ToHttpResult())
             .RequirePermission(ShopManage)
-            .WithName("UpdateShopService").WithSummary("Edits the shop's own service (optimistic concurrency).")
+            .WithName("UpdateShopService").WithSummary("Edits the shop's own service and, when given, who of its barbers does it (optimistic concurrency).")
             .Produces<ShopServiceResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         foreach (var (action, change) in new[] { ("activate", CatalogStateChange.Activate), ("deactivate", CatalogStateChange.Deactivate), ("archive", CatalogStateChange.Archive) })
         {

@@ -5378,7 +5378,7 @@
         "tags": [
           "Shop: services"
         ],
-        "summary": "Creates a service with the shop\u0027s own name, price and duration.",
+        "summary": "Creates a service with the shop\u0027s own name, price and duration, and the shop\u0027s own barbers who do it.",
         "operationId": "CreateShopService",
         "requestBody": {
           "content": {
@@ -5459,7 +5459,7 @@
         "tags": [
           "Shop: services"
         ],
-        "summary": "Edits the shop\u0027s own service (optimistic concurrency).",
+        "summary": "Edits the shop\u0027s own service and, when given, who of its barbers does it (optimistic concurrency).",
         "operationId": "UpdateShopService",
         "parameters": [
           {
@@ -15822,9 +15822,19 @@
           },
           "onlineBookable": {
             "type": "boolean"
+          },
+          "professionalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
-        "description": "A new service of the signed-in shop. Price in SAR (\u2264 2 decimals); duration a multiple of 5 minutes."
+        "description": "A new service of the signed-in shop. Price in SAR (\u2264 2 decimals); duration a multiple of 5 minutes.\n\u0060ProfessionalIds\u0060 are the shop\u0027s own barbers who do it (D-137); null or empty assigns none."
       },
       "CsrfTokenResponse": {
         "required": [
@@ -21658,7 +21668,8 @@
           "moderation",
           "moderationReason",
           "assignedProfessionalCount",
-          "version"
+          "version",
+          "professionalIds"
         ],
         "type": "object",
         "properties": {
@@ -21734,6 +21745,13 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "professionalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "description": "A shop\u0027s own service as the shop manages it. Shop-facing contract: no customer data. \u0060NameEn\u0060 may be null;\nclients show the Arabic name instead (D-070)."
@@ -23211,9 +23229,19 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "professionalIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
-        "description": "Edit of the shop\u0027s own service; a stale \u0060Version\u0060 answers 409."
+        "description": "Edit of the shop\u0027s own service; a stale \u0060Version\u0060 answers 409. \u0060ProfessionalIds\u0060 null keeps who does it;\na list makes exactly those of the shop\u0027s own barbers do it (D-137)."
       },
       "VerifyOtpRequest": {
         "required": [

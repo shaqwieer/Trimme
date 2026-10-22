@@ -27,7 +27,8 @@ public sealed record ShopServiceResponse(
     ModerationState Moderation,
     string? ModerationReason,
     int AssignedProfessionalCount,
-    uint Version);
+    uint Version,
+    IReadOnlyList<Guid> ProfessionalIds);
 
 public sealed record PackageItemResponse(Guid ServiceId, string NameAr, string? NameEn, bool IsAvailable);
 
@@ -82,7 +83,7 @@ internal static class CatalogMapping
     public static CatalogText Text(ICatalogTextFields fields) =>
         CatalogText.Create(fields.NameAr, fields.NameEn, fields.DescriptionAr, fields.DescriptionEn);
 
-    public static ShopServiceResponse ToResponse(ShopService service, int assignedProfessionals) => new(
+    public static ShopServiceResponse ToResponse(ShopService service, IReadOnlyList<Guid> professionalIds) => new(
         service.Id.Value,
         service.NameAr,
         service.NameEn,
@@ -98,8 +99,9 @@ internal static class CatalogMapping
         service.DisplayOrder,
         service.Moderation,
         service.ModerationReason,
-        assignedProfessionals,
-        service.Version);
+        professionalIds.Count,
+        service.Version,
+        professionalIds);
 
     public static ShopPackageResponse ToResponse(ServicePackage package, IReadOnlyDictionary<ShopServiceId, ShopService> services)
     {

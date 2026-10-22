@@ -1236,6 +1236,7 @@ This refines D-126.
   - `ServiceForm` and `PackageForm` now always save through the admin.
   - The shop's catalogue API and its `Shop.Services.Manage` permission remain (the owner role still holds it), so API clients and the existing tests keep working; nothing in the shop UI reaches it.
   - The admin's shop-invite form describes the owner role as «الدوام والإعدادات والمواعيد» ("Hours, settings and appointments"); it said services, which the owner no longer manages.
+  - **Updated by D-137:** the owner adds and edits the shop's services again, with the barbers who do each; packages stay the admin's.
 - **The shop's bottom tab bar.**
   - Below `lg`, the shop dashboard has an app-style bar with its four everyday pages. In Arabic, from the right: النظرة التشغيلية، الدوام والبريكات، حجز حضوري، المواعيد. Each tab shows only with its permission.
   - The drawer keeps everything else (calendar, settings, QR, subscription, notifications).
@@ -1308,6 +1309,7 @@ This refines D-126.
   - API (Availability): `GET /api/v1/shop/schedule/barber-day?professionalId&date` returns one barber's calendar date in minutes (0–1440): working time (including the previous business day's hours after midnight), the barber's own one-off breaks, the shop's breaks (weekly, or for everyone), booked time and time off. `PUT /api/v1/shop/schedule/barber-day` replaces the barber's own one-off breaks on that date: windows are joined where they touch, at most 48, on 5-minute steps, never on a past date, for the shop's own barber only; the last save wins. Weekly breaks and breaks for everyone stay the owner's. Bookings are never cancelled.
   - A break's label is optional everywhere (domain and `BreakRequest.Label`). The owner's break form has no name field, and the list names each break by who it is for.
   - Web: for the desk, /shop/schedule is «البريكات». It has a barber picker, day arrows from today, and the 24 hours as cells: free, break, booked, the shop's break, off, not working. One tap makes an hour a break or frees it, and saves at once. «استراحة طوال اليوم» makes every free hour a break; «إلغاء كل الاستراحات» clears them from the current hour on. Booked hours, the shop's breaks and time off cannot be changed there. The owner keeps every card and gets the same day view.
+  - **Updated by D-137:** an hour opens its 5-minute slots; breaks are picked there and saved after a confirmation, with a visible message.
   - Demo data: the prayer and lunch breaks (ids …701–703, …711) are no longer seeded, and the demo seeder deletes them where they exist. groomhere.sa runs the dev seed on `migrate`, so it has no fixed breaks after the next deploy. Owners can still add weekly breaks.
 - **The walk-in's mobile.** This replaces "walk-ins collect no phone" (Phase 13, R-SD-04).
   - The desk asks for the customer's mobile, which is optional: some customers will not give it. The client first asked for it to be required, then optional (the same session). The name stays required, even one letter. A mobile that is given must be a Saudi mobile, checked with `PhoneNumber.TryParseMobile`; Arabic-Indic digits are accepted. Otherwise 400, `customerPhone`: `validation.phone_invalid`. Without a mobile, no row is stored.
@@ -1349,8 +1351,13 @@ This refines D-126.
 - **The owner's appointments.** The owner gets the same simple list as the desk (D-134), with the new or returning badges (D-135). The full board (status chips, date range, barber filter, search, cancellations) is removed (`AppointmentsBoard`, its messages and the owner's E2 steps on it). Past visits stay in the calendar, the overview keeps the figures, and the platform team keeps the full admin list. The admin bookings page still uses the status chips (`lib/shop/board`).
 - **Dependencies.** None added. No migration.
 
-## D-137 — The language menu in a phone's dashboard header, top left; no sentence under the walk-in's mobile — Accepted (Session 19, after Phase 17, at the client's request)
-- **The client's request** (a screenshot of the owner's overview on a phone, groomhere.sa): the language choice at the top left, so each user picks the language that suits them, done first so the client can check it the same day. And: remove the sentence under the walk-in's mobile ("there is no need for it").
+## D-137 — The language menu in a phone's dashboard header, top left; no sentence under the walk-in's mobile; the owner's services again; breaks every 5 minutes with a confirmation — Accepted (Session 19, after Phase 17, at the client's request)
+- **The client's request** (screenshots of the owner's overview and of «البريكات» on a phone, groomhere.sa):
+  1. The language choice at the top left, so each user picks the language that suits them, done first so the client can check it the same day.
+  2. Remove the sentence under the walk-in's mobile ("there is no need for it").
+  3. Give adding and editing services back to the salon owner (not the desk); the platform team keeps it too.
+  4. Breaks: after choosing an hour, choose the time every 5 minutes, as in the booking, with a confirmation at each step that the time is now a break.
+- **Asked and answered in the session:** the user chose to deploy once all four were done, and the 5-minute chips with a confirm button for the breaks (over a start time plus a length).
 - **Before.** The dashboard header showed the language menu from 768 px only: D-124 left the phone header to the title, the live status and the bell, and moved the theme menu to the drawer. The drawer has no language menu, so on a phone the shop and admin dashboards had no language choice at all.
 - **The language menu.**
   - It is in the shop and admin dashboard headers at every width, as the header's last control. That puts it in the end corner: top left in Arabic, top right in English and Turkish. The bell sits next to it.
@@ -1363,5 +1370,15 @@ This refines D-126.
     - At 360 px, the overview's title is cut by 8 px.
     - No page overflows at 360 or 390 px: ar, en and tr; owner, desk and admin; light and dark.
 - **The walk-in.** The sentence under the customer's mobile («يصل الرقم إلى إدارة Groom Here فقط، ولا يظهر للمحل بعد تسجيل الحجز.») is removed in all three languages. Nothing else changes: the mobile is still optional and still reaches the platform team only (D-134).
-- **Found on the way.** The walk-in page overflowed by 13 px at 360 px, because its one-column grid took its content's width. The column is now bounded (`grid-cols-1`).
-- **Dependencies.** None added. No migration, and the API is unchanged.
+- **Found on the way.** The walk-in page overflowed by 13 px at 360 px, because its one-column grid took its content's width. The column is now bounded (`grid-cols-1`). «جارٍ الاتصال…», shown on every page load, wrapped onto two lines on a phone and squeezed the title, so it is the dot alone there too; only «إعادة الاتصال…» keeps its words.
+- **The owner's services (D-130 updated).**
+  - The owner has «الخدمات» again, in the drawer and the sidebar (`Shop.Services.Manage`, the owner's only; the desk has none, and the API refuses it with 403). `/shop/services` lists the services with the on/off switch, keyboard reorder, edit, archive and delete; `/shop/services/new` and `/shop/services/{id}` hold the form. Packages stay the admin's (D-130), and the admin keeps adding and editing services (D-127).
+  - A service the owner added had no barber and could not be booked: barbers are linked by the platform team (`Admin.Professionals.AssignServices`). The owner now picks which of the shop's own barbers do each service, as the admin does. `CreateShopServiceRequest` and `UpdateShopServiceRequest` take an optional `ProfessionalIds` (on create, null or empty links none; on edit, null keeps who does it). The shop's own barbers only, through the admin's `ServiceChanges.AssignAsync`: another shop's barber is `validation.invalid` on `professionalIds`. `ShopServiceResponse` gains `ProfessionalIds`. A new service starts with every active barber picked. With no barber, the form says the Groom Here team adds them.
+  - The owner's own changes are not audited, as before D-130 (Phase 07): the audit covers the platform team's changes to a shop.
+  - The admin's invitation describes the owner role as «الخدمات والدوام والإعدادات والمواعيد» again.
+- **Breaks every 5 minutes (D-134 updated).**
+  - The 24 hours stay. Each hour sums up its twelve 5-minute slots: free, «متاح جزئياً» (partly booked or the shop's), a break, «استراحة ١٥ دقيقة» (partly a break), booked, the shop's break, off or not working. An hour opens while any of its slots can still change, so a half-booked hour is no longer locked.
+  - Tapping an hour opens its slots below the hours, :00 to :55, as the booking's hour and minutes do (D-125, D-130). Free slots are picked (several, any order) and «الساعة كاملة» picks every free one; «تأكيد الاستراحة» asks «استراحة ٢:١٥ م – ٢:٣٠ م لـ …؟» and saves only after «تأكيد الاستراحة» in the dialog («تراجع» sends nothing). A visible message then says «تم حجز … استراحة لـ …». Picked slots next to each other become one window.
+  - Tapping a break asks «إلغاء استراحة …؟» for the whole break around it, from the current 5 minutes on (what is over stays), and then says so. «استراحة طوال اليوم» and «إلغاء كل الاستراحات» ask first too and say what was done; clearing frees from the current 5 minutes on.
+  - Past slots cannot change; booked time, the shop's breaks and time off cannot be picked. The API already took 5-minute windows (D-134): no API change. Its cap of 48 separate windows a day now has its own message.
+- **Dependencies.** None added. No migration. API: the shop's service contracts above (OpenAPI regenerated).

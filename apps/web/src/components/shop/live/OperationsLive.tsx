@@ -167,7 +167,10 @@ export function LiveIndicator({ className }: { className?: string }) {
   return (
     <span
       role="status"
-      className={cn('inline-flex items-center gap-1.5 text-helper font-bold', className)}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1.5 text-helper font-bold whitespace-nowrap',
+        className,
+      )}
       data-testid="live-indicator"
       data-state={state}
     >
@@ -178,9 +181,16 @@ export function LiveIndicator({ className }: { className?: string }) {
           state === 'live' ? 'bg-success-500' : state === 'connecting' ? 'bg-warning-500' : 'bg-danger-500',
         )}
       />
-      {/* On a phone, live is the green dot alone (the header needs the room for the language, D-137); a problem keeps
-          its words. */}
-      <span className={state === 'live' ? 'text-success-700 max-md:sr-only' : 'text-text-secondary'}>{t(state)}</span>
+      {/* On a phone, live and the first connection on each page are the dot alone (the header needs the room for the
+          language, D-137); a lost connection keeps its words. Screen readers always hear them. */}
+      <span
+        className={cn(
+          state === 'live' ? 'text-success-700' : 'text-text-secondary',
+          state !== 'offline' && 'max-md:sr-only',
+        )}
+      >
+        {t(state)}
+      </span>
     </span>
   );
 }

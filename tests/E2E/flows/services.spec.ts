@@ -38,15 +38,92 @@ async function csrf(context: BrowserContext, request: APIRequestContext): Promis
 }
 
 test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
-  test('the salon owner has no services page; the admin adds the salon’s package from its Services tab (D-130)', async ({
+  test('the salon owner adds a service with its own price, duration and barbers, edits, reorders and archives it; the desk cannot (D-137)', async ({
     browser,
   }) => {
+    const name = `حلاقة تجربة ${Date.now().toString(36)}`;
+    const ownerContext = await browser.newContext();
+    const page = await ownerContext.newPage();
+    await staffSignIn(page, 'owner@barber-house.trimme.local', DEMO_PASSWORD);
+    // The sidebar at this width; the drawer on a phone.
+    await page.getByRole('link', { name: 'Services', exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/shop\/services$/);
+    await expect(page.getByTestId('shop-services')).toBeVisible();
+    await expectNoSeriousAxeViolations(page);
+
+    await page.getByRole('link', { name: 'Add service' }).click();
+    const form = page.getByTestId('service-form');
+    await form.getByLabel('Service name in Arabic').fill(name);
+    await form.getByLabel('Price (SAR)').fill('٧٢٫٥'); // Arabic-Indic digits and decimal separator
+    await form.getByLabel('Duration').selectOption('45');
+    // Every active barber starts picked; keep one.
+    const barbers = form.getByTestId('service-professionals').getByRole('checkbox');
+    const count = await barbers.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 1; i < count; i++) await barbers.nth(i).uncheck();
+    await expectNoSeriousAxeViolations(page);
+    await form.getByRole('button', { name: 'Create service' }).click();
+    await expect(page).toHaveURL(/\/en\/shop\/services\/[0-9a-f-]{36}$/);
+    const serviceId = page.url().split('/').pop()!;
+    await expect(page.getByRole('heading', { name })).toBeVisible();
+    const created = await (await page.request.get(`/api/v1/shop/services/${serviceId}`)).json();
+    expect(created.price).toBe(72.5);
+    expect(created.professionalIds).toHaveLength(1);
+
+    // Bookable at once by customers, with that barber.
+    const listed = await (await page.request.get('/api/v1/public/shops/barber-house/services')).json();
+    expect(listed.find((s: { id: string }) => s.id === serviceId)?.professionalIds).toEqual(
+      created.professionalIds,
+    );
+
+    await form.getByLabel('Price (SAR)').fill('80');
+    await form.getByLabel('Duration').selectOption('50');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Changes saved.')).toBeVisible();
+    const saved = await (await page.request.get(`/api/v1/shop/services/${serviceId}`)).json();
+    expect(saved.price).toBe(80);
+    expect(saved.durationMinutes).toBe(50);
+    expect(saved.professionalIds).toEqual(created.professionalIds);
+
+    // Keyboard reorder: the new service is last; move it up once.
+    await page.goto('/en/shop/services');
+    const row = page.getByTestId(`catalog-row-${serviceId}`);
+    await expect(row).toContainText('SAR 80');
+    await expect(row).toContainText('50 min');
+    const moveUp = row.getByRole('button', { name: `Move ${name} up` });
+    await moveUp.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(new RegExp(`${name} moved to position`))).toBeAttached();
+
+    // Off, then archive (confirm): the demo shop keeps no test service in use.
+    await row.getByRole('switch', { name: `${name}: bookable` }).click();
+    await expect(row).toContainText('Off');
+    await row.getByRole('button', { name: `Archive ${name}` }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
+    await expect(page.getByTestId(`catalog-row-${serviceId}`)).toHaveCount(0);
+    await page.getByRole('link', { name: 'Show archived' }).click();
+    await expect(page.getByTestId(`catalog-row-${serviceId}`)).toContainText('Archived');
+
+    // The desk has no services page and no way to add one.
+    const deskContext = await browser.newContext();
+    const desk = await deskContext.newPage();
+    await staffSignIn(desk, 'staff@barber-house.trimme.local', DEMO_PASSWORD);
+    await expect(desk.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
+    await desk.goto('/en/shop/services');
+    await expect(desk.getByTestId('shop-services')).toHaveCount(0);
+    const refused = await desk.request.post('/api/v1/shop/services', {
+      headers: { 'X-CSRF-Token': await csrf(deskContext, desk.request) },
+      data: { nameAr: name, price: 50, durationMinutes: 30, onlineBookable: true },
+    });
+    expect(refused.status()).toBe(403);
+    await deskContext.close();
+    await ownerContext.close();
+  });
+
+  test('the admin adds the salon’s package from its Services tab (D-130)', async ({ browser }) => {
     const ownerContext = await browser.newContext();
     const owner = await ownerContext.newPage();
     await staffSignIn(owner, 'owner@barber-house.trimme.local', DEMO_PASSWORD);
-    await expect(owner.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
-    const gone = await owner.goto('/en/shop/services');
-    expect(gone?.status()).toBe(404);
 
     const adminContext = await browser.newContext();
     const admin = await adminContext.newPage();
