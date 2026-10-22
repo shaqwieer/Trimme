@@ -2208,7 +2208,6 @@
       "name": "Müşterinin adı",
       "nameTooLong": "Ad çok uzun.",
       "phone": "Müşterinin cep telefonu",
-      "phonePrivacy": "Numara yalnızca Groom Here ekibine gider; randevu kaydedildikten sonra salona gösterilmez.",
       "note": "Not",
       "notePlaceholder": "ör. kısa fade",
       "summary": {

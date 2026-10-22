@@ -1348,3 +1348,20 @@ This refines D-126.
 - **Confirmation.** «انتهت الخدمة» now asks first («انتهت خدمة …؟», "the visit is recorded as finished now and the rest of the barber's time becomes free to book; this can't be undone"), both on the list and in the drawer. «تراجع» sends nothing.
 - **The owner's appointments.** The owner gets the same simple list as the desk (D-134), with the new or returning badges (D-135). The full board (status chips, date range, barber filter, search, cancellations) is removed (`AppointmentsBoard`, its messages and the owner's E2 steps on it). Past visits stay in the calendar, the overview keeps the figures, and the platform team keeps the full admin list. The admin bookings page still uses the status chips (`lib/shop/board`).
 - **Dependencies.** None added. No migration.
+
+## D-137 — The language menu in a phone's dashboard header, top left; no sentence under the walk-in's mobile — Accepted (Session 19, after Phase 17, at the client's request)
+- **The client's request** (a screenshot of the owner's overview on a phone, groomhere.sa): the language choice at the top left, so each user picks the language that suits them, done first so the client can check it the same day. And: remove the sentence under the walk-in's mobile ("there is no need for it").
+- **Before.** The dashboard header showed the language menu from 768 px only: D-124 left the phone header to the title, the live status and the bell, and moved the theme menu to the drawer. The drawer has no language menu, so on a phone the shop and admin dashboards had no language choice at all.
+- **The language menu.**
+  - It is in the shop and admin dashboard headers at every width, as the header's last control. That puts it in the end corner: top left in Arabic, top right in English and Turkish. The bell sits next to it.
+  - Below 768 px it is compact: the icon and the short name («ع», EN, TR), with no chevron (48–58 px). The panel and its links are unchanged: each opens the same page in that language.
+  - To make room below 768 px:
+    - The header's gaps are 8 px (12 px from `md`).
+    - While the connection is live, «مباشر» is the green dot alone. The word stays for screen readers. «جارٍ الاتصال…» and «إعادة الاتصال…» keep their words.
+  - Measured in Chromium:
+    - At 390 px, «النظرة التشغيلية» (160 px) and «حجز عميل حضوري» fit. Longer titles («الدوام والاستراحات والإجازات», most Turkish ones) end with an ellipsis, as before.
+    - At 360 px, the overview's title is cut by 8 px.
+    - No page overflows at 360 or 390 px: ar, en and tr; owner, desk and admin; light and dark.
+- **The walk-in.** The sentence under the customer's mobile («يصل الرقم إلى إدارة Groom Here فقط، ولا يظهر للمحل بعد تسجيل الحجز.») is removed in all three languages. Nothing else changes: the mobile is still optional and still reaches the platform team only (D-134).
+- **Found on the way.** The walk-in page overflowed by 13 px at 360 px, because its one-column grid took its content's width. The column is now bounded (`grid-cols-1`).
+- **Dependencies.** None added. No migration, and the API is unchanged.

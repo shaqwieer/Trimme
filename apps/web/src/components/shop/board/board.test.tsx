@@ -227,7 +227,8 @@ describe('WalkInFlow (s-walkin, D-035, D-134)', () => {
       <WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />,
     );
 
-    expect(screen.getByTestId('walk-in-phone-privacy')).toHaveTextContent('لا يظهر للمحل');
+    // The client removed the sentence under the mobile (D-137).
+    expect(screen.queryByTestId('walk-in-phone-privacy')).not.toBeInTheDocument();
 
     await user.click(await screen.findByRole('radio', { name: /سلطان الحربي/ }));
     expect(screen.getByRole('radio', { name: /ابدأ الآن/ })).toBeChecked();

@@ -1,15 +1,28 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-21 (Session 18: the desk's pages — breaks by the hour, the walk-in's mobile, a simple appointments list (D-134); «انتهت الخدمة» and new or returning customers (D-135); after Phase 17)
+- **Updated:** 2026-10-22 (Session 19: the language menu in a phone's dashboard header and no sentence under the walk-in's mobile (D-137); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 17 and 18 are pushed (`60bb98e`) and deployed on groomhere.sa (2026-10-21).
 - **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - The `trimme-api:dev` and `trimme-web:dev` images were rebuilt from Session 18's tree, but the `trimme` stack on 3300 was **not** restarted or migrated. It still runs Session 17's containers against a volume without `WalkInContacts`. Run `up -d` (which runs `migrate` and the seed) when memory allows.
-  - The local volume is several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows fail on it. Run E2E on a fresh stack (see Session 17 below) or after `down -v`.
+  - Session 19 brought it up with `up -d` (migrate and the seed ran on the old volume, so `WalkInContacts` is applied there). The API image is Session 18's; the web image is built from Session 19's tree.
+  - The volume is still several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows and the anonymous route audit fail on it (`/shops/barber-house…: public page is noindex`). Run those on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 19: the language menu on a phone's dashboard; no sentence under the walk-in's mobile (D-137)
+- **The client's points** (two screenshots of the owner's account on a phone, groomhere.sa, and a message relayed by the user):
+  1. The language choice at the top left of the dashboard, done first so the client can check it the same day. **Done (D-137).**
+  2. Remove the sentence under the walk-in's mobile. **Done (D-137).**
+  3. Give the owner (not the desk) back adding and editing services; the platform team keeps it too. **Next.**
+  4. Breaks: after choosing an hour, choose the time every 5 minutes, as in the booking, with a confirmation at each step that the time is now a break. **Next.**
+- **Language menu:** in the shop and admin headers at every width, the header's last control (top left in Arabic), compact below 768 px. While live, «مباشر» is the green dot alone below 768 px. The header's gaps are 8 px below 768 px.
+- **Walk-in:** the `phonePrivacy` sentence is removed (ar, en, tr). The walk-in grid is bounded (`grid-cols-1`), which fixes a 13 px overflow at 360 px.
+- **Evidence:**
+  - Web: `lint`, `typecheck`, `format:check` pass; `pnpm test` 51 files, 475 tests (new: the header's language menu); `build` and `bundle:check` pass (78 routes).
+  - A scripted Chromium check on the local stack covered the owner's four tab pages, the desk's breaks and two admin pages. It ran at 390 and 360 px, in ar, en and tr, light and dark, with the live status settled: no page overflows, «النظرة التشغيلية» fits at 390 px, and the language button sits at x 16–64 in Arabic and at the right edge in en/tr. Switching from the open menu goes to `/en/shop`. Screenshots are in the session scratchpad (`shots-d137/`).
+  - E2E `smoke` passed in full (locale menu, RTL and LTR). The `a11y` and `a11y-dark` route audits passed 17/21: the owner, desk, customer and admin pages in ar and en, overflow included. The 4 failures are the anonymous pages, where `/en/shops/barber-house` is "noindex" because the seeded subscription has lapsed on this volume. The change does not touch them.
 
 ## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135); the client's answers and the deploy (D-136)
 - **The client's points** (screenshots of the desk account on groomhere.sa):

@@ -182,7 +182,7 @@ export function WalkInFlow({
   }
 
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-[1.6fr_1fr]" data-testid="walk-in">
+    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1.6fr_1fr]" data-testid="walk-in">
       <div className="flex flex-col gap-6 rounded-card border border-border bg-surface p-5 shadow-e1">
         <p className="text-helper text-text-secondary">{t('intro')}</p>
 
@@ -333,13 +333,6 @@ export function WalkInFlow({
             onValueChange={(national) => setPhone(national)}
             onBlur={() => setPhoneTouched(true)}
           />
-          <p
-            className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
-            data-testid="walk-in-phone-privacy"
-          >
-            <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
-            {t('phonePrivacy')}
-          </p>
           <TextareaField
             label={t('note')}
             optional

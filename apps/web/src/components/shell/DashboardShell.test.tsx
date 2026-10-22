@@ -106,6 +106,29 @@ describe('DashboardShell', () => {
     expect(drawerSwitch).toHaveFocus();
   });
 
+  it('keeps the language switch in the header at every width, last, in the top-left corner in Arabic (D-137)', async () => {
+    const user = userEvent.setup();
+    setPathname('/ar/shop');
+    renderWithIntl(
+      <DashboardShell variant="shop" title="النظرة التشغيلية">
+        <p>content</p>
+      </DashboardShell>,
+    );
+
+    const header = screen.getByRole('banner');
+    const button = within(header).getByRole('button', { name: 'اللغة: العربية' });
+    // Shown on phones too (no `hidden`), compact there: no chevron and less padding below 768px.
+    expect(button.parentElement).not.toHaveClass('hidden');
+    expect(button).toHaveClass('px-2', 'md:px-3');
+    expect(button.querySelectorAll('svg')[1]).toHaveClass('hidden', 'md:block');
+    // The last control of the header's end group: the corner (left in Arabic, right in English).
+    expect(button.parentElement?.parentElement?.lastElementChild).toBe(button.parentElement);
+
+    await user.click(button);
+    expect(within(header).getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/shop');
+    expect(within(header).getByRole('link', { name: 'Türkçe' })).toHaveAttribute('href', '/tr/shop');
+  });
+
   it('hides items the user has no permission for', () => {
     renderWithIntl(
       <DashboardShell

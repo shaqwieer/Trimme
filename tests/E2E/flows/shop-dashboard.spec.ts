@@ -107,7 +107,6 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     // Walk-in at the desk: service, barber, first free time that day, the name and the mobile (D-134).
     await page.goto('/ar/shop/walk-in');
     await expect(page.getByTestId('walk-in')).toBeVisible();
-    await expect(page.getByTestId('walk-in-phone-privacy')).toContainText('لا يظهر للمحل');
     await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
     await page.getByLabel('اليوم', { exact: true }).fill(date);
     await page.locator('label').filter({ hasText: 'عمر السالم' }).click();

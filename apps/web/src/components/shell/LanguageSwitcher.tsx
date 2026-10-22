@@ -17,11 +17,14 @@ export function LanguageSwitcher({
   className,
   tone = 'default',
   align = 'end',
+  compact = false,
 }: {
   className?: string;
   tone?: 'default' | 'onDark';
   /** Which edge of the button the panel lines up with. */
   align?: 'start' | 'end';
+  /** Below 768px the button drops its chevron and side padding, for the dashboard header on a phone (D-137). */
+  compact?: boolean;
 }) {
   const t = useTranslations('common.languageSwitch');
   const locale = useLocale();
@@ -69,7 +72,8 @@ export function LanguageSwitcher({
         data-testid="language-menu"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'group inline-flex min-h-11 items-center gap-1.5 rounded-field px-3 text-label font-bold transition-colors',
+          'group inline-flex min-h-11 items-center gap-1.5 rounded-field text-label font-bold transition-colors',
+          compact ? 'min-w-11 justify-center px-2 md:px-3' : 'px-3',
           tone === 'onDark'
             ? 'text-on-chrome-muted hover:bg-on-chrome-subtle hover:text-on-chrome aria-expanded:bg-on-chrome-subtle'
             : 'border border-border-input bg-surface text-text-strong hover:bg-brand-100 aria-expanded:bg-brand-100',
@@ -79,7 +83,10 @@ export function LanguageSwitcher({
         <span>{t('short')}</span>
         <ChevronDown
           aria-hidden="true"
-          className="size-3.5 transition-transform group-aria-expanded:rotate-180"
+          className={cn(
+            'size-3.5 transition-transform group-aria-expanded:rotate-180',
+            compact && 'hidden md:block',
+          )}
           strokeWidth={2}
         />
       </button>

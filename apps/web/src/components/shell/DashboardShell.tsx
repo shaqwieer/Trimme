@@ -65,7 +65,7 @@ export function DashboardShell({
       </aside>
 
       <header className="sticky top-0 z-20 border-b border-border-subtle bg-surface">
-        <div className="flex h-16 items-center gap-3 px-4 md:px-6 lg:px-8">
+        <div className="flex h-16 items-center gap-2 px-4 md:gap-3 md:px-6 lg:px-8">
           <Sheet
             open={drawerOpen}
             onOpenChange={setDrawerOpen}
@@ -82,8 +82,8 @@ export function DashboardShell({
           <h1 className="truncate text-page-title font-bold text-navy-900">{title}</h1>
           {titleAddon}
           <div className="ms-auto flex items-center gap-2">
-            <LanguageSwitcher className="hidden md:inline-flex" />
-            {/* Below 768px the header has no room left (title, live status, language, bell); the drawer has it. */}
+            {/* Below 768px the header has no room left for the theme menu (title, live status, bell, language); the
+                drawer has it. */}
             <ThemeMenu className="hidden md:block" />
             {!notifications ? (
               <IconButton icon="bell" label={t('shell.notifications')} />
@@ -92,6 +92,8 @@ export function DashboardShell({
             ) : (
               <AdminNotificationBell />
             )}
+            {/* At every width, in the end corner (top left in Arabic), as the client asked (D-137). */}
+            <LanguageSwitcher compact />
           </div>
         </div>
       </header>

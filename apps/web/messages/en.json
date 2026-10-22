@@ -2208,7 +2208,6 @@
       "name": "Customer's name",
       "nameTooLong": "The name is too long.",
       "phone": "Customer's mobile",
-      "phonePrivacy": "The number goes to the Groom Here team only and is not shown to the shop once the booking is saved.",
       "note": "Note",
       "notePlaceholder": "e.g. short fade",
       "summary": {

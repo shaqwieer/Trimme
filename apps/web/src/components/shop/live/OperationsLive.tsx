@@ -178,7 +178,9 @@ export function LiveIndicator({ className }: { className?: string }) {
           state === 'live' ? 'bg-success-500' : state === 'connecting' ? 'bg-warning-500' : 'bg-danger-500',
         )}
       />
-      <span className={state === 'live' ? 'text-success-700' : 'text-text-secondary'}>{t(state)}</span>
+      {/* On a phone, live is the green dot alone (the header needs the room for the language, D-137); a problem keeps
+          its words. */}
+      <span className={state === 'live' ? 'text-success-700 max-md:sr-only' : 'text-text-secondary'}>{t(state)}</span>
     </span>
   );
 }
