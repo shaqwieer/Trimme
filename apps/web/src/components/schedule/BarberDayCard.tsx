@@ -305,7 +305,7 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
               id={panelId}
               role="group"
               aria-labelledby={`${panelId}-title`}
-              className="flex scroll-mt-24 flex-col gap-3 rounded-card border border-border bg-bg-page p-4"
+              className="flex scroll-mt-24 scroll-mb-[calc(var(--layout-bottom-nav-height)+1rem)] flex-col gap-3 rounded-card border border-border bg-bg-page p-4 lg:scroll-mb-0"
               data-testid="barber-day-minutes"
             >
               <div className="flex items-center justify-between gap-2">
