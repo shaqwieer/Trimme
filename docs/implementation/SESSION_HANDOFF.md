@@ -2,7 +2,7 @@
 
 - **Updated:** 2026-10-22 (Session 19: the language menu in a phone's dashboard header, no sentence under the walk-in's mobile, the owner's services again, breaks every 5 minutes with a confirmation (D-137); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Sessions 17 and 18 are pushed (`60bb98e`) and deployed on groomhere.sa (2026-10-21).
+  - Session 19 is pushed (`eb044ec`) and deployed on groomhere.sa (2026-10-22, about 12:05 Riyadh).
 - **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - Session 19 brought it up with `up -d` (migrate and the seed ran on the old volume, so `WalkInContacts` is applied there). The API and web images are built from Session 19's final tree.
@@ -35,7 +35,11 @@
   - E2E on the local stack (Session 19's API and web images): `services`, `shop-schedule` and `shop-dashboard` passed 7/7, twice, the second time on the final web image. They cover the owner adding a service with one barber from the sidebar, then editing, reordering and archiving it, and the desk having no link, no page and getting 403. They also cover the desk making 4:00–4:15 PM a break with the confirmation and message, the public times following, and cancelling it again. `smoke` passed in full. The `a11y` and `a11y-dark` route audits passed 49/53, with the three restored services pages for the owner. The 4 failures are the anonymous pages, where Barber House is "noindex" because its seeded subscription has lapsed on this volume. The change does not touch them.
   - A scripted Chromium check at 390 and 360 px (ar, en, tr; owner, desk, admin; light and dark) found no overflow anywhere. «النظرة التشغيلية» fits at 390 px. The breaks flow and the services pages have no overflow at 390 px.
   - Screenshots are in the session scratchpad (`shots-d137/`). They show the header and the open language menu in light and dark, and the breaks flow (picked chips, confirmation, saved message, the hour reading «استراحة ١٥ دقيقة») in light and dark. They also show the owner's services list and new-service form.
-- **To deploy (D-137):** push, then on the VPS run `git pull`, back up the database, `docker compose build api web`, `docker compose run --rm migrate` (no new migration; it re-syncs the managed roles), `up -d`. Do not run the seed.
+- **Deployed 2026-10-22 (`eb044ec`: D-137 and the fix that keeps the break panel's confirm button above the phone tab bar):**
+  - Backup first: `/root/backups/trimme-before-d137-20261022-120155.sql.gz` on the VPS (a complete dump, 95 KB).
+  - `git pull` (from `60bb98e`), `docker compose build api web`, `docker compose run --rm migrate` ("Database is up to date (18 migrations applied in total)"; reference data synchronized), `up -d`; api and web healthy. The seed was not run.
+  - Checked from the VPS: `/ar`, `/api/v1/meta`, the Al Asala page and the staff sign-in answer 200; `/ar/shop/services` answers 307 to the sign-in (it was 404 before). The live API's OpenAPI document (read from inside the web container; Caddy does not expose it) has `professionalIds` on `CreateShopServiceRequest` and `ShopServiceResponse`.
+  - Not checked signed in: the demo owner's password on groomhere.sa is not the local demo one (401), and no credential was looked up. The client's own check covers the signed-in pages.
 - **To tell the client:** packages are still added by the platform team. The owner's own service changes are not in the audit log; the platform team's are.
 
 ## Session 18: the desk's pages (D-134); «انتهت الخدمة» and new or returning customers (D-135); the client's answers and the deploy (D-136)
