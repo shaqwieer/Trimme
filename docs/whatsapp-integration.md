@@ -102,8 +102,8 @@ Secrets come from environment variables only; nothing is committed.
 | `WhatsApp__Meta__PhoneNumberId` | The WhatsApp Business phone number id |
 | `WhatsApp__Meta__AccessToken` | A system-user token with `whatsapp_business_messaging` |
 | `WhatsApp__Meta__GraphApiVersion` | Default `v21.0` |
-| `WhatsApp__Meta__AppSecret` | Verifies the webhook signature; the webhook answers 404 without it |
-| `WhatsApp__Meta__VerifyToken` | Echo token for the webhook subscription check |
+| `WhatsApp__Meta__AppSecret` | Verifies the webhook signature; every POST answers 404 without it |
+| `WhatsApp__Meta__VerifyToken` | Echo token for the webhook subscription check (GET); the check answers 404 without it, and needs nothing else (D-138) |
 | `WhatsApp__Meta__AuthenticationTemplateName` | The approved authentication template for sign-in codes (copy-code button) |
 | `WhatsApp__Meta__ButtonBaseUrl` | The base URL registered for URL buttons, usually `https://<domain>/`; the rest of the link is sent as the dynamic suffix |
 | `Identity__Otp__Sender` | `WhatsApp` sends sign-in codes through the authentication template (`DevInbox` locally) |
@@ -126,9 +126,9 @@ message delivered, except for these test numbers:
      renders its approved text.
 4. Submit an **authentication** template with a copy-code button, and set `WhatsApp__Meta__AuthenticationTemplateName`.
 5. Configure the webhook `https://<domain>/api/v1/webhooks/whatsapp`:
-   - verify token `WhatsApp__Meta__VerifyToken`;
+   - verify token `WhatsApp__Meta__VerifyToken`. Only the token needs to be set for Meta's "Verify and save" (D-138);
    - subscribe to `messages`;
-   - set `WhatsApp__Meta__AppSecret` to the app secret.
+   - set `WhatsApp__Meta__AppSecret` to the app secret. Until then every status update is refused (404).
 6. Set `WhatsApp__Provider=Meta`. Send a test from Admin → WhatsApp → Templates to a staff test number.
 
 **Lead time.** Template approval usually takes minutes to a day. The authentication template category has stricter

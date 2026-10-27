@@ -365,6 +365,15 @@ public sealed class NotificationsTests(PostgresFixture postgres)
             await FailsAsync(anonymous.GetAsync("/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=x&hub.challenge=1", ct), HttpStatusCode.NotFound, null, ct);
         }
 
+        // D-138: the subscription check needs only the verify token; without the app secret every POST is still 404.
+        await using (var tokenOnly = await IdentityTestData.CreateFactoryAsync(postgres, "ntf_hook_token", ct, settings: new Dictionary<string, string?> { ["WhatsApp:Meta:VerifyToken"] = "verify-me" }))
+        {
+            using var anonymous = ApiSession.Create(tokenOnly);
+            (await (await anonymous.GetAsync("/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=verify-me&hub.challenge=2342", ct)).Content.ReadAsStringAsync(ct)).ShouldBe("2342");
+            using var unsigned = new HttpRequestMessage(HttpMethod.Post, "/api/v1/webhooks/whatsapp") { Content = new StringContent("{}", Encoding.UTF8, "application/json") };
+            (await anonymous.Client.SendAsync(unsigned, ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        }
+
         var settings = new Dictionary<string, string?> { ["WhatsApp:Meta:AppSecret"] = "app-secret", ["WhatsApp:Meta:VerifyToken"] = "verify-me" };
         await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "ntf_hook", ct, settings: settings);
         using var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);

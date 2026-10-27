@@ -15,7 +15,8 @@ namespace Trimme.Modules.Notifications.Api;
 /// <summary>
 /// The Meta WhatsApp status webhook (R-NTF-01, D-110). Anonymous and exempt from the CSRF check, because Meta signs every
 /// call instead: the <c>X-Hub-Signature-256</c> HMAC-SHA256 of the raw body with the app secret is verified in constant
-/// time before anything is parsed. Without an app secret configured the webhook does not exist (404).
+/// time before anything is parsed. Without an app secret configured the POST does not exist (404). The subscription check
+/// (GET) needs only the verify token, so Meta can verify the callback before the app secret is set (D-138).
 /// </summary>
 internal static class WhatsAppWebhook
 {
@@ -38,7 +39,7 @@ internal static class WhatsAppWebhook
     {
         cancellationToken.ThrowIfCancellationRequested();
         var meta = options.Value.Meta;
-        if (string.IsNullOrWhiteSpace(meta.AppSecret) || string.IsNullOrWhiteSpace(meta.VerifyToken))
+        if (string.IsNullOrWhiteSpace(meta.VerifyToken))
         {
             return TypedResults.NotFound();
         }

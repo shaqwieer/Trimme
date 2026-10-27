@@ -65,7 +65,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A25 | Expired-session and permission-denied states per surface | §5 | 3/4 — `ExpiredSession`, `PermissionDenied`, `ErrorState` built (Phase 03); wired to 401/403 in Phase 04 — **applied** (session restore page, PermissionDenied on the wrong surface) |
 | DV-A26 | English (LTR) versions of all screens; desktop/tablet layouts for customer screens other than landing | §5, §6 | 2+ |
 | DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 — **applied**: `/shops` with city links, rating order, paging and breadcrumb data |
-| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — **applied**: `/terms` and `/privacy` (placeholder text stating the real product rules, marked for legal review); the sign-up checkbox links to them in a new tab; the marketing footer links them |
+| DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — **applied**: `/terms` and `/privacy` (placeholder text stating the real product rules; the "draft, pending legal review" notice was removed at the client's request, D-138); the sign-up checkbox links to them in a new tab; the marketing footer links them |
 
 ## DV-T — Tokens, visual and accessibility fixes
 

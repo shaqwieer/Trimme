@@ -1,8 +1,8 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-22 (Session 19: the language menu in a phone's dashboard header, no sentence under the walk-in's mobile, the owner's services again, breaks every 5 minutes with a confirmation (D-137); after Phase 17)
+- **Updated:** 2026-10-27 (Session 20: the legal pages without the draft notice; Meta's webhook check needs only the verify token; groomhere.sa has a verify token (D-138); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Session 19 is pushed (`eb044ec`) and deployed on groomhere.sa (2026-10-22, about 12:05 Riyadh).
+  - Session 20 is pushed and deployed on groomhere.sa (2026-10-27); see its section below for the commit and the backup.
 - **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - Session 19 brought it up with `up -d` (migrate and the seed ran on the old volume, so `WalkInContacts` is applied there). The API and web images are built from Session 19's final tree.
@@ -10,6 +10,16 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 20: the legal pages without the draft notice; the WhatsApp webhook's verify token (D-138)
+- **The client's points** (relayed by the user):
+  1. Remove «مسودة — بانتظار المراجعة القانونية قبل الإطلاق.» from the legal pages. **Done** (ar, en, tr; `legal.draft` removed).
+  2. The callback URL and verify token to enter in the Meta app. **Done:** `https://groomhere.sa/api/v1/webhooks/whatsapp`, with the token generated on the VPS (`TRIMME_WHATSAPP_VERIFY_TOKEN` in `/opt/trimme-deploy/.env`; never committed). Subscribe to `messages`.
+  3. Where the policy pages are: `https://groomhere.sa/ar/privacy`, `/en/privacy`, `/ar/terms`, `/en/terms`.
+  4. What the client must send to connect the Cloud API: the app secret, the phone number id, a permanent system-user token with `whatsapp_business_messaging`, the approved templates' names (the names and wording to submit were exported from the live active versions), and an approved authentication template's name.
+- **Code:** the GET subscription check needs only `WhatsApp:Meta:VerifyToken` (it needed the app secret too, which only the client holds). The POST is unchanged: 404 without the app secret, 401 without a valid signature.
+- **VPS config:** `compose.yml` passes `WhatsApp__Meta__VerifyToken: ${TRIMME_WHATSAPP_VERIFY_TOKEN}` and `WhatsApp__Meta__AppSecret: ${TRIMME_WHATSAPP_APP_SECRET:-}` to the API (the shared `x-api-environment` anchor). `TRIMME_WHATSAPP_APP_SECRET` is empty until the client sends it; then set it and `docker compose up -d api`. Backups: `compose.yml.bak-d138-20261027-074454`, `.env.bak-d138-20261027-074454`. `WhatsApp__Provider` and `Identity__Otp__Sender` are not set, so the demo keeps the fake provider and the dev OTP inbox.
+- **Going live with WhatsApp later:** set the app secret, `WhatsApp__Meta__PhoneNumberId`, `WhatsApp__Meta__AccessToken`, `WhatsApp__Meta__AuthenticationTemplateName`, `WhatsApp__Meta__ButtonBaseUrl=https://groomhere.sa/`, then `WhatsApp__Provider=Meta` and `Identity__Otp__Sender=WhatsApp` (`docs/whatsapp-integration.md`). Test from Admin → WhatsApp → Templates first.
 
 ## Session 19: the language menu on a phone's dashboard; no sentence under the walk-in's mobile; the owner's services again; breaks every 5 minutes (D-137)
 - **The client's points** (two screenshots of the owner's account on a phone, groomhere.sa, and a message relayed by the user):

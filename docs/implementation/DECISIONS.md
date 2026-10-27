@@ -1382,3 +1382,14 @@ This refines D-126.
   - Tapping a break asks «إلغاء استراحة …؟» for the whole break around it, from the current 5 minutes on (what is over stays), and then says so. «استراحة طوال اليوم» and «إلغاء كل الاستراحات» ask first too and say what was done; clearing frees from the current 5 minutes on.
   - Past slots cannot change; booked time, the shop's breaks and time off cannot be picked. The API already took 5-minute windows (D-134): no API change. Its cap of 48 separate windows a day now has its own message.
 - **Dependencies.** None added. No migration. API: the shop's service contracts above (OpenAPI regenerated).
+
+## D-138 — The legal pages without the draft notice; Meta's webhook check needs only the verify token — Accepted (Session 20, after Phase 17, at the client's request)
+- **The client's request** (relayed by the user): remove «مسودة — بانتظار المراجعة القانونية قبل الإطلاق.» from the legal pages, and send the client the callback URL and verify token to enter in the Meta app, the privacy policy's address, and what is needed to connect the WhatsApp Cloud API.
+- **The legal pages.** `/terms` and `/privacy` no longer show the warning notice, in any language: the `legal.draft` message is removed (ar, en, tr). The text is unchanged (DV-A28). The public E2E flow now checks that the notice is absent.
+- **The webhook check (D-110 updated).**
+  - Before, the GET subscription check answered 404 unless both the verify token and the app secret were set. Only the client holds the app secret, so Meta's "Verify and save" would fail until it was sent.
+  - The GET check now needs only `WhatsApp:Meta:VerifyToken`. It still echoes `hub.challenge` only after a constant-time match of the token, and answers 403 otherwise.
+  - The POST is unchanged: without `WhatsApp:Meta:AppSecret` it answers 404, and with it every call must carry a valid `X-Hub-Signature-256`.
+  - `Webhook_VerifiesTheSignature_AndMovesDispatchStatuses` adds the case: token only, so GET echoes and POST is 404.
+- **groomhere.sa.** The deployment's `.env` holds a generated verify token (`TRIMME_WHATSAPP_VERIFY_TOKEN`) and an empty app secret (`TRIMME_WHATSAPP_APP_SECRET`), passed to the API as `WhatsApp__Meta__VerifyToken` and `WhatsApp__Meta__AppSecret`. The provider and the sign-in code sender are not changed: the demo keeps the fake provider and the dev OTP inbox until the client's credentials and approved templates exist.
+- **Dependencies.** None added. No migration. No API contract change.

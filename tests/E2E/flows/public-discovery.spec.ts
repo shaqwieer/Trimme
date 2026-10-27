@@ -237,7 +237,7 @@ test.describe('public discovery (Phase 11)', () => {
 
     await page.goto('/en/terms');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Terms of use');
-    await expect(page.getByText('Draft, pending legal review before launch.')).toBeVisible();
+    await expect(page.getByText('Draft, pending legal review before launch.')).toHaveCount(0);
     await expectNoSeriousAxe(page, '/en/terms');
   });
 
