@@ -19,6 +19,13 @@
   4. What the client must send to connect the Cloud API: the app secret, the phone number id, a permanent system-user token with `whatsapp_business_messaging`, the approved templates' names (the names and wording to submit were exported from the live active versions), and an approved authentication template's name.
 - **Code:** the GET subscription check needs only `WhatsApp:Meta:VerifyToken` (it needed the app secret too, which only the client holds). The POST is unchanged: 404 without the app secret, 401 without a valid signature.
 - **VPS config:** `compose.yml` passes `WhatsApp__Meta__VerifyToken: ${TRIMME_WHATSAPP_VERIFY_TOKEN}` and `WhatsApp__Meta__AppSecret: ${TRIMME_WHATSAPP_APP_SECRET:-}` to the API (the shared `x-api-environment` anchor). `TRIMME_WHATSAPP_APP_SECRET` is empty until the client sends it; then set it and `docker compose up -d api`. Backups: `compose.yml.bak-d138-20261027-074454`, `.env.bak-d138-20261027-074454`. `WhatsApp__Provider` and `Identity__Otp__Sender` are not set, so the demo keeps the fake provider and the dev OTP inbox.
+- **Evidence:**
+  - .NET: unit 430/430; integration `NotificationsTests` and `AuthorizationMatrixTests` 18/18 (with the new token-only case).
+  - Web: `lint`, `typecheck`, `format:check`, `test`, `openapi:check` and `build` pass.
+- **Deployed 2026-10-27 (`7849b46`):**
+  - Backup first: `/root/backups/trimme-before-d138-20261027-074855.sql.gz` (95 KB).
+  - `git pull` (from `eb044ec`), `docker compose build api web`, `migrate` ("Database is up to date (18 migrations applied in total)"), `up -d`; api and web healthy. The seed was not run.
+  - Smoke from the VPS: the right token with `hub.challenge=12345` returns `12345` (200); a wrong token 403; a POST 404 (no app secret yet). `/ar|en|tr/privacy` and `/ar|en/terms` are 200, and none contains the notice sentence. Pages still contain «مسودة»/«Taslak» from other labels in the message bundle, such as the shop status «Draft».
 - **Going live with WhatsApp later:** set the app secret, `WhatsApp__Meta__PhoneNumberId`, `WhatsApp__Meta__AccessToken`, `WhatsApp__Meta__AuthenticationTemplateName`, `WhatsApp__Meta__ButtonBaseUrl=https://groomhere.sa/`, then `WhatsApp__Provider=Meta` and `Identity__Otp__Sender=WhatsApp` (`docs/whatsapp-integration.md`). Test from Admin → WhatsApp → Templates first.
 
 ## Session 19: the language menu on a phone's dashboard; no sentence under the walk-in's mobile; the owner's services again; breaks every 5 minutes (D-137)
