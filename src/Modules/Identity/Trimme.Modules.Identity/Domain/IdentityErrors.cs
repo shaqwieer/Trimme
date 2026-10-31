@@ -55,6 +55,19 @@ public static class IdentityErrors
     public static Error PasswordPolicy(IReadOnlyList<string> codes) =>
         Error.Validation("validation.failed", "The password does not meet the policy.", Field("password", [.. codes]));
 
+    /// <summary>
+    /// The email and password are right, but the password is a temporary one an admin set (D-139): no session is
+    /// started until the user replaces it. Only a caller who knows the password learns this.
+    /// </summary>
+    public static Error PasswordChangeRequired() =>
+        Error.Forbidden("auth.password_change_required", "Choose a new password to replace the temporary one.");
+
+    public static Error PasswordChangeNotRequired() =>
+        Error.Validation("auth.password_change_not_required", "This account has no temporary password to replace.");
+
+    public static Error PasswordUnchanged() =>
+        Error.Validation("validation.failed", "The new password must differ from the current one.", Field("password", "validation.password_unchanged"));
+
     public static Error InvitationInvalid() =>
         Error.Validation("invitation.invalid", "The invitation is invalid, used or expired.");
 

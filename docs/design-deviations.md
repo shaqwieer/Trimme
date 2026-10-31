@@ -66,6 +66,7 @@ Status: `planned` (to be applied in the listed phase) · `applied` (with commit)
 | DV-A26 | English (LTR) versions of all screens; desktop/tablet layouts for customer screens other than landing | §5, §6 | 2+ |
 | DV-A27 | Indexable public shop listing (`/shops`) | §6 | 11 — **applied**: `/shops` with city links, rating order, paging and breadcrumb data |
 | DV-A28 | Legal pages (terms, privacy) linked from sign-up | §9 (terms acceptance) | 11 — **applied**: `/terms` and `/privacy` (placeholder text stating the real product rules; the "draft, pending legal review" notice was removed at the client's request, D-138); the sign-up checkbox links to them in a new tab; the marketing footer links them |
+| DV-A29 | Adding a shop account by hand, and the first sign-in with a temporary password (the design has neither: a-shops shows no account form, and the staff sign-in has one step) | §9 (shop accounts created or invited by admins); client request, D-139 | After 17 — **applied**: the admin shop page's accounts card «إضافة حساب للمحل» has two tabs, «دعوة بالبريد» (default) and «إنشاء يدوي» (name, email, owner or desk cards, a plain-text temporary password with «توليد كلمة مرور», the password shown once after «إنشاء الحساب»); the staff sign-in card turns into «اختر كلمة مرور جديدة» with the reset page's fields, «حفظ وتسجيل الدخول» and «رجوع» |
 
 ## DV-T — Tokens, visual and accessibility fixes
 

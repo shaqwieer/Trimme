@@ -15,6 +15,13 @@ internal sealed record ForgotPasswordCommand(string Email, string Locale) : ICom
 
 internal sealed record ResetPasswordCommand(Guid UserId, string Token, string NewPassword) : ICommand<Result>;
 
+/// <summary>
+/// Replaces the temporary password an admin set (D-139) and signs in. The email and current password are checked as
+/// at sign-in (lockout included), because the account has no session until this succeeds.
+/// </summary>
+internal sealed record ChangeTemporaryPasswordCommand(string Email, string Password, string NewPassword, ClientContext Client)
+    : ICommand<Result<SignInOutcome>>;
+
 internal sealed class StaffSignInValidator : AbstractValidator<StaffSignInCommand>
 {
     public StaffSignInValidator()
@@ -49,6 +56,19 @@ internal sealed class ResetPasswordValidator : AbstractValidator<ResetPasswordCo
     }
 }
 
+internal sealed class ChangeTemporaryPasswordValidator : AbstractValidator<ChangeTemporaryPasswordCommand>
+{
+    public ChangeTemporaryPasswordValidator()
+    {
+        RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.Password).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.NewPassword).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+    }
+}
+
 internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager sessions, MeReader me, TimeProvider clock)
     : ICommandHandler<StaffSignInCommand, Result<SignInOutcome>>
 {
@@ -66,6 +86,45 @@ internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager 
         }
 
         var account = check.Account!;
+        if (account.MustChangePassword)
+        {
+            return IdentityErrors.PasswordChangeRequired();
+        }
+
+        var session = await sessions.StartAsync(account, command.Client, cancellationToken);
+        return new SignInOutcome(session, new SignInResponse(false, await me.BuildAsync(account, cancellationToken)));
+    }
+}
+
+internal sealed class ChangeTemporaryPasswordHandler(IAccountStore accounts, SessionManager sessions, MeReader me, TimeProvider clock)
+    : ICommandHandler<ChangeTemporaryPasswordCommand, Result<SignInOutcome>>
+{
+    public async Task<Result<SignInOutcome>> Handle(ChangeTemporaryPasswordCommand command, CancellationToken cancellationToken)
+    {
+        var check = await accounts.CheckStaffPasswordAsync(command.Email.Trim(), command.Password, cancellationToken);
+        switch (check.Outcome)
+        {
+            case StaffPasswordOutcome.LockedOut:
+                return IdentityErrors.LockedOut((check.LockedUntil ?? clock.GetUtcNow()) - clock.GetUtcNow());
+            case StaffPasswordOutcome.Disabled:
+                return IdentityErrors.AccountDisabled();
+            case StaffPasswordOutcome.Invalid:
+                return IdentityErrors.InvalidCredentials();
+        }
+
+        // Only a temporary password is replaced here; anyone else changes theirs through the emailed reset.
+        var account = check.Account!;
+        if (!account.MustChangePassword)
+        {
+            return IdentityErrors.PasswordChangeNotRequired();
+        }
+
+        var changed = await accounts.ChangePasswordAsync(account.UserId, command.Password, command.NewPassword, cancellationToken);
+        if (changed.IsFailure)
+        {
+            return changed.Error;
+        }
+
         var session = await sessions.StartAsync(account, command.Client, cancellationToken);
         return new SignInOutcome(session, new SignInResponse(false, await me.BuildAsync(account, cancellationToken)));
     }

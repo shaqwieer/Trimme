@@ -10,6 +10,7 @@ const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@trimme.local';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'trimme local admin';
 const DEMO_PASSWORD = process.env.E2E_DEMO_PASSWORD ?? 'trimme local demo';
 const MAILPIT_URL = process.env.E2E_MAILPIT_URL ?? 'http://localhost:8025';
+const AL_ASALA_ID = '0199a0de-5a10-7000-8000-000000000001';
 const BARBER_HOUSE_ID = '0199a0de-5a10-7000-8000-000000000002';
 
 async function staffSignIn(page: Page, email: string, password: string) {
@@ -79,7 +80,7 @@ test.describe('shops and tenancy (R-SHP-01, R-AUTH-02, R-TEN-01/06)', () => {
 
     // Invitations live on the shop's "Accounts" tab (Phase 06 tabs: profile, location, accounts, professionals).
     await admin.getByRole('link', { name: 'Accounts' }).click();
-    await admin.getByLabel('Email').fill(ownerEmail);
+    await admin.getByLabel('Email', { exact: true }).fill(ownerEmail);
     await admin.getByRole('button', { name: 'Send invitation' }).click();
     await expect(admin.getByText('Invitation sent.')).toBeVisible();
 
@@ -103,6 +104,54 @@ test.describe('shops and tenancy (R-SHP-01, R-AUTH-02, R-TEN-01/06)', () => {
 
     await adminContext.close();
     await ownerContext.close();
+  });
+
+  test('admin creates a desk account with a temporary password, replaced at the first sign-in (D-139)', async ({
+    browser,
+  }) => {
+    const adminContext = await browser.newContext();
+    const deskContext = await browser.newContext();
+    const admin = await adminContext.newPage();
+    const desk = await deskContext.newPage();
+    const deskEmail = `desk.${Date.now().toString(36)}@trimme.test`;
+    const temporary = 'temporary pass 2026';
+
+    await staffSignIn(admin, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await expect(admin).toHaveURL(/\/en\/admin$/);
+    await admin.goto(`/en/admin/shops/${AL_ASALA_ID}?tab=users`);
+    await admin.getByRole('tab', { name: 'Create manually' }).click();
+    await admin.getByLabel('Name', { exact: true }).fill('Trial Desk');
+    await admin.getByLabel('Email', { exact: true }).fill(deskEmail);
+    await admin.getByText('Reception staff').click();
+    await admin.getByLabel('Temporary password').fill(temporary);
+    await admin.getByRole('button', { name: 'Create the account' }).click();
+    await expect(admin.getByText('Account created.')).toBeVisible();
+    await expect(admin.getByText(temporary)).toBeVisible();
+    await expectNoSeriousAxeViolations(admin);
+
+    // The temporary password leads to the new-password step, never into the dashboard.
+    await staffSignIn(desk, deskEmail, temporary);
+    await expect(desk.getByRole('heading', { name: 'Choose a new password' })).toBeVisible();
+    await expect(desk).toHaveURL(/\/en\/auth\/staff\/sign-in$/);
+    await expectNoSeriousAxeViolations(desk);
+    expect((await desk.request.get('/api/v1/me')).status()).toBe(401);
+
+    await desk.getByLabel('New password').fill('trial desk passphrase');
+    await desk.getByLabel('Confirm password').fill('trial desk passphrase');
+    await desk.getByRole('button', { name: 'Save and sign in' }).click();
+    await expect(desk).toHaveURL(/\/en\/shop$/);
+    await expect(desk.getByTestId('shop-name')).toHaveText('Al Asala Barbershop');
+
+    // The temporary password no longer signs in.
+    const csrf = (await (await desk.request.get('/api/v1/auth/csrf')).json()).token as string;
+    const old = await desk.request.post('/api/v1/auth/staff/sign-in', {
+      data: { email: deskEmail, password: temporary },
+      headers: { 'X-CSRF-Token': csrf },
+    });
+    expect(old.status()).toBe(401);
+
+    await adminContext.close();
+    await deskContext.close();
   });
 
   test('shop_user_cannot_open_another_shop', async ({ page }) => {

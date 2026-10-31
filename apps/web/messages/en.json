@@ -269,7 +269,8 @@
     "rangeInvalid": "The end is before the start, or the range is longer than a year",
     "breakDays": "Choose weekdays or a single date",
     "immutable": "This value cannot change",
-    "roleNameTaken": "Another role already has this name."
+    "roleNameTaken": "Another role already has this name.",
+    "passwordUnchanged": "Choose a password different from the temporary one."
   },
   "auth": {
     "meta": {
@@ -323,7 +324,11 @@
       "password": "Password",
       "submit": "Sign in",
       "forgot": "Forgot your password?",
-      "customer": "A customer? Sign in with your mobile"
+      "customer": "A customer? Sign in with your mobile",
+      "changeTitle": "Choose a new password",
+      "changeSubtitle": "The Groom Here team created your account with a temporary password. Choose your own password to continue.",
+      "changeSubmit": "Save and sign in",
+      "changeBack": "Back"
     },
     "forgot": {
       "title": "Forgot your password",
@@ -510,7 +515,9 @@
     "qr_already_active": "The code is already active.",
     "qr_already_inactive": "The code is already switched off.",
     "invitation_role_invalid": "That role does not fit the kind of account being invited.",
-    "loyalty_reward_unavailable": "This coupon isn’t available: it was used, has expired or belongs to another salon."
+    "loyalty_reward_unavailable": "This coupon isn’t available: it was used, has expired or belongs to another salon.",
+    "auth_password_change_required": "Choose a new password to replace the temporary one.",
+    "auth_password_change_not_required": "This password isn’t temporary. Sign in with it directly."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -558,7 +565,7 @@
       "notFoundTitle": "Shop not found",
       "notFoundBody": "The link may be wrong or the shop no longer exists.",
       "invite": {
-        "title": "Invite a shop account",
+        "title": "Add a shop account",
         "body": "The invitee receives an email link to set a password. The link is valid for 7 days.",
         "email": "Email",
         "role": "Role",
@@ -567,7 +574,18 @@
         "staff": "Reception staff",
         "staffHint": "Appointments and walk-ins only",
         "submit": "Send invitation",
-        "sent": "Invitation sent."
+        "sent": "Invitation sent.",
+        "modes": "How to add the account",
+        "byEmail": "Email invitation",
+        "manual": "Create manually",
+        "manualBody": "You create the account with a temporary password and give it to the person yourself; no email is sent. At the first sign-in they choose a new password.",
+        "name": "Name",
+        "temporaryPassword": "Temporary password",
+        "temporaryPasswordHint": "At least 10 characters.",
+        "generate": "Generate a password",
+        "create": "Create the account",
+        "created": "Account created.",
+        "createdBody": "Give the account’s owner the email {email} and the temporary password below. They will choose a new password at the first sign-in."
       },
       "bookings": "Bookings at this shop"
     },

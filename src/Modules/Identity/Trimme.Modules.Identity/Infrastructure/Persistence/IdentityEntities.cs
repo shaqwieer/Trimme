@@ -33,6 +33,12 @@ internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
 
     /// <summary>Set by an admin to block sign-in and end every session (admin UI in Phase 14).</summary>
     public DateTimeOffset? DisabledAt { get; set; }
+
+    /// <summary>
+    /// The password is a temporary one an admin set (D-139): sign-in starts no session until the user replaces it.
+    /// Cleared by the change or by an emailed password reset.
+    /// </summary>
+    public bool MustChangePassword { get; set; }
 }
 
 /// <summary>A role belongs to exactly one user type; only permissions of that type can be granted to it.</summary>

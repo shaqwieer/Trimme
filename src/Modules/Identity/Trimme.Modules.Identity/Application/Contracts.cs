@@ -34,6 +34,9 @@ public sealed record RoleResponse(Guid Id, string Name, string UserType, bool Ma
 
 public sealed record InvitationResponse(Guid Id, string Email, string Role, DateTimeOffset ExpiresAt);
 
+/// <summary>A shop account an admin created with a temporary password (D-139). The password is never returned.</summary>
+public sealed record ShopUserResponse(Guid Id, string Email, string DisplayName, string Role);
+
 /// <summary>A new session: the plaintext refresh token goes into the refresh cookie and is never stored.</summary>
 /// <remarks><c>ShopId</c> comes from the account row (never the request) and becomes the <c>shop_id</c> claim.</remarks>
 public sealed record IssuedSession(Guid SessionId, Guid UserId, string UserType, string RefreshToken, DateTimeOffset ExpiresAt, Guid? ShopId = null);

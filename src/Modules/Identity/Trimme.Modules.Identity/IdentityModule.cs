@@ -68,6 +68,7 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<SessionValidator>();
         services.AddScoped<SessionManager>();
         services.AddScoped<MeReader>();
+        services.AddScoped<NewStaffAccountRules>();
         services.AddScoped<InvitationIssuer>();
 
         services.AddSingleton<IReferenceDataSynchronizer, PermissionCatalogueSynchronizer>();

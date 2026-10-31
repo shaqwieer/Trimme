@@ -5,7 +5,7 @@ import { AdminFrame } from '@/components/admin/AdminFrame';
 import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
 import { LoyaltyProgramForm } from '@/components/admin/LoyaltyProgramForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
-import { InviteShopUserForm, ShopStatusActions } from '@/components/admin/ShopForms';
+import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
 import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
@@ -116,8 +116,7 @@ export default async function AdminShopPage({
         } else if (tab === 'users') {
           content = me.permissions.includes('Admin.Shops.ManageAccount') ? (
             <Card title={t('detail.invite.title')}>
-              <p className="text-caption text-text-secondary">{t('detail.invite.body')}</p>
-              <InviteShopUserForm shopId={shop.id} />
+              <ShopAccountForms shopId={shop.id} />
             </Card>
           ) : (
             <EmptyState icon="shield" title={t('detail.invite.title')} />

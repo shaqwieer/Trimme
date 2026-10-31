@@ -26,6 +26,13 @@ internal sealed record InviteStaffCommand(string Email, string Role, string Loca
 internal sealed record InviteShopUserCommand(Guid ShopId, string Email, string Role, string Locale, Guid InvitedByUserId)
     : ICommand<Result<InvitationResponse>>;
 
+/// <summary>
+/// An admin creates a shop owner or shop staff account directly, with a temporary password and no email (D-139). The
+/// user must replace the password before the first session starts.
+/// </summary>
+internal sealed record CreateShopUserCommand(Guid ShopId, string Email, string DisplayName, string Role, string Password, string Locale)
+    : ICommand<Result<ShopUserResponse>>;
+
 /// <summary>The invitee sets a name and password; the account is created and signed in.</summary>
 internal sealed record AcceptInvitationCommand(string Token, string DisplayName, string Password, ClientContext Client)
     : ICommand<Result<SignInOutcome>>;
@@ -55,6 +62,23 @@ internal sealed class InviteShopUserValidator : AbstractValidator<InviteShopUser
     }
 }
 
+internal sealed class CreateShopUserValidator : AbstractValidator<CreateShopUserCommand>
+{
+    public CreateShopUserValidator()
+    {
+        RuleFor(c => c.ShopId).NotEmpty().WithErrorCode(ValidationCodes.Required);
+        RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .EmailAddress().WithErrorCode(ValidationCodes.EmailInvalid)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.DisplayName).Must(n => !string.IsNullOrWhiteSpace(n)).WithErrorCode(ValidationCodes.Required)
+            .MaximumLength(60).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.Role).NotEmpty().WithErrorCode(ValidationCodes.Required);
+        RuleFor(c => c.Password).NotEmpty().WithErrorCode(ValidationCodes.Required)
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+        RuleFor(c => c.Locale).Must(Locales.IsSupported).WithErrorCode(ValidationCodes.Invalid);
+    }
+}
+
 internal sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvitationCommand>
 {
     public AcceptInvitationValidator()
@@ -68,24 +92,13 @@ internal sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvita
     }
 }
 
-/// <summary>Creates invitations and emails them. Shared by admin-staff (now) and shop-user (Phase 05) invitations.</summary>
-internal sealed class InvitationIssuer(
-    TrimmeDbContext db,
-    TimeProvider clock,
-    IAccountStore accounts,
-    IIdentityMailer mailer,
-    IOptions<InvitationOptions> options,
-    IShopDirectory shops,
-    IAuditLog audit)
+/// <summary>
+/// Rules shared by invitations and accounts an admin creates directly (D-139): the role belongs to the user type, a
+/// shop user belongs to exactly one existing shop (platform staff to none), and no account uses the email yet.
+/// </summary>
+internal sealed class NewStaffAccountRules(TrimmeDbContext db, IAccountStore accounts, IShopDirectory shops)
 {
-    public async Task<Result<InvitationResponse>> IssueAsync(
-        string email,
-        UserType userType,
-        string roleName,
-        Guid? shopId,
-        string locale,
-        Guid invitedByUserId,
-        CancellationToken cancellationToken)
+    public async Task<Error?> CheckAsync(string email, UserType userType, string roleName, Guid? shopId, CancellationToken cancellationToken)
     {
         var role = SystemRoles.Find(roleName);
         if ((role is not null && role.UserType != userType)
@@ -94,7 +107,6 @@ internal sealed class InvitationIssuer(
             return IdentityErrors.RoleNotAssignable();
         }
 
-        // A shop user belongs to exactly one existing shop; platform staff belong to none.
         if (userType == UserType.ShopUser)
         {
             if (shopId is not { } target || await shops.FindAsync(new ShopId(target), cancellationToken) is null)
@@ -107,16 +119,12 @@ internal sealed class InvitationIssuer(
             return IdentityErrors.RoleNotAssignable();
         }
 
-        var trimmed = email.Trim();
-        if (await accounts.EmailExistsAsync(trimmed, cancellationToken))
-        {
-            return IdentityErrors.EmailAlreadyRegistered();
-        }
+        return await accounts.EmailExistsAsync(email, cancellationToken) ? IdentityErrors.EmailAlreadyRegistered() : null;
+    }
 
-        var now = clock.GetUtcNow();
-        var normalizedEmail = accounts.NormalizeEmail(trimmed);
-
-        // Only the newest invitation for an address stays usable.
+    /// <summary>Revokes the address's open invitations (tracked; the caller saves).</summary>
+    public async Task RevokePendingInvitationsAsync(string normalizedEmail, DateTimeOffset now, CancellationToken cancellationToken)
+    {
         var pending = await db.Set<Invitation>()
             .Where(i => i.NormalizedEmail == normalizedEmail && i.AcceptedAt == null && i.RevokedAt == null)
             .ToListAsync(cancellationToken);
@@ -124,6 +132,39 @@ internal sealed class InvitationIssuer(
         {
             previous.Revoke(now);
         }
+    }
+}
+
+/// <summary>Creates invitations and emails them. Shared by admin-staff (now) and shop-user (Phase 05) invitations.</summary>
+internal sealed class InvitationIssuer(
+    TrimmeDbContext db,
+    TimeProvider clock,
+    IAccountStore accounts,
+    IIdentityMailer mailer,
+    IOptions<InvitationOptions> options,
+    NewStaffAccountRules rules,
+    IAuditLog audit)
+{
+    public async Task<Result<InvitationResponse>> IssueAsync(
+        string email,
+        UserType userType,
+        string roleName,
+        Guid? shopId,
+        string locale,
+        Guid invitedByUserId,
+        CancellationToken cancellationToken)
+    {
+        var trimmed = email.Trim();
+        if (await rules.CheckAsync(trimmed, userType, roleName, shopId, cancellationToken) is { } refused)
+        {
+            return refused;
+        }
+
+        var now = clock.GetUtcNow();
+        var normalizedEmail = accounts.NormalizeEmail(trimmed);
+
+        // Only the newest invitation for an address stays usable.
+        await rules.RevokePendingInvitationsAsync(normalizedEmail, now, cancellationToken);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         var invitation = new Invitation(
@@ -180,6 +221,47 @@ internal sealed class InviteShopUserHandler(InvitationIssuer issuer) : ICommandH
 {
     public Task<Result<InvitationResponse>> Handle(InviteShopUserCommand command, CancellationToken cancellationToken) =>
         issuer.IssueAsync(command.Email, UserType.ShopUser, command.Role, command.ShopId, command.Locale, command.InvitedByUserId, cancellationToken);
+}
+
+internal sealed class CreateShopUserHandler(
+    TrimmeDbContext db,
+    TimeProvider clock,
+    IAccountStore accounts,
+    NewStaffAccountRules rules,
+    IAuditLog audit) : ICommandHandler<CreateShopUserCommand, Result<ShopUserResponse>>
+{
+    public async Task<Result<ShopUserResponse>> Handle(CreateShopUserCommand command, CancellationToken cancellationToken)
+    {
+        var email = command.Email.Trim();
+        if (await rules.CheckAsync(email, UserType.ShopUser, command.Role, command.ShopId, cancellationToken) is { } refused)
+        {
+            return refused;
+        }
+
+        var created = await accounts.CreateStaffAsync(
+            new NewStaffAccount(
+                email, command.DisplayName.Trim(), command.Password, UserType.ShopUser, command.Role, command.Locale, command.ShopId,
+                MustChangePassword: true),
+            cancellationToken);
+        if (created.IsFailure)
+        {
+            return created.Error;
+        }
+
+        // An invitation emailed earlier to this address can no longer be accepted.
+        await rules.RevokePendingInvitationsAsync(accounts.NormalizeEmail(email), clock.GetUtcNow(), cancellationToken);
+
+        // Audited without the email address or the password: the user id links to the account for authorized readers.
+        audit.Record(new AuditRecord(
+            "shop_user.created",
+            "User",
+            created.Value.UserId.ToString(),
+            new ShopId(command.ShopId),
+            $"Created as {command.Role} with a temporary password"));
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new ShopUserResponse(created.Value.UserId, email, created.Value.DisplayName ?? string.Empty, command.Role);
+    }
 }
 
 internal sealed class AcceptInvitationHandler(

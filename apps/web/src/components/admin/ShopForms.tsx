@@ -2,8 +2,10 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import type { UseFormRegisterReturn } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
+import { Tabs } from '@/components/ui/Tabs';
 import { RadioCard } from '@/components/ui/selection';
 import { ConfirmDialog } from '@/components/ui/overlays';
 import { TextareaField } from '@/components/ui/inputs';
@@ -14,7 +16,7 @@ import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { FormTextField, useZodForm } from '@/lib/forms/fields';
 import { applyProblemToForm } from '@/lib/forms/problem';
-import { email, requiredText } from '@/lib/forms/validation';
+import { email, requiredText, withParams } from '@/lib/forms/validation';
 
 function useFailure() {
   const apiMessage = useApiErrorMessage();
@@ -165,7 +167,61 @@ export function ShopStatusActions({ shopId, status }: { shopId: string; status: 
   );
 }
 
-const inviteSchema = z.object({ email, role: z.enum(['ShopOwner', 'ShopStaff']) });
+const shopRole = z.enum(['ShopOwner', 'ShopStaff']);
+
+const inviteSchema = z.object({ email, role: shopRole });
+
+/** The owner or desk choice shared by both ways of adding a shop account. */
+function ShopRoleCards({ field }: { field: UseFormRegisterReturn<'role'> }) {
+  const t = useTranslations('adminShops.detail.invite');
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-2">
+      <legend className="pb-2 text-label font-bold text-text-strong">{t('role')}</legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <RadioCard {...field} value="ShopOwner">
+          <span className="block font-bold">{t('owner')}</span>
+          <span className="block text-helper text-text-tertiary">{t('ownerHint')}</span>
+        </RadioCard>
+        <RadioCard {...field} value="ShopStaff">
+          <span className="block font-bold">{t('staff')}</span>
+          <span className="block text-helper text-text-tertiary">{t('staffHint')}</span>
+        </RadioCard>
+      </div>
+    </fieldset>
+  );
+}
+
+/** A shop's accounts: an emailed invitation, or an account created here with a temporary password (D-139). */
+export function ShopAccountForms({ shopId }: { shopId: string }) {
+  const t = useTranslations('adminShops.detail.invite');
+  return (
+    <Tabs
+      label={t('modes')}
+      items={[
+        {
+          value: 'email',
+          label: t('byEmail'),
+          content: (
+            <div className="flex flex-col gap-4">
+              <p className="text-caption text-text-secondary">{t('body')}</p>
+              <InviteShopUserForm shopId={shopId} />
+            </div>
+          ),
+        },
+        {
+          value: 'manual',
+          label: t('manual'),
+          content: (
+            <div className="flex flex-col gap-4">
+              <p className="text-caption text-text-secondary">{t('manualBody')}</p>
+              <CreateShopUserForm shopId={shopId} />
+            </div>
+          ),
+        },
+      ]}
+    />
+  );
+}
 
 /** Emails an owner or staff invitation for this shop (R-AUTH-02). */
 export function InviteShopUserForm({ shopId }: { shopId: string }) {
@@ -207,23 +263,130 @@ export function InviteShopUserForm({ shopId }: { shopId: string }) {
         dir="ltr"
         autoComplete="off"
       />
-      <fieldset className="flex min-w-0 flex-col gap-2">
-        <legend className="pb-2 text-label font-bold text-text-strong">{t('role')}</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <RadioCard {...form.register('role')} value="ShopOwner">
-            <span className="block font-bold">{t('owner')}</span>
-            <span className="block text-helper text-text-tertiary">{t('ownerHint')}</span>
-          </RadioCard>
-          <RadioCard {...form.register('role')} value="ShopStaff">
-            <span className="block font-bold">{t('staff')}</span>
-            <span className="block text-helper text-text-tertiary">{t('staffHint')}</span>
-          </RadioCard>
-        </div>
-      </fieldset>
+      <ShopRoleCards field={form.register('role')} />
       {sent && <InlineAlert tone="success" title={t('sent')} />}
       {failure && <InlineAlert tone="danger" title={failure} />}
       <Button type="submit" size="md" icon="msg" loading={form.formState.isSubmitting} className="self-start">
         {t('submit')}
+      </Button>
+    </form>
+  );
+}
+
+const PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+
+/** A temporary password that is easy to read out and type: three groups of four, without look-alike characters. */
+export function generateTemporaryPassword(): string {
+  const chars: string[] = [];
+  while (chars.length < 12) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+      // 248 = 8 × 31: dropping the rest keeps every character equally likely.
+      if (byte < 248 && chars.length < 12) chars.push(PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length]!);
+    }
+  }
+  return [0, 4, 8].map((start) => chars.slice(start, start + 4).join('')).join('-');
+}
+
+const createUserSchema = z.object({
+  displayName: requiredText(60),
+  email,
+  role: shopRole,
+  password: z
+    .string()
+    .min(1, { error: 'required' })
+    .min(10, { error: 'passwordTooShort' })
+    .max(256, { error: withParams('tooLong', { max: 256 }) }),
+});
+
+/**
+ * Creates an owner or desk account with a temporary password and no email (D-139). The admin gives the password to
+ * the person, who replaces it at the first sign-in.
+ */
+export function CreateShopUserForm({ shopId }: { shopId: string }) {
+  const t = useTranslations('adminShops.detail.invite');
+  const locale = useLocale();
+  const { failure, clear, fail } = useFailure();
+  const [created, setCreated] = useState<{ email: string; password: string }>();
+  const form = useZodForm(createUserSchema, {
+    defaultValues: { displayName: '', email: '', role: 'ShopOwner', password: '' },
+    mode: 'onSubmit',
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    clear();
+    setCreated(undefined);
+    try {
+      const user = ensureOk(
+        await browserApi.POST('/api/v1/admin/shops/{shopId}/users', {
+          params: { path: { shopId } },
+          body: { ...values, locale },
+        }),
+      );
+      setCreated({ email: user.email, password: values.password });
+      form.reset({ displayName: '', email: '', role: values.role, password: '' });
+    } catch (error) {
+      if (error instanceof ApiError && error.isValidation)
+        applyProblemToForm(error, form.setError, ['displayName', 'email', 'role', 'password']);
+      else fail(error);
+    }
+  });
+
+  return (
+    <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
+      <FormTextField control={form.control} name="displayName" label={t('name')} autoComplete="off" />
+      <FormTextField
+        control={form.control}
+        name="email"
+        label={t('email')}
+        type="email"
+        dir="ltr"
+        autoComplete="off"
+      />
+      <ShopRoleCards field={form.register('role')} />
+      <div className="flex flex-col gap-2">
+        {/* Plain text, because the admin reads it out or copies it; a password field would also invite the
+            browser to save it as the admin's own login. */}
+        <FormTextField
+          control={form.control}
+          name="password"
+          label={t('temporaryPassword')}
+          helper={t('temporaryPasswordHint')}
+          dir="ltr"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          icon="refresh"
+          className="self-start"
+          onClick={() =>
+            form.setValue('password', generateTemporaryPassword(), {
+              shouldValidate: form.formState.isSubmitted,
+            })
+          }
+        >
+          {t('generate')}
+        </Button>
+      </div>
+      {created && (
+        <InlineAlert tone="success" title={t('created')}>
+          <p>{t('createdBody', { email: created.email })}</p>
+          <p dir="ltr" className="font-mono text-body font-bold select-all">
+            {created.password}
+          </p>
+        </InlineAlert>
+      )}
+      {failure && <InlineAlert tone="danger" title={failure} />}
+      <Button
+        type="submit"
+        size="md"
+        icon="plus"
+        loading={form.formState.isSubmitting}
+        className="self-start"
+      >
+        {t('create')}
       </Button>
     </form>
   );

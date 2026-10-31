@@ -2197,6 +2197,67 @@
         }
       }
     },
+    "/api/v1/auth/password/change-temporary": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Replaces the temporary password an admin set (sign-in answered auth.password_change_required) and signs in.",
+        "operationId": "ChangeTemporaryPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeTemporaryPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/invitations/accept": {
       "post": {
         "tags": [
@@ -2549,6 +2610,78 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/users": {
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Creates a ShopOwner or ShopStaff account with a temporary password, without email (audited).",
+        "operationId": "CreateShopUser",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShopUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserResponse"
                 }
               }
             }
@@ -15321,6 +15454,25 @@
           }
         }
       },
+      "ChangeTemporaryPasswordRequest": {
+        "required": [
+          "email",
+          "password",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
       "ClosureRequest": {
         "required": [
           "startDate",
@@ -15835,6 +15987,36 @@
           }
         },
         "description": "A new service of the signed-in shop. Price in SAR (\u2264 2 decimals); duration a multiple of 5 minutes.\n\u0060ProfessionalIds\u0060 are the shop\u0027s own barbers who do it (D-137); null or empty assigns none."
+      },
+      "CreateShopUserRequest": {
+        "required": [
+          "email",
+          "displayName",
+          "role",
+          "password",
+          "locale"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "locale": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       },
       "CsrfTokenResponse": {
         "required": [
@@ -21831,6 +22013,31 @@
           }
         },
         "description": "The signed-in shop\u0027s own subscription, read-only (renewals go through the platform admins)."
+      },
+      "ShopUserResponse": {
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "description": "A shop account an admin created with a temporary password (D-139). The password is never returned."
       },
       "SignInResponse": {
         "required": [

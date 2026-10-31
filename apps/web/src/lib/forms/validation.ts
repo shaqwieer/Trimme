@@ -60,6 +60,7 @@ export const VALIDATION_KEY_LIST = [
   'breakDays',
   'immutable',
   'roleNameTaken',
+  'passwordUnchanged',
 ] as const satisfies readonly ValidationKey[];
 
 export const VALIDATION_KEYS: ReadonlySet<string> = new Set(VALIDATION_KEY_LIST);

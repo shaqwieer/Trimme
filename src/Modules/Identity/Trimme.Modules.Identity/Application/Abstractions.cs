@@ -14,11 +14,24 @@ public sealed record AccountSummary(
     DateTimeOffset? TermsAcceptedAt,
     IReadOnlyList<string> Roles,
     bool IsDisabled,
-    Guid? ShopId = null);
+    Guid? ShopId = null,
+    bool MustChangePassword = false);
 
 public sealed record NewCustomer(string PhoneHash, string ProtectedPhone, string PreferredLocale, DateTimeOffset? TermsAcceptedAt);
 
-public sealed record NewStaffAccount(string Email, string DisplayName, string Password, UserType UserType, string RoleName, string PreferredLocale, Guid? ShopId = null);
+/// <summary>
+/// A staff account to create. <c>MustChangePassword</c> marks a temporary password an admin set (D-139): the user
+/// must replace it before signing in.
+/// </summary>
+public sealed record NewStaffAccount(
+    string Email,
+    string DisplayName,
+    string Password,
+    UserType UserType,
+    string RoleName,
+    string PreferredLocale,
+    Guid? ShopId = null,
+    bool MustChangePassword = false);
 
 public sealed record PasswordResetTicket(Guid UserId, string Email, string? DisplayName, string PreferredLocale, string Token);
 
@@ -59,6 +72,12 @@ internal interface IAccountStore
     Task<PasswordResetTicket?> CreatePasswordResetAsync(string email, CancellationToken cancellationToken);
 
     Task<Result> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Replaces a staff password the caller has just proven (D-139) and clears <c>MustChangePassword</c>. The new
+    /// password must differ from the current one.
+    /// </summary>
+    Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
 
     Task<bool> AnyUserInRoleAsync(string roleName, CancellationToken cancellationToken);
 }

@@ -144,6 +144,7 @@ internal sealed class AccountStore(
             PreferredLocale = account.PreferredLocale,
             CreatedAt = clock.GetUtcNow(),
             LockoutEnabled = true,
+            MustChangePassword = account.MustChangePassword,
         };
 
         var created = await users.CreateAsync(user, account.Password);
@@ -184,9 +185,36 @@ internal sealed class AccountStore(
                 : PasswordOrThrow(reset);
         }
 
-        // Proving control of the mailbox also lifts a lockout.
+        // Proving control of the mailbox also lifts a lockout, and the new password replaces a temporary one.
         await users.SetLockoutEndDateAsync(user, null);
         await users.ResetAccessFailedCountAsync(user);
+        await ClearTemporaryPasswordAsync(user);
+        return Result.Success();
+    }
+
+    public async Task<Result> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId.ToString());
+        if (user is null || user.UserType == UserType.Customer || user.DisabledAt is not null)
+        {
+            return IdentityErrors.InvalidCredentials();
+        }
+
+        if (await users.CheckPasswordAsync(user, newPassword))
+        {
+            return IdentityErrors.PasswordUnchanged();
+        }
+
+        var changed = await users.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!changed.Succeeded)
+        {
+            // The caller checked the current password a moment ago; a mismatch means it changed in between.
+            return changed.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.PasswordMismatch))
+                ? IdentityErrors.InvalidCredentials()
+                : PasswordOrThrow(changed);
+        }
+
+        await ClearTemporaryPasswordAsync(user);
         return Result.Success();
     }
 
@@ -220,7 +248,17 @@ internal sealed class AccountStore(
             user.TermsAcceptedAt,
             roles,
             user.DisabledAt is not null,
-            user.ShopId?.Value);
+            user.ShopId?.Value,
+            user.MustChangePassword);
+    }
+
+    private async Task ClearTemporaryPasswordAsync(ApplicationUser user)
+    {
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            EnsureSucceeded(await users.UpdateAsync(user));
+        }
     }
 
     /// <summary>Password-policy failures become field errors on <c>password</c>; anything else is a bug.</summary>

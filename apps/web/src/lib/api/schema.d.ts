@@ -804,6 +804,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/change-temporary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replaces the temporary password an admin set (sign-in answered auth.password_change_required) and signs in. */
+        post: operations["ChangeTemporaryPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/invitations/accept": {
         parameters: {
             query?: never;
@@ -969,6 +986,23 @@ export interface paths {
         put?: never;
         /** Emails a ShopOwner or ShopStaff invitation for one shop (audited). */
         post: operations["InviteShopUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Creates a ShopOwner or ShopStaff account with a temporary password, without email (audited). */
+        post: operations["CreateShopUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4351,6 +4385,11 @@ export interface components {
         ChangeShopStatusRequest: {
             reason: null | string;
         };
+        ChangeTemporaryPasswordRequest: {
+            email: string;
+            password: string;
+            newPassword: string;
+        };
         /** @description Closed days, inclusive. `Version` is needed to edit. */
         ClosureRequest: {
             /** Format: date */
@@ -4489,6 +4528,13 @@ export interface components {
             durationMinutes: number;
             onlineBookable: boolean;
             professionalIds?: null | string[];
+        };
+        CreateShopUserRequest: {
+            email: string;
+            displayName: string;
+            role: string;
+            password: string;
+            locale: null | string;
         };
         CsrfTokenResponse: {
             token: string;
@@ -6355,6 +6401,14 @@ export interface components {
             expiringSoonThresholdDays: number;
             hiddenFromDiscovery: boolean;
             renewals: components["schemas"]["ShopRenewalResponse"][];
+        };
+        /** @description A shop account an admin created with a temporary password (D-139). The password is never returned. */
+        ShopUserResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            displayName: string;
+            role: string;
         };
         /**
          * @description Result of a successful sign-in; the session cookies are set on the response. `IsNewUser` is true when the OTP
@@ -8445,6 +8499,57 @@ export interface operations {
             };
         };
     };
+    ChangeTemporaryPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeTemporaryPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     AcceptInvitation: {
         parameters: {
             query?: never;
@@ -8747,6 +8852,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvitationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateShopUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShopUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopUserResponse"];
                 };
             };
             /** @description Bad Request */

@@ -1,15 +1,40 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-27 (Session 20: the legal pages without the draft notice; Meta's webhook check needs only the verify token; groomhere.sa has a verify token (D-138); after Phase 17)
+- **Updated:** 2026-10-31 (Session 21: the admin creates a shop owner or desk account with a temporary password, replaced at the first sign-in (D-139); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Session 20 is pushed and deployed on groomhere.sa (2026-10-27); see its section below for the commit and the backup.
-- **Working tree:** clean after the commit, except the five user guides in `docs/guides/` (PDF/DOCX), which were untracked before and are left alone.
+  - Session 21 is committed locally, **not pushed and not deployed** (the user did not ask). Session 20 is the last push and deploy (2026-10-27).
+- **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - Session 19 brought it up with `up -d` (migrate and the seed ran on the old volume, so `WalkInContacts` is applied there). The API and web images are built from Session 19's final tree.
+  - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
   - The volume is still several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows and the anonymous route audit fail on it (`/shops/barber-house…: public page is noindex`). Run those on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 21: shop accounts created by hand with a temporary password (D-139)
+- **The client's answer** (relayed by the user): asked whether owners and staff should be added by hand in the platform or invited by email (changing the password at the first sign-in), the client wants **both**.
+  - The email way already exists (invitation and forgot-password emails over SMTP, D-056). It only needs a provider: the user told the client it would be Resend.
+  - **What to ask the client for Resend:** an account in the client's name; a sending domain, preferably a subdomain such as `mail.groomhere.sa`, in the Ireland (eu-west-1) region, with the DNS records Resend shows added (or DNS access given); an API key with "Sending access" only, limited to that domain; and the sender address and name.
+  - Then, on the VPS, set `Email__Smtp__Host=smtp.resend.com`, `Email__Smtp__Port=465`, `Email__Smtp__Security=SslOnConnect`, `Email__Smtp__Username=resend`, `Email__Smtp__Password=<API key>` and `Email__Smtp__FromAddress=<sender>` in `compose.yml`/`.env`. Check that `Web__PublicBaseUrl` is `https://groomhere.sa`, since emailed links use it. No code change is needed. A set SMTP host switches from the dropping sender to SMTP even in the demo's Development mode.
+- **Built: the manual way.**
+  - **Admin:** on the shop's Accounts tab, «إضافة حساب للمحل» has the tabs «دعوة بالبريد» (as before, the default) and «إنشاء يدوي». The manual tab takes the name, email, owner or desk, and a temporary password («توليد كلمة مرور» makes `abcd-efgh-jkmn`). The password is shown once after «إنشاء الحساب».
+  - **API:** `POST /api/v1/admin/shops/{shopId}/users` (`Admin.Shops.ManageAccount`, the invitation's rules via `NewStaffAccountRules`; audited `shop_user.created`, without the email or the password).
+  - **Sign-in:** the temporary password starts **no session**. `staff/sign-in` answers 403 `auth.password_change_required` (only after the right password), and the sign-in card becomes «اختر كلمة مرور جديدة». `POST /api/v1/auth/password/change-temporary` (anonymous, `auth` rate limit, lockout counts) refuses the same password, saves the new one and signs in. An emailed reset also clears the flag.
+  - **Migration:** `TemporaryPasswords` adds `identity.users.must_change_password` (default false).
+- **Scope kept:** shop owners and desk accounts, by admins only. Owners still cannot add their own staff, and platform admins are still invited by email (D-106).
+- **Follow-ups to offer the client:**
+  - an admin action to set a new temporary password for an existing shop account (a forgotten password otherwise needs the email reset, so Resend);
+  - owners adding their own staff.
+- **Evidence (final tree):**
+  - .NET: unit 430/430, architecture 69/69. Integration **213/213** in two runs:
+    - 102: Identity, Tenancy, Api and Persistence;
+    - 111: every other namespace.
+  - New integration tests: `ShopUserTemporaryPasswordTests` (3). `AuthorizationMatrixTests` lists the new anonymous endpoint and its rate limit. `OpenApiContractTests` was regenerated (`TRIMME_UPDATE_OPENAPI=1`), and `schema.d.ts` too.
+  - Web: `lint`, `typecheck`, `format:check`, `openapi:check` and `build` pass. `pnpm test`: 53 files, 490 tests. New: `StaffForms.test.tsx` and `ShopForms.test.tsx`.
+  - E2E on the local stack (rebuilt images): `tenancy` and `auth` flows 9/9. The new tenancy test has the admin create a desk account in the UI. The temporary password leads to the new-password step with `/me` 401, then `/shop`, and the temporary password is then refused. Axe passes on both pages.
+  - The existing invite test now matches the email field exactly: the tab panel «Email invitation» also matched `getByLabel('Email')`.
+  - `smoke` and the `a11y`/`a11y-dark` route audits: 49/53. The 4 failures are the anonymous pages, the same known ones: Barber House is noindex on this old volume.
+- **Deploying later (when asked):** this adds a migration, so take the pg_dump backup on the VPS first. Then `git pull`, `docker compose build api web`, `run --rm migrate` and `up -d`.
 
 ## Session 20: the legal pages without the draft notice; the WhatsApp webhook's verify token (D-138)
 - **The client's points** (relayed by the user):

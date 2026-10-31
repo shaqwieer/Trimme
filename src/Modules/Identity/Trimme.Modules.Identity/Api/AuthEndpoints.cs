@@ -28,6 +28,8 @@ public sealed record ResetPasswordRequest(Guid UserId, string Token, string NewP
 
 public sealed record AcceptInvitationRequest(string Token, string DisplayName, string Password);
 
+public sealed record ChangeTemporaryPasswordRequest(string Email, string Password, string NewPassword);
+
 public sealed record CsrfTokenResponse(string Token);
 
 public sealed record RevokedSessionsResponse(int Revoked);
@@ -64,6 +66,11 @@ internal static class AuthEndpoints
         auth.MapPost("/password/reset", ResetPassword).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
             .WithName("ResetPassword").WithSummary("Sets a new staff password from an emailed link and signs out every device.")
             .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status400BadRequest);
+        auth.MapPost("/password/change-temporary", ChangeTemporaryPassword).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
+            .WithName("ChangeTemporaryPassword")
+            .WithSummary("Replaces the temporary password an admin set (sign-in answered auth.password_change_required) and signs in.")
+            .Produces<SignInResponse>().ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized).ProducesProblem(StatusCodes.Status403Forbidden);
         auth.MapPost("/invitations/accept", AcceptInvitation).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
             .WithName("AcceptInvitation").WithSummary("Creates a staff account from an emailed invitation and signs it in.")
             .Produces<SignInResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status409Conflict);
@@ -137,6 +144,16 @@ internal static class AuthEndpoints
             new ResetPasswordCommand(request.UserId, request.Token ?? string.Empty, request.NewPassword ?? string.Empty),
             cancellationToken);
         return result.ToHttpResult();
+    }
+
+    private static async Task<IResult> ChangeTemporaryPassword(
+        ChangeTemporaryPasswordRequest request, HttpContext http, IDispatcher dispatcher, CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.Send(
+            new ChangeTemporaryPasswordCommand(
+                request.Email ?? string.Empty, request.Password ?? string.Empty, request.NewPassword ?? string.Empty, SessionCookies.Client(http)),
+            cancellationToken);
+        return await SignedIn(http, result);
     }
 
     private static async Task<IResult> AcceptInvitation(AcceptInvitationRequest request, HttpContext http, IDispatcher dispatcher, CancellationToken cancellationToken)

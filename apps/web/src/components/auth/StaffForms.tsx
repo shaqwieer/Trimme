@@ -33,11 +33,16 @@ function useServerError() {
   return { serverError, setServerError, fail };
 }
 
-/** Shop and admin staff sign-in with email + password (D-005). */
+/**
+ * Shop and admin staff sign-in with email + password (D-005). An account an admin created with a temporary password
+ * gets no session until the user chooses a new one (D-139), so that step follows here.
+ */
 export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
   const t = useTranslations('auth.staffSignIn');
   const router = useRouter();
   const { serverError, setServerError, fail } = useServerError();
+  // Held in memory only, to prove the temporary password once more when it is replaced.
+  const [temporary, setTemporary] = useState<{ email: string; password: string }>();
   const form = useZodForm(z.object({ email, password: z.string().min(1, { error: 'required' }) }), {
     defaultValues: { email: '', password: '' },
     // Validate on submit: a blur error on the autofocused empty field would shift the links below it.
@@ -50,11 +55,27 @@ export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
       const { user } = ensureOk(await browserApi.POST('/api/v1/auth/staff/sign-in', { body: values }));
       router.replace(returnTo ?? homeFor(user.userType));
     } catch (error) {
-      if (error instanceof ApiError && error.isValidation)
+      if (error instanceof ApiError && error.errorCode === 'auth.password_change_required')
+        setTemporary(values);
+      else if (error instanceof ApiError && error.isValidation)
         applyProblemToForm(error, form.setError, ['email', 'password']);
       else fail(error);
     }
   });
+
+  if (temporary) {
+    return (
+      <ReplaceTemporaryPasswordForm
+        email={temporary.email}
+        temporaryPassword={temporary.password}
+        onBack={() => {
+          setTemporary(undefined);
+          form.reset({ email: temporary.email, password: '' });
+        }}
+        onSignedIn={(userType) => router.replace(returnTo ?? homeFor(userType))}
+      />
+    );
+  }
 
   return (
     <AuthCard
@@ -94,6 +115,76 @@ export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
         <Button type="submit" fullWidth loading={form.formState.isSubmitting}>
           {t('submit')}
         </Button>
+      </form>
+    </AuthCard>
+  );
+}
+
+/** The second sign-in step for a temporary password: the API checks it again, saves the new one and signs in. */
+function ReplaceTemporaryPasswordForm({
+  email,
+  temporaryPassword,
+  onBack,
+  onSignedIn,
+}: {
+  email: string;
+  temporaryPassword: string;
+  onBack: () => void;
+  onSignedIn: (userType: string) => void;
+}) {
+  const t = useTranslations('auth.staffSignIn');
+  const tReset = useTranslations('auth.reset');
+  const { serverError, setServerError, fail } = useServerError();
+  const form = useZodForm(newPasswordSchema, { defaultValues: { password: '', confirmPassword: '' } });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    setServerError(undefined);
+    try {
+      const { user } = ensureOk(
+        await browserApi.POST('/api/v1/auth/password/change-temporary', {
+          body: { email, password: temporaryPassword, newPassword: values.password },
+        }),
+      );
+      onSignedIn(user.userType);
+    } catch (error) {
+      if (error instanceof ApiError && error.isValidation)
+        applyProblemToForm(error, form.setError, ['password']);
+      else fail(error);
+    }
+  });
+
+  return (
+    <AuthCard showLogo title={t('changeTitle')} subtitle={t('changeSubtitle')}>
+      <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+        {/* Lets a password manager save the new password against the right account. */}
+        <input type="email" name="email" value={email} autoComplete="username" readOnly hidden />
+        <FormTextField
+          control={form.control}
+          name="password"
+          label={tReset('newPassword')}
+          helper={tReset('passwordHint')}
+          type="password"
+          autoComplete="new-password"
+          autoFocus
+        />
+        <FormTextField
+          control={form.control}
+          name="confirmPassword"
+          label={tReset('confirmPassword')}
+          type="password"
+          autoComplete="new-password"
+        />
+        {serverError && <InlineAlert tone="danger" title={serverError} />}
+        <Button type="submit" fullWidth loading={form.formState.isSubmitting}>
+          {t('changeSubmit')}
+        </Button>
+        <button
+          type="button"
+          onClick={onBack}
+          className="self-center text-caption font-bold text-brand-700 hover:underline"
+        >
+          {t('changeBack')}
+        </button>
       </form>
     </AuthCard>
   );

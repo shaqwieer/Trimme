@@ -1393,3 +1393,30 @@ This refines D-126.
   - `Webhook_VerifiesTheSignature_AndMovesDispatchStatuses` adds the case: token only, so GET echoes and POST is 404.
 - **groomhere.sa.** The deployment's `.env` holds a generated verify token (`TRIMME_WHATSAPP_VERIFY_TOKEN`) and an empty app secret (`TRIMME_WHATSAPP_APP_SECRET`), passed to the API as `WhatsApp__Meta__VerifyToken` and `WhatsApp__Meta__AppSecret`. The provider and the sign-in code sender are not changed: the demo keeps the fake provider and the dev OTP inbox until the client's credentials and approved templates exist.
 - **Dependencies.** None added. No migration. No API contract change.
+
+## D-139 — A shop account created by the admin with a temporary password, replaced at the first sign-in — Accepted (Session 21, after Phase 17, at the client's request)
+- **The client's request** (relayed by the user): the developer asked whether owners and staff should be added by hand inside the platform, or invited by email and made to change their password at the first sign-in. The client wants **both**. The email way needs a mail provider (Resend, over SMTP, D-056); this decision covers the manual way.
+- **Before.** Shop accounts existed only through the admin's emailed invitation (D-059): the invitee sets a name and password from the link. Without a mail provider (groomhere.sa has none), an admin could not add an owner or a desk account at all.
+- **Scope.** Shop owners and desk staff (ShopOwner, ShopStaff), created by an admin with `Admin.Shops.ManageAccount`, as invitations are. Shop owners still cannot add their own staff (R-AUTH-02), and platform-admin colleagues are still invited by email only (D-106). The user had not answered whether owners should add their own staff, so nothing changed there.
+- **Creating the account.**
+  - `POST /api/v1/admin/shops/{shopId}/users` takes `email`, `displayName`, `role`, `password` and an optional `locale`, and answers 201 with `ShopUserResponse` (id, email, name, role; never the password).
+  - It applies the invitation's rules, now shared as `NewStaffAccountRules`:
+    - the role must be a shop role (`invitation.role_invalid` on `role`);
+    - the shop must exist (404 `shop.not_found`);
+    - the email must be free (409 `invitation.email_registered`).
+  - The password policy is the usual one (field errors on `password`). An invitation already emailed to the address is revoked.
+  - Audited as `shop_user.created` against the shop and the user id, with neither the email nor the password.
+- **The temporary password starts no session.**
+  - `identity.users.must_change_password` (migration `TemporaryPasswords`; existing rows false) is set on such accounts. Staff sign-in checks the password and the disabled state as before, then answers 403 `auth.password_change_required` and sets no cookie. Only a caller who knows the password learns this. A wrong password still answers `auth.invalid_credentials`, and lockout applies.
+  - `POST /api/v1/auth/password/change-temporary` (anonymous, CSRF, `auth` rate limit) takes `email`, `password` (the temporary one) and `newPassword`. It checks them as sign-in does (lockout counts), refuses the same password (`validation.password_unchanged` on `password`), saves the new one, clears the flag and signs in (`SignInResponse`, session cookies).
+  - It changes only a temporary password: on any other account it answers 400 `auth.password_change_not_required`. Staff still change an ordinary password through the emailed reset.
+  - An emailed reset also clears the flag: proving the mailbox replaces a temporary password too.
+  - **Why no session, rather than a session limited until the change:** a flag on a live session would have to be enforced on every path. The permission check would cover most endpoints, but not the shop endpoints that need only the user type (`/shop/me`, `/shop/profile`, `/shop/professionals`, the catalogue lists), the hubs or the jobs dashboard. With no session there is nothing to enforce. `/me`, the server guards and the dashboards are unchanged.
+- **Web.**
+  - On the admin shop page, the Accounts card («إضافة حساب للمحل») has two tabs: «دعوة بالبريد» (the email invitation, as before, and the default) and «إنشاء يدوي».
+  - The manual form has the name, the email, owner or desk, and the temporary password. The password is a plain text field, so the admin can read it out and the browser does not save it as the admin's login. «توليد كلمة مرور» fills twelve characters without look-alikes, in three groups of four (`abcd-efgh-jkmn`).
+  - After «إنشاء الحساب» a success message gives the email and shows the temporary password once, and the form clears.
+  - Staff sign-in: on `auth.password_change_required` the card becomes «اختر كلمة مرور جديدة» (new password and confirmation, «حفظ وتسجيل الدخول», «رجوع»). The temporary password is kept in memory only, never in storage. Then the user goes on to their dashboard (`returnTo` kept).
+  - New messages in ar, en and tr: the tabs and the form, the sign-in step, `apiErrors.auth_password_change_required` / `_not_required` and `validation.passwordUnchanged`.
+- **Not added (follow-ups to offer the client):** an admin action to set a new temporary password for an existing shop account (today a forgotten password needs the emailed reset, so a mail provider), and owners adding their own staff.
+- **Dependencies.** None added. Migration `TemporaryPasswords` (one boolean column with a default). API: the two endpoints above (OpenAPI and `schema.d.ts` regenerated).

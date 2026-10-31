@@ -269,7 +269,8 @@
     "rangeInvalid": "Bitiş başlangıçtan önce ya da aralık bir yıldan uzun",
     "breakDays": "Hafta günlerini veya tek bir tarih seçin",
     "immutable": "Bu değer değiştirilemez",
-    "roleNameTaken": "Bu adı zaten başka bir rol kullanıyor."
+    "roleNameTaken": "Bu adı zaten başka bir rol kullanıyor.",
+    "passwordUnchanged": "Geçici şifreden farklı bir şifre seçin."
   },
   "auth": {
     "meta": {
@@ -323,7 +324,11 @@
       "password": "Şifre",
       "submit": "Giriş yap",
       "forgot": "Şifrenizi mi unuttunuz?",
-      "customer": "Müşteri misiniz? Cep telefonunuzla giriş yapın"
+      "customer": "Müşteri misiniz? Cep telefonunuzla giriş yapın",
+      "changeTitle": "Yeni bir şifre seçin",
+      "changeSubtitle": "Groom Here ekibi hesabınızı geçici bir şifreyle oluşturdu. Devam etmek için kendi şifrenizi seçin.",
+      "changeSubmit": "Kaydet ve giriş yap",
+      "changeBack": "Geri"
     },
     "forgot": {
       "title": "Şifremi unuttum",
@@ -510,7 +515,9 @@
     "qr_already_active": "Kod zaten aktif.",
     "qr_already_inactive": "Kod zaten kapalı.",
     "invitation_role_invalid": "Bu rol, davet edilen hesap türüne uygun değil.",
-    "loyalty_reward_unavailable": "Bu kupon kullanılamıyor: kullanılmış, süresi dolmuş ya da başka bir salona ait."
+    "loyalty_reward_unavailable": "Bu kupon kullanılamıyor: kullanılmış, süresi dolmuş ya da başka bir salona ait.",
+    "auth_password_change_required": "Geçici şifrenin yerine yeni bir şifre seçin.",
+    "auth_password_change_not_required": "Bu şifre geçici değil. Doğrudan bu şifreyle giriş yapın."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -558,7 +565,7 @@
       "notFoundTitle": "Salon bulunamadı",
       "notFoundBody": "Bağlantı hatalı olabilir veya salon artık mevcut değil.",
       "invite": {
-        "title": "Salon hesabı davet edin",
+        "title": "Salona hesap ekle",
         "body": "Davet edilen kişiye şifre belirlemesi için e-postayla bir bağlantı gönderilir. Bağlantı 7 gün geçerlidir.",
         "email": "E-posta",
         "role": "Rol",
@@ -567,7 +574,18 @@
         "staff": "Resepsiyon personeli",
         "staffHint": "Yalnızca randevular ve randevusuz müşteriler",
         "submit": "Davet gönder",
-        "sent": "Davet gönderildi."
+        "sent": "Davet gönderildi.",
+        "modes": "Hesabı ekleme yöntemi",
+        "byEmail": "E-posta daveti",
+        "manual": "Elle oluştur",
+        "manualBody": "Hesabı geçici bir şifreyle oluşturur ve şifreyi kişiye kendiniz verirsiniz; e-posta gönderilmez. Kişi ilk girişte yeni bir şifre seçer.",
+        "name": "Ad",
+        "temporaryPassword": "Geçici şifre",
+        "temporaryPasswordHint": "En az 10 karakter.",
+        "generate": "Şifre oluştur",
+        "create": "Hesabı oluştur",
+        "created": "Hesap oluşturuldu.",
+        "createdBody": "Hesabın sahibine {email} e-postasını ve aşağıdaki geçici şifreyi verin. İlk girişte yeni bir şifre seçecek."
       },
       "bookings": "Bu salondaki randevular"
     },
