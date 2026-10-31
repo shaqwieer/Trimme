@@ -1415,7 +1415,7 @@ This refines D-126.
 - **Web.**
   - On the admin shop page, the Accounts card («إضافة حساب للمحل») has two tabs: «دعوة بالبريد» (the email invitation, as before, and the default) and «إنشاء يدوي».
   - The manual form has the name, the email, owner or desk, and the temporary password. The password is a plain text field, so the admin can read it out and the browser does not save it as the admin's login. «توليد كلمة مرور» fills twelve characters without look-alikes, in three groups of four (`abcd-efgh-jkmn`).
-  - After «إنشاء الحساب» a success message gives the email and shows the temporary password once, and the form clears.
+  - After «إنشاء الحساب» a success message shows the email and the temporary password once, each on its own LTR line (the email wraps, so a long address stays inside the box on a phone), and the form clears.
   - Staff sign-in: on `auth.password_change_required` the card becomes «اختر كلمة مرور جديدة» (new password and confirmation, «حفظ وتسجيل الدخول», «رجوع»). The temporary password is kept in memory only, never in storage. Then the user goes on to their dashboard (`returnTo` kept).
   - New messages in ar, en and tr: the tabs and the form, the sign-in step, `apiErrors.auth_password_change_required` / `_not_required` and `validation.passwordUnchanged`.
 - **Not added (follow-ups to offer the client):** an admin action to set a new temporary password for an existing shop account (today a forgotten password needs the emailed reset, so a mail provider), and owners adding their own staff.

@@ -585,7 +585,7 @@
         "generate": "Generate a password",
         "create": "Create the account",
         "created": "Account created.",
-        "createdBody": "Give the account’s owner the email {email} and the temporary password below. They will choose a new password at the first sign-in."
+        "createdBody": "Give the account’s owner the email and the temporary password below. They will choose a new password at the first sign-in."
       },
       "bookings": "Bookings at this shop"
     },

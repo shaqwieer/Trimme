@@ -34,6 +34,10 @@
   - E2E on the local stack (rebuilt images): `tenancy` and `auth` flows 9/9. The new tenancy test has the admin create a desk account in the UI. The temporary password leads to the new-password step with `/me` 401, then `/shop`, and the temporary password is then refused. Axe passes on both pages.
   - The existing invite test now matches the email field exactly: the tab panel «Email invitation» also matched `getByLabel('Email')`.
   - `smoke` and the `a11y`/`a11y-dark` route audits: 49/53. The 4 failures are the anonymous pages, the same known ones: Barber House is noindex on this old volume.
+  - The route audit loads the Accounts tab on its email panel only, so a scripted Chromium check covered the rest at 360 and 390 px, in Arabic, light and dark. It covered the «إنشاء يدوي» panel after a create and the «اختر كلمة مرور جديدة» step.
+    - It found the email in the success message running out of the box: a long address has no break points, and the page overflowed by 32 px at 360 px.
+    - Fixed in a second commit: the email is now on its own LTR line that can wrap, under the sentence (`createdBody` no longer contains it).
+    - After the fix: 0 px overflow everywhere. `tenancy` passes again, 3/3, on the rebuilt web image.
 - **Deploying later (when asked):** this adds a migration, so take the pg_dump backup on the VPS first. Then `git pull`, `docker compose build api web`, `run --rm migrate` and `up -d`.
 
 ## Session 20: the legal pages without the draft notice; the WhatsApp webhook's verify token (D-138)

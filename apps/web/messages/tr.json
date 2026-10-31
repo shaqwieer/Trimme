@@ -585,7 +585,7 @@
         "generate": "Şifre oluştur",
         "create": "Hesabı oluştur",
         "created": "Hesap oluşturuldu.",
-        "createdBody": "Hesabın sahibine {email} e-postasını ve aşağıdaki geçici şifreyi verin. İlk girişte yeni bir şifre seçecek."
+        "createdBody": "Hesabın sahibine aşağıdaki e-postayı ve geçici şifreyi verin. İlk girişte yeni bir şifre seçecek."
       },
       "bookings": "Bu salondaki randevular"
     },

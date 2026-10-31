@@ -372,7 +372,11 @@ export function CreateShopUserForm({ shopId }: { shopId: string }) {
       </div>
       {created && (
         <InlineAlert tone="success" title={t('created')}>
-          <p>{t('createdBody', { email: created.email })}</p>
+          <p>{t('createdBody')}</p>
+          {/* Its own line, free to wrap: an address has no break points and ran out of the box on a phone. */}
+          <p dir="ltr" className="[overflow-wrap:anywhere]">
+            {created.email}
+          </p>
           <p dir="ltr" className="font-mono text-body font-bold select-all">
             {created.password}
           </p>

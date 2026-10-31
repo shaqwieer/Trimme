@@ -47,6 +47,7 @@ describe('ShopAccountForms (D-139)', () => {
     });
     expect(await screen.findByText('تم إنشاء الحساب.')).toBeInTheDocument();
     expect(screen.getByText(generated)).toBeInTheDocument();
+    expect(screen.getByText('owner@shop.sa')).toHaveAttribute('dir', 'ltr');
     expect(screen.getByLabelText('كلمة المرور المؤقتة')).toHaveValue('');
   });
 
