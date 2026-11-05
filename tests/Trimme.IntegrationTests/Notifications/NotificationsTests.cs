@@ -61,7 +61,7 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         var shopNameAr = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}", ct), ct)).GetProperty("nameAr").GetString()!;
         toCustomer.Body.ShouldContain(shopNameAr);
         toCustomer.Buttons.ShouldContain(b => b.Url.EndsWith($"/ar/account/bookings/{bookingId}", StringComparison.Ordinal));
-        toProfessional.Body.ShouldNotBeNull().ShouldStartWith("لديك حجز جديد مع نورة القحطاني");
+        toProfessional.Body.ShouldNotBeNull().ShouldStartWith("لديك حجز جديد باسم نورة القحطاني");
         toProfessional.Body.ShouldNotContain(customerPhone[4..], Case.Sensitive, "the professional never receives the customer's number");
         toProfessional.RecipientMasked.ShouldBe("+966 5•• ••• •01");
         created.ShouldAllBe(d => !d.RecipientProtected.Contains("5123"));
@@ -151,7 +151,7 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         var sent = (await DispatchesAsync(w.Factory, bookingId, ct)).Where(d => d.Kind == DispatchKind.Reminder).ToList();
         sent.Count.ShouldBe(1, "a reminder job run twice sends once");
         sent[0].Event.ShouldBe(MessageEvent.BookingReminder);
-        sent[0].Body.ShouldNotBeNull().ShouldStartWith("لديك حجز مع نورة بعد ٣٠ دقيقة");
+        sent[0].Body.ShouldNotBeNull().ShouldStartWith("تذكير: لديك حجز باسم نورة بعد ٣٠ دقيقة");
         (await RemindersAsync(w.Factory, bookingId, ct)).Single(r => r.Id == reminder.Id).Status.ShouldBe(ReminderStatus.Sent);
 
         // The customer's reminder job runs after the booking moved but before the outbox caught up: it skips.
@@ -235,6 +235,35 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         var log = await OkAsync(w.Admin.GetAsync("/api/v1/admin/whatsapp/dispatches?audience=Professional", ct), ct);
         log.GetProperty("counts").GetProperty("queued").GetInt32().ShouldBeGreaterThan(0);
         log.GetRawText().ShouldNotContain("512349999");
+    }
+
+    [Fact]
+    public async Task Allowlist_SendsOnlyToListedNumbers_AndASkippedMessageIsNoDeliveryFailure()
+    {
+        // D-140: a demo with made-up numbers lists the real test numbers; everyone else is refused before the provider.
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(
+            postgres, "ntf_allowlist", ct, settings: new Dictionary<string, string?> { ["WhatsApp:AllowedRecipients"] = "+966 51 230 0001, +20 155 000 0000" });
+        await SetWhatsAppAsync(w.Admin, w.Faisal, FaisalNumber, ct);
+        await SetWhatsAppAsync(w.Admin, w.Omar, "+966512300002", ct);
+        using var noura = await CustomerWithPhoneAsync(w.Factory, "نورة", IdentityTestData.NewPhone(), ct);
+
+        var withFaisal = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        var withOmar = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await ProcessOutboxAsync(w.Factory, ct);
+        await RunSendsAsync(w.Factory, [.. await DispatchesAsync(w.Factory, withFaisal, ct), .. await DispatchesAsync(w.Factory, withOmar, ct)], ct);
+
+        var faisal = await DispatchesAsync(w.Factory, withFaisal, ct);
+        faisal.Single(d => d.Audience == MessageAudience.Professional).Status.ShouldBe(DispatchStatus.Delivered, "a listed number is sent as usual");
+        var refused = faisal.Where(d => d.Audience == MessageAudience.Customer)
+            .Concat(await DispatchesAsync(w.Factory, withOmar, ct)).ToList();
+        refused.Count.ShouldBe(3, "the customer twice and Omar once");
+        refused.ShouldAllBe(d => d.Status == DispatchStatus.Failed && d.Attempts == 1 && d.LastError!.StartsWith("whatsapp.recipient_not_allowed"));
+
+        (await ContactAsync(w.Factory, w.Omar, ct)).Verification.ShouldNotBe(WhatsAppVerification.Failed, "a skipped message is not a delivery failure");
+        (await ContactAsync(w.Factory, w.Faisal, ct)).Verification.ShouldBe(WhatsAppVerification.Verified);
+        (await OkAsync(w.Admin.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .ShouldNotContain(n => n.GetProperty("kind").GetString() == "whatsapp.dispatch_failed", "admins are not alerted for the allowlist");
     }
 
     [Fact]

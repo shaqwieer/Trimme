@@ -70,7 +70,7 @@ public sealed class NotificationDomainTests
         forCustomer.Body.ShouldContain("85 ر.س");
         forCustomer.Body.ShouldNotContain("{{");
         forCustomer.Buttons.Select(b => b.Url).ShouldContain(u => u.Contains("/ar/account/bookings/", StringComparison.Ordinal));
-        forProfessional.Body.ShouldStartWith("لديك حجز جديد مع سارة العتيبي");
+        forProfessional.Body.ShouldStartWith("لديك حجز جديد باسم سارة العتيبي");
         forProfessional.Buttons.ShouldBeEmpty();
         forProfessional.Body.ShouldNotBe(forCustomer.Body);
         MessageComposer.Values(booking, shop, MessageAudience.Professional, "ar", 30, "https://trimme.test").Keys.ShouldNotContain(Placeholders.ManageUrl);
@@ -78,7 +78,7 @@ public sealed class NotificationDomainTests
         var english = RenderedMessage.From(Default(MessageEvent.BookingReminder, MessageAudience.Customer, "en"),
             MessageComposer.Values(SampleMessage.For("en", Now).Booking, SampleMessage.For("en", Now).Shop, MessageAudience.Customer, "en", 30, "https://trimme.test"),
             new Dictionary<TemplateButtonTarget, string>());
-        english.Body.ShouldStartWith("Reminder: your appointment at Al Asala Salon is in 30 min, at 5:30 pm.");
+        english.Body.ShouldStartWith("Reminder: your appointment at Al Asala Salon starts in 30 min, at 5:30 pm.");
         english.Parameters.ShouldBe(["Al Asala Salon", "30 min", "5:30 pm", "Haircut and styling", "Majed Alharbi", "Prince Mohammed bin Abdulaziz Rd, Al Olaya, Riyadh"]);
     }
 

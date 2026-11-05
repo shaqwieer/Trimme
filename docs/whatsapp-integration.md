@@ -101,11 +101,12 @@ Secrets come from environment variables only; nothing is committed.
 | `WhatsApp__Provider` | `Fake` (the default in Development and Testing; refused elsewhere), `Meta`, or `None` (the default elsewhere: every message fails with `whatsapp.not_configured`, visible in the log) |
 | `WhatsApp__Meta__PhoneNumberId` | The WhatsApp Business phone number id |
 | `WhatsApp__Meta__AccessToken` | A system-user token with `whatsapp_business_messaging` |
-| `WhatsApp__Meta__GraphApiVersion` | Default `v21.0` |
+| `WhatsApp__Meta__GraphApiVersion` | Default `v27.0`, the app's version (D-140) |
 | `WhatsApp__Meta__AppSecret` | Verifies the webhook signature; every POST answers 404 without it |
 | `WhatsApp__Meta__VerifyToken` | Echo token for the webhook subscription check (GET); the check answers 404 without it, and needs nothing else (D-138) |
 | `WhatsApp__Meta__AuthenticationTemplateName` | The approved authentication template for sign-in codes (copy-code button) |
 | `WhatsApp__Meta__ButtonBaseUrl` | The base URL registered for URL buttons, usually `https://<domain>/`; the rest of the link is sent as the dynamic suffix |
+| `WhatsApp__AllowedRecipients` | Pilot or demo switch (D-140): numbers separated by commas. When set, messages, test sends and sign-in codes go only to them; any other recipient is refused before the provider with `whatsapp.recipient_not_allowed`. The refusal shows as failed in the log, but raises no admin alert and does not mark a professional's number as failing. Unset means everyone. |
 | `Identity__Otp__Sender` | `WhatsApp` sends sign-in codes through the authentication template (`DevInbox` locally) |
 | `Jobs__Enabled` | `false` stops the Hangfire server, the outbox processor and the recurring jobs (the rollback switch); messages then wait in the outbox |
 | `Notifications__ContentRetentionDays` | Days to keep rendered text (default 90) |
@@ -115,21 +116,47 @@ message delivered, except for these test numbers:
 - numbers ending in `0000` fail transiently;
 - numbers ending in `9999` fail permanently.
 
-**Meta setup (production):**
-1. Create a Meta Business account, a WhatsApp Business Account (WABA) and a phone number. Note the phone number id.
-2. Create a system user with `whatsapp_business_messaging`, and generate a permanent token (`WhatsApp__Meta__AccessToken`).
-3. Submit one template per slot you use, named like the version's "Meta template name" (for example
-   `trimme_customer_booking_confirmed`), in the matching language (`ar` / `en`).
-   - Body parameters are `{{1}}`, `{{2}}` … in the order the placeholders first appear in the TRIMME wording.
-   - URL buttons use `WhatsApp__Meta__ButtonBaseUrl` plus a dynamic `{{1}}`.
-   - Changing the wording in TRIMME requires approving the new text with Meta before activating it, because Meta
-     renders its approved text.
-4. Submit an **authentication** template with a copy-code button, and set `WhatsApp__Meta__AuthenticationTemplateName`.
+**Meta setup (production, D-140):**
+1. Create a Meta Business account, a WhatsApp Business Account (WABA) and a phone number. Note the phone number id and
+   the WABA id (App dashboard → WhatsApp → API Setup).
+2. Create a system user with `whatsapp_business_messaging` and `whatsapp_business_management`, and generate a permanent
+   token (`WhatsApp__Meta__AccessToken`). **Assign the WABA to the system user with full control.** Without that the
+   token is valid but sees no account. `GET /me/assigned_whatsapp_business_accounts` lists the accounts it can use.
+3. Register the templates from the code. `docs/whatsapp/meta-templates.json` is generated from the default wording by
+   `MetaTemplateCatalogTests` (`TRIMME_UPDATE_SNAPSHOTS=1` rewrites it):
+   ```bash
+   WHATSAPP_ACCESS_TOKEN=… WHATSAPP_WABA_ID=… node tools/whatsapp/register-meta-templates.mjs           # submit the missing ones
+   WHATSAPP_ACCESS_TOKEN=… WHATSAPP_WABA_ID=… node tools/whatsapp/register-meta-templates.mjs --status  # list what Meta has
+   ```
+   - One UTILITY template per slot, named like the version's "Meta template name" (for example
+     `trimme_customer_booking_confirmed`), in `ar` and `en`. Body parameters are `{{1}}`, `{{2}}` … in the order the
+     placeholders first appear in the TRIMME wording, the order the sender uses. URL buttons are
+     `https://groomhere.sa/{{1}}` (`WhatsApp__Meta__ButtonBaseUrl` plus a dynamic suffix).
+   - **Meta's rules on a body** (the unit tests check them):
+     - **Ends:** a variable cannot open or close the body, and trailing punctuation does not count (`{{7}}.` is refused,
+       subcode 2388299).
+     - **Length:** keep at least 2.5 words of fixed text per variable. Meta refused 2 and accepted 2.67 ("too many
+       variables for its length", 2388293).
+   - **Changing the wording.** Meta renders its approved text and fills in the values we send, so they must line up:
+     - New wording with the same placeholders in the same order works with the approved template. Only the admin page
+       shows the new text.
+     - Adding, removing or reordering placeholders needs the new text approved by Meta before the version is activated.
+4. Submit the **authentication** template `trimme_sign_in_code` (copy-code button, 5-minute expiry) with the same
+   script, and set `WhatsApp__Meta__AuthenticationTemplateName`. **Meta allows authentication templates only after
+   business verification** (Business Settings → Security Center). Before that, the submission fails with subcode
+   2388185.
 5. Configure the webhook `https://<domain>/api/v1/webhooks/whatsapp`:
    - verify token `WhatsApp__Meta__VerifyToken`. Only the token needs to be set for Meta's "Verify and save" (D-138);
    - subscribe to `messages`;
-   - set `WhatsApp__Meta__AppSecret` to the app secret. Until then every status update is refused (404).
-6. Set `WhatsApp__Provider=Meta`. Send a test from Admin → WhatsApp → Templates to a staff test number.
+   - set `WhatsApp__Meta__AppSecret` to the app secret. Until then every status update is refused (404);
+   - **subscribe the app to the WABA** with `POST /{waba-id}/subscribed_apps`, after the app secret is set. Without
+     this, the app's webhook gets nothing for that account.
+6. Set `WhatsApp__Provider=Meta`. Send a test from Admin → WhatsApp → Templates to a staff test number. Body parameters
+   are sent on one line and never empty: new lines and repeated spaces become one space, and an empty value becomes "-".
+
+**groomhere.sa (2026-11-05).** The account is «Groom here Establishment» (WABA `1798791391452264`). The number is
++966 54 637 9134 (phone number id `1469285809598518`), on the Cloud API with 250 business-initiated conversations a
+day until the business is verified. The token and the app secret are only in the server's `.env`.
 
 **Lead time.** Template approval usually takes minutes to a day. The authentication template category has stricter
 formatting rules.

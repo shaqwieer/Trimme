@@ -40,6 +40,21 @@ public sealed class WhatsAppProviderTests
         handler.Body!.ShouldNotContain("rendered text", Case.Sensitive, "Meta renders the approved template; the local text is not sent");
     }
 
+    [Fact]
+    public async Task Meta_Parameters_AreSingleLine_AndNeverEmpty()
+    {
+        MetaCloudApiProvider.ParameterText("طريق الملك فهد\nحي العليا").ShouldBe("طريق الملك فهد حي العليا");
+        MetaCloudApiProvider.ParameterText("Al Olaya,\r\n\tRiyadh      12211 ").ShouldBe("Al Olaya, Riyadh 12211");
+        MetaCloudApiProvider.ParameterText("").ShouldBe("-", "Meta refuses an empty parameter");
+        MetaCloudApiProvider.ParameterText("  ").ShouldBe("-");
+        MetaCloudApiProvider.ParameterText(null).ShouldBe("-");
+
+        var handler = new RecordingHandler(HttpStatusCode.OK, """{"messages":[{"id":"wamid.x"}]}""");
+        await Provider(handler).SendAsync(Message with { Parameters = ["Sara", "Line one\nLine two", ""] }, CancellationToken.None);
+        JsonNode.Parse(handler.Body!)!["template"]!["components"]![0]!["parameters"]!.AsArray()
+            .Select(p => p!["text"]!.GetValue<string>()).ShouldBe(["Sara", "Line one Line two", "-"]);
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.BadRequest, true)]
     [InlineData(HttpStatusCode.TooManyRequests, false)]
@@ -88,6 +103,37 @@ public sealed class WhatsAppProviderTests
         inbox.All().Count.ShouldBe(2);
         inbox.All().ShouldAllBe(m => !m.RecipientMasked.Contains("12345678"));
         inbox.All().ShouldNotContain(m => m.Body.Contains("482913"));
+    }
+
+    [Fact]
+    public async Task Allowlist_PassesListedNumbers_AndRefusesOthers_WithoutCallingTheProvider()
+    {
+        var options = new WhatsAppOptions { AllowedRecipients = "+20 155 000 0001; 00966512345678" };
+        options.TryGetAllowedRecipients(out var allowed).ShouldBeTrue();
+        allowed.ShouldBe(["+201550000001", "+966512345678"], ignoreOrder: true);
+
+        var inbox = new FakeWhatsAppInbox();
+        var provider = new AllowlistedWhatsAppProvider(new FakeWhatsAppProvider(inbox, TimeProvider.System, NullLogger<FakeWhatsAppProvider>.Instance), allowed!);
+        (await provider.SendAsync(Message, CancellationToken.None)).Accepted.ShouldBeTrue();
+        (await provider.SendAuthenticationCodeAsync("+201550000001", "482913", "ar", CancellationToken.None)).Accepted.ShouldBeTrue();
+
+        var refused = await provider.SendAsync(Message with { ToE164 = "+966500100101" }, CancellationToken.None);
+        refused.ShouldSatisfyAllConditions(r => r.Accepted.ShouldBeFalse(), r => r.Permanent.ShouldBeTrue());
+        WhatsAppErrors.IsRecipientNotAllowed(refused.Error).ShouldBeTrue();
+        refused.Error!.ShouldNotContain("500100101");
+        WhatsAppErrors.IsRecipientNotAllowed((await provider.SendAuthenticationCodeAsync("+966500100301", "482913", "ar", CancellationToken.None)).Error).ShouldBeTrue();
+        inbox.All().Count.ShouldBe(2, "a refused recipient never reaches the provider");
+    }
+
+    [Theory]
+    [InlineData(null, true, false)]
+    [InlineData("  ", true, false)]
+    [InlineData("+966512345678, not-a-number", false, false)]
+    [InlineData("+966512345678", true, true)]
+    public void Allowlist_IsOffWhenEmpty_AndRefusesAnInvalidEntry(string? setting, bool valid, bool active)
+    {
+        new WhatsAppOptions { AllowedRecipients = setting }.TryGetAllowedRecipients(out var allowed).ShouldBe(valid);
+        (allowed is not null).ShouldBe(active);
     }
 
     [Fact]

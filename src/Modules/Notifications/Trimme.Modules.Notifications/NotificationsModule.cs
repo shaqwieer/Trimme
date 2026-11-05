@@ -39,17 +39,24 @@ public sealed class NotificationsModule : ModuleBase
             .Validate<IHostEnvironment>(
                 (options, environment) => options.Provider != WhatsAppProviderKind.Fake || WhatsAppOptions.IsLocal(environment),
                 "WhatsApp:Provider=Fake is only allowed in Development and Testing.")
+            .Validate(options => options.TryGetAllowedRecipients(out _), "WhatsApp:AllowedRecipients holds an entry that is not a valid phone number.")
             .ValidateOnStart();
 
         services.AddSingleton<FakeWhatsAppInbox>();
         services.AddHttpClient<MetaCloudApiProvider>(client => client.Timeout = TimeSpan.FromSeconds(15));
         services.AddScoped<IWhatsAppProvider>(sp =>
-            sp.GetRequiredService<IOptions<WhatsAppOptions>>().Value.Resolve(sp.GetRequiredService<IHostEnvironment>()) switch
+        {
+            var options = sp.GetRequiredService<IOptions<WhatsAppOptions>>().Value;
+            IWhatsAppProvider provider = options.Resolve(sp.GetRequiredService<IHostEnvironment>()) switch
             {
                 WhatsAppProviderKind.Fake => ActivatorUtilities.CreateInstance<FakeWhatsAppProvider>(sp),
                 WhatsAppProviderKind.Meta => sp.GetRequiredService<MetaCloudApiProvider>(),
                 _ => new UnconfiguredWhatsAppProvider(),
-            });
+            };
+            return options.TryGetAllowedRecipients(out var allowed) && allowed is not null
+                ? new AllowlistedWhatsAppProvider(provider, allowed)
+                : provider;
+        });
         services.AddScoped<IWhatsAppAuthenticationSender, WhatsAppAuthenticationSender>();
 
         services.AddScoped<DispatchSender>();

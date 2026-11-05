@@ -1,0 +1,652 @@
+[
+  {
+    "name": "trimme_customer_booking_confirmed",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، تم تأكيد حجزك في {{2}} بنجاح.\nحجزت خدمة {{3}} مع {{4}} يوم {{5}} الساعة {{6}}، ومدتها {{7}} تقريباً.\nالمبلغ المطلوب {{8}}، ويُدفع في المحل يوم الموعد.\nعنوان المحل: {{9}}.\nرقم حجزك هو {{10}}، ويمكنك إدارة الحجز من الزر أدناه. نتطلع لرؤيتك!",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة",
+              "قص شعر وتصفيف",
+              "ماجد الحربي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "٤٥ دقيقة",
+              "85 ر.س",
+              "طريق الأمير محمد بن عبدالعزيز، حي العليا، الرياض",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "إدارة الموعد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          },
+          {
+            "type": "URL",
+            "text": "الاتجاهات",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_confirmed",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, your booking at {{2}} is confirmed.\nYou booked {{3}} with {{4}} on {{5}} at {{6}}; it takes about {{7}}.\nThe price is {{8}}, paid at the shop on the day.\nThe shop's address is {{9}}.\nYour booking reference is {{10}}. You can manage your booking with the button below.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon",
+              "Haircut and styling",
+              "Majed Alharbi",
+              "Friday 6 November",
+              "5:30 pm",
+              "45 min",
+              "SAR 85",
+              "Prince Mohammed bin Abdulaziz Rd, Al Olaya, Riyadh",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Manage booking",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          },
+          {
+            "type": "URL",
+            "text": "Directions",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_pending",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، استلمنا طلب حجزك في {{2}}، وهو الآن بانتظار تأكيد المحل.\nطلبت خدمة {{3}} مع {{4}} يوم {{5}} الساعة {{6}}.\nرقم حجزك هو {{7}}، وسنرسل لك رسالة فور تأكيد المحل للحجز.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة",
+              "قص شعر وتصفيف",
+              "ماجد الحربي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "إدارة الموعد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_pending",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, we received your booking request at {{2}}, and it is waiting for the shop to confirm it.\nYou asked for {{3}} with {{4}} on {{5}} at {{6}}.\nYour booking reference is {{7}}. We will message you again as soon as the shop confirms.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon",
+              "Haircut and styling",
+              "Majed Alharbi",
+              "Friday 6 November",
+              "5:30 pm",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Manage booking",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_rescheduled",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، تم تغيير موعد حجزك في {{2}} إلى وقت جديد.\nموعدك الجديد يوم {{3}} الساعة {{4}}، لخدمة {{5}} مع {{6}}.\nرقم حجزك ما زال {{7}}، ويمكنك إدارة الحجز من الزر أدناه.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "ماجد الحربي",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "إدارة الموعد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_rescheduled",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, your booking at {{2}} has been moved to a new time.\nYour new appointment is on {{3}} at {{4}}, for {{5}} with {{6}}.\nYour booking reference is still {{7}}. You can manage your booking with the button below.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "Majed Alharbi",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Manage booking",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_cancelled",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، تم إلغاء حجزك في {{2}} يوم {{3}} الساعة {{4}} ({{5}}).\nرقم الحجز: {{6}}. يسعدنا حجزك من جديد في أي وقت.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "احجز من جديد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_cancelled",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, your booking at {{2}} on {{3}} at {{4}} ({{5}}) has been cancelled.\nBooking reference: {{6}}. You are welcome to book again any time.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Book again",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_reminder",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "تذكير: موعدك في {{1}} بعد {{2}}، الساعة {{3}}.\nحجزت خدمة {{4}} مع {{5}}.\nعنوان المحل: {{6}}. استخدم الأزرار أدناه لمعرفة الاتجاهات أو لإدارة حجزك. نتمنى لك تجربة ممتعة.",
+        "example": {
+          "body_text": [
+            [
+              "صالون الأصالة",
+              "٣٠ دقيقة",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "ماجد الحربي",
+              "طريق الأمير محمد بن عبدالعزيز، حي العليا، الرياض"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "الاتجاهات",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/shops/sample-shop"
+            ]
+          },
+          {
+            "type": "URL",
+            "text": "إدارة الموعد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_reminder",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Reminder: your appointment at {{1}} starts in {{2}}, at {{3}}.\nYou booked {{4}} with {{5}}.\nThe shop's address is {{6}}. Use the buttons below for directions or to manage your booking. Enjoy your visit.",
+        "example": {
+          "body_text": [
+            [
+              "Al Asala Salon",
+              "30 min",
+              "5:30 pm",
+              "Haircut and styling",
+              "Majed Alharbi",
+              "Prince Mohammed bin Abdulaziz Rd, Al Olaya, Riyadh"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Directions",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/shops/sample-shop"
+            ]
+          },
+          {
+            "type": "URL",
+            "text": "Manage booking",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_confirmed",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "لديك حجز جديد باسم {{1}} يوم {{2}} الساعة {{3}}.\nالخدمة المطلوبة هي {{4}}، ومدتها {{5}} تقريباً.\nالحجز في {{6}}، ورقم الحجز {{7}}. يرجى الاستعداد للموعد في وقته المحدد. شكراً لك.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "٤٥ دقيقة",
+              "صالون الأصالة",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_confirmed",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "You have a new booking with {{1}} on {{2}} at {{3}}.\nThe service is {{4}}, and it takes about {{5}}.\nThe booking is at {{6}}, and its reference is {{7}}. Please be ready on time. Thank you.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "45 min",
+              "Al Asala Salon",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_rescheduled",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "تنبيه: تم تغيير موعد الحجز باسم {{1}} إلى وقت جديد.\nالموعد الجديد يوم {{2}} الساعة {{3}}، لخدمة {{4}} في {{5}}. يرجى مراجعة جدولك.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "صالون الأصالة"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_rescheduled",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Heads up: the booking for {{1}} has moved to a new time.\nThe new time is {{2}} at {{3}}, for {{4}} at {{5}}. Please check your schedule.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "Al Asala Salon"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_cancelled",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "تنبيه: نود إعلامك بأنه تم إلغاء الحجز باسم {{1}} يوم {{2}} الساعة {{3}} لخدمة {{4}} في {{5}}.\nأصبح هذا الوقت متاحاً الآن في جدولك.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "صالون الأصالة"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_cancelled",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Heads up: the booking for {{1}} on {{2}} at {{3}} ({{4}}) at {{5}} has been cancelled.\nThat time is now free in your schedule.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "Al Asala Salon"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_reminder",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "تذكير: لديك حجز باسم {{1}} بعد {{2}}، الساعة {{3}}.\nالخدمة المطلوبة هي {{4}}، ومدتها {{5}} تقريباً. يرجى الاستعداد للموعد في وقته المحدد.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "٣٠ دقيقة",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "٤٥ دقيقة"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_professional_booking_reminder",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Reminder: you have a booking with {{1}} in {{2}}, at {{3}}.\nThe service is {{4}}, and it takes about {{5}}. Please be ready on time.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "30 min",
+              "5:30 pm",
+              "Haircut and styling",
+              "45 min"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "trimme_sign_in_code",
+    "language": "ar",
+    "category": "AUTHENTICATION",
+    "components": [
+      {
+        "type": "BODY",
+        "add_security_recommendation": true
+      },
+      {
+        "type": "FOOTER",
+        "code_expiration_minutes": 5
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "OTP",
+            "otp_type": "COPY_CODE"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_sign_in_code",
+    "language": "en",
+    "category": "AUTHENTICATION",
+    "components": [
+      {
+        "type": "BODY",
+        "add_security_recommendation": true
+      },
+      {
+        "type": "FOOTER",
+        "code_expiration_minutes": 5
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "OTP",
+            "otp_type": "COPY_CODE"
+          }
+        ]
+      }
+    ]
+  }
+]

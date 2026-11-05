@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -37,8 +38,39 @@ internal sealed class WhatsAppOptions
 
     public MetaCloudOptions Meta { get; set; } = new();
 
+    /// <summary>
+    /// A pilot or demo switch (D-140): numbers separated by commas, semicolons or spaces. When set, messages and sign-in
+    /// codes go only to these numbers; any other recipient is refused with <see cref="WhatsAppErrors.RecipientNotAllowed"/>
+    /// without calling the provider. Unset (the default): everyone.
+    /// </summary>
+    public string? AllowedRecipients { get; set; }
+
     public WhatsAppProviderKind Resolve(IHostEnvironment environment) =>
         Provider ?? (IsLocal(environment) ? WhatsAppProviderKind.Fake : WhatsAppProviderKind.None);
+
+    /// <summary>The allowlist in E.164, or <c>null</c> when it is not set. False when an entry is not a valid number.</summary>
+    public bool TryGetAllowedRecipients(out IReadOnlySet<string>? allowed)
+    {
+        allowed = null;
+        if (string.IsNullOrWhiteSpace(AllowedRecipients))
+        {
+            return true;
+        }
+
+        var numbers = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var entry in AllowedRecipients.Split([',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!PhoneNumber.TryParse(entry, out var phone))
+            {
+                return false;
+            }
+
+            numbers.Add(phone.E164);
+        }
+
+        allowed = numbers;
+        return true;
+    }
 
     public static bool IsLocal(IHostEnvironment environment) => environment.IsDevelopment() || environment.IsEnvironment("Testing");
 }
@@ -48,7 +80,7 @@ internal sealed class MetaCloudOptions
 {
     public string GraphApiBaseUrl { get; set; } = "https://graph.facebook.com";
 
-    public string GraphApiVersion { get; set; } = "v21.0";
+    public string GraphApiVersion { get; set; } = "v27.0";
 
     public string? PhoneNumberId { get; set; }
 
@@ -135,6 +167,30 @@ internal sealed partial class FakeWhatsAppProvider(FakeWhatsAppInbox inbox, Time
     private static partial void LogRecorded(ILogger logger);
 }
 
+/// <summary>
+/// The recipient allowlist (D-140, <see cref="WhatsAppOptions.AllowedRecipients"/>): passes listed numbers to the
+/// configured provider and refuses every other one before any call, so a demo with made-up numbers never messages a
+/// stranger.
+/// </summary>
+internal sealed class AllowlistedWhatsAppProvider(IWhatsAppProvider inner, IReadOnlySet<string> allowed) : IWhatsAppProvider
+{
+    public string Name => inner.Name;
+
+    public Task<WhatsAppSendResult> SendAsync(WhatsAppOutgoing message, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return Allowed(message.ToE164) ? inner.SendAsync(message, cancellationToken) : Task.FromResult(NotAllowed());
+    }
+
+    public Task<WhatsAppSendResult> SendAuthenticationCodeAsync(string toE164, string code, string locale, CancellationToken cancellationToken) =>
+        Allowed(toE164) ? inner.SendAuthenticationCodeAsync(toE164, code, locale, cancellationToken) : Task.FromResult(NotAllowed());
+
+    private bool Allowed(string toE164) => PhoneNumber.TryParse(toE164, out var phone) && allowed.Contains(phone.E164);
+
+    private static WhatsAppSendResult NotAllowed() =>
+        WhatsAppSendResult.Refused($"{WhatsAppErrors.RecipientNotAllowed}: the number is not in WhatsApp:AllowedRecipients");
+}
+
 /// <summary>Used when no provider is configured: every message fails permanently, so admins see it in the log.</summary>
 internal sealed class UnconfiguredWhatsAppProvider : IWhatsAppProvider
 {
@@ -173,7 +229,7 @@ internal sealed partial class MetaCloudApiProvider(HttpClient http, IOptions<Wha
             components.Add(new JsonObject
             {
                 ["type"] = "body",
-                ["parameters"] = new JsonArray([.. message.Parameters.Select(p => (JsonNode)new JsonObject { ["type"] = "text", ["text"] = p })]),
+                ["parameters"] = new JsonArray([.. message.Parameters.Select(p => (JsonNode)new JsonObject { ["type"] = "text", ["text"] = ParameterText(p) })]),
             });
         }
 
@@ -272,6 +328,17 @@ internal sealed partial class MetaCloudApiProvider(HttpClient http, IOptions<Wha
         }
     }
 
+    /// <summary>
+    /// A body parameter as Meta accepts it (D-140): every run of whitespace (new lines, tabs, repeated spaces) becomes one
+    /// space, and an empty value becomes "-", because Meta refuses empty parameters and ones with new lines, tabs or more
+    /// than four consecutive spaces (a shop's address can be empty or span lines).
+    /// </summary>
+    internal static string ParameterText(string? value)
+    {
+        var text = Whitespace().Replace(value ?? string.Empty, " ").Trim();
+        return text.Length == 0 ? "-" : text;
+    }
+
     private string ButtonSuffix(string url)
     {
         var baseUrl = Meta.ButtonBaseUrl;
@@ -289,6 +356,9 @@ internal sealed partial class MetaCloudApiProvider(HttpClient http, IOptions<Wha
             return null;
         }
     }
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex Whitespace();
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The Meta Cloud API was unreachable ({ErrorType})")]
     private static partial void LogUnreachable(ILogger logger, string errorType);

@@ -1420,3 +1420,39 @@ This refines D-126.
   - New messages in ar, en and tr: the tabs and the form, the sign-in step, `apiErrors.auth_password_change_required` / `_not_required` and `validation.passwordUnchanged`.
 - **Not added (follow-ups to offer the client):** an admin action to set a new temporary password for an existing shop account (today a forgotten password needs the emailed reset, so a mail provider), and owners adding their own staff.
 - **Dependencies.** None added. Migration `TemporaryPasswords` (one boolean column with a default). API: the two endpoints above (OpenAPI and `schema.d.ts` regenerated).
+
+## D-140 — WhatsApp on the client's Meta account: the templates registered from the code, wording within Meta's rules, parameters on one line — Accepted (Session 22, after Phase 17, at the user's request)
+- **The request** (from the user): connect the WhatsApp Business account to the code, for sign-in codes ("authentication") and booking messages ("utility"). The user sent the system-user token, the app id and the app secret; these live in environment variables only, never in the repository. Tests may go to the user's two numbers, +20 155… and +966 53….
+- **The Meta account, as read through the Graph API (read-only, 2026-11-05).**
+  - The token is a `SYSTEM_USER` token for the app "Groom Here" that never expires. Its scopes are `whatsapp_business_management`, `whatsapp_business_messaging`, `whatsapp_business_manage_events` and `manage_app_solution`.
+  - At first no WhatsApp account was assigned to that system user. The user assigned it, with full control.
+  - The WhatsApp account is «Groom here Establishment», id `1798791391452264`, in SAR. Its account review is approved; **business verification is not done**.
+  - The number is +966 54 637 9134, phone number id `1469285809598518`: `CONNECTED` on the Cloud API, quality GREEN, 250 business-initiated conversations a day.
+  - The app's webhook subscription is active: `https://groomhere.sa/api/v1/webhooks/whatsapp` on v27.0, with `messages` and the template status fields. **The app is not yet subscribed to this WhatsApp account** (`subscribed_apps` is empty), so no status reaches the site. Subscribing (`POST /{waba-id}/subscribed_apps`) belongs to the deploy, once the server has the app secret; until then the webhook POST answers 404 and Meta would retry.
+  - The app's Graph API version is v27.0. The code's default was v21.0.
+- **Meta's rules for a template body, learned from its refusals on the first submission:**
+  - **2388299:** a variable cannot start or end the body, and punctuation does not count, so `… {{7}}.` still ends with a variable.
+  - **2388293 ("too many variables for its length"):** about 2 or fewer words of fixed text per variable was refused, and 2.67 was accepted.
+  - **2388185 ("does not have permission to create message template")** on the AUTHENTICATION category: Meta needs **business verification** before an account can create authentication templates. Utility templates were not affected.
+- **What changed.**
+  - **The default wording** (`DefaultTemplates`) is rewritten for those rules. Every body now opens and closes with words and has at least 2.67 words per variable. The customer's «booking cancelled», accepted as it was, is unchanged.
+    - **Same placeholders, same order of first appearance in every slot.** The parameters a dispatch sends come from the active version's body in the database, and Meta renders its own approved text. So a database still holding the old wording (local, groomhere.sa) sends the right values in the right places, and only the text shown in the admin's templates page and message log is older. To show the new text there, an admin saves it as a draft and activates it (Admin → WhatsApp → Templates).
+  - **`MetaTemplateCatalog`** builds the Meta "create template" body for every default slot (UTILITY, `{{1}}…{{n}}` in the sender's order, the admin preview's sample values as examples, URL buttons as `https://groomhere.sa/{{1}}`), plus the AUTHENTICATION template `trimme_sign_in_code` in ar and en (security recommendation, 5-minute expiry like `OtpPolicy.CodeLifetime`, copy-code button).
+    - `docs/whatsapp/meta-templates.json` is its snapshot; `MetaTemplateCatalogTests` fails when they differ, and `TRIMME_UPDATE_SNAPSHOTS=1` rewrites it.
+    - The tests also check Meta's rules on every body: no variable at either end, even before punctuation; at least 2.5 words per variable; at most 1024 characters; numbering 1…n; one example per variable; button text at most 25 characters.
+  - **`tools/whatsapp/register-meta-templates.mjs`** (Node, no dependencies) submits that file: `WHATSAPP_ACCESS_TOKEN=… WHATSAPP_WABA_ID=… node tools/whatsapp/register-meta-templates.mjs [--status]`. It skips a name and language Meta already has, never prints the token, and exits 1 on a refusal.
+  - **`MetaCloudApiProvider`:**
+    - every body parameter goes through `ParameterText`: whitespace runs become one space, and an empty value becomes "-". Meta refuses empty parameters and ones with new lines, tabs or runs of spaces, and a shop's address can be empty or span lines;
+    - the default Graph API version is `v27.0`.
+- **Submitted (2026-11-05):** the 18 utility templates, under the names the database versions already carry (`trimme_customer_booking_confirmed`, …), in ar and en. The authentication template is refused until the business is verified. So sign-in codes stay on the dev OTP inbox on groomhere.sa, and `Identity__Otp__Sender=WhatsApp` waits for an approved `trimme_sign_in_code`.
+- **The recipient allowlist (the user's choice for going live on the demo).**
+  - **The problem:** groomhere.sa still holds the seed's demo barbers (`+966 50 010 01xx`) and demo customers (`+966 50 010 03xx`). Their made-up numbers are valid Saudi mobiles and could belong to real people.
+  - **The options offered:** an allowlist first (recommended), everyone after turning off the demo barbers' messages, or not deploying yet. The user chose the allowlist.
+  - **`WhatsApp:AllowedRecipients`** (`WhatsApp__AllowedRecipients`) takes numbers separated by commas or semicolons, in any format libphonenumber reads.
+    - When set, `AllowlistedWhatsAppProvider` wraps the configured provider. Messages, test sends and sign-in codes go only to those numbers. Any other recipient is refused before the provider is called, with `whatsapp.recipient_not_allowed`, and the refusal never includes the number.
+    - An invalid entry stops the API at startup (options validation).
+    - Unset is the default: everyone.
+  - **A refused dispatch is not a delivery failure.** It shows as failed in the admin's message log with that error. But `SendDispatchJob` raises no `whatsapp.dispatch_failed` notice to admins, and does not mark a professional's number as failing.
+  - Going fully live later means removing the setting and restarting the API.
+- **Not done in this decision:** the authentication template, which waits on business verification.
+- **Dependencies.** None added. No migration. No API contract change. New setting `WhatsApp__AllowedRecipients`.

@@ -57,15 +57,18 @@ internal sealed class SendDispatchJob(
                 job => job.RunAsync(dispatchId, CancellationToken.None), clock.GetUtcNow() + DispatchSender.Backoff(dispatch.Attempts)));
         }
 
+        // Refused by the allowlist (D-140): kept in the log as failed, but not a delivery failure.
+        var notAllowed = dispatch.Status == DispatchStatus.Failed && WhatsAppErrors.IsRecipientNotAllowed(dispatch.LastError);
         using (scope.Begin())
         {
             if (dispatch is { Audience: MessageAudience.Professional, RecipientId: { } professionalId, Kind: not DispatchKind.Test }
-                && dispatch.Status is DispatchStatus.Delivered or DispatchStatus.Failed)
+                && dispatch.Status is DispatchStatus.Delivered or DispatchStatus.Failed
+                && !notAllowed)
             {
                 await professionals.RecordDeliveryAsync(new ProfessionalId(professionalId), dispatch.Status == DispatchStatus.Delivered, cancellationToken);
             }
 
-            if (dispatch.Status == DispatchStatus.Failed && dispatch.Kind != DispatchKind.Test)
+            if (dispatch.Status == DispatchStatus.Failed && dispatch.Kind != DispatchKind.Test && !notAllowed)
             {
                 await center.NotifyAdminsAsync(WatchPermission, new InAppNotice(
                     NoticeKinds.DispatchFailed,

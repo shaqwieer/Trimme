@@ -37,6 +37,19 @@ public sealed record WhatsAppSendResult(bool Accepted, string? ProviderMessageId
     public static WhatsAppSendResult Refused(string error) => new(false, null, false, true, error);
 }
 
+/// <summary>Stable error codes a provider result can start with.</summary>
+public static class WhatsAppErrors
+{
+    /// <summary>
+    /// The recipient is not on the allowlist (D-140). The message is kept in the log as failed, but it is not a delivery
+    /// failure: admins are not alerted and a professional's number is not marked as failing.
+    /// </summary>
+    public const string RecipientNotAllowed = "whatsapp.recipient_not_allowed";
+
+    public static bool IsRecipientNotAllowed(string? error) =>
+        error is not null && error.StartsWith(RecipientNotAllowed, StringComparison.Ordinal);
+}
+
 /// <summary>Where the web app lives, for manage-booking and shop links in messages. Bound from <c>Web</c>.</summary>
 public sealed class MessageLinkOptions
 {

@@ -74,9 +74,10 @@ internal static class BookingTestData
         return body;
     }
 
-    public static async Task<BookingWorld> ArrangeAsync(PostgresFixture postgres, string prefix, CancellationToken ct, FakeTimeProvider? clock = null)
+    public static async Task<BookingWorld> ArrangeAsync(
+        PostgresFixture postgres, string prefix, CancellationToken ct, FakeTimeProvider? clock = null, IReadOnlyDictionary<string, string?>? settings = null)
     {
-        var factory = await IdentityTestData.CreateFactoryAsync(postgres, prefix, ct, clock);
+        var factory = await IdentityTestData.CreateFactoryAsync(postgres, prefix, ct, clock, settings);
 
         var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
         var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);

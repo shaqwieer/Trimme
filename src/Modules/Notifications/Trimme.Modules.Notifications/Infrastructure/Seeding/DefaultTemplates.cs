@@ -56,44 +56,38 @@ internal static class DefaultTemplates
     public static IReadOnlyList<(TemplateKey Key, TemplateContent Content)> All { get; } =
     [
         Customer(MessageEvent.BookingConfirmed, "ar",
-            "مرحباً {{customer_name}}، تم تأكيد حجزك في {{shop_name}}.\n"
-            + "الخدمة: {{service_name}} مع {{professional_name}}\n"
-            + "الموعد: {{booking_date}} الساعة {{booking_time}} ({{duration}})\n"
-            + "المبلغ: {{amount}}، يُدفع في المحل\n"
-            + "العنوان: {{address}}\n"
-            + "رقم الحجز: {{booking_reference}}",
+            "مرحباً {{customer_name}}، تم تأكيد حجزك في {{shop_name}} بنجاح.\n"
+            + "حجزت خدمة {{service_name}} مع {{professional_name}} يوم {{booking_date}} الساعة {{booking_time}}، ومدتها {{duration}} تقريباً.\n"
+            + "المبلغ المطلوب {{amount}}، ويُدفع في المحل يوم الموعد.\n"
+            + "عنوان المحل: {{address}}.\n"
+            + "رقم حجزك هو {{booking_reference}}، ويمكنك إدارة الحجز من الزر أدناه. نتطلع لرؤيتك!",
             ManageAr, DirectionsAr),
         Customer(MessageEvent.BookingConfirmed, "en",
             "Hi {{customer_name}}, your booking at {{shop_name}} is confirmed.\n"
-            + "Service: {{service_name}} with {{professional_name}}\n"
-            + "When: {{booking_date}} at {{booking_time}} ({{duration}})\n"
-            + "Amount: {{amount}}, paid at the shop\n"
-            + "Address: {{address}}\n"
-            + "Booking reference: {{booking_reference}}",
+            + "You booked {{service_name}} with {{professional_name}} on {{booking_date}} at {{booking_time}}; it takes about {{duration}}.\n"
+            + "The price is {{amount}}, paid at the shop on the day.\n"
+            + "The shop's address is {{address}}.\n"
+            + "Your booking reference is {{booking_reference}}. You can manage your booking with the button below.",
             ManageEn, DirectionsEn),
         Customer(MessageEvent.BookingPending, "ar",
-            "مرحباً {{customer_name}}، استلمنا طلب حجزك في {{shop_name}} وهو بانتظار تأكيد المحل.\n"
-            + "الخدمة: {{service_name}} مع {{professional_name}}\n"
-            + "الموعد: {{booking_date}} الساعة {{booking_time}}\n"
-            + "سنرسل لك رسالة عند التأكيد. رقم الحجز: {{booking_reference}}",
+            "مرحباً {{customer_name}}، استلمنا طلب حجزك في {{shop_name}}، وهو الآن بانتظار تأكيد المحل.\n"
+            + "طلبت خدمة {{service_name}} مع {{professional_name}} يوم {{booking_date}} الساعة {{booking_time}}.\n"
+            + "رقم حجزك هو {{booking_reference}}، وسنرسل لك رسالة فور تأكيد المحل للحجز.",
             ManageAr),
         Customer(MessageEvent.BookingPending, "en",
-            "Hi {{customer_name}}, we received your booking request at {{shop_name}}; the shop will confirm it shortly.\n"
-            + "Service: {{service_name}} with {{professional_name}}\n"
-            + "When: {{booking_date}} at {{booking_time}}\n"
-            + "We will message you once it is confirmed. Booking reference: {{booking_reference}}",
+            "Hi {{customer_name}}, we received your booking request at {{shop_name}}, and it is waiting for the shop to confirm it.\n"
+            + "You asked for {{service_name}} with {{professional_name}} on {{booking_date}} at {{booking_time}}.\n"
+            + "Your booking reference is {{booking_reference}}. We will message you again as soon as the shop confirms.",
             ManageEn),
         Customer(MessageEvent.BookingRescheduled, "ar",
-            "مرحباً {{customer_name}}، تم تعديل موعدك في {{shop_name}}.\n"
-            + "الموعد الجديد: {{booking_date}} الساعة {{booking_time}}\n"
-            + "الخدمة: {{service_name}} مع {{professional_name}}\n"
-            + "رقم الحجز: {{booking_reference}}",
+            "مرحباً {{customer_name}}، تم تغيير موعد حجزك في {{shop_name}} إلى وقت جديد.\n"
+            + "موعدك الجديد يوم {{booking_date}} الساعة {{booking_time}}، لخدمة {{service_name}} مع {{professional_name}}.\n"
+            + "رقم حجزك ما زال {{booking_reference}}، ويمكنك إدارة الحجز من الزر أدناه.",
             ManageAr),
         Customer(MessageEvent.BookingRescheduled, "en",
-            "Hi {{customer_name}}, your booking at {{shop_name}} has been moved.\n"
-            + "New time: {{booking_date}} at {{booking_time}}\n"
-            + "Service: {{service_name}} with {{professional_name}}\n"
-            + "Booking reference: {{booking_reference}}",
+            "Hi {{customer_name}}, your booking at {{shop_name}} has been moved to a new time.\n"
+            + "Your new appointment is on {{booking_date}} at {{booking_time}}, for {{service_name}} with {{professional_name}}.\n"
+            + "Your booking reference is still {{booking_reference}}. You can manage your booking with the button below.",
             ManageEn),
         Customer(MessageEvent.BookingCancelled, "ar",
             "مرحباً {{customer_name}}، تم إلغاء حجزك في {{shop_name}} يوم {{booking_date}} الساعة {{booking_time}} ({{service_name}}).\n"
@@ -105,38 +99,40 @@ internal static class DefaultTemplates
             new TemplateButton("Book again", TemplateButtonTarget.ShopPage)),
         Customer(MessageEvent.BookingReminder, "ar",
             "تذكير: موعدك في {{shop_name}} بعد {{time_remaining}}، الساعة {{booking_time}}.\n"
-            + "الخدمة: {{service_name}} مع {{professional_name}}\n"
-            + "العنوان: {{address}}",
+            + "حجزت خدمة {{service_name}} مع {{professional_name}}.\n"
+            + "عنوان المحل: {{address}}. استخدم الأزرار أدناه لمعرفة الاتجاهات أو لإدارة حجزك. نتمنى لك تجربة ممتعة.",
             DirectionsAr, ManageAr),
         Customer(MessageEvent.BookingReminder, "en",
-            "Reminder: your appointment at {{shop_name}} is in {{time_remaining}}, at {{booking_time}}.\n"
-            + "Service: {{service_name}} with {{professional_name}}\n"
-            + "Address: {{address}}",
+            "Reminder: your appointment at {{shop_name}} starts in {{time_remaining}}, at {{booking_time}}.\n"
+            + "You booked {{service_name}} with {{professional_name}}.\n"
+            + "The shop's address is {{address}}. Use the buttons below for directions or to manage your booking. Enjoy your visit.",
             DirectionsEn, ManageEn),
         Professional(MessageEvent.BookingConfirmed, "ar",
-            "لديك حجز جديد مع {{customer_name}} يوم {{booking_date}} الساعة {{booking_time}}.\n"
-            + "الخدمة: {{service_name}} ({{duration}})\n"
-            + "المحل: {{shop_name}} · رقم الحجز: {{booking_reference}}"),
+            "لديك حجز جديد باسم {{customer_name}} يوم {{booking_date}} الساعة {{booking_time}}.\n"
+            + "الخدمة المطلوبة هي {{service_name}}، ومدتها {{duration}} تقريباً.\n"
+            + "الحجز في {{shop_name}}، ورقم الحجز {{booking_reference}}. يرجى الاستعداد للموعد في وقته المحدد. شكراً لك."),
         Professional(MessageEvent.BookingConfirmed, "en",
             "You have a new booking with {{customer_name}} on {{booking_date}} at {{booking_time}}.\n"
-            + "Service: {{service_name}} ({{duration}})\n"
-            + "Shop: {{shop_name}} · Booking reference: {{booking_reference}}"),
+            + "The service is {{service_name}}, and it takes about {{duration}}.\n"
+            + "The booking is at {{shop_name}}, and its reference is {{booking_reference}}. Please be ready on time. Thank you."),
         Professional(MessageEvent.BookingRescheduled, "ar",
-            "تم تعديل حجز {{customer_name}}: الموعد الجديد {{booking_date}} الساعة {{booking_time}}.\n"
-            + "الخدمة: {{service_name}} · {{shop_name}}"),
+            "تنبيه: تم تغيير موعد الحجز باسم {{customer_name}} إلى وقت جديد.\n"
+            + "الموعد الجديد يوم {{booking_date}} الساعة {{booking_time}}، لخدمة {{service_name}} في {{shop_name}}. يرجى مراجعة جدولك."),
         Professional(MessageEvent.BookingRescheduled, "en",
-            "{{customer_name}}'s booking has moved: new time {{booking_date}} at {{booking_time}}.\n"
-            + "Service: {{service_name}} · {{shop_name}}"),
+            "Heads up: the booking for {{customer_name}} has moved to a new time.\n"
+            + "The new time is {{booking_date}} at {{booking_time}}, for {{service_name}} at {{shop_name}}. Please check your schedule."),
         Professional(MessageEvent.BookingCancelled, "ar",
-            "تم إلغاء حجز {{customer_name}} يوم {{booking_date}} الساعة {{booking_time}} ({{service_name}}) في {{shop_name}}."),
+            "تنبيه: نود إعلامك بأنه تم إلغاء الحجز باسم {{customer_name}} يوم {{booking_date}} الساعة {{booking_time}} لخدمة {{service_name}} في {{shop_name}}.\n"
+            + "أصبح هذا الوقت متاحاً الآن في جدولك."),
         Professional(MessageEvent.BookingCancelled, "en",
-            "{{customer_name}}'s booking on {{booking_date}} at {{booking_time}} ({{service_name}}) at {{shop_name}} has been cancelled."),
+            "Heads up: the booking for {{customer_name}} on {{booking_date}} at {{booking_time}} ({{service_name}}) at {{shop_name}} has been cancelled.\n"
+            + "That time is now free in your schedule."),
         Professional(MessageEvent.BookingReminder, "ar",
-            "لديك حجز مع {{customer_name}} بعد {{time_remaining}}، الساعة {{booking_time}}.\n"
-            + "الخدمة: {{service_name}} ({{duration}})"),
+            "تذكير: لديك حجز باسم {{customer_name}} بعد {{time_remaining}}، الساعة {{booking_time}}.\n"
+            + "الخدمة المطلوبة هي {{service_name}}، ومدتها {{duration}} تقريباً. يرجى الاستعداد للموعد في وقته المحدد."),
         Professional(MessageEvent.BookingReminder, "en",
-            "You have a booking with {{customer_name}} in {{time_remaining}}, at {{booking_time}}.\n"
-            + "Service: {{service_name}} ({{duration}})"),
+            "Reminder: you have a booking with {{customer_name}} in {{time_remaining}}, at {{booking_time}}.\n"
+            + "The service is {{service_name}}, and it takes about {{duration}}. Please be ready on time."),
     ];
 
     /// <summary>A deterministic id from a name, so every environment gets the same template ids.</summary>
