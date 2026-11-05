@@ -1,8 +1,8 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-10-31 (Session 21: the admin creates a shop owner or desk account with a temporary password, replaced at the first sign-in (D-139); after Phase 17)
+- **Updated:** 2026-11-05 (Session 22: WhatsApp on the client's Meta account (D-140); D-139 and D-140 deployed; after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
-  - Session 21 is committed locally, **not pushed and not deployed** (the user did not ask). Session 20 is the last push and deploy (2026-10-27).
+  - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
@@ -10,6 +10,44 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 22: WhatsApp on the client's Meta account (D-140)
+- **The request** (from the user): connect the WhatsApp Business account for sign-in codes ("authentication") and booking messages ("utility"). Tests go to the user's numbers +20 155… and +966 53…, which are in the VPS `.env` allowlist and not in the repository.
+- **Meta side (read through the Graph API):**
+  - **Token:** a `SYSTEM_USER` token for the app "Groom Here" (`1438990374393920`) that never expires, with both WhatsApp scopes.
+  - **Account access:** the WhatsApp account had not been assigned to the system user. The user assigned it, with full control, and added a card for billing.
+  - **Account:** WABA `1798791391452264` «Groom here Establishment». Review approved; **business verification not done**.
+  - **Number:** +966 54 637 9134, phone number id `1469285809598518`. Cloud API, `CONNECTED`, quality GREEN, 250 conversations a day.
+  - **Webhook:** the app's webhook was already active. The app was **not** subscribed to the WhatsApp account; it is now (`POST /{waba}/subscribed_apps`, after the server had the app secret).
+- **Templates (`docs/whatsapp/meta-templates.json`, submitted with `tools/whatsapp/register-meta-templates.mjs`):**
+  - **First submission:** 2 accepted, 18 refused, which taught Meta's rules (recorded in D-140 and `docs/whatsapp-integration.md`):
+    - 2388299: no variable at either end, and a trailing "." does not count;
+    - 2388293: at least about 2.5 words per variable;
+    - 2388185: the authentication template needs business verification.
+  - **The fix:** the default wording was rewritten with the same placeholders in the same order, so the database's old versions still send the right parameters. The 16 refused utility templates were resubmitted.
+  - **State at the end of the session:** all 18 utility templates were PENDING (see Evidence). The authentication template `trimme_sign_in_code` cannot be created until the client verifies the business in Meta Business Settings → Security Center.
+- **Code:**
+  - `MetaTemplateCatalog` with its snapshot test, which also checks Meta's rules;
+  - `MetaCloudApiProvider.ParameterText`, which sends parameters on one line and never empty;
+  - the default Graph API version is `v27.0`;
+  - `WhatsApp:AllowedRecipients` with `AllowlistedWhatsAppProvider`. A refused dispatch is Failed with `whatsapp.recipient_not_allowed`, raises no admin alert and does not mark a barber's number as failing.
+- **The user's choices:**
+  - go live with an allowlist first, because the demo's made-up numbers could be real people's;
+  - deploy D-139 together with D-140.
+- **groomhere.sa:**
+  - **Before the deploy:** backup `/root/backups/trimme-before-d139-d140-20261105-202822.sql.gz`, and copies `compose.yml.bak-d140-20261105-202822` and `.env.bak-d140-20261105-202822`.
+  - **compose.yml:** now passes `WhatsApp__Provider` (`${TRIMME_WHATSAPP_PROVIDER:-Fake}`), `WhatsApp__AllowedRecipients`, `WhatsApp__Meta__PhoneNumberId`, `…AccessToken`, `GraphApiVersion: v27.0`, `ButtonBaseUrl: https://groomhere.sa/` and `AuthenticationTemplateName: trimme_sign_in_code`.
+  - **`.env`:** holds the app secret, the number id, the token, the allowlist (the user's two numbers) and `TRIMME_WHATSAPP_PROVIDER`.
+  - **Deploy:** `git pull` to `206d0a1`, then build api and web, `migrate` (19 migrations; `TemporaryPasswords` applied) and `up -d`.
+  - **Smoke from the VPS:** GET verify echoes the challenge (200); unsigned POST 401; signed POST 200; `/ar` and the staff sign-in 200; no errors in the API log.
+- **Switching to real sends** (once the templates are approved): set `TRIMME_WHATSAPP_PROVIDER=Meta` in `/opt/trimme-deploy/.env`, then `docker compose up -d api`. Then test from Admin → WhatsApp → Templates to the allowlisted numbers.
+- **Going fully live later:**
+  - clear `TRIMME_WHATSAPP_ALLOWED_RECIPIENTS` and `up -d api`, after removing the demo's made-up numbers;
+  - after business verification, run the registration script again to add `trimme_sign_in_code`, then set `Identity__Otp__Sender=WhatsApp`. The demo's dev OTP inbox then stops receiving codes.
+- **Not changed:** the database's template versions keep the old wording, because the synchronizer never overwrites a slot. WhatsApp shows Meta's approved text, while the admin's templates page shows the old one. To align them, save each new default text as a draft and activate it (Admin → WhatsApp → Templates).
+- **Evidence:**
+  - .NET: Release build clean. Unit tests 440/440. Integration `Trimme.IntegrationTests.Notifications` 15/15, with the new `Allowlist_SendsOnlyToListedNumbers_AndASkippedMessageIsNoDeliveryFailure`.
+  - Local API with the Meta provider and the allowlist: a test send to a demo barber's number was refused before Meta (`whatsapp.recipient_not_allowed`, masked `+966 5•• ••• •01`).
 
 ## Session 21: shop accounts created by hand with a temporary password (D-139)
 - **The client's answer** (relayed by the user): asked whether owners and staff should be added by hand in the platform or invited by email (changing the password at the first sign-in), the client wants **both**.

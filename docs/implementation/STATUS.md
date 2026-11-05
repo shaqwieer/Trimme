@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-10-31 (Session 21: the admin creates a shop owner or desk account with a temporary password, replaced at the first sign-in (D-139))
+- **Updated:** 2026-11-05 (Session 22: WhatsApp on the client's Meta account, templates registered from the code, a recipient allowlist (D-140); D-139 and D-140 deployed)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -33,6 +33,12 @@
 - **Session 19 (D-137), at the client's request:** the shop and admin dashboards show the language menu at every width, in the header's top-left corner in Arabic (compact on phones, where «مباشر» is the green dot alone); the walk-in no longer has a sentence under the customer's mobile; the salon owner (not the desk) adds and edits the shop's services again and picks the barbers who do each (packages stay the platform team's); breaks are set every 5 minutes: an hour opens its 5-minute slots, the picked ones become a break after a confirmation, and a message says what was saved. No migration.
 - **Session 20 (D-138), at the client's request:** `/terms` and `/privacy` no longer show «مسودة — بانتظار المراجعة القانونية قبل الإطلاق.» (ar, en, tr). Meta's webhook subscription check (GET `/api/v1/webhooks/whatsapp`) now needs only the verify token, so the client can verify the callback before sending the app secret; every POST still needs the app secret and a valid signature. groomhere.sa has a generated verify token in its `.env`; the demo keeps the fake WhatsApp provider and the dev OTP inbox. No migration.
 - **Session 21 (D-139), at the client's request:** besides the emailed invitation, the admin can create a shop owner or desk account by hand on the shop's Accounts tab («إنشاء يدوي»): name, email, role and a temporary password, with no email sent. That password starts no session: the staff sign-in asks for a new password first («اختر كلمة مرور جديدة») and then opens the dashboard. An emailed reset replaces it too. New endpoints `POST /admin/shops/{shopId}/users` and `POST /auth/password/change-temporary`; migration `TemporaryPasswords`. Not deployed yet. The email way needs a Resend account and a verified sending domain from the client (SMTP settings only, no code change).
+- **Session 22 (D-140), at the user's request:** WhatsApp on the client's Meta account. The account is «Groom here Establishment» and the number is +966 54 637 9134. The token and app secret are in the VPS `.env` only.
+  - **Templates:** the 18 booking templates are generated from the code (`docs/whatsapp/meta-templates.json`) and submitted with `tools/whatsapp/register-meta-templates.mjs`, in wording rewritten for Meta's rules (no variable at either end; enough words per variable).
+  - **Sending:** body parameters are sent on one line and never empty. Graph API v27.0.
+  - **Allowlist:** `WhatsApp__AllowedRecipients` limits real sends to the user's test numbers while the demo still has made-up numbers. A refused message raises no admin alert and does not mark a barber's number as failing.
+  - **Sign-in codes:** they stay on the dev OTP inbox, because Meta allows the authentication template only after business verification.
+  - **Deployed** to groomhere.sa (`206d0a1`, with D-139's migration), and the app is subscribed to the WhatsApp account.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |
