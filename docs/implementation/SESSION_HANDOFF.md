@@ -45,10 +45,13 @@
   - **Check first:** groomhere.sa's 18 active versions are the v1 originals, each with the approved template's variables in the same order.
   - **Test sends from Admin:** «booking confirmed» (ar) to the +20 number reached **Read**; «booking reminder» (en) to the +966 number reached **Delivered**. Both statuses came back through the signed webhook (`POST /api/v1/webhooks/whatsapp` 200).
   - **Turning it off:** set `TRIMME_WHATSAPP_PROVIDER=Fake` and `up -d api`.
-- **Going fully live later:**
-  - clear `TRIMME_WHATSAPP_ALLOWED_RECIPIENTS` and `up -d api`, after removing the demo's made-up numbers;
+- **Fully live (2026-11-06, the user's request; their choice to silence the demo accounts first):**
+  - **Demo accounts:** the 5 demo barbers' WhatsApp is off (admin API, audited). The 3 demo customers are disabled (`disabled_at` set by SQL; there is no admin endpoint for customers). After that, 0 active customers have a phone and 0 barbers have messages on.
+  - **Allowlist:** `TRIMME_WHATSAPP_ALLOWED_RECIPIENTS` is now empty (backup `.env.bak-d140-allowlist-*`), then `up -d api`; the API is healthy with the provider `Meta`.
+  - **Admin template texts:** 16 slots activated as v2 with Meta's approved wording (the cancelled ones were already the same). All 18 active versions equal the approved text.
+- **Still open:**
   - after business verification, run the registration script again to add `trimme_sign_in_code`, then set `Identity__Otp__Sender=WhatsApp`. The demo's dev OTP inbox then stops receiving codes.
-- **Not changed:** the database's template versions keep the old wording, because the synchronizer never overwrites a slot. WhatsApp shows Meta's approved text, while the admin's templates page shows the old one. To align them, save each new default text as a draft and activate it (Admin → WhatsApp → Templates).
+- **Template texts:** aligned on groomhere.sa (above). Another environment keeps the old wording until each new default is saved as a draft and activated, because the synchronizer never overwrites a slot.
 - **Evidence:**
   - .NET: Release build clean. Unit tests 440/440. Integration `Trimme.IntegrationTests.Notifications` 15/15, with the new `Allowlist_SendsOnlyToListedNumbers_AndASkippedMessageIsNoDeliveryFailure`.
   - Local API with the Meta provider and the allowlist: a test send to a demo barber's number was refused before Meta (`whatsapp.recipient_not_allowed`, masked `+966 5•• ••• •01`).

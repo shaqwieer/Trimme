@@ -1457,5 +1457,12 @@ This refines D-126.
 - **Live on groomhere.sa (2026-11-06).** `TRIMME_WHATSAPP_PROVIDER=Meta`, with the allowlist set to the user's two numbers.
   - groomhere.sa's 18 active versions are the untouched v1 originals, each with the approved template's placeholders in the same order.
   - Admin test sends: «booking confirmed» (ar) to the +20 number reached **Read**, and «booking reminder» (en) to the +966 number reached **Delivered**. Both statuses arrived through the signed webhook.
+- **Fully live for everyone (2026-11-06, at the user's request).**
+  - **Demo accounts silenced first.** All 5 barbers with a WhatsApp number (faisal, sultan, rakan, omar, majed) and all 3 customers (Noura, Khalid, Sara) were demo accounts with made-up numbers. The user chose to silence them:
+    - the 5 barbers' WhatsApp messages are off (`PUT /admin/professionals/{id}/whatsapp` with `keepCurrentNumber`, audited);
+    - the 3 demo customers are disabled (`identity.users.disabled_at`, set by SQL because there is no admin endpoint to disable a customer; the same field the staff disable sets). Their past bookings stay, and they can no longer sign in.
+  - **Allowlist cleared:** `TRIMME_WHATSAPP_ALLOWED_RECIPIENTS` is empty, so new customers and barbers get messages normally.
+  - **Admin texts aligned:** the 16 template slots whose stored text differed from Meta's now have Meta's approved wording as an active **v2**, saved as a draft and activated through the admin API (audited). The 2 «booking cancelled» slots were already identical. All 18 active versions equal the approved text, with placeholders numbered in order.
+  - **To undo:** re-enable a demo customer by clearing `disabled_at`, and turn a barber's messages back on from the admin barber page.
 - **Not done in this decision:** the authentication template, which waits on business verification.
 - **Dependencies.** None added. No migration. No API contract change. New setting `WhatsApp__AllowedRecipients`.
