@@ -25,7 +25,7 @@
     - 2388293: at least about 2.5 words per variable;
     - 2388185: the authentication template needs business verification.
   - **The fix:** the default wording was rewritten with the same placeholders in the same order, so the database's old versions still send the right parameters. The 16 refused utility templates were resubmitted.
-  - **State at the end of the session:** all 18 utility templates were PENDING (see Evidence). The authentication template `trimme_sign_in_code` cannot be created until the client verifies the business in Meta Business Settings → Security Center.
+  - **State at the end of the session:** all 18 utility templates are **APPROVED** (UTILITY). The authentication template `trimme_sign_in_code` cannot be created until the client verifies the business in Meta Business Settings → Security Center.
 - **Code:**
   - `MetaTemplateCatalog` with its snapshot test, which also checks Meta's rules;
   - `MetaCloudApiProvider.ParameterText`, which sends parameters on one line and never empty;
@@ -40,7 +40,11 @@
   - **`.env`:** holds the app secret, the number id, the token, the allowlist (the user's two numbers) and `TRIMME_WHATSAPP_PROVIDER`.
   - **Deploy:** `git pull` to `206d0a1`, then build api and web, `migrate` (19 migrations; `TemporaryPasswords` applied) and `up -d`.
   - **Smoke from the VPS:** GET verify echoes the challenge (200); unsigned POST 401; signed POST 200; `/ar` and the staff sign-in 200; no errors in the API log.
-- **Switching to real sends** (once the templates are approved): set `TRIMME_WHATSAPP_PROVIDER=Meta` in `/opt/trimme-deploy/.env`, then `docker compose up -d api`. Then test from Admin → WhatsApp → Templates to the allowlisted numbers.
+- **Real sends are on (2026-11-06):**
+  - **Switch:** `TRIMME_WHATSAPP_PROVIDER=Meta` in `/opt/trimme-deploy/.env` (backup `.env.bak-d140-meta-*`), then `docker compose up -d api`.
+  - **Check first:** groomhere.sa's 18 active versions are the v1 originals, each with the approved template's variables in the same order.
+  - **Test sends from Admin:** «booking confirmed» (ar) to the +20 number reached **Read**; «booking reminder» (en) to the +966 number reached **Delivered**. Both statuses came back through the signed webhook (`POST /api/v1/webhooks/whatsapp` 200).
+  - **Turning it off:** set `TRIMME_WHATSAPP_PROVIDER=Fake` and `up -d api`.
 - **Going fully live later:**
   - clear `TRIMME_WHATSAPP_ALLOWED_RECIPIENTS` and `up -d api`, after removing the demo's made-up numbers;
   - after business verification, run the registration script again to add `trimme_sign_in_code`, then set `Identity__Otp__Sender=WhatsApp`. The demo's dev OTP inbox then stops receiving codes.

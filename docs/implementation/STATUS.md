@@ -39,6 +39,7 @@
   - **Allowlist:** `WhatsApp__AllowedRecipients` limits real sends to the user's test numbers while the demo still has made-up numbers. A refused message raises no admin alert and does not mark a barber's number as failing.
   - **Sign-in codes:** they stay on the dev OTP inbox, because Meta allows the authentication template only after business verification.
   - **Deployed** to groomhere.sa (`206d0a1`, with D-139's migration), and the app is subscribed to the WhatsApp account.
+  - **Live (2026-11-06):** all 18 templates are approved and the provider is Meta, behind the allowlist. The test sends to the user's numbers were Read and Delivered.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

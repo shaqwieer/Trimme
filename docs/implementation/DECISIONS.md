@@ -1444,7 +1444,7 @@ This refines D-126.
   - **`MetaCloudApiProvider`:**
     - every body parameter goes through `ParameterText`: whitespace runs become one space, and an empty value becomes "-". Meta refuses empty parameters and ones with new lines, tabs or runs of spaces, and a shop's address can be empty or span lines;
     - the default Graph API version is `v27.0`.
-- **Submitted (2026-11-05):** the 18 utility templates, under the names the database versions already carry (`trimme_customer_booking_confirmed`, …), in ar and en. The authentication template is refused until the business is verified. So sign-in codes stay on the dev OTP inbox on groomhere.sa, and `Identity__Otp__Sender=WhatsApp` waits for an approved `trimme_sign_in_code`.
+- **Submitted (2026-11-05), approved (by 2026-11-06):** the 18 utility templates, under the names the database versions already carry (`trimme_customer_booking_confirmed`, …), in ar and en. All are approved and kept the UTILITY category. The authentication template is refused until the business is verified. So sign-in codes stay on the dev OTP inbox on groomhere.sa, and `Identity__Otp__Sender=WhatsApp` waits for an approved `trimme_sign_in_code`.
 - **The recipient allowlist (the user's choice for going live on the demo).**
   - **The problem:** groomhere.sa still holds the seed's demo barbers (`+966 50 010 01xx`) and demo customers (`+966 50 010 03xx`). Their made-up numbers are valid Saudi mobiles and could belong to real people.
   - **The options offered:** an allowlist first (recommended), everyone after turning off the demo barbers' messages, or not deploying yet. The user chose the allowlist.
@@ -1454,5 +1454,8 @@ This refines D-126.
     - Unset is the default: everyone.
   - **A refused dispatch is not a delivery failure.** It shows as failed in the admin's message log with that error. But `SendDispatchJob` raises no `whatsapp.dispatch_failed` notice to admins, and does not mark a professional's number as failing.
   - Going fully live later means removing the setting and restarting the API.
+- **Live on groomhere.sa (2026-11-06).** `TRIMME_WHATSAPP_PROVIDER=Meta`, with the allowlist set to the user's two numbers.
+  - groomhere.sa's 18 active versions are the untouched v1 originals, each with the approved template's placeholders in the same order.
+  - Admin test sends: «booking confirmed» (ar) to the +20 number reached **Read**, and «booking reminder» (en) to the +966 number reached **Delivered**. Both statuses arrived through the signed webhook.
 - **Not done in this decision:** the authentication template, which waits on business verification.
 - **Dependencies.** None added. No migration. No API contract change. New setting `WhatsApp__AllowedRecipients`.
