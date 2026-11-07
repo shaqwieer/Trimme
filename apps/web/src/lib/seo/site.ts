@@ -39,5 +39,16 @@ export const OG_IMAGE = { url: '/brand/groomhere-og.png', width: 1200, height: 6
 /** Open Graph locale names. */
 export const OG_LOCALE: Record<Locale, string> = { ar: 'ar_SA', en: 'en_US', tr: 'tr_TR' };
 
+/**
+ * Domain-ownership tags in every page's `<head>` (D-141). `TRIMME_FACEBOOK_DOMAIN_VERIFICATION` is the token Meta
+ * Business Manager issues for the deployed domain (runtime configuration); nothing is rendered when it is unset.
+ */
+export function siteVerification(
+  token: string | undefined = process.env.TRIMME_FACEBOOK_DOMAIN_VERIFICATION,
+): Metadata['verification'] {
+  const facebook = token?.trim();
+  return facebook ? { other: { 'facebook-domain-verification': facebook } } : undefined;
+}
+
 /** Private or personalised pages: never indexed (R-NEG-10). */
 export const NO_INDEX: Metadata['robots'] = { index: false, follow: false };

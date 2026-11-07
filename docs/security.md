@@ -79,6 +79,7 @@ Outside Development and Testing, the API refuses to start without the first thre
 | `NEXT_PUBLIC_MAP_TILE_URL` (web build, compose `TRIMME_MAP_TILE_URL`) | The production tile host (D-007), for example `https://tiles.example.org/{z}/{x}/{y}.png`. Its origin is added to the CSP automatically |
 | `Geocoding__Provider=Nominatim`, `Geocoding__Nominatim__BaseUrl`, `Geocoding__Nominatim__UserAgent` | The production geocoder: a self-hosted or OSM-based Nominatim-compatible host (D-007, D-068). Without them, address search uses the built-in development gazetteer |
 | `TRIMME_ENABLE_DEV_ROUTES` (web) | Unset or `false` |
+| `TRIMME_FACEBOOK_DOMAIN_VERIFICATION` (web, optional) | Meta Business domain verification token for the public domain (D-141). Public, not a secret; no tag when unset |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` (optional) | Telemetry export (D-118) |
 
 ### Client addresses behind the proxy

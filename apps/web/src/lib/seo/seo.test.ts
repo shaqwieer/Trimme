@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { aggregateRatingLd, breadcrumbLd, openingHoursLd, serializeJsonLd } from './jsonld';
-import { localizedAlternates } from './site';
+import { localizedAlternates, siteVerification } from './site';
 
 describe('structured data (R-WEB-11)', () => {
   it('jsonld_aggregateRating_absent_without_reviews', () => {
@@ -93,5 +93,15 @@ describe('sitemaps (R-WEB-10, Phase 17)', () => {
     expect(xml).toContain('hreflang="tr" href="http://localhost:3000/tr/shops/a&amp;b"');
     expect(xml).toContain('hreflang="x-default" href="http://localhost:3000/ar"');
     expect(xml).not.toContain('a&b');
+  });
+});
+
+describe('domain verification (D-141)', () => {
+  it('renders the Meta tag only when the deployment sets a token', () => {
+    expect(siteVerification(undefined)).toBeUndefined();
+    expect(siteVerification('  ')).toBeUndefined();
+    expect(siteVerification(' jkrbq1nw3b155bv2c5m7pygnoskvkl ')).toEqual({
+      other: { 'facebook-domain-verification': 'jkrbq1nw3b155bv2c5m7pygnoskvkl' },
+    });
   });
 });

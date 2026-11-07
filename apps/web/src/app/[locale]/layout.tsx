@@ -9,7 +9,7 @@ import { getTranslations } from 'next-intl/server';
 import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { localeDirection, routing } from '@/i18n/routing';
-import { OG_IMAGE, OG_LOCALE, siteUrl } from '@/lib/seo/site';
+import { OG_IMAGE, OG_LOCALE, siteUrl, siteVerification } from '@/lib/seo/site';
 import { colorScheme, parseTheme, THEME_COOKIE, themeAttribute } from '@/lib/theme/theme';
 import { BRAND_NAVY_900, DARK_BG_PAGE } from '@/styles/brand';
 import '../globals.css';
@@ -61,6 +61,8 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [{ ...OG_IMAGE, alt: t('appName') }],
     },
     twitter: { card: 'summary_large_image' },
+    // Meta Business domain verification (D-141); absent unless the deployment sets the token.
+    verification: siteVerification(),
   };
 }
 

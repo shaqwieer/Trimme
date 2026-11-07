@@ -1466,3 +1466,12 @@ This refines D-126.
   - **To undo:** re-enable a demo customer by clearing `disabled_at`, and turn a barber's messages back on from the admin barber page.
 - **Not done in this decision:** the authentication template, which waits on business verification.
 - **Dependencies.** None added. No migration. No API contract change. New setting `WhatsApp__AllowedRecipients`.
+
+## D-141 — Meta Business domain verification tag from runtime configuration — Accepted (Session 23, after Phase 17, at the user's request)
+- **The request:** the client's Meta contact asked for `<meta name="facebook-domain-verification" content="…">` in the home page's `<head>`, to verify groomhere.sa for the Meta Business account behind WhatsApp (D-140).
+- **How:** the root `[locale]` layout's metadata sets `verification.other['facebook-domain-verification']` from the web's runtime variable `TRIMME_FACEBOOK_DOMAIN_VERIFICATION` (`siteVerification()` in `lib/seo/site.ts`). Unset or blank renders no tag, so other environments carry nothing. The token is per domain, so it is configuration, not code; it is public (it is in every page's HTML), so it is not a secret.
+  - Every page carries it, not only the home page: the layout is shared, and Meta reads the home page.
+  - Next.js puts it in `<head>`, not streamed into `<body>`: checked on the built container for a browser, `facebookexternalhit/1.1` and `curl` user agents.
+- **The bare domain redirects.** With `localePrefix: 'always'`, `https://groomhere.sa/` answers 307 to `/ar` (or `/en` from `Accept-Language`), and the tag is on `/ar`. If Meta's checker does not follow the redirect, Business Manager's other methods avoid it: a DNS TXT record, or the HTML file at the site root (a path with a dot skips the locale proxy, so a file in `apps/web/public/` is served with 200).
+- **Deployment:** `TRIMME_FACEBOOK_DOMAIN_VERIFICATION` in `/opt/trimme-deploy/.env`, mapped to the web service in `compose.yml` (outside the repository); only the web image is rebuilt.
+- **Dependencies.** None added. No migration. No API change. New web setting `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`.

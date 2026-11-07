@@ -115,6 +115,8 @@ services:
       TRIMME_SITE_URL: ${TRIMME_SITE_URL:-http://localhost:3000}
       # Optional "become a partner" link on the landing page (mailto: or a form); the button is hidden when empty.
       TRIMME_PARTNER_CONTACT_URL: ${TRIMME_PARTNER_CONTACT_URL:-}
+      # Meta Business domain verification token (<meta name="facebook-domain-verification">, D-141); no tag when empty.
+      TRIMME_FACEBOOK_DOMAIN_VERIFICATION: ${TRIMME_FACEBOOK_DOMAIN_VERIFICATION:-}
     ports:
       - "${TRIMME_WEB_PORT:-3000}:3000"
     depends_on:
