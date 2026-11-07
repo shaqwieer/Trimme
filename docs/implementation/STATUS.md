@@ -42,6 +42,7 @@
   - **Live (2026-11-06):** all 18 templates are approved and the provider is Meta. The test sends to the user's numbers were Read and Delivered.
   - **For everyone:** the demo accounts were silenced first (5 demo barbers' messages off, the 3 demo customers disabled), then the allowlist was cleared.
   - **Admin texts:** the Templates page now holds Meta's approved wording (v2).
+- **Session 23 (D-141), at the user's request:** the Meta Business domain verification tag (`<meta name="facebook-domain-verification">`) is in every page's `<head>` from the web setting `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`. Deployed to groomhere.sa on 2026-11-07 (`6abf98a`, web only) and checked live. Meta's confirmation is the client's step; if the redirect from `/` to `/ar` gets in the way, use the DNS TXT method.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

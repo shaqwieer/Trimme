@@ -1,8 +1,9 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-05 (Session 22: WhatsApp on the client's Meta account (D-140); D-139 and D-140 deployed; after Phase 17)
+- **Updated:** 2026-11-07 (Session 23: Meta domain verification tag (D-141), deployed web-only; before it, Session 22: WhatsApp on the client's Meta account (D-140); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
+  - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
