@@ -61,6 +61,15 @@ internal sealed partial class DispatchFactory(
             return null;
         }
 
+        // The platform turned this message off for the shop (D-142). Read when the message is due, so switching it back on
+        // also brings back reminders that were already scheduled.
+        if (await db.Set<ShopMessageOptOut>().AnyAsync(
+                o => o.ShopId == booking.ShopId && o.Audience == audience && o.Event == @event, cancellationToken))
+        {
+            LogTurnedOff(logger, @event, audience);
+            return null;
+        }
+
         var recipient = await RecipientAsync(audience, booking, platform, cancellationToken);
         if (recipient is null)
         {
@@ -112,6 +121,9 @@ internal sealed partial class DispatchFactory(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No active WhatsApp template for {Event} / {Audience} / {Locale}; nothing sent")]
     private static partial void LogNoTemplate(ILogger logger, MessageEvent @event, MessageAudience audience, string locale);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "WhatsApp {Event} / {Audience} is turned off for the booking's shop; nothing sent")]
+    private static partial void LogTurnedOff(ILogger logger, MessageEvent @event, MessageAudience audience);
 }
 
 /// <summary>

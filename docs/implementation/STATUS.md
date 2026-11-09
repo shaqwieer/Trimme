@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-05 (Session 22: WhatsApp on the client's Meta account, templates registered from the code, a recipient allowlist (D-140); D-139 and D-140 deployed)
+- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches for the admin, and customers signed in for 365 days (D-142); local only, not deployed)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -43,6 +43,10 @@
   - **For everyone:** the demo accounts were silenced first (5 demo barbers' messages off, the 3 demo customers disabled), then the allowlist was cleared.
   - **Admin texts:** the Templates page now holds Meta's approved wording (v2).
 - **Session 23 (D-141), at the user's request:** the Meta Business domain verification tag (`<meta name="facebook-domain-verification">`) is in every page's `<head>` from the web setting `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`. Deployed to groomhere.sa on 2026-11-07 (`6abf98a`, web only) and checked live. Meta's confirmation is the client's step; if the redirect from `/` to `/ar` gets in the way, use the DNS TXT method.
+- **Session 24 (D-142), at the user's request:**
+  - **Per-shop WhatsApp switches:** each admin shop page has a «رسائل واتساب» tab with the nine messages (5 customer, 4 barber), all on by default. A message turned off reaches no customer and no barber of that shop. Admin-only and audited; one additive migration (`ShopMessageSwitches`).
+  - **365-day customer sign-in:** customers (signed in by a paid code) now stay signed in for a year; staff stay at 7 days.
+  - Committed locally, **not pushed or deployed**. Deploying needs a backup, then `git pull`, build api and web, `migrate` and `up -d`.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

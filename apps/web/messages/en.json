@@ -598,7 +598,8 @@
       "professionals": "Professionals",
       "services": "Services",
       "subscription": "Subscription",
-      "loyalty": "Loyalty"
+      "loyalty": "Loyalty",
+      "whatsapp": "WhatsApp messages"
     },
     "sections": {
       "profile": "Shop profile",
@@ -627,6 +628,22 @@
       "packagesTitle": "The salon's packages",
       "noPackages": "No packages yet.",
       "addPackage": "Add a package"
+    },
+    "whatsapp": {
+      "title": "WhatsApp messages for this salon",
+      "intro": "Choose which messages this salon’s customers and barbers get. Every message is on by default. A message turned off reaches no customer who books at this salon and none of its barbers. Only admins see this setting; the salon does not.",
+      "readOnly": "View only. Changing the messages needs permission to edit WhatsApp templates.",
+      "count": "{on} of {total} messages on",
+      "audience": {
+        "Customer": "Customer messages",
+        "Professional": "Barber messages"
+      },
+      "on": "On",
+      "off": "Off",
+      "showText": "Message text",
+      "cancelHint": "Sent only if the barber got the new-booking or rescheduled message.",
+      "save": "Save messages",
+      "saved": "This salon’s WhatsApp messages are saved."
     }
   },
   "shopCategory": {

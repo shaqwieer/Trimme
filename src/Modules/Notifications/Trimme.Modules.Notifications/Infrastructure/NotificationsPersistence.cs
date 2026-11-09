@@ -111,6 +111,17 @@ internal sealed class ReminderScheduleConfiguration : IEntityTypeConfiguration<R
     }
 }
 
+internal sealed class ShopMessageOptOutConfiguration : IEntityTypeConfiguration<ShopMessageOptOut>
+{
+    public void Configure(EntityTypeBuilder<ShopMessageOptOut> builder)
+    {
+        builder.ToTable("shop_message_opt_outs");
+        builder.HasKey(o => new { o.ShopId, o.Audience, o.Event });
+        builder.Property(o => o.Audience).HasConversion<string>().HasMaxLength(20);
+        builder.Property(o => o.Event).HasConversion<string>().HasMaxLength(40);
+    }
+}
+
 internal sealed class ShopNotificationConfiguration : IEntityTypeConfiguration<ShopNotification>
 {
     public void Configure(EntityTypeBuilder<ShopNotification> builder)

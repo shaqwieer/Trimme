@@ -1,7 +1,12 @@
+using System.Globalization;
 using System.Net;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
+using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.IntegrationTests.Infrastructure;
+using Trimme.Modules.Identity.Domain;
 
 namespace Trimme.IntegrationTests.Identity;
 
@@ -42,6 +47,31 @@ public sealed class SessionTests(PostgresFixture postgres)
         body.ShouldNotContain(session.Cookie("trimme-refresh", "/api/v1/auth")!);
         body.ShouldNotContain(session.Cookie("trimme-access")!);
         response.Headers.CacheControl!.NoStore.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task CustomerSessions_LastAYear_StaffSessionsAWeek()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "lifetime", ct);
+        var phone = IdentityTestData.NewPhone();
+        using var session = ApiSession.Create(factory);
+        var challengeId = await IdentityTestData.RequestOtpAsync(session, phone, ct);
+
+        // A customer signs in with a paid code, so the session and its refresh cookie last a year (D-142).
+        using var response = await session.PostAsync(
+            "/api/v1/auth/otp/verify", new { challengeId, code = IdentityTestData.LatestOtp(factory, phone) }, ct);
+        var refresh = response.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith("trimme-refresh=", StringComparison.Ordinal));
+        var expires = refresh.Split(';').Select(part => part.Trim()).Single(part => part.StartsWith("expires=", StringComparison.OrdinalIgnoreCase));
+        var cookieExpires = DateTimeOffset.Parse(expires["expires=".Length..], CultureInfo.InvariantCulture);
+        (cookieExpires - DateTimeOffset.UtcNow).TotalDays.ShouldBe(365, tolerance: 0.01);
+
+        using var staff = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.Support, ct);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var sessions = await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<UserSession>().AsNoTracking().ToListAsync(ct);
+        var customer = sessions.Single(s => s.UserType == UserType.Customer);
+        (customer.ExpiresAt - customer.CreatedAt).ShouldBe(TimeSpan.FromDays(365));
+        sessions.Where(s => s.UserType == UserType.PlatformAdmin).ShouldAllBe(s => s.ExpiresAt - s.CreatedAt == TimeSpan.FromDays(7));
     }
 
     [Fact]

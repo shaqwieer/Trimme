@@ -20,6 +20,13 @@ professional's number is used only by the notification jobs and by audited admin
 - **Professional:** an active professional with a number and notifications on (spec §16). The platform's default locale
   (Arabic) picks the template.
 
+**Per-shop switches (D-142).**
+- On each shop's admin page, the «رسائل واتساب» tab turns each of the nine messages above on or off for that shop. That covers the customer's 5 and the barber's 4; a barber never gets the pending request.
+- All nine are on until an admin turns one off. A message turned off is not sent for any booking of that shop, to the customer or to any of its barbers. It applies whatever the recipient's language.
+- The check happens when the message is due, so a scheduled reminder follows the switch as it is at its due time.
+- Reading needs `Admin.WhatsApp.View`; changing needs `Admin.WhatsApp.Templates.Edit`, and each change is audited. The shop never sees the setting.
+- API: `GET` and `PUT /api/v1/admin/shops/{shopId}/whatsapp-messages`. Stored as opt-outs in `notifications.shop_message_opt_outs`.
+
 **In-app notices.**
 - The shop gets a notice for what customers and admins did; its own actions are not echoed back to it.
 - The customer gets a notice for what the shop or the platform did.

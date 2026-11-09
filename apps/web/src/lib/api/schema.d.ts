@@ -3420,6 +3420,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/whatsapp-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's nine WhatsApp booking messages (5 customer, 4 barber), each on or off, with the Arabic text it sends. All are on until an admin turns one off. */
+        get: operations["AdminGetShopWhatsAppMessages"];
+        /** Turns the shop's WhatsApp booking messages on or off. A message turned off is not sent for any booking of the shop, to the customer or to any of its barbers (audited). */
+        put: operations["AdminSaveShopWhatsAppMessages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/notifications": {
         parameters: {
             query?: never;
@@ -5930,6 +5948,10 @@ export interface components {
             /** Format: uuid */
             shopId: string;
         };
+        /** @description The switches to set for the shop (D-142); a message left out keeps its state. */
+        SaveShopMessagesRequest: {
+            messages: null | components["schemas"]["ShopMessageSwitch"][];
+        };
         /** @description The draft's text, buttons and optional Meta template name; send the template version read. */
         SaveTemplateDraftRequest: {
             body: null | string;
@@ -6114,6 +6136,26 @@ export interface components {
         ShopLoyaltyResponse: {
             program: null | components["schemas"]["LoyaltyProgramResponse"];
             stats: components["schemas"]["LoyaltyStatsResponse"];
+        };
+        /** @description One switch: an audience and event, whether it is on, and the Arabic message it sends (Meta name and active text). */
+        ShopMessageResponse: {
+            audience: components["schemas"]["MessageAudience"];
+            event: components["schemas"]["MessageEvent"];
+            enabled: boolean;
+            templateName: null | string;
+            bodyAr: null | string;
+        };
+        /** @description The nine switches of a shop, customer first, in the order of a booking's life. */
+        ShopMessagesResponse: {
+            /** Format: uuid */
+            shopId: string;
+            items: components["schemas"]["ShopMessageResponse"][];
+        };
+        /** @description A switch to set. A slot left out keeps its state. */
+        ShopMessageSwitch: {
+            audience: components["schemas"]["MessageAudience"];
+            event: components["schemas"]["MessageEvent"];
+            enabled: boolean;
         };
         ShopOverviewKpis: {
             /**
@@ -15618,6 +15660,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingNotificationsResponse"];
+                };
+            };
+        };
+    };
+    AdminGetShopWhatsAppMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopMessagesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSaveShopWhatsAppMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveShopMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopMessagesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

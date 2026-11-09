@@ -1890,6 +1890,32 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("reminder_schedules", "notifications");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Notifications.Domain.ShopMessageOptOut", b =>
+                {
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("Audience")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("audience");
+
+                    b.Property<string>("Event")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("event");
+
+                    b.Property<DateTimeOffset>("DisabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disabled_at");
+
+                    b.HasKey("ShopId", "Audience", "Event")
+                        .HasName("pk_shop_message_opt_outs");
+
+                    b.ToTable("shop_message_opt_outs", "notifications");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Notifications.Domain.ShopNotification", b =>
                 {
                     b.Property<Guid>("Id")

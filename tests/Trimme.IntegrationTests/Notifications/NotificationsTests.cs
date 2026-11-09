@@ -136,6 +136,83 @@ public sealed class NotificationsTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task ShopMessageSwitches_AMessageTurnedOff_ReachesNobodyAtThatShop_OnlyAdminsSetThem()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "ntf_switches", ct);
+        await SetWhatsAppAsync(w.Admin, w.Faisal, FaisalNumber, ct);
+        await SetWhatsAppAsync(w.Admin, w.ProB, "+966512300009", ct);
+        var url = $"/api/v1/admin/shops/{w.Shops.A.ShopId}/whatsapp-messages";
+        static string Slot(JsonElement item) => $"{item.GetProperty("audience").GetString()}.{item.GetProperty("event").GetString()}";
+
+        // Nine switches (5 customer, 4 barber: a barber never gets the pending request), all on by default.
+        var initial = (await OkAsync(w.Admin.GetAsync(url, ct), ct)).GetProperty("items").EnumerateArray().ToList();
+        initial.Select(Slot).ShouldBe([
+            "Customer.BookingConfirmed", "Customer.BookingPending", "Customer.BookingRescheduled", "Customer.BookingCancelled", "Customer.BookingReminder",
+            "Professional.BookingConfirmed", "Professional.BookingRescheduled", "Professional.BookingCancelled", "Professional.BookingReminder",
+        ]);
+        initial.ShouldAllBe(i => i.GetProperty("enabled").GetBoolean());
+        initial[0].GetProperty("templateName").GetString().ShouldBe("trimme_customer_booking_confirmed");
+        initial[0].GetProperty("bodyAr").GetString().ShouldNotBeNull().ShouldContain("{{customer_name}}");
+
+        // Only platform admins: the shop cannot read or change them; a slot that is not sent is refused.
+        await FailsAsync(w.OwnerA.GetAsync(url, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(w.OwnerA.PutAsync(url, new { messages = Array.Empty<object>() }, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(
+            w.Admin.PutAsync(url, new { messages = new[] { new { audience = "Professional", @event = "BookingPending", enabled = false } } }, ct),
+            HttpStatusCode.BadRequest, "validation.invalid", ct);
+        await FailsAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{Guid.NewGuid()}/whatsapp-messages", ct), HttpStatusCode.NotFound, "shop.not_found", ct);
+
+        // Shop A: the customer's confirmation and the barber's reminder off. Saved twice: idempotent, audited once.
+        object[] off =
+        [
+            new { audience = "Customer", @event = "BookingConfirmed", enabled = false },
+            new { audience = "Professional", @event = "BookingReminder", enabled = false },
+        ];
+        await OkAsync(w.Admin.PutAsync(url, new { messages = off }, ct), ct);
+        var saved = (await OkAsync(w.Admin.PutAsync(url, new { messages = off }, ct), ct)).GetProperty("items").EnumerateArray().ToList();
+        saved.Where(i => !i.GetProperty("enabled").GetBoolean()).Select(Slot).ShouldBe(["Customer.BookingConfirmed", "Professional.BookingReminder"]);
+        var audit = (await AuditAsync(w.Factory, "whatsapp_shop_messages.saved", ct)).ShouldHaveSingleItem();
+        audit.ShopId.ShouldBe(w.Shops.A.ShopId);
+        audit.Summary.ShouldBe("Customer.BookingConfirmed off, Professional.BookingReminder off");
+        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}/whatsapp-messages", ct), ct)).GetProperty("items").EnumerateArray()
+            .ShouldAllBe(i => i.GetProperty("enabled").GetBoolean());
+
+        // A booking at shop A: the barber is told, the customer is not.
+        using var noura = await CustomerWithPhoneAsync(w.Factory, "نورة", IdentityTestData.NewPhone(), ct);
+        var atA = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await ProcessOutboxAsync(w.Factory, ct);
+        (await DispatchesAsync(w.Factory, atA, ct)).Select(d => $"{d.Event}:{d.Audience}").ShouldBe(["BookingConfirmed:Professional"]);
+
+        // Shop B keeps everything: both are told.
+        var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
+        var atB = (await OkAsync(BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 11), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await ProcessOutboxAsync(w.Factory, ct);
+        (await DispatchesAsync(w.Factory, atB, ct)).Select(d => $"{d.Event}:{d.Audience}")
+            .ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"], ignoreOrder: true);
+
+        // Reminders at shop A: the customer's goes out, the barber's is skipped when it is due.
+        var reminders = await RemindersAsync(w.Factory, atA, ct);
+        foreach (var reminder in reminders)
+        {
+            await RunReminderAsync(w.Factory, reminder.Id.Value, ct);
+        }
+
+        var ran = await RemindersAsync(w.Factory, atA, ct);
+        ran.Single(r => r.Audience == MessageAudience.Customer).Status.ShouldBe(ReminderStatus.Sent);
+        ran.Single(r => r.Audience == MessageAudience.Professional).Status.ShouldBe(ReminderStatus.Skipped);
+        (await DispatchesAsync(w.Factory, atA, ct)).Where(d => d.Kind == DispatchKind.Reminder).Select(d => d.Audience).ShouldBe([MessageAudience.Customer]);
+
+        // Turned back on, the next booking's confirmation reaches the customer again.
+        await OkAsync(w.Admin.PutAsync(url, new { messages = new[] { new { audience = "Customer", @event = "BookingConfirmed", enabled = true } } }, ct), ct);
+        using var khalid = await CustomerWithPhoneAsync(w.Factory, "خالد", IdentityTestData.NewPhone(), ct);
+        var again = (await OkAsync(BookAsync(khalid, w.SlugA, w.Haircut, w.Faisal, At(Target, 14), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await ProcessOutboxAsync(w.Factory, ct);
+        (await DispatchesAsync(w.Factory, again, ct)).Select(d => $"{d.Event}:{d.Audience}")
+            .ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"], ignoreOrder: true);
+    }
+
+    [Fact]
     public async Task Reminder_Idempotent_AndSkipsWhenTheBookingMoved()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -598,7 +598,8 @@
       "professionals": "Uzmanlar",
       "services": "Hizmetler",
       "subscription": "Abonelik",
-      "loyalty": "Sadakat"
+      "loyalty": "Sadakat",
+      "whatsapp": "WhatsApp mesajları"
     },
     "sections": {
       "profile": "Salon profili",
@@ -627,6 +628,22 @@
       "packagesTitle": "Salonun paketleri",
       "noPackages": "Henüz paket yok.",
       "addPackage": "Paket ekle"
+    },
+    "whatsapp": {
+      "title": "Bu salonun WhatsApp mesajları",
+      "intro": "Bu salonun müşterilerine ve berberlerine hangi mesajların gideceğini seçin. Tüm mesajlar varsayılan olarak açıktır. Kapatılan bir mesaj, bu salonda randevu alan hiçbir müşteriye ve salonun hiçbir berberine gitmez. Bu ayarı yalnızca yöneticiler görür; salon görmez.",
+      "readOnly": "Yalnızca görüntüleme. Mesajları değiştirmek için WhatsApp şablonlarını düzenleme izni gerekir.",
+      "count": "{total} mesajdan {on} tanesi açık",
+      "audience": {
+        "Customer": "Müşteri mesajları",
+        "Professional": "Berber mesajları"
+      },
+      "on": "Açık",
+      "off": "Kapalı",
+      "showText": "Mesaj metni",
+      "cancelHint": "Yalnızca berbere yeni randevu veya saat değişikliği mesajı gittiyse gönderilir.",
+      "save": "Mesajları kaydet",
+      "saved": "Bu salonun WhatsApp mesajları kaydedildi."
     }
   },
   "shopCategory": {

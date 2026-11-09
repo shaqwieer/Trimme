@@ -26,6 +26,9 @@ public sealed record PreviewTemplateRequest(string? Body, IReadOnlyList<Template
 /// </summary>
 public sealed record TestSendRequest(Guid? VersionId, string? Recipient, bool ConfirmTestRecipient);
 
+/// <summary>The switches to set for the shop (D-142); a message left out keeps its state.</summary>
+public sealed record SaveShopMessagesRequest(IReadOnlyList<ShopMessageSwitch>? Messages);
+
 internal static class NotificationEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -44,6 +47,7 @@ internal static class NotificationEndpoints
     {
         MapTemplates(api.MapGroup("/admin/whatsapp/templates").WithTags("Admin: WhatsApp"));
         MapDispatches(api.MapGroup("/admin/whatsapp").WithTags("Admin: WhatsApp"));
+        MapShopMessages(api.MapGroup("/admin/shops/{shopId:guid}/whatsapp-messages").WithTags("Admin: WhatsApp"));
         MapShopInbox(api.MapGroup("/shop/notifications").WithTags("Shop: notifications"));
         MapMyInbox(api);
         WhatsAppWebhook.Map(api);
@@ -125,6 +129,22 @@ internal static class NotificationEndpoints
             .WithName("AdminGetBookingNotifications")
             .WithSummary("A booking's WhatsApp dispatches and its reminder jobs (audience, due time, status).")
             .Produces<BookingNotificationsResponse>();
+    }
+
+    private static void MapShopMessages(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopMessagesQuery(shopId), ct)).ToHttpResult())
+            .RequirePermission(WhatsAppView)
+            .WithName("AdminGetShopWhatsAppMessages")
+            .WithSummary("The shop's nine WhatsApp booking messages (5 customer, 4 barber), each on or off, with the Arabic text it sends. All are on until an admin turns one off.")
+            .Produces<ShopMessagesResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPut("/", async (Guid shopId, SaveShopMessagesRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new SaveShopMessagesCommand(shopId, r.Messages), ct)).ToHttpResult())
+            .RequirePermission(TemplatesEdit)
+            .WithName("AdminSaveShopWhatsAppMessages")
+            .WithSummary("Turns the shop's WhatsApp booking messages on or off. A message turned off is not sent for any booking of the shop, to the customer or to any of its barbers (audited).")
+            .Produces<ShopMessagesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static void MapShopInbox(RouteGroupBuilder group)

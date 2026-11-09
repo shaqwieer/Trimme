@@ -183,6 +183,7 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `POST /api/v1/admin/qr/codes`, `POST .../{id}/deactivate|activate` | `Admin.Qr.Manage` · a professional code only for an active professional of the same shop · version-checked · audited · no delete (D-114) |
 | `GET /api/v1/admin/shops/{id}/loyalty` · `PUT` same | `Admin.Shops.View` to read · `Admin.Loyalty.Manage` to set the terms · version-checked · audited (D-132) |
 | `GET /api/v1/shop/loyalty` | `Shop.Bookings.Read` · the shop's own programme, read-only (D-132) |
+| `GET /api/v1/admin/shops/{id}/whatsapp-messages` · `PUT` same | `Admin.WhatsApp.View` to read · `Admin.WhatsApp.Templates.Edit` to turn a shop's WhatsApp messages on or off · audited · no shop endpoint (D-142) |
 | `GET /api/v1/me/loyalty`, `GET /api/v1/me/loyalty/shops/{slug}` | Customer only · their own stamps and rewards (D-132) |
 | `GET /api/v1/public/shops/{slug}/loyalty` | Anonymous · a published shop's terms only (D-132) |
 | `GET /api/v1/shop/qr/codes`, `GET .../{id}`, `GET .../{id}/image` | `Shop.Qr.View` · the shop's own codes and their own scans and bookings only; another shop's id → 404 · read-only (D-114) |

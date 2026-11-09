@@ -12220,6 +12220,108 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/whatsapp-messages": {
+      "get": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "The shop\u0027s nine WhatsApp booking messages (5 customer, 4 barber), each on or off, with the Arabic text it sends. All are on until an admin turns one off.",
+        "operationId": "AdminGetShopWhatsAppMessages",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopMessagesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: WhatsApp"
+        ],
+        "summary": "Turns the shop\u0027s WhatsApp booking messages on or off. A message turned off is not sent for any booking of the shop, to the customer or to any of its barbers (audited).",
+        "operationId": "AdminSaveShopWhatsAppMessages",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveShopMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopMessagesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/notifications": {
       "get": {
         "tags": [
@@ -20483,6 +20585,24 @@
         },
         "description": "The professional\u0027s shop (a professional belongs to exactly one shop)."
       },
+      "SaveShopMessagesRequest": {
+        "required": [
+          "messages"
+        ],
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShopMessageSwitch"
+            }
+          }
+        },
+        "description": "The switches to set for the shop (D-142); a message left out keeps its state."
+      },
       "SaveTemplateDraftRequest": {
         "required": [
           "body",
@@ -21077,6 +21197,80 @@
           }
         },
         "description": "The shop\u0027s own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none."
+      },
+      "ShopMessageResponse": {
+        "required": [
+          "audience",
+          "event",
+          "enabled",
+          "templateName",
+          "bodyAr"
+        ],
+        "type": "object",
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "event": {
+            "$ref": "#/components/schemas/MessageEvent"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "templateName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bodyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "One switch: an audience and event, whether it is on, and the Arabic message it sends (Meta name and active text)."
+      },
+      "ShopMessagesResponse": {
+        "required": [
+          "shopId",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopMessageResponse"
+            }
+          }
+        },
+        "description": "The nine switches of a shop, customer first, in the order of a booking\u0027s life."
+      },
+      "ShopMessageSwitch": {
+        "required": [
+          "audience",
+          "event",
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "audience": {
+            "$ref": "#/components/schemas/MessageAudience"
+          },
+          "event": {
+            "$ref": "#/components/schemas/MessageEvent"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "A switch to set. A slot left out keeps its state."
       },
       "ShopOverviewKpis": {
         "required": [

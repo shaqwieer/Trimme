@@ -1,16 +1,41 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-07 (Session 23: Meta domain verification tag (D-141), deployed web-only; before it, Session 22: WhatsApp on the client's Meta account (D-140); after Phase 17)
+- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches and a 365-day customer sign-in (D-142), local only; before it, Session 23: Meta domain verification tag (D-141); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
+  - Session 24 (D-142) is committed locally, **not pushed, not deployed**.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 24 rebuilt the api and web images from its tree, ran `migrate` (`ShopMessageSwitches` applied: 20 migrations) and `up -d`. The seed was not re-run.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
   - The volume is still several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows and the anonymous route audit fail on it (`/shops/barber-house…: public page is noindex`). Run those on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 24: per-shop WhatsApp message switches; customers signed in for a year (D-142)
+- **The request** (from the user):
+  - on every shop, the Groom Here admin gets a tab to turn on or off each of the nine Arabic utility messages (5 customer, 4 barber), all on by default;
+  - a message turned off reaches nobody at that shop, neither the customer nor any of its barbers, and only the admin sets it;
+  - a screenshot of the result;
+  - sign-in should last 365 days, to send fewer paid sign-in codes.
+- **What was built:**
+  - **Storage:** `notifications.shop_message_opt_outs` holds one row per switch turned off (migration `ShopMessageSwitches`, additive).
+  - **Enforcement:** the one check is in `DispatchFactory.CreateForBookingAsync`, so it covers lifecycle messages and reminders. It is read when the message is due.
+  - **API:** `GET` and `PUT /api/v1/admin/shops/{shopId}/whatsapp-messages`, using `Admin.WhatsApp.View` and `Admin.WhatsApp.Templates.Edit` (no new permission), audited.
+  - **Web:** a «رسائل واتساب» tab on the admin shop page (`ShopWhatsAppMessagesForm`), with texts in ar, en and tr.
+  - **Sign-in:** `CustomerSessionLifetime` is 365 days (was 30). Staff stay at 7 days. Sessions started before a deploy keep their 30-day end.
+- **Screenshots** (local stack, shop «صالون التجربة»): all on, two off after a save, and phone width. They were taken in the session's scratchpad and are not in the repository.
+- **To tell the client:**
+  - a barber's «cancelled» goes out only if they were told about the booking, so with the barber's «confirmed» off it rarely goes out;
+  - OperationsManager can also change the switches (it holds `Admin.WhatsApp.Templates.Edit`), and Support can only view them.
+- **Deploying later (when asked):** this adds a migration, so take the pg_dump backup on the VPS first. Then `git pull`, `docker compose build api web`, `run --rm migrate` and `up -d`. No new environment variable.
+- **Evidence:** see D-142 and below.
+  - .NET: Release build of `Trimme.slnx`, 0 warnings. Unit tests 440/440.
+  - Integration, full suite (Release): 215/215, with the new `ShopMessageSwitches_AMessageTurnedOff_ReachesNobodyAtThatShop_OnlyAdminsSetThem`, the migrations tests and the regenerated OpenAPI contract. The new `CustomerSessions_LastAYear_StaffSessionsAWeek` was added after that run and passed with `SessionTests` (7/7, Debug).
+  - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 491/491; the web Docker image builds (`next build`).
+  - Local stack (3300): the tab in Arabic RTL at 1440 and 390 px; two switches turned off through the UI, saved, still off after a reload («المفعّل 7 من 9 رسائل»), then restored to all on. A customer code sign-in's refresh cookie lasts 365.00 days.
 
 ## Session 22: WhatsApp on the client's Meta account (D-140)
 - **The request** (from the user): connect the WhatsApp Business account for sign-in codes ("authentication") and booking messages ("utility"). Tests go to the user's numbers +20 155… and +966 53…, which are in the VPS `.env` allowlist and not in the repository.

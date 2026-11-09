@@ -8,7 +8,11 @@ public sealed class SessionOptions
     /// <summary>Lifetime of the access cookie. Short, because it is only re-issued by a refresh.</summary>
     public TimeSpan AccessLifetime { get; set; } = TimeSpan.FromMinutes(15);
 
-    public TimeSpan CustomerSessionLifetime { get; set; } = TimeSpan.FromDays(30);
+    /// <summary>
+    /// A customer signs in with a code sent to their phone, and each code is a paid message, so a customer stays signed in
+    /// for a year (D-142; was 30 days in D-052). Absolute: a refresh never extends it.
+    /// </summary>
+    public TimeSpan CustomerSessionLifetime { get; set; } = TimeSpan.FromDays(365);
 
     public TimeSpan StaffSessionLifetime { get; set; } = TimeSpan.FromDays(7);
 

@@ -7,6 +7,7 @@ import { LoyaltyProgramForm } from '@/components/admin/LoyaltyProgramForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
+import { ShopWhatsAppMessagesForm } from '@/components/admin/ShopWhatsAppMessagesForm';
 import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
 import { ShopLocationEditor } from '@/components/shops/ShopLocationEditor';
@@ -35,6 +36,7 @@ const TABS = [
   'services',
   'subscription',
   'loyalty',
+  'whatsapp',
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -53,7 +55,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 /**
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
  * exact location (pin picker), accounts, the shop's professionals, its services (added and edited here, D-127), its
- * subscription and its loyalty programme (D-132). Tab state lives in the URL (`?tab=`).
+ * subscription, its loyalty programme (D-132) and which WhatsApp messages its customers and barbers get (D-142). Tab
+ * state lives in the URL (`?tab=`).
  */
 export default async function AdminShopPage({
   params,
@@ -123,6 +126,26 @@ export default async function AdminShopPage({
           );
         } else if (tab === 'subscription') {
           content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
+        } else if (tab === 'whatsapp') {
+          // The platform's switches for this shop's WhatsApp messages (D-142); never shown to the shop.
+          const { data: messages } = me.permissions.includes('Admin.WhatsApp.View')
+            ? await api.GET('/api/v1/admin/shops/{shopId}/whatsapp-messages', {
+                params: { path: { shopId: shop.id } },
+              })
+            : { data: undefined };
+          content = !me.permissions.includes('Admin.WhatsApp.View') ? (
+            <EmptyState icon="shield" title={t('whatsapp.title')} />
+          ) : messages ? (
+            <Card title={t('whatsapp.title')} testId="shop-whatsapp-card">
+              <ShopWhatsAppMessagesForm
+                shopId={shop.id}
+                messages={messages}
+                canEdit={me.permissions.includes('Admin.WhatsApp.Templates.Edit')}
+              />
+            </Card>
+          ) : (
+            <ErrorState />
+          );
         } else if (tab === 'loyalty') {
           const { data: loyalty } = await api.GET('/api/v1/admin/shops/{shopId}/loyalty', {
             params: { path: { shopId: shop.id } },
