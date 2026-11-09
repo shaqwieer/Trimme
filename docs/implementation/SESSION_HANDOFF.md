@@ -1,9 +1,9 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches and a 365-day customer sign-in (D-142), local only; before it, Session 23: Meta domain verification tag (D-141); after Phase 17)
+- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches and a 365-day sign-in for customers and shop accounts (D-142), deployed to groomhere.sa; before it, Session 23: Meta domain verification tag (D-141); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
-  - Session 24 (D-142) is committed locally, **not pushed, not deployed**.
+  - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -30,7 +30,8 @@
 - **To tell the client:**
   - a barber's «cancelled» goes out only if they were told about the booking, so with the barber's «confirmed» off it rarely goes out;
   - OperationsManager can also change the switches (it holds `Admin.WhatsApp.Templates.Edit`), and Support can only view them.
-- **Deploying later (when asked):** this adds a migration, so take the pg_dump backup on the VPS first. Then `git pull`, `docker compose build api web`, `run --rm migrate` and `up -d`. No new environment variable.
+- **Deployed to groomhere.sa (2026-11-09, `b6e02c5`).** Backup `/root/backups/trimme-before-d142-20261109-105232.sql.gz`; `git pull` from `6abf98a`, build api and web, `migrate` (20 migrations; `ShopMessageSwitches` applied, `notifications.shop_message_opt_outs` empty, so every shop has all nine on), `up -d`. Smoke from the VPS: api and web healthy; `/ar` and the staff sign-in 200; the new admin endpoint 401 without a session; the webhook 403 without a token; the WhatsApp provider still `Meta`; 0 API errors after the restart; the tab is in the web build. Signing in as an admin there needs the client's password.
+  - Run with `/root/deploy-d142.sh` on the VPS. Lesson: run such a script as a file, not through `ssh … 'bash -s' < script`. There, `docker compose exec` reads the rest of the script from stdin and bash stops silently after the first exec. In scripts, give every `exec` and `run` `</dev/null`.
 - **Evidence:** see D-142 and below.
   - .NET: Release build of `Trimme.slnx`, 0 warnings. Unit tests 440/440.
   - Integration, full suite (Release): 215/215, with the new `ShopMessageSwitches_AMessageTurnedOff_ReachesNobodyAtThatShop_OnlyAdminsSetThem`, the migrations tests and the regenerated OpenAPI contract. `CustomerAndShopSessions_LastAYear_PlatformAdminSessionsAWeek` was added after that run and passed with `SessionTests` and `StaffAuthTests` (19/19, Debug).

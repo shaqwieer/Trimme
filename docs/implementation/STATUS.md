@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches for the admin, and customers signed in for 365 days (D-142); local only, not deployed)
+- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches for the admin, and a 365-day sign-in for customers and shop accounts (D-142); deployed to groomhere.sa)
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -46,7 +46,7 @@
 - **Session 24 (D-142), at the user's request:**
   - **Per-shop WhatsApp switches:** each admin shop page has a «رسائل واتساب» tab with the nine messages (5 customer, 4 barber), all on by default. A message turned off reaches no customer and no barber of that shop. Admin-only and audited; one additive migration (`ShopMessageSwitches`).
   - **365-day sign-in:** customers (signed in by a paid code), shop owners and desk staff now stay signed in for a year; the platform's admins stay at 7 days.
-  - Committed locally, **not pushed or deployed**. Deploying needs a backup, then `git pull`, build api and web, `migrate` and `up -d`.
+  - Pushed (`b6e02c5`) and **deployed to groomhere.sa on 2026-11-09**, after a database backup; smoke checks clean, WhatsApp still on Meta.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |
