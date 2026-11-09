@@ -14,6 +14,10 @@ public sealed class SessionOptions
     /// </summary>
     public TimeSpan CustomerSessionLifetime { get; set; } = TimeSpan.FromDays(365);
 
+    /// <summary>Shop owners and desk staff stay signed in for a year too, at the user's request (D-142; was 7 days).</summary>
+    public TimeSpan ShopUserSessionLifetime { get; set; } = TimeSpan.FromDays(365);
+
+    /// <summary>The platform's own admins: kept short, because their accounts reach every shop.</summary>
     public TimeSpan StaffSessionLifetime { get; set; } = TimeSpan.FromDays(7);
 
     /// <summary>

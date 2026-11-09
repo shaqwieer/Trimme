@@ -45,7 +45,7 @@
 - **Session 23 (D-141), at the user's request:** the Meta Business domain verification tag (`<meta name="facebook-domain-verification">`) is in every page's `<head>` from the web setting `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`. Deployed to groomhere.sa on 2026-11-07 (`6abf98a`, web only) and checked live. Meta's confirmation is the client's step; if the redirect from `/` to `/ar` gets in the way, use the DNS TXT method.
 - **Session 24 (D-142), at the user's request:**
   - **Per-shop WhatsApp switches:** each admin shop page has a «رسائل واتساب» tab with the nine messages (5 customer, 4 barber), all on by default. A message turned off reaches no customer and no barber of that shop. Admin-only and audited; one additive migration (`ShopMessageSwitches`).
-  - **365-day customer sign-in:** customers (signed in by a paid code) now stay signed in for a year; staff stay at 7 days.
+  - **365-day sign-in:** customers (signed in by a paid code), shop owners and desk staff now stay signed in for a year; the platform's admins stay at 7 days.
   - Committed locally, **not pushed or deployed**. Deploying needs a backup, then `git pull`, build api and web, `migrate` and `up -d`.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 

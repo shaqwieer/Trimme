@@ -25,7 +25,7 @@
   - **Enforcement:** the one check is in `DispatchFactory.CreateForBookingAsync`, so it covers lifecycle messages and reminders. It is read when the message is due.
   - **API:** `GET` and `PUT /api/v1/admin/shops/{shopId}/whatsapp-messages`, using `Admin.WhatsApp.View` and `Admin.WhatsApp.Templates.Edit` (no new permission), audited.
   - **Web:** a «رسائل واتساب» tab on the admin shop page (`ShopWhatsAppMessagesForm`), with texts in ar, en and tr.
-  - **Sign-in:** `CustomerSessionLifetime` is 365 days (was 30). Staff stay at 7 days. Sessions started before a deploy keep their 30-day end.
+  - **Sign-in:** `CustomerSessionLifetime` is 365 days (was 30), and the new `ShopUserSessionLifetime` is 365 days for owners and desk staff (was 7), at the user's answer. Platform admins stay at 7 days. Sessions started before a deploy keep their old end.
 - **Screenshots** (local stack, shop «صالون التجربة»): all on, two off after a save, and phone width. They were taken in the session's scratchpad and are not in the repository.
 - **To tell the client:**
   - a barber's «cancelled» goes out only if they were told about the booking, so with the barber's «confirmed» off it rarely goes out;
@@ -33,7 +33,7 @@
 - **Deploying later (when asked):** this adds a migration, so take the pg_dump backup on the VPS first. Then `git pull`, `docker compose build api web`, `run --rm migrate` and `up -d`. No new environment variable.
 - **Evidence:** see D-142 and below.
   - .NET: Release build of `Trimme.slnx`, 0 warnings. Unit tests 440/440.
-  - Integration, full suite (Release): 215/215, with the new `ShopMessageSwitches_AMessageTurnedOff_ReachesNobodyAtThatShop_OnlyAdminsSetThem`, the migrations tests and the regenerated OpenAPI contract. The new `CustomerSessions_LastAYear_StaffSessionsAWeek` was added after that run and passed with `SessionTests` (7/7, Debug).
+  - Integration, full suite (Release): 215/215, with the new `ShopMessageSwitches_AMessageTurnedOff_ReachesNobodyAtThatShop_OnlyAdminsSetThem`, the migrations tests and the regenerated OpenAPI contract. `CustomerAndShopSessions_LastAYear_PlatformAdminSessionsAWeek` was added after that run and passed with `SessionTests` and `StaffAuthTests` (19/19, Debug).
   - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 491/491; the web Docker image builds (`next build`).
   - Local stack (3300): the tab in Arabic RTL at 1440 and 390 px; two switches turned off through the UI, saved, still off after a reload («المفعّل 7 من 9 رسائل»), then restored to all on. A customer code sign-in's refresh cookie lasts 365.00 days.
 

@@ -50,7 +50,7 @@ public sealed class SessionTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task CustomerSessions_LastAYear_StaffSessionsAWeek()
+    public async Task CustomerAndShopSessions_LastAYear_PlatformAdminSessionsAWeek()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var factory = await IdentityTestData.CreateFactoryAsync(postgres, "lifetime", ct);
@@ -66,11 +66,18 @@ public sealed class SessionTests(PostgresFixture postgres)
         var cookieExpires = DateTimeOffset.Parse(expires["expires=".Length..], CultureInfo.InvariantCulture);
         (cookieExpires - DateTimeOffset.UtcNow).TotalDays.ShouldBe(365, tolerance: 0.01);
 
-        using var staff = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.Support, ct);
+        // Shop owners and desk staff a year too; the platform's admins, who reach every shop, a week.
+        using var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
+        var shops = await Tenancy.ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
+        using var owner = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
+        using var desk = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
         await using var scope = factory.Services.CreateAsyncScope();
         var sessions = await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<UserSession>().AsNoTracking().ToListAsync(ct);
         var customer = sessions.Single(s => s.UserType == UserType.Customer);
         (customer.ExpiresAt - customer.CreatedAt).ShouldBe(TimeSpan.FromDays(365));
+        sessions.Count(s => s.UserType == UserType.ShopUser).ShouldBe(2);
+        sessions.Where(s => s.UserType == UserType.ShopUser).ShouldAllBe(s => s.ExpiresAt - s.CreatedAt == TimeSpan.FromDays(365));
+        sessions.Count(s => s.UserType == UserType.PlatformAdmin).ShouldBeGreaterThan(0);
         sessions.Where(s => s.UserType == UserType.PlatformAdmin).ShouldAllBe(s => s.ExpiresAt - s.CreatedAt == TimeSpan.FromDays(7));
     }
 

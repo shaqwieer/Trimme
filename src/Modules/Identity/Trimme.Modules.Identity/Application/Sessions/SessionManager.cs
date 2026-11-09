@@ -30,7 +30,12 @@ internal sealed class SessionManager(
         var userId = account.UserId;
         var userType = account.UserType;
         var now = clock.GetUtcNow();
-        var lifetime = userType == UserType.Customer ? _options.CustomerSessionLifetime : _options.StaffSessionLifetime;
+        var lifetime = userType switch
+        {
+            UserType.Customer => _options.CustomerSessionLifetime,
+            UserType.ShopUser => _options.ShopUserSessionLifetime,
+            _ => _options.StaffSessionLifetime,
+        };
         var session = new UserSession(
             EntityId.New<UserSessionId>(), userId, userType, now, now + lifetime, DeviceLabels.From(client.UserAgent), HashIp(client.IpAddress));
         var (token, tokenHash) = NewToken();
