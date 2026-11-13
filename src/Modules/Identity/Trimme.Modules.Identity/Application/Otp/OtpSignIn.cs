@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Domain.Primitives;
@@ -19,6 +20,13 @@ internal sealed record RequestOtpCommand(string Phone, bool TermsAccepted, strin
 /// <summary>Step 2: verify the code; signs in an existing customer or creates the account (<c>isNewUser</c>).</summary>
 internal sealed record VerifyOtpCommand(Guid ChallengeId, string Code, ClientContext Client) : ICommand<Result<SignInOutcome>>;
 
+/// <summary>
+/// Sign-in or sign-up with the mobile number alone, while codes are turned off (D-143). Signs in an existing customer
+/// or creates the account (<c>isNewUser</c>), whose number is then not confirmed.
+/// </summary>
+internal sealed record PhoneSignInCommand(string Phone, bool TermsAccepted, string Locale, ClientContext Client)
+    : ICommand<Result<SignInOutcome>>;
+
 /// <summary>Step 3 (new customers): name, language and terms acceptance.</summary>
 internal sealed record CompleteProfileCommand(Guid UserId, string DisplayName, string PreferredLocale, bool TermsAccepted)
     : ICommand<Result<MeResponse>>;
@@ -26,6 +34,15 @@ internal sealed record CompleteProfileCommand(Guid UserId, string DisplayName, s
 internal sealed class RequestOtpValidator : AbstractValidator<RequestOtpCommand>
 {
     public RequestOtpValidator()
+    {
+        RuleFor(c => c.Phone).NotEmpty().WithErrorCode(ValidationCodes.Required);
+        RuleFor(c => c.Locale).Must(Locales.IsSupported).WithErrorCode(ValidationCodes.Invalid);
+    }
+}
+
+internal sealed class PhoneSignInValidator : AbstractValidator<PhoneSignInCommand>
+{
+    public PhoneSignInValidator()
     {
         RuleFor(c => c.Phone).NotEmpty().WithErrorCode(ValidationCodes.Required);
         RuleFor(c => c.Locale).Must(Locales.IsSupported).WithErrorCode(ValidationCodes.Invalid);
@@ -57,10 +74,16 @@ internal sealed class RequestOtpHandler(
     TimeProvider clock,
     IPersonalDataProtector protector,
     IOtpSender sender,
-    OtpPolicy policy) : ICommandHandler<RequestOtpCommand, Result<OtpChallengeResponse>>
+    OtpPolicy policy,
+    IOptions<CustomerSignInOptions> signIn) : ICommandHandler<RequestOtpCommand, Result<OtpChallengeResponse>>
 {
     public async Task<Result<OtpChallengeResponse>> Handle(RequestOtpCommand command, CancellationToken cancellationToken)
     {
+        if (!signIn.Value.Enabled)
+        {
+            return IdentityErrors.OtpDisabled();
+        }
+
         if (!MobileNumber.TryNormalize(command.Phone, out var phone))
         {
             return IdentityErrors.InvalidPhone();
@@ -121,10 +144,16 @@ internal sealed class VerifyOtpHandler(
     IPersonalDataProtector protector,
     IAccountStore accounts,
     SessionManager sessions,
-    MeReader me) : ICommandHandler<VerifyOtpCommand, Result<SignInOutcome>>
+    MeReader me,
+    IOptions<CustomerSignInOptions> signIn) : ICommandHandler<VerifyOtpCommand, Result<SignInOutcome>>
 {
     public async Task<Result<SignInOutcome>> Handle(VerifyOtpCommand command, CancellationToken cancellationToken)
     {
+        if (!signIn.Value.Enabled)
+        {
+            return IdentityErrors.OtpDisabled();
+        }
+
         var now = clock.GetUtcNow();
         var id = new OtpChallengeId(command.ChallengeId);
         var challenge = await db.Set<OtpChallenge>().AsNoTracking().SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -166,6 +195,46 @@ internal sealed class VerifyOtpHandler(
 
         var (account, created) = await accounts.FindOrCreateCustomerAsync(
             new NewCustomer(challenge.PhoneHash, challenge.ProtectedPhone, challenge.Locale, challenge.TermsAccepted ? now : null),
+            cancellationToken);
+
+        if (account.IsDisabled)
+        {
+            return IdentityErrors.AccountDisabled();
+        }
+
+        var session = await sessions.StartAsync(account, command.Client, cancellationToken);
+        return new SignInOutcome(session, new SignInResponse(created, await me.BuildAsync(account, cancellationToken)));
+    }
+}
+
+internal sealed class PhoneSignInHandler(
+    TimeProvider clock,
+    IPersonalDataProtector protector,
+    IAccountStore accounts,
+    SessionManager sessions,
+    MeReader me,
+    IOptions<CustomerSignInOptions> signIn) : ICommandHandler<PhoneSignInCommand, Result<SignInOutcome>>
+{
+    public async Task<Result<SignInOutcome>> Handle(PhoneSignInCommand command, CancellationToken cancellationToken)
+    {
+        // With codes on, only a verified code signs a customer in; a number alone must never open an account.
+        if (signIn.Value.Enabled)
+        {
+            return IdentityErrors.OtpRequired();
+        }
+
+        if (!MobileNumber.TryNormalize(command.Phone, out var phone))
+        {
+            return IdentityErrors.InvalidPhone();
+        }
+
+        var (account, created) = await accounts.FindOrCreateCustomerAsync(
+            new NewCustomer(
+                protector.LookupHash(phone, PersonalDataPurposes.MobileNumber),
+                protector.Protect(phone, PersonalDataPurposes.MobileNumber),
+                command.Locale,
+                command.TermsAccepted ? clock.GetUtcNow() : null,
+                PhoneVerified: false),
             cancellationToken);
 
         if (account.IsDisabled)

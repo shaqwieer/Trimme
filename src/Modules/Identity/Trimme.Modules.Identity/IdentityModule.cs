@@ -46,6 +46,7 @@ public sealed class IdentityModule : ModuleBase
 
         services.AddOptions<SessionOptions>().Bind(configuration.GetSection(SessionOptions.SectionName));
         services.AddOptions<InvitationOptions>().Bind(configuration.GetSection(InvitationOptions.SectionName));
+        services.AddOptions<CustomerSignInOptions>().Bind(configuration.GetSection(CustomerSignInOptions.SectionName));
         services.AddOptions<WebLinkOptions>().Bind(configuration.GetSection(WebLinkOptions.SectionName));
         services.AddSingleton(configuration.GetSection("Identity:Otp:Limits").Get<OtpPolicy>() ?? new OtpPolicy());
 

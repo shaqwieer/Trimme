@@ -33,6 +33,22 @@ export async function requireUser(locale: string, returnTo: string): Promise<Me>
   return me;
 }
 
+/**
+ * Whether customers confirm their number with a code (D-143). Off by default: they sign in with the number alone.
+ * Read on every request (the API client uses `no-store`), so switching `Identity__Otp__Enabled` on the API changes the
+ * sign-in pages without a web rebuild. The API refuses whichever flow is off, so a wrong answer here can only show an
+ * error, never skip a code; if the API cannot answer, the default (no code) is assumed.
+ */
+export async function otpRequired(): Promise<boolean> {
+  try {
+    const api = await getServerApi();
+    const { data } = await api.GET('/api/v1/auth/sign-in-options');
+    return data?.otpRequired ?? false;
+  } catch {
+    return false;
+  }
+}
+
 /** Sign-in pages send an already signed-in user straight on. */
 export async function redirectIfSignedIn(locale: string, returnTo: string | undefined): Promise<void> {
   const me = await getMe();

@@ -702,6 +702,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/sign-in-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether customers confirm their number with a code (otp/request, otp/verify) or sign in with it alone (phone/sign-in). */
+        get: operations["GetCustomerSignInOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/phone/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** While codes are off: signs a customer in by mobile number alone (creating the account if new) and sets the session cookies. */
+        post: operations["PhoneSignIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/otp/request": {
         parameters: {
             query?: never;
@@ -711,7 +745,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sends a 6-digit sign-in code to a Saudi mobile number (customers). */
+        /** While codes are on: sends a 6-digit sign-in code to a Saudi mobile number (customers). */
         post: operations["RequestOtp"];
         delete?: never;
         options?: never;
@@ -4596,6 +4630,13 @@ export interface components {
         CustomerContactResponse: {
             phone: string;
         };
+        /**
+         * @description How customers sign in (D-143). `OtpRequired` true: a code to the number (`otp/request`, `otp/verify`);
+         *     false (the default): the number alone (`phone/sign-in`).
+         */
+        CustomerSignInOptionsResponse: {
+            otpRequired: boolean;
+        };
         /** @enum {unknown} */
         CustomerVisit: "New" | "Returning" | null;
         /** @enum {unknown} */
@@ -5257,6 +5298,11 @@ export interface components {
             code: string;
             scope: string;
             userType: string;
+        };
+        PhoneSignInRequest: {
+            phone: string;
+            termsAccepted: boolean;
+            locale: null | string;
         };
         PlanFeatureDto: {
             ar: string;
@@ -8302,6 +8348,77 @@ export interface operations {
             };
         };
     };
+    GetCustomerSignInOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerSignInOptionsResponse"];
+                };
+            };
+        };
+    };
+    PhoneSignIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhoneSignInRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     RequestOtp: {
         parameters: {
             query?: never;
@@ -8326,6 +8443,15 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1506,3 +1506,42 @@ This refines D-126.
   - Local stack (port 3300, migration applied: 20 in total): the tab renders in Arabic RTL at 1440 px and 390 px; two switches off through the UI, saved, still off after a reload («المفعّل 7 من 9 رسائل»), then restored. A customer code sign-in's refresh cookie lasts 365.00 days.
 - **Deployed to groomhere.sa (2026-11-09, `b6e02c5`).** Backup `/root/backups/trimme-before-d142-20261109-105232.sql.gz`; `git pull` from `6abf98a`, build api and web, `migrate` (20 migrations; `ShopMessageSwitches` applied, `notifications.shop_message_opt_outs` empty, so every shop has all nine on), `up -d`. Smoke from the VPS: api and web healthy; `/ar` and the staff sign-in 200; the new admin endpoint 401 without a session; the webhook 403 without a token; the WhatsApp provider still `Meta`; 0 API errors after the restart; the tab is in the web build. Signing in as an admin there needs the client's password.
 - **Dependencies.** None added. One additive migration. API contract: two new admin endpoints (OpenAPI regenerated). Configuration: the `CustomerSessionLifetime` default changed, and `ShopUserSessionLifetime` is new.
+
+## D-143 — Customers sign up and sign in with their mobile number alone; sign-in codes are off by default — Accepted (Session 25, after Phase 17, at the user's request)
+- **The request** (from the user): registration must work without a code. The user will say when codes should come back, through SMS or Meta's authentication template; until then codes must not be used, by default.
+- **Why now:** Meta refuses the authentication template until the business is verified (D-140), so on groomhere.sa codes only reached the dev OTP inbox behind basic auth, and real customers could not finish signing up.
+- **The switch: `Identity:Otp:Enabled`** (`Identity__Otp__Enabled`, `CustomerSignInOptions`), **false by default in every environment**, Development included, because the demo VPS runs as Development.
+  - **Off:**
+    - `POST /api/v1/auth/phone/sign-in` `{ phone, termsAccepted, locale }` signs the customer in by number, or creates the account (`isNewUser`), and sets the session cookies like `otp/verify`.
+    - `otp/request` and `otp/verify` answer 403 `otp.disabled`.
+  - **On:** `phone/sign-in` answers 403 `auth.otp_required` and starts no session; the code flow works as before (D-005), with `Identity:Otp:Sender` choosing the channel.
+  - The switch is read at startup: change the environment variable, then restart the API (`docker compose up -d api`). The web needs no rebuild.
+- **`GET /api/v1/auth/sign-in-options`** (anonymous) returns `{ otpRequired }`. The sign-up and sign-in pages read it on every request (`no-store`) and choose the flow.
+  - If the API cannot answer, the pages assume the default (no code).
+  - Whichever flow is off is refused by the API, so a stale page can only show an error, never skip a code.
+- **The same rules as a code sign-in:**
+  - the number is normalised by libphonenumber (Saudi mobiles), looked up by keyed hash and stored protected; it is never logged;
+  - a disabled account gets `auth.account_disabled` and no session (the three demo customers disabled in D-140 stay out);
+  - CSRF header required; the `otp` rate limit (5 per 10 minutes per client address; Caddy's `X-Forwarded-For` is trusted on the VPS, D-094);
+  - a new customer completes the profile (name, terms) next; the session lasts 365 days (D-142).
+- **Unverified numbers are marked.** An account created without a code has `phone_number_confirmed = false`. Its first code sign-in, once codes are on, confirms it. Nothing else reads the flag yet.
+- **Web:**
+  - `PhoneStep` takes `otpRequired`. Without codes, the subtitles read «أدخل رقم جوالك لإنشاء حسابك» and «أدخل رقم جوالك لتسجيل الدخول»; the buttons «إنشاء الحساب» and «تسجيل الدخول». A signed-in customer goes to `returnTo` (or `/discover`), or to profile completion first, exactly as after the verify step.
+  - New error texts `otp_disabled` and `auth_otp_required`, in ar, en and tr. Recorded as DV-A30.
+- **Risks the user accepted by asking for it (told in the session's reply):**
+  - anyone who types a customer's number becomes that customer: their bookings, reviews and loyalty coupons, for a 365-day session. Shop and admin accounts are unaffected (email and password);
+  - booking WhatsApp messages go to whatever number was typed, so a typo or a made-up number sends paid messages to a stranger;
+  - the terms page still says customers register «برقم جوالك ورمز تحقق يصلك عبر واتساب». It was left alone because legal text is the client's to change.
+- **To turn codes on later:**
+  - WhatsApp: register `trimme_sign_in_code` once the business is verified, set `WhatsApp__Meta__AuthenticationTemplateName`, then `Identity__Otp__Sender=WhatsApp` and `Identity__Otp__Enabled=true`, and restart the API;
+  - SMS: needs a new sender behind `IOtpSender`, which does not exist yet.
+- **Tests and the local stack:**
+  - the integration test host turns codes on (`TrimmeApiFactory`), so every existing test keeps signing customers in through the code flow;
+  - `PhoneSignInTests` turns them off;
+  - `infra/docker-compose.yml` sets `Identity__Otp__Enabled: ${TRIMME_OTP_ENABLED:-true}` so the local E2E flows keep reading codes from the dev inbox. The VPS compose is outside the repository and does not set it, so groomhere.sa gets the default (off).
+- **Also fixed:** the architecture test `EntitiesWithAShopId_AreTenantScoped` failed on `ShopMessageOptOut` since D-142, which had not run the architecture suite. The table is in the reviewed allowlist now, with D-142's reason: the platform admin's setting, no shop endpoint, read by the jobs without a shop claim.
+- **Evidence:**
+  - I `PhoneSignInTests` 4/4: codes on, a number alone gets 403 `auth.otp_required` with no session and no account; codes off, `otp/request` and `otp/verify` 403 `otp.disabled`, sign-up then sign-in (another number format) to the same account, number protected and unconfirmed, invalid number 400, no CSRF 403; a disabled customer 403 `auth.account_disabled` with no session; codes turned on later, the same account signs in with a code and its number is confirmed. Full integration suite 220/220 (Release); unit 440/440; architecture 69/69.
+  - W `PhoneStep.test.tsx` 4/4; `pnpm test` 495/495.
+  - E local stack: codes off, `flows/phone-sign-in.spec.ts` 1/1; codes on (API recreated, web untouched), `flows/auth.spec.ts` 6/6 and the no-code spec skipped.
+- **Dependencies.** None added. No migration. API contract: two new endpoints, and 403 on `otp/request` (OpenAPI regenerated). Configuration: new `Identity__Otp__Enabled` (default false).

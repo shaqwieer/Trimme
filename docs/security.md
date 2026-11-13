@@ -71,7 +71,8 @@ Outside Development and Testing, the API refuses to start without the first thre
 | `PersonalData__LookupKey` | Base64, at least 32 bytes: the HMAC key for number lookups |
 | `DataProtection__CertificatePath`, `DataProtection__CertificatePassword` | The PKCS#12 file that wraps the key ring (D-120), mounted as a secret |
 | `Email__Smtp__*` | Staff invitations and password resets (D-056) |
-| `Identity__Otp__Sender=WhatsApp` | Sign-in codes through the WhatsApp authentication template (D-054, D-111). Without it, code requests answer 503 |
+| `Identity__Otp__Enabled` | Whether customers confirm their number with a code (D-143). **False by default:** customers sign in with their number alone (`POST /auth/phone/sign-in`), and the code endpoints answer 403 `otp.disabled`. Anyone who knows a customer's number can then sign in as them. Set it to `true` together with a working sender |
+| `Identity__Otp__Sender=WhatsApp` | Sign-in codes through the WhatsApp authentication template (D-054, D-111), once `Identity__Otp__Enabled=true`. With codes on and no sender, code requests answer 503 |
 | WhatsApp provider settings | `docs/whatsapp-integration.md` |
 | `Cors__AllowedOrigins__0` | The public origin, exactly |
 | `ReverseProxy__KnownProxies__N` / `ReverseProxy__KnownNetworks__N` | The proxy's address and the web containers' network (below) |

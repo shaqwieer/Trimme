@@ -1915,12 +1915,94 @@
         }
       }
     },
+    "/api/v1/auth/sign-in-options": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Whether customers confirm their number with a code (otp/request, otp/verify) or sign in with it alone (phone/sign-in).",
+        "operationId": "GetCustomerSignInOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerSignInOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/phone/sign-in": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "While codes are off: signs a customer in by mobile number alone (creating the account if new) and sets the session cookies.",
+        "operationId": "PhoneSignIn",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneSignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/otp/request": {
       "post": {
         "tags": [
           "Auth"
         ],
-        "summary": "Sends a 6-digit sign-in code to a Saudi mobile number (customers).",
+        "summary": "While codes are on: sends a 6-digit sign-in code to a Saudi mobile number (customers).",
         "operationId": "RequestOtp",
         "requestBody": {
           "content": {
@@ -1945,6 +2027,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -16264,6 +16356,18 @@
         },
         "description": "The customer\u0027s full mobile in E.164, returned once to an authorized admin (never cached, never logged)."
       },
+      "CustomerSignInOptionsResponse": {
+        "required": [
+          "otpRequired"
+        ],
+        "type": "object",
+        "properties": {
+          "otpRequired": {
+            "type": "boolean"
+          }
+        },
+        "description": "How customers sign in (D-143). \u0060OtpRequired\u0060 true: a code to the number (\u0060otp/request\u0060, \u0060otp/verify\u0060);\nfalse (the default): the number alone (\u0060phone/sign-in\u0060)."
+      },
       "CustomerVisit": {
         "enum": [
           "New",
@@ -18339,6 +18443,28 @@
           },
           "userType": {
             "type": "string"
+          }
+        }
+      },
+      "PhoneSignInRequest": {
+        "required": [
+          "phone",
+          "termsAccepted",
+          "locale"
+        ],
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "termsAccepted": {
+            "type": "boolean"
+          },
+          "locale": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

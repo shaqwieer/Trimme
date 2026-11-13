@@ -283,6 +283,8 @@
       "subtitle": "Cep telefonu numaranızı girin, size WhatsApp’tan bir doğrulama kodu gönderelim",
       "terms": "<terms>Kullanım Koşulları</terms>’nı ve <privacy>Gizlilik Politikası</privacy>’nı kabul ediyorum",
       "submit": "Kodu gönder",
+      "subtitleNoCode": "Hesabınızı oluşturmak için cep telefonu numaranızı girin",
+      "submitNoCode": "Hesap oluştur",
       "haveAccount": "Zaten hesabınız var mı?",
       "signIn": "Giriş yap"
     },
@@ -290,6 +292,8 @@
       "title": "Giriş yap",
       "subtitle": "Cep telefonu numaranızı girin, giriş kodunuzu WhatsApp’tan gönderelim",
       "submit": "Kodu gönder",
+      "subtitleNoCode": "Giriş yapmak için cep telefonu numaranızı girin",
+      "submitNoCode": "Giriş yap",
       "noAccount": "Groom Here’da yeni misiniz?",
       "signUp": "Hesap oluştur",
       "staff": "Salon ve yönetim ekibi girişi"
@@ -427,6 +431,8 @@
     "otp_resend_cooldown": "Yeni kod istemeden önce {seconds} saniye bekleyin.",
     "otp_too_many_requests": "Bu numara için çok fazla kod istendi. {minutes} dakika sonra tekrar deneyin.",
     "otp_delivery_unavailable": "Kod şu anda gönderilemedi. Biraz sonra tekrar deneyin.",
+    "otp_disabled": "Doğrulama kodları kapalı. Sayfayı yenileyin ve cep telefonu numaranızla giriş yapın.",
+    "auth_otp_required": "Giriş için artık doğrulama kodu gerekiyor. Sayfayı yenileyin.",
     "otp_challenge_invalid": "Bu kod artık geçerli değil. Yeni bir kod isteyin.",
     "otp_expired": "Kodun süresi doldu. Yeni bir kod isteyin.",
     "otp_attempts_exhausted": "Çok fazla hatalı deneme yapıldı. Yeni bir kod isteyin.",

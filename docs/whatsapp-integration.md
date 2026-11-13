@@ -114,7 +114,8 @@ Secrets come from environment variables only; nothing is committed.
 | `WhatsApp__Meta__AuthenticationTemplateName` | The approved authentication template for sign-in codes (copy-code button) |
 | `WhatsApp__Meta__ButtonBaseUrl` | The base URL registered for URL buttons, usually `https://<domain>/`; the rest of the link is sent as the dynamic suffix |
 | `WhatsApp__AllowedRecipients` | Pilot or demo switch (D-140): numbers separated by commas. When set, messages, test sends and sign-in codes go only to them; any other recipient is refused before the provider with `whatsapp.recipient_not_allowed`. The refusal shows as failed in the log, but raises no admin alert and does not mark a professional's number as failing. Unset means everyone. |
-| `Identity__Otp__Sender` | `WhatsApp` sends sign-in codes through the authentication template (`DevInbox` locally) |
+| `Identity__Otp__Enabled` | `true` turns sign-in codes on (D-143). Default `false`: customers sign in with their number alone and no code is sent |
+| `Identity__Otp__Sender` | `WhatsApp` sends sign-in codes through the authentication template (`DevInbox` locally), while `Identity__Otp__Enabled=true` |
 | `Jobs__Enabled` | `false` stops the Hangfire server, the outbox processor and the recurring jobs (the rollback switch); messages then wait in the outbox |
 | `Notifications__ContentRetentionDays` | Days to keep rendered text (default 90) |
 

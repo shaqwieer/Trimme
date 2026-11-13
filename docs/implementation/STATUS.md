@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches for the admin, and a 365-day sign-in for customers and shop accounts (D-142); deployed to groomhere.sa)
+- **Updated:** 2026-11-13 (Session 25: customers sign up and sign in with their mobile number alone; sign-in codes are off by default (D-143))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -47,6 +47,10 @@
   - **Per-shop WhatsApp switches:** each admin shop page has a «رسائل واتساب» tab with the nine messages (5 customer, 4 barber), all on by default. A message turned off reaches no customer and no barber of that shop. Admin-only and audited; one additive migration (`ShopMessageSwitches`).
   - **365-day sign-in:** customers (signed in by a paid code), shop owners and desk staff now stay signed in for a year; the platform's admins stay at 7 days.
   - Pushed (`b6e02c5`) and **deployed to groomhere.sa on 2026-11-09**, after a database backup; smoke checks clean, WhatsApp still on Meta.
+- **Session 25 (D-143), at the user's request:**
+  - **No code by default:** customers sign up and sign in with their mobile number alone (`POST /auth/phone/sign-in`); the code endpoints answer 403 `otp.disabled`. The sign-up and sign-in pages ask the API (`GET /auth/sign-in-options`) and drop the code wording.
+  - **Codes later:** `Identity__Otp__Enabled=true` plus a sender (WhatsApp once Meta approves the authentication template; SMS needs a new sender). Then a number alone is refused (`auth.otp_required`).
+  - **The risk, accepted by the user:** anyone who knows a customer's number can sign in as them; booking messages go to whatever number was typed.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

@@ -19,6 +19,14 @@ public static class IdentityErrors
     public static Error OtpDeliveryUnavailable() =>
         Error.Unavailable("otp.delivery_unavailable", "The verification code could not be sent. Try again later.");
 
+    /// <summary>Codes are turned off (<c>Identity:Otp:Enabled</c> is false, D-143): customers sign in with their number alone.</summary>
+    public static Error OtpDisabled() =>
+        Error.Forbidden("otp.disabled", "Sign-in codes are turned off. Sign in with the mobile number alone.");
+
+    /// <summary>Codes are turned on (D-143), so a number alone no longer signs anyone in.</summary>
+    public static Error OtpRequired() =>
+        Error.Forbidden("auth.otp_required", "A verification code is required to sign in.");
+
     public static Error OtpChallengeInvalid() =>
         Error.Validation("otp.challenge_invalid", "This code is no longer valid. Request a new code.");
 

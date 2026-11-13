@@ -39,6 +39,8 @@ public sealed partial class TenancyRules
             "Code → shop map (ids only) so an anonymous scan finds the shop before any shop-owned row is read; written with the code in one unit of work (D-114).",
         [typeof(Trimme.Modules.QrAnalytics.Domain.QrVisit)] =
             "Platform scan log (no personal data; the visitor is a per-day keyed hash) written by the anonymous visit endpoint; shops read it only through their own codes' ids, resolved under their tenant (D-114).",
+        [typeof(Trimme.Modules.Notifications.Domain.ShopMessageOptOut)] =
+            "The platform admin's per-shop WhatsApp message switches; no shop endpoint reads or writes them, and the outbox consumer and reminder jobs read them without a shop claim (D-142).",
     };
 
     private static readonly Assembly[] ProductionAssemblies =

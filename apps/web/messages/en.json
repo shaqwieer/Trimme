@@ -283,6 +283,8 @@
       "subtitle": "Enter your mobile number and we'll send you a verification code on WhatsApp",
       "terms": "I agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>",
       "submit": "Send code",
+      "subtitleNoCode": "Enter your mobile number to create your account",
+      "submitNoCode": "Create account",
       "haveAccount": "Already have an account?",
       "signIn": "Sign in"
     },
@@ -290,6 +292,8 @@
       "title": "Sign in",
       "subtitle": "Enter your mobile number and we'll send your sign-in code on WhatsApp",
       "submit": "Send code",
+      "subtitleNoCode": "Enter your mobile number to sign in",
+      "submitNoCode": "Sign in",
       "noAccount": "New to Groom Here?",
       "signUp": "Create an account",
       "staff": "Shop and admin team sign-in"
@@ -427,6 +431,8 @@
     "otp_resend_cooldown": "Wait {seconds} seconds before requesting a new code.",
     "otp_too_many_requests": "Too many codes were requested for this number. Try again in {minutes} minutes.",
     "otp_delivery_unavailable": "We couldn't send the code right now. Try again shortly.",
+    "otp_disabled": "Verification codes are turned off. Reload the page and sign in with your mobile number.",
+    "auth_otp_required": "Signing in now needs a verification code. Reload the page.",
     "otp_challenge_invalid": "This code is no longer valid. Request a new one.",
     "otp_expired": "The code has expired. Request a new one.",
     "otp_attempts_exhausted": "Too many incorrect attempts. Request a new code.",

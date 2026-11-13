@@ -17,6 +17,12 @@ public sealed record MeResponse(
     Guid? ShopId,
     bool ProfileComplete);
 
+/// <summary>
+/// How customers sign in (D-143). <c>OtpRequired</c> true: a code to the number (<c>otp/request</c>, <c>otp/verify</c>);
+/// false (the default): the number alone (<c>phone/sign-in</c>).
+/// </summary>
+public sealed record CustomerSignInOptionsResponse(bool OtpRequired);
+
 /// <summary>Response to an OTP request. The code is never returned.</summary>
 public sealed record OtpChallengeResponse(Guid ChallengeId, int CodeLength, DateTimeOffset ExpiresAt, DateTimeOffset ResendAvailableAt);
 

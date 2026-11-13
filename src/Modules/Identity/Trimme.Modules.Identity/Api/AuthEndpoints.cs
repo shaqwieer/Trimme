@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Domain.Results;
@@ -17,6 +18,8 @@ namespace Trimme.Modules.Identity.Api;
 public sealed record RequestOtpRequest(string Phone, bool TermsAccepted, string? Locale);
 
 public sealed record VerifyOtpRequest(Guid ChallengeId, string Code);
+
+public sealed record PhoneSignInRequest(string Phone, bool TermsAccepted, string? Locale);
 
 public sealed record CompleteProfileRequest(string DisplayName, string PreferredLocale, bool TermsAccepted);
 
@@ -44,11 +47,19 @@ internal static class AuthEndpoints
         auth.MapGet("/csrf", IssueCsrf).AllowAnonymous()
             .WithName("GetCsrfToken").WithSummary("Issues the CSRF cookie and returns its value for the X-CSRF-Token header.");
 
+        auth.MapGet("/sign-in-options", SignInOptions).AllowAnonymous()
+            .WithName("GetCustomerSignInOptions")
+            .WithSummary("Whether customers confirm their number with a code (otp/request, otp/verify) or sign in with it alone (phone/sign-in).");
+        auth.MapPost("/phone/sign-in", PhoneSignIn).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Otp)
+            .WithName("PhoneSignIn")
+            .WithSummary("While codes are off: signs a customer in by mobile number alone (creating the account if new) and sets the session cookies.")
+            .Produces<SignInResponse>().ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status429TooManyRequests);
         auth.MapPost("/otp/request", RequestOtp).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Otp)
-            .WithName("RequestOtp").WithSummary("Sends a 6-digit sign-in code to a Saudi mobile number (customers).")
+            .WithName("RequestOtp").WithSummary("While codes are on: sends a 6-digit sign-in code to a Saudi mobile number (customers).")
             .Produces<OtpChallengeResponse>(StatusCodes.Status202Accepted)
-            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status429TooManyRequests)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests).ProducesProblem(StatusCodes.Status503ServiceUnavailable);
         auth.MapPost("/otp/verify", VerifyOtp).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
             .WithName("VerifyOtp").WithSummary("Verifies the code, signs the customer in (creating the account if new) and sets the session cookies.")
             .Produces<SignInResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden);
@@ -100,6 +111,20 @@ internal static class AuthEndpoints
     {
         cancellationToken.ThrowIfCancellationRequested();
         return TypedResults.Ok(new CsrfTokenResponse(Csrf.Issue(http.Response)));
+    }
+
+    private static Ok<CustomerSignInOptionsResponse> SignInOptions(IOptions<CustomerSignInOptions> options, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return TypedResults.Ok(new CustomerSignInOptionsResponse(options.Value.Enabled));
+    }
+
+    private static async Task<IResult> PhoneSignIn(PhoneSignInRequest request, HttpContext http, IDispatcher dispatcher, CancellationToken cancellationToken)
+    {
+        var result = await dispatcher.Send(
+            new PhoneSignInCommand(request.Phone ?? string.Empty, request.TermsAccepted, request.Locale ?? "ar", SessionCookies.Client(http)),
+            cancellationToken);
+        return await SignedIn(http, result);
     }
 
     private static async Task<IResult> RequestOtp(RequestOtpRequest request, HttpContext http, IDispatcher dispatcher, CancellationToken cancellationToken)

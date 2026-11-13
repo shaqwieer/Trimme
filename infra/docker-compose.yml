@@ -13,6 +13,10 @@ x-api-environment: &api-environment
   Email__Smtp__Host: mailpit
   Email__Smtp__Port: "1025"
   Email__Smtp__Security: None
+  # Sign-in codes are off by default in the code (D-143): customers sign in with their number alone. This local stack
+  # turns them on, because the E2E flows sign customers in through the code flow and the dev OTP inbox. Set
+  # TRIMME_OTP_ENABLED=false to try the default, number-only sign-in. Deployments that leave it unset get no codes.
+  Identity__Otp__Enabled: ${TRIMME_OTP_ENABLED:-true}
   # In local compose the web container proxies /api, so every browser shares one client IP at the API.
   # These higher limits are for local development and E2E only; production keeps the code defaults.
   RateLimiting__otp__PermitLimit: ${TRIMME_OTP_RATE_LIMIT:-500}

@@ -42,6 +42,14 @@ internal sealed class AccountStore(
 
         if (await FindCustomerByPhoneHashAsync(customer.PhoneHash, cancellationToken) is { } existing)
         {
+            if (customer.PhoneVerified)
+            {
+                // An account created without a code (D-143) has its number confirmed by its first code sign-in.
+                await db.Set<ApplicationUser>()
+                    .Where(u => u.Id == existing.UserId && !u.PhoneNumberConfirmed)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.PhoneNumberConfirmed, true), cancellationToken);
+            }
+
             return (existing, false);
         }
 
@@ -53,7 +61,7 @@ internal sealed class AccountStore(
             UserType = UserType.Customer,
             PhoneLookupHash = customer.PhoneHash,
             ProtectedPhone = customer.ProtectedPhone,
-            PhoneNumberConfirmed = true,
+            PhoneNumberConfirmed = customer.PhoneVerified,
             PreferredLocale = customer.PreferredLocale,
             TermsAcceptedAt = customer.TermsAcceptedAt,
             CreatedAt = clock.GetUtcNow(),

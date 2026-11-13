@@ -41,6 +41,10 @@ public class TrimmeApiFactory(string connectionString, IReadOnlyDictionary<strin
             builder.UseSetting(key, value);
         }
 
+        // Codes are off by default (D-143); most tests sign customers in through the code flow, so the test host turns
+        // them on. PhoneSignInTests turns them off.
+        builder.UseSetting("Identity:Otp:Enabled", "true");
+
         foreach (var (key, value) in settings ?? new Dictionary<string, string?>())
         {
             builder.UseSetting(key, value);

@@ -27,6 +27,22 @@ public sealed class SessionOptions
     public TimeSpan RefreshReuseGrace { get; set; } = TimeSpan.FromSeconds(10);
 }
 
+/// <summary>
+/// Whether a customer must confirm their mobile number with a one-time code (D-143). Bound from <c>Identity:Otp</c>,
+/// the section that also holds the code's sender (<c>Identity:Otp:Sender</c>).
+/// </summary>
+public sealed class CustomerSignInOptions
+{
+    public const string SectionName = "Identity:Otp";
+
+    /// <summary>
+    /// Off by default in every environment (the user's choice, D-143): customers sign up and sign in with their number
+    /// alone, and the code endpoints refuse. Turn it on (<c>Identity__Otp__Enabled=true</c>) only together with a
+    /// working sender: the WhatsApp authentication template once Meta approves it, or an SMS provider.
+    /// </summary>
+    public bool Enabled { get; set; }
+}
+
 /// <summary>Staff invitation settings. Bound from <c>Identity:Invitations</c>.</summary>
 public sealed class InvitationOptions
 {

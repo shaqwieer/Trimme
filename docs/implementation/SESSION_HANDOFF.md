@@ -1,18 +1,45 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-09 (Session 24: per-shop WhatsApp message switches and a 365-day sign-in for customers and shop accounts (D-142), deployed to groomhere.sa; before it, Session 23: Meta domain verification tag (D-141); after Phase 17)
+- **Updated:** 2026-11-13 (Session 25: customers sign up and sign in with their mobile number alone; sign-in codes off by default (D-143); before it, Session 24: per-shop WhatsApp message switches and a 365-day sign-in (D-142); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
+  - Session 25 (D-143): see its section below for the commit, push and deploy.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 25 rebuilt the api and web images from its tree (no migration). `infra/docker-compose.yml` now sets `Identity__Otp__Enabled: ${TRIMME_OTP_ENABLED:-true}`: codes stay on locally for the E2E flows, and `TRIMME_OTP_ENABLED=false` gives the deployed default (no code).
   - Session 24 rebuilt the api and web images from its tree, ran `migrate` (`ShopMessageSwitches` applied: 20 migrations) and `up -d`. The seed was not re-run.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
   - The volume is still several days old: Barber House's seeded subscription has lapsed there, so the public E2E flows and the anonymous route audit fail on it (`/shops/barber-house…: public page is noindex`). Run those on a fresh stack (see Session 17 below) or after `down -v`.
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 25: sign-up and sign-in without a code; codes off by default (D-143)
+- **The request** (from the user): the system must work without a code when a customer registers. The user will say when to bring codes back (SMS or Meta's authentication template); until then, by default, codes must not be used. Then commit, push and deploy to 169.58.70.59 (groomhere.sa).
+- **What was built:**
+  - **Setting:** `Identity:Otp:Enabled` (`CustomerSignInOptions`), false by default in every environment, Development included (the VPS runs as Development).
+  - **API:**
+    - `POST /api/v1/auth/phone/sign-in` signs in or creates the customer by number, with the same protections as a code sign-in (protected number, disabled accounts refused, CSRF, `otp` rate limit);
+    - `GET /api/v1/auth/sign-in-options` → `{ otpRequired }`;
+    - while codes are off, `otp/request` and `otp/verify` answer 403 `otp.disabled`; while they are on, `phone/sign-in` answers 403 `auth.otp_required`.
+  - **Accounts:** an account made without a code has `phone_number_confirmed = false`; its first code sign-in confirms it.
+  - **Web:** the sign-up and sign-in pages read the options per request. Without codes, the number goes straight to profile completion (new customers) or the destination; the copy no longer mentions WhatsApp codes (DV-A30). New error texts in ar, en and tr.
+  - **Tests:** `TrimmeApiFactory` turns codes on, so the existing code-flow tests are unchanged; `PhoneSignInTests` (4) turns them off; `PhoneStep.test.tsx` (4); E2E `flows/phone-sign-in.spec.ts` skips itself on a stack with codes on.
+  - **Also fixed:** `EntitiesWithAShopId_AreTenantScoped` had failed since D-142 on `ShopMessageOptOut`, now in the reviewed allowlist with D-142's reason.
+- **To tell the client (also in D-143):**
+  - anyone who knows a customer's number can sign in as them (their bookings, reviews and loyalty coupons, for a year);
+  - booking messages go to whatever number was typed, so a typo sends a paid WhatsApp message to a stranger;
+  - the terms page still says customers register with a code over WhatsApp; that text is the client's to change.
+- **To turn codes on:** WhatsApp, once the business is verified and `trimme_sign_in_code` is approved: `WhatsApp__Meta__AuthenticationTemplateName`, `Identity__Otp__Sender=WhatsApp`, `Identity__Otp__Enabled=true` in the VPS compose/.env, then `docker compose up -d api`. SMS needs a new `IOtpSender`.
+- **Evidence:**
+  - .NET: Release build of `Trimme.slnx`, 0 warnings. Unit 440/440; architecture 69/69; integration 220/220 in Release on the final code (with `PhoneSignInTests` 4/4, the authorization and rate-limit matrices, and the regenerated OpenAPI contract).
+  - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 495/495. E2E project typecheck and format clean.
+  - Local stack (3300), api and web rebuilt from this tree:
+    - with `TRIMME_OTP_ENABLED=false`: `sign-in-options` → `{"otpRequired":false}`; `flows/phone-sign-in.spec.ts` 1/1 (sign-up with terms required, profile, sign-out, sign-in again to the same account, `otp/request` 403 `otp.disabled`, axe clean); the sign-up and sign-in pages checked in Arabic RTL at 390 and 1440 px;
+    - API recreated with codes on (the local default), web untouched: `{"otpRequired":true}`; `flows/auth.spec.ts` 6/6 through the code flow, and the no-code spec skipped itself. So the web follows the API setting with no rebuild.
+- **Deploy to groomhere.sa:** after this commit and its push; recorded in the follow-up docs commit.
 
 ## Session 24: per-shop WhatsApp message switches; customers signed in for a year (D-142)
 - **The request** (from the user):

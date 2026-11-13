@@ -1,5 +1,5 @@
 import { PhoneStep } from '@/components/auth/PhoneStep';
-import { redirectIfSignedIn } from '@/lib/auth/server';
+import { otpRequired, redirectIfSignedIn } from '@/lib/auth/server';
 import { optionalReturnTo } from '@/lib/auth/paths';
 
 export default async function CustomerSignUpPage({
@@ -9,5 +9,5 @@ export default async function CustomerSignUpPage({
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   const returnTo = optionalReturnTo(query.returnTo);
   await redirectIfSignedIn(locale, returnTo);
-  return <PhoneStep mode="signUp" returnTo={returnTo} />;
+  return <PhoneStep mode="signUp" returnTo={returnTo} otpRequired={await otpRequired()} />;
 }

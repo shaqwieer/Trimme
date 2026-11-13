@@ -10,7 +10,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
-import { withReturnTo } from '@/lib/auth/paths';
+import { homeFor, withReturnTo } from '@/lib/auth/paths';
 import { FormPhoneField, useValidationMessage, useZodForm } from '@/lib/forms/fields';
 import { applyProblemToForm } from '@/lib/forms/problem';
 import { saudiMobile } from '@/lib/forms/validation';
@@ -30,10 +30,20 @@ const schema = (mode: Mode) =>
 
 /**
  * Customer sign-up / sign-in, step 1 (design c-auth "SIGN UP · OTP REQUEST"): mobile number with the fixed +966
- * prefix; sign-up also asks for terms acceptance. Both send the same OTP (D-005); the verify step tells new and
- * returning customers apart.
+ * prefix; sign-up also asks for terms acceptance.
+ * - Codes off (`otpRequired` false, the default, D-143): the number alone signs the customer in, or creates the
+ *   account; a new customer continues to profile completion, as after the verify step.
+ * - Codes on: both send the same OTP (D-005); the verify step tells new and returning customers apart.
  */
-export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string }) {
+export function PhoneStep({
+  mode,
+  returnTo,
+  otpRequired,
+}: {
+  mode: Mode;
+  returnTo?: string;
+  otpRequired: boolean;
+}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const router = useRouter();
@@ -50,6 +60,18 @@ export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string })
     setServerError(undefined);
     const phoneE164 = toE164(phone) ?? '';
     try {
+      if (!otpRequired) {
+        const { user } = ensureOk(
+          await browserApi.POST('/api/v1/auth/phone/sign-in', {
+            body: { phone: phoneE164, termsAccepted, locale },
+          }),
+        );
+        const destination = returnTo ?? homeFor(user.userType);
+        router.replace(
+          user.profileComplete ? destination : withReturnTo('/auth/complete-profile', destination),
+        );
+        return;
+      }
       const challenge = ensureOk(
         await browserApi.POST('/api/v1/auth/otp/request', {
           body: { phone: phoneE164, termsAccepted, locale },
@@ -72,7 +94,7 @@ export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string })
     <AuthCard
       showLogo
       title={t(`${mode}.title`)}
-      subtitle={t(`${mode}.subtitle`)}
+      subtitle={t(otpRequired ? `${mode}.subtitle` : `${mode}.subtitleNoCode`)}
       footer={
         <div className="flex flex-col items-center gap-3">
           <p>
@@ -122,7 +144,7 @@ export function PhoneStep({ mode, returnTo }: { mode: Mode; returnTo?: string })
         )}
         {serverError && <InlineAlert tone="danger" title={serverError} />}
         <Button type="submit" fullWidth loading={form.formState.isSubmitting}>
-          {t(`${mode}.submit`)}
+          {t(otpRequired ? `${mode}.submit` : `${mode}.submitNoCode`)}
         </Button>
       </form>
     </AuthCard>

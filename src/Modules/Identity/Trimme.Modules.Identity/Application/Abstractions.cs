@@ -17,7 +17,12 @@ public sealed record AccountSummary(
     Guid? ShopId = null,
     bool MustChangePassword = false);
 
-public sealed record NewCustomer(string PhoneHash, string ProtectedPhone, string PreferredLocale, DateTimeOffset? TermsAcceptedAt);
+/// <summary>
+/// A customer to find or create by number. <c>PhoneVerified</c> is false for a sign-in without a code (D-143); a later
+/// code sign-in marks the account's number as confirmed.
+/// </summary>
+public sealed record NewCustomer(
+    string PhoneHash, string ProtectedPhone, string PreferredLocale, DateTimeOffset? TermsAcceptedAt, bool PhoneVerified = true);
 
 /// <summary>
 /// A staff account to create. <c>MustChangePassword</c> marks a temporary password an admin set (D-139): the user
