@@ -4,7 +4,7 @@
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
-  - Session 25 (D-143): see its section below for the commit, push and deploy.
+  - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -39,7 +39,7 @@
   - Local stack (3300), api and web rebuilt from this tree:
     - with `TRIMME_OTP_ENABLED=false`: `sign-in-options` → `{"otpRequired":false}`; `flows/phone-sign-in.spec.ts` 1/1 (sign-up with terms required, profile, sign-out, sign-in again to the same account, `otp/request` 403 `otp.disabled`, axe clean); the sign-up and sign-in pages checked in Arabic RTL at 390 and 1440 px;
     - API recreated with codes on (the local default), web untouched: `{"otpRequired":true}`; `flows/auth.spec.ts` 6/6 through the code flow, and the no-code spec skipped itself. So the web follows the API setting with no rebuild.
-- **Deploy to groomhere.sa:** after this commit and its push; recorded in the follow-up docs commit.
+- **Deployed to groomhere.sa (2026-11-13, `0bd8fcb`)** with `/root/deploy-d143.sh`: backup `/root/backups/trimme-before-d143-20261113-134310.sql.gz`; `git pull` from `b6e02c5`; api and web built; `migrate` (database up to date, 20 migrations, none new); `up -d`. The VPS compose and `.env` set no `Identity__Otp__Enabled`, so codes are off. Smoke from the VPS: api and web healthy; `sign-in-options` → `{"otpRequired":false}`; `phone/sign-in` with an invalid number 400 `validation.phone_invalid` (no account created); `otp/request` 403 `otp.disabled`; `/ar`, the sign-up, sign-in and staff sign-in pages 200; both customer pages serve the no-code text; WhatsApp provider still `Meta`; 0 API errors after the restart. A real sign-up was not made on the client's database.
 
 ## Session 24: per-shop WhatsApp message switches; customers signed in for a year (D-142)
 - **The request** (from the user):

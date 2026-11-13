@@ -51,6 +51,7 @@
   - **No code by default:** customers sign up and sign in with their mobile number alone (`POST /auth/phone/sign-in`); the code endpoints answer 403 `otp.disabled`. The sign-up and sign-in pages ask the API (`GET /auth/sign-in-options`) and drop the code wording.
   - **Codes later:** `Identity__Otp__Enabled=true` plus a sender (WhatsApp once Meta approves the authentication template; SMS needs a new sender). Then a number alone is refused (`auth.otp_required`).
   - **The risk, accepted by the user:** anyone who knows a customer's number can sign in as them; booking messages go to whatever number was typed.
+  - Pushed (`0bd8fcb`) and **deployed to groomhere.sa on 2026-11-13** after a database backup; no migration; smoke checks clean (codes off, WhatsApp still on Meta).
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |
