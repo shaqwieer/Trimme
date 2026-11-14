@@ -50,7 +50,8 @@ public static class QrImages
     public static QrImageFile Render(string url, string code, QrImageFormat format, int? pixelsPerModule = null)
     {
         var matrix = Matrix(url);
-        var name = $"trimme-qr-{code}";
+        // The brand is Groom Here (D-131, D-144): the downloaded file is named after it.
+        var name = $"groomhere-qr-{code}";
         return format switch
         {
             QrImageFormat.Svg => new QrImageFile(Encoding.UTF8.GetBytes(Svg(matrix)), "image/svg+xml", $"{name}.svg"),

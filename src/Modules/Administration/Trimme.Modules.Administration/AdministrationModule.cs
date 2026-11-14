@@ -11,7 +11,7 @@ using Trimme.Modules.Administration.Infrastructure;
 namespace Trimme.Modules.Administration;
 
 /// <summary>Administration module (schema <c>administration</c>): the audit trail (Phase 05, read side Phase 14), the platform settings
-/// (Phase 08) and the admin overview (Phase 14).</summary>
+/// (Phase 08), the admin overview (Phase 14) and the legal pages' text (D-144).</summary>
 public sealed class AdministrationModule : ModuleBase
 {
     public override string Name => "Administration";
@@ -29,6 +29,7 @@ public sealed class AdministrationModule : ModuleBase
     public override void MapEndpoints(IEndpointRouteBuilder api)
     {
         SettingsEndpoints.Map(api);
+        LegalEndpoints.Map(api);
         OperationsEndpoints.Map(api);
     }
 }

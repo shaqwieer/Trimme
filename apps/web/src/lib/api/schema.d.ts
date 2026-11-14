@@ -49,7 +49,8 @@ export interface paths {
         get: operations["GetMe"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Deletes the customer's account: refused while bookings are ahead; erases the name, number and email, ends every session and clears the cookies. */
+        delete: operations["DeleteCustomerAccount"];
         options?: never;
         head?: never;
         patch?: never;
@@ -668,6 +669,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/legal/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The admin's text of the terms (kind=terms) or privacy policy (kind=privacy) in one language; 404 means the built-in text applies. */
+        get: operations["GetPublicLegalDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/dashboard/overview": {
         parameters: {
             query?: never;
@@ -951,6 +969,24 @@ export interface paths {
         put?: never;
         /** Signs out every other device; the current session stays signed in. */
         post: operations["RevokeOtherSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The customer's name, language, email and masked number, and whether the number can be changed here. */
+        get: operations["GetCustomerProfile"];
+        /** Saves the customer's name, language and email; a new number becomes the one they sign in with (while sign-in codes are off). */
+        put: operations["UpdateCustomerProfile"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1561,6 +1597,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/geo/map-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The point and address of a pasted Google Maps link (a short link is followed through Google only, D-144). */
+        get: operations["AdminResolveMapLink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/geo/search": {
         parameters: {
             query?: never;
@@ -1587,6 +1640,23 @@ export interface paths {
         };
         /** The address at a map point, for the picker's confirmation card. */
         get: operations["ShopGeocodeReverse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/geo/map-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The point and address of a pasted Google Maps link (a short link is followed through Google only, D-144). */
+        get: operations["ShopResolveMapLink"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3558,6 +3628,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every saved language of the terms and the privacy policy. */
+        get: operations["ListLegalDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/legal/{kind}/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Saves one language of the terms or the privacy policy (rich text through an allowlist; audited). */
+        put: operations["SaveLegalDocument"];
+        post?: never;
+        /** Deletes the saved text of one language, so the page shows its built-in text again (audited). */
+        delete: operations["ResetLegalDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/audit": {
         parameters: {
             query?: never;
@@ -4631,6 +4736,17 @@ export interface components {
             phone: string;
         };
         /**
+         * @description "Personal info": the name shops see, the language, an optional email (for the customer's records only), and the
+         *     number masked. `PhoneChangeAllowed` is false while sign-in codes are on (a new number would need a code).
+         */
+        CustomerProfileResponse: {
+            displayName: null | string;
+            preferredLocale: string;
+            email: null | string;
+            phoneMasked: null | string;
+            phoneChangeAllowed: boolean;
+        };
+        /**
          * @description How customers sign in (D-143). `OtpRequired` true: a code to the number (`otp/request`, `otp/verify`);
          *     false (the default): the number alone (`phone/sign-in`).
          */
@@ -4885,6 +5001,15 @@ export interface components {
             role: string;
             locale: null | string;
         };
+        JsonElement: unknown;
+        /** @description One saved legal page: `Kind` is `terms` or `privacy`; `Content` is the cleaned rich-text document. */
+        LegalDocumentResponse: {
+            kind: string;
+            locale: string;
+            content: components["schemas"]["JsonElement"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         /**
          * @description How the location point was chosen in the picker.
          * @enum {unknown}
@@ -4934,6 +5059,22 @@ export interface components {
             rewardsAvailable: number;
             /** Format: int32 */
             rewardsRedeemed: number;
+        };
+        /**
+         * @description The point and address a pasted Google Maps link names (D-144): the coordinates come from the link itself; the
+         *     address fields from reverse geocoding them, else the place's name in the link. Any field the provider cannot fill is
+         *     null and stays editable in the picker.
+         */
+        MapLinkPlace: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
+            placeName: null | string;
+            formattedAddress: null | string;
+            addressLine: null | string;
+            district: null | string;
+            city: null | string;
         };
         /**
          * @description The signed-in user (`GET /api/v1/me`). `UserType` is `Customer`, `ShopUser` or
@@ -5967,6 +6108,10 @@ export interface components {
             managed: boolean;
             permissions: string[];
         };
+        /** @description The rich-text document from the admin's editor (ProseMirror JSON); the API keeps only what its allowlist permits. */
+        SaveLegalDocumentRequest: {
+            content: components["schemas"]["JsonElement"];
+        };
         /**
          * @description A shop's loyalty terms (D-132). `RewardTitleAr` is what the customer gets («حلاقة مجانية»); a discount needs
          *     `DiscountPercent` 1–100. `RewardValidityDays` (7–365) limits how long a reward stays usable; null keeps it.
@@ -6784,6 +6929,13 @@ export interface components {
             /** Format: int32 */
             unread: number;
         };
+        /** @description `Phone` empty keeps the number; another number moves the account to it (codes off only, D-144). */
+        UpdateCustomerProfileRequest: {
+            displayName: string;
+            preferredLocale: string;
+            email: null | string;
+            phone: null | string;
+        };
         /** @description The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value. */
         UpdateOwnShopProfileRequest: {
             nameAr: string;
@@ -7057,6 +7209,33 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteCustomerAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8297,6 +8476,39 @@ export interface operations {
             };
         };
     };
+    GetPublicLegalDocument: {
+        parameters: {
+            query?: {
+                locale?: string;
+            };
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     GetAdminOverview: {
         parameters: {
             query?: {
@@ -8879,6 +9091,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokedSessionsResponse"];
+                };
+            };
+        };
+    };
+    GetCustomerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerProfileResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCustomerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomerProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerProfileResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -10607,6 +10899,38 @@ export interface operations {
             };
         };
     };
+    AdminResolveMapLink: {
+        parameters: {
+            query?: {
+                url?: string;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapLinkPlace"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ShopGeocodeSearch: {
         parameters: {
             query?: {
@@ -10663,6 +10987,38 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShopResolveMapLink: {
+        parameters: {
+            query?: {
+                url?: string;
+                lang?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapLinkPlace"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16036,6 +16392,101 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListLegalDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentResponse"][];
+                };
+            };
+        };
+    };
+    SaveLegalDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveLegalDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetLegalDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                locale: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,13 +1,15 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-13 (Session 25: customers sign up and sign in with their mobile number alone; sign-in codes off by default (D-143); before it, Session 24: per-shop WhatsApp message switches and a 365-day sign-in (D-142); after Phase 17)
+- **Updated:** 2026-11-14 (Session 26: eleven changes from the client's review (D-144); before it, Session 25: sign-up and sign-in without a code (D-143); Session 24: per-shop WhatsApp switches and a 365-day sign-in (D-142); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
+  - **Session 26 (D-144) is committed locally only: not pushed, not deployed.** It has migration 21; take a database backup on the VPS before deploying.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 26 rebuilt the api and web images from its tree and started a **fresh** stack (`down -v`, then `up -d`: migrate (21 migrations) and seed ran), so the seeded subscriptions are current again.
   - Session 25 rebuilt the api and web images from its tree (no migration). `infra/docker-compose.yml` now sets `Identity__Otp__Enabled: ${TRIMME_OTP_ENABLED:-true}`: codes stay on locally for the E2E flows, and `TRIMME_OTP_ENABLED=false` gives the deployed default (no code).
   - Session 24 rebuilt the api and web images from its tree, ran `migrate` (`ShopMessageSwitches` applied: 20 migrations) and `up -d`. The seed was not re-run.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
@@ -15,6 +17,24 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 26: eleven changes from the client's review (D-144)
+- **The request** (from the user, with screenshots of groomhere.sa): «احجز» → the services step; no time count under the hours; rescheduling like booking; delete account; no «إشعارات واتساب» row; email and number in personal info with a sign-in warning; rich-text terms and privacy edited by the admin; a Google Maps link fills the shop location; QR files named Groom Here; signed-in users kept off the landing and sign-in pages; directions in Google Maps.
+- **What was built** (details in D-144):
+  - **Web only:** the per-service booking links (`step=service`), `HourMinutePicker` without counts, `RescheduleForm` rebuilt on the wizard's screens, the account row removed, `directionsUrl` → Google Maps.
+  - **API + web:** `GET`/`PUT /me/profile` (`contact_email`; a number change only while codes are off), `DELETE /me` (erasure; 409 with bookings ahead), the `trimme-signed-in` hint cookie + proxy redirect + `SignedInGate`, `GET /{admin|shop}/geo/map-link` (`GoogleMapsLink`, `MapLinkResolver`), `administration.legal_documents` with `/public/legal/{kind}` and `/admin/legal/…`, `/admin/legal` (TipTap 3.32.2), `RichText`, `groomhere-qr-…` files.
+  - **Migration 21** `CustomerAccountAndLegalPages` (additive).
+- **To tell the client:**
+  - a customer with an appointment ahead must cancel it (or wait until it is over) before deleting the account;
+  - the number can be changed from personal info only while sign-in codes are off (today's setting); when codes come back it will need a code step;
+  - the address fields of a pasted Google Maps link come from the server's geocoder: with the built-in test geocoder (`Geocoding__Provider` unset or `Fake`) only the coordinates fill for points outside the test gazetteer. Check the VPS setting before relying on it; short links need the VPS to reach `maps.app.goo.gl` (this machine cannot, so a real short link was not tried);
+  - the terms page still says customers register with a WhatsApp code: the admin can now change it at «الشروط والخصوصية».
+- **Evidence:**
+  - .NET: Release build of `Trimme.slnx`, 0 warnings. Unit 470/470 (with `GoogleMapsLinkTests` 30); architecture 69/69; integration 225/225 (with `CustomerSelfServiceTests` 3, `LegalDocumentTests` 1, the map-link test, the cookie assertions in `SessionTests`, both matrices and the regenerated OpenAPI contract).
+  - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 509/509. E2E project typecheck and format clean.
+  - E2E on the fresh local stack (3300, codes on): smoke + flows 86 passed, 1 skipped (the no-code spec, as designed), 1 failed: `qr.spec` «switched off» under parallel load, the known flake from Session 17; it passes alone (5/5 with `shop-schedule`). New: `signed-in-gate.spec.ts` 2/2, `account-legal.spec.ts` 2/2; changed: `customer-booking` E1, `public-discovery` (Google directions), `shops-professionals` (the map is lower).
+  - Route audit (a11y + a11y-dark, with `/admin/legal` added): 21/21 (every role, both locales, light and dark; axe 0 serious). The first run flagged raw audit-action keys on «سجل النشاط» for the four new actions; their labels were added in ar, en and tr and the admin audits re-run 4/4.
+  - Screenshots (local, Arabic RTL, 1280/1440 and 390 px) of the services step, hours, reschedule and its review, account, personal info, the admin legal editor and the location picker; in the session's scratchpad, not in the repository.
 
 ## Session 25: sign-up and sign-in without a code; codes off by default (D-143)
 - **The request** (from the user): the system must work without a code when a customer registers. The user will say when to bring codes back (SMS or Meta's authentication template); until then, by default, codes must not be used. Then commit, push and deploy to 169.58.70.59 (groomhere.sa).

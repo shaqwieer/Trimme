@@ -138,9 +138,10 @@ test.describe('public discovery (Phase 11)', () => {
     await page.goto(`/ar/shops/${BARBER_HOUSE}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('باربر هاوس');
     await expect(page.getByTestId('shop-open-status')).toBeVisible();
+    // Directions open Google Maps from the visitor's location, with time and distance (D-144).
     await expect(page.getByRole('link', { name: 'الاتجاهات' })).toHaveAttribute(
       'href',
-      /openstreetmap\.org\/directions/,
+      /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=24\.\d+%2C46\.\d+$/,
     );
 
     // Services and packages with the shop's own prices, each bookable.

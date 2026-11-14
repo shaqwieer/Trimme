@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { DeleteAccount } from '@/components/account/DeleteAccount';
 import { SignOutButton } from '@/components/auth/SessionClient';
 import { ThemeSettings } from '@/components/theme/ThemeSettings';
 import { Ltr } from '@/components/text/Ltr';
@@ -45,8 +46,8 @@ function Row({ row }: { row: SettingsRow }) {
 
 /**
  * The customer's account (c-profile 1995–2036): who they are (own masked mobile, LTR), then preferences, account and
- * support rows, and sign out. Payment is shown read-only as "at the shop" (DV-S20: no payment in v1); WhatsApp
- * notification preferences arrive with the notification centre (Phase 15).
+ * support rows, and sign out. Payment is shown read-only as "at the shop" (DV-S20: no payment in v1). There is no
+ * WhatsApp notifications row (D-144): the customer has no setting there, and the bell opens the in-app notifications.
  */
 export default async function AccountPage({ params, searchParams }: PageProps<'/[locale]/account'>) {
   const [{ locale: raw }, query] = await Promise.all([params, searchParams]);
@@ -69,12 +70,6 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
           value: t(`profile.${LANGUAGE_NAME_KEY[asLocale(me.preferredLocale)]}`),
           valueLang: asLocale(me.preferredLocale),
           href: '/account/profile',
-        },
-        {
-          icon: 'bell',
-          label: t('rows.notifications'),
-          value: t('rows.notificationsValue'),
-          href: '/account/notifications',
         },
       ],
     },
@@ -143,6 +138,7 @@ export default async function AccountPage({ params, searchParams }: PageProps<'/
         </section>
       ))}
       <SignOutButton className="self-start" />
+      <DeleteAccount />
     </div>
   );
 }

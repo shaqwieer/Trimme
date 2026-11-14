@@ -136,6 +136,8 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/admin/roles/staff' },
         { path: '/admin/audit' },
         { path: '/admin/settings' },
+        { path: '/admin/legal' },
+        { path: '/admin/legal?page=privacy&lang=en' },
       ];
   }
 }

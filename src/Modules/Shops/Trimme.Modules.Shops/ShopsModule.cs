@@ -29,6 +29,14 @@ public sealed class ShopsModule : ModuleBase
         services.AddScoped<BuildingBlocks.Application.Discovery.IShopCards, Application.Public.ShopCards>();
         services.AddSingleton<IDevSeeder, DemoShopsSeeder>();
 
+        // Google Maps short links (D-144): followed hop by hop, never automatically, so only Google hosts are contacted.
+        services.AddHttpClient<IMapLinkResolver, MapLinkResolver>(http =>
+            {
+                http.Timeout = TimeSpan.FromSeconds(6);
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; GroomHere/1.0)");
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
+
         var geocoding = configuration.GetSection(GeocodingOptions.SectionName);
         services.Configure<GeocodingOptions>(geocoding);
         if (string.Equals(geocoding[nameof(GeocodingOptions.Provider)], GeocodingOptions.NominatimProvider, StringComparison.OrdinalIgnoreCase))

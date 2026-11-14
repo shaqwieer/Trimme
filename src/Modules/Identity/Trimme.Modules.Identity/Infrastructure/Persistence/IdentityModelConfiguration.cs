@@ -31,6 +31,7 @@ internal static class IdentityModel
             user.Property(u => u.DisplayName).HasMaxLength(100);
             user.Property(u => u.PreferredLocale).HasMaxLength(5);
             user.Property(u => u.PhoneLookupHash).HasMaxLength(64);
+            user.Property(u => u.ContactEmail).HasMaxLength(256);
 
             user.HasIndex(u => u.NormalizedUserName).IsUnique();
             user.HasIndex(u => u.NormalizedEmail).IsUnique().HasFilter("normalized_email IS NOT NULL");

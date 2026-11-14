@@ -136,3 +136,60 @@ describe('LocationPicker (R-SHP-02, DV-A02)', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 });
+
+describe('LocationPicker: a pasted Google Maps link (D-144)', () => {
+  const link = 'https://maps.app.goo.gl/AbC123';
+
+  it('fills the point and the address from the link, ready to confirm', async () => {
+    get.mockImplementation(async (path: string) =>
+      path.endsWith('/geo/map-link')
+        ? {
+            data: { ...malqa, latitude: 24.8123456, longitude: 46.6011234, placeName: 'صالون الأصالة' },
+            response: new Response(null, { status: 200 }),
+          }
+        : { data: undefined },
+    );
+    const onSave = vi.fn(async (_: PickedLocation) => {});
+    renderWithIntl(<LocationPicker initial={null} scope="shop" onSave={onSave} MapComponent={FakeMap} />);
+
+    const field = screen.getByLabelText('رابط الموقع من خرائط Google');
+    fireEvent.paste(field, { clipboardData: { getData: () => `صالون الأصالة ${link}` } });
+
+    expect(await screen.findByText(/حُدّد الموقع من الرابط/)).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith('/api/v1/shop/geo/map-link', {
+      params: { query: { url: `صالون الأصالة ${link}`, lang: 'ar' } },
+    });
+    expect(screen.getByTestId('fake-pin')).toHaveTextContent('24.812346,46.601123');
+    expect(screen.getByLabelText('الحي')).toHaveValue('الملقا');
+    expect(screen.getByLabelText('المدينة')).toHaveValue('الرياض');
+
+    await userEvent.click(screen.getByRole('button', { name: 'تأكيد الموقع' }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        latitude: 24.812346,
+        longitude: 46.601123,
+        source: 'Geocoded',
+        district: 'الملقا',
+      }),
+    );
+  });
+
+  it('a link typed into the address search is read as a link, and a refused one says why', async () => {
+    get.mockImplementation(async (path: string) =>
+      path.endsWith('/geo/map-link')
+        ? {
+            error: { status: 400, errorCode: 'geo.map_link_invalid', title: 'x' },
+            response: new Response(null, { status: 400 }),
+          }
+        : { data: [] },
+    );
+    renderWithIntl(<LocationPicker initial={null} scope="admin" onSave={vi.fn()} MapComponent={FakeMap} />);
+
+    await userEvent.type(screen.getByLabelText('ابحث عن العنوان أو الحي'), 'https://example.com/maps');
+    await userEvent.click(screen.getByRole('button', { name: 'بحث' }));
+
+    expect(await screen.findByText('هذا ليس رابطاً من خرائط Google.')).toBeInTheDocument();
+    expect(get).not.toHaveBeenCalledWith('/api/v1/admin/geo/search', expect.anything());
+    expect(screen.getByTestId('fake-pin')).toHaveTextContent('none');
+  });
+});

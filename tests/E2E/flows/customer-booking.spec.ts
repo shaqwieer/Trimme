@@ -135,10 +135,14 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
   test('E1: a guest books through the wizard, signs in at confirmation, then adds it to the calendar, reschedules and cancels', async ({
     page,
   }) => {
-    // Shop page → the service's "book" link opens the wizard on the professional step ("any" preselected).
+    // Shop page → the service's "book" link opens the wizard on the services step with it chosen, so more can be
+    // added (D-144); then the professional step ("any" preselected).
     await page.goto(`/ar/shops/${BARBER_HOUSE}`);
     await page.getByRole('link', { name: 'احجز قص وتصفيف' }).click();
-    await expect(page).toHaveURL(/\/ar\/shops\/barber-house\/book\?service=/);
+    await expect(page).toHaveURL(/\/ar\/shops\/barber-house\/book\?service=.*step=service/);
+    await expect(page.getByTestId('wizard-title')).toHaveText('اختر الخدمات');
+    await expect(page.getByRole('checkbox', { name: /قص وتصفيف/ }).first()).toBeChecked();
+    await page.getByRole('button', { name: 'التالي' }).click();
     await expect(page.getByTestId('wizard-title')).toHaveText('اختر المختص');
     await expect(page.getByRole('radio', { name: /أي مختص متاح/ })).toBeChecked();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
@@ -196,9 +200,14 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     // Reschedule: the current time stays booked until the new one is confirmed (D-089).
     await card.getByRole('link', { name: 'إعادة جدولة' }).click();
     await expect(page.getByText(/سيبقى محجوزاً حتى تؤكد الموعد الجديد/)).toBeVisible();
+    // The same screens as booking (D-144): days, the hour, its minutes, then a review of the old and new times.
+    await expect(page.getByTestId('reschedule-title')).toHaveText('إعادة الجدولة');
     await pickDate(page, 'reschedule-date', 4);
     const moved = await pickSlot(page, 'reschedule-time', 1);
     await expectNoSeriousAxe(page, 'reschedule');
+    await page.getByRole('button', { name: 'التالي' }).click();
+    await expect(page.getByTestId('reschedule-review')).toContainText('الموعد الجديد');
+    await expectNoSeriousAxe(page, 'reschedule review');
     await page.getByRole('button', { name: 'تأكيد الموعد الجديد' }).click();
     await expect(page.getByText('تم تحديث موعدك.')).toBeVisible();
     expect(moved).toBeTruthy();

@@ -197,6 +197,7 @@ export default async function ProfessionalPage({
                           href={bookHref(pro.shopSlug, {
                             pro: pro.id,
                             [offer.isPackage ? 'package' : 'service']: offer.id,
+                            step: offer.isPackage ? undefined : 'service',
                           })}
                           variant="secondary"
                           size="xs"

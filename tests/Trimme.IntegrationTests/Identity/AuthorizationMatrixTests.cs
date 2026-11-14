@@ -73,6 +73,9 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         // D-132: a published shop's loyalty offer (its terms only; no customer data).
         "GET /api/v1/public/shops/{slug}/loyalty",
 
+        // D-144: the admin's text of the terms and privacy policy (published legal pages; no user data).
+        "GET /api/v1/public/legal/{kind}",
+
         // Phase 15: the Meta status webhook. Verification needs the configured token; every POST must carry a valid
         // HMAC-SHA256 signature of the raw body with the app secret; both answer 404 when WhatsApp is not configured (D-110).
         "GET /api/v1/webhooks/whatsapp",
@@ -255,6 +258,8 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
     {
         ["DELETE /api/v1/me/favorites/professionals/{professionalId:guid}"] = RateLimitPolicies.Favorites,
         ["DELETE /api/v1/me/favorites/shops/{shopId:guid}"] = RateLimitPolicies.Favorites,
+        ["DELETE /api/v1/me"] = RateLimitPolicies.Auth,
+        ["GET /api/v1/admin/geo/map-link"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/admin/geo/reverse"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/admin/geo/search"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/me/bookings/{bookingId:guid}/reschedule/dates"] = RateLimitPolicies.Availability,
@@ -267,6 +272,7 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         ["GET /api/v1/public/shops/{slug}/availability/slots"] = RateLimitPolicies.Availability,
         ["GET /api/v1/public/shops/{slug}/professionals/{professionalSlug}/next-slots"] = RateLimitPolicies.Availability,
         ["GET /api/v1/public/shops/{slug}/status"] = RateLimitPolicies.Availability,
+        ["GET /api/v1/shop/geo/map-link"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/shop/geo/reverse"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/shop/geo/search"] = RateLimitPolicies.Geocode,
         ["POST /api/v1/auth/invitations/accept"] = RateLimitPolicies.Auth,
@@ -284,6 +290,7 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         ["POST /api/v1/public/qr/{code}/visits"] = RateLimitPolicies.Qr,
         ["PUT /api/v1/me/favorites/professionals/{professionalId:guid}"] = RateLimitPolicies.Favorites,
         ["PUT /api/v1/me/favorites/shops/{shopId:guid}"] = RateLimitPolicies.Favorites,
+        ["PUT /api/v1/me/profile"] = RateLimitPolicies.Auth,
     };
 
     [Fact]

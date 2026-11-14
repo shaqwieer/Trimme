@@ -12,6 +12,7 @@ import { CancelBookingButton } from './BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from './BookingDetailParts';
 import { HourMinutePicker } from '@/components/ui/booking';
 import { BookingWizard, type WizardPro } from './BookingWizard';
+import { RescheduleForm } from './RescheduleForm';
 import { ReviewForm } from './ReviewForm';
 
 const api = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() }));
@@ -701,7 +702,9 @@ describe('HourMinutePicker (D-125)', () => {
       />,
     );
 
-    expect(screen.getByRole('radio', { name: /١٠ ص/ })).toHaveAccessibleName(/وقتان/);
+    // The hour alone, without how many minutes it has free (D-144).
+    expect(screen.getByRole('radio', { name: /١٠ ص/ })).toHaveAccessibleName('١٠ ص');
+    expect(screen.queryByText(/وقتان|أوقات/)).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /١٠:٣٠/ })).not.toBeInTheDocument();
     expect(screen.getByText('اختر ساعة لعرض الدقائق المتاحة فيها.')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /١١ ص/ }));
@@ -715,5 +718,112 @@ describe('HourMinutePicker (D-125)', () => {
     await user.click(screen.getByRole('radio', { name: /١١:١٥/ }));
     expect(onValueChange).toHaveBeenCalledWith('2026-10-01T08:15:00Z');
     await expectNoAxeViolations(container);
+  });
+});
+
+describe('RescheduleForm (D-144)', () => {
+  const BOOKING = {
+    id: 'bk-1',
+    version: 3,
+    startsAt: '2030-01-01T07:00:00Z',
+    timeZone: 'Asia/Riyadh',
+    shopName: 'باربر هاوس',
+    area: 'حطين، الرياض',
+    itemName: 'قص وتصفيف',
+    professionalName: 'عمر السالم',
+    durationMinutes: 30,
+    price: 85,
+    currency: 'SAR',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function wrap(node: ReactElement) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return renderWithIntl(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+  }
+
+  it('moves a booking through the same screens as booking: nearest time, days, hour, minute, then a review', async () => {
+    const user = userEvent.setup();
+    const today = todayLocal('Asia/Riyadh');
+    const day = addDays(today, 2);
+    api.GET.mockImplementation(async (path: string) =>
+      path.endsWith('/reschedule/dates')
+        ? ok({
+            bookable: true,
+            blockedReason: null,
+            timeZone: 'Asia/Riyadh',
+            dates: [
+              { date: addDays(today, 1), slotCount: 0 },
+              { date: day, slotCount: 2 },
+            ],
+          })
+        : ok({
+            bookable: true,
+            blockedReason: null,
+            timeZone: 'Asia/Riyadh',
+            date: day,
+            slots: [
+              { startsAt: `${day}T07:00:00Z`, localTime: '10:00', period: 'Morning' },
+              { startsAt: `${day}T07:30:00Z`, localTime: '10:30', period: 'Morning' },
+            ],
+          }),
+    );
+    api.POST.mockResolvedValue(ok({}));
+    const { container } = wrap(<RescheduleForm booking={BOOKING} />);
+
+    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('إعادة الجدولة');
+    expect(await screen.findByTestId('nearest-slot')).toHaveTextContent('أقرب موعد متاح');
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
+
+    await user.click(screen.getByRole('radio', { name: dayName(day) }));
+    expect(await screen.findByText('وقتان متاحان')).toBeInTheDocument();
+    await user.click(await screen.findByRole('radio', { name: '١٠ ص' }));
+    await user.click(screen.getByRole('radio', { name: /١٠:٣٠/ }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    const review = await screen.findByTestId('reschedule-review');
+    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('مراجعة الموعد الجديد');
+    expect(review).toHaveTextContent('الموعد الحالي');
+    expect(review).toHaveTextContent('عمر السالم');
+    await expectNoAxeViolations(container);
+
+    await user.click(screen.getByRole('button', { name: 'تأكيد الموعد الجديد' }));
+    expect(api.POST).toHaveBeenCalledWith(
+      '/api/v1/me/bookings/{bookingId}/reschedule',
+      expect.objectContaining({ body: { startsAt: `${day}T07:30:00Z`, professionalId: null, version: 3 } }),
+    );
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/account/bookings/bk-1?rescheduled=1'));
+  });
+
+  it('a time taken meanwhile sends the customer back to the days with a notice', async () => {
+    const user = userEvent.setup();
+    const day = addDays(todayLocal('Asia/Riyadh'), 1);
+    api.GET.mockImplementation(async (path: string) =>
+      path.endsWith('/reschedule/dates')
+        ? ok({
+            bookable: true,
+            blockedReason: null,
+            timeZone: 'Asia/Riyadh',
+            dates: [{ date: day, slotCount: 1 }],
+          })
+        : ok({
+            bookable: true,
+            blockedReason: null,
+            timeZone: 'Asia/Riyadh',
+            date: day,
+            slots: [{ startsAt: `${day}T07:00:00Z`, localTime: '10:00', period: 'Morning' }],
+          }),
+    );
+    api.POST.mockResolvedValue(fail(409, 'booking.slot_unavailable'));
+    wrap(<RescheduleForm booking={BOOKING} />);
+
+    await user.click(await screen.findByRole('button', { name: 'اختر هذا الموعد' }));
+    await user.click(await screen.findByRole('button', { name: 'تأكيد الموعد الجديد' }));
+    expect(await screen.findByText(/حُجز هذا الوقت للتو/)).toBeInTheDocument();
+    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('إعادة الجدولة');
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });

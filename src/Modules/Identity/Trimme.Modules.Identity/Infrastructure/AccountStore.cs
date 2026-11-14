@@ -93,6 +93,59 @@ internal sealed class AccountStore(
         EnsureSucceeded(await users.UpdateAsync(user));
     }
 
+    public Task<CustomerProfileRow?> FindCustomerProfileAsync(Guid userId, CancellationToken cancellationToken) =>
+        db.Set<ApplicationUser>().AsNoTracking()
+            .Where(u => u.Id == userId && u.UserType == UserType.Customer && u.DisabledAt == null && u.DeletedAt == null)
+            .Select(u => new CustomerProfileRow(u.Id, u.DisplayName, u.PreferredLocale, u.ContactEmail, u.ProtectedPhone, u.PhoneLookupHash))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<bool> UpdateCustomerProfileAsync(Guid userId, CustomerProfileUpdate update, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+
+        var user = await db.Set<ApplicationUser>().SingleAsync(u => u.Id == userId && u.UserType == UserType.Customer, cancellationToken);
+        if (update.NewPhoneHash is { } hash
+            && await db.Set<ApplicationUser>().AnyAsync(u => u.Id != userId && u.PhoneLookupHash == hash, cancellationToken))
+        {
+            return false;
+        }
+
+        user.DisplayName = update.DisplayName;
+        user.PreferredLocale = update.PreferredLocale;
+        user.ContactEmail = update.ContactEmail;
+        if (update.NewPhoneHash is not null)
+        {
+            user.PhoneLookupHash = update.NewPhoneHash;
+            user.ProtectedPhone = update.NewProtectedPhone;
+            user.PhoneNumberConfirmed = false;
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // The number was taken at the same moment by another sign-up.
+            db.ChangeTracker.Clear();
+            return false;
+        }
+    }
+
+    public async Task EraseCustomerAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var user = await db.Set<ApplicationUser>().SingleAsync(u => u.Id == userId && u.UserType == UserType.Customer, cancellationToken);
+        user.DisplayName = null;
+        user.ContactEmail = null;
+        user.PhoneLookupHash = null;
+        user.ProtectedPhone = null;
+        user.PhoneNumberConfirmed = false;
+        user.DisabledAt ??= now;
+        user.DeletedAt = now;
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+    }
+
     public async Task<StaffPasswordCheck> CheckStaffPasswordAsync(string email, string password, CancellationToken cancellationToken)
     {
         var user = await users.FindByEmailAsync(email);

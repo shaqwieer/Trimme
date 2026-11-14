@@ -194,6 +194,8 @@ internal static class AuthEndpoints
         var token = SessionCookies.ReadRefreshToken(http.Request);
         if (token is null)
         {
+            // Nothing can restore a session here, so the browser must not keep thinking it is signed in (D-144).
+            SessionCookies.ClearSignedInHint(http);
             return Domain.IdentityErrors.RefreshInvalid().ToProblem();
         }
 

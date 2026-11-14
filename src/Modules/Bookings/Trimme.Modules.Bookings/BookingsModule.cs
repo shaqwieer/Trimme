@@ -33,6 +33,7 @@ public sealed class BookingsModule : ModuleBase
         base.AddServices(services, configuration);
         services.AddScoped<IdempotencyGate>();
         services.AddScoped<CustomerBookingSupport>();
+        services.AddScoped<BuildingBlocks.Application.Privacy.ICustomerUpcomingBookings, CustomerUpcomingBookings>();
         services.AddScoped<RescheduleAvailability>();
         services.AddScoped<ProfessionalPicker>();
         services.AddScoped<CustomerVisits>();

@@ -232,6 +232,7 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
                           href={bookHref(shop.slug, {
                             pro: target.professionalId ?? undefined,
                             [offer.isPackage ? 'package' : 'service']: offer.id,
+                            step: offer.isPackage ? undefined : 'service',
                           })}
                           variant="secondary"
                           size="xs"

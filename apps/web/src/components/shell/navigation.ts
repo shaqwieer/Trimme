@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock,
   CreditCard,
+  FileText,
   Heart,
   Home,
   Layers,
@@ -95,6 +96,7 @@ export const adminNav: NavItem<'admin'>[] = [
   { key: 'roles', href: '/admin/roles', icon: Shield, permission: 'Admin.Roles.View' },
   { key: 'audit', href: '/admin/audit', icon: BookOpen, permission: 'Admin.Audit.View' },
   { key: 'settings', href: '/admin/settings', icon: Settings, permission: 'Admin.Settings.View' },
+  { key: 'legal', href: '/admin/legal', icon: FileText, permission: 'Admin.Settings.View' },
 ];
 
 /** Filters items by permission. `undefined` permissions means "not yet known" (pre-Phase 04 dev shells): show all. */

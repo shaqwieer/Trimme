@@ -87,7 +87,7 @@ export function ServicesPanel({
                 s.price,
                 s.currency,
                 s.durationMinutes,
-                bookable && s.onlineBookable ? bookHref(slug, { service: s.id }) : null,
+                bookable && s.onlineBookable ? bookHref(slug, { service: s.id, step: 'service' }) : null,
               ),
             )}
           </ul>

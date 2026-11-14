@@ -240,7 +240,14 @@ internal static class ShopEndpoints
         group.MapGet("/reverse", Reverse).RequirePermission(permission).RequireRateLimiting(RateLimitPolicies.Geocode)
             .WithName($"{namePrefix}GeocodeReverse").WithSummary("The address at a map point, for the picker's confirmation card.")
             .Produces<GeocodedPlace>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapGet("/map-link", MapLink).RequirePermission(permission).RequireRateLimiting(RateLimitPolicies.Geocode)
+            .WithName($"{namePrefix}ResolveMapLink")
+            .WithSummary("The point and address of a pasted Google Maps link (a short link is followed through Google only, D-144).")
+            .Produces<MapLinkPlace>().ProducesProblem(StatusCodes.Status400BadRequest);
     }
+
+    private static async Task<IResult> MapLink(string? url, string? lang, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new ResolveMapLinkQuery(url ?? string.Empty, lang ?? "ar"), cancellationToken)).ToHttpResult();
 
     private static async Task<IResult> Create(CreateShopRequest request, IDispatcher dispatcher, CancellationToken cancellationToken)
     {

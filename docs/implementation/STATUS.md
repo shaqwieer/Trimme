@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-13 (Session 25: customers sign up and sign in with their mobile number alone; sign-in codes are off by default (D-143))
+- **Updated:** 2026-11-14 (Session 26: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -52,6 +52,14 @@
   - **Codes later:** `Identity__Otp__Enabled=true` plus a sender (WhatsApp once Meta approves the authentication template; SMS needs a new sender). Then a number alone is refused (`auth.otp_required`).
   - **The risk, accepted by the user:** anyone who knows a customer's number can sign in as them; booking messages go to whatever number was typed.
   - Pushed (`0bd8fcb`) and **deployed to groomhere.sa on 2026-11-13** after a database backup; no migration; smoke checks clean (codes off, WhatsApp still on Meta).
+- **Session 26 (D-144), at the user's request** (screenshots of groomhere.sa):
+  - **Booking:** a service's «احجز» opens the services step with it chosen (more can be added); the hour buttons no longer show a time count; rescheduling uses the booking screens (nearest time, days, hour then minutes, a review of the old and new times).
+  - **Customer account:** personal info has an optional email and the number (masked) with «تغيير الرقم» and the warning that the new number becomes the sign-in number (only while codes are off); «حذف الحساب» erases the customer (refused while bookings are ahead); the «إشعارات واتساب» row is gone.
+  - **Signed-in users** cannot open the landing or sign-in pages until they sign out (typed or with Back); a stale hint never locks anyone out.
+  - **Admin:** «الشروط والخصوصية» edits both legal pages per language in rich text (TipTap, stored as an allowlisted document, never HTML); restore brings back the built-in text.
+  - **Location:** a pasted Google Maps link (full or short) fills the coordinates and the address; short links are followed through Google hosts only.
+  - **Directions** open Google Maps from the visitor's location; **QR files** are named `groomhere-qr-…`.
+  - Migration 21 (`CustomerAccountAndLegalPages`, additive). Committed locally; **not pushed or deployed** (the user has not asked yet).
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

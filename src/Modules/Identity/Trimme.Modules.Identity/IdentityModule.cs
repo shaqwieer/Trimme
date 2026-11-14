@@ -81,6 +81,7 @@ public sealed class IdentityModule : ModuleBase
     public override void MapEndpoints(IEndpointRouteBuilder api)
     {
         AuthEndpoints.Map(api);
+        CustomerAccountEndpoints.Map(api);
         AdminIdentityEndpoints.Map(api);
         AdminAccountEndpoints.Map(api);
         DevOtpInboxEndpoints.Map(api);

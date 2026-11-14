@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
-import { useApiErrorMessage } from '@/lib/api/errors';
+import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
 import { contentLanguage } from '@/lib/i18n/localized';
@@ -22,6 +22,7 @@ import { MapLibreView } from './MapLibreView';
 import type { MapViewComponent } from './MapView';
 
 type Place = components['schemas']['GeocodedPlace'];
+type LinkPlace = components['schemas']['MapLinkPlace'];
 export type LocationSource = 'Manual' | 'Geocoded' | 'Device';
 
 /** What the picker saves: the confirmed point, its address and how it was chosen. */
@@ -66,6 +67,19 @@ async function reversePlace(scope: 'admin' | 'shop', point: LatLng, lang: string
   return data ?? null;
 }
 
+/** The point and address of a pasted Google Maps link (D-144); a short link is followed by the API, through Google only. */
+async function placeFromLink(scope: 'admin' | 'shop', url: string, lang: string): Promise<LinkPlace> {
+  const query = { params: { query: { url, lang } } };
+  return ensureOk(
+    scope === 'admin'
+      ? await browserApi.GET('/api/v1/admin/geo/map-link', query)
+      : await browserApi.GET('/api/v1/shop/geo/map-link', query),
+  );
+}
+
+/** Anything pasted into the address search that is a web address goes to the link reader instead. */
+const looksLikeLink = (text: string) => /https?:\/\//i.test(text);
+
 const toAddress = (place: Place): Address => ({
   addressLine: place.addressLine,
   district: place.district,
@@ -74,9 +88,10 @@ const toAddress = (place: Place): Address => ({
 });
 
 /**
- * Shop location picker (spec §8, DV-A02), in the TRIMME visual language: address search, "use my current location",
- * a map with a draggable pin, the resolved address with its coordinates, and confirm. The typed coordinate and
- * address fields are the keyboard and no-map alternative. Geolocation is requested only when the user asks.
+ * Shop location picker (spec §8, DV-A02), in the TRIMME visual language: a pasted Google Maps link (D-144), address
+ * search, "use my current location", a map with a draggable pin, the resolved address with its coordinates, and
+ * confirm. The typed coordinate and address fields are the keyboard and no-map alternative. Geolocation is requested
+ * only when the user asks.
  */
 export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibreView }: LocationPickerProps) {
   const t = useTranslations('locationPicker');
@@ -102,6 +117,9 @@ export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibre
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [failure, setFailure] = useState<string>();
+  const [link, setLink] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [linkResult, setLinkResult] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const reverseRequest = useRef(0);
 
   const moveTo = useCallback((next: LatLng, nextSource: LocationSource) => {
@@ -136,8 +154,48 @@ export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibre
 
   const onPinChange = useCallback((next: LatLng) => void resolve(moveTo(next, 'Manual')), [moveTo, resolve]);
 
+  /** Reads a Google Maps link: the point from the link, the address from the API (else the place's name in it). */
+  const applyLink = async (text: string) => {
+    if (!text.trim()) return;
+    setLinking(true);
+    setLinkResult(null);
+    try {
+      const place = await placeFromLink(scope, text.trim(), lang);
+      reverseRequest.current++;
+      moveTo({ lat: place.latitude, lng: place.longitude }, 'Geocoded');
+      setAddress({
+        addressLine: place.addressLine,
+        district: place.district,
+        city: place.city,
+        formattedAddress: place.formattedAddress,
+      });
+      setResolving(false);
+      setUnresolved(!place.formattedAddress);
+      setResults(null);
+      setLinkResult({ tone: 'success', text: t('link.applied') });
+    } catch (error) {
+      setLinkResult({
+        tone: 'danger',
+        text: apiMessage(error instanceof ApiError ? error : 'server.unexpected') ?? '',
+      });
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const onLink = (event: FormEvent) => {
+    event.preventDefault();
+    void applyLink(link);
+  };
+
   const onSearch = async (event: FormEvent) => {
     event.preventDefault();
+    if (looksLikeLink(query)) {
+      setLink(query.trim());
+      setQuery('');
+      void applyLink(query);
+      return;
+    }
     if (query.trim().length < 2) return;
     setSearching(true);
     try {
@@ -209,6 +267,39 @@ export function LocationPicker({ initial, scope, onSave, MapComponent = MapLibre
 
   return (
     <div className="flex flex-col gap-4" data-testid="location-picker">
+      <form
+        method="post"
+        onSubmit={onLink}
+        className="flex flex-col gap-2 rounded-card border border-border bg-bg-subtle p-4"
+        data-testid="map-link"
+      >
+        <div className="flex items-end gap-2">
+          <TextField
+            label={t('link.label')}
+            placeholder={t('link.placeholder')}
+            value={link}
+            dir="ltr"
+            inputMode="url"
+            autoComplete="off"
+            onChange={(event) => setLink(event.target.value)}
+            onPaste={(event) => {
+              const pasted = event.clipboardData.getData('text');
+              if (pasted.trim()) {
+                event.preventDefault();
+                setLink(pasted.trim());
+                void applyLink(pasted);
+              }
+            }}
+            className="min-w-0 flex-1"
+          />
+          <Button type="submit" variant="secondary" size="md" icon="pin" loading={linking}>
+            {t('link.apply')}
+          </Button>
+        </div>
+        <p className="text-helper text-text-secondary">{t('link.hint')}</p>
+        {linkResult && <InlineAlert tone={linkResult.tone} title={linkResult.text} />}
+      </form>
+
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <form method="post" role="search" onSubmit={onSearch} className="flex min-w-0 flex-1 items-end gap-2">
           <TextField

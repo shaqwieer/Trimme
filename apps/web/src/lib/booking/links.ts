@@ -14,7 +14,11 @@ export function bookHref(slug: string, query: Record<string, string | string[] |
   return text ? `/shops/${slug}/book?${text}` : `/shops/${slug}/book`;
 }
 
-/** OpenStreetMap directions to the shop (D-007: OSM everywhere; opens the visitor's route in a new tab). */
+/**
+ * Google Maps directions to the shop (D-144, replacing D-007's OpenStreetMap link for directions only): with no origin,
+ * Google Maps starts from the visitor's own location and shows the route's time and distance; on a phone it opens the
+ * Google Maps app. The maps on our pages stay OpenStreetMap.
+ */
 export function directionsUrl(latitude: number, longitude: number): string {
-  return `https://www.openstreetmap.org/directions?to=${latitude.toFixed(6)}%2C${longitude.toFixed(6)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${latitude.toFixed(6)}%2C${longitude.toFixed(6)}`;
 }

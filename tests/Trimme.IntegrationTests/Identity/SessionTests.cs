@@ -42,6 +42,14 @@ public sealed class SessionTests(PostgresFixture postgres)
         csrf.ShouldContain("secure");
         csrf.ShouldNotContain("httponly");
 
+        // The signed-in hint (D-144) carries only the user type, for the web app's redirects; it is no token.
+        var hint = setCookies.Single(c => c.StartsWith("trimme-signed-in=", StringComparison.Ordinal)).ToLowerInvariant();
+        hint.ShouldStartWith("trimme-signed-in=customer;");
+        hint.ShouldContain("secure");
+        hint.ShouldContain("samesite=lax");
+        hint.ShouldContain("path=/;");
+        hint.ShouldNotContain("httponly");
+
         // Tokens travel only in cookies, never in a body the page could store.
         var body = await response.Content.ReadAsStringAsync(ct);
         body.ShouldNotContain(session.Cookie("trimme-refresh", "/api/v1/auth")!);
@@ -209,16 +217,32 @@ public sealed class SessionTests(PostgresFixture postgres)
 
         session.Cookie("trimme-access").ShouldBeNull();
         session.Cookie("trimme-refresh", "/api/v1/auth").ShouldBeNull();
+        session.Cookie("trimme-signed-in").ShouldBeNull();
         using (var me = await session.GetAsync("/api/v1/me", ct))
         {
             me.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         }
 
-        // The refresh token of the ended session is dead too.
+        // The refresh token of the ended session is dead too, and its failed refresh deletes a stale hint (D-144).
         using var replay = ApiSession.Create(factory);
         replay.Cookies.Add(new Uri(ApiSession.Origin, "/api/v1/auth"), new Cookie("trimme-refresh", refresh, "/api/v1/auth"));
-        using var refreshed = await replay.PostAsync("/api/v1/auth/refresh", body: null, ct);
-        refreshed.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        replay.Cookies.Add(ApiSession.Origin, new Cookie("trimme-signed-in", "Customer", "/") { Secure = true });
+        using (var refreshed = await replay.PostAsync("/api/v1/auth/refresh", body: null, ct))
+        {
+            refreshed.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        }
+
+        replay.Cookie("trimme-signed-in").ShouldBeNull();
+
+        // A browser with the hint but no refresh cookie at all loses the hint on its first refresh too.
+        using var hintOnly = ApiSession.Create(factory);
+        hintOnly.Cookies.Add(ApiSession.Origin, new Cookie("trimme-signed-in", "ShopUser", "/") { Secure = true });
+        using (var refreshed = await hintOnly.PostAsync("/api/v1/auth/refresh", body: null, ct))
+        {
+            refreshed.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        }
+
+        hintOnly.Cookie("trimme-signed-in").ShouldBeNull();
     }
 
     [Fact]

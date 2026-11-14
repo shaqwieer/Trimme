@@ -1,3 +1,4 @@
+import { SignedInGate } from '@/components/auth/SignedInGate';
 import { StaffSignInForm } from '@/components/auth/StaffForms';
 import { optionalReturnTo } from '@/lib/auth/paths';
 import { redirectIfSignedIn } from '@/lib/auth/server';
@@ -9,5 +10,10 @@ export default async function StaffSignInPage({
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   const returnTo = optionalReturnTo(query.returnTo);
   await redirectIfSignedIn(locale, returnTo);
-  return <StaffSignInForm returnTo={returnTo} />;
+  return (
+    <>
+      <SignedInGate returnTo={returnTo} />
+      <StaffSignInForm returnTo={returnTo} />
+    </>
+  );
 }

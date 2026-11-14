@@ -10,6 +10,7 @@ import { getServerApi } from '@/lib/api/server';
 import { requireCustomer } from '@/lib/auth/server';
 import { getPublicShop } from '@/lib/discovery/shop-data';
 import { OPERATING_TIME_ZONE } from '@/lib/i18n/config';
+import { localizedName } from '@/lib/i18n/localized';
 
 export async function generateMetadata({
   params,
@@ -19,7 +20,7 @@ export async function generateMetadata({
   return { title: t('title') };
 }
 
-/** Reschedule one of the customer's own bookings while the policy allows it (D-015, D-089, D-097). */
+/** Reschedule one of the customer's own bookings while the policy allows it (D-015, D-089, D-097), as booking it (D-144). */
 export default async function ReschedulePage({
   params,
 }: PageProps<'/[locale]/account/bookings/[bookingId]/reschedule'>) {
@@ -41,24 +42,17 @@ export default async function ReschedulePage({
     getPublicShop(booking.shop.slug),
   ]);
 
-  return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 md:px-6">
-      <Breadcrumb
-        items={[
-          { label: tList('title'), href: '/account/bookings' },
-          { label: tList('detail.title'), href: detail },
-          { label: t('title') },
-        ]}
-      />
-      <h1 className="text-page-title font-bold text-navy-900">{t('title')}</h1>
-      {booking.allowedActions.includes('Reschedule') ? (
-        <RescheduleForm
-          bookingId={booking.id}
-          version={booking.version}
-          startsAt={booking.startsAt}
-          timeZone={shop?.timeZone ?? OPERATING_TIME_ZONE}
+  if (!booking.allowedActions.includes('Reschedule')) {
+    return (
+      <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 md:px-6">
+        <Breadcrumb
+          items={[
+            { label: tList('title'), href: '/account/bookings' },
+            { label: tList('detail.title'), href: detail },
+            { label: t('title') },
+          ]}
         />
-      ) : (
+        <h1 className="text-page-title font-bold text-navy-900">{t('title')}</h1>
         <InlineAlert
           tone="warning"
           title={t('notAllowed')}
@@ -68,7 +62,30 @@ export default async function ReschedulePage({
             </ButtonLink>
           }
         />
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  // The same screens as the booking wizard (D-144): the shop and area in the header, the service and professional on
+  // the review.
+  const area = [shop?.location?.district, shop?.location?.city]
+    .filter(Boolean)
+    .join(locale === 'ar' ? '، ' : ', ');
+  return (
+    <RescheduleForm
+      booking={{
+        id: booking.id,
+        version: booking.version,
+        startsAt: booking.startsAt,
+        timeZone: shop?.timeZone ?? OPERATING_TIME_ZONE,
+        shopName: localizedName(locale, booking.shop.nameAr, booking.shop.nameEn),
+        area: area || null,
+        itemName: localizedName(locale, booking.item.nameAr, booking.item.nameEn),
+        professionalName: localizedName(locale, booking.professional.nameAr, booking.professional.nameEn),
+        durationMinutes: booking.item.durationMinutes,
+        price: booking.item.price,
+        currency: booking.item.currency,
+      }}
+    />
   );
 }

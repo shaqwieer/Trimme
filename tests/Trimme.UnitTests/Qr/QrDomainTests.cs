@@ -155,7 +155,7 @@ public sealed partial class QrDomainTests
         new QrLinkOptions { PublicBaseUrl = "https://trimme.sa/" }.UrlFor("aswn7qkd").ShouldBe("https://trimme.sa/q/aswn7qkd");
         var png = QrImages.Render(Url, "aswn7qkd", QrImageFormat.Png, 100);
         png.ContentType.ShouldBe("image/png");
-        png.FileName.ShouldBe("trimme-qr-aswn7qkd.png");
+        png.FileName.ShouldBe("groomhere-qr-aswn7qkd.png");
     }
 
     [GeneratedRegex(@"h(\d+)v1")]

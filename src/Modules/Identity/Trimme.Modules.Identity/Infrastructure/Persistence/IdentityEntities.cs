@@ -39,6 +39,18 @@ internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
     /// Cleared by the change or by an emailed password reset.
     /// </summary>
     public bool MustChangePassword { get; set; }
+
+    /// <summary>
+    /// A customer's own email (D-144), for their records only: kept apart from Identity's <c>Email</c>, which staff
+    /// sign-in, password resets and invitations key on, so a customer can never claim a staff address.
+    /// </summary>
+    public string? ContactEmail { get; set; }
+
+    /// <summary>
+    /// The customer deleted their account (D-144): name, number and email are erased, sign-in is closed for good and
+    /// the number can register again as a new account. Bookings and reviews keep their own records.
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
 }
 
 /// <summary>A role belongs to exactly one user type; only permissions of that type can be granted to it.</summary>

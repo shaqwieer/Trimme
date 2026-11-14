@@ -256,25 +256,20 @@ export function HourMinutePicker({
       <fieldset className="flex min-w-0 flex-col">
         <legend className="pb-2.5 text-label font-bold text-text-strong">{t('hour')}</legend>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
-          {hours.map((h) => {
-            const inHour = slots.filter((slot) => hourOf(slot) === h);
-            return (
-              <label key={h} className={cn(chip, 'flex-col gap-0.5 py-1.5')}>
-                <input
-                  type="radio"
-                  name={`${name}-hour`}
-                  value={h}
-                  checked={hour === h}
-                  onChange={() => setPicked(h)}
-                  className="sr-only"
-                />
-                <span>{formatHour(inHour[0]!.start, locale, timeZone)}</span>
-                <span className="text-[0.6875rem] font-medium opacity-80">
-                  {t('minutesCount', { count: inHour.length })}
-                </span>
-              </label>
-            );
-          })}
+          {hours.map((h) => (
+            // The hour alone (D-144): how many minutes it has free shows once it is opened.
+            <label key={h} className={chip}>
+              <input
+                type="radio"
+                name={`${name}-hour`}
+                value={h}
+                checked={hour === h}
+                onChange={() => setPicked(h)}
+                className="sr-only"
+              />
+              {formatHour(slots.find((slot) => hourOf(slot) === h)!.start, locale, timeZone)}
+            </label>
+          ))}
         </div>
       </fieldset>
       {hour ? (

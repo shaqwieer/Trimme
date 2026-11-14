@@ -116,6 +116,8 @@ test.describe('shops, locations and professionals (R-SHP-01/02, R-PRO-01, R-NEG-
 
     const pin = page.getByTestId('map-pin');
     await expect(pin).toBeVisible();
+    // The Google Maps link field sits above the map (D-144): bring the map into view before dragging its pin.
+    await pin.evaluate((element) => element.scrollIntoView({ block: 'center' }));
     const box = await settledBox(page, pin);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height - 4);
     await page.mouse.down();

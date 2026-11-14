@@ -72,7 +72,8 @@
       "whatsapp": "WhatsApp",
       "roles": "Roller ve yetkiler",
       "audit": "Denetim kaydı",
-      "settings": "Platform ayarları"
+      "settings": "Platform ayarları",
+      "legal": "Koşullar ve gizlilik"
     }
   },
   "errors": {
@@ -134,7 +135,6 @@
       "hour": "Saati seçin",
       "minute": "Dakikayı seçin",
       "pickHour": "Boş dakikalarını görmek için bir saat seçin.",
-      "minutesCount": "{count, plural, one {1 seçenek} other {# seçenek}}",
       "taken": "Müsait değil"
     },
     "calendar": {
@@ -395,8 +395,6 @@
     },
     "rows": {
       "language": "Dil",
-      "notifications": "WhatsApp bildirimleri",
-      "notificationsValue": "WhatsApp ve uygulama içi",
       "personal": "Kişisel bilgiler",
       "bookings": "Randevularım",
       "favorites": "Favoriler",
@@ -413,7 +411,26 @@
       "english": "English",
       "turkish": "Türkçe",
       "save": "Değişiklikleri kaydet",
-      "saved": "Bilgileriniz kaydedildi."
+      "saved": "Bilgileriniz kaydedildi.",
+      "emailLabel": "E-posta",
+      "emailHint": "Yalnızca kendi kayıtlarınız için; işletmeler görmez.",
+      "phoneLabel": "Cep telefonu",
+      "phoneChange": "Numarayı değiştir",
+      "phoneCancel": "Numaramı koru",
+      "phoneNewLabel": "Yeni cep telefonu",
+      "phoneWarningTitle": "Yeni numarayla giriş yapacaksınız",
+      "phoneWarningBody": "Kaydettikten sonra giriş yaptığınız ve randevu mesajlarınızın gittiği numara bu olur. Mevcut numaranız bu hesabı artık açmaz.",
+      "phoneLocked": "Cep telefonunuzu değiştirmek için Groom Here ekibiyle iletişime geçin."
+    },
+    "delete": {
+      "title": "Hesabı sil",
+      "body": "Adınızı, cep telefonunuzu, e-postanızı ve favorilerinizi siler, tüm cihazlarda oturumunuzu kapatır. Geçmiş randevularınız işletmelerin kayıtlarında kalır. Bu işlem geri alınamaz.",
+      "button": "Hesabımı sil",
+      "confirmTitle": "Hesabınız kalıcı olarak silinsin mi?",
+      "confirmBody": "Hesabınızı, favorilerinizi veya sadakat kartlarınızı geri alamazsınız. Daha sonra numaranızla yeni bir hesap olarak kaydolabilirsiniz.",
+      "confirm": "Evet, hesabımı sil",
+      "cancel": "Vazgeç",
+      "upcomingLink": "Randevularımı gör"
     }
   },
   "shopHome": {
@@ -523,7 +540,15 @@
     "invitation_role_invalid": "Bu rol, davet edilen hesap türüne uygun değil.",
     "loyalty_reward_unavailable": "Bu kupon kullanılamıyor: kullanılmış, süresi dolmuş ya da başka bir salona ait.",
     "auth_password_change_required": "Geçici şifrenin yerine yeni bir şifre seçin.",
-    "auth_password_change_not_required": "Bu şifre geçici değil. Doğrudan bu şifreyle giriş yapın."
+    "auth_password_change_not_required": "Bu şifre geçici değil. Doğrudan bu şifreyle giriş yapın.",
+    "geo_map_link_invalid": "Bu bir Google Haritalar bağlantısı değil.",
+    "geo_map_link_unresolved": "Kısa bağlantı açılamadı. Google Haritalar’dan tam bağlantıyı kopyalayıp tekrar deneyin.",
+    "geo_map_link_no_location": "Bağlantıda konum yok. İşletmeyi Google Haritalar’da açıp bağlantısını Paylaş’tan kopyalayın.",
+    "auth_phone_taken": "Bu numara başka bir hesapta kayıtlı.",
+    "auth_phone_change_otp_required": "Numara şu anda buradan değiştirilemez. Groom Here ekibiyle iletişime geçin.",
+    "account_has_upcoming_bookings": "Yaklaşan randevularınız var. Onları iptal edin ya da bitmelerini bekleyin, sonra hesabınızı silin.",
+    "legal_content_invalid": "Bu metin kaydedilemez: desteklenmeyen öğeleri veya güvenli olmayan bağlantıları kaldırın ve boş olmadığından emin olun.",
+    "legal_not_found": "Bu sayfa yok."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -753,7 +778,14 @@
     "attribution": "Harita verileri © OpenStreetMap katkıda bulunanlar",
     "zoomIn": "Yakınlaştır",
     "zoomOut": "Uzaklaştır",
-    "toggleAttribution": "Harita kaynaklarını göster"
+    "toggleAttribution": "Harita kaynaklarını göster",
+    "link": {
+      "label": "Google Haritalar bağlantısı",
+      "placeholder": "https://maps.app.goo.gl/…",
+      "hint": "İşletmeyi Google Haritalar’da açın, Paylaş’a ve ardından Bağlantıyı kopyala’ya dokunun, buraya yapıştırın: koordinatlar ve adres otomatik doldurulur.",
+      "apply": "Bağlantıyı kullan",
+      "applied": "Konum bağlantıdan belirlendi. Adresi kontrol edip Konumu onayla’ya basın."
+    }
   },
   "adminProfessionals": {
     "title": "Uzmanlar ve hizmetleri",
@@ -1857,7 +1889,8 @@
           "body": "Hesap sayfanızdan bilgilerinizi düzenleyebilir ve oturumlarınızı sonlandırabilir, destek ekibinden hesabınızın silinmesini isteyebilirsiniz."
         }
       }
-    }
+    },
+    "updated": "Son güncelleme: {date}"
   },
   "booking": {
     "meta": {
@@ -2044,7 +2077,13 @@
       "loading": "Saatler yükleniyor…",
       "taken": "Bu saat az önce alındı — yenilenen saatlerden başka birini seçin.",
       "notAllowed": "Bu randevu şu anda Groom Here üzerinden değiştirilemez.",
-      "backToBooking": "Randevuya dön"
+      "backToBooking": "Randevuya dön",
+      "reviewTitle": "Yeni saati gözden geçirin",
+      "nearestPick": "Bu saati seç",
+      "summary": {
+        "from": "Mevcut randevu",
+        "to": "Yeni randevu"
+      }
     }
   },
   "review": {
@@ -2760,7 +2799,8 @@
       "PlatformSettings": "ayarlar",
       "QrCodeLink": "QR kod",
       "WhatsAppTemplate": "WhatsApp şablonu",
-      "WhatsAppDispatch": "WhatsApp mesajı"
+      "WhatsAppDispatch": "WhatsApp mesajı",
+      "LegalDocument": "Yasal sayfa"
     },
     "actions": {
       "shop_created": "Salon oluşturuldu",
@@ -2829,7 +2869,11 @@
       "whatsapp_template_activated": "WhatsApp şablon sürümü etkinleştirildi",
       "whatsapp_template_test_sent": "WhatsApp şablon testi gönderildi",
       "package_admin_created": "Paket bir yönetici tarafından eklendi",
-      "package_admin_updated": "Paket bir yönetici tarafından düzenlendi"
+      "package_admin_updated": "Paket bir yönetici tarafından düzenlendi",
+      "customer_account_deleted": "Müşteri hesabını sildi",
+      "customer_contact_changed": "Müşteri e-postasını veya numarasını değiştirdi",
+      "legal_document_saved": "Yasal sayfa metni kaydedildi",
+      "legal_document_reset": "Yasal sayfa yerleşik metne döndürüldü"
     }
   },
   "notifications": {
@@ -3270,5 +3314,53 @@
         "redeemed": "Kullanılan kuponlar"
       }
     }
+  },
+  "legalAdmin": {
+    "title": "Koşullar ve gizlilik",
+    "intro": "Kullanım koşulları ve Gizlilik politikası sayfalarını her dil için yazın. Kaydedilen metin ziyaretçilere hemen gösterilir; geri yükleme yerleşik metni getirir.",
+    "kinds": {
+      "terms": "Kullanım koşulları",
+      "privacy": "Gizlilik politikası"
+    },
+    "locale": "Dil",
+    "custom": "Özel metin — güncelleme {date}",
+    "builtIn": "Şu anda yerleşik metin gösteriliyor. Kendi metninizi yayınlamak için düzenleyip kaydedin.",
+    "editorLabel": "{page} metni ({language})",
+    "save": "Kaydet ve yayınla",
+    "saved": "Metin kaydedildi ve yayınlandı.",
+    "restore": "Yerleşik metni geri yükle",
+    "restoreTitle": "Yerleşik metin geri yüklensin mi?",
+    "restoreBody": "Bu dil için kaydedilen metin silinir ve sayfa yerleşik metnini gösterir.",
+    "restoreConfirm": "Evet, geri yükle",
+    "restored": "Sayfa yeniden yerleşik metnini gösteriyor.",
+    "cancel": "Vazgeç",
+    "view": "Sayfayı görüntüle",
+    "readOnly": "Bu metni düzenleyemezsiniz.",
+    "unsaved": "Kaydedilmemiş değişiklikler",
+    "toolbar": {
+      "label": "Biçimlendirme",
+      "h2": "Başlık",
+      "h3": "Alt başlık",
+      "paragraph": "Paragraf",
+      "bold": "Kalın",
+      "italic": "İtalik",
+      "underline": "Altı çizili",
+      "strike": "Üstü çizili",
+      "bulletList": "Madde işaretli liste",
+      "orderedList": "Numaralı liste",
+      "blockquote": "Alıntı",
+      "link": "Bağlantı",
+      "undo": "Geri al",
+      "redo": "Yinele"
+    },
+    "link": {
+      "label": "Bağlantı adresi",
+      "placeholder": "https://…",
+      "apply": "Uygula",
+      "remove": "Bağlantıyı kaldır",
+      "invalid": "https:// ile başlayan bir bağlantı ya da bir e-posta veya telefon bağlantısı girin."
+    },
+    "customBadge": "Özel metin",
+    "builtInBadge": "Yerleşik metin"
   }
 }

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { SignedInGate } from '@/components/auth/SignedInGate';
 import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { DiscoveryShopCard } from '@/components/discovery/ShopCards';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -58,6 +59,7 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
   const city = cities.length === 1 ? cities[0] : null;
   return (
     <PublicShell variant="landing">
+      <SignedInGate />
       <JsonLd
         data={[
           organizationLd(absoluteUrl('/'), absoluteUrl('/brand/groomhere-logo.png'), app('appName')),

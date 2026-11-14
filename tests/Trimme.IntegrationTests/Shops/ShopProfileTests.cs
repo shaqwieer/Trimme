@@ -421,4 +421,38 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
         (await admin.GetAsync("/api/v1/admin/geo/reverse?lat=51.5&lng=-0.12", ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await admin.GetAsync("/api/v1/admin/geo/search?q=a", ct)).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task AGoogleMapsLink_FillsThePointAndTheAddress_AndAnythingElseIsRefused()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await ShopTestData.CreateFactoryAsync(postgres, "shop_map_link", ct);
+        using var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
+        string Link(string url) => $"/api/v1/admin/geo/map-link?lang=en&url={Uri.EscapeDataString(url)}";
+
+        // The pin (!3d!4d), not the camera centre (@…), and the address reverse-geocoded from it (D-144).
+        var place = await (await admin.GetAsync(
+            Link("https://www.google.com/maps/place/Barber+House/@24.70,46.50,17z/data=!3m1!4b1!4m6!3m5!8m2!3d24.7631!4d46.6012"), ct)).JsonAsync(ct);
+        place.GetProperty("latitude").GetDouble().ShouldBe(24.7631);
+        place.GetProperty("longitude").GetDouble().ShouldBe(46.6012);
+        place.GetProperty("placeName").GetString().ShouldBe("Barber House");
+        place.GetProperty("district").GetString().ShouldBe("Hittin");
+        place.GetProperty("city").GetString().ShouldBe("Riyadh");
+
+        // A link with only a place name is searched by that name.
+        var named = await (await admin.GetAsync(Link("https://www.google.com/maps?q=Al+Malqa"), ct)).JsonAsync(ct);
+        named.GetProperty("district").GetString().ShouldBe("Al Malqa");
+
+        using (var other = await admin.GetAsync(Link("https://example.com/maps/@24.7,46.6,17z"), ct))
+        {
+            other.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            (await other.ErrorCodeAsync(ct)).ShouldBe("geo.map_link_invalid");
+        }
+
+        using (var nowhere = await admin.GetAsync(Link("https://www.google.com/maps"), ct))
+        {
+            nowhere.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            (await nowhere.ErrorCodeAsync(ct)).ShouldBe("geo.map_link_no_location");
+        }
+    }
 }

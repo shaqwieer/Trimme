@@ -94,6 +94,28 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Customer account"
+        ],
+        "summary": "Deletes the customer\u0027s account: refused while bookings are ahead; erases the name, number and email, ends every session and clears the cookies.",
+        "operationId": "DeleteCustomerAccount",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/shop/me": {
@@ -1853,6 +1875,54 @@
         }
       }
     },
+    "/api/v1/public/legal/{kind}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "The admin\u0027s text of the terms (kind=terms) or privacy policy (kind=privacy) in one language; 404 means the built-in text applies.",
+        "operationId": "GetPublicLegalDocument",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/dashboard/overview": {
       "get": {
         "tags": [
@@ -2522,6 +2592,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RevokedSessionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profile": {
+      "get": {
+        "tags": [
+          "Customer account"
+        ],
+        "summary": "The customer\u0027s name, language, email and masked number, and whether the number can be changed here.",
+        "operationId": "GetCustomerProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Customer account"
+        ],
+        "summary": "Saves the customer\u0027s name, language and email; a new number becomes the one they sign in with (while sign-in codes are off).",
+        "operationId": "UpdateCustomerProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -4870,6 +5030,53 @@
         }
       }
     },
+    "/api/v1/admin/geo/map-link": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "The point and address of a pasted Google Maps link (a short link is followed through Google only, D-144).",
+        "operationId": "AdminResolveMapLink",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapLinkPlace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/geo/search": {
       "get": {
         "tags": [
@@ -4967,6 +5174,53 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/geo/map-link": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The point and address of a pasted Google Maps link (a short link is followed through Google only, D-144).",
+        "operationId": "ShopResolveMapLink",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapLinkPlace"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12630,6 +12884,139 @@
         }
       }
     },
+    "/api/v1/admin/legal": {
+      "get": {
+        "tags": [
+          "Admin: settings"
+        ],
+        "summary": "Every saved language of the terms and the privacy policy.",
+        "operationId": "ListLegalDocuments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LegalDocumentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/legal/{kind}/{locale}": {
+      "put": {
+        "tags": [
+          "Admin: settings"
+        ],
+        "summary": "Saves one language of the terms or the privacy policy (rich text through an allowlist; audited).",
+        "operationId": "SaveLegalDocument",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLegalDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalDocumentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: settings"
+        ],
+        "summary": "Deletes the saved text of one language, so the page shows its built-in text again (audited).",
+        "operationId": "ResetLegalDocument",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/audit": {
       "get": {
         "tags": [
@@ -16356,6 +16743,43 @@
         },
         "description": "The customer\u0027s full mobile in E.164, returned once to an authorized admin (never cached, never logged)."
       },
+      "CustomerProfileResponse": {
+        "required": [
+          "displayName",
+          "preferredLocale",
+          "email",
+          "phoneMasked",
+          "phoneChangeAllowed"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "preferredLocale": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phoneChangeAllowed": {
+            "type": "boolean"
+          }
+        },
+        "description": "\u0022Personal info\u0022: the name shops see, the language, an optional email (for the customer\u0027s records only), and the\nnumber masked. \u0060PhoneChangeAllowed\u0060 is false while sign-in codes are on (a new number would need a code)."
+      },
       "CustomerSignInOptionsResponse": {
         "required": [
           "otpRequired"
@@ -17204,6 +17628,32 @@
           }
         }
       },
+      "JsonElement": {},
+      "LegalDocumentResponse": {
+        "required": [
+          "kind",
+          "locale",
+          "content",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "One saved legal page: \u0060Kind\u0060 is \u0060terms\u0060 or \u0060privacy\u0060; \u0060Content\u0060 is the cleaned rich-text document."
+      },
       "LocationSource": {
         "enum": [
           "Manual",
@@ -17335,6 +17785,59 @@
           }
         },
         "description": "How the programme is used at one shop: customers with a stamp, stamps on open cards, and rewards by state."
+      },
+      "MapLinkPlace": {
+        "required": [
+          "latitude",
+          "longitude",
+          "placeName",
+          "formattedAddress",
+          "addressLine",
+          "district",
+          "city"
+        ],
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double"
+          },
+          "placeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "formattedAddress": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "addressLine": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "district": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The point and address a pasted Google Maps link names (D-144): the coordinates come from the link itself; the\naddress fields from reverse geocoding them, else the place\u0027s name in the link. Any field the provider cannot fill is\nnull and stays editable in the picker."
       },
       "MeResponse": {
         "required": [
@@ -20631,6 +21134,18 @@
           }
         }
       },
+      "SaveLegalDocumentRequest": {
+        "required": [
+          "content"
+        ],
+        "type": "object",
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        },
+        "description": "The rich-text document from the admin\u0027s editor (ProseMirror JSON); the API keeps only what its allowlist permits."
+      },
       "SaveLoyaltyProgramRequest": {
         "required": [
           "isActive",
@@ -23312,6 +23827,36 @@
           }
         }
       },
+      "UpdateCustomerProfileRequest": {
+        "required": [
+          "displayName",
+          "preferredLocale",
+          "email",
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "preferredLocale": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "\u0060Phone\u0060 empty keeps the number; another number moves the account to it (codes off only, D-144)."
+      },
       "UpdateOwnShopProfileRequest": {
         "required": [
           "nameAr",
@@ -23982,6 +24527,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "Customer account"
     },
     {
       "name": "Shop"

@@ -7,6 +7,7 @@ import { SkeletonList } from '@/components/ui/states';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import { browserApi, refreshSession, setSessionExpiredHandler } from '@/lib/api/client';
 import { signInPathFor, withReturnTo } from '@/lib/auth/paths';
+import { clearSignedInHint } from '@/lib/auth/signedIn';
 
 /**
  * Landing page of the server guards when the access cookie is missing or expired: tries one silent refresh (the
@@ -23,6 +24,9 @@ export function SessionRestore({ returnTo }: { returnTo: string }) {
     started.current = true;
     void (async () => {
       const restored = (await refreshSession()) && (await browserApi.GET('/api/v1/me')).response.ok;
+      // A hint the session could not back (revoked elsewhere, or the API unreachable) must not keep the user away from
+      // sign-in (D-144); the API deletes it on a refused refresh, and this covers a refresh that never got an answer.
+      if (!restored) clearSignedInHint();
       router.replace(restored ? returnTo : withReturnTo(signInPathFor(returnTo), returnTo));
     })();
   }, [returnTo, router]);

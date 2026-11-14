@@ -94,6 +94,18 @@ public static class IdentityErrors
     public static Error UserNotFound() =>
         Error.NotFound("auth.user_not_found", "The user was not found.");
 
+    /// <summary>Another customer account has this number (D-144).</summary>
+    public static Error PhoneTaken() =>
+        Error.Conflict("auth.phone_taken", "Another account uses this mobile number.");
+
+    /// <summary>While codes are on, a new number must be confirmed with a code, which this change does not do yet (D-144).</summary>
+    public static Error PhoneChangeNeedsCode() =>
+        Error.Forbidden("auth.phone_change_otp_required", "The mobile number cannot be changed here while sign-in codes are on.");
+
+    /// <summary>An account with bookings still ahead cannot be deleted (D-144).</summary>
+    public static Error AccountHasUpcomingBookings(int count) =>
+        Error.Conflict("account.has_upcoming_bookings", $"Cancel or attend the {count} upcoming booking(s) before deleting the account.");
+
     private static Dictionary<string, string[]> Field(string field, params string[] codes) =>
         new(StringComparer.Ordinal) { [field] = codes };
 

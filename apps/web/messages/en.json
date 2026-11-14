@@ -72,7 +72,8 @@
       "whatsapp": "WhatsApp",
       "roles": "Roles & permissions",
       "audit": "Activity log",
-      "settings": "Platform settings"
+      "settings": "Platform settings",
+      "legal": "Terms and privacy"
     }
   },
   "errors": {
@@ -134,7 +135,6 @@
       "hour": "Choose the hour",
       "minute": "Choose the minutes",
       "pickHour": "Choose an hour to see its free minutes.",
-      "minutesCount": "{count, plural, one {1 time} other {# times}}",
       "taken": "Unavailable"
     },
     "calendar": {
@@ -395,8 +395,6 @@
     },
     "rows": {
       "language": "Language",
-      "notifications": "WhatsApp notifications",
-      "notificationsValue": "WhatsApp and in the app",
       "personal": "Personal info",
       "bookings": "My appointments",
       "favorites": "Favourites",
@@ -413,7 +411,26 @@
       "english": "English",
       "turkish": "Türkçe",
       "save": "Save changes",
-      "saved": "Your details were saved."
+      "saved": "Your details were saved.",
+      "emailLabel": "Email",
+      "emailHint": "For your own records; shops never see it.",
+      "phoneLabel": "Mobile number",
+      "phoneChange": "Change number",
+      "phoneCancel": "Keep my number",
+      "phoneNewLabel": "New mobile number",
+      "phoneWarningTitle": "You will sign in with the new number",
+      "phoneWarningBody": "Once saved, this becomes the number you sign in with and where your booking messages go. Your current number will no longer open this account.",
+      "phoneLocked": "To change your mobile number, contact the Groom Here team."
+    },
+    "delete": {
+      "title": "Delete account",
+      "body": "Deletes your name, mobile number, email and favorites, and signs you out on every device. Your past appointments stay in the shops' records. This cannot be undone.",
+      "button": "Delete my account",
+      "confirmTitle": "Delete your account for good?",
+      "confirmBody": "You will not be able to restore your account, favorites or loyalty cards. You can sign up again later with your number as a new account.",
+      "confirm": "Yes, delete my account",
+      "cancel": "Cancel",
+      "upcomingLink": "See my appointments"
     }
   },
   "shopHome": {
@@ -523,7 +540,15 @@
     "invitation_role_invalid": "That role does not fit the kind of account being invited.",
     "loyalty_reward_unavailable": "This coupon isn’t available: it was used, has expired or belongs to another salon.",
     "auth_password_change_required": "Choose a new password to replace the temporary one.",
-    "auth_password_change_not_required": "This password isn’t temporary. Sign in with it directly."
+    "auth_password_change_not_required": "This password isn’t temporary. Sign in with it directly.",
+    "geo_map_link_invalid": "This is not a Google Maps link.",
+    "geo_map_link_unresolved": "The short link could not be opened. Copy the full link from Google Maps and try again.",
+    "geo_map_link_no_location": "The link has no location in it. Open the shop in Google Maps and copy its link from Share.",
+    "auth_phone_taken": "Another account uses this number.",
+    "auth_phone_change_otp_required": "The number cannot be changed here right now. Contact the Groom Here team.",
+    "account_has_upcoming_bookings": "You have upcoming appointments. Cancel them or wait until they are over, then delete your account.",
+    "legal_content_invalid": "This text cannot be saved: remove unsupported elements or unsafe links, and make sure it is not empty.",
+    "legal_not_found": "This page does not exist."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -753,7 +778,14 @@
     "attribution": "Map data © OpenStreetMap contributors",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "toggleAttribution": "Show map credits"
+    "toggleAttribution": "Show map credits",
+    "link": {
+      "label": "Google Maps link",
+      "placeholder": "https://maps.app.goo.gl/…",
+      "hint": "Open the shop in Google Maps, tap Share, then Copy link, and paste it here: the coordinates and address are filled in for you.",
+      "apply": "Use link",
+      "applied": "The location was set from the link. Check the address, then press Confirm location."
+    }
   },
   "adminProfessionals": {
     "title": "Professionals & their services",
@@ -1857,7 +1889,8 @@
           "body": "You can edit your details and end your sessions from your account page, and ask support to delete your account."
         }
       }
-    }
+    },
+    "updated": "Last updated: {date}"
   },
   "booking": {
     "meta": {
@@ -2044,7 +2077,13 @@
       "loading": "Loading times…",
       "taken": "That time was just booked — pick another from the refreshed times.",
       "notAllowed": "This appointment can't be changed in Groom Here now.",
-      "backToBooking": "Back to the appointment"
+      "backToBooking": "Back to the appointment",
+      "reviewTitle": "Review the new time",
+      "nearestPick": "Choose this time",
+      "summary": {
+        "from": "Current time",
+        "to": "New time"
+      }
     }
   },
   "review": {
@@ -2760,7 +2799,8 @@
       "PlatformSettings": "settings",
       "QrCodeLink": "QR code",
       "WhatsAppTemplate": "WhatsApp template",
-      "WhatsAppDispatch": "WhatsApp message"
+      "WhatsAppDispatch": "WhatsApp message",
+      "LegalDocument": "Legal page"
     },
     "actions": {
       "shop_created": "Shop created",
@@ -2829,7 +2869,11 @@
       "whatsapp_template_activated": "WhatsApp template version activated",
       "whatsapp_template_test_sent": "WhatsApp template test sent",
       "package_admin_created": "Package added by an admin",
-      "package_admin_updated": "Package edited by an admin"
+      "package_admin_updated": "Package edited by an admin",
+      "customer_account_deleted": "Customer deleted their account",
+      "customer_contact_changed": "Customer changed their email or number",
+      "legal_document_saved": "Legal page text saved",
+      "legal_document_reset": "Legal page restored to built-in text"
     }
   },
   "notifications": {
@@ -3270,5 +3314,53 @@
         "redeemed": "Coupons used"
       }
     }
+  },
+  "legalAdmin": {
+    "title": "Terms and privacy",
+    "intro": "Write the Terms of use and Privacy policy pages for each language. Saved text is shown to visitors at once; restoring brings back the built-in text.",
+    "kinds": {
+      "terms": "Terms of use",
+      "privacy": "Privacy policy"
+    },
+    "locale": "Language",
+    "custom": "Custom text — updated {date}",
+    "builtIn": "The built-in text is shown now. Edit it and save to publish your own.",
+    "editorLabel": "{page} text ({language})",
+    "save": "Save and publish",
+    "saved": "The text was saved and published.",
+    "restore": "Restore built-in text",
+    "restoreTitle": "Restore the built-in text?",
+    "restoreBody": "The saved text for this language is deleted and the page shows its built-in text.",
+    "restoreConfirm": "Yes, restore it",
+    "restored": "The page shows its built-in text again.",
+    "cancel": "Cancel",
+    "view": "View page",
+    "readOnly": "You cannot edit this text.",
+    "unsaved": "Unsaved changes",
+    "toolbar": {
+      "label": "Formatting",
+      "h2": "Heading",
+      "h3": "Subheading",
+      "paragraph": "Paragraph",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "strike": "Strikethrough",
+      "bulletList": "Bulleted list",
+      "orderedList": "Numbered list",
+      "blockquote": "Quote",
+      "link": "Link",
+      "undo": "Undo",
+      "redo": "Redo"
+    },
+    "link": {
+      "label": "Link address",
+      "placeholder": "https://…",
+      "apply": "Apply",
+      "remove": "Remove link",
+      "invalid": "Enter a web link starting with https://, or an email or phone link."
+    },
+    "customBadge": "Custom text",
+    "builtInBadge": "Built-in text"
   }
 }
