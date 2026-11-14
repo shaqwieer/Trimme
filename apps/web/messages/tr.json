@@ -53,6 +53,7 @@
       "walkIn": "Randevusuz kayıt",
       "schedule": "Çalışma saatleri ve molalar",
       "services": "Hizmetler",
+      "barbers": "Berberler",
       "subscription": "Abonelik",
       "notifications": "Bildirimler",
       "settings": "Salon ayarları",
@@ -446,6 +447,10 @@
     "suspendedBody": "Salon verilerine şu anda erişilemiyor. Yeniden etkinleştirmek için platform ekibiyle iletişime geçin."
   },
   "apiErrors": {
+    "barber_number_required": "Girişini açmadan önce berberin WhatsApp numarasını ekleyin.",
+    "barber_professional_inactive": "Berber devre dışı. Önce etkinleştirin.",
+    "booking_professional_busy": "Berber bu saatte dolu.",
+    "booking_same_professional": "Randevu zaten bu berberde.",
     "generic": "İstek tamamlanamadı. Lütfen tekrar deneyin.",
     "form": "İşaretli alanları gözden geçirip tekrar deneyin.",
     "otp_resend_cooldown": "Yeni kod istemeden önce {seconds} saniye bekleyin.",
@@ -456,7 +461,7 @@
     "otp_challenge_invalid": "Bu kod artık geçerli değil. Yeni bir kod isteyin.",
     "otp_expired": "Kodun süresi doldu. Yeni bir kod isteyin.",
     "otp_attempts_exhausted": "Çok fazla hatalı deneme yapıldı. Yeni bir kod isteyin.",
-    "auth_invalid_credentials": "E-posta veya şifre hatalı.",
+    "auth_invalid_credentials": "E-posta, cep telefonu veya şifre hatalı.",
     "auth_locked_out": "Çok fazla denemeden sonra giriş geçici olarak durduruldu. {minutes} dakika sonra tekrar deneyin veya şifrenizi sıfırlayın.",
     "auth_account_disabled": "Bu hesap devre dışı. Platform yöneticileriyle iletişime geçin.",
     "auth_csrf_invalid": "Bu sayfanın süresi doldu. Sayfayı yenileyip tekrar deneyin.",
@@ -1266,6 +1271,34 @@
       "customEntry": "Süper Yönetici özel fiyatı ({reason}; plan fiyatı {standard})"
     },
     "manageLabel": "{name} için aboneliği yönet"
+  },
+  "barberLogins": {
+    "title": "Berberler",
+    "adminTitle": "Berber girişi",
+    "intro": "Her berberin girişini açın; kendi randevularını, bildirimlerini ve gününü görsün, gel-al randevularını kendisi eklesin. Berber, profilindeki WhatsApp numarası ve burada seçtiğiniz geçici bir şifreyle giriş yapar; ilk girişte şifresini değiştirir.",
+    "empty": "Salonda etkin berber yok.",
+    "state": {
+      "off": "Giriş kapalı",
+      "temporary": "Açık — ilk giriş bekleniyor",
+      "on": "Giriş açık"
+    },
+    "noNumberShop": "Bu berberin WhatsApp numarası yok. Groom Here ekibinden eklemesini isteyin.",
+    "noNumberAdmin": "Önce berberin WhatsApp numarasını ekleyin.",
+    "enable": "Girişi aç",
+    "newPassword": "Yeni geçici şifre",
+    "disable": "Girişi kapat",
+    "enableTitle": "{name} için girişi aç",
+    "newPasswordTitle": "{name} için yeni geçici şifre",
+    "passwordBody": "Bu şifreyi berbere verin. Profilindeki WhatsApp numarasıyla giriş yapar, ardından kendi şifresini seçer.",
+    "password": "Geçici şifre",
+    "passwordHint": "En az 10 karakter.",
+    "passwordTooShort": "En az 10 karakter kullanın",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "saved": "{name} için giriş kaydedildi. Geçici şifreyi kendisine verin.",
+    "disabled": "{name} için giriş kapatıldı.",
+    "disableTitle": "{name} için giriş kapatılsın mı?",
+    "disableBody": "Berber tüm cihazlarda hemen oturumdan çıkar ve siz yeniden açana kadar giriş yapamaz."
   },
   "shopSubscription": {
     "title": "Abonelik",

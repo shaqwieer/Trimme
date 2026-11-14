@@ -53,6 +53,7 @@
       "walkIn": "Walk-in",
       "schedule": "Hours & breaks",
       "services": "Services",
+      "barbers": "Barbers",
       "subscription": "Subscription",
       "notifications": "Notifications",
       "settings": "Shop settings",
@@ -446,6 +447,10 @@
     "suspendedBody": "Shop data is unavailable for now. Contact the platform team to reactivate it."
   },
   "apiErrors": {
+    "barber_number_required": "Add the barber's WhatsApp number before turning on their sign-in.",
+    "barber_professional_inactive": "The barber is disabled. Enable them first.",
+    "booking_professional_busy": "The barber is busy at this time.",
+    "booking_same_professional": "The booking is already with this barber.",
     "generic": "We couldn't complete the request. Please try again.",
     "form": "Review the highlighted fields and try again.",
     "otp_resend_cooldown": "Wait {seconds} seconds before requesting a new code.",
@@ -456,7 +461,7 @@
     "otp_challenge_invalid": "This code is no longer valid. Request a new one.",
     "otp_expired": "The code has expired. Request a new one.",
     "otp_attempts_exhausted": "Too many incorrect attempts. Request a new code.",
-    "auth_invalid_credentials": "The email or password is incorrect.",
+    "auth_invalid_credentials": "The email, mobile number or password is incorrect.",
     "auth_locked_out": "Sign-in is paused after too many attempts. Try again in {minutes} minutes or reset your password.",
     "auth_account_disabled": "This account is disabled. Contact the platform administrators.",
     "auth_csrf_invalid": "This page has expired. Refresh it and try again.",
@@ -1266,6 +1271,34 @@
       "customEntry": "SuperAdmin custom price ({reason}; plan price {standard})"
     },
     "manageLabel": "Manage the subscription of {name}"
+  },
+  "barberLogins": {
+    "title": "Barbers",
+    "adminTitle": "Barber sign-in",
+    "intro": "Turn on each barber's sign-in so they can see their own appointments, notifications and day, and book walk-ins themselves. A barber signs in with the WhatsApp number on their profile and a temporary password you choose here, which they replace at their first sign-in.",
+    "empty": "The shop has no active barbers.",
+    "state": {
+      "off": "Sign-in off",
+      "temporary": "On — waiting for the first sign-in",
+      "on": "Sign-in on"
+    },
+    "noNumberShop": "This barber has no WhatsApp number. Ask the Groom Here team to add it.",
+    "noNumberAdmin": "Add the barber's WhatsApp number first.",
+    "enable": "Turn on sign-in",
+    "newPassword": "New temporary password",
+    "disable": "Turn off sign-in",
+    "enableTitle": "Turn on sign-in for {name}",
+    "newPasswordTitle": "New temporary password for {name}",
+    "passwordBody": "Give the barber this password. They sign in with the WhatsApp number on their profile, then choose their own password.",
+    "password": "Temporary password",
+    "passwordHint": "At least 10 characters.",
+    "passwordTooShort": "Use at least 10 characters",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "{name}'s sign-in is saved. Give them the temporary password.",
+    "disabled": "{name}'s sign-in is turned off.",
+    "disableTitle": "Turn off {name}'s sign-in?",
+    "disableBody": "The barber is signed out on every device at once, and cannot sign in until you turn it on again."
   },
   "shopSubscription": {
     "title": "Subscription",

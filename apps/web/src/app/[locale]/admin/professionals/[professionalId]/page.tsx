@@ -1,3 +1,4 @@
+import { BarberLoginControls } from '@/components/shop/BarberLoginControls';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
@@ -39,6 +40,7 @@ export default async function AdminProfessionalPage({
   const lang = asLocale(locale);
   const t = await getTranslations({ locale: lang, namespace: 'adminProfessionals' });
   const tServices = await getTranslations({ locale: lang, namespace: 'adminServices.professionalServices' });
+  const tLogin = await getTranslations({ locale: lang, namespace: 'barberLogins' });
 
   return (
     <AdminFrame
@@ -62,9 +64,19 @@ export default async function AdminProfessionalPage({
         }
         if (!professional) return <ErrorState />;
 
-        const { data: services } = await api.GET('/api/v1/admin/professionals/{professionalId}/services', {
-          params: { path: { professionalId } },
-        });
+        const canLogin = me.permissions.includes('Admin.Shops.ManageAccount');
+        const [{ data: services }, login] = await Promise.all([
+          api.GET('/api/v1/admin/professionals/{professionalId}/services', {
+            params: { path: { professionalId } },
+          }),
+          canLogin
+            ? api
+                .GET('/api/v1/admin/professionals/{professionalId}/login', {
+                  params: { path: { professionalId } },
+                })
+                .then((r) => r.data)
+            : Promise.resolve(undefined),
+        ]);
         const name = localizedName(lang, professional.nameAr, professional.nameEn);
         const shopName = localizedName(lang, professional.shopNameAr, professional.shopNameEn);
         const canEdit = me.permissions.includes('Admin.Professionals.Edit');
@@ -115,6 +127,17 @@ export default async function AdminProfessionalPage({
                 canReveal={me.permissions.includes('Admin.Professionals.RevealWhatsApp')}
               />
             </Card>
+
+            {login && (
+              <Card title={tLogin('adminTitle')}>
+                <BarberLoginControls
+                  scope="admin"
+                  professionalId={professional.id}
+                  name={name}
+                  login={login}
+                />
+              </Card>
+            )}
 
             <Card title={t('detail.photo')}>
               {canEdit ? (
