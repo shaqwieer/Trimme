@@ -5,8 +5,8 @@
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
-  - **Session 26 (D-144) is committed locally only: not pushed, not deployed.** It has migration 21; take a database backup on the VPS before deploying.
-  - **Session 26, second request (D-145) is committed locally only: not pushed, not deployed.** Three more migrations (`BarberLogins`, `BookingProfessionalChanges`, `RemoveShopDesk`); back up first. Deploy step one may stop at `8eec53c` (see below).
+  - Session 26 (D-144) is pushed and deployed with D-145 (below).
+  - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -506,7 +506,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
-0. **D-145 is complete and committed locally.** Ask the user before pushing or deploying (two-step option at `8eec53c`, back up first) and before registering `trimme_customer_booking_professional_changed` with Meta (client token). The D-144 deploy question is still open.
+0. **D-144 and D-145 are deployed.** Check the new template's review: `bash /root/register-professional-changed.sh` prints its status at the end (it skips templates Meta already has). Until it is APPROVED, a change of barber fails that WhatsApp (in-app notice only). Tell the client: barbers' logins are turned on in «الحلاقون» once the admin has set each barber's WhatsApp number.
 0. Done: Sessions 17 and 18 pushed and deployed. Confirm with the client:
    - that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant;
    - per-barber logins (see Session 18).

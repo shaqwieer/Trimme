@@ -59,14 +59,14 @@
   - **Admin:** «الشروط والخصوصية» edits both legal pages per language in rich text (TipTap, stored as an allowlisted document, never HTML); restore brings back the built-in text.
   - **Location:** a pasted Google Maps link (full or short) fills the coordinates and the address; short links are followed through Google hosts only.
   - **Directions** open Google Maps from the visitor's location; **QR files** are named `groomhere-qr-…`.
-  - Migration 21 (`CustomerAccountAndLegalPages`, additive). Committed locally; **not pushed or deployed** (the user has not asked yet).
+  - Migration 21 (`CustomerAccountAndLegalPages`, additive). Pushed and deployed with D-145 on 2026-11-14.
 - **Session 26, second request (D-145), at the user's request:**
   - **Barbers sign in** with the WhatsApp number on their profile and a password (temporary at first); the owner («الحلاقون») or the admin turns logins on and off.
   - **A barber is their own desk:** their overview, appointments, day and week calendar, walk-ins, breaks and notifications, never a colleague's.
   - **The shop changes a booking for the customer:** a new time with the same barber, or «نقل الحجز إلى حلاق آخر» at the same time; the customer is told (new WhatsApp template, in-app) and may cancel or change it until it starts.
   - **Walk-ins with a mobile** get «تأكيد الحجز» (and changes, cancellation); both barbers hear about a move; the owner hears what barbers did.
   - **The desk role is removed** (migration `RemoveShopDesk` disables its accounts). Three migrations in all.
-  - Committed locally; **not pushed or deployed**. .NET, web and end-to-end gates pass (codes on and off).
+  - .NET, web and end-to-end gates pass (codes on and off). pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |
