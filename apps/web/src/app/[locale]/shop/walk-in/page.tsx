@@ -32,7 +32,9 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
         ]);
         const offers: WalkInOffer[] = [
           ...(services ?? [])
+            // A barber's login books walk-ins for themselves, so only what they do (D-145).
             .filter((s) => s.isActive && !s.isArchived && s.moderation === 'Visible')
+            .filter((s) => !me.professionalId || s.professionalIds.includes(me.professionalId))
             .map((s) => ({
               kind: 'service' as const,
               id: s.id,
@@ -61,7 +63,7 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
             offers={offers}
             today={today}
             timeZone={shop.timeZone}
-            initialProfessionalId={firstParam(query.professionalId)}
+            initialProfessionalId={me.professionalId ?? firstParam(query.professionalId)}
             initialStart={firstParam(query.startsAt)}
             initialDate={date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= today ? date : undefined}
           />

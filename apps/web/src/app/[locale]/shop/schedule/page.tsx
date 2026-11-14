@@ -41,7 +41,8 @@ export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/
             <div className="max-w-[760px]">
               <BarberDayCard
                 barbers={(professionals ?? [])
-                  .filter((p) => p.status === 'Active')
+                  // A barber's login manages their own day only (D-145).
+                  .filter((p) => p.status === 'Active' && (!me.professionalId || p.id === me.professionalId))
                   .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
                 today={today}
               />

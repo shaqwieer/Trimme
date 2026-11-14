@@ -164,19 +164,22 @@ export function ShopCalendar({
             </Button>
           )}
         </div>
-        <SelectField
-          label={t('professional')}
-          className="min-w-[180px]"
-          value={professionalId}
-          onChange={(e) => update({ professional: e.target.value || null })}
-        >
-          <option value="">{t('allProfessionals')}</option>
-          {(calendar.data?.professionals ?? []).map((p) => (
-            <option key={p.id} value={p.id}>
-              {localizedName(locale, p.nameAr, p.nameEn)}
-            </option>
-          ))}
-        </SelectField>
+        {/* A barber's login (D-145), or a one-barber shop, has nobody to filter by. */}
+        {(calendar.data?.professionals.length ?? 2) > 1 && (
+          <SelectField
+            label={t('professional')}
+            className="min-w-[180px]"
+            value={professionalId}
+            onChange={(e) => update({ professional: e.target.value || null })}
+          >
+            <option value="">{t('allProfessionals')}</option>
+            {(calendar.data?.professionals ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {localizedName(locale, p.nameAr, p.nameEn)}
+              </option>
+            ))}
+          </SelectField>
+        )}
         <ul
           className="ms-auto flex flex-wrap items-center gap-3 text-helper text-text-secondary"
           aria-label={t('legend')}
