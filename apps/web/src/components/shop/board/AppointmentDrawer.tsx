@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import dynamic from 'next/dynamic';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -24,6 +23,7 @@ import {
 } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 import { bookingSource } from '@/lib/booking/format';
+import { MoveDialog, RescheduleDialog } from './BookingChangeDialogs';
 import { CustomerVisitBadge } from './CustomerVisitBadge';
 
 type Detail = components['schemas']['ShopBookingDetailResponse'];
@@ -31,11 +31,6 @@ type Status = components['schemas']['BookingStatus'];
 
 export const BOARD_KEY = 'shop-board';
 
-// Loaded when opened (the drawer is on every board page; the bundle budget, D-144).
-const RescheduleDialog = dynamic(() => import('./BookingChangeDialogs').then((m) => m.RescheduleDialog), {
-  ssr: false,
-});
-const MoveDialog = dynamic(() => import('./BookingChangeDialogs').then((m) => m.MoveDialog), { ssr: false });
 
 const NOTE_MAX = 500;
 
