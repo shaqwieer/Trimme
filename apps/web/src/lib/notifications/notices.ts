@@ -4,8 +4,23 @@ import { localizedName } from '@/lib/i18n/localized';
 
 export type Notice = components['schemas']['NotificationResponse'];
 
-/** Whose inbox a notice is in: the shop's, a customer's own, or an admin's own (D-112). */
-export type NoticeAudience = 'shop' | 'customer' | 'admin';
+/**
+ * Whose inbox a notice is in: the shop's (the owner's), a customer's own, an admin's own (D-112), or a barber's own
+ * login (D-145), which reads through `/me` but links into the shop dashboard.
+ */
+export type NoticeAudience = 'shop' | 'customer' | 'admin' | 'barber';
+
+const BOOKING_KINDS = [
+  'booking.created',
+  'booking.pending',
+  'booking.confirmed',
+  'booking.rescheduled',
+  'booking.cancelled',
+  'booking.professional_changed',
+] as const;
+
+/** Booking changes the owner's inbox words as a barber's when a shop user made them (D-145). */
+const BY_BARBER: readonly string[] = ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled'];
 
 /** The kinds each inbox has a message for (the API may add kinds later; unknown ones fall back to a generic line). */
 const KNOWN: Record<NoticeAudience, readonly string[]> = {
@@ -15,11 +30,13 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'booking.confirmed',
     'booking.rescheduled',
     'booking.cancelled',
+    'booking.professional_changed',
     'subscription.expiring',
     'subscription.expired',
     'admin.message',
   ],
-  customer: ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled'],
+  customer: ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled', 'booking.professional_changed'],
+  barber: BOOKING_KINDS,
   admin: [
     'whatsapp.dispatch_failed',
     'subscription.expiring',
@@ -30,10 +47,13 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
 
 /**
  * The message key under `notifications.kinds` for a notice, or `generic` for a kind this inbox does not know.
- * next-intl nests on dots, so `booking.created` becomes `booking_created`.
+ * next-intl nests on dots, so `booking.created` becomes `booking_created`. In the owner's inbox a booking change made by
+ * a shop user is a barber's (the owner's own never reach it, D-145), worded as such.
  */
-export function noticeKey(audience: NoticeAudience, kind: string): string {
-  return KNOWN[audience].includes(kind) ? `${audience}.${kind.replace(/\./g, '_')}` : 'generic';
+export function noticeKey(audience: NoticeAudience, kind: string, actor?: string): string {
+  if (!KNOWN[audience].includes(kind)) return 'generic';
+  const key = `${audience}.${kind.replace(/\./g, '_')}`;
+  return audience === 'shop' && actor === 'ShopUser' && BY_BARBER.includes(kind) ? `${key}_by_barber` : key;
 }
 
 /**
@@ -48,6 +68,11 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     customer: p.customerName ?? '',
     item: localizedName(locale, p.itemNameAr ?? '', p.itemNameEn),
     professional: localizedName(locale, p.professionalNameAr ?? '', p.professionalNameEn),
+    previousProfessional: localizedName(
+      locale,
+      p.previousProfessionalNameAr ?? '',
+      p.previousProfessionalNameEn,
+    ),
     shop: localizedName(locale, p.shopNameAr ?? '', p.shopNameEn),
     date: at ? formatDate(at, locale) : '',
     time: at ? formatTime(at, locale) : '',
@@ -70,6 +95,8 @@ export function noticeHref(audience: NoticeAudience, notice: Notice): string | u
   switch (audience) {
     case 'shop':
       if (notice.kind.startsWith('subscription.')) return '/shop/subscription';
+      return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
+    case 'barber':
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'customer':
       return notice.bookingId ? `/account/bookings/${notice.bookingId}` : undefined;

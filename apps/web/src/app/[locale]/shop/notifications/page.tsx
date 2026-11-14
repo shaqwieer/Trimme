@@ -9,8 +9,9 @@ import { getServerApi } from '@/lib/api/server';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * The shop's notification centre (spec §13, DV-A05, R-SD-08, D-112): what customers and the platform did with the shop's
- * bookings, and subscription warnings. Shared by the shop's users; never a customer phone number.
+ * The shop's notification centre (spec §13, DV-A05, R-SD-08, D-112): what customers, barbers and the platform did with
+ * the shop's bookings, and subscription warnings, for the owner. A barber's login sees its own notices instead: their
+ * bookings only (D-145). Never a customer phone number.
  */
 export default async function ShopNotificationsPage({ params }: PageProps<'/[locale]/shop/notifications'>) {
   const { locale: raw } = await params;
@@ -24,11 +25,19 @@ export default async function ShopNotificationsPage({ params }: PageProps<'/[loc
           return <EmptyState icon="shield" title={t('title')} />;
         }
         const api = await getServerApi();
-        const { data } = await api.GET('/api/v1/shop/notifications', { params: { query: { pageSize: 50 } } });
+        const owner = me.permissions.includes('Shop.Notifications.Manage');
+        const query = { params: { query: { pageSize: 50 } } };
+        const { data } = owner
+          ? await api.GET('/api/v1/shop/notifications', query)
+          : await api.GET('/api/v1/me/notifications', query);
         if (!data) return <ErrorState />;
         return (
           <div className="mx-auto w-full max-w-[760px]">
-            <NotificationsPanel audience="shop" items={data.items} unread={data.unread} />
+            <NotificationsPanel
+              audience={owner ? 'shop' : 'barber'}
+              items={data.items}
+              unread={data.unread}
+            />
           </div>
         );
       }}

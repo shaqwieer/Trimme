@@ -232,6 +232,7 @@
     "otpIncomplete": "6 haneli kodu girin",
     "tooLong": "Metni en fazla {max} karakter olacak şekilde kısaltın",
     "emailInvalid": "Geçerli bir e-posta adresi girin",
+    "identifierInvalid": "Bir e-posta adresi veya 5 ile başlayan bir Suudi cep numarası girin",
     "form": "Kaydedilemedi — işaretli alanları gözden geçirip tekrar deneyin",
     "termsRequired": "Devam etmek için koşulları ve gizlilik politikasını kabul edin",
     "passwordTooShort": "En az 10 karakter kullanın",
@@ -324,7 +325,8 @@
     "staffSignIn": {
       "title": "Ekip girişi",
       "subtitle": "Salon hesapları ve platform yöneticileri için",
-      "email": "E-posta",
+      "identifier": "E-posta veya cep telefonu",
+      "identifierHint": "Berberler profillerindeki WhatsApp numarasıyla giriş yapar.",
       "password": "Şifre",
       "submit": "Giriş yap",
       "forgot": "Şifrenizi mi unuttunuz?",
@@ -340,7 +342,8 @@
       "submit": "Bağlantı gönder",
       "sentTitle": "E-postanızı kontrol edin",
       "sentBody": "Bu e-posta kayıtlıysa birkaç dakika içinde bir mesaj gelecek. Bağlantı bir saat geçerlidir.",
-      "backToSignIn": "Girişe dön"
+      "backToSignIn": "Girişe dön",
+      "barber": "Cep telefonunuzla giriş yapan bir berber misiniz? Salon sahibinden yeni bir geçici şifre isteyin."
     },
     "reset": {
       "title": "Yeni şifre belirleyin",
@@ -2902,12 +2905,25 @@
         "booking_cancelled": "{customer}, {date} saat {time} tarihli randevusunu iptal etti ({item})",
         "subscription_expiring": "Salonun aboneliği {days, plural, one {# gün} other {# gün}} sonra, {endDate} tarihinde sona eriyor",
         "subscription_expired": "Salonun aboneliği {endDate} tarihinde sona erdi. Yenilemek için Groom Here ekibiyle iletişime geçin",
-        "admin_message": "Groom Here ekibinden mesaj: {message}"
+        "admin_message": "Groom Here ekibinden mesaj: {message}",
+        "booking_confirmed_by_barber": "{professional}, {customer} adlı müşterinin randevusunu onayladı: {item}, {date} saat {time}",
+        "booking_rescheduled_by_barber": "{professional}, {customer} adlı müşterinin randevusunu {date} saat {time} olarak değiştirdi ({item})",
+        "booking_cancelled_by_barber": "{professional}, {customer} adlı müşterinin {date} saat {time} tarihli randevusunu iptal etti ({item})",
+        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}"
       },
       "customer": {
         "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
         "booking_rescheduled": "{shop} salonundaki randevunuz taşındı: {date} saat {time}",
-        "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi"
+        "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi",
+        "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz"
+      },
+      "barber": {
+        "booking_created": "{customer} için yeni randevu: {item}, {date} saat {time}",
+        "booking_pending": "{customer} adlı müşteriden onay bekleyen randevu talebi: {item}, {date} saat {time}",
+        "booking_confirmed": "{customer} adlı müşterinin randevusu onaylandı: {item}, {date} saat {time}",
+        "booking_rescheduled": "{customer} adlı müşterinin randevusu artık {date} saat {time} ({item})",
+        "booking_cancelled": "{customer} adlı müşterinin {date} saat {time} tarihli randevusu iptal edildi ({item})",
+        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}"
       },
       "admin": {
         "whatsapp_dispatch_failed": "Bir WhatsApp mesajı gönderilemedi ({event})",

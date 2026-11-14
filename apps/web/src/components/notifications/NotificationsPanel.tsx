@@ -19,7 +19,7 @@ import {
 import { useNotificationSignal } from './useNotificationSignal';
 
 type Props = {
-  audience: Extract<NoticeAudience, 'shop' | 'customer'>;
+  audience: Extract<NoticeAudience, 'shop' | 'customer' | 'barber'>;
   items: Notice[];
   unread: number;
 };
@@ -98,7 +98,10 @@ export function NotificationsPanel({ audience, items, unread }: Props) {
         {items.map((notice) => {
           const read = isRead(notice);
           const href = noticeHref(audience, notice);
-          const text = tk(noticeKey(audience, notice.kind), noticeValues(notice, locale));
+          const text = tk(
+            noticeKey(audience, notice.kind, (notice.parameters as Record<string, string | undefined>).actor),
+            noticeValues(notice, locale),
+          );
           return (
             <li
               key={notice.id}

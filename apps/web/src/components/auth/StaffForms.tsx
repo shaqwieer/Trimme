@@ -11,8 +11,8 @@ import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { homeFor } from '@/lib/auth/paths';
 import { FormTextField, useZodForm } from '@/lib/forms/fields';
-import { applyProblemToForm } from '@/lib/forms/problem';
-import { email, requiredText, withParams } from '@/lib/forms/validation';
+import { applyProblemToForm, codeToMessageKey } from '@/lib/forms/problem';
+import { email, requiredText, staffIdentifier, withParams } from '@/lib/forms/validation';
 import { AuthCard } from './AuthCard';
 
 const password = z
@@ -33,44 +33,77 @@ function useServerError() {
   return { serverError, setServerError, fail };
 }
 
+/** Who is signing in, as the API takes it: an email, or a barber's mobile in E.164 (D-145). */
+type StaffIdentity = { email: string } | { email: null; phone: string };
+
+function identityOf(parsed: { kind: 'email' | 'phone'; value: string }): StaffIdentity {
+  return parsed.kind === 'email' ? { email: parsed.value } : { email: null, phone: parsed.value };
+}
+
 /**
- * Shop and admin staff sign-in with email + password (D-005). An account an admin created with a temporary password
- * gets no session until the user chooses a new one (D-139), so that step follows here.
+ * Shop and admin staff sign-in with email + password (D-005); a barber signs in with their mobile instead (D-145). An
+ * account created with a temporary password gets no session until the user chooses a new one (D-139), so that step
+ * follows here.
  */
 export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
   const t = useTranslations('auth.staffSignIn');
   const router = useRouter();
   const { serverError, setServerError, fail } = useServerError();
   // Held in memory only, to prove the temporary password once more when it is replaced.
-  const [temporary, setTemporary] = useState<{ email: string; password: string }>();
-  const form = useZodForm(z.object({ email, password: z.string().min(1, { error: 'required' }) }), {
-    defaultValues: { email: '', password: '' },
-    // Validate on submit: a blur error on the autofocused empty field would shift the links below it.
-    mode: 'onSubmit',
-  });
+  const [temporary, setTemporary] = useState<{
+    identifier: string;
+    identity: StaffIdentity;
+    password: string;
+  }>();
+  const form = useZodForm(
+    z
+      .object({ identifier: z.string(), password: z.string().min(1, { error: 'required' }) })
+      .superRefine((values, ctx) => {
+        const parsed = staffIdentifier.safeParse(values.identifier);
+        if (!parsed.success)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['identifier'],
+            message: parsed.error.issues[0]?.message ?? 'invalid',
+          });
+      }),
+    {
+      defaultValues: { identifier: '', password: '' },
+      // Validate on submit: a blur error on the autofocused empty field would shift the links below it.
+      mode: 'onSubmit',
+    },
+  );
 
   const onSubmit = form.handleSubmit(async (values) => {
     setServerError(undefined);
+    const identity = identityOf(staffIdentifier.parse(values.identifier));
     try {
-      const { user } = ensureOk(await browserApi.POST('/api/v1/auth/staff/sign-in', { body: values }));
+      const { user } = ensureOk(
+        await browserApi.POST('/api/v1/auth/staff/sign-in', {
+          body: { ...identity, password: values.password },
+        }),
+      );
       router.replace(returnTo ?? homeFor(user.userType));
     } catch (error) {
       if (error instanceof ApiError && error.errorCode === 'auth.password_change_required')
-        setTemporary(values);
-      else if (error instanceof ApiError && error.isValidation)
-        applyProblemToForm(error, form.setError, ['email', 'password']);
-      else fail(error);
+        setTemporary({ identifier: values.identifier, identity, password: values.password });
+      else if (error instanceof ApiError && error.isValidation) {
+        const field = error.fieldErrors.email ?? error.fieldErrors.phone;
+        if (field) form.setError('identifier', { type: 'server', message: codeToMessageKey(field[0]) });
+        else applyProblemToForm(error, form.setError, ['password']);
+      } else fail(error);
     }
   });
 
   if (temporary) {
     return (
       <ReplaceTemporaryPasswordForm
-        email={temporary.email}
+        username={temporary.identifier}
+        identity={temporary.identity}
         temporaryPassword={temporary.password}
         onBack={() => {
           setTemporary(undefined);
-          form.reset({ email: temporary.email, password: '' });
+          form.reset({ identifier: temporary.identifier, password: '' });
         }}
         onSignedIn={(userType) => router.replace(returnTo ?? homeFor(userType))}
       />
@@ -91,9 +124,11 @@ export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
       <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormTextField
           control={form.control}
-          name="email"
-          label={t('email')}
-          type="email"
+          name="identifier"
+          label={t('identifier')}
+          helper={t('identifierHint')}
+          type="text"
+          inputMode="email"
           autoComplete="username"
           dir="ltr"
           autoFocus
@@ -122,12 +157,14 @@ export function StaffSignInForm({ returnTo }: { returnTo?: string }) {
 
 /** The second sign-in step for a temporary password: the API checks it again, saves the new one and signs in. */
 function ReplaceTemporaryPasswordForm({
-  email,
+  username,
+  identity,
   temporaryPassword,
   onBack,
   onSignedIn,
 }: {
-  email: string;
+  username: string;
+  identity: StaffIdentity;
   temporaryPassword: string;
   onBack: () => void;
   onSignedIn: (userType: string) => void;
@@ -142,7 +179,7 @@ function ReplaceTemporaryPasswordForm({
     try {
       const { user } = ensureOk(
         await browserApi.POST('/api/v1/auth/password/change-temporary', {
-          body: { email, password: temporaryPassword, newPassword: values.password },
+          body: { ...identity, password: temporaryPassword, newPassword: values.password },
         }),
       );
       onSignedIn(user.userType);
@@ -157,7 +194,7 @@ function ReplaceTemporaryPasswordForm({
     <AuthCard showLogo title={t('changeTitle')} subtitle={t('changeSubtitle')}>
       <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         {/* Lets a password manager save the new password against the right account. */}
-        <input type="email" name="email" value={email} autoComplete="username" readOnly hidden />
+        <input type="text" name="username" value={username} autoComplete="username" readOnly hidden />
         <FormTextField
           control={form.control}
           name="password"
@@ -248,6 +285,8 @@ export function ForgotPasswordForm() {
         <Button type="submit" fullWidth loading={form.formState.isSubmitting}>
           {t('submit')}
         </Button>
+        {/* Barbers sign in with their mobile and have no email (D-145). */}
+        <p className="text-center text-caption text-text-secondary">{t('barber')}</p>
         <Link
           href="/auth/staff/sign-in"
           className="text-center text-caption font-bold text-brand-700 hover:underline"

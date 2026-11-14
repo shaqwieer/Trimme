@@ -35,6 +35,31 @@ describe('notices', () => {
     expect(noticeKey('shop', 'something.new')).toBe('generic');
   });
 
+  it('words what a barber did for the owner, and a barber inbox in its own words (D-145)', () => {
+    expect(noticeKey('shop', 'booking.cancelled', 'ShopUser')).toBe('shop.booking_cancelled_by_barber');
+    expect(noticeKey('shop', 'booking.cancelled', 'Customer')).toBe('shop.booking_cancelled');
+    expect(noticeKey('shop', 'booking.created', 'ShopUser')).toBe('shop.booking_created');
+    expect(noticeKey('barber', 'booking.cancelled', 'ShopUser')).toBe('barber.booking_cancelled');
+    expect(noticeKey('barber', 'subscription.expiring')).toBe('generic');
+    expect(noticeKey('customer', 'booking.professional_changed')).toBe(
+      'customer.booking_professional_changed',
+    );
+
+    const moved = {
+      ...booking,
+      kind: 'booking.professional_changed',
+      parameters: {
+        ...booking.parameters,
+        previousProfessionalNameAr: 'عمر',
+        previousProfessionalNameEn: 'Omar',
+      },
+    };
+    expect(noticeValues(moved, 'en').previousProfessional).toBe('Omar');
+    expect(noticeValues(moved, 'ar').previousProfessional).toBe('عمر');
+    expect(noticeValues(booking, 'en').previousProfessional).toBe('');
+    expect(noticeHref('barber', moved)).toBe('/shop/appointments?booking=b1');
+  });
+
   it('has an Arabic and an English message for every known kind', () => {
     const kinds: Array<[Parameters<typeof noticeKey>[0], string]> = [
       ['shop', 'booking.created'],
@@ -45,9 +70,17 @@ describe('notices', () => {
       ['shop', 'subscription.expiring'],
       ['shop', 'subscription.expired'],
       ['shop', 'admin.message'],
+      ['shop', 'booking.professional_changed'],
       ['customer', 'booking.confirmed'],
       ['customer', 'booking.rescheduled'],
       ['customer', 'booking.cancelled'],
+      ['customer', 'booking.professional_changed'],
+      ['barber', 'booking.created'],
+      ['barber', 'booking.pending'],
+      ['barber', 'booking.confirmed'],
+      ['barber', 'booking.rescheduled'],
+      ['barber', 'booking.cancelled'],
+      ['barber', 'booking.professional_changed'],
       ['admin', 'whatsapp.dispatch_failed'],
       ['admin', 'subscription.expiring'],
       ['admin', 'subscription.expired'],
@@ -55,6 +88,11 @@ describe('notices', () => {
     ];
     for (const [audience, kind] of kinds) {
       const path = `notifications.kinds.${noticeKey(audience, kind)}`;
+      expect(typeof lookup(ar, path), path).toBe('string');
+      expect(typeof lookup(en, path), path).toBe('string');
+    }
+    for (const kind of ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled']) {
+      const path = `notifications.kinds.${noticeKey('shop', kind, 'ShopUser')}`;
       expect(typeof lookup(ar, path), path).toBe('string');
       expect(typeof lookup(en, path), path).toBe('string');
     }

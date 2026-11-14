@@ -24,6 +24,8 @@ type DashboardShellProps = {
   titleAddon?: ReactNode;
   /** A signed-in dashboard gets the live notification bell (D-112); previews without a session keep a plain icon. */
   notifications?: boolean;
+  /** The shop bell's inbox: the shop's (the owner's) or the signed-in barber's own (D-145). */
+  notificationScope?: 'shop' | 'me';
 };
 
 /**
@@ -41,6 +43,7 @@ export function DashboardShell({
   sidebarFooter,
   titleAddon,
   notifications = false,
+  notificationScope = 'shop',
 }: DashboardShellProps) {
   const t = useTranslations();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -88,7 +91,7 @@ export function DashboardShell({
             {!notifications ? (
               <IconButton icon="bell" label={t('shell.notifications')} />
             ) : variant === 'shop' ? (
-              <NotificationBell scope="shop" href="/shop/notifications" />
+              <NotificationBell scope={notificationScope} href="/shop/notifications" />
             ) : (
               <AdminNotificationBell />
             )}

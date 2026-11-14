@@ -232,6 +232,7 @@
     "otpIncomplete": "Enter the 6-digit code",
     "tooLong": "Shorten the text to {max} characters or fewer",
     "emailInvalid": "Enter a valid email address",
+    "identifierInvalid": "Enter an email address or a Saudi mobile number starting with 5",
     "form": "Could not save — review the highlighted fields and try again",
     "termsRequired": "Accept the terms and privacy policy to continue",
     "passwordTooShort": "Use at least 10 characters",
@@ -324,7 +325,8 @@
     "staffSignIn": {
       "title": "Team sign-in",
       "subtitle": "For shop accounts and platform administrators",
-      "email": "Email",
+      "identifier": "Email or mobile number",
+      "identifierHint": "Barbers sign in with the WhatsApp number on their profile.",
       "password": "Password",
       "submit": "Sign in",
       "forgot": "Forgot your password?",
@@ -340,7 +342,8 @@
       "submit": "Send link",
       "sentTitle": "Check your email",
       "sentBody": "If this email is registered, a message will arrive within minutes. The link is valid for one hour.",
-      "backToSignIn": "Back to sign-in"
+      "backToSignIn": "Back to sign-in",
+      "barber": "A barber signing in with your mobile? Ask the shop owner for a new temporary password."
     },
     "reset": {
       "title": "Set a new password",
@@ -2902,12 +2905,25 @@
         "booking_cancelled": "{customer} cancelled their booking on {date} at {time} ({item})",
         "subscription_expiring": "The shop's subscription ends in {days, plural, one {# day} other {# days}}, on {endDate}",
         "subscription_expired": "The shop's subscription ended on {endDate}. Contact the Groom Here team to renew",
-        "admin_message": "Message from the Groom Here team: {message}"
+        "admin_message": "Message from the Groom Here team: {message}",
+        "booking_confirmed_by_barber": "{professional} confirmed {customer}'s booking: {item} on {date} at {time}",
+        "booking_rescheduled_by_barber": "{professional} changed {customer}'s booking to {date} at {time} ({item})",
+        "booking_cancelled_by_barber": "{professional} cancelled {customer}'s booking on {date} at {time} ({item})",
+        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}"
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
         "booking_rescheduled": "Your booking at {shop} was moved to {date} at {time}",
-        "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled"
+        "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled",
+        "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts"
+      },
+      "barber": {
+        "booking_created": "New booking for {customer}: {item} on {date} at {time}",
+        "booking_pending": "Booking request from {customer} awaiting confirmation: {item} on {date} at {time}",
+        "booking_confirmed": "{customer}'s booking is confirmed: {item} on {date} at {time}",
+        "booking_rescheduled": "{customer}'s booking is now on {date} at {time} ({item})",
+        "booking_cancelled": "{customer}'s booking on {date} at {time} was cancelled ({item})",
+        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}"
       },
       "admin": {
         "whatsapp_dispatch_failed": "A WhatsApp message could not be sent ({event})",

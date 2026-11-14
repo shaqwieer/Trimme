@@ -232,6 +232,7 @@
     "otpIncomplete": "أدخل الرمز المكوّن من ٦ أرقام",
     "tooLong": "اختصر النص إلى {max} حرفاً أو أقل",
     "emailInvalid": "أدخل بريداً إلكترونياً صحيحاً",
+    "identifierInvalid": "أدخل بريداً إلكترونياً أو رقم جوال سعودياً يبدأ بـ 5",
     "form": "تعذّر الحفظ — راجع الحقول المظللة ثم أعد المحاولة",
     "termsRequired": "يجب الموافقة على الشروط وسياسة الخصوصية",
     "passwordTooShort": "استخدم 10 أحرف على الأقل",
@@ -324,7 +325,8 @@
     "staffSignIn": {
       "title": "دخول فريق العمل",
       "subtitle": "لحسابات المحلات وإدارة المنصة",
-      "email": "البريد الإلكتروني",
+      "identifier": "البريد الإلكتروني أو رقم الجوال",
+      "identifierHint": "الحلاق يدخل برقم واتساب المسجل في ملفه.",
       "password": "كلمة المرور",
       "submit": "تسجيل الدخول",
       "forgot": "نسيت كلمة المرور؟",
@@ -340,7 +342,8 @@
       "submit": "إرسال الرابط",
       "sentTitle": "تحقق من بريدك",
       "sentBody": "إذا كان البريد مسجلاً لدينا فستصلك رسالة خلال دقائق. الرابط صالح لمدة ساعة واحدة.",
-      "backToSignIn": "العودة لتسجيل الدخول"
+      "backToSignIn": "العودة لتسجيل الدخول",
+      "barber": "حلاق تدخل برقم جوالك؟ اطلب من صاحب المحل كلمة مرور مؤقتة جديدة."
     },
     "reset": {
       "title": "تعيين كلمة مرور جديدة",
@@ -2902,12 +2905,25 @@
         "booking_cancelled": "ألغى {customer} حجزه يوم {date} الساعة {time} ({item})",
         "subscription_expiring": "ينتهي اشتراك المحل بعد {days, plural, one {يوم واحد} two {يومين} few {# أيام} many {# يوماً} other {# يوم}} في {endDate}",
         "subscription_expired": "انتهى اشتراك المحل في {endDate}. تواصل مع فريق Groom Here للتجديد",
-        "admin_message": "رسالة من فريق Groom Here: {message}"
+        "admin_message": "رسالة من فريق Groom Here: {message}",
+        "booking_confirmed_by_barber": "أكّد {professional} حجز {customer}: {item} يوم {date} الساعة {time}",
+        "booking_rescheduled_by_barber": "غيّر {professional} موعد {customer} إلى {date} الساعة {time} ({item})",
+        "booking_cancelled_by_barber": "ألغى {professional} حجز {customer} يوم {date} الساعة {time} ({item})",
+        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}"
       },
       "customer": {
         "booking_confirmed": "أكّد {shop} حجزك: {item} يوم {date} الساعة {time}",
         "booking_rescheduled": "تم تعديل موعدك في {shop} إلى {date} الساعة {time}",
-        "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}"
+        "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}",
+        "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ"
+      },
+      "barber": {
+        "booking_created": "حجز جديد لـ {customer}: {item} يوم {date} الساعة {time}",
+        "booking_pending": "طلب حجز من {customer} بانتظار التأكيد: {item} يوم {date} الساعة {time}",
+        "booking_confirmed": "تأكّد حجز {customer}: {item} يوم {date} الساعة {time}",
+        "booking_rescheduled": "تغيّر موعد {customer} إلى {date} الساعة {time} ({item})",
+        "booking_cancelled": "أُلغي حجز {customer} يوم {date} الساعة {time} ({item})",
+        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}"
       },
       "admin": {
         "whatsapp_dispatch_failed": "تعذّر إرسال رسالة واتساب ({event})",

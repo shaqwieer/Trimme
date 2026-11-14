@@ -22,6 +22,7 @@ export const VALIDATION_KEY_LIST = [
   'otpIncomplete',
   'tooLong',
   'emailInvalid',
+  'identifierInvalid',
   'form',
   'termsRequired',
   'passwordTooShort',
@@ -109,3 +110,20 @@ export const email = z
   .trim()
   .min(1, { error: 'required' })
   .pipe(z.email({ error: 'emailInvalid' }));
+
+/**
+ * The team sign-in identifier (D-145): an email (anything with "@"), or a barber's Saudi mobile as typed, sent as E.164.
+ */
+export const staffIdentifier = z
+  .string()
+  .trim()
+  .min(1, { error: 'required' })
+  .transform((value, ctx) => {
+    if (value.includes('@')) {
+      if (!z.email().safeParse(value).success) ctx.addIssue({ code: 'custom', message: 'emailInvalid' });
+      return { kind: 'email' as const, value };
+    }
+    const national = normalizeSaudiMobile(value);
+    if (!isValidSaudiMobile(national)) ctx.addIssue({ code: 'custom', message: 'identifierInvalid' });
+    return { kind: 'phone' as const, value: `+966${national}` };
+  });

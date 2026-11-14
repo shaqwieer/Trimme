@@ -99,6 +99,8 @@ function Shell({
       titleAddon={addon}
       permissions={permissions}
       notifications={permissions.includes('Shop.Bookings.Read')}
+      // The shop's inbox is the owner's; a barber's login has its own (D-145).
+      notificationScope={permissions.includes('Shop.Notifications.Manage') ? 'shop' : 'me'}
       sidebarFooter={
         <div className="flex flex-col gap-3 rounded-card bg-on-chrome-subtle p-3">
           <p className="truncate text-label font-bold text-on-chrome">{name}</p>
