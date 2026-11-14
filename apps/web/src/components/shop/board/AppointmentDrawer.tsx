@@ -31,7 +31,6 @@ type Status = components['schemas']['BookingStatus'];
 
 export const BOARD_KEY = 'shop-board';
 
-
 const NOTE_MAX = 500;
 
 const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' | 'danger'>> = {
