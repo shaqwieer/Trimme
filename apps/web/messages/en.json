@@ -2067,6 +2067,7 @@
       "policy": {
         "title": "Cancellation policy",
         "before": "You can cancel or reschedule in Groom Here for free until {time}.",
+        "moved": "Your booking was given to {professional} at the same time. You can cancel it or change the time on Groom Here until it starts ({time}).",
         "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the Groom Here team."
       },
       "window": {

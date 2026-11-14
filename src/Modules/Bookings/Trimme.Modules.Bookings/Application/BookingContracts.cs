@@ -53,6 +53,8 @@ internal sealed record CustomerBookingView(DateTimeOffset Now, int CutoffMinutes
 /// <summary>
 /// A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
 /// completed visit until <c>ReviewDeadline</c>. <c>ReviewRating</c> is the stars they gave, once reviewed.
+/// <c>ProfessionalChangedAt</c>: the shop gave the booking to another barber since the customer last chose it (D-145);
+/// until it starts they may cancel or change it whatever the cutoff.
 /// </summary>
 public sealed record CustomerBookingResponse(
     Guid Id,
@@ -73,7 +75,8 @@ public sealed record CustomerBookingResponse(
     int? ReviewRating,
     DateTimeOffset? ReviewDeadline,
     BookingLoyaltyRewardResponse? LoyaltyReward,
-    uint Version);
+    uint Version,
+    DateTimeOffset? ProfessionalChangedAt = null);
 
 /// <summary>
 /// A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). <c>AllowedTransitions</c> is
@@ -191,7 +194,8 @@ internal static class BookingMapping
         }
 
         return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
-            b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version);
+            b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version,
+            b.ProfessionalChangedAt);
     }
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>

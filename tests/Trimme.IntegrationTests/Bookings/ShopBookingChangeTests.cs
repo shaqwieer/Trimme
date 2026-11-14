@@ -156,6 +156,7 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
         mine = await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{id}", ct), ct);
         mine.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar);
         mine.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).ShouldBe(["Cancel", "Reschedule"], ignoreOrder: true);
+        mine.GetProperty("professionalChangedAt").ValueKind.ShouldBe(JsonValueKind.String, "the page says why the window is open");
         await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), ct);
 
         // Changing it themselves uses that up: the window applies again to the time they chose.
@@ -163,6 +164,7 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
         var rescheduled = await OkAsync(
             customer.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{id}/reschedule", new { startsAt = At(day, 10), professionalId = (Guid?)null, version }, ct, headers: Key()), ct);
         rescheduled.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).ShouldNotContain("Cancel");
+        rescheduled.GetProperty("professionalChangedAt").ValueKind.ShouldBe(JsonValueKind.Null);
         await FailsAsync(customer.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { version = rescheduled.GetProperty("version").GetUInt32() }, ct),
             HttpStatusCode.UnprocessableEntity, "booking.cancellation_cutoff_passed", ct);
     }

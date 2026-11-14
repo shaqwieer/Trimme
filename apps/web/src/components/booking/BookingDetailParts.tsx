@@ -20,18 +20,22 @@ export function CreatedBanner({ status }: { status: string }) {
 /**
  * The cancellation policy of an active booking (D-015, DV-S10). Before the cutoff: until when it can be cancelled or
  * moved online. After it (the API no longer allows either): the window has closed, and TRIMME is the one to contact; no
- * shop phone is shown (D-129).
+ * shop phone is shown (D-129). After the shop gave the booking to another barber (D-145): it can be cancelled or changed
+ * until it starts, whatever the cutoff.
  */
 export function BookingPolicy({
   startsAt,
   cutoffMinutes,
   canChange,
   timeZone,
+  movedTo,
 }: {
   startsAt: string;
   cutoffMinutes: number;
   canChange: boolean;
   timeZone?: string;
+  /** The barber the shop gave the booking to, when it did so since the customer last chose it. */
+  movedTo?: string;
 }) {
   const t = useTranslations('bookings.detail');
   const locale = useLocale() as AppLocale;
@@ -42,7 +46,14 @@ export function BookingPolicy({
       <h2 id="policy-title" className="text-label font-bold text-text-primary">
         {t('policy.title')}
       </h2>
-      {canChange ? (
+      {canChange && movedTo ? (
+        <p className="text-helper leading-[1.8] text-text-secondary" data-testid="moved-policy">
+          {t('policy.moved', {
+            professional: movedTo,
+            time: `${formatDate(startsAt, locale, { timeZone })} ${formatTime(startsAt, locale, timeZone)}`,
+          })}
+        </p>
+      ) : canChange ? (
         <p className="text-helper leading-[1.8] text-text-secondary">
           {t('policy.before', {
             time: `${formatDate(deadline, locale, { timeZone })} ${formatTime(deadline, locale, timeZone)}`,

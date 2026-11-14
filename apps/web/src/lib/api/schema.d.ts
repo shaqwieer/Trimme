@@ -4857,6 +4857,8 @@ export interface components {
         /**
          * @description A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
          *     completed visit until `ReviewDeadline`. `ReviewRating` is the stars they gave, once reviewed.
+         *     `ProfessionalChangedAt`: the shop gave the booking to another barber since the customer last chose it (D-145);
+         *     until it starts they may cancel or change it whatever the cutoff.
          */
         CustomerBookingResponse: {
             /** Format: uuid */
@@ -4886,6 +4888,8 @@ export interface components {
             loyaltyReward: null | components["schemas"]["BookingLoyaltyRewardResponse"];
             /** Format: uint32 */
             version: number;
+            /** Format: date-time */
+            professionalChangedAt?: null | string;
         };
         /** @description The customer's full mobile in E.164, returned once to an authorized admin (never cached, never logged). */
         CustomerContactResponse: {

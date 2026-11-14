@@ -174,6 +174,11 @@ export default async function BookingDetailPage({
           cutoffMinutes={booking.cancellationCutoffMinutes}
           canChange={actions.has('Cancel')}
           timeZone={timeZone}
+          movedTo={
+            booking.professionalChangedAt
+              ? localizedName(locale, booking.professional.nameAr, booking.professional.nameEn)
+              : undefined
+          }
         />
       )}
 

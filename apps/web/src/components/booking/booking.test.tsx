@@ -638,6 +638,15 @@ describe('booking page parts (DV-S13, DV-S10)', () => {
     expect(screen.queryByRole('link', { name: /اتصل/ })).not.toBeInTheDocument();
     expect(document.querySelector('a[href^="tel:"]')).toBeNull();
   });
+
+  it('after the shop gave the booking to another barber, says it can change until it starts (D-145)', () => {
+    renderWithIntl(
+      <BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange movedTo="عمر" />,
+    );
+    expect(screen.getByTestId('moved-policy')).toHaveTextContent('نُقل حجزك إلى عمر في نفس الموعد');
+    expect(screen.getByTestId('moved-policy')).toHaveTextContent('٥:٠٠');
+    expect(screen.queryByText(/مجاني عبر Groom Here حتى/)).not.toBeInTheDocument();
+  });
 });
 
 describe('FavoriteButton after signing in (client-side return)', () => {

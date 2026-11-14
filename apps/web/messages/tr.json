@@ -2067,6 +2067,7 @@
       "policy": {
         "title": "İptal politikası",
         "before": "Groom Here üzerinden ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Son tarih: {time}.",
+        "moved": "Randevunuz aynı saatte {professional} adlı berbere verildi. Başlayana kadar ({time}) Groom Here üzerinden iptal edebilir veya saatini değiştirebilirsiniz.",
         "after": "Online iptal ve saat değiştirme süresi sona erdi (randevudan {window} önce). Değiştirmek için Groom Here ekibiyle iletişime geçin."
       },
       "window": {

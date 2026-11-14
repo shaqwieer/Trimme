@@ -17517,9 +17517,16 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "professionalChangedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a\ncompleted visit until \u0060ReviewDeadline\u0060. \u0060ReviewRating\u0060 is the stars they gave, once reviewed."
+        "description": "A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a\ncompleted visit until \u0060ReviewDeadline\u0060. \u0060ReviewRating\u0060 is the stars they gave, once reviewed.\n\u0060ProfessionalChangedAt\u0060: the shop gave the booking to another barber since the customer last chose it (D-145);\nuntil it starts they may cancel or change it whatever the cutoff."
       },
       "CustomerContactResponse": {
         "required": [
