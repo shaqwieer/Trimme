@@ -60,14 +60,14 @@ describe('ShopAccountForms (D-139)', () => {
     renderWithIntl(<ShopAccountForms shopId="s1" />);
     await user.click(screen.getByRole('tab', { name: 'إنشاء يدوي' }));
 
-    await user.type(screen.getByLabelText('الاسم'), 'Desk');
-    await user.type(screen.getByLabelText('البريد الإلكتروني'), 'desk@shop.sa');
-    await user.click(screen.getByLabelText(/موظف استقبال/));
+    await user.type(screen.getByLabelText('الاسم'), 'Co-owner');
+    await user.type(screen.getByLabelText('البريد الإلكتروني'), 'co-owner@shop.sa');
+    expect(screen.queryByLabelText(/موظف استقبال/)).toBeNull();
     await user.type(screen.getByLabelText('كلمة المرور المؤقتة'), 'temporary pass');
     await user.click(screen.getByRole('button', { name: 'إنشاء الحساب' }));
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(api.POST.mock.calls[0]![1].body).toMatchObject({ role: 'ShopStaff' });
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({ role: 'ShopOwner' });
   });
 });
 

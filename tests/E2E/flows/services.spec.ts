@@ -38,7 +38,7 @@ async function csrf(context: BrowserContext, request: APIRequestContext): Promis
 }
 
 test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
-  test('the salon owner adds a service with its own price, duration and barbers, edits, reorders and archives it; the desk cannot (D-137)', async ({
+  test('the salon owner adds a service with its own price, duration and barbers, edits, reorders and archives it; a barber cannot (D-137, D-145)', async ({
     browser,
   }) => {
     const name = `حلاقة تجربة ${Date.now().toString(36)}`;
@@ -104,10 +104,10 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     await page.getByRole('link', { name: 'Show archived' }).click();
     await expect(page.getByTestId(`catalog-row-${serviceId}`)).toContainText('Archived');
 
-    // The desk has no services page and no way to add one.
+    // A barber's login (Omar, by his mobile) has no services page and no way to add one.
     const deskContext = await browser.newContext();
     const desk = await deskContext.newPage();
-    await staffSignIn(desk, 'staff@barber-house.trimme.local', DEMO_PASSWORD);
+    await staffSignIn(desk, '0500100201', DEMO_PASSWORD);
     await expect(desk.getByRole('link', { name: 'Services', exact: true })).toHaveCount(0);
     await desk.goto('/en/shop/services');
     await expect(desk.getByTestId('shop-services')).toHaveCount(0);

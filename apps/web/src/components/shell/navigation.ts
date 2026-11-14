@@ -52,7 +52,7 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'appointments', href: '/shop/appointments', icon: List, permission: 'Shop.Bookings.Read' },
   { key: 'walkIn', href: '/shop/walk-in', icon: Plus, permission: 'Shop.Bookings.CreateWalkIn' },
   { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Breaks.Manage' },
-  // The owner's own services again (D-137; D-130 had given them to the admin only). The desk has no permission.
+  // The owner's own services again (D-137; D-130 had given them to the admin only). A barber's login has no permission.
   { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
   // The owner turns barbers' logins on and off (D-145).
   { key: 'barbers', href: '/shop/barbers', icon: Users, permission: 'Shop.Barbers.ManageLogin' },

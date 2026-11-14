@@ -3136,7 +3136,7 @@
         "tags": [
           "Admin: identity"
         ],
-        "summary": "Emails a ShopOwner or ShopStaff invitation for one shop (audited).",
+        "summary": "Emails a ShopOwner invitation for one shop (audited). Barbers\u0027 logins are turned on from their professional.",
         "operationId": "InviteShopUser",
         "parameters": [
           {
@@ -3208,7 +3208,7 @@
         "tags": [
           "Admin: identity"
         ],
-        "summary": "Creates a ShopOwner or ShopStaff account with a temporary password, without email (audited).",
+        "summary": "Creates a ShopOwner account with a temporary password, without email (audited).",
         "operationId": "CreateShopUser",
         "parameters": [
           {

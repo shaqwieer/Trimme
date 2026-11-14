@@ -11,10 +11,12 @@ import {
   customerSignUp,
   firstId,
   OWNER,
+  BARBER,
   type Role,
   routes,
   type RuntimeIds,
   staffSignIn,
+  barberSignIn,
 } from './inventory';
 
 /**
@@ -28,7 +30,7 @@ import {
  */
 const LOCALES = ['ar', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
-const ROLES: Role[] = ['anonymous', 'customer', 'owner', 'admin'];
+const ROLES: Role[] = ['anonymous', 'customer', 'owner', 'barber', 'admin'];
 const BLANK_TILE = png(256, 256, [233, 238, 243]);
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -265,6 +267,7 @@ async function signedIn(context: BrowserContext, page: Page, role: Role): Promis
   await page.goto('/ar/terms');
   if (role === 'admin') await staffSignIn(context, page.request, ADMIN.email, ADMIN.password);
   if (role === 'owner') await staffSignIn(context, page.request, OWNER.email, OWNER.password);
+  if (role === 'barber') await barberSignIn(context, page.request, BARBER.phone, BARBER.password);
   if (role === 'customer') {
     await customerSignUp(context, page.request);
     const bookingId = await bookFaisal(context, page.request);

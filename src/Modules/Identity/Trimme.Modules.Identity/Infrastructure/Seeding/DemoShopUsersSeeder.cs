@@ -8,8 +8,9 @@ using Trimme.Modules.Identity.Infrastructure.Persistence;
 namespace Trimme.Modules.Identity.Infrastructure.Seeding;
 
 /// <summary>
-/// An owner and a staff account for each demo shop (idempotent; development only). The password comes from
-/// <c>TRIMME_DEMO_PASSWORD</c>, defaulting to a documented local-only value.
+/// An owner account for each demo shop (idempotent; development only); its barbers sign in by mobile (D-145,
+/// <c>DemoBarberLoginsSeeder</c>). The password comes from <c>TRIMME_DEMO_PASSWORD</c>, defaulting to a documented
+/// local-only value.
 /// </summary>
 internal sealed class DemoShopUsersSeeder : IDevSeeder
 {
@@ -29,7 +30,6 @@ internal sealed class DemoShopUsersSeeder : IDevSeeder
         foreach (var shop in DemoData.Shops)
         {
             await EnsureAsync(users, shop, shop.OwnerEmail, "مالك المحل", SystemRoles.ShopOwner, password);
-            await EnsureAsync(users, shop, shop.StaffEmail, "موظف الاستقبال", SystemRoles.ShopStaff, password);
             cancellationToken.ThrowIfCancellationRequested();
         }
     }

@@ -4,13 +4,14 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * Phase 09 flow (spec §19 E2, schedule part; R-AVL-02/03): the shop edits a professional's hours, records time off and
- * pauses online booking in /shop/schedule, and the public slot API follows each change. Staff see none of that: only
- * each barber's day by the hour, where they set breaks with no reason (D-134). Every change is undone, so the flow can
+ * pauses online booking in /shop/schedule, and the public slot API follows each change. A barber's own login sees none
+ * of that: only their day by the hour, where they set breaks with no reason (D-134, D-145). Every change is undone, so the flow can
  * run again on the same stack. Demo data: Al Asala (DemoData), Faisal does the haircut, Sultan the beard trim.
  */
 const DEMO_PASSWORD = process.env.E2E_DEMO_PASSWORD ?? 'trimme local demo';
 const OWNER = 'owner@al-asala.trimme.local';
-const STAFF = 'staff@al-asala.trimme.local';
+/** Sultan's own login, by the WhatsApp number on his profile (D-145). */
+const SULTAN_LOGIN = '0500100102';
 const SLUG = 'al-asala';
 const FAISAL = '0199a0de-5a10-7000-8000-000000000101';
 const SULTAN = '0199a0de-5a10-7000-8000-000000000102';
@@ -159,12 +160,12 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     expect((await slots(page.request, target.iso)).bookable).toBe(true);
   });
 
-  test("staff set a barber's breaks every 5 minutes with a confirmation and no reason, and see nothing else of the schedule (D-134, D-137)", async ({
+  test('a barber sets their own breaks every 5 minutes with a confirmation and no reason, and sees nothing else of the schedule (D-134, D-137, D-145)', async ({
     page,
     context,
   }) => {
     const target = targetDate();
-    await staffSignIn(page, STAFF);
+    await staffSignIn(page, SULTAN_LOGIN);
     const headers = { 'X-CSRF-Token': await csrf(context, page.request) };
     const clear = { professionalId: SULTAN, date: target.iso, breaks: [] };
     expect(

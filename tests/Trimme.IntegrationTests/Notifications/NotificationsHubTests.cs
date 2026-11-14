@@ -1,3 +1,4 @@
+using Trimme.IntegrationTests.Identity;
 using System.Net;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Http.Connections;
@@ -75,16 +76,17 @@ public sealed class NotificationsHubTests(PostgresFixture postgres)
         await using var w = await ArrangeAsync(postgres, "ntf_hub", ct);
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
         await using var shopA = await ConnectAsync(w.Factory, w.OwnerA, ct);
-        await using var staffA = await ConnectAsync(w.Factory, w.StaffA, ct);
+        using var omarLogin = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512396001", ct);
+        await using var omar = await ConnectAsync(w.Factory, omarLogin, ct);
         await using var shopB = await ConnectAsync(w.Factory, w.OwnerB, ct);
         await using var customer = await ConnectAsync(w.Factory, noura, ct);
 
-        // The customer books at shop A: the owner, whose inbox it is, is signalled (D-145: not the desk); B and the
+        // The customer books at shop A: the owner, whose inbox it is, is signalled (D-145: not another barber); B and the
         // customer are not.
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
         await ProcessOutboxAsync(w.Factory, ct);
         await shopA.NextAsync(ct);
-        staffA.HasSignal.ShouldBeFalse("the shop's inbox is the owner's");
+        omar.HasSignal.ShouldBeFalse("the shop's inbox is the owner's, and the booking is Faisal's");
         shopB.HasSignal.ShouldBeFalse();
         customer.HasSignal.ShouldBeFalse("the customer is not told about their own booking");
 

@@ -258,7 +258,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         // Jump to 10:00 on the target day (the clock only moves forward), then sign in again.
         clock.SetUtcNow(At(Target, 10).ToUniversalTime());
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct);
+        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
 
         var now = await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
         now.GetProperty("status").GetString().ShouldBe("Arrived", "a walk-in starting now (D-035)");
@@ -301,7 +301,7 @@ public sealed class BookingTests(PostgresFixture postgres)
 
         // Arrived is allowed from an hour before; a no-show after the start.
         clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
-        using var staffLater = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct); // the access cookie is short-lived
+        using var staffLater = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct); // the access cookie is short-lived
         var arrived = await OkAsync(staffLater.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "NoShow", version = laterVersion }, ct), ct);
         arrived.GetProperty("status").GetString().ShouldBe("NoShow");
         (await OutboxAsync(w.Factory, ct)).Select(m => m.Split('|')[0]).ShouldBe(["booking.created", "booking.created", "booking.status_changed", "booking.status_changed"]);
@@ -317,13 +317,13 @@ public sealed class BookingTests(PostgresFixture postgres)
 
         // D-134: the mobile is optional (some customers will not give it); when given it must be a mobile number
         // (Arabic-Indic digits are fine). The name is required.
-        await FailsAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerName = " " }, ct), HttpStatusCode.BadRequest, "customerName", ct);
-        await FailsAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerPhone = "0112345678" }, ct), HttpStatusCode.BadRequest, "validation.phone_invalid", ct);
-        var anonymous = await OkAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { startsAt = At(Target, 16), customerName = "م", customerPhone = " " }, ct),
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerName = " " }, ct), HttpStatusCode.BadRequest, "customerName", ct);
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { customerPhone = "0112345678" }, ct), HttpStatusCode.BadRequest, "validation.phone_invalid", ct);
+        var anonymous = await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn with { startsAt = At(Target, 16), customerName = "م", customerPhone = " " }, ct),
             ct, HttpStatusCode.Created);
         (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/bookings/{anonymous.GetProperty("id").GetGuid()}", ct), ct))
             .GetProperty("walkInPhoneMasked").ValueKind.ShouldBe(JsonValueKind.Null, "no number given, none stored");
-        using var created = await w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn, ct);
+        using var created = await w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", walkIn, ct);
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         var body = await created.Content.ReadAsStringAsync(ct);
         var id = JsonDocument.Parse(body).RootElement.GetProperty("id").GetGuid();
@@ -332,7 +332,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         string[] shopViews =
         [
             body,
-            await (await w.StaffA.GetAsync($"/api/v1/shop/bookings/{id}", ct)).Content.ReadAsStringAsync(ct),
+            await (await w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct)).Content.ReadAsStringAsync(ct),
             await (await w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}", ct)).Content.ReadAsStringAsync(ct),
             .. await OutboxAsync(w.Factory, ct),
         ];
@@ -383,10 +383,12 @@ public sealed class BookingTests(PostgresFixture postgres)
         var first = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
         var again = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target.AddDays(1), 12), ct), ct, HttpStatusCode.Created);
         var other = await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Omar, At(Target.AddDays(1), 13), ct), ct, HttpStatusCode.Created);
+        const string FaisalNumber = "+966512397001";
+        (await Identity.BarberLoginTests.BarberAsync(w, w.Faisal, FaisalNumber, ct)).Dispose();
 
-        // 12:10 on the target day: the 30-minute haircut is under way, so Faisal is busy until 12:30.
+        // 12:10 on the target day: the 30-minute haircut is under way, so Faisal is busy until 12:30. Faisal runs his day.
         clock.SetUtcNow(At(Target, 12, 10).ToUniversalTime());
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct);
+        using var staff = await Identity.BarberLoginTests.SignInBarberAsync(w.Factory, FaisalNumber, ct);
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
         bool FreeNow(JsonElement options) =>
             options.GetProperty("professionals").EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == w.Faisal).GetProperty("freeNow").GetBoolean();
@@ -409,7 +411,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{again.GetProperty("id").GetGuid()}/transitions",
             new { to = "Completed", version = again.GetProperty("version").GetUInt32() }, ct), HttpStatusCode.UnprocessableEntity, "booking.too_early", ct);
 
-        // The owner sees who is new and who is returning; the desk does not (D-135).
+        // The owner sees who is new and who is returning; a barber's login does not (D-135, D-145).
         var list = $"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target.AddDays(1))}";
         var visits = (await OkAsync(owner.GetAsync(list, ct), ct)).GetProperty("items").EnumerateArray()
             .ToDictionary(b => b.GetProperty("id").GetGuid(), b => b.GetProperty("visit").ValueKind == JsonValueKind.Null ? null : b.GetProperty("visit").GetString());

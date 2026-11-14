@@ -128,7 +128,11 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/notifications/read-all", null, ct), ct, HttpStatusCode.NoContent);
 
         // The shop's inbox is the owner's (D-145).
-        await FailsAsync(w.StaffA.GetAsync("/api/v1/shop/notifications/unread-count", ct), HttpStatusCode.Forbidden, null, ct);
+        using (var omar = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512395001", ct))
+        {
+            await FailsAsync(omar.GetAsync("/api/v1/shop/notifications/unread-count", ct), HttpStatusCode.Forbidden, null, ct);
+        }
+
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(0);
 
         // The admin booking page lists the booking's messages and reminder jobs; masked recipients only.

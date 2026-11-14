@@ -29,8 +29,8 @@ public sealed class DemoSeedTests(PostgresFixture postgres)
             [$"{DemoData.AlAsala.Id}|Active", $"{DemoData.BarberHouse.Id}|ExpiringSoon", $"{DemoData.LamsatAlRajul.Id}|Expired", $"{DemoData.AlMadina.Id}|Suspended"],
             ignoreOrder: true);
         first.PlanPrices.Count.ShouldBeGreaterThan(first.Plans, "at least one plan has more than one price version");
-        // An owner and a desk account per demo shop, and a login for each of the five demo barbers (D-145).
-        first.Users.Count.ShouldBe(9);
+        // An owner per demo shop, and a login for each of the five demo barbers (D-145: no desk accounts).
+        first.Users.Count.ShouldBe(7);
     }
 
     private async Task<SeedSnapshot> SeedTwiceAsync(string prefix, CancellationToken ct)

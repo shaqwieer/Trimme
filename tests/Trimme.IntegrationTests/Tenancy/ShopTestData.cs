@@ -22,7 +22,8 @@ namespace Trimme.IntegrationTests.Tenancy;
 /// <summary>Two shops with an owner and a staff member each: the isolation harness (R-TEN-06).</summary>
 internal sealed record TwoShops(ShopMembers A, ShopMembers B);
 
-internal sealed record ShopMembers(Guid ShopId, string OwnerEmail, string StaffEmail);
+/// <summary>A shop and its owner's email. The desk role is gone (D-145): a restricted shop user is a barber's login.</summary>
+internal sealed record ShopMembers(Guid ShopId, string OwnerEmail);
 
 internal static class ShopTestData
 {
@@ -81,10 +82,8 @@ internal static class ShopTestData
             var slug = $"{name}-{Guid.NewGuid():N}"[..24];
             var shopId = await CreateShopAsync(admin, slug, ct);
             var owner = IdentityTestData.NewEmail($"{name}-owner");
-            var staff = IdentityTestData.NewEmail($"{name}-staff");
             await CreateShopUserAsync(factory, shopId, owner, SystemRoles.ShopOwner, ct);
-            await CreateShopUserAsync(factory, shopId, staff, SystemRoles.ShopStaff, ct);
-            return new ShopMembers(shopId, owner, staff);
+            return new ShopMembers(shopId, owner);
         }
 
         return new TwoShops(await One("alpha"), await One("beta"));

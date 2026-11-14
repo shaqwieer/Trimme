@@ -3,7 +3,8 @@ namespace Trimme.Modules.Identity.Domain;
 /// <summary>
 /// Seed roles (D-018, D-019, D-051). <see cref="RoleDefinition.Managed"/> roles have their grants reset to these
 /// defaults on every <c>migrate</c>; the others receive the defaults once, when first created, and are then editable
-/// by an admin with <c>Admin.Roles.Manage</c> (Phase 14).
+/// by an admin with <c>Admin.Roles.Manage</c> (Phase 14). The shop desk role (ShopStaff) is gone (D-145): each barber
+/// signs in as their own desk, and the migration <c>RemoveShopDesk</c> disabled the desk accounts.
 /// </summary>
 public static class SystemRoles
 {
@@ -11,7 +12,6 @@ public static class SystemRoles
     public const string OperationsManager = "OperationsManager";
     public const string Support = "Support";
     public const string ShopOwner = "ShopOwner";
-    public const string ShopStaff = "ShopStaff";
 
     /// <summary>A barber's own login (D-145): their bookings, walk-ins, breaks and figures only.</summary>
     public const string ShopBarber = "ShopBarber";
@@ -45,16 +45,6 @@ public static class SystemRoles
         ]),
         new(ShopOwner, UserType.ShopUser, Managed: true,
             Permissions.All.Where(p => p.UserType == UserType.ShopUser).Select(p => p.Code).ToArray()),
-        new(ShopStaff, UserType.ShopUser, Managed: true,
-        [
-            Permissions.Shop.BookingsRead,
-            Permissions.Shop.BookingsUpdateStatus,
-            Permissions.Shop.BookingsCreateWalkIn,
-            Permissions.Shop.BookingsResendNotification,
-
-            // Breaks only: the shop's and the barbers' hours, closures and time off are the owner's (D-134).
-            Permissions.Shop.BreaksManage,
-        ]),
         new(ShopBarber, UserType.ShopUser, Managed: true,
         [
             // Scoped to the barber's own professional by the handlers (D-145): never a colleague's booking or day.

@@ -42,7 +42,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
     private static async Task CompleteAsync(BookingWorld w, FakeTimeProvider clock, Guid bookingId, DateTimeOffset start, CancellationToken ct, string? staffEmail = null)
     {
         clock.SetUtcNow(start.AddMinutes(40).ToUniversalTime());
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, staffEmail ?? w.Shops.A.StaffEmail, ct);
+        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, staffEmail ?? w.Shops.A.OwnerEmail, ct);
         foreach (var to in new[] { "Arrived", "Completed" })
         {
             var current = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
@@ -227,7 +227,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var version = saved.GetProperty("version").GetUInt32();
         await FailsAsync(w.Admin.PutAsync(url, Terms(visits: 6, version: version + 1), ct), HttpStatusCode.Conflict, null, ct);
 
-        var shop = await OkAsync(w.StaffA.GetAsync("/api/v1/shop/loyalty", ct), ct);
+        var shop = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/loyalty", ct), ct);
         shop.GetProperty("program").GetProperty("discountPercent").GetInt32().ShouldBe(20);
         shop.GetProperty("program").GetProperty("isActive").GetBoolean().ShouldBeFalse();
         (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("program").ValueKind.ShouldBe(JsonValueKind.Null);

@@ -607,11 +607,6 @@
         "title": "Add a shop account",
         "body": "The invitee receives an email link to set a password. The link is valid for 7 days.",
         "email": "Email",
-        "role": "Role",
-        "owner": "Shop owner",
-        "ownerHint": "Services, hours, settings and appointments",
-        "staff": "Reception staff",
-        "staffHint": "Appointments and walk-ins only",
         "submit": "Send invitation",
         "sent": "Invitation sent.",
         "modes": "How to add the account",
@@ -624,7 +619,8 @@
         "generate": "Generate a password",
         "create": "Create the account",
         "created": "Account created.",
-        "createdBody": "Give the account’s owner the email and the temporary password below. They will choose a new password at the first sign-in."
+        "createdBody": "Give the account’s owner the email and the temporary password below. They will choose a new password at the first sign-in.",
+        "ownerOnly": "This creates a shop owner account. Barbers sign in with their WhatsApp number; their sign-in is turned on from the barber's page or the owner's «Barbers» page."
       },
       "bookings": "Bookings at this shop"
     },

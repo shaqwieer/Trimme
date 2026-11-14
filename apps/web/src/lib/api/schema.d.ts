@@ -1092,7 +1092,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Emails a ShopOwner or ShopStaff invitation for one shop (audited). */
+        /** Emails a ShopOwner invitation for one shop (audited). Barbers' logins are turned on from their professional. */
         post: operations["InviteShopUser"];
         delete?: never;
         options?: never;
@@ -1109,7 +1109,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Creates a ShopOwner or ShopStaff account with a temporary password, without email (audited). */
+        /** Creates a ShopOwner account with a temporary password, without email (audited). */
         post: operations["CreateShopUser"];
         delete?: never;
         options?: never;

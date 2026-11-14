@@ -117,9 +117,6 @@ internal sealed class IdentityMailer(IEmailSender sender, IOptions<WebLinkOption
         (SystemRoles.ShopOwner, Locales.Arabic) => "مالك المحل",
         (SystemRoles.ShopOwner, Locales.Turkish) => "salon sahibi",
         (SystemRoles.ShopOwner, _) => "the shop owner",
-        (SystemRoles.ShopStaff, Locales.Arabic) => "موظف المحل",
-        (SystemRoles.ShopStaff, Locales.Turkish) => "salon personeli",
-        (SystemRoles.ShopStaff, _) => "shop staff",
         _ => roleName,
     };
 }

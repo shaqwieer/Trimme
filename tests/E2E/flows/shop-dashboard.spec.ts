@@ -3,19 +3,20 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 
 /**
- * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in made by staff and seen live on the
- * owner's screen, the calendar, the appointment drawer (note, cancel with a reason), all with the staff role's
- * permissions; no access to another shop's bookings, no customer phone anywhere in the dashboard's API responses or live
- * messages (not even the mobile the desk typed for the walk-in, D-134), and no export (R-NEG-03).
+ * Flow E2 (spec §19) — the shop's day on TRIMME (Phase 13): the overview, a walk-in made by a barber and seen live on
+ * the owner's screen, the calendar, the appointment drawer (note, cancel with a reason), all with Omar's own login,
+ * signed in with his mobile (D-145); no access to another shop's bookings, no customer phone anywhere in the dashboard's
+ * API responses or live messages (not even the mobile the barber typed for the walk-in, D-134), and no export (R-NEG-03).
  * Barber House with Omar, two days ahead: the customer flows use him 3–13 days ahead, Majed is on seeded time off, and
  * Al Asala's Faisal is kept for the schedule flow. Each run cancels its walk-in, so reruns find free time again.
  */
 const DEMO_PASSWORD = process.env.E2E_DEMO_PASSWORD ?? 'trimme local demo';
 const OWNER = 'owner@barber-house.trimme.local';
-const STAFF = 'staff@barber-house.trimme.local';
+/** Omar's own login: the WhatsApp number on his profile, as he types it (D-145). */
+const OMAR_LOGIN = '0500100201';
 const OMAR = '0199a0de-5a10-7000-8000-000000000201';
 const AL_ASALA_BOOKING = '0199a0de-5a10-7000-8000-000000000a12';
-/** The mobile the desk takes for the walk-in (D-134): it goes to the platform team only. */
+/** The mobile the barber takes for the walk-in (D-134): it goes to the platform team only. */
 const WALK_IN_PHONE = '551000777';
 const CUSTOMER_PHONES = ['500100301', '500100302', '500100303', WALK_IN_PHONE];
 
@@ -82,7 +83,7 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
   }) => {
     const traffic = recordTraffic(page);
     const customer = `زائر ${Date.now().toString(36).slice(-5)}`;
-    await staffSignIn(page, STAFF);
+    await staffSignIn(page, OMAR_LOGIN);
     await expect(page.getByTestId('shop-overview')).toBeVisible();
     await expect(page.getByTestId('shop-kpis')).toBeVisible();
     await expect(page.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
@@ -104,7 +105,7 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const watched = watcher.getByTestId('coming-appointment').filter({ hasText: customer });
     await expect(watched).toHaveCount(0);
 
-    // Walk-in at the desk: service, barber, first free time that day, the name and the mobile (D-134).
+    // Omar's walk-in: service, himself (the only barber offered), the last free time that day, the name and the mobile (D-134).
     await page.goto('/ar/shop/walk-in');
     await expect(page.getByTestId('walk-in')).toBeVisible();
     await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();

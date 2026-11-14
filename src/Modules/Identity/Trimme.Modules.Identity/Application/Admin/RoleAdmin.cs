@@ -11,7 +11,7 @@ namespace Trimme.Modules.Identity.Application.Admin;
 
 // Roles, permissions and platform staff (a-roles, DV-A15, R-AD-11, D-106). Admin roles only: shop and customer roles
 // are managed by the catalogue. Guards against privilege escalation:
-// - managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are never edited here;
+// - managed roles (SuperAdmin, ShopOwner, ShopBarber, Customer) are never edited here;
 // - SuperAdmin.* permissions are never granted to another role;
 // - an admin grants only permissions they hold themselves, and assigns only roles whose permissions they hold;
 // - only a SuperAdmin gives or takes the SuperAdmin role; the last enabled SuperAdmin stays;

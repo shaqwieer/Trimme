@@ -7,7 +7,7 @@
 - The API enforces every rule; the web app only hides navigation (spec §7, R-WEB-13).
 - Every `/api/v1` endpoint is **default-deny**: it requires a signed-in user unless it explicitly allows anonymous access. The endpoint matrix test (`AuthorizationMatrixTests.Endpoint_WithoutPermission_Returns403`) fails if an endpoint is anonymous without being on the reviewed allow-list, or authenticated without a permission, a user type or a reviewed self-service entry.
 - A role belongs to one user type (Customer, ShopUser, PlatformAdmin) and can hold only permissions of that type. `SuperAdmin.*` permissions are held only by the SuperAdmin role.
-- Managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) are reset to these grants on every `migrate`. OperationsManager and Support receive these defaults once and are editable by `Admin.Roles.Manage` at `/admin/roles` (Phase 14, D-106), which also creates custom platform-admin roles.
+- Managed roles (SuperAdmin, ShopOwner, ShopBarber, Customer) are reset to these grants on every `migrate`. The shop desk role (ShopStaff) was removed by D-145 (migration `RemoveShopDesk` disabled its accounts): each barber signs in as their own desk. OperationsManager and Support receive these defaults once and are editable by `Admin.Roles.Manage` at `/admin/roles` (Phase 14, D-106), which also creates custom platform-admin roles.
 - **Never** in the catalogue: moving/transferring a professional between shops (D-011), customer data export, shop access to customer contact details. `PermissionCatalogue_HasNoTransferPermission` guards this.
 - Shop permissions are always tenant-scoped to the user's own shop: the tenant comes from the session and the shop's current status, every shop-owned row is filtered by it, and a suspended shop has no tenant (D-059, D-061).
 
@@ -65,26 +65,26 @@
 
 ## Shop roles
 
-| Permission | ShopOwner | ShopStaff (reception) | ShopBarber (D-145) |
-|---|---|---|---|
-| `Shop.Bookings.Read` | ✓ | ✓ | ✓ own bookings |
-| `Shop.Bookings.UpdateStatus` | ✓ | ✓ | ✓ own bookings |
-| `Shop.Bookings.CreateWalkIn` | ✓ | ✓ | ✓ for themselves |
-| `Shop.Bookings.ResendNotification` | ✓ | ✓ | — |
-| `Shop.Bookings.Reschedule` | ✓ | — | ✓ own bookings |
-| `Shop.Bookings.ChangeProfessional` | ✓ | — | ✓ own bookings, to a colleague |
-| `Shop.Schedule.Read` | ✓ | — (D-134) | — |
-| `Shop.Schedule.Manage` | ✓ | — | — |
-| `Shop.Breaks.Manage` | ✓ | ✓ | ✓ own breaks |
-| `Shop.OnlineBooking.Pause` | ✓ | — | — |
-| `Shop.Services.Manage` | ✓ | — | — |
-| `Shop.Profile.Edit` | ✓ | — | — |
-| `Shop.Location.Edit` | ✓ | — | — |
-| `Shop.Subscription.Read` | ✓ | — | — |
-| `Shop.Notifications.Manage` | ✓ | — | — |
-| `Shop.Qr.View` | ✓ | — | — |
-| `Shop.Insights.View` | ✓ | — (D-135) | — |
-| `Shop.Barbers.ManageLogin` | ✓ | — | — |
+| Permission | ShopOwner | ShopBarber (D-145) |
+|---|---|---|
+| `Shop.Bookings.Read` | ✓ | ✓ own bookings |
+| `Shop.Bookings.UpdateStatus` | ✓ | ✓ own bookings |
+| `Shop.Bookings.CreateWalkIn` | ✓ | ✓ for themselves |
+| `Shop.Bookings.ResendNotification` | ✓ | — |
+| `Shop.Bookings.Reschedule` | ✓ | ✓ own bookings |
+| `Shop.Bookings.ChangeProfessional` | ✓ | ✓ own bookings, to a colleague |
+| `Shop.Schedule.Read` | ✓ | — |
+| `Shop.Schedule.Manage` | ✓ | — |
+| `Shop.Breaks.Manage` | ✓ | ✓ own breaks |
+| `Shop.OnlineBooking.Pause` | ✓ | — |
+| `Shop.Services.Manage` | ✓ | — |
+| `Shop.Profile.Edit` | ✓ | — |
+| `Shop.Location.Edit` | ✓ | — |
+| `Shop.Subscription.Read` | ✓ | — |
+| `Shop.Notifications.Manage` | ✓ | — |
+| `Shop.Qr.View` | ✓ | — |
+| `Shop.Insights.View` | ✓ | — |
+| `Shop.Barbers.ManageLogin` | ✓ | — |
 
 A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings, breaks and figures (D-145). It signs in with the professional's WhatsApp number.
 
@@ -119,7 +119,7 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/shops/{id}` | `Admin.Shops.View` · unknown id → 404 |
 | `POST /api/v1/admin/shops/{id}/activate` | `Admin.Shops.Suspend` · audited |
 | `POST /api/v1/admin/shops/{id}/suspend` | `Admin.Shops.Suspend` · audited · shop users lose tenant access on their next request |
-| `POST /api/v1/admin/shops/{id}/users/invitations` | `Admin.Shops.ManageAccount` · ShopOwner/ShopStaff only · audited without the email |
+| `POST /api/v1/admin/shops/{id}/users/invitations` | `Admin.Shops.ManageAccount` · ShopOwner only (a barber's login is turned on from their professional, D-145) · audited without the email |
 | `GET /api/v1/shop/me` | User type ShopUser · the shop comes from the session, never the request |
 | `GET /api/v1/dev/otp-inbox/latest` | Development/Testing only; not mapped otherwise; excluded from OpenAPI |
 | `GET /api/v1/media/{id}` | Anonymous · a stored image (JPEG/PNG/WebP), public and immutable (D-064) |

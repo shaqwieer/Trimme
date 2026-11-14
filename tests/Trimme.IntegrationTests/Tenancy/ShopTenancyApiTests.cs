@@ -93,7 +93,7 @@ public sealed partial class ShopTenancyApiTests(PostgresFixture postgres, Mailpi
         // Operations managers have Admin.Shops.ManageAccount; Support does not.
         using var support = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.Support, ct);
         using var forbidden = await support.PostAsync(
-            $"/api/v1/admin/shops/{shopId}/users/invitations", new { email = IdentityTestData.NewEmail(), role = SystemRoles.ShopStaff }, ct);
+            $"/api/v1/admin/shops/{shopId}/users/invitations", new { email = IdentityTestData.NewEmail(), role = SystemRoles.ShopOwner }, ct);
         forbidden.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -119,8 +119,8 @@ public sealed partial class ShopTenancyApiTests(PostgresFixture postgres, Mailpi
         using var foreign = await ownerA.GetAsync($"/api/v1/admin/shops/{shops.B.ShopId}", ct);
         foreign.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
-        // Staff of shop B resolve to shop B.
-        using var staffB = await IdentityTestData.SignInStaffAsync(factory, shops.B.StaffEmail, ct);
+        // Shop B's own user resolves to shop B.
+        using var staffB = await IdentityTestData.SignInStaffAsync(factory, shops.B.OwnerEmail, ct);
         (await ProbeAsync(staffB, ct)).Tenant.ShouldBe(shops.B.ShopId);
 
         // Non-shop callers have no tenant (shop-owned data is deny-all for them).
@@ -173,7 +173,7 @@ public sealed partial class ShopTenancyApiTests(PostgresFixture postgres, Mailpi
         var shopId = await ShopTestData.CreateShopAsync(admin, $"audit-{Guid.NewGuid():N}"[..20], ct);
         var invitee = IdentityTestData.NewEmail("audited");
         using (await admin.PostAsync($"/api/v1/admin/shops/{shopId}/suspend", new { reason = "Complaint review" }, ct))
-        using (await admin.PostAsync($"/api/v1/admin/shops/{shopId}/users/invitations", new { email = invitee, role = SystemRoles.ShopStaff }, ct))
+        using (await admin.PostAsync($"/api/v1/admin/shops/{shopId}/users/invitations", new { email = invitee, role = SystemRoles.ShopOwner }, ct))
         {
         }
 

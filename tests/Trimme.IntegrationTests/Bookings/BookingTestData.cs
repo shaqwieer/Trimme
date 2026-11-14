@@ -20,7 +20,6 @@ internal sealed record BookingWorld(
     ApiSession Admin,
     TwoShops Shops,
     ApiSession OwnerA,
-    ApiSession StaffA,
     ApiSession OwnerB,
     string SlugA,
     Guid Haircut,
@@ -35,7 +34,6 @@ internal sealed record BookingWorld(
     {
         Admin.Dispose();
         OwnerA.Dispose();
-        StaffA.Dispose();
         OwnerB.Dispose();
         await Factory.DisposeAsync();
     }
@@ -82,7 +80,6 @@ internal static class BookingTestData
         var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
         var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
         var ownerA = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
-        var staffA = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
         var ownerB = await IdentityTestData.SignInStaffAsync(factory, shops.B.OwnerEmail, ct);
 
         async Task<Guid> ServiceAsync(ApiSession owner, string name, int minutes) =>
@@ -113,7 +110,7 @@ internal static class BookingTestData
         await SubscribeAsync(admin, shops.B.ShopId, ct, "B");
 
         var slugA = (await OkAsync(admin.GetAsync($"/api/v1/admin/shops/{shops.A.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
-        return new BookingWorld(factory, clock, admin, shops, ownerA, staffA, ownerB, slugA, haircut, beard, package, serviceB, faisal, omar, proB);
+        return new BookingWorld(factory, clock, admin, shops, ownerA, ownerB, slugA, haircut, beard, package, serviceB, faisal, omar, proB);
     }
 
     /// <summary>A signed-in customer who completed the profile (a name is required to book).</summary>

@@ -41,12 +41,12 @@ internal static class AdminIdentityEndpoints
             .Produces<InvitationResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict);
         admin.MapPost("/shops/{shopId:guid}/users/invitations", InviteShopUser).RequirePermission(Permissions.Admin.ShopsManageAccount)
-            .WithName("InviteShopUser").WithSummary("Emails a ShopOwner or ShopStaff invitation for one shop (audited).")
+            .WithName("InviteShopUser").WithSummary("Emails a ShopOwner invitation for one shop (audited). Barbers' logins are turned on from their professional.")
             .Produces<InvitationResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         admin.MapPost("/shops/{shopId:guid}/users", CreateShopUser).RequirePermission(Permissions.Admin.ShopsManageAccount)
             .WithName("CreateShopUser")
-            .WithSummary("Creates a ShopOwner or ShopStaff account with a temporary password, without email (audited).")
+            .WithSummary("Creates a ShopOwner account with a temporary password, without email (audited).")
             .Produces<ShopUserResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
     }

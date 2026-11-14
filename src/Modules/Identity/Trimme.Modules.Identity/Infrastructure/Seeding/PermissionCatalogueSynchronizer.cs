@@ -10,7 +10,7 @@ namespace Trimme.Modules.Identity.Infrastructure.Seeding;
 
 /// <summary>
 /// Keeps <c>identity.permissions</c> equal to the code catalogue and makes sure the seed roles exist (D-051):
-/// managed roles (SuperAdmin, ShopOwner, ShopStaff, Customer) always hold exactly their default grants; the editable
+/// managed roles (SuperAdmin, ShopOwner, ShopBarber, Customer) always hold exactly their default grants; the editable
 /// seed roles (OperationsManager, Support) receive their defaults only when first created. Grants of permissions that
 /// no longer exist are removed. A grant is never made across user types.
 /// </summary>

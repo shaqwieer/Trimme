@@ -2,11 +2,9 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import type { UseFormRegisterReturn } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
-import { RadioCard } from '@/components/ui/selection';
 import { ConfirmDialog } from '@/components/ui/overlays';
 import { TextareaField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
@@ -167,28 +165,16 @@ export function ShopStatusActions({ shopId, status }: { shopId: string; status: 
   );
 }
 
-const shopRole = z.enum(['ShopOwner', 'ShopStaff']);
+// A shop account made by the admin is an owner (D-145): the desk role is gone, and barbers' logins are turned on from
+// their professional (the admin's barber page, or the owner's «الحلاقون»).
+const shopRole = z.literal('ShopOwner');
 
 const inviteSchema = z.object({ email, role: shopRole });
 
-/** The owner or desk choice shared by both ways of adding a shop account. */
-function ShopRoleCards({ field }: { field: UseFormRegisterReturn<'role'> }) {
+/** Says what both ways of adding a shop account create. */
+function OwnerOnlyNote() {
   const t = useTranslations('adminShops.detail.invite');
-  return (
-    <fieldset className="flex min-w-0 flex-col gap-2">
-      <legend className="pb-2 text-label font-bold text-text-strong">{t('role')}</legend>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <RadioCard {...field} value="ShopOwner">
-          <span className="block font-bold">{t('owner')}</span>
-          <span className="block text-helper text-text-tertiary">{t('ownerHint')}</span>
-        </RadioCard>
-        <RadioCard {...field} value="ShopStaff">
-          <span className="block font-bold">{t('staff')}</span>
-          <span className="block text-helper text-text-tertiary">{t('staffHint')}</span>
-        </RadioCard>
-      </div>
-    </fieldset>
-  );
+  return <p className="text-helper text-text-tertiary">{t('ownerOnly')}</p>;
 }
 
 /** A shop's accounts: an emailed invitation, or an account created here with a temporary password (D-139). */
@@ -223,7 +209,7 @@ export function ShopAccountForms({ shopId }: { shopId: string }) {
   );
 }
 
-/** Emails an owner or staff invitation for this shop (R-AUTH-02). */
+/** Emails an owner invitation for this shop (R-AUTH-02). */
 export function InviteShopUserForm({ shopId }: { shopId: string }) {
   const t = useTranslations('adminShops.detail.invite');
   const locale = useLocale();
@@ -263,7 +249,7 @@ export function InviteShopUserForm({ shopId }: { shopId: string }) {
         dir="ltr"
         autoComplete="off"
       />
-      <ShopRoleCards field={form.register('role')} />
+      <OwnerOnlyNote />
       {sent && <InlineAlert tone="success" title={t('sent')} />}
       {failure && <InlineAlert tone="danger" title={failure} />}
       <Button type="submit" size="md" icon="msg" loading={form.formState.isSubmitting} className="self-start">
@@ -299,7 +285,7 @@ const createUserSchema = z.object({
 });
 
 /**
- * Creates an owner or desk account with a temporary password and no email (D-139). The admin gives the password to
+ * Creates an owner account with a temporary password and no email (D-139). The admin gives the password to
  * the person, who replaces it at the first sign-in.
  */
 export function CreateShopUserForm({ shopId }: { shopId: string }) {
@@ -342,7 +328,7 @@ export function CreateShopUserForm({ shopId }: { shopId: string }) {
         dir="ltr"
         autoComplete="off"
       />
-      <ShopRoleCards field={form.register('role')} />
+      <OwnerOnlyNote />
       <div className="flex flex-col gap-2">
         {/* Plain text, because the admin reads it out or copies it; a password field would also invite the
             browser to save it as the admin's own login. */}

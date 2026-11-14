@@ -152,7 +152,7 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
         using var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
         var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
         using var owner = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
-        using var staff = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
+        using var staff = await BarberLoginTests.NewBarberAsync(factory, admin, owner, shops.A.ShopId, "+966512391001", ct);
 
         var own = await (await owner.GetAsync("/api/v1/shop/profile", ct)).JsonAsync(ct);
         own.GetProperty("id").GetGuid().ShouldBe(shops.A.ShopId);
@@ -176,7 +176,7 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
             version = (await open.JsonAsync(ct)).GetProperty("version").GetUInt32();
         }
 
-        // Staff have no Shop.Profile.Edit.
+        // A barber's login has no Shop.Profile.Edit.
         using (var asStaff = await staff.PutAsync("/api/v1/shop/profile", OwnProfile(nameAr, nameEn, version, "x"), ct))
         {
             asStaff.StatusCode.ShouldBe(HttpStatusCode.Forbidden);

@@ -50,7 +50,7 @@ public sealed class CatalogTests(PostgresFixture postgres)
         var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
         using var owner = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
         using var otherOwner = await IdentityTestData.SignInStaffAsync(factory, shops.B.OwnerEmail, ct);
-        using var staff = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
+        using var staff = await BarberLoginTests.NewBarberAsync(factory, admin, owner, shops.A.ShopId, "+966512392001", ct);
 
         var cut = await CreateServiceAsync(owner, "حلاقة شعر", 60.5m, 35, ct);
         var beard = await CreateServiceAsync(owner, "تهذيب لحية", 35m, 20, ct);
@@ -75,7 +75,7 @@ public sealed class CatalogTests(PostgresFixture postgres)
         theirsNow.GetProperty("price").GetDecimal().ShouldBe(60.5m);
         theirsNow.GetProperty("durationMinutes").GetInt32().ShouldBe(35);
 
-        // Stale version, invalid price/duration, staff without Shop.Services.Manage.
+        // Stale version, invalid price/duration, a barber without Shop.Services.Manage.
         (await owner.PutAsync($"/api/v1/shop/services/{cutId}", Service("س", 1m, 5, version: cut.GetProperty("version").GetUInt32()), ct)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
         using (var invalid = await owner.PostAsync("/api/v1/shop/services", Service("س", 10.005m, 7), ct))
         {
@@ -85,7 +85,7 @@ public sealed class CatalogTests(PostgresFixture postgres)
         }
 
         (await staff.PostAsync("/api/v1/shop/services", Service("س", 10m, 10), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await staff.GetAsync("/api/v1/shop/services", ct)).StatusCode.ShouldBe(HttpStatusCode.OK, "staff can read the list (walk-ins)");
+        (await staff.GetAsync("/api/v1/shop/services", ct)).StatusCode.ShouldBe(HttpStatusCode.OK, "a barber can read the list (walk-ins)");
 
         // Off, on, reorder (full set required), archive.
         (await (await owner.PostAsync($"/api/v1/shop/services/{cutId}/deactivate", new { }, ct)).JsonAsync(ct)).GetProperty("isActive").GetBoolean().ShouldBeFalse();

@@ -607,11 +607,6 @@
         "title": "Salona hesap ekle",
         "body": "Davet edilen kişiye şifre belirlemesi için e-postayla bir bağlantı gönderilir. Bağlantı 7 gün geçerlidir.",
         "email": "E-posta",
-        "role": "Rol",
-        "owner": "Salon sahibi",
-        "ownerHint": "Hizmetler, çalışma saatleri, ayarlar ve randevular",
-        "staff": "Resepsiyon personeli",
-        "staffHint": "Yalnızca randevular ve randevusuz müşteriler",
         "submit": "Davet gönder",
         "sent": "Davet gönderildi.",
         "modes": "Hesabı ekleme yöntemi",
@@ -624,7 +619,8 @@
         "generate": "Şifre oluştur",
         "create": "Hesabı oluştur",
         "created": "Hesap oluşturuldu.",
-        "createdBody": "Hesabın sahibine aşağıdaki e-postayı ve geçici şifreyi verin. İlk girişte yeni bir şifre seçecek."
+        "createdBody": "Hesabın sahibine aşağıdaki e-postayı ve geçici şifreyi verin. İlk girişte yeni bir şifre seçecek.",
+        "ownerOnly": "Bir salon sahibi hesabı oluşturulur. Berberler WhatsApp numaralarıyla giriş yapar; girişleri berber sayfasından veya sahibin «Berberler» sayfasından açılır."
       },
       "bookings": "Bu salondaki randevular"
     },

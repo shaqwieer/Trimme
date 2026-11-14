@@ -153,7 +153,7 @@ export const SEED_ROLES = [
   'OperationsManager',
   'Support',
   'ShopOwner',
-  'ShopStaff',
+  'ShopBarber',
   'Customer',
 ] as const;
 

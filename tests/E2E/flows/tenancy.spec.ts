@@ -106,23 +106,24 @@ test.describe('shops and tenancy (R-SHP-01, R-AUTH-02, R-TEN-01/06)', () => {
     await ownerContext.close();
   });
 
-  test('admin creates a desk account with a temporary password, replaced at the first sign-in (D-139)', async ({
+  test('admin creates an owner account with a temporary password, replaced at the first sign-in (D-139, D-145)', async ({
     browser,
   }) => {
     const adminContext = await browser.newContext();
     const deskContext = await browser.newContext();
     const admin = await adminContext.newPage();
     const desk = await deskContext.newPage();
-    const deskEmail = `desk.${Date.now().toString(36)}@trimme.test`;
+    const deskEmail = `co-owner.${Date.now().toString(36)}@trimme.test`;
     const temporary = 'temporary pass 2026';
 
     await staffSignIn(admin, ADMIN_EMAIL, ADMIN_PASSWORD);
     await expect(admin).toHaveURL(/\/en\/admin$/);
     await admin.goto(`/en/admin/shops/${AL_ASALA_ID}?tab=users`);
     await admin.getByRole('tab', { name: 'Create manually' }).click();
-    await admin.getByLabel('Name', { exact: true }).fill('Trial Desk');
+    await admin.getByLabel('Name', { exact: true }).fill('Trial Co-owner');
     await admin.getByLabel('Email', { exact: true }).fill(deskEmail);
-    await admin.getByText('Reception staff').click();
+    // Only owners are made here; barbers' logins come from their professional (D-145).
+    await expect(admin.getByText('Reception staff')).toHaveCount(0);
     await admin.getByLabel('Temporary password').fill(temporary);
     await admin.getByRole('button', { name: 'Create the account' }).click();
     await expect(admin.getByText('Account created.')).toBeVisible();

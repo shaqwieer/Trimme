@@ -16,16 +16,14 @@ public static class DemoData
         "al-asala",
         "صالون الأصالة للحلاقة",
         "Al Asala Barbershop",
-        "owner@al-asala.trimme.local",
-        "staff@al-asala.trimme.local");
+        "owner@al-asala.trimme.local");
 
     public static readonly DemoShop BarberHouse = new(
         new ShopId(Guid.Parse("0199a0de-5a10-7000-8000-000000000002")),
         "barber-house",
         "باربر هاوس",
         "Barber House",
-        "owner@barber-house.trimme.local",
-        "staff@barber-house.trimme.local");
+        "owner@barber-house.trimme.local");
 
     public static IReadOnlyList<DemoShop> Shops { get; } = [AlAsala, BarberHouse];
 
@@ -187,6 +185,6 @@ public sealed record DemoProfessional(
     string SpecialtyEn,
     string WhatsApp);
 
-public sealed record DemoShop(ShopId Id, string Slug, string NameAr, string NameEn, string OwnerEmail, string StaffEmail);
+public sealed record DemoShop(ShopId Id, string Slug, string NameAr, string NameEn, string OwnerEmail);
 
 public sealed record DemoExtraShop(ShopId Id, string Slug, string NameAr, string NameEn, double Latitude, double Longitude, string District);

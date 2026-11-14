@@ -202,7 +202,7 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         options.GetProperty("slots").EnumerateArray().Select(s => s.GetProperty("startsAt").GetDateTimeOffset()).ShouldContain(At(Target, 10));
         await FailsAsync(support.GetAsync($"/api/v1/admin/bookings/{id}/reschedule/options?date={Iso(Target)}&professionalId={w.ProB}", ct), HttpStatusCode.UnprocessableEntity, "booking.professional_not_eligible", ct);
 
-        await OkAsync(w.StaffA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 12), customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 12), customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
         Task<HttpResponseMessage> Move(DateTimeOffset start, Guid? professionalId, string? reason, string? key) =>
             support.SendAsync(HttpMethod.Post, $"/api/v1/admin/bookings/{id}/reschedule", new { startsAt = start, professionalId, reason, version }, ct,
                 headers: key is null ? null : Key(key));
@@ -400,7 +400,7 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         sara.Dispose();
 
         clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
-        using (var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.StaffEmail, ct))
+        using (var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
         {
             foreach (var visit in new[] { first, second })
             {

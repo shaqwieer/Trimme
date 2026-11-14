@@ -35,11 +35,11 @@
 - [x] 4. Operations: shop reschedule; change barber; history + event; cutoff exemption — with tests (the admin's handler is unchanged; its helper `RescheduleTargets` is shared)
 - [x] 5. Messages: `ProfessionalChanged` event/template/switch/notice; old/new barber; walk-in recipient port; per-user barber notifications — with tests
 - [x] 6. Web: sign-in identifier; barber dashboard (overview, appointments, calendar, walk-in, breaks, notifications); drawer actions (change time, move, cancel); owner «الحلاقون» page; admin professional login card; customer after-move actions — unit tests
-- [ ] 7. Desk removal: migration, roles, forms, seed, tests, permissions-matrix doc, E2E (barber role in the route audit)
+- [x] 7. Desk removal: migration, roles, forms, seed, tests, permissions-matrix doc, E2E (barber role in the route audit)
 - [ ] 8. Verification: .NET (Release, unit, architecture, integration), web gates, bundle budget, E2E codes on and off, route audit; docs (D-145, TRACEABILITY, deviations, STATUS, handoff)
 
 ## Deploy notes (for the user, before deploying)
-- Removing the desk role disables desk accounts at that deploy. Suggest two deploys: first barber logins (desk still works), enable each barber's login and check their numbers; then the desk removal.
+- Removing the desk role disables desk accounts at that deploy. Suggest two deploys: first barber logins (desk still works) up to commit `8eec53c` (the last commit before the desk removal; it closes the invite hole below), enable each barber's login and check their numbers; then the desk removal (migration `RemoveShopDesk`).
 - Registering the new template with Meta uses the client's token on the VPS: ask first.
 - Barbers have no email, so no «نسيت كلمة المرور»: the owner or admin re-enables the login with a new temporary password.
 
@@ -75,3 +75,12 @@
   - «الحلاقون» (`/shop/barbers`, `Shop.Barbers.ManageLogin`) and the admin professional card (`Admin.Shops.ManageAccount`): login state, temporary password (10+), turn off with confirmation; no number → disabled, the owner is told the platform adds it.
   - Customer: `CustomerBookingResponse.professionalChangedAt`; the policy line then names the new barber and says until it starts. Actions already came from the API.
   - Tests: web unit 522/522 (StaffForms +3, notices +1 and kinds coverage, BookingChangeDialogs 5, BarberLoginControls 3, booking policy +1); typecheck, lint, format, `openapi:check` clean. I `ShopBookingChangeTests` (+`professionalChangedAt`), `OpenApiContractTests`, `BookingTests`, `CustomerAccountTests` 24/24.
+- **Invite hole (found before slice 7, commit `8eec53c`):** the admin's shop-account invite/create accepted the role `ShopBarber`, which would have made a barber account linked to no barber (its barber permissions then cover the whole shop). Now refused (`invitation.role_invalid`); with the desk gone a shop account made there is an owner only. I `ShopUserTemporaryPasswordTests` (ShopBarber in any spelling, by create and by invite → 400).
+- **Slice 7 (desk removal):**
+  - `SystemRoles.ShopStaff` removed; invite/create take `ShopOwner` only; mailer labels, endpoint summaries, comments; demo seed: owners only (`DemoShop.StaffEmail` removed), the demo barbers sign in by mobile.
+  - Migration `RemoveShopDesk` (SQL only, its script in `RemoveShopDesk.Sql`): disable every ShopStaff holder, revoke their sessions (`LoginDisabled`; the access cookie is checked against its session on every request, so it stops at the next request, and refresh tokens belong to the revoked sessions), revoke pending ShopStaff invitations, delete the role's memberships, grants, claims and the role. Down: a no-op (not reversible). The role synchronizer only creates `SystemRoles.All`, so `migrate` never brings it back.
+  - I `RemoveShopDeskTests`: a desk rebuilt as production has it (role + grant, a signed-in account, a pending invitation) next to an owner, a pending owner invitation and a barber's login; the script disables the desk, revokes its session (`LoginDisabled`, its cookie answers 401), revokes its invitation, deletes the role and membership; the owner, the owner invitation and the barber are untouched; a second run and a `migrate` change nothing.
+  - Tests: `ShopMembers.StaffEmail` and `BookingWorld.StaffA` removed, so the compiler listed every desk use. Shop operations moved to the owner; restricted-user checks use a real barber login (new helpers `BarberLoginTests.BarberAsync(factory, admin, owner, …)`, `SignInBarberAsync`, `NewBarberAsync`): schedule (Faisal's own day; owner-only endpoints 403), booking finish-early (Faisal's login; no visit badges, no customer mix), services (403 manage, list readable), profile edit 403, subscription 403, QR 403, shop inbox 403, hub (another barber hears nothing). `DemoSeedTests` 7 users.
+  - Web: the admin's add-account form has no role choice (owner only, with a note on barbers' logins); `SEED_ROLES` lists ShopBarber; copy and comments.
+  - E2E (run in slice 8): admin-operations' walk-in by the Barber House owner; services, shop-dashboard (Omar) and shop-schedule (Sultan) by barbers' mobile sign-in through the UI; tenancy creates an owner account; the route audit gains the `barber` role (Majed) and `/shop/barbers` for the owner.
+  - Docs: permissions matrix without the desk column; README demo accounts.

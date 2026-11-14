@@ -141,7 +141,7 @@ public sealed class ShopUserTemporaryPasswordTests(PostgresFixture postgres)
         var shopId = await ShopTestData.CreateShopAsync(admin, "create-rules", ct, activate: false);
 
         object Body(string email, string role, string password = TemporaryPassword) =>
-            new { email, displayName = "Desk", role, password, locale = "en" };
+            new { email, displayName = "Owner", role, password, locale = "en" };
 
         using (var unknownShop = await admin.PostAsync(
                    $"/api/v1/admin/shops/{Guid.NewGuid()}/users", Body(IdentityTestData.NewEmail(), SystemRoles.ShopOwner), ct))
@@ -166,21 +166,21 @@ public sealed class ShopUserTemporaryPasswordTests(PostgresFixture postgres)
         }
 
         using (var weak = await admin.PostAsync(
-                   $"/api/v1/admin/shops/{shopId}/users", Body(IdentityTestData.NewEmail(), SystemRoles.ShopStaff, "short"), ct))
+                   $"/api/v1/admin/shops/{shopId}/users", Body(IdentityTestData.NewEmail(), SystemRoles.ShopOwner, "short"), ct))
         {
             weak.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
             FieldErrors(await weak.JsonAsync(ct), "password").ShouldContain("validation.password_too_short");
         }
 
         // An invitation already emailed to the address is revoked by the manual account.
-        var email = IdentityTestData.NewEmail("desk");
+        var email = IdentityTestData.NewEmail("co-owner");
         using (var invite = await admin.PostAsync(
-                   $"/api/v1/admin/shops/{shopId}/users/invitations", new { email, role = SystemRoles.ShopStaff, locale = "en" }, ct))
+                   $"/api/v1/admin/shops/{shopId}/users/invitations", new { email, role = SystemRoles.ShopOwner, locale = "en" }, ct))
         {
             invite.StatusCode.ShouldBe(HttpStatusCode.Created);
         }
 
-        using (var created = await admin.PostAsync($"/api/v1/admin/shops/{shopId}/users", Body(email, SystemRoles.ShopStaff), ct))
+        using (var created = await admin.PostAsync($"/api/v1/admin/shops/{shopId}/users", Body(email, SystemRoles.ShopOwner), ct))
         {
             created.StatusCode.ShouldBe(HttpStatusCode.Created);
         }
@@ -199,7 +199,7 @@ public sealed class ShopUserTemporaryPasswordTests(PostgresFixture postgres)
 
         // Operations managers have Admin.Shops.ManageAccount; Support does not.
         using var support = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.Support, ct);
-        using var forbidden = await support.PostAsync($"/api/v1/admin/shops/{shopId}/users", Body(IdentityTestData.NewEmail(), SystemRoles.ShopStaff), ct);
+        using var forbidden = await support.PostAsync($"/api/v1/admin/shops/{shopId}/users", Body(IdentityTestData.NewEmail(), SystemRoles.ShopOwner), ct);
         forbidden.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -213,7 +213,7 @@ public sealed class ShopUserTemporaryPasswordTests(PostgresFixture postgres)
         var email = IdentityTestData.NewEmail("staff");
         using (var created = await admin.PostAsync(
                    $"/api/v1/admin/shops/{shopId}/users",
-                   new { email, displayName = "Desk", role = SystemRoles.ShopStaff, password = TemporaryPassword },
+                   new { email, displayName = "Owner", role = SystemRoles.ShopOwner, password = TemporaryPassword },
                    ct))
         {
             created.StatusCode.ShouldBe(HttpStatusCode.Created);

@@ -14,22 +14,44 @@ namespace Trimme.IntegrationTests.Identity;
 public sealed class BarberLoginTests(PostgresFixture postgres)
 {
     private const string Temporary = "barber-temp-2026";
-    private const string Chosen = "barber-chosen-2026";
+    internal const string Chosen = "barber-chosen-2026";
 
-    internal static async Task SetNumberAsync(BookingWorld w, Guid professionalId, string number, CancellationToken ct) =>
-        await OkAsync(w.Admin.PutAsync($"/api/v1/admin/professionals/{professionalId}/whatsapp", new { whatsAppNumber = number, notificationsEnabled = false }, ct), ct);
+    internal static Task SetNumberAsync(BookingWorld w, Guid professionalId, string number, CancellationToken ct) => SetNumberAsync(w.Admin, professionalId, number, ct);
+
+    internal static async Task SetNumberAsync(ApiSession admin, Guid professionalId, string number, CancellationToken ct) =>
+        await OkAsync(admin.PutAsync($"/api/v1/admin/professionals/{professionalId}/whatsapp", new { whatsAppNumber = number, notificationsEnabled = false }, ct), ct);
 
     internal static Task<HttpResponseMessage> SignInAsync(ApiSession session, string phone, string password, CancellationToken ct) =>
         session.PostAsync("/api/v1/auth/staff/sign-in", new { phone, password }, ct);
 
     /// <summary>Turns the barber's login on as the shop's owner and signs the barber in for good (temporary password replaced).</summary>
-    internal static async Task<ApiSession> BarberAsync(BookingWorld w, Guid professionalId, string number, CancellationToken ct)
+    internal static Task<ApiSession> BarberAsync(BookingWorld w, Guid professionalId, string number, CancellationToken ct) =>
+        BarberAsync(w.Factory, w.Admin, w.OwnerA, professionalId, number, ct);
+
+    /// <summary>The same in any test world: the admin sets the barber's number, their shop's owner turns the login on.</summary>
+    internal static async Task<ApiSession> BarberAsync(TrimmeApiFactory factory, ApiSession admin, ApiSession owner, Guid professionalId, string number, CancellationToken ct)
     {
-        await SetNumberAsync(w, professionalId, number, ct);
-        await OkAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{professionalId}/login", new { password = Temporary }, ct), ct);
-        var session = ApiSession.Create(w.Factory);
+        await SetNumberAsync(admin, professionalId, number, ct);
+        await OkAsync(owner.PutAsync($"/api/v1/shop/professionals/{professionalId}/login", new { password = Temporary }, ct), ct);
+        var session = ApiSession.Create(factory);
         await OkAsync(session.PostAsync("/api/v1/auth/password/change-temporary", new { phone = number, password = Temporary, newPassword = Chosen }, ct), ct);
         return session;
+    }
+
+    /// <summary>A barber whose login is on signs in again (for example after the test clock moved past the access cookie).</summary>
+    internal static async Task<ApiSession> SignInBarberAsync(TrimmeApiFactory factory, string number, CancellationToken ct)
+    {
+        var session = ApiSession.Create(factory);
+        await OkAsync(SignInAsync(session, number, Chosen, ct), ct);
+        return session;
+    }
+
+    /// <summary>A barber at a shop of a <see cref="Tenancy.TwoShops"/> world, with a login (the world has no barbers of its own).</summary>
+    internal static async Task<ApiSession> NewBarberAsync(TrimmeApiFactory factory, ApiSession admin, ApiSession owner, Guid shopId, string number, CancellationToken ct)
+    {
+        var professional = (await OkAsync(admin.PostAsync("/api/v1/admin/professionals", new { shopId, nameAr = "حلاق", nameEn = "Barber" }, ct), ct, HttpStatusCode.Created))
+            .GetProperty("id").GetGuid();
+        return await BarberAsync(factory, admin, owner, professional, number, ct);
     }
 
     [Fact]

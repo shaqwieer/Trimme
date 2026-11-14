@@ -70,15 +70,15 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         await using var s = await ArrangeAsync("avl_flow", ct);
         using var anonymous = ApiSession.Create(s.Factory);
 
-        // No hours yet: the shop is closed. The hours are the owner's: staff neither read nor change them (R-AVL-03, D-134).
+        // No hours yet: the shop is closed. The hours are the owner's: a barber neither reads nor changes them (R-AVL-03, D-134, D-145).
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBeEmpty();
-        await FailsAsync(s.StaffA.GetAsync("/api/v1/shop/schedule", ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.BarberA.GetAsync("/api/v1/shop/schedule", ct), HttpStatusCode.Forbidden, null, ct);
         var schedule = await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct);
         schedule.GetProperty("openingHours").GetProperty("version").ValueKind.ShouldBe(JsonValueKind.Null);
         schedule.GetProperty("timeZone").GetString().ShouldBe("Asia/Riyadh");
         schedule.GetProperty("professionals")[0].GetProperty("followsShopHours").GetBoolean().ShouldBeTrue();
-        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), HttpStatusCode.Forbidden, null, ct);
-        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
 
         // Opening hours 09:00–12:00 every day: a 30-minute service on the 5-minute grid, 09:00 … 11:30.
         await FailsAsync(s.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = new[] { new { day = "Sunday", startMinute = 540, endMinute = 530 } } }, ct),
@@ -301,8 +301,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         var eleven = new DateTimeOffset(Target.ToDateTime(new TimeOnly(11, 0)), TimeSpan.FromHours(3));
         s.Bookings.Appointments.Add(new BookedAppointment(Guid.NewGuid(), new ProfessionalId(s.ProA), eleven, eleven.AddMinutes(30), "Test Customer", "حلاقة", "Haircut"));
 
-        // The barber's date, in minutes: the desk sees when they work, what is booked and whose breaks are whose.
-        var read = await OkAsync(s.StaffA.GetAsync(day, ct), ct);
+        // The barber's date, in minutes: their own login sees when they work, what is booked and whose breaks are whose.
+        var read = await OkAsync(s.BarberA.GetAsync(day, ct), ct);
         Windows(read, "working").ShouldBe([(540, 720)]);
         Windows(read, "breaks").ShouldBe([(540, 555)]);
         Windows(read, "shopBreaks").ShouldBe([(615, 630)]);
@@ -312,7 +312,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
 
         // Two hours as breaks (10:00–11:00 and 11:00–12:00 join), no reason; the owner's break of the date goes, the
         // weekly one for everyone stays, and the public slots follow.
-        var saved = await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", new
+        var saved = await OkAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", new
         {
             professionalId = s.ProA,
             date = Iso(Target),
@@ -328,26 +328,26 @@ public sealed class ScheduleTests(PostgresFixture postgres)
 
         // The whole day, then nothing: an empty list clears the barber's breaks of that date only.
         var whole = new { professionalId = s.ProA, date = Iso(Target), breaks = new[] { new { startMinute = 0, endMinute = 1440 } } };
-        Windows(await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", whole, ct), ct), "breaks").ShouldBe([(0, 1440)]);
+        Windows(await OkAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", whole, ct), ct), "breaks").ShouldBe([(0, 1440)]);
         (await SlotTimesAsync(anonymous, s.SlugA, s.ServiceA, Target, ct)).ShouldBeEmpty();
         var none = new { professionalId = s.ProA, date = Iso(Target), breaks = Array.Empty<object>() };
-        Windows(await OkAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none, ct), ct), "breaks").ShouldBeEmpty();
+        Windows(await OkAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", none, ct), ct), "breaks").ShouldBeEmpty();
         (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("breaks").GetArrayLength().ShouldBe(1, "the weekly break stays");
 
         // Rules: not a past date, whole 5-minute steps within the day, the shop's own barber only.
-        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none with { date = Iso(Today.AddDays(-1)) }, ct),
+        await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", none with { date = Iso(Today.AddDays(-1)) }, ct),
             HttpStatusCode.BadRequest, "validation.date_in_past", ct);
-        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", whole with { breaks = new[] { new { startMinute = 600, endMinute = 603 } } }, ct),
+        await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", whole with { breaks = new[] { new { startMinute = 600, endMinute = 603 } } }, ct),
             HttpStatusCode.BadRequest, "validation.hours_invalid", ct);
-        await FailsAsync(s.StaffA.GetAsync($"/api/v1/shop/schedule/barber-day?professionalId={s.ProB}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, null, ct);
-        await FailsAsync(s.StaffA.PutAsync("/api/v1/shop/schedule/barber-day", none with { professionalId = s.ProB }, ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(s.BarberA.GetAsync($"/api/v1/shop/schedule/barber-day?professionalId={s.ProB}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", none with { professionalId = s.ProB }, ct), HttpStatusCode.NotFound, null, ct);
 
-        // Staff manage breaks only: hours, weekly breaks, time off and closures stay with the owner.
-        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, date = Iso(Target), startMinute = 600, endMinute = 660 }, ct),
+        // A barber manages their own breaks only: hours, weekly breaks, time off and closures stay with the owner.
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, date = Iso(Target), startMinute = 600, endMinute = 660 }, ct),
             HttpStatusCode.Forbidden, null, ct);
-        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/time-off", new { professionalId = s.ProA, kind = "Vacation", startDate = Iso(Target), endDate = Iso(Target) }, ct),
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/schedule/time-off", new { professionalId = s.ProA, kind = "Vacation", startDate = Iso(Target), endDate = Iso(Target) }, ct),
             HttpStatusCode.Forbidden, null, ct);
-        await FailsAsync(s.StaffA.PostAsync("/api/v1/shop/schedule/closures", new { startDate = Iso(Target), endDate = Iso(Target) }, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/schedule/closures", new { startDate = Iso(Target), endDate = Iso(Target) }, ct), HttpStatusCode.Forbidden, null, ct);
     }
 
     [Fact]
@@ -392,13 +392,13 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
         var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
         var ownerA = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
-        var staffA = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
         var ownerB = await IdentityTestData.SignInStaffAsync(factory, shops.B.OwnerEmail, ct);
 
         var serviceA = (await OkAsync(ownerA.PostAsync("/api/v1/shop/services", new { nameAr = "حلاقة", price = 60m, durationMinutes = 30, onlineBookable = true }, ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var serviceB = (await OkAsync(ownerB.PostAsync("/api/v1/shop/services", new { nameAr = "حلاقة", price = 50m, durationMinutes = 30, onlineBookable = true }, ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var proA = await CreateProfessionalAsync(admin, shops.A.ShopId, "فيصل", "Faisal", ct);
         var proB = await CreateProfessionalAsync(admin, shops.B.ShopId, "عمر", "Omar", ct);
+        var barberA = await BarberLoginTests.BarberAsync(factory, admin, ownerA, proA, "+966512398001", ct);
         await OkAsync(admin.PutAsync($"/api/v1/admin/professionals/{proA}/services", new { serviceIds = new[] { serviceA } }, ct), ct);
         await OkAsync(admin.PutAsync($"/api/v1/admin/professionals/{proB}/services", new { serviceIds = new[] { serviceB } }, ct), ct);
         if (subscribeA)
@@ -407,7 +407,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         }
 
         var slugA = (await OkAsync(admin.GetAsync($"/api/v1/admin/shops/{shops.A.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
-        return new Arranged(factory, bookings, admin, shops, ownerA, staffA, ownerB, slugA, serviceA, serviceB, proA, proB);
+        return new Arranged(factory, bookings, admin, shops, ownerA, barberA, ownerB, slugA, serviceA, serviceB, proA, proB);
     }
 
     private static async Task<ShopBookability> GateAsync(TrimmeApiFactory factory, Guid shopId, CancellationToken ct)
@@ -456,7 +456,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         ApiSession Admin,
         TwoShops Shops,
         ApiSession OwnerA,
-        ApiSession StaffA,
+        ApiSession BarberA,
         ApiSession OwnerB,
         string SlugA,
         Guid ServiceA,
@@ -468,7 +468,7 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         {
             Admin.Dispose();
             OwnerA.Dispose();
-            StaffA.Dispose();
+            BarberA.Dispose();
             OwnerB.Dispose();
             await Factory.DisposeAsync();
         }

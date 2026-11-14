@@ -1,3 +1,4 @@
+using Trimme.IntegrationTests.Identity;
 using System.Net;
 using Shouldly;
 using Trimme.IntegrationTests.Infrastructure;
@@ -7,7 +8,7 @@ namespace Trimme.IntegrationTests.Services;
 
 /// <summary>
 /// D-137: the owner adds and edits the shop's own services again, and picks which of the shop's own barbers do each, so
-/// a new service can be booked at once. The desk (ShopStaff) cannot. Another shop's barber is refused, as for the admin
+/// a new service can be booked at once. A barber's login cannot (D-145). Another shop's barber is refused, as for the admin
 /// (D-127).
 /// </summary>
 public sealed class OwnerShopServicesTests(PostgresFixture postgres)
@@ -30,15 +31,16 @@ public sealed class OwnerShopServicesTests(PostgresFixture postgres)
         [.. service.GetProperty("professionalIds").EnumerateArray().Select(p => p.GetGuid())];
 
     [Fact]
-    public async Task Owner_AddsAndEditsAService_WithTheShopsOwnBarbers_AndTheDeskCannot()
+    public async Task Owner_AddsAndEditsAService_WithTheShopsOwnBarbers_AndABarberCannot()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "svc_owner_build", ct);
         using var anonymous = ApiSession.Create(w.Factory);
         var target = TodayAt(DateTimeOffset.UtcNow).AddDays(2);
+        using var barber = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512393001", ct);
 
-        // The desk has no Shop.Services.Manage; another shop's barber is refused.
-        (await w.StaffA.PostAsync("/api/v1/shop/services", Body(40m, 30, [w.Faisal]), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        // A barber has no Shop.Services.Manage; another shop's barber is refused.
+        (await barber.PostAsync("/api/v1/shop/services", Body(40m, 30, [w.Faisal]), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/services", Body(40m, 30, [w.ProB]), ct), HttpStatusCode.BadRequest, "professionalIds", ct))
             .ShouldContain("validation.invalid");
 
@@ -53,9 +55,9 @@ public sealed class OwnerShopServicesTests(PostgresFixture postgres)
         slots.GetProperty("slots").EnumerateArray()
             .SelectMany(s => s.GetProperty("professionalIds").EnumerateArray().Select(p => p.GetGuid())).Distinct().ShouldBe([w.Faisal]);
 
-        // The edit: price, duration and barbers; the desk cannot; another shop's barber is refused and changes nothing.
+        // The edit: price, duration and barbers; a barber cannot; another shop's barber is refused and changes nothing.
         var version = created.GetProperty("version").GetUInt32();
-        (await w.StaffA.PutAsync($"/api/v1/shop/services/{id}", Body(45m, 35, null, version), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await barber.PutAsync($"/api/v1/shop/services/{id}", Body(45m, 35, null, version), ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/services/{id}", Body(45m, 35, [w.Faisal, w.ProB], version), ct), HttpStatusCode.BadRequest, "professionalIds", ct);
         var edited = await OkAsync(w.OwnerA.PutAsync($"/api/v1/shop/services/{id}", Body(45m, 35, [w.Faisal, w.Omar], version), ct), ct);
         edited.GetProperty("price").GetDecimal().ShouldBe(45m);
@@ -68,8 +70,8 @@ public sealed class OwnerShopServicesTests(PostgresFixture postgres)
         var none = await OkAsync(w.OwnerA.PutAsync($"/api/v1/shop/services/{id}", Body(45m, 35, [], kept.GetProperty("version").GetUInt32()), ct), ct);
         Barbers(none).ShouldBeEmpty();
 
-        // The list carries each service's barbers; the desk can read the list, and another shop cannot see the service.
-        var list = await OkAsync(w.StaffA.GetAsync("/api/v1/shop/services", ct), ct);
+        // The list carries each service's barbers; a barber can read the list, and another shop cannot see the service.
+        var list = await OkAsync(barber.GetAsync("/api/v1/shop/services", ct), ct);
         Barbers(list.EnumerateArray().Single(s => s.GetProperty("id").GetGuid() == w.Haircut)).ShouldNotBeEmpty();
         (await w.OwnerB.GetAsync($"/api/v1/shop/services/{id}", ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 

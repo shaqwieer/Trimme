@@ -5,13 +5,15 @@ import type { APIRequestContext, BrowserContext } from '@playwright/test';
  * (DemoData, the module seeders). The route audit (Phase 17) visits each in both locales.
  * `indexable` pages must not carry `noindex`; every other page must (R-NEG-10).
  */
-export type Role = 'anonymous' | 'customer' | 'owner' | 'admin';
+export type Role = 'anonymous' | 'customer' | 'owner' | 'barber' | 'admin';
 
 export type AuditRoute = { path: string; indexable?: boolean; map?: boolean };
 
 export const DEMO_PASSWORD = 'trimme local demo';
 export const ADMIN = { email: 'admin@trimme.local', password: 'trimme local admin' };
 export const OWNER = { email: 'owner@barber-house.trimme.local', password: DEMO_PASSWORD };
+/** Majed's own login at Barber House, by his mobile (D-145). */
+export const BARBER = { phone: '+966500100202', password: DEMO_PASSWORD };
 
 const id = (suffix: string) => `0199a0de-5a10-7000-8000-${suffix.padStart(12, '0')}`;
 
@@ -98,6 +100,18 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/notifications' },
         { path: '/shop/qr' },
         { path: `/shop/qr/${SEED.barberHouseQr.id}/poster` },
+        { path: '/shop/barbers' },
+      ];
+    case 'barber':
+      // A barber's own login (D-145): their overview, appointments, calendar, walk-ins, breaks and notifications.
+      return [
+        { path: '/shop' },
+        { path: '/shop/appointments' },
+        { path: '/shop/calendar' },
+        { path: '/shop/calendar?view=week' },
+        { path: '/shop/walk-in' },
+        { path: '/shop/schedule' },
+        { path: '/shop/notifications' },
       ];
     case 'admin':
       return [
@@ -158,6 +172,20 @@ export async function staffSignIn(
     data: { email, password },
   });
   if (!response.ok()) throw new Error(`Staff sign-in failed for ${email}: ${response.status()}`);
+}
+
+/** A barber signs in with the WhatsApp number on their profile (D-145). */
+export async function barberSignIn(
+  context: BrowserContext,
+  request: APIRequestContext,
+  phone: string,
+  password: string,
+) {
+  const response = await request.post('/api/v1/auth/staff/sign-in', {
+    headers: { 'X-CSRF-Token': await csrf(context, request) },
+    data: { email: null, phone, password },
+  });
+  if (!response.ok()) throw new Error(`Barber sign-in failed: ${response.status()}`);
 }
 
 /** A new customer through the OTP flow (development inbox), so no seeded number's hourly code budget is used. */

@@ -184,13 +184,13 @@ public sealed class QrTests(PostgresFixture postgres)
         var shopView = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
         shopView.GetProperty("booking").GetProperty("viaQr").GetBoolean().ShouldBeTrue();
 
-        // A walk-in by a staff browser carrying the cookie is never credited.
-        w.StaffA.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
-        var walkIn = await OkAsync(w.StaffA.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+        // A walk-in by a shop browser carrying the cookie is never credited.
+        w.OwnerA.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
+        var walkIn = await OkAsync(w.OwnerA.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
             new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "زائر", customerPhone = "0501234567" }, ct, headers: Key()), ct, HttpStatusCode.Created);
         (await InDbAsync(w.Factory, db => db.Set<Booking>().AsNoTracking().SingleAsync(b => b.Id == new BookingId(walkIn.GetProperty("id").GetGuid()), ct))).QrLinkId.ShouldBeNull();
 
-        // The shop's own view: its code with one scan and one booking; another shop sees nothing of it; staff have no access.
+        // The shop's own view: its code with one scan and one booking; another shop sees nothing of it; a barber has no access.
         var own = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/qr/codes", ct), ct);
         var ownCode = own.GetProperty("items").EnumerateArray().Single();
         ownCode.GetProperty("visits").GetInt32().ShouldBe(1);
@@ -199,7 +199,11 @@ public sealed class QrTests(PostgresFixture postgres)
         (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/qr/codes", ct), ct)).GetProperty("items").GetArrayLength().ShouldBe(0);
         await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/qr/codes/{codeId}", ct), HttpStatusCode.NotFound, "qr.not_found", ct);
         await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/qr/codes/{codeId}/image", ct), HttpStatusCode.NotFound, "qr.not_found", ct);
-        (await w.StaffA.GetAsync("/api/v1/shop/qr/codes", ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        using (var omar = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512394001", ct))
+        {
+            (await omar.GetAsync("/api/v1/shop/qr/codes", ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        }
+
 
         // Eight days later the scan no longer credits a booking (the default window is 7 days).
         clock.Advance(TimeSpan.FromDays(8));

@@ -559,7 +559,7 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
 
         using var ownerA = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
         using var ownerB = await IdentityTestData.SignInStaffAsync(factory, shops.B.OwnerEmail, ct);
-        using var staffA = await IdentityTestData.SignInStaffAsync(factory, shops.A.StaffEmail, ct);
+        using var staffA = await BarberLoginTests.NewBarberAsync(factory, super, ownerA, shops.A.ShopId, "+966512390001", ct);
 
         var mine = await OkJsonAsync(ownerA.GetAsync("/api/v1/shop/subscription", ct), ct);
         mine.GetProperty("status").GetString().ShouldBe("Active");
