@@ -86,6 +86,14 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         (await KindsAsync(omar, ct)).ShouldBe(["booking.professional_changed"]);
         (await KindsAsync(faisal, ct)).ShouldBe(["booking.professional_changed", "booking.created"]);
         (await NoticesAsync(noura, ct)).Select(n => n.GetProperty("kind").GetString()).ShouldContain("booking.cancelled");
+
+        // The owner hears what the barber did (not what the owner did): the cancellation, with the barber's name.
+        var ownerInbox = (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Where(n => n.GetProperty("bookingId").ValueKind == JsonValueKind.String && n.GetProperty("bookingId").GetGuid() == id)
+            .ToList();
+        ownerInbox.Select(n => n.GetProperty("kind").GetString()).ShouldBe(["booking.cancelled", "booking.created"]);
+        ownerInbox[0].GetProperty("parameters").GetProperty("actor").GetString().ShouldBe("ShopUser");
+        ownerInbox[0].GetProperty("parameters").GetProperty("professionalNameEn").GetString().ShouldBe("Omar");
     }
 
     [Fact]

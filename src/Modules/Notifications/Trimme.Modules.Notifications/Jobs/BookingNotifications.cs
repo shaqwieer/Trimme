@@ -173,8 +173,9 @@ internal sealed partial class DispatchFactory(
 /// <item>Reminders follow the booking's current state: a confirmed booking has one per audience at start − offset, a
 /// moved one gets new jobs and the old ones are deleted, a cancelled one has none. A reminder whose time already passed is
 /// not scheduled.</item>
-/// <item>In-app: the shop hears about what customers and admins did; the customer about what the shop or admins did; a
-/// barber with a login (D-145) about their own bookings, the one it left included, unless they made the change.</item>
+/// <item>In-app: the shop (the owner's inbox) hears about what customers, admins and barbers did; the customer about what
+/// the shop or admins did; a barber with a login (D-145) about their own bookings, the one it left included, unless they
+/// made the change.</item>
 /// </list>
 /// Nothing exists for a rolled-back change or seed data: both write no outbox message.
 /// </summary>
@@ -359,8 +360,21 @@ internal sealed class BookingNotificationsConsumer(
 
         var dedupe = $"{message.Id:N}";
 
-        // The shop's own actions are not echoed back to it; walk-ins are the shop's own.
-        if (change.ActorType != ShopActor && change.Channel != "WalkIn")
+        // The barbers concerned (D-145): the booking's, and the one it left; their logins, if they have one.
+        var concerned = left is { } l ? new[] { new ProfessionalId(change.ProfessionalId), l } : [new ProfessionalId(change.ProfessionalId)];
+        var barbers = new List<Guid>();
+        foreach (var professional in concerned)
+        {
+            if (await staff.BarberAccountAsync(professional, cancellationToken) is { } account)
+            {
+                barbers.Add(account);
+            }
+        }
+
+        // The shop's own actions are not echoed back to its inbox (the owner's), but a barber's are (D-145): the owner hears
+        // when a barber confirms, changes, moves or cancels a customer's booking. Walk-ins are the shop's own.
+        var byBarber = change.ActorType == ShopActor && change.ActorId is { } actor && barbers.Contains(actor);
+        if ((change.ActorType != ShopActor || byBarber) && change.Channel != "WalkIn")
         {
             var forShop = new Dictionary<string, string>(parameters, StringComparer.Ordinal) { ["customerName"] = booking.CustomerName };
             await center.NotifyShopAsync(booking.ShopId, new InAppNotice(kind, dedupe, forShop, booking.Id), cancellationToken);
@@ -381,12 +395,9 @@ internal sealed class BookingNotificationsConsumer(
         // made the change themselves. A change of barber is the same notice for both.
         var forBarber = new Dictionary<string, string>(parameters, StringComparer.Ordinal) { ["customerName"] = booking.CustomerName };
         var barberKind = left is null ? kind : NoticeKinds.BookingProfessionalChanged;
-        foreach (var professional in left is { } l ? new[] { new ProfessionalId(change.ProfessionalId), l } : [new ProfessionalId(change.ProfessionalId)])
+        foreach (var barber in barbers.Where(b => b != change.ActorId))
         {
-            if (await staff.BarberAccountAsync(professional, cancellationToken) is { } barber && barber != change.ActorId)
-            {
-                await center.NotifyUserAsync(barber, new InAppNotice(barberKind, dedupe, forBarber, booking.Id), cancellationToken);
-            }
+            await center.NotifyUserAsync(barber, new InAppNotice(barberKind, dedupe, forBarber, booking.Id), cancellationToken);
         }
     }
 
