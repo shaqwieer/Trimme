@@ -27,7 +27,8 @@ async function latestOtp(request: APIRequestContext, national: string): Promise<
   return (await response.json()).code as string;
 }
 
-async function signUp(page: Page, name: string) {
+/** Signs a new customer up (through the code when the stack asks for one) and returns the national number. */
+async function signUp(page: Page, name: string): Promise<string> {
   const national = newPhone();
   await page.goto('/ar/auth/sign-up');
   await page.getByLabel('رقم الجوال').fill(national);
@@ -46,6 +47,7 @@ async function signUp(page: Page, name: string) {
   await page.getByLabel(/أوافق على/).check();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
   await expect(page).toHaveURL(/\/ar\/discover$/);
+  return national;
 }
 
 test.describe('D-144: legal pages, personal info and account deletion', () => {
@@ -61,6 +63,13 @@ test.describe('D-144: legal pages, personal info and account deletion', () => {
 
     await page.getByRole('link', { name: 'الشروط والخصوصية' }).first().click();
     await expect(page).toHaveURL(/\/ar\/admin\/legal/);
+    await expect(page.getByTestId('legal-editor')).toBeVisible();
+    // Start from the built-in text, even after an interrupted run.
+    const restoreFirst = page.getByRole('button', { name: 'استعادة النص الافتراضي' });
+    if (await restoreFirst.isVisible()) {
+      await restoreFirst.click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'نعم، استعد الافتراضي' }).click();
+    }
     await expect(page.getByTestId('legal-status')).toContainText('النص الافتراضي');
     const editor = page.getByRole('textbox', { name: /نص شروط الاستخدام/ });
     await expect(editor).toContainText('الخدمة');
@@ -95,6 +104,8 @@ test.describe('D-144: legal pages, personal info and account deletion', () => {
       await visitorContext.close();
     } finally {
       await page.goto('/ar/admin/legal');
+      // The editor loads on demand; its buttons appear with it.
+      await expect(page.getByTestId('legal-editor')).toBeVisible();
       const restore = page.getByRole('button', { name: 'استعادة النص الافتراضي' });
       if (await restore.isVisible()) {
         await restore.click();
@@ -106,8 +117,10 @@ test.describe('D-144: legal pages, personal info and account deletion', () => {
     await expect(page.getByTestId('legal-page')).not.toContainText('شروط صالونات Groom Here');
   });
 
-  test('a customer adds an email, sees the number rules, and deletes the account', async ({ page }) => {
-    await signUp(page, 'ريان الشهري');
+  test('a customer adds an email, changes the number when allowed, and deletes the account', async ({
+    page,
+  }) => {
+    const first = await signUp(page, 'ريان الشهري');
 
     // No WhatsApp notifications row any more.
     await page.goto('/ar/account');
@@ -116,14 +129,36 @@ test.describe('D-144: legal pages, personal info and account deletion', () => {
     await page.goto('/ar/account/profile');
     const phone = page.getByTestId('profile-phone');
     await expect(phone).toContainText('•');
-    // The local stack has sign-in codes on (D-143), so the number cannot change here.
-    await expect(phone.getByRole('button', { name: 'تغيير الرقم' })).toHaveCount(0);
     await page.getByLabel(/البريد الإلكتروني/).fill('rayan@example.com');
+    const change = phone.getByRole('button', { name: 'تغيير الرقم' });
+    // With sign-in codes on the number cannot change here; with codes off (groomhere.sa today) it can.
+    const second = (await change.isVisible()) ? newPhone() : null;
+    if (second) {
+      await change.click();
+      await page.getByLabel(/رقم الجوال الجديد/).fill(second);
+      await expect(page.getByText('ستسجّل الدخول بالرقم الجديد')).toBeVisible();
+    } else {
+      await expect(page.getByText('لتغيير رقم جوالك تواصل مع فريق Groom Here.')).toBeVisible();
+    }
     await expectNoSeriousAxe(page, 'personal info');
     await page.getByRole('button', { name: 'حفظ التغييرات' }).click();
     await expect(page).toHaveURL(/\/ar\/account\?saved=1$/);
     await page.goto('/ar/account/profile');
     await expect(page.getByLabel(/البريد الإلكتروني/)).toHaveValue('rayan@example.com');
+
+    if (second) {
+      await expect(phone).toContainText(second.slice(-2));
+      const id = (await (await page.request.get('/api/v1/me')).json()).id as string;
+      // The new number signs in to the same account; the old one now starts a new account.
+      await page.goto('/ar/account');
+      await page.getByRole('button', { name: 'تسجيل الخروج' }).click();
+      await expect(page).toHaveURL(/\/ar\/auth\/sign-in$/);
+      await page.getByLabel('رقم الجوال').fill(second);
+      await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+      await expect(page).toHaveURL(/\/ar\/discover$/);
+      expect((await (await page.request.get('/api/v1/me')).json()).id).toBe(id);
+      expect(first).not.toBe(second);
+    }
 
     await page.goto('/ar/account');
     const section = page.getByTestId('delete-account');

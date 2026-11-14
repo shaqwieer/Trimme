@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
-import { LegalEditor } from '@/components/admin/LegalEditor';
+import { LegalEditorLoader } from '@/components/admin/LegalEditorLoader';
 import { builtInSections } from '@/components/legal/LegalPage';
 import type { RichNode } from '@/components/legal/RichText';
 import { LinkTabs } from '@/components/ui/LinkTabs';
@@ -95,7 +95,7 @@ export default async function LegalAdminPage({ params, searchParams }: PageProps
                   })
                 : t('builtIn')}
             </p>
-            <LegalEditor
+            <LegalEditorLoader
               key={`${kind}-${language}-${saved?.updatedAt ?? 'built-in'}`}
               kind={kind}
               locale={language}

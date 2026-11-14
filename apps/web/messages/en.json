@@ -3361,6 +3361,7 @@
       "invalid": "Enter a web link starting with https://, or an email or phone link."
     },
     "customBadge": "Custom text",
-    "builtInBadge": "Built-in text"
+    "builtInBadge": "Built-in text",
+    "loading": "Loading the editor…"
   }
 }

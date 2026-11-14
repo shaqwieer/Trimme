@@ -9,7 +9,7 @@
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
-  - Session 26 rebuilt the api and web images from its tree and started a **fresh** stack (`down -v`, then `up -d`: migrate (21 migrations) and seed ran), so the seeded subscriptions are current again.
+  - Session 26 rebuilt the api and web images from its tree and started a **fresh** stack (`down -v`, then `up -d`: migrate (21 migrations) and seed ran), so the seeded subscriptions are current again. The API was left with codes **on** (the local default) after the codes-off runs.
   - Session 25 rebuilt the api and web images from its tree (no migration). `infra/docker-compose.yml` now sets `Identity__Otp__Enabled: ${TRIMME_OTP_ENABLED:-true}`: codes stay on locally for the E2E flows, and `TRIMME_OTP_ENABLED=false` gives the deployed default (no code).
   - Session 24 rebuilt the api and web images from its tree, ran `migrate` (`ShopMessageSwitches` applied: 20 migrations) and `up -d`. The seed was not re-run.
   - Session 21 rebuilt the API and web images from its final tree, ran `migrate` (`TemporaryPasswords` applied: 19 migrations) and `up -d`. The seed was not re-run.
@@ -34,6 +34,8 @@
   - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 509/509. E2E project typecheck and format clean.
   - E2E on the fresh local stack (3300, codes on): smoke + flows 86 passed, 1 skipped (the no-code spec, as designed), 1 failed: `qr.spec` «switched off» under parallel load, the known flake from Session 17; it passes alone (5/5 with `shop-schedule`). New: `signed-in-gate.spec.ts` 2/2, `account-legal.spec.ts` 2/2; changed: `customer-booking` E1, `public-discovery` (Google directions), `shops-professionals` (the map is lower).
   - Route audit (a11y + a11y-dark, with `/admin/legal` added): 21/21 (every role, both locales, light and dark; axe 0 serious). The first run flagged raw audit-action keys on «سجل النشاط» for the four new actions; their labels were added in ar, en and tr and the admin audits re-run 4/4.
+  - Codes **off** (API recreated with `TRIMME_OTP_ENABLED=false`, as on groomhere.sa): `account-legal` (number change → sign-in with the new number, same account), `signed-in-gate` (with a client-side logo click after sign-out) and `phone-sign-in`, 5/5. Codes back on: those plus `customer-booking` and `auth`, 15 passed, 1 skipped by design.
+  - Bundle budget: `pnpm build` + `bundle:check` within budget on all 82 routes once the editor loads on demand (statically it made `/admin/legal` 393 KB > 330 KB); the largest route is `/admin/shops/[shopId]` at 328.3 KB.
   - Screenshots (local, Arabic RTL, 1280/1440 and 390 px) of the services step, hours, reschedule and its review, account, personal info, the admin legal editor and the location picker; in the session's scratchpad, not in the repository.
 
 ## Session 25: sign-up and sign-in without a code; codes off by default (D-143)

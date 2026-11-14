@@ -46,10 +46,12 @@ test.describe('signed-in users stay out of the landing and sign-in pages (D-144)
 
     // The Back button restores the sign-up page, then the landing page, without asking the server; each sends the
     // customer home again.
-    await page.goBack();
-    await expect(page).toHaveURL(/\/ar\/discover$/);
-    await page.goBack();
-    await expect(page).toHaveURL(/\/ar\/discover$/);
+    // (With codes off there is no verify step, so the history is one page shorter.)
+    for (let step = 0; step < 2; step++) {
+      await page.goBack();
+      if (page.url() === 'about:blank') break;
+      await expect(page).toHaveURL(/\/ar\/discover$/);
+    }
 
     // Typed addresses: the landing page and every sign-in page lead home; a sign-in's returnTo is honoured.
     for (const path of ['/ar', '/ar/auth/sign-in', '/ar/auth/sign-up', '/ar/auth/staff/sign-in']) {
@@ -64,6 +66,9 @@ test.describe('signed-in users stay out of the landing and sign-in pages (D-144)
     await page.getByRole('button', { name: 'تسجيل الخروج' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/sign-in$/);
     expect((await page.context().cookies()).some((c) => c.name === 'trimme-signed-in')).toBe(false);
+    // A client-side click on the logo must not replay a home page prefetched while signed in (its redirect).
+    await page.locator('header a[href="/ar"]').first().click();
+    await expect(page).toHaveURL(/\/ar$/);
     await page.goto('/ar');
     await expect(page).toHaveURL(/\/ar$/);
   });

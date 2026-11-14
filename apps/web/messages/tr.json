@@ -3361,6 +3361,7 @@
       "invalid": "https:// ile başlayan bir bağlantı ya da bir e-posta veya telefon bağlantısı girin."
     },
     "customBadge": "Özel metin",
-    "builtInBadge": "Yerleşik metin"
+    "builtInBadge": "Yerleşik metin",
+    "loading": "Düzenleyici yükleniyor…"
   }
 }
