@@ -76,9 +76,15 @@ internal sealed class CustomerNumberCheck(TrimmeDbContext db, IPersonalDataProte
     }
 }
 
-/// <summary><see cref="IStaffDirectory"/>: enabled platform admins whose roles grant a permission (ids only).</summary>
+/// <summary><see cref="IStaffDirectory"/>: enabled platform admins whose roles grant a permission, and barbers' logins (ids only).</summary>
 internal sealed class StaffDirectory(TrimmeDbContext db) : IStaffDirectory
 {
+    public async Task<Guid?> BarberAccountAsync(BuildingBlocks.Domain.Tenancy.ProfessionalId professionalId, CancellationToken cancellationToken) =>
+        await db.Set<ApplicationUser>().AsNoTracking()
+            .Where(u => u.ProfessionalId == professionalId.Value && u.UserType == UserType.ShopUser && u.DisabledAt == null)
+            .Select(u => (Guid?)u.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Guid>> ActiveAdminsWithPermissionAsync(string permission, CancellationToken cancellationToken) =>
         await (from userRole in db.Set<Microsoft.AspNetCore.Identity.IdentityUserRole<Guid>>()
                join grant in db.Set<RolePermission>() on userRole.RoleId equals grant.RoleId

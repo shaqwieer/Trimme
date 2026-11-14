@@ -85,9 +85,12 @@ public sealed class NotificationDomainTests
     [Fact]
     public void DefaultTemplates_CoverEverySlotOnce_AndAreValid()
     {
-        DefaultTemplates.All.Count.ShouldBe(18, "customers five events and professionals four, in Arabic and English");
-        DefaultTemplates.All.Select(t => t.Key).Distinct().Count().ShouldBe(18);
-        DefaultTemplates.All.ShouldNotContain(t => t.Key.Audience == MessageAudience.Professional && t.Key.Event == MessageEvent.BookingPending);
+        DefaultTemplates.All.Count.ShouldBe(20, "customers six events and professionals four, in Arabic and English");
+        DefaultTemplates.All.Select(t => t.Key).Distinct().Count().ShouldBe(20);
+        DefaultTemplates.All.ShouldNotContain(t => !WhatsAppTemplate.IsSent(t.Key.Event, t.Key.Audience));
+        DefaultTemplates.All.Select(t => t.Key).ShouldBe(
+            ShopMessageOptOut.Slots.SelectMany(s => new[] { new TemplateKey(s.Event, s.Audience, "ar"), new TemplateKey(s.Event, s.Audience, "en") }),
+            ignoreOrder: true, "every switch has its wording in both languages");
         foreach (var (key, content) in DefaultTemplates.All)
         {
             TemplateValidator.Validate(key.Audience, content).ShouldBeEmpty($"{key}");
@@ -172,6 +175,8 @@ public sealed class NotificationDomainTests
     {
         WhatsAppTemplate.IsSent(MessageEvent.BookingPending, MessageAudience.Professional).ShouldBeFalse();
         WhatsAppTemplate.IsSent(MessageEvent.BookingPending, MessageAudience.Customer).ShouldBeTrue();
+        WhatsAppTemplate.IsSent(MessageEvent.BookingProfessionalChanged, MessageAudience.Professional).ShouldBeFalse();
+        WhatsAppTemplate.IsSent(MessageEvent.BookingProfessionalChanged, MessageAudience.Customer).ShouldBeTrue();
 
         Plan("booking.created", "Confirmed", "Confirmed").ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"]);
         Plan("booking.created", "Arrived", "Arrived").ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"], "a walk-in starting now");
@@ -182,6 +187,42 @@ public sealed class NotificationDomainTests
         Plan("booking.rescheduled", "Pending", "Pending").ShouldBe(["BookingRescheduled:Customer"]);
         Plan("booking.rescheduled", "Confirmed", "Confirmed").ShouldBe(["BookingRescheduled:Customer", "BookingRescheduled:Professional"]);
         Plan("booking.cancelled", "CancelledByShop", "CancelledByShop").ShouldBe(["BookingCancelled:Customer", "BookingCancelled:Professional"]);
+
+        // D-145: a change of barber. The barber it left: cancelled; the barber it went to: confirmed (once it is).
+        Plan("booking.professional_changed", "Confirmed", "Confirmed", movedFrom: true)
+            .ShouldBe(["BookingProfessionalChanged:Customer", "BookingCancelled:Professional:previous", "BookingConfirmed:Professional"]);
+        Plan("booking.professional_changed", "Pending", "Pending", movedFrom: true)
+            .ShouldBe(["BookingProfessionalChanged:Customer", "BookingCancelled:Professional:previous"]);
+        Plan("booking.rescheduled", "Confirmed", "Confirmed", movedFrom: true)
+            .ShouldBe(["BookingRescheduled:Customer", "BookingCancelled:Professional:previous", "BookingConfirmed:Professional"], "a new time with another barber");
+    }
+
+    [Fact]
+    public void TheBarberABookingLeft_IsToldAboutItAsTheyHadIt()
+    {
+        var booking = SampleMessage.For("ar", Now).Booking;
+        var before = Guid.CreateVersion7();
+        var moved = new BookingOutboxEvent(
+            booking.Id, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, Now.AddHours(3), Now.AddHours(4), "Confirmed", "Online",
+            Now.AddHours(1), "ShopUser", before);
+        var asTheyHadIt = BookingNotificationsConsumer.AsTheBarberItLeftHadIt(moved, booking);
+        asTheyHadIt.ProfessionalId.Value.ShouldBe(before);
+        asTheyHadIt.StartsAt.ShouldBe(Now.AddHours(1), "their old time");
+        asTheyHadIt.EndsAt.ShouldBe(Now.AddHours(1).AddMinutes(booking.DurationMinutes));
+
+        (moved with { PreviousProfessionalId = booking.ProfessionalId.Value }).LeftProfessionalId.ShouldBeNull("the same barber: not a change of barber");
+        (moved with { PreviousProfessionalId = null }).LeftProfessionalId.ShouldBeNull();
+    }
+
+    [Fact]
+    public void AWalkIn_ManageButton_OpensTheShopsPage()
+    {
+        var (booking, shop) = SampleMessage.For("ar", Now);
+        var walkIn = booking with { CustomerId = null, Channel = "WalkIn" };
+        MessageComposer.Urls(walkIn, shop, MessageAudience.Customer, "ar", "https://trimme.test")[TemplateButtonTarget.ManageBooking]
+            .ShouldBe($"https://trimme.test/ar/shops/{shop.Slug}");
+        MessageComposer.Urls(booking, shop, MessageAudience.Customer, "ar", "https://trimme.test")[TemplateButtonTarget.ManageBooking]
+            .ShouldBe($"https://trimme.test/ar/account/bookings/{booking.Id}");
     }
 
     [Fact]
@@ -238,10 +279,11 @@ public sealed class NotificationDomainTests
             "cipher", "+966 5•• ••• •12", Guid.CreateVersion7(), new RenderedMessage("Hello Sara", [], ["Sara"]), Now);
     }
 
-    private static string[] Plan(string type, string eventStatus, string bookingStatus)
+    private static string[] Plan(string type, string eventStatus, string bookingStatus, bool movedFrom = false)
     {
-        var change = new BookingOutboxEvent(Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Now, Now, eventStatus, "Online", null, "Customer");
+        var change = new BookingOutboxEvent(
+            Guid.Empty, Guid.Empty, Guid.Empty, Guid.Empty, Now, Now, eventStatus, "Online", null, "Customer", movedFrom ? Guid.CreateVersion7() : null);
         var booking = SampleMessage.For("ar", Now).Booking with { Status = bookingStatus };
-        return [.. BookingNotificationsConsumer.Plan(type, change, booking).Select(p => $"{p.Event}:{p.Audience}")];
+        return [.. BookingNotificationsConsumer.Plan(type, change, booking).Select(p => $"{p.Event}:{p.Audience}" + (p.Previous ? ":previous" : string.Empty))];
     }
 }

@@ -21,8 +21,9 @@ public enum MessageAudience
 }
 
 /// <summary>
-/// The booking lifecycle events that send a WhatsApp message (spec §16, D-109). Customers get all five; professionals get
-/// confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request.
+/// The booking lifecycle events that send a WhatsApp message (spec §16, D-109, D-145). Customers get all six;
+/// professionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending
+/// request nor the change of barber (the barbers concerned get «cancelled» and «confirmed» instead).
 /// </summary>
 public enum MessageEvent
 {
@@ -38,6 +39,12 @@ public enum MessageEvent
 
     /// <summary><c>ReminderOffsetMinutes</c> (default 30) before the start, for both audiences.</summary>
     BookingReminder,
+
+    /// <summary>
+    /// The shop gave the booking to another barber at the same time (D-145). Customers only: they may keep it, or cancel
+    /// or change it until it starts.
+    /// </summary>
+    BookingProfessionalChanged,
 }
 
 public enum TemplateVersionStatus
@@ -105,9 +112,9 @@ public sealed class WhatsAppTemplate : AggregateRoot<WhatsAppTemplateId>, IConcu
 
     public static readonly IReadOnlyList<string> Locales = ["ar", "en"];
 
-    /// <summary>Whether this event is sent to this audience at all (professionals never get the pending request).</summary>
+    /// <summary>Whether this event is sent to this audience at all (professionals never get the pending request nor the change of barber).</summary>
     public static bool IsSent(MessageEvent @event, MessageAudience audience) =>
-        !(audience == MessageAudience.Professional && @event == MessageEvent.BookingPending);
+        !(audience == MessageAudience.Professional && @event is MessageEvent.BookingPending or MessageEvent.BookingProfessionalChanged);
 
     /// <summary>A new slot whose first version is active at once (the <c>migrate</c> defaults, D-109).</summary>
     public static WhatsAppTemplate CreateWithActiveVersion(

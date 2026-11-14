@@ -114,7 +114,10 @@ public sealed record ShopBookingDetailResponse(ShopBookingResponse Booking, IRea
 /// <summary>A booking in the admin views (the shop's view plus the shop and the customer's id; no contact data).</summary>
 public sealed record AdminBookingResponse(BookingShopResponse Shop, Guid? CustomerId, ShopBookingResponse Booking, IReadOnlyList<BookingHistoryResponse> History);
 
-/// <summary>An outbox payload (R-BKG-08): ids, times and statuses only — no names, no phone numbers.</summary>
+/// <summary>
+/// An outbox payload (R-BKG-08): ids, times and statuses only — no names, no phone numbers. <c>ActorId</c> is the account
+/// that made the change (null for the system), so a barber is not told about their own action (D-145).
+/// </summary>
 internal sealed record BookingEvent(
     Guid BookingId,
     Guid ShopId,
@@ -126,7 +129,8 @@ internal sealed record BookingEvent(
     string Channel,
     DateTimeOffset? PreviousStartsAt,
     string ActorType,
-    Guid? PreviousProfessionalId = null);
+    Guid? PreviousProfessionalId = null,
+    Guid? ActorId = null);
 
 internal static class BookingEvents
 {
@@ -143,7 +147,7 @@ internal static class BookingEvents
         var last = booking.History[^1];
         db.Add(OutboxMessage.Create(type, new BookingEvent(
             booking.Id.Value, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, booking.StartsAt, booking.EndsAt,
-            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId), now));
+            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId, last.ActorId), now));
     }
 
     public static string ForStatus(BookingStatus status) => BookingRules.IsCancelled(status) ? Cancelled : StatusChanged;

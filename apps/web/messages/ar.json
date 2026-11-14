@@ -2929,7 +2929,8 @@
       "BookingPending": "طلب بانتظار التأكيد",
       "BookingRescheduled": "تعديل الموعد",
       "BookingCancelled": "إلغاء الحجز",
-      "BookingReminder": "التذكير قبل الموعد"
+      "BookingReminder": "التذكير قبل الموعد",
+      "BookingProfessionalChanged": "نقل الحجز إلى حلاق آخر"
     },
     "audience": {
       "Customer": "العميل",

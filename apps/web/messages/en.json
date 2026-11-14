@@ -2929,7 +2929,8 @@
       "BookingPending": "Request awaiting confirmation",
       "BookingRescheduled": "Booking moved",
       "BookingCancelled": "Booking cancelled",
-      "BookingReminder": "Reminder before the appointment"
+      "BookingReminder": "Reminder before the appointment",
+      "BookingProfessionalChanged": "Booking given to another barber"
     },
     "audience": {
       "Customer": "Customer",

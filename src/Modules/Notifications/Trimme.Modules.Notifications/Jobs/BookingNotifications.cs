@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Jobs;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Notifications;
@@ -10,13 +11,17 @@ using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Privacy;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Notifications.Application;
 using Trimme.Modules.Notifications.Domain;
 
 namespace Trimme.Modules.Notifications.Jobs;
 
-/// <summary>The booking outbox payload (Bookings' <c>BookingEvent</c>, D-089): ids, times, statuses, channel and actor type.</summary>
+/// <summary>
+/// The booking outbox payload (Bookings' <c>BookingEvent</c>, D-089): ids, times, statuses, channel and actor type; the
+/// previous barber when the change gave the booking to another one, and the acting account (D-145).
+/// </summary>
 internal sealed record BookingOutboxEvent(
     Guid BookingId,
     Guid ShopId,
@@ -27,17 +32,26 @@ internal sealed record BookingOutboxEvent(
     string Status,
     string Channel,
     DateTimeOffset? PreviousStartsAt,
-    string ActorType);
+    string ActorType,
+    Guid? PreviousProfessionalId = null,
+    Guid? ActorId = null)
+{
+    /// <summary>The barber the booking left, when this change gave it to another one (D-145).</summary>
+    public Guid? LeftProfessionalId => PreviousProfessionalId is { } previous && previous != ProfessionalId ? previous : null;
+}
 
 /// <summary>
 /// Creates a WhatsApp dispatch for one booking, event and audience (D-110), or nothing when the audience does not get
 /// the event, has no usable recipient (no customer account, a disabled account, a professional without an enabled number,
 /// spec §16), or a dispatch with the same dedupe key exists. It renders the active template version of the recipient's
-/// locale (customers: their preferred locale; professionals: the platform default), falling back to Arabic.
+/// locale (customers: their preferred locale; walk-ins and professionals: the platform default), falling back to Arabic.
+/// A walk-in whose mobile the shop took (D-134) is told that it is booked, moved or cancelled (D-145): it has no account,
+/// so no reminder, no offer to change it after a change of barber, and its manage button opens the shop's page.
 /// </summary>
 internal sealed partial class DispatchFactory(
     TrimmeDbContext db,
     ICustomerContactReader customers,
+    IWalkInContactReader walkIns,
     IProfessionalContactReader professionals,
     IPersonalDataProtector protector,
     IOptions<MessageLinkOptions> links,
@@ -70,10 +84,16 @@ internal sealed partial class DispatchFactory(
             return null;
         }
 
-        var recipient = await RecipientAsync(audience, booking, platform, cancellationToken);
+        var recipient = await RecipientAsync(@event, audience, booking, platform, cancellationToken);
         if (recipient is null)
         {
             return null;
+        }
+
+        // A barber's message names them as they are named now (the barber a booking left is no longer its professional).
+        if (recipient.Value.Professional is { } card)
+        {
+            booking = booking with { ProfessionalNameAr = card.NameAr, ProfessionalNameEn = card.NameEn };
         }
 
         // The recipient's language first; a language without templates (Turkish, D-132) falls back to English, then Arabic.
@@ -103,21 +123,35 @@ internal sealed partial class DispatchFactory(
         return dispatch;
     }
 
-    private async Task<(string E164, string Locale, Guid Id)?> RecipientAsync(
-        MessageAudience audience, NotifiableBooking booking, PlatformSettingsSnapshot platform, CancellationToken cancellationToken)
+    private async Task<Recipient?> RecipientAsync(
+        MessageEvent @event, MessageAudience audience, NotifiableBooking booking, PlatformSettingsSnapshot platform, CancellationToken cancellationToken)
     {
         if (audience == MessageAudience.Customer)
         {
-            return booking.CustomerId is { } customerId
-                   && await customers.FindAsync(customerId, cancellationToken) is { IsActive: true, MobileE164: { } mobile } customer
-                ? (mobile, customer.PreferredLocale, customerId)
+            if (booking.CustomerId is { } customerId)
+            {
+                return await customers.FindAsync(customerId, cancellationToken) is { IsActive: true, MobileE164: { } mobile } customer
+                    ? new Recipient(mobile, customer.PreferredLocale, customerId, null)
+                    : null;
+            }
+
+            return booking.Channel == WalkInChannel
+                   && @event is MessageEvent.BookingConfirmed or MessageEvent.BookingRescheduled or MessageEvent.BookingCancelled
+                   && await walkIns.FindMobileAsync(booking.Id, cancellationToken) is { } walkIn
+                ? new Recipient(walkIn, platform.DefaultLocale, null, null)
                 : null;
         }
 
-        return await professionals.FindAsync(booking.ProfessionalId, cancellationToken) is { IsActive: true, WhatsAppE164: { } number }
-            ? (number, platform.DefaultLocale, booking.ProfessionalId.Value)
+        return await professionals.FindAsync(booking.ProfessionalId, cancellationToken) is { IsActive: true, WhatsAppE164: { } number } card
+            ? new Recipient(number, platform.DefaultLocale, booking.ProfessionalId.Value, card)
             : null;
     }
+
+    /// <summary>Bookings' <c>BookingChannel.WalkIn</c>.</summary>
+    private const string WalkInChannel = "WalkIn";
+
+    /// <summary>Where a message goes; <c>Id</c> is the customer's or professional's id (none for a walk-in).</summary>
+    private readonly record struct Recipient(string E164, string Locale, Guid? Id, ProfessionalContactCard? Professional);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "No active WhatsApp template for {Event} / {Audience} / {Locale}; nothing sent")]
     private static partial void LogNoTemplate(ILogger logger, MessageEvent @event, MessageAudience audience, string locale);
@@ -130,14 +164,17 @@ internal sealed partial class DispatchFactory(
 /// Turns booking outbox events into WhatsApp dispatches, in-app notices and reminder jobs (spec §16, §17; R-NTF-03/04/06/09;
 /// D-109…D-112). Runs once per event (the processor's processed-message record) and writes idempotently.
 /// <list type="bullet">
-/// <item>Customers: confirmed, pending request, rescheduled, cancelled. Professionals: confirmed (their new-booking alert),
-/// rescheduled while confirmed, and cancelled only if they had been told about the booking.</item>
+/// <item>Customers: confirmed, pending request, rescheduled, cancelled, given to another barber (D-145). Professionals:
+/// confirmed (their new-booking alert), rescheduled while confirmed, and cancelled only if they had been told about the
+/// booking. When a change gives the booking to another barber, the barber it left is told it is cancelled (if they had been
+/// told about it) and the barber it went to that it is confirmed (if it is).</item>
 /// <item>Messages about an event older than <see cref="MaxMessageAge"/> are not sent (a backlog after downtime, D-111);
 /// reminders are still reconciled.</item>
 /// <item>Reminders follow the booking's current state: a confirmed booking has one per audience at start − offset, a
 /// moved one gets new jobs and the old ones are deleted, a cancelled one has none. A reminder whose time already passed is
 /// not scheduled.</item>
-/// <item>In-app: the shop hears about what customers and admins did; the customer about what the shop or admins did.</item>
+/// <item>In-app: the shop hears about what customers and admins did; the customer about what the shop or admins did; a
+/// barber with a login (D-145) about their own bookings, the one it left included, unless they made the change.</item>
 /// </list>
 /// Nothing exists for a rolled-back change or seed data: both write no outbox message.
 /// </summary>
@@ -148,6 +185,8 @@ internal sealed class BookingNotificationsConsumer(
     IPlatformSettings settings,
     DispatchFactory factory,
     INotificationCenter center,
+    IStaffDirectory staff,
+    IProfessionalDirectory professionals,
     IJobScheduler jobs,
     TimeProvider clock) : IOutboxConsumer
 {
@@ -159,7 +198,8 @@ internal sealed class BookingNotificationsConsumer(
 
     public string Name => ConsumerName;
 
-    public bool Handles(string messageType) => messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed";
+    public bool Handles(string messageType) =>
+        messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed" or "booking.professional_changed";
 
     public async Task HandleAsync(OutboxEnvelope message, OutboxConsumerContext context, CancellationToken cancellationToken)
     {
@@ -175,15 +215,17 @@ internal sealed class BookingNotificationsConsumer(
         var dispatches = new List<WhatsAppDispatch>();
         if (now - message.OccurredAt <= MaxMessageAge)
         {
-            foreach (var (@event, audience) in Plan(message.Type, change, booking))
+            foreach (var (@event, audience, previous) in Plan(message.Type, change, booking))
             {
-                if (audience == MessageAudience.Professional && @event == MessageEvent.BookingCancelled && !await ProfessionalWasToldAsync(booking.Id, cancellationToken))
+                var about = previous ? AsTheBarberItLeftHadIt(change, booking) : booking;
+                if (audience == MessageAudience.Professional && @event == MessageEvent.BookingCancelled
+                    && !await ProfessionalWasToldAsync(booking.Id, about.ProfessionalId, cancellationToken))
                 {
                     continue;
                 }
 
-                if (await factory.CreateForBookingAsync(
-                        DispatchKind.Lifecycle, $"{message.Id:N}:{audience}", @event, audience, booking, shop, platform, cancellationToken) is { } dispatch)
+                var key = previous ? $"{message.Id:N}:{audience}:previous" : $"{message.Id:N}:{audience}";
+                if (await factory.CreateForBookingAsync(DispatchKind.Lifecycle, key, @event, audience, about, shop, platform, cancellationToken) is { } dispatch)
                 {
                     dispatches.Add(dispatch);
                 }
@@ -216,37 +258,63 @@ internal sealed class BookingNotificationsConsumer(
         });
     }
 
-    /// <summary>Which messages an event sends, from what happened (the event and the status it produced).</summary>
-    internal static IEnumerable<(MessageEvent Event, MessageAudience Audience)> Plan(string type, BookingOutboxEvent change, NotifiableBooking booking)
+    /// <summary>
+    /// Which messages an event sends, from what happened (the event and the status it produced). <c>Previous</c> marks the
+    /// message for the barber the booking left (D-145); the others go to the booking's barber.
+    /// </summary>
+    internal static IEnumerable<(MessageEvent Event, MessageAudience Audience, bool Previous)> Plan(string type, BookingOutboxEvent change, NotifiableBooking booking)
     {
         switch (type)
         {
             case "booking.created" when change.Status == "Pending":
-                yield return (MessageEvent.BookingPending, MessageAudience.Customer);
+                yield return (MessageEvent.BookingPending, MessageAudience.Customer, false);
                 break;
             case "booking.created" when change.Status is "Confirmed" or "Arrived":
             case "booking.status_changed" when change.Status == "Confirmed":
-                yield return (MessageEvent.BookingConfirmed, MessageAudience.Customer);
-                yield return (MessageEvent.BookingConfirmed, MessageAudience.Professional);
+                yield return (MessageEvent.BookingConfirmed, MessageAudience.Customer, false);
+                yield return (MessageEvent.BookingConfirmed, MessageAudience.Professional, false);
                 break;
             case "booking.rescheduled":
-                yield return (MessageEvent.BookingRescheduled, MessageAudience.Customer);
-                if (booking.IsConfirmed)
+            case "booking.professional_changed":
+                yield return (type == "booking.rescheduled" ? MessageEvent.BookingRescheduled : MessageEvent.BookingProfessionalChanged, MessageAudience.Customer, false);
+                if (change.LeftProfessionalId is not null)
                 {
-                    yield return (MessageEvent.BookingRescheduled, MessageAudience.Professional);
+                    // Off the day of the barber it left; new to the barber it went to.
+                    yield return (MessageEvent.BookingCancelled, MessageAudience.Professional, true);
+                    if (booking.IsConfirmed)
+                    {
+                        yield return (MessageEvent.BookingConfirmed, MessageAudience.Professional, false);
+                    }
+                }
+                else if (booking.IsConfirmed)
+                {
+                    yield return (MessageEvent.BookingRescheduled, MessageAudience.Professional, false);
                 }
 
                 break;
             case "booking.cancelled":
-                yield return (MessageEvent.BookingCancelled, MessageAudience.Customer);
-                yield return (MessageEvent.BookingCancelled, MessageAudience.Professional);
+                yield return (MessageEvent.BookingCancelled, MessageAudience.Customer, false);
+                yield return (MessageEvent.BookingCancelled, MessageAudience.Professional, false);
                 break;
         }
     }
 
-    private Task<bool> ProfessionalWasToldAsync(Guid bookingId, CancellationToken cancellationToken) =>
+    /// <summary>The booking as the barber it left had it: theirs, at the time it had then (D-145).</summary>
+    internal static NotifiableBooking AsTheBarberItLeftHadIt(BookingOutboxEvent change, NotifiableBooking booking)
+    {
+        var startsAt = change.PreviousStartsAt ?? change.StartsAt;
+        return booking with
+        {
+            ProfessionalId = new ProfessionalId(change.LeftProfessionalId ?? change.ProfessionalId),
+            StartsAt = startsAt,
+            EndsAt = startsAt.AddMinutes(booking.DurationMinutes),
+        };
+    }
+
+    /// <summary>Whether this barber got a message announcing the booking (so a cancellation means something to them).</summary>
+    private Task<bool> ProfessionalWasToldAsync(Guid bookingId, ProfessionalId professionalId, CancellationToken cancellationToken) =>
         db.Set<WhatsAppDispatch>().AnyAsync(
-            d => d.BookingId == bookingId && d.Audience == MessageAudience.Professional
+            d => d.BookingId == bookingId && d.Audience == MessageAudience.Professional && d.RecipientId == professionalId.Value
                  && (d.Event == MessageEvent.BookingConfirmed || d.Event == MessageEvent.BookingRescheduled),
             cancellationToken);
 
@@ -258,6 +326,7 @@ internal sealed class BookingNotificationsConsumer(
             "booking.status_changed" when change.Status == "Confirmed" => NoticeKinds.BookingConfirmed,
             "booking.rescheduled" => NoticeKinds.BookingRescheduled,
             "booking.cancelled" => NoticeKinds.BookingCancelled,
+            "booking.professional_changed" => NoticeKinds.BookingProfessionalChanged,
             _ => null,
         };
         if (kind is null)
@@ -281,6 +350,13 @@ internal sealed class BookingNotificationsConsumer(
             parameters["previousStartsAt"] = previous.ToString("O", CultureInfo.InvariantCulture);
         }
 
+        var left = change.LeftProfessionalId is { } leftId ? new ProfessionalId(leftId) : (ProfessionalId?)null;
+        if (left is { } leftProfessional && await professionals.FindAsync(leftProfessional, cancellationToken) is { } before)
+        {
+            parameters["previousProfessionalNameAr"] = before.NameAr;
+            parameters["previousProfessionalNameEn"] = before.NameEn;
+        }
+
         var dedupe = $"{message.Id:N}";
 
         // The shop's own actions are not echoed back to it; walk-ins are the shop's own.
@@ -299,6 +375,18 @@ internal sealed class BookingNotificationsConsumer(
                 ["shopNameEn"] = string.IsNullOrWhiteSpace(shop.NameEn) ? shop.NameAr : shop.NameEn,
             };
             await center.NotifyUserAsync(customerId, new InAppNotice(kind, dedupe, forCustomer, booking.Id), cancellationToken);
+        }
+
+        // A barber with a login hears about their own bookings, and the one it left about the move (D-145), unless they
+        // made the change themselves. A change of barber is the same notice for both.
+        var forBarber = new Dictionary<string, string>(parameters, StringComparer.Ordinal) { ["customerName"] = booking.CustomerName };
+        var barberKind = left is null ? kind : NoticeKinds.BookingProfessionalChanged;
+        foreach (var professional in left is { } l ? new[] { new ProfessionalId(change.ProfessionalId), l } : [new ProfessionalId(change.ProfessionalId)])
+        {
+            if (await staff.BarberAccountAsync(professional, cancellationToken) is { } barber && barber != change.ActorId)
+            {
+                await center.NotifyUserAsync(barber, new InAppNotice(barberKind, dedupe, forBarber, booking.Id), cancellationToken);
+            }
         }
     }
 

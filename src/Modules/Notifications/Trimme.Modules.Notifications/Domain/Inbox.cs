@@ -107,6 +107,9 @@ public static class NoticeKinds
     public const string BookingConfirmed = "booking.confirmed";
     public const string BookingRescheduled = "booking.rescheduled";
     public const string BookingCancelled = "booking.cancelled";
+
+    /// <summary>The booking was given to another barber (D-145); carries the previous barber's names.</summary>
+    public const string BookingProfessionalChanged = "booking.professional_changed";
     public const string SubscriptionExpiring = "subscription.expiring";
     public const string SubscriptionExpired = "subscription.expired";
     public const string DispatchFailed = "whatsapp.dispatch_failed";

@@ -2929,7 +2929,8 @@
       "BookingPending": "Onay bekleyen talep",
       "BookingRescheduled": "Randevu taşındı",
       "BookingCancelled": "Randevu iptal edildi",
-      "BookingReminder": "Randevu öncesi hatırlatma"
+      "BookingReminder": "Randevu öncesi hatırlatma",
+      "BookingProfessionalChanged": "Randevu başka bir berbere verildi"
     },
     "audience": {
       "Customer": "Müşteri",

@@ -9,7 +9,7 @@ using Trimme.Modules.Notifications.Domain;
 namespace Trimme.Modules.Notifications.Infrastructure.Seeding;
 
 /// <summary>
-/// The starting wording of every template slot (spec §16, D-109): customers get five events and professionals four, in
+/// The starting wording of every template slot (spec §16, D-109, D-145): customers get six events and professionals four, in
 /// Arabic and English. <c>migrate</c> creates a missing slot with this text as its active version 1 and never touches an
 /// existing slot, so admin edits always win. This is the only place with message text; jobs and handlers render templates
 /// from the database (R-NEG-09). Production must register matching approved templates with Meta.
@@ -107,6 +107,16 @@ internal static class DefaultTemplates
             + "You booked {{service_name}} with {{professional_name}}.\n"
             + "The shop's address is {{address}}. Use the buttons below for directions or to manage your booking. Enjoy your visit.",
             DirectionsEn, ManageEn),
+        Customer(MessageEvent.BookingProfessionalChanged, "ar",
+            "مرحباً {{customer_name}}، نود إعلامك بأن {{shop_name}} نقل حجزك إلى {{professional_name}} في نفس الموعد.\n"
+            + "موعدك يوم {{booking_date}} الساعة {{booking_time}} لخدمة {{service_name}}، ورقم حجزك {{booking_reference}}.\n"
+            + "إن لم يناسبك ذلك يمكنك تغيير الموعد أو إلغاؤه من الزر أدناه حتى بدء الموعد.",
+            ManageAr),
+        Customer(MessageEvent.BookingProfessionalChanged, "en",
+            "Hi {{customer_name}}, {{shop_name}} has given your booking to {{professional_name}}, at the same time.\n"
+            + "Your appointment is on {{booking_date}} at {{booking_time}} for {{service_name}}; your booking reference is {{booking_reference}}.\n"
+            + "If this does not suit you, you can change or cancel it with the button below until it starts.",
+            ManageEn),
         Professional(MessageEvent.BookingConfirmed, "ar",
             "لديك حجز جديد باسم {{customer_name}} يوم {{booking_date}} الساعة {{booking_time}}.\n"
             + "الخدمة المطلوبة هي {{service_name}}، ومدتها {{duration}} تقريباً.\n"

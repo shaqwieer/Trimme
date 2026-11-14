@@ -5264,11 +5264,12 @@ export interface components {
          */
         MessageAudience: "Customer" | "Professional";
         /**
-         * @description The booking lifecycle events that send a WhatsApp message (spec §16, D-109). Customers get all five; professionals get
-         *     confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request.
+         * @description The booking lifecycle events that send a WhatsApp message (spec §16, D-109, D-145). Customers get all six;
+         *     professionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending
+         *     request nor the change of barber (the barbers concerned get «cancelled» and «confirmed» instead).
          * @enum {unknown}
          */
-        MessageEvent: "BookingConfirmed" | "BookingPending" | "BookingRescheduled" | "BookingCancelled" | "BookingReminder";
+        MessageEvent: "BookingConfirmed" | "BookingPending" | "BookingRescheduled" | "BookingCancelled" | "BookingReminder" | "BookingProfessionalChanged";
         /** @description Minutes from the local midnight of one calendar date, end exclusive (0–1440). */
         MinuteWindowDto: {
             /** Format: int32 */

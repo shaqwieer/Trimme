@@ -16,6 +16,7 @@ export const MESSAGE_EVENTS: readonly MessageEvent[] = [
   'BookingConfirmed',
   'BookingPending',
   'BookingRescheduled',
+  'BookingProfessionalChanged',
   'BookingCancelled',
   'BookingReminder',
 ];

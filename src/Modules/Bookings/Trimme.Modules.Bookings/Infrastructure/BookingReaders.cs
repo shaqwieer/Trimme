@@ -115,6 +115,23 @@ internal sealed class BookingNotificationSource(TrimmeDbContext db) : IBookingNo
 }
 
 /// <summary>
+/// <see cref="IWalkInContactReader"/> (D-145): the walk-in's mobile for its WhatsApp confirmation, decrypted only here for
+/// the notification jobs (architecture rule). Reads through the caller's scope (the system scope in jobs); never logged.
+/// </summary>
+internal sealed class WalkInContactReader(TrimmeDbContext db, BuildingBlocks.Application.Privacy.IPersonalDataProtector protector) : IWalkInContactReader
+{
+    public async Task<string?> FindMobileAsync(Guid bookingId, CancellationToken cancellationToken)
+    {
+        var id = new BookingId(bookingId);
+        var stored = await db.Set<WalkInContact>().AsNoTracking()
+            .Where(c => c.BookingId == id)
+            .Select(c => c.ProtectedPhone)
+            .SingleOrDefaultAsync(cancellationToken);
+        return string.IsNullOrEmpty(stored) ? null : protector.Unprotect(stored, BuildingBlocks.Application.Privacy.PersonalDataPurposes.WalkInPhone);
+    }
+}
+
+/// <summary>
 /// <see cref="BuildingBlocks.Application.Qr.IQrBookingReader"/> (D-114): bookings credited to a QR scan, through the caller's scope (the shop's own for a
 /// shop user; every shop's inside an admin data scope). Ids and the creation time only.
 /// </summary>

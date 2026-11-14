@@ -30,7 +30,7 @@ public sealed partial class MetaTemplateCatalogTests
     public void Catalog_HasEveryUtilitySlot_AndTheAuthenticationTemplateInBothLanguages()
     {
         var templates = Templates();
-        templates.Count(t => Category(t) == "UTILITY").ShouldBe(18);
+        templates.Count(t => Category(t) == "UTILITY").ShouldBe(20);
         templates.Where(t => Category(t) == "AUTHENTICATION").Select(t => (Name(t), t["language"]!.GetValue<string>()))
             .ShouldBe([(MetaTemplateCatalog.AuthenticationTemplateName, "ar"), (MetaTemplateCatalog.AuthenticationTemplateName, "en")]);
         templates.ShouldAllBe(t => MetaName().IsMatch(Name(t)));

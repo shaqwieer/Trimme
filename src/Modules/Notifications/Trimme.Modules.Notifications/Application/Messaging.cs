@@ -93,7 +93,7 @@ public static class MessageComposer
         };
         if (audience == MessageAudience.Customer)
         {
-            values[Placeholders.ManageUrl] = ManageUrl(publicBaseUrl, locale, booking.Id);
+            values[Placeholders.ManageUrl] = ManageUrl(publicBaseUrl, locale, booking, shop);
         }
 
         return values;
@@ -104,13 +104,15 @@ public static class MessageComposer
         var urls = new Dictionary<TemplateButtonTarget, string> { [TemplateButtonTarget.ShopPage] = ShopUrl(publicBaseUrl, locale, shop.Slug) };
         if (audience == MessageAudience.Customer)
         {
-            urls[TemplateButtonTarget.ManageBooking] = ManageUrl(publicBaseUrl, locale, booking.Id);
+            urls[TemplateButtonTarget.ManageBooking] = ManageUrl(publicBaseUrl, locale, booking, shop);
         }
 
         return urls;
     }
 
-    private static string ManageUrl(string baseUrl, string locale, Guid bookingId) => $"{baseUrl.TrimEnd('/')}/{locale}/account/bookings/{bookingId}";
+    /// <summary>The customer's booking page; a walk-in has no account to open it from, so the shop's page (D-145).</summary>
+    private static string ManageUrl(string baseUrl, string locale, NotifiableBooking booking, ShopSummary shop) =>
+        booking.Channel == "WalkIn" ? ShopUrl(baseUrl, locale, shop.Slug) : $"{baseUrl.TrimEnd('/')}/{locale}/account/bookings/{booking.Id}";
 
     private static string ShopUrl(string baseUrl, string locale, string slug) => $"{baseUrl.TrimEnd('/')}/{locale}/shops/{slug}";
 }

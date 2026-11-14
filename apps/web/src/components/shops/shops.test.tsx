@@ -60,7 +60,8 @@ describe('no barber transfer anywhere in the UI copy (R-NEG-01, DV-S01)', () => 
     Object.values(catalog).flatMap((value) => (typeof value === 'string' ? [value] : texts(value as object)));
 
   it.each([
-    ['ar', ar, /نقل (ال)?حلاق|تنفيذ النقل|(^|\s)نقل\s|تحويل (ال)?حلاق/], // not "التنقل" (navigation)
+    // Not "التنقل" (navigation), nor moving a booking to a colleague in the same shop («نقل الحجز», D-145): only the barber stays put.
+    ['ar', ar, /نقل (ال)?حلاق|تنفيذ النقل|(^|\s)نقل\s(?!(ال)?حجز)|تحويل (ال)?حلاق/],
     ['en', en, /transfer|move (the )?professional|reassign/i],
   ] as const)('the %s catalog offers no transfer action', (_, catalog, pattern) => {
     expect(texts(catalog).filter((text) => pattern.test(text))).toEqual([]);

@@ -49,6 +49,7 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<IShopServiceUsage, BookingServiceUsage>();
         services.AddScoped<IBookingReviewSource, BookingReviewSource>();
         services.AddScoped<BuildingBlocks.Application.Notifications.IBookingNotificationSource, BookingNotificationSource>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IWalkInContactReader, WalkInContactReader>();
         services.AddScoped<IBookingStatistics, BookingStatistics>();
         services.AddScoped<BuildingBlocks.Application.Qr.IQrBookingReader, QrBookingReader>();
         services.AddSingleton<IDevSeeder, DemoBookingsSeeder>();

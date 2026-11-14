@@ -414,6 +414,82 @@
     ]
   },
   {
+    "name": "trimme_customer_booking_professional_changed",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، نود إعلامك بأن {{2}} نقل حجزك إلى {{3}} في نفس الموعد.\nموعدك يوم {{4}} الساعة {{5}} لخدمة {{6}}، ورقم حجزك {{7}}.\nإن لم يناسبك ذلك يمكنك تغيير الموعد أو إلغاؤه من الزر أدناه حتى بدء الموعد.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة",
+              "ماجد الحربي",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "قص شعر وتصفيف",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "إدارة الموعد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_professional_changed",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, {{2}} has given your booking to {{3}}, at the same time.\nYour appointment is on {{4}} at {{5}} for {{6}}; your booking reference is {{7}}.\nIf this does not suit you, you can change or cancel it with the button below until it starts.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon",
+              "Majed Alharbi",
+              "Friday 6 November",
+              "5:30 pm",
+              "Haircut and styling",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Manage booking",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/account/bookings/00000000-0000-0000-0000-000000000000"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "trimme_professional_booking_confirmed",
     "language": "ar",
     "category": "UTILITY",

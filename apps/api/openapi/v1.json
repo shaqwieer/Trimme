@@ -18729,9 +18729,10 @@
           "BookingPending",
           "BookingRescheduled",
           "BookingCancelled",
-          "BookingReminder"
+          "BookingReminder",
+          "BookingProfessionalChanged"
         ],
-        "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109). Customers get all five; professionals get\nconfirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending request."
+        "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109, D-145). Customers get all six;\nprofessionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending\nrequest nor the change of barber (the barbers concerned get \u00ABcancelled\u00BB and \u00ABconfirmed\u00BB instead)."
       },
       "MinuteWindowDto": {
         "required": [

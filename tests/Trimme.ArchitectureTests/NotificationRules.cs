@@ -24,7 +24,7 @@ public sealed partial class NotificationRules
     [Fact]
     public void ContactReaders_AreUsedOnlyByNotificationJobs()
     {
-        foreach (var reader in new[] { typeof(ICustomerContactReader), typeof(IProfessionalContactReader) })
+        foreach (var reader in new[] { typeof(ICustomerContactReader), typeof(IWalkInContactReader), typeof(IProfessionalContactReader) })
         {
             UsersOutsideJobs(ProductionAssemblies, reader).ShouldBeEmpty($"{reader.Name} may only be used by *.Jobs types.");
             UsersOutsideJobs([typeof(NotificationRules).Assembly], reader).ShouldContain(typeof(ProbeContactReaderUser).FullName);
@@ -80,9 +80,11 @@ public sealed partial class NotificationRules
 }
 
 /// <summary>Reads a customer's number outside a job: exactly what the rule must reject.</summary>
-internal sealed class ProbeContactReaderUser(ICustomerContactReader customers, IProfessionalContactReader professionals)
+internal sealed class ProbeContactReaderUser(ICustomerContactReader customers, IWalkInContactReader walkIns, IProfessionalContactReader professionals)
 {
     public Task<CustomerContact?> Customer(Guid id) => customers.FindAsync(id, CancellationToken.None);
+
+    public Task<string?> WalkIn(Guid bookingId) => walkIns.FindMobileAsync(bookingId, CancellationToken.None);
 
     public Task<ProfessionalContactCard?> Professional(Trimme.BuildingBlocks.Domain.Tenancy.ProfessionalId id) => professionals.FindAsync(id, CancellationToken.None);
 }

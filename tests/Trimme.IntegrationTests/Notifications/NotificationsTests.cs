@@ -148,10 +148,11 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         var url = $"/api/v1/admin/shops/{w.Shops.A.ShopId}/whatsapp-messages";
         static string Slot(JsonElement item) => $"{item.GetProperty("audience").GetString()}.{item.GetProperty("event").GetString()}";
 
-        // Nine switches (5 customer, 4 barber: a barber never gets the pending request), all on by default.
+        // Ten switches (6 customer, 4 barber: a barber never gets the pending request nor the change of barber), all on by default.
         var initial = (await OkAsync(w.Admin.GetAsync(url, ct), ct)).GetProperty("items").EnumerateArray().ToList();
         initial.Select(Slot).ShouldBe([
-            "Customer.BookingConfirmed", "Customer.BookingPending", "Customer.BookingRescheduled", "Customer.BookingCancelled", "Customer.BookingReminder",
+            "Customer.BookingConfirmed", "Customer.BookingPending", "Customer.BookingRescheduled", "Customer.BookingProfessionalChanged",
+            "Customer.BookingCancelled", "Customer.BookingReminder",
             "Professional.BookingConfirmed", "Professional.BookingRescheduled", "Professional.BookingCancelled", "Professional.BookingReminder",
         ]);
         initial.ShouldAllBe(i => i.GetProperty("enabled").GetBoolean());

@@ -2,9 +2,9 @@ using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.BuildingBlocks.Application.Notifications;
 
-// Ports the Notifications module uses to build messages from other modules' data (Phase 15, D-108…D-112). The two
+// Ports the Notifications module uses to build messages from other modules' data (Phase 15, D-108…D-112). The three
 // contact readers return phone numbers, so an architecture rule limits them to background jobs (*.Jobs namespaces):
-// no endpoint can read a customer's or a professional's number through them.
+// no endpoint can read a customer's, a walk-in's or a professional's number through them.
 
 /// <summary>A booking as notifications need it (implemented by the Bookings module); reads through the caller's scope.</summary>
 public interface IBookingNotificationSource
@@ -89,11 +89,24 @@ public interface IProfessionalContactReader
 /// </summary>
 public sealed record ProfessionalContactCard(ProfessionalId Id, ShopId ShopId, string NameAr, string NameEn, bool IsActive, string? WhatsAppE164);
 
-/// <summary>Platform admins for notification fan-out (implemented by the Identity module). Ids only.</summary>
+/// <summary>
+/// The mobile number the shop took for a walk-in (D-134), for its WhatsApp confirmation (D-145; implemented by the
+/// Bookings module, which holds it encrypted). Null when none was given or it was erased. Only the notification jobs may
+/// use it (architecture rule); the number never enters the outbox, a notice or a log.
+/// </summary>
+public interface IWalkInContactReader
+{
+    Task<string?> FindMobileAsync(Guid bookingId, CancellationToken cancellationToken);
+}
+
+/// <summary>Accounts for notification fan-out (implemented by the Identity module). Ids only.</summary>
 public interface IStaffDirectory
 {
     /// <summary>Enabled platform admins whose roles grant <paramref name="permission"/>.</summary>
     Task<IReadOnlyList<Guid>> ActiveAdminsWithPermissionAsync(string permission, CancellationToken cancellationToken);
+
+    /// <summary>The enabled login of a barber (D-145), if the professional has one; their in-app notices go to it.</summary>
+    Task<Guid?> BarberAccountAsync(ProfessionalId professionalId, CancellationToken cancellationToken);
 }
 
 /// <summary>
