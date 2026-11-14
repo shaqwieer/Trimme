@@ -51,6 +51,12 @@ public sealed record AdminCancelBookingRequest(string Reason, uint Version);
 /// <summary>An admin reschedule: the new start, optionally another eligible professional, a reason (≥ 5 characters) and the version read.</summary>
 public sealed record AdminRescheduleBookingRequest(DateTimeOffset StartsAt, Guid? ProfessionalId, string? Reason, uint Version);
 
+/// <summary>The shop gives the booking a new time with the same barber (D-145). Send the version read.</summary>
+public sealed record ShopRescheduleBookingRequest(DateTimeOffset StartsAt, uint Version);
+
+/// <summary>The shop gives the booking to another barber at the same time (D-145). Send the version read.</summary>
+public sealed record ChangeBookingProfessionalRequest(Guid ProfessionalId, uint Version);
+
 internal static class BookingEndpoints
 {
     public const string IdempotencyHeader = "Idempotency-Key";
@@ -60,6 +66,8 @@ internal static class BookingEndpoints
     private const string ShopRead = "Shop.Bookings.Read";
     private const string ShopUpdateStatus = "Shop.Bookings.UpdateStatus";
     private const string ShopWalkIn = "Shop.Bookings.CreateWalkIn";
+    private const string ShopReschedule = "Shop.Bookings.Reschedule";
+    private const string ShopChangeProfessional = "Shop.Bookings.ChangeProfessional";
     private const string AdminView = "Admin.Bookings.View";
     private const string AdminIntervene = "Admin.Bookings.Intervene";
     private const string AdminViewContact = "Admin.Customers.ViewContact";
@@ -168,6 +176,59 @@ internal static class BookingEndpoints
             .RequirePermission(ShopUpdateStatus)
             .WithName("AddBookingNote").WithSummary("Adds an internal note (never shown to the customer).")
             .Produces<BookingNoteResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{bookingId:guid}/reschedule/dates", async (Guid bookingId, DateOnly? from, DateOnly? to, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopRescheduleDatesQuery(bookingId, from, to), ct)).ToHttpResult())
+            .RequirePermission(ShopReschedule)
+            .WithName("GetShopRescheduleDates")
+            .WithSummary("Dates the booking can move to with its barber, with the number of free starts on each (the desk's rules; its own time does not block it).")
+            .Produces<RescheduleDatesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapGet("/{bookingId:guid}/reschedule/slots", async (Guid bookingId, DateOnly date, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopRescheduleSlotsQuery(bookingId, date), ct)).ToHttpResult())
+            .RequirePermission(ShopReschedule)
+            .WithName("GetShopRescheduleSlots").WithSummary("The free starts on one date for the booking's barber and duration.")
+            .Produces<RescheduleSlotsResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/reschedule", async (Guid bookingId, [FromHeader(Name = IdempotencyHeader)] string? key, ShopRescheduleBookingRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
+                KeyError(key) is { } missing
+                    ? missing.ToProblem()
+                    : Changed(http, await d.Send(new ShopRescheduleBookingCommand(bookingId, r.StartsAt, r.Version, key!), ct)))
+            .RequirePermission(ShopReschedule)
+            .WithName("ShopRescheduleBooking")
+            .WithSummary("Gives the booking a new time with the same barber; the customer is told. Idempotency-Key required; 409 booking.slot_unavailable when taken.")
+            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapGet("/{bookingId:guid}/professional-options", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetBookingProfessionalOptionsQuery(bookingId), ct)).ToHttpResult())
+            .RequirePermission(ShopChangeProfessional)
+            .WithName("GetBookingProfessionalOptions")
+            .WithSummary("The shop's other barbers who do the booked item, and whether each is free at its time.")
+            .Produces<BookingProfessionalOptionsResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/professional", async (Guid bookingId, [FromHeader(Name = IdempotencyHeader)] string? key, ChangeBookingProfessionalRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
+                KeyError(key) is { } missing
+                    ? missing.ToProblem()
+                    : Changed(http, await d.Send(new ChangeBookingProfessionalCommand(bookingId, r.ProfessionalId, r.Version, key!), ct)))
+            .RequirePermission(ShopChangeProfessional)
+            .WithName("ChangeBookingProfessional")
+            .WithSummary("Gives the booking to another barber of the shop at the same time; the customer is told and may cancel or change it until it starts. Idempotency-Key required.")
+            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+    }
+
+    private static IResult Changed(HttpContext http, Result<ShopBookingChangeResult> result)
+    {
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblem();
+        }
+
+        if (result.Value.Replayed)
+        {
+            http.Response.Headers[ReplayedHeader] = "true";
+        }
+
+        return TypedResults.Ok(result.Value.Booking);
     }
 
     private static void MapBoard(IEndpointRouteBuilder api)

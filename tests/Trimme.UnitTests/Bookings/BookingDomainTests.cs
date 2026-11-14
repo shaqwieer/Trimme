@@ -231,4 +231,53 @@ public sealed class BookingDomainTests
         AvailabilityEngine.IsFree(shop, pro, At(11, 45), 15).ShouldBeTrue("up to closing");
         AvailabilityEngine.FreeTime(shop, pro, sunday, sunday).Ranges.Count.ShouldBe(3);
     }
+
+    // ---------------------------------------------------------------- D-145: another barber, and the customer's window
+
+    private static readonly BookedProfessional Omar = new(new ProfessionalId(Guid.CreateVersion7()), "عمر", "Omar");
+
+    [Fact]
+    public void ChangingTheBarber_KeepsTheTime_RecordsWhoHadIt_AndOpensTheCustomersWindowUntilTheStart()
+    {
+        var booking = Online(start: Now.AddMinutes(90));
+        booking.CustomerCanChange(Now, cutoffMinutes: 120).ShouldBeFalse();
+
+        booking.ChangeProfessional(Omar, ShopUser, Now).IsSuccess.ShouldBeTrue();
+        booking.ProfessionalId.ShouldBe(Omar.Id);
+        booking.StartsAt.ShouldBe(Now.AddMinutes(90));
+        var entry = booking.History[^1];
+        entry.Kind.ShouldBe(BookingEventKind.ProfessionalChanged);
+        entry.PreviousProfessionalId.ShouldBe(Faisal.Id.Value);
+        entry.PreviousProfessionalNameAr.ShouldBe("فيصل");
+
+        // Inside the window, the customer may now cancel or change it, until it starts.
+        booking.CustomerCanChange(Now, cutoffMinutes: 120).ShouldBeTrue();
+        booking.CustomerCanChange(Now.AddMinutes(90), cutoffMinutes: 120).ShouldBeFalse();
+        booking.CancelByCustomer(Customer, null, Now.AddMinutes(30), cutoffMinutes: 120).IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ChangingTheBarber_IsRefused_ForTheSameBarber_AStartedVisit_OrAFinishedBooking()
+    {
+        Online().ChangeProfessional(Faisal, ShopUser, Now).Error!.Code.ShouldBe("booking.same_professional");
+        Online(start: Now.AddMinutes(-5)).ChangeProfessional(Omar, ShopUser, Now).IsFailure.ShouldBeTrue();
+        InStatus(BookingStatus.Arrived).ChangeProfessional(Omar, ShopUser, Now).Error!.Code.ShouldBe("booking.not_reschedulable");
+        InStatus(BookingStatus.Completed).ChangeProfessional(Omar, ShopUser, Now).Error!.Code.ShouldBe("booking.not_reschedulable");
+    }
+
+    [Fact]
+    public void TheCustomersOwnReschedule_UsesUpTheFreeChange_AShopReschedule_DoesNot()
+    {
+        var booking = Online(start: Now.AddMinutes(90));
+        booking.ChangeProfessional(Omar, ShopUser, Now).IsSuccess.ShouldBeTrue();
+
+        // The shop moves the time: still the customer's free change.
+        booking.Reschedule(Now.AddMinutes(100), Omar, ShopUser, Now, cutoffMinutes: null).IsSuccess.ShouldBeTrue();
+        booking.CustomerCanChange(Now, cutoffMinutes: 120).ShouldBeTrue();
+
+        // The customer chooses a time themselves: the window applies again.
+        booking.Reschedule(Now.AddMinutes(110), Omar, new BookingActor(Customer, ActorType.Customer), Now, cutoffMinutes: 120).IsSuccess.ShouldBeTrue();
+        booking.ProfessionalChangedAt.ShouldBeNull();
+        booking.CustomerCanChange(Now, cutoffMinutes: 120).ShouldBeFalse();
+    }
 }

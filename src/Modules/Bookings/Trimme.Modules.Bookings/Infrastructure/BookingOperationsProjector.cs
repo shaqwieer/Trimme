@@ -12,7 +12,8 @@ internal sealed class BookingOperationsProjector : IOperationsEventProjector
 {
     public OperationsEvent? Project(string outboxType, string payload)
     {
-        if (outboxType is not (BookingEvents.Created or BookingEvents.Rescheduled or BookingEvents.Cancelled or BookingEvents.StatusChanged))
+        if (outboxType is not (BookingEvents.Created or BookingEvents.Rescheduled or BookingEvents.Cancelled or BookingEvents.StatusChanged
+            or BookingEvents.ProfessionalChanged))
         {
             return null;
         }
@@ -20,6 +21,8 @@ internal sealed class BookingOperationsProjector : IOperationsEventProjector
         var booking = JsonSerializer.Deserialize<BookingEvent>(payload, JsonSerializerOptions.Web);
         return booking is null
             ? null
-            : new OperationsEvent(outboxType, booking.ShopId, booking.BookingId, booking.ProfessionalId, booking.Status, booking.StartsAt, booking.EndsAt);
+            : new OperationsEvent(
+                outboxType, booking.ShopId, booking.BookingId, booking.ProfessionalId, booking.Status, booking.StartsAt, booking.EndsAt,
+                booking.PreviousProfessionalId);
     }
 }

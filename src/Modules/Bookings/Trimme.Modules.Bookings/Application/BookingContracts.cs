@@ -35,7 +35,8 @@ public sealed record BookingHistoryResponse(
     DateTimeOffset? PreviousStartsAt,
     ActorType ActorType,
     string? Reason,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    BookingProfessionalResponse? PreviousProfessional = null);
 
 public enum CustomerBookingAction
 {
@@ -124,7 +125,8 @@ internal sealed record BookingEvent(
     string Status,
     string Channel,
     DateTimeOffset? PreviousStartsAt,
-    string ActorType);
+    string ActorType,
+    Guid? PreviousProfessionalId = null);
 
 internal static class BookingEvents
 {
@@ -133,12 +135,15 @@ internal static class BookingEvents
     public const string Cancelled = "booking.cancelled";
     public const string StatusChanged = "booking.status_changed";
 
+    /// <summary>The booking was given to another barber at the same time (D-145); the payload names the previous one.</summary>
+    public const string ProfessionalChanged = "booking.professional_changed";
+
     public static void Add(TrimmeDbContext db, string type, Booking booking, DateTimeOffset now)
     {
         var last = booking.History[^1];
         db.Add(OutboxMessage.Create(type, new BookingEvent(
             booking.Id.Value, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, booking.StartsAt, booking.EndsAt,
-            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString()), now));
+            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId), now));
     }
 
     public static string ForStatus(BookingStatus status) => BookingRules.IsCancelled(status) ? Cancelled : StatusChanged;
@@ -158,7 +163,11 @@ internal static class BookingMapping
     public static IReadOnlyList<BookingHistoryResponse> History(Booking b) =>
     [
         .. b.History.OrderBy(h => h.OccurredAt).ThenBy(h => h.Id)
-            .Select(h => new BookingHistoryResponse(h.Kind, h.FromStatus, h.ToStatus, h.PreviousStartsAt, h.ActorType, h.Reason, h.OccurredAt)),
+            .Select(h => new BookingHistoryResponse(
+                h.Kind, h.FromStatus, h.ToStatus, h.PreviousStartsAt, h.ActorType, h.Reason, h.OccurredAt,
+                h.PreviousProfessionalId is { } previous
+                    ? new BookingProfessionalResponse(previous, h.PreviousProfessionalNameAr ?? string.Empty, h.PreviousProfessionalNameEn ?? string.Empty)
+                    : null)),
     ];
 
     public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null) =>

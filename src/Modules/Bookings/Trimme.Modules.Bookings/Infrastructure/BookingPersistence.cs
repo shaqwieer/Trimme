@@ -80,6 +80,8 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
             history.Property(h => h.ToStatus).HasConversion<string>().HasMaxLength(24);
             history.Property(h => h.ActorType).HasConversion<string>().HasMaxLength(20);
             history.Property(h => h.Reason).HasMaxLength(BookingRules.MaxReasonLength);
+            history.Property(h => h.PreviousProfessionalNameAr).HasMaxLength(120);
+            history.Property(h => h.PreviousProfessionalNameEn).HasMaxLength(120);
         });
         builder.Navigation(b => b.History).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Ignore(b => b.IsActive);

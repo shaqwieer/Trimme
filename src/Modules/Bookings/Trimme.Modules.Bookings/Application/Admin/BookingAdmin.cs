@@ -286,7 +286,7 @@ internal sealed class AdminRescheduleBookingHandler(
         }
 
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
-        var target = await AdminRescheduleTargets.ResolveAsync(booking, command.ProfessionalId, catalog, professionals, cancellationToken);
+        var target = await RescheduleTargets.ResolveAsync(booking, command.ProfessionalId, catalog, professionals, cancellationToken);
         if (target.IsFailure)
         {
             return target.Error;
@@ -345,40 +345,6 @@ internal sealed class AdminRescheduleBookingHandler(
     }
 }
 
-/// <summary>Who may take a rescheduled booking: its own professional, or another active one assigned to the booked item.</summary>
-internal static class AdminRescheduleTargets
-{
-    public static async Task<IReadOnlyList<ProfessionalSummary>> CandidatesAsync(
-        Booking booking, IBookableOfferCatalog catalog, IProfessionalDirectory professionals, CancellationToken cancellationToken)
-    {
-        var staff = await professionals.ListByShopAsync(booking.ShopId, cancellationToken);
-        var offer = await catalog.FindBookedAsync(
-            booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken);
-        var eligible = offer?.EligibleProfessionalIds.ToHashSet() ?? [];
-        return [.. staff.Where(p => p.Id == booking.ProfessionalId || (p.IsActive && eligible.Contains(p.Id)))];
-    }
-
-    public static async Task<Result<BookedProfessional>> ResolveAsync(
-        Booking booking, Guid? professionalId, IBookableOfferCatalog catalog, IProfessionalDirectory professionals, CancellationToken cancellationToken)
-    {
-        var requested = new ProfessionalId(professionalId ?? booking.ProfessionalId.Value);
-        var candidates = await CandidatesAsync(booking, catalog, professionals, cancellationToken);
-        if (candidates.SingleOrDefault(p => p.Id == requested) is not { } professional)
-        {
-            return requested == booking.ProfessionalId
-                ? Error.NotFound("professional.not_found", "The professional was not found.")
-                : BookingErrors.ProfessionalNotEligible();
-        }
-
-        if (!professional.IsActive)
-        {
-            return BookingErrors.ProfessionalNotEligible();
-        }
-
-        return new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn);
-    }
-}
-
 /// <summary>The reschedule dialog's choices: professionals it may move to and the free starts on one date (online grid, the booking ignored).</summary>
 internal sealed class GetAdminRescheduleOptionsHandler(
     TrimmeDbContext db,
@@ -407,7 +373,7 @@ internal sealed class GetAdminRescheduleOptionsHandler(
             return BookingErrors.NotReschedulable(booking.Status);
         }
 
-        var candidates = (await AdminRescheduleTargets.CandidatesAsync(booking, catalog, professionals, cancellationToken)).Where(p => p.IsActive).ToList();
+        var candidates = (await RescheduleTargets.CandidatesAsync(booking, catalog, professionals, cancellationToken)).Where(p => p.IsActive).ToList();
         var chosen = new ProfessionalId(query.ProfessionalId ?? booking.ProfessionalId.Value);
         if (candidates.All(p => p.Id != chosen))
         {

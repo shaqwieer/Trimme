@@ -957,6 +957,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("price");
 
+                    b.Property<DateTimeOffset?>("ProfessionalChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("professional_changed_at");
+
                     b.Property<Guid>("ProfessionalId")
                         .HasColumnType("uuid")
                         .HasColumnName("professional_id");
@@ -4033,6 +4037,20 @@ namespace Trimme.Migrations.Migrations
                             b1.Property<DateTimeOffset>("OccurredAt")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("occurred_at");
+
+                            b1.Property<Guid?>("PreviousProfessionalId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("previous_professional_id");
+
+                            b1.Property<string>("PreviousProfessionalNameAr")
+                                .HasMaxLength(120)
+                                .HasColumnType("character varying(120)")
+                                .HasColumnName("previous_professional_name_ar");
+
+                            b1.Property<string>("PreviousProfessionalNameEn")
+                                .HasMaxLength(120)
+                                .HasColumnType("character varying(120)")
+                                .HasColumnName("previous_professional_name_en");
 
                             b1.Property<DateTimeOffset?>("PreviousStartsAt")
                                 .HasColumnType("timestamp with time zone")

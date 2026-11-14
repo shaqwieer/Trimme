@@ -50,6 +50,9 @@ public enum BookingEventKind
     Created,
     StatusChanged,
     Rescheduled,
+
+    /// <summary>The booking was given to another barber of the same shop, at the same time (D-145).</summary>
+    ProfessionalChanged,
 }
 
 /// <summary>Who did something to a booking. The id is the user's (null for the system).</summary>
@@ -79,12 +82,17 @@ public sealed record BookedProfessional(ProfessionalId Id, string NameAr, string
 /// <summary>One entry of the booking's history (R-BKG-02): every status change and reschedule, with actor and time.</summary>
 public sealed class BookingHistoryEntry
 {
-    internal BookingHistoryEntry(BookingEventKind kind, BookingStatus? from, BookingStatus to, DateTimeOffset? previousStartsAt, BookingActor actor, string? reason, DateTimeOffset at)
+    internal BookingHistoryEntry(
+        BookingEventKind kind, BookingStatus? from, BookingStatus to, DateTimeOffset? previousStartsAt, BookingActor actor, string? reason, DateTimeOffset at,
+        BookedProfessional? previousProfessional = null)
     {
         Kind = kind;
         FromStatus = from;
         ToStatus = to;
         PreviousStartsAt = previousStartsAt;
+        PreviousProfessionalId = previousProfessional?.Id.Value;
+        PreviousProfessionalNameAr = previousProfessional?.NameAr;
+        PreviousProfessionalNameEn = previousProfessional?.NameEn;
         ActorId = actor.Id;
         ActorType = actor.Type;
         Reason = reason;
@@ -105,6 +113,13 @@ public sealed class BookingHistoryEntry
 
     /// <summary>For a reschedule: the start it moved from.</summary>
     public DateTimeOffset? PreviousStartsAt { get; private set; }
+
+    /// <summary>When the booking changed barber (D-145): who had it before, as they were named then.</summary>
+    public Guid? PreviousProfessionalId { get; private set; }
+
+    public string? PreviousProfessionalNameAr { get; private set; }
+
+    public string? PreviousProfessionalNameEn { get; private set; }
 
     public Guid? ActorId { get; private set; }
 
@@ -296,6 +311,12 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public IReadOnlyList<BookingHistoryEntry> History => _history;
 
+    /// <summary>
+    /// When the shop last gave the booking to another barber (D-145); cleared when the customer reschedules it. While
+    /// set, the customer may cancel or change the booking until it starts, whatever the cancellation window.
+    /// </summary>
+    public DateTimeOffset? ProfessionalChangedAt { get; private set; }
+
     public static Booking CreateOnline(
         BookingId id, ShopId shopId, Guid customerId, string customerName, BookedProfessional professional, BookedItem item,
         DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null)
@@ -413,7 +434,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             return BookingErrors.InvalidTransition(Status, BookingStatus.CancelledByCustomer);
         }
 
-        if (now > StartsAt.AddMinutes(-cutoffMinutes))
+        if (CutoffApplies(now, cutoffMinutes))
         {
             return BookingErrors.CutoffPassed(cutoffMinutes);
         }
@@ -438,19 +459,73 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             return BookingErrors.NotReschedulable(Status);
         }
 
-        if (cutoffMinutes is { } cutoff && now > StartsAt.AddMinutes(-cutoff))
+        if (cutoffMinutes is { } cutoff && CutoffApplies(now, cutoff))
         {
             return BookingErrors.CutoffPassed(cutoff);
         }
 
         var previous = StartsAt;
+        var previousProfessional = CurrentProfessional;
         StartsAt = newStart.ToUniversalTime();
         EndsAt = StartsAt.AddMinutes(DurationMinutes);
         SetProfessional(professional);
         UpdatedAt = now;
-        _history.Add(new BookingHistoryEntry(BookingEventKind.Rescheduled, Status, Status, previous, actor, Clean(reason), now));
+
+        // The customer chose this time and barber: a free change offered after a barber change is used up (D-145).
+        if (actor.Type == ActorType.Customer)
+        {
+            ProfessionalChangedAt = null;
+        }
+        else if (professional.Id != previousProfessional.Id)
+        {
+            ProfessionalChangedAt = now;
+        }
+
+        _history.Add(new BookingHistoryEntry(
+            BookingEventKind.Rescheduled, Status, Status, previous, actor, Clean(reason), now,
+            professional.Id != previousProfessional.Id ? previousProfessional : null));
         return Result.Success();
     }
+
+    /// <summary>
+    /// Gives a Pending or Confirmed booking that has not started to another barber of the same shop, at the same time
+    /// (D-145). The caller has checked that the barber does the booked item and is free. Until the start, the customer
+    /// may then cancel or change it even inside the cancellation window.
+    /// </summary>
+    public Result ChangeProfessional(BookedProfessional professional, BookingActor actor, DateTimeOffset now)
+    {
+        if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
+        {
+            return BookingErrors.NotReschedulable(Status);
+        }
+
+        if (now >= StartsAt)
+        {
+            return BookingErrors.StartInPast();
+        }
+
+        if (professional.Id == ProfessionalId)
+        {
+            return BookingErrors.SameProfessional();
+        }
+
+        var previous = CurrentProfessional;
+        SetProfessional(professional);
+        ProfessionalChangedAt = now;
+        UpdatedAt = now;
+        _history.Add(new BookingHistoryEntry(BookingEventKind.ProfessionalChanged, Status, Status, null, actor, null, now, previous));
+        return Result.Success();
+    }
+
+    /// <summary>The barber as the booking names them now.</summary>
+    public BookedProfessional CurrentProfessional => new(ProfessionalId, ProfessionalNameAr, ProfessionalNameEn);
+
+    /// <summary>
+    /// The customer's cancellation window (D-015) is closed, unless the shop gave the booking to another barber since
+    /// the customer last chose it (D-145): then the customer may cancel or change it until it starts.
+    /// </summary>
+    public bool CutoffApplies(DateTimeOffset now, int cutoffMinutes) =>
+        now > StartsAt.AddMinutes(-cutoffMinutes) && !(ProfessionalChangedAt is not null && now < StartsAt);
 
     /// <summary>What the given actor may do next (the UI renders only these, DV-S08).</summary>
     public IReadOnlyList<BookingStatus> AllowedShopTransitions(DateTimeOffset now) =>
@@ -466,7 +541,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     ];
 
     public bool CustomerCanChange(DateTimeOffset now, int cutoffMinutes) =>
-        Status is BookingStatus.Pending or BookingStatus.Confirmed && now <= StartsAt.AddMinutes(-cutoffMinutes);
+        Status is BookingStatus.Pending or BookingStatus.Confirmed && !CutoffApplies(now, cutoffMinutes);
 
     /// <summary>
     /// A visit marked finished before its booked end ends at that minute (D-135): the calendar, the history and the
@@ -580,6 +655,12 @@ public static class BookingErrors
 
     public static Error ReasonRequired() =>
         Error.Validation("validation.failed", "A reason is required.", new Dictionary<string, string[]>(StringComparer.Ordinal) { ["reason"] = ["validation.reason_required"] });
+
+    public static Error ProfessionalBusy() =>
+        Error.Conflict("booking.professional_busy", "The barber is not free at this time.");
+
+    public static Error SameProfessional() =>
+        Error.Validation("booking.same_professional", "The booking is already with this barber.");
 
     public static Error CutoffPassed(int cutoffMinutes) =>
         Error.BusinessRule("booking.cancellation_cutoff_passed", "It is too late to change this booking online.").WithDetail("cutoffMinutes", cutoffMinutes);
