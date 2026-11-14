@@ -44,7 +44,7 @@ internal sealed class SessionManager(
         db.Add(new RefreshToken(EntityId.New<RefreshTokenId>(), session.Id, tokenHash, now));
         await db.SaveChangesAsync(cancellationToken);
 
-        return new IssuedSession(session.Id.Value, userId, userType.ToString(), token, session.ExpiresAt, account.ShopId);
+        return new IssuedSession(session.Id.Value, userId, userType.ToString(), token, session.ExpiresAt, account.ShopId, account.ProfessionalId);
     }
 
     public async Task<Result<IssuedSession>> RotateAsync(string refreshToken, ClientContext client, CancellationToken cancellationToken)
@@ -100,7 +100,9 @@ internal sealed class SessionManager(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new IssuedSession(session.Id.Value, session.UserId, session.UserType.ToString(), successor, session.ExpiresAt, account.ShopId);
+        // Read from the account on every refresh, so a barber's professional (D-145) is never lost or stale.
+        return new IssuedSession(
+            session.Id.Value, session.UserId, session.UserType.ToString(), successor, session.ExpiresAt, account.ShopId, account.ProfessionalId);
     }
 
     /// <summary>Finds the session a refresh token belongs to, used by sign-out when the access cookie has expired.</summary>

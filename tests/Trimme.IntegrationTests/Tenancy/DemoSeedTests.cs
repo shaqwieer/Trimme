@@ -29,7 +29,8 @@ public sealed class DemoSeedTests(PostgresFixture postgres)
             [$"{DemoData.AlAsala.Id}|Active", $"{DemoData.BarberHouse.Id}|ExpiringSoon", $"{DemoData.LamsatAlRajul.Id}|Expired", $"{DemoData.AlMadina.Id}|Suspended"],
             ignoreOrder: true);
         first.PlanPrices.Count.ShouldBeGreaterThan(first.Plans, "at least one plan has more than one price version");
-        first.Users.Count.ShouldBe(4);
+        // An owner and a desk account per demo shop, and a login for each of the five demo barbers (D-145).
+        first.Users.Count.ShouldBe(9);
     }
 
     private async Task<SeedSnapshot> SeedTwiceAsync(string prefix, CancellationToken ct)
@@ -49,7 +50,7 @@ public sealed class DemoSeedTests(PostgresFixture postgres)
         var shops = await db.Set<Shop>().AsNoTracking().Select(s => $"{s.Id.Value}|{s.Slug}|{s.Status}").ToListAsync(ct);
         var users = await db.Set<ApplicationUser>().AsNoTracking()
             .Where(u => u.UserType == UserType.ShopUser)
-            .Select(u => $"{u.Id}|{u.Email}|{u.ShopId}")
+            .Select(u => $"{u.Id}|{u.Email}|{u.ShopId}|{u.ProfessionalId}|{u.LoginPhoneHash != null}")
             .ToListAsync(ct);
 
         var settings = await read.ServiceProvider.GetRequiredService<IPlatformSettings>().GetAsync(ct);

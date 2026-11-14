@@ -51,6 +51,18 @@ internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
     /// the number can register again as a new account. Bookings and reviews keep their own records.
     /// </summary>
     public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>
+    /// The professional a barber's login belongs to (D-145): one login per professional, of the same shop, set when the
+    /// login is created and never changed.
+    /// </summary>
+    public Guid? ProfessionalId { get; set; }
+
+    /// <summary>
+    /// The barber's sign-in number (D-145): the keyed hash of the professional's WhatsApp number under its own purpose
+    /// (<c>trimme.barber-login</c>), kept in step with the number by the Professionals module. Never a customer's hash.
+    /// </summary>
+    public string? LoginPhoneHash { get; set; }
 }
 
 /// <summary>A role belongs to exactly one user type; only permissions of that type can be granted to it.</summary>

@@ -21,4 +21,10 @@ public interface ICurrentUser
     /// the shop is suspended.
     /// </summary>
     Guid? ShopId { get; }
+
+    /// <summary>
+    /// The professional a barber's login belongs to (D-145): the barber sees and changes only that professional's
+    /// bookings, breaks and figures. <see langword="null"/> for owners, admins and customers.
+    /// </summary>
+    Guid? ProfessionalId { get; }
 }

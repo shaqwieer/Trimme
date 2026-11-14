@@ -12,6 +12,9 @@ public static class SystemRoles
     public const string Support = "Support";
     public const string ShopOwner = "ShopOwner";
     public const string ShopStaff = "ShopStaff";
+
+    /// <summary>A barber's own login (D-145): their bookings, walk-ins, breaks and figures only.</summary>
+    public const string ShopBarber = "ShopBarber";
     public const string Customer = "Customer";
 
     public static IReadOnlyList<RoleDefinition> All { get; } =
@@ -50,6 +53,16 @@ public static class SystemRoles
             Permissions.Shop.BookingsResendNotification,
 
             // Breaks only: the shop's and the barbers' hours, closures and time off are the owner's (D-134).
+            Permissions.Shop.BreaksManage,
+        ]),
+        new(ShopBarber, UserType.ShopUser, Managed: true,
+        [
+            // Scoped to the barber's own professional by the handlers (D-145): never a colleague's booking or day.
+            Permissions.Shop.BookingsRead,
+            Permissions.Shop.BookingsUpdateStatus,
+            Permissions.Shop.BookingsCreateWalkIn,
+            Permissions.Shop.BookingsReschedule,
+            Permissions.Shop.BookingsChangeProfessional,
             Permissions.Shop.BreaksManage,
         ]),
         new(Customer, UserType.Customer, Managed: true, []),

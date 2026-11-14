@@ -10,6 +10,9 @@ public static class TrimmeClaims
     /// <summary>The shop of a shop user, written from the database at sign-in (never client-supplied).</summary>
     public const string ShopId = "shop_id";
 
+    /// <summary>The professional a barber's login belongs to (D-145), written from the database at sign-in.</summary>
+    public const string ProfessionalId = "professional_id";
+
     /// <summary>Authentication scheme of the short-lived access cookie (D-027).</summary>
     public const string AuthenticationScheme = "trimme-session";
 }

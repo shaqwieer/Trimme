@@ -65,23 +65,28 @@
 
 ## Shop roles
 
-| Permission | ShopOwner | ShopStaff (reception) |
-|---|---|---|
-| `Shop.Bookings.Read` | ✓ | ✓ |
-| `Shop.Bookings.UpdateStatus` | ✓ | ✓ |
-| `Shop.Bookings.CreateWalkIn` | ✓ | ✓ |
-| `Shop.Bookings.ResendNotification` | ✓ | ✓ |
-| `Shop.Schedule.Read` | ✓ | — (D-134) |
-| `Shop.Schedule.Manage` | ✓ | — |
-| `Shop.Breaks.Manage` | ✓ | ✓ |
-| `Shop.OnlineBooking.Pause` | ✓ | — |
-| `Shop.Services.Manage` | ✓ | — |
-| `Shop.Profile.Edit` | ✓ | — |
-| `Shop.Location.Edit` | ✓ | — |
-| `Shop.Subscription.Read` | ✓ | — |
-| `Shop.Notifications.Manage` | ✓ | — |
-| `Shop.Qr.View` | ✓ | — |
-| `Shop.Insights.View` | ✓ | — (D-135) |
+| Permission | ShopOwner | ShopStaff (reception) | ShopBarber (D-145) |
+|---|---|---|---|
+| `Shop.Bookings.Read` | ✓ | ✓ | ✓ own bookings |
+| `Shop.Bookings.UpdateStatus` | ✓ | ✓ | ✓ own bookings |
+| `Shop.Bookings.CreateWalkIn` | ✓ | ✓ | ✓ for themselves |
+| `Shop.Bookings.ResendNotification` | ✓ | ✓ | — |
+| `Shop.Bookings.Reschedule` | ✓ | — | ✓ own bookings |
+| `Shop.Bookings.ChangeProfessional` | ✓ | — | ✓ own bookings, to a colleague |
+| `Shop.Schedule.Read` | ✓ | — (D-134) | — |
+| `Shop.Schedule.Manage` | ✓ | — | — |
+| `Shop.Breaks.Manage` | ✓ | ✓ | ✓ own breaks |
+| `Shop.OnlineBooking.Pause` | ✓ | — | — |
+| `Shop.Services.Manage` | ✓ | — | — |
+| `Shop.Profile.Edit` | ✓ | — | — |
+| `Shop.Location.Edit` | ✓ | — | — |
+| `Shop.Subscription.Read` | ✓ | — | — |
+| `Shop.Notifications.Manage` | ✓ | — | — |
+| `Shop.Qr.View` | ✓ | — | — |
+| `Shop.Insights.View` | ✓ | — (D-135) | — |
+| `Shop.Barbers.ManageLogin` | ✓ | — | — |
+
+A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings, breaks and figures (D-145). It signs in with the professional's WhatsApp number.
 
 ## Customer
 

@@ -20,6 +20,7 @@ public enum SessionRevocationReason
     RefreshTokenReuse,
     PasswordReset,
     AccountDeleted,
+    LoginDisabled,
 }
 
 /// <summary>

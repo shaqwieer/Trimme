@@ -23,7 +23,8 @@ public sealed record PhoneSignInRequest(string Phone, bool TermsAccepted, string
 
 public sealed record CompleteProfileRequest(string DisplayName, string PreferredLocale, bool TermsAccepted);
 
-public sealed record StaffSignInRequest(string Email, string Password);
+/// <summary>An email (owners and admins), or a barber's mobile number in <c>Phone</c> (D-145).</summary>
+public sealed record StaffSignInRequest(string? Email, string Password, string? Phone = null);
 
 public sealed record ForgotPasswordRequest(string Email, string? Locale);
 
@@ -31,7 +32,7 @@ public sealed record ResetPasswordRequest(Guid UserId, string Token, string NewP
 
 public sealed record AcceptInvitationRequest(string Token, string DisplayName, string Password);
 
-public sealed record ChangeTemporaryPasswordRequest(string Email, string Password, string NewPassword);
+public sealed record ChangeTemporaryPasswordRequest(string? Email, string Password, string NewPassword, string? Phone = null);
 
 public sealed record CsrfTokenResponse(string Token);
 
@@ -68,7 +69,7 @@ internal static class AuthEndpoints
             .Produces<MeResponse>().ProducesProblem(StatusCodes.Status400BadRequest);
 
         auth.MapPost("/staff/sign-in", StaffSignIn).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
-            .WithName("StaffSignIn").WithSummary("Shop and admin staff sign in with email and password.")
+            .WithName("StaffSignIn").WithSummary("Shop and admin staff sign in with email and password; a barber with their mobile number (phone) and password.")
             .Produces<SignInResponse>().ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized).ProducesProblem(StatusCodes.Status403Forbidden);
         auth.MapPost("/password/forgot", ForgotPassword).AllowAnonymous().RequireRateLimiting(RateLimitPolicies.Auth)
@@ -152,7 +153,7 @@ internal static class AuthEndpoints
     private static async Task<IResult> StaffSignIn(StaffSignInRequest request, HttpContext http, IDispatcher dispatcher, CancellationToken cancellationToken)
     {
         var result = await dispatcher.Send(
-            new StaffSignInCommand(request.Email ?? string.Empty, request.Password ?? string.Empty, SessionCookies.Client(http)),
+            new StaffSignInCommand(request.Email ?? string.Empty, request.Password ?? string.Empty, SessionCookies.Client(http), request.Phone),
             cancellationToken);
         return await SignedIn(http, result);
     }
@@ -176,7 +177,8 @@ internal static class AuthEndpoints
     {
         var result = await dispatcher.Send(
             new ChangeTemporaryPasswordCommand(
-                request.Email ?? string.Empty, request.Password ?? string.Empty, request.NewPassword ?? string.Empty, SessionCookies.Client(http)),
+                request.Email ?? string.Empty, request.Password ?? string.Empty, request.NewPassword ?? string.Empty, SessionCookies.Client(http),
+                request.Phone),
             cancellationToken);
         return await SignedIn(http, result);
     }

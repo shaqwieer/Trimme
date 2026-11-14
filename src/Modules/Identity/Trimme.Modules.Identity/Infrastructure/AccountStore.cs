@@ -146,9 +146,91 @@ internal sealed class AccountStore(
         user.SecurityStamp = Guid.NewGuid().ToString("N");
     }
 
-    public async Task<StaffPasswordCheck> CheckStaffPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    public async Task<StaffPasswordCheck> CheckStaffPasswordAsync(string email, string password, CancellationToken cancellationToken) =>
+        await CheckPasswordAsync(await users.FindByEmailAsync(email), password, cancellationToken);
+
+    public async Task<StaffPasswordCheck> CheckBarberPasswordAsync(string loginHash, string password, CancellationToken cancellationToken)
     {
-        var user = await users.FindByEmailAsync(email);
+        var user = await db.Set<ApplicationUser>()
+            .SingleOrDefaultAsync(
+                u => u.LoginPhoneHash == loginHash && u.UserType == UserType.ShopUser && u.ProfessionalId != null, cancellationToken);
+        return await CheckPasswordAsync(user, password, cancellationToken);
+    }
+
+    public async Task<BarberLogin?> FindBarberLoginAsync(Guid professionalId, CancellationToken cancellationToken) =>
+        await db.Set<ApplicationUser>().AsNoTracking()
+            .Where(u => u.ProfessionalId == professionalId && u.UserType == UserType.ShopUser)
+            .Select(u => new BarberLogin(u.Id, u.DisabledAt == null, u.MustChangePassword, u.LoginPhoneHash != null))
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<Result<Guid>> SetBarberLoginAsync(NewBarberLogin login, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(login);
+
+        var user = await db.Set<ApplicationUser>()
+            .SingleOrDefaultAsync(u => u.ProfessionalId == login.ProfessionalId && u.UserType == UserType.ShopUser, cancellationToken);
+        if (user is null)
+        {
+            var id = Guid.CreateVersion7();
+            user = new ApplicationUser
+            {
+                Id = id,
+                UserName = $"barber-{id:N}",
+                UserType = UserType.ShopUser,
+                ShopId = new ShopId(login.ShopId),
+                ProfessionalId = login.ProfessionalId,
+                LoginPhoneHash = login.LoginHash,
+                DisplayName = login.DisplayName,
+                PreferredLocale = login.PreferredLocale,
+                CreatedAt = clock.GetUtcNow(),
+                LockoutEnabled = true,
+                MustChangePassword = true,
+            };
+
+            var created = await users.CreateAsync(user, login.Password);
+            if (!created.Succeeded)
+            {
+                return PasswordErrors(created);
+            }
+
+            EnsureSucceeded(await users.AddToRoleAsync(user, SystemRoles.ShopBarber));
+            return id;
+        }
+
+        // Turning a login on again sets a new temporary password: the barber has no email for a reset (D-145).
+        var token = await users.GeneratePasswordResetTokenAsync(user);
+        var reset = await users.ResetPasswordAsync(user, token, login.Password);
+        if (!reset.Succeeded)
+        {
+            return PasswordErrors(reset);
+        }
+
+        user.LoginPhoneHash = login.LoginHash;
+        user.DisplayName = login.DisplayName;
+        user.DisabledAt = null;
+        user.MustChangePassword = true;
+        user.LockoutEnd = null;
+        user.AccessFailedCount = 0;
+        EnsureSucceeded(await users.UpdateAsync(user));
+        return user.Id;
+    }
+
+    public async Task<Guid?> DisableBarberLoginAsync(Guid professionalId, CancellationToken cancellationToken)
+    {
+        var user = await db.Set<ApplicationUser>()
+            .SingleOrDefaultAsync(u => u.ProfessionalId == professionalId && u.UserType == UserType.ShopUser, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.DisabledAt ??= clock.GetUtcNow();
+        await db.SaveChangesAsync(cancellationToken);
+        return user.Id;
+    }
+
+    private async Task<StaffPasswordCheck> CheckPasswordAsync(ApplicationUser? user, string password, CancellationToken cancellationToken)
+    {
         if (user is null || user.UserType == UserType.Customer || user.PasswordHash is null)
         {
             hasher.VerifyHashedPassword(new ApplicationUser(), DummyHash.Value, password);
@@ -291,6 +373,9 @@ internal sealed class AccountStore(
             .Select(r => new RoleSummary(r.Id, r.Name!, r.UserType))
             .ToListAsync(cancellationToken);
 
+    private static Error PasswordErrors(IdentityResult result) =>
+        IdentityErrors.PasswordPolicy([.. result.Errors.Select(e => e.Code)]);
+
     private async Task<AccountSummary> SummarizeAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
         var roles = await (from userRole in db.Set<IdentityUserRole<Guid>>()
@@ -310,7 +395,8 @@ internal sealed class AccountStore(
             roles,
             user.DisabledAt is not null,
             user.ShopId?.Value,
-            user.MustChangePassword);
+            user.MustChangePassword,
+            user.ProfessionalId);
     }
 
     private async Task ClearTemporaryPasswordAsync(ApplicationUser user)

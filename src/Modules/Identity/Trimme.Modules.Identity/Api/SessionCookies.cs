@@ -50,6 +50,11 @@ internal static class SessionCookies
             claims.Add(new Claim(TrimmeClaims.ShopId, shopId.ToString()));
         }
 
+        if (session.ProfessionalId is { } professionalId)
+        {
+            claims.Add(new Claim(TrimmeClaims.ProfessionalId, professionalId.ToString()));
+        }
+
         var identity = new ClaimsIdentity(
             claims,
             TrimmeClaims.AuthenticationScheme,

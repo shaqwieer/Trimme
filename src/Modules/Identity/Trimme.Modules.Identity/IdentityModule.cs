@@ -69,12 +69,16 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<SessionValidator>();
         services.AddScoped<SessionManager>();
         services.AddScoped<MeReader>();
+        services.AddScoped<StaffCredentials>();
+        services.AddScoped<Application.Barbers.BarberLoginManager>();
+        services.AddScoped<IBarberLoginSync, BarberLoginSync>();
         services.AddScoped<NewStaffAccountRules>();
         services.AddScoped<InvitationIssuer>();
 
         services.AddSingleton<IReferenceDataSynchronizer, PermissionCatalogueSynchronizer>();
         services.AddSingleton<IDevSeeder, BootstrapAdminSeeder>();
         services.AddSingleton<IDevSeeder, DemoShopUsersSeeder>();
+        services.AddSingleton<IDevSeeder, DemoBarberLoginsSeeder>();
         services.AddSingleton<IDevSeeder, DemoCustomersSeeder>();
     }
 
@@ -82,6 +86,7 @@ public sealed class IdentityModule : ModuleBase
     {
         AuthEndpoints.Map(api);
         CustomerAccountEndpoints.Map(api);
+        BarberLoginEndpoints.Map(api);
         AdminIdentityEndpoints.Map(api);
         AdminAccountEndpoints.Map(api);
         DevOtpInboxEndpoints.Map(api);

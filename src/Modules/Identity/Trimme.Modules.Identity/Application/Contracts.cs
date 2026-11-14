@@ -3,7 +3,8 @@ namespace Trimme.Modules.Identity.Application;
 /// <summary>
 /// The signed-in user (<c>GET /api/v1/me</c>). <c>UserType</c> is <c>Customer</c>, <c>ShopUser</c> or
 /// <c>PlatformAdmin</c>. A customer sees only their own number, masked. <c>ShopId</c> is set for shop users from
-/// Phase 05. <c>ProfileComplete</c> is false until a customer has given a name and accepted the terms.
+/// Phase 05. <c>ProfileComplete</c> is false until a customer has given a name and accepted the terms. <c>ProfessionalId</c>
+/// is set for a barber's login (D-145): their pages show only that professional's bookings, breaks and figures.
 /// </summary>
 public sealed record MeResponse(
     Guid Id,
@@ -15,7 +16,8 @@ public sealed record MeResponse(
     IReadOnlyList<string> Roles,
     IReadOnlyList<string> Permissions,
     Guid? ShopId,
-    bool ProfileComplete);
+    bool ProfileComplete,
+    Guid? ProfessionalId = null);
 
 /// <summary>
 /// How customers sign in (D-143). <c>OtpRequired</c> true: a code to the number (<c>otp/request</c>, <c>otp/verify</c>);
@@ -45,7 +47,8 @@ public sealed record ShopUserResponse(Guid Id, string Email, string DisplayName,
 
 /// <summary>A new session: the plaintext refresh token goes into the refresh cookie and is never stored.</summary>
 /// <remarks><c>ShopId</c> comes from the account row (never the request) and becomes the <c>shop_id</c> claim.</remarks>
-public sealed record IssuedSession(Guid SessionId, Guid UserId, string UserType, string RefreshToken, DateTimeOffset ExpiresAt, Guid? ShopId = null);
+public sealed record IssuedSession(
+    Guid SessionId, Guid UserId, string UserType, string RefreshToken, DateTimeOffset ExpiresAt, Guid? ShopId = null, Guid? ProfessionalId = null);
 
 /// <summary>What a sign-in use case hands to the API layer, which writes the cookies.</summary>
 public sealed record SignInOutcome(IssuedSession Session, SignInResponse Response);

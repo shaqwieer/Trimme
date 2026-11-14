@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Auditing;
+using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
@@ -190,6 +191,10 @@ internal sealed class ProfessionalAdminSupport(TrimmeDbContext db, IPersonalData
         return contact;
     }
 
+    /// <summary>The barber-login hash of a valid number (D-145), or <see langword="null"/> without one.</summary>
+    public string? LoginHashOf(string? input) =>
+        PhoneNumber.TryParseMobile(input, out var phone) ? protector.LookupHash(phone.E164, PersonalDataPurposes.BarberLogin) : null;
+
     /// <summary>Encrypts a valid mobile number, or reports that another professional already has it.</summary>
     public async Task<Result<ProtectedPhone?>> ProtectAsync(string? input, ProfessionalId owner, CancellationToken cancellationToken)
     {
@@ -365,6 +370,7 @@ internal sealed class ChangeProfessionalStatusHandler(
     IAdminDataScope scope,
     ProfessionalAdminSupport support,
     IAuditLog audit,
+    IBarberLoginSync logins,
     TimeProvider clock) : ICommandHandler<ChangeProfessionalStatusCommand, Result<AdminProfessionalResponse>>
 {
     public async Task<Result<AdminProfessionalResponse>> Handle(ChangeProfessionalStatusCommand command, CancellationToken cancellationToken)
@@ -382,6 +388,13 @@ internal sealed class ChangeProfessionalStatusHandler(
             return changed.Error;
         }
 
+        if (!command.Enable)
+        {
+            // A disabled barber can no longer sign in, and is signed out at once (D-145). Enabling them again does not
+            // turn the login back on: the owner or admin does that, with a new temporary password.
+            await logins.ProfessionalDisabledAsync(professional.Id, cancellationToken);
+        }
+
         audit.Record(new AuditRecord(
             command.Enable ? "professional.enabled" : "professional.disabled",
             nameof(Professional), professional.Id.ToString(), professional.ShopId, $"Now {professional.Status}", command.Reason?.Trim()));
@@ -396,6 +409,7 @@ internal sealed class SetProfessionalWhatsAppHandler(
     IAdminDataScope scope,
     ProfessionalAdminSupport support,
     IAuditLog audit,
+    IBarberLoginSync logins,
     TimeProvider clock) : ICommandHandler<SetProfessionalWhatsAppCommand, Result<AdminProfessionalResponse>>
 {
     public async Task<Result<AdminProfessionalResponse>> Handle(SetProfessionalWhatsAppCommand command, CancellationToken cancellationToken)
@@ -435,6 +449,12 @@ internal sealed class SetProfessionalWhatsAppHandler(
         if (set.IsFailure)
         {
             return set.Error;
+        }
+
+        if (numberChanged)
+        {
+            // A barber's login follows their number (D-145): the new one signs in, the old one no longer does.
+            await logins.NumberChangedAsync(professional.Id, support.LoginHashOf(command.WhatsAppNumber), cancellationToken);
         }
 
         // The audit trail never holds the number, only what happened to it.

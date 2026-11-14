@@ -26,6 +26,12 @@ public static class PersonalDataPurposes
     /// <summary>The mobile number the desk takes for a walk-in (D-134); readable only by an audited admin reveal.</summary>
     public const string WalkInPhone = "trimme.walk-in-phone";
 
+    /// <summary>
+    /// A barber's sign-in number (D-145): the keyed hash of the professional's WhatsApp number under its own purpose, so
+    /// it never equals a customer's <see cref="MobileNumber"/> hash for the same number.
+    /// </summary>
+    public const string BarberLogin = "trimme.barber-login";
+
     public const string IpAddress = "trimme.ip-address";
     public const string OtpCode = "trimme.otp-code";
 

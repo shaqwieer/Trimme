@@ -107,6 +107,24 @@ internal sealed class ProfessionalDirectory(TrimmeDbContext db) : IProfessionalD
 }
 
 /// <summary>
+/// <see cref="IProfessionalLoginNumbers"/> (D-145): the barber-login hash of the professional's WhatsApp number, whether
+/// or not WhatsApp messages are on. The number is decrypted only to be hashed under its own purpose.
+/// </summary>
+internal sealed class ProfessionalLoginNumbers(TrimmeDbContext db, IPersonalDataProtector protector) : IProfessionalLoginNumbers
+{
+    public async Task<string?> LoginHashAsync(ProfessionalId professionalId, CancellationToken cancellationToken)
+    {
+        var ciphertext = await db.Set<ProfessionalContact>().AsNoTracking()
+            .Where(c => c.ProfessionalId == professionalId && c.ProtectedWhatsApp != null)
+            .Select(c => c.ProtectedWhatsApp)
+            .SingleOrDefaultAsync(cancellationToken);
+        return ciphertext is null
+            ? null
+            : protector.LookupHash(protector.Unprotect(ciphertext, PersonalDataPurposes.ProfessionalWhatsApp), PersonalDataPurposes.BarberLogin);
+    }
+}
+
+/// <summary>
 /// <see cref="IProfessionalContactReader"/>: the professional's WhatsApp number, decrypted only when notifications are on
 /// (spec §16), for the notification jobs (architecture rule). Reads through the caller's scope (the system scope in jobs).
 /// </summary>

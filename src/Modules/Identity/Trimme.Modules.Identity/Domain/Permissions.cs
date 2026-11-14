@@ -14,6 +14,18 @@ public static class Permissions
         public const string BookingsUpdateStatus = "Shop.Bookings.UpdateStatus";
         public const string BookingsCreateWalkIn = "Shop.Bookings.CreateWalkIn";
         public const string BookingsResendNotification = "Shop.Bookings.ResendNotification";
+
+        /// <summary>Give a customer's booking a new time (D-145); the customer is told.</summary>
+        public const string BookingsReschedule = "Shop.Bookings.Reschedule";
+
+        /// <summary>
+        /// Give a booking to another barber of the same shop at the same time (D-145); the customer is told and may cancel
+        /// or change it. Never moves a barber between shops (D-011).
+        /// </summary>
+        public const string BookingsChangeProfessional = "Shop.Bookings.ChangeProfessional";
+
+        /// <summary>The owner turns a barber's sign-in on or off and sets its temporary password (D-145).</summary>
+        public const string BarbersManageLogin = "Shop.Barbers.ManageLogin";
         public const string ScheduleRead = "Shop.Schedule.Read";
         public const string ScheduleManage = "Shop.Schedule.Manage";
 

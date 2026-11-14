@@ -15,7 +15,8 @@ public sealed record AccountSummary(
     IReadOnlyList<string> Roles,
     bool IsDisabled,
     Guid? ShopId = null,
-    bool MustChangePassword = false);
+    bool MustChangePassword = false,
+    Guid? ProfessionalId = null);
 
 /// <summary>
 /// A customer to find or create by number. <c>PhoneVerified</c> is false for a sign-in without a code (D-143); a later
@@ -48,6 +49,12 @@ public sealed record CustomerProfileRow(
 /// </summary>
 public sealed record CustomerProfileUpdate(
     string DisplayName, string PreferredLocale, string? ContactEmail, string? NewPhoneHash = null, string? NewProtectedPhone = null);
+
+/// <summary>A barber's login as the owner and admin see it (D-145): never the number or the password.</summary>
+public sealed record BarberLogin(Guid UserId, bool Enabled, bool MustChangePassword, bool HasNumber);
+
+/// <summary>What turning a barber's login on writes (D-145). <c>LoginHash</c> is the professional's number under the login purpose.</summary>
+public sealed record NewBarberLogin(Guid ProfessionalId, Guid ShopId, string DisplayName, string LoginHash, string Password, string PreferredLocale);
 
 public sealed record PasswordResetTicket(Guid UserId, string Email, string? DisplayName, string PreferredLocale, string Token);
 
@@ -89,6 +96,21 @@ internal interface IAccountStore
 
     /// <summary>Checks a staff password with lockout (5 failures → 15 minutes). Unknown emails cost the same as known ones.</summary>
     Task<StaffPasswordCheck> CheckStaffPasswordAsync(string email, string password, CancellationToken cancellationToken);
+
+    /// <summary>As <see cref="CheckStaffPasswordAsync"/>, for a barber signing in with their number's login hash (D-145).</summary>
+    Task<StaffPasswordCheck> CheckBarberPasswordAsync(string loginHash, string password, CancellationToken cancellationToken);
+
+    /// <summary>A professional's barber login, if one was ever created (D-145).</summary>
+    Task<BarberLogin?> FindBarberLoginAsync(Guid professionalId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Creates the barber's login, or turns it on again with a new temporary password (D-145). Saved; returns the
+    /// account id, or the password policy's errors.
+    /// </summary>
+    Task<Result<Guid>> SetBarberLoginAsync(NewBarberLogin login, CancellationToken cancellationToken);
+
+    /// <summary>Turns a barber's login off; the caller revokes its sessions. <see langword="null"/> when there is none.</summary>
+    Task<Guid?> DisableBarberLoginAsync(Guid professionalId, CancellationToken cancellationToken);
 
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 

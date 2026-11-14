@@ -1,14 +1,19 @@
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Privacy;
+using Trimme.BuildingBlocks.Domain.Privacy;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.Modules.Identity.Application.Sessions;
 using Trimme.Modules.Identity.Domain;
 
 namespace Trimme.Modules.Identity.Application.Staff;
 
-/// <summary>Shop and admin staff sign in with email + password (D-005). Lockout after repeated failures.</summary>
-internal sealed record StaffSignInCommand(string Email, string Password, ClientContext Client) : ICommand<Result<SignInOutcome>>;
+/// <summary>
+/// Shop and admin staff sign in with email + password (D-005); a barber with their mobile number + password (D-145).
+/// Lockout after repeated failures, on either path.
+/// </summary>
+internal sealed record StaffSignInCommand(string Email, string Password, ClientContext Client, string? Phone = null) : ICommand<Result<SignInOutcome>>;
 
 /// <summary>Always succeeds (enumeration-safe); emails a reset link only to an active staff account.</summary>
 internal sealed record ForgotPasswordCommand(string Email, string Locale) : ICommand<Result>;
@@ -19,15 +24,38 @@ internal sealed record ResetPasswordCommand(Guid UserId, string Token, string Ne
 /// Replaces the temporary password an admin set (D-139) and signs in. The email and current password are checked as
 /// at sign-in (lockout included), because the account has no session until this succeeds.
 /// </summary>
-internal sealed record ChangeTemporaryPasswordCommand(string Email, string Password, string NewPassword, ClientContext Client)
+internal sealed record ChangeTemporaryPasswordCommand(string Email, string Password, string NewPassword, ClientContext Client, string? Phone = null)
     : ICommand<Result<SignInOutcome>>;
+
+/// <summary>
+/// Who is signing in: an email (owners and admins) or a barber's mobile number (D-145). A number is normalised as the
+/// Professionals module stores it and hashed under the login purpose; an unknown or invalid number costs the same as a
+/// wrong password and answers the same.
+/// </summary>
+internal sealed class StaffCredentials(IAccountStore accounts, IPersonalDataProtector protector)
+{
+    public Task<StaffPasswordCheck> CheckAsync(string? email, string? phone, string password, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return accounts.CheckStaffPasswordAsync((email ?? string.Empty).Trim(), password, cancellationToken);
+        }
+
+        var hash = PhoneNumber.TryParseMobile(phone, out var number)
+            ? protector.LookupHash(number.E164, PersonalDataPurposes.BarberLogin)
+            : "no-such-number";
+        return accounts.CheckBarberPasswordAsync(hash, password, cancellationToken);
+    }
+}
 
 internal sealed class StaffSignInValidator : AbstractValidator<StaffSignInCommand>
 {
     public StaffSignInValidator()
     {
         RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
-            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong)
+            .When(c => string.IsNullOrWhiteSpace(c.Phone));
+        RuleFor(c => c.Phone).MaximumLength(32).WithErrorCode(ValidationCodes.TooLong);
         RuleFor(c => c.Password).NotEmpty().WithErrorCode(ValidationCodes.Required)
             .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
     }
@@ -61,7 +89,9 @@ internal sealed class ChangeTemporaryPasswordValidator : AbstractValidator<Chang
     public ChangeTemporaryPasswordValidator()
     {
         RuleFor(c => c.Email).NotEmpty().WithErrorCode(ValidationCodes.Required)
-            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
+            .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong)
+            .When(c => string.IsNullOrWhiteSpace(c.Phone));
+        RuleFor(c => c.Phone).MaximumLength(32).WithErrorCode(ValidationCodes.TooLong);
         RuleFor(c => c.Password).NotEmpty().WithErrorCode(ValidationCodes.Required)
             .MaximumLength(256).WithErrorCode(ValidationCodes.TooLong);
         RuleFor(c => c.NewPassword).NotEmpty().WithErrorCode(ValidationCodes.Required)
@@ -69,12 +99,12 @@ internal sealed class ChangeTemporaryPasswordValidator : AbstractValidator<Chang
     }
 }
 
-internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager sessions, MeReader me, TimeProvider clock)
+internal sealed class StaffSignInHandler(StaffCredentials credentials, SessionManager sessions, MeReader me, TimeProvider clock)
     : ICommandHandler<StaffSignInCommand, Result<SignInOutcome>>
 {
     public async Task<Result<SignInOutcome>> Handle(StaffSignInCommand command, CancellationToken cancellationToken)
     {
-        var check = await accounts.CheckStaffPasswordAsync(command.Email.Trim(), command.Password, cancellationToken);
+        var check = await credentials.CheckAsync(command.Email, command.Phone, command.Password, cancellationToken);
         switch (check.Outcome)
         {
             case StaffPasswordOutcome.LockedOut:
@@ -96,12 +126,13 @@ internal sealed class StaffSignInHandler(IAccountStore accounts, SessionManager 
     }
 }
 
-internal sealed class ChangeTemporaryPasswordHandler(IAccountStore accounts, SessionManager sessions, MeReader me, TimeProvider clock)
+internal sealed class ChangeTemporaryPasswordHandler(
+    IAccountStore accounts, StaffCredentials credentials, SessionManager sessions, MeReader me, TimeProvider clock)
     : ICommandHandler<ChangeTemporaryPasswordCommand, Result<SignInOutcome>>
 {
     public async Task<Result<SignInOutcome>> Handle(ChangeTemporaryPasswordCommand command, CancellationToken cancellationToken)
     {
-        var check = await accounts.CheckStaffPasswordAsync(command.Email.Trim(), command.Password, cancellationToken);
+        var check = await credentials.CheckAsync(command.Email, command.Phone, command.Password, cancellationToken);
         switch (check.Outcome)
         {
             case StaffPasswordOutcome.LockedOut:

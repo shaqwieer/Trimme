@@ -29,8 +29,8 @@
 - **Desk removal last.** Migration: disable ShopStaff holders, revoke their sessions, revoke pending ShopStaff invitations, delete the role. Tests switch desk usages to the owner; barber tests are added. Demo seed: barber logins for the demo barbers.
 
 ## Checklist
-- [ ] 1. Plan file and D-145 skeleton committed
-- [ ] 2. Identity: role, professional link, claim, number sign-in, enable/disable (admin + owner), temporary password by identifier, session checks — with tests
+- [x] 1. Plan file and D-145 skeleton committed (`98d846f`)
+- [x] 2. Identity: role, professional link, claim, number sign-in, enable/disable (admin + owner), temporary password by identifier, session checks — with tests. **Do not deploy without slice 3:** until then a barber's permissions are not yet kept to their own bookings.
 - [ ] 3. Scoping: bookings (list, detail, transitions, notes), calendar, overview, walk-in + options, barber-day, loyalty, hubs, notifications — barber matrix test
 - [ ] 4. Operations: shared reschedule service; shop reschedule; change barber; history + event; cutoff exemption — with tests
 - [ ] 5. Messages: `ProfessionalChanged` event/template/switch/notice; old/new barber; walk-in recipient port; per-user barber notifications — with tests
@@ -44,4 +44,9 @@
 - Barbers have no email, so no «نسيت كلمة المرور»: the owner or admin re-enables the login with a new temporary password.
 
 ## Evidence
-(filled in as slices are verified)
+- **Slice 2 (identity):**
+  - Sign-in by number: the login hash lives on the barber's account under `trimme.barber-login`, kept in step by `IBarberLoginSync` when the admin changes the number. An anonymous sign-in cannot read the professionals' tables (tenant filter, scope rules), so it never does.
+  - A disabled barber: `ChangeProfessionalStatusHandler` calls `IBarberLoginSync.ProfessionalDisabledAsync`, which turns the login off and revokes the sessions in the same save. Re-enabling the barber does not turn the login back on.
+  - Migration `BarberLogins` (additive): `identity.users.professional_id` and `login_phone_hash`, unique filtered indexes.
+  - Demo seed: a login for each of the five demo barbers (their demo number, the demo password, no temporary password).
+  - I `BarberLoginTests` 2/2: owner turns the login on; another shop's owner 404; temporary password → `auth.password_change_required`; change-temporary by number (local format) → session with `professionalId`, kept after a refresh; barber permissions; a barber cannot turn logins on; wrong password, unknown and malformed numbers answer alike; the same number as a customer works. No number → 400; the admin's number change moves the login; turning it off ends sessions and answers `auth.account_disabled`; the admin turns it on again; disabling the barber ends the session, 409 while disabled, not re-enabled with them. `AuthorizationMatrixTests`, `StaffAuthTests`, `ShopUserTemporaryPasswordTests`, `DemoSeedTests` pass; unit 470/470, architecture 69/69; OpenAPI regenerated.

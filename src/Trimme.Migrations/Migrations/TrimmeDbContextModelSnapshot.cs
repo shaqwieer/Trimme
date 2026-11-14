@@ -1570,6 +1570,11 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("lockout_end");
 
+                    b.Property<string>("LoginPhoneHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("login_phone_hash");
+
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("boolean")
                         .HasColumnName("must_change_password");
@@ -1602,6 +1607,10 @@ namespace Trimme.Migrations.Migrations
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
                         .HasColumnName("preferred_locale");
+
+                    b.Property<Guid?>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
 
                     b.Property<string>("ProtectedPhone")
                         .HasColumnType("text")
@@ -1637,6 +1646,11 @@ namespace Trimme.Migrations.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
+                    b.HasIndex("LoginPhoneHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_login_phone_hash")
+                        .HasFilter("login_phone_hash IS NOT NULL");
+
                     b.HasIndex("NormalizedEmail")
                         .IsUnique()
                         .HasDatabaseName("ix_users_normalized_email")
@@ -1650,6 +1664,11 @@ namespace Trimme.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_phone_lookup_hash")
                         .HasFilter("phone_lookup_hash IS NOT NULL");
+
+                    b.HasIndex("ProfessionalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_professional_id")
+                        .HasFilter("professional_id IS NOT NULL");
 
                     b.HasIndex("ShopId")
                         .HasDatabaseName("ix_users_shop_id");

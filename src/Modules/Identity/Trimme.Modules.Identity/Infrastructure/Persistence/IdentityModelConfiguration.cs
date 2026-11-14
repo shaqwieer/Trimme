@@ -32,11 +32,14 @@ internal static class IdentityModel
             user.Property(u => u.PreferredLocale).HasMaxLength(5);
             user.Property(u => u.PhoneLookupHash).HasMaxLength(64);
             user.Property(u => u.ContactEmail).HasMaxLength(256);
+            user.Property(u => u.LoginPhoneHash).HasMaxLength(64);
 
             user.HasIndex(u => u.NormalizedUserName).IsUnique();
             user.HasIndex(u => u.NormalizedEmail).IsUnique().HasFilter("normalized_email IS NOT NULL");
             user.HasIndex(u => u.PhoneLookupHash).IsUnique().HasFilter("phone_lookup_hash IS NOT NULL");
             user.HasIndex(u => u.ShopId);
+            user.HasIndex(u => u.ProfessionalId).IsUnique().HasFilter("professional_id IS NOT NULL");
+            user.HasIndex(u => u.LoginPhoneHash).IsUnique().HasFilter("login_phone_hash IS NOT NULL");
 
             // The customers directory (newest first) and the overview's new customers (Phase 17).
             user.HasIndex(u => new { u.UserType, u.CreatedAt });

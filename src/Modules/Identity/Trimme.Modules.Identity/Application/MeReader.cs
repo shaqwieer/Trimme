@@ -32,7 +32,8 @@ internal sealed class MeReader(IAccountStore accounts, IPermissionResolver permi
             account.Roles,
             [.. granted.Order(StringComparer.Ordinal)],
             ShopId: account.ShopId,
-            ProfileComplete: IsProfileComplete(account));
+            ProfileComplete: IsProfileComplete(account),
+            ProfessionalId: account.ProfessionalId);
     }
 
     public static bool IsProfileComplete(AccountSummary account) =>
