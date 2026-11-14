@@ -150,11 +150,19 @@ public sealed class ShopUserTemporaryPasswordTests(PostgresFixture postgres)
             (await unknownShop.ErrorCodeAsync(ct)).ShouldBe("shop.not_found");
         }
 
-        foreach (var role in new[] { SystemRoles.SuperAdmin, SystemRoles.Customer })
+        // A barber's login comes only from their professional (D-145): never by email, in any spelling.
+        foreach (var role in new[] { SystemRoles.SuperAdmin, SystemRoles.Customer, SystemRoles.ShopBarber, "shopbarber" })
         {
             using var wrongRole = await admin.PostAsync($"/api/v1/admin/shops/{shopId}/users", Body(IdentityTestData.NewEmail(), role), ct);
             wrongRole.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
             FieldErrors(await wrongRole.JsonAsync(ct), "role").ShouldBe(["invitation.role_invalid"]);
+        }
+
+        using (var barberInvite = await admin.PostAsync(
+                   $"/api/v1/admin/shops/{shopId}/users/invitations", new { email = IdentityTestData.NewEmail(), role = SystemRoles.ShopBarber, locale = "en" }, ct))
+        {
+            barberInvite.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            FieldErrors(await barberInvite.JsonAsync(ct), "role").ShouldBe(["invitation.role_invalid"]);
         }
 
         using (var weak = await admin.PostAsync(

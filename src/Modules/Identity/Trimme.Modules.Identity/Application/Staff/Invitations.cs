@@ -94,7 +94,9 @@ internal sealed class AcceptInvitationValidator : AbstractValidator<AcceptInvita
 
 /// <summary>
 /// Rules shared by invitations and accounts an admin creates directly (D-139): the role belongs to the user type, a
-/// shop user belongs to exactly one existing shop (platform staff to none), and no account uses the email yet.
+/// shop user belongs to exactly one existing shop (platform staff to none), and no account uses the email yet. A
+/// barber's login is never made here (D-145): it comes only from their professional (the barber login endpoints), so
+/// it is always linked to one barber and kept to that barber's bookings.
 /// </summary>
 internal sealed class NewStaffAccountRules(TrimmeDbContext db, IAccountStore accounts, IShopDirectory shops)
 {
@@ -102,6 +104,7 @@ internal sealed class NewStaffAccountRules(TrimmeDbContext db, IAccountStore acc
     {
         var role = SystemRoles.Find(roleName);
         if ((role is not null && role.UserType != userType)
+            || string.Equals(roleName, SystemRoles.ShopBarber, StringComparison.OrdinalIgnoreCase)
             || !await accounts.RoleExistsAsync(roleName, userType, cancellationToken))
         {
             return IdentityErrors.RoleNotAssignable();
