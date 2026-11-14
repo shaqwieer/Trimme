@@ -31,6 +31,8 @@ export default async function ShopAppointmentsPage({ params }: PageProps<'/[loca
               today={todayLocal(shop.timeZone)}
               timeZone={shop.timeZone}
               canUpdate={me.permissions.includes('Shop.Bookings.UpdateStatus')}
+              canReschedule={me.permissions.includes('Shop.Bookings.Reschedule')}
+              canMove={me.permissions.includes('Shop.Bookings.ChangeProfessional')}
             />
           </Suspense>
         );

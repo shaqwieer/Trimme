@@ -2251,13 +2251,37 @@
         "title": "Geçmiş",
         "created": "Randevu oluşturuldu",
         "rescheduled": "Saat değiştirildi",
-        "status": "Durum: {status}"
+        "status": "Durum: {status}",
+        "professionalChanged": "Başka bir berbere verildi (önceki: {previous})"
       },
       "actor": {
         "Customer": "Müşteri",
         "ShopUser": "Salon",
         "PlatformAdmin": "Platform ekibi",
         "System": "Sistem"
+      },
+      "change": {
+        "title": "Randevuyu değiştir",
+        "reschedule": "Saati değiştir",
+        "move": "Başka bir berbere ver",
+        "rescheduleTitle": "{name} için yeni saat",
+        "rescheduleBody": "Aynı berber, aynı hizmet. Müşteriye yeni saat bildirilir.",
+        "current": "Mevcut saat: {when}",
+        "pickDay": "Günü seçin",
+        "pickTime": "Saati seçin",
+        "noDates": "Bu berberin önümüzdeki günlerde boş saati yok.",
+        "blocked": "Bu randevuya şu anda yeni saat verilemez.",
+        "taken": "Bu saat az önce alındı. Başka bir saat seçin.",
+        "confirmReschedule": "Yeni saati kaydet",
+        "moveTitle": "{name} adlı müşterinin randevusunu başka bir berbere ver",
+        "moveBody": "Aynı saatte ({when}). Müşteriye bildirilir; randevu başlayana kadar iptal edebilir veya değiştirebilir.",
+        "free": "Müsait",
+        "busy": "Bu saatte dolu",
+        "noColleagues": "Salonda bu hizmeti veren başka berber yok.",
+        "busyNow": "Bu berber artık bu saatte dolu. Başka birini seçin.",
+        "confirmMove": "Randevuyu ver",
+        "keep": "Vazgeç",
+        "loading": "Yükleniyor…"
       },
       "cancel": {
         "title": "Randevu iptal edilsin mi?",

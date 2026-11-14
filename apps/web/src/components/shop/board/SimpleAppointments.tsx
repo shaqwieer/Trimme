@@ -56,10 +56,14 @@ export function SimpleAppointments({
   today,
   timeZone,
   canUpdate,
+  canReschedule = false,
+  canMove = false,
 }: {
   today: LocalDate;
   timeZone: string;
   canUpdate: boolean;
+  canReschedule?: boolean;
+  canMove?: boolean;
 }) {
   const t = useTranslations('shopBoard.simple');
   const tBoard = useTranslations('shopBoard.appointments');
@@ -279,6 +283,8 @@ export function SimpleAppointments({
         bookingId={bookingId}
         timeZone={timeZone}
         canUpdate={canUpdate}
+        canReschedule={canReschedule}
+        canMove={canMove}
         onClose={() => open(null)}
       />
     </div>

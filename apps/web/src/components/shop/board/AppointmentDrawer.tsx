@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -30,6 +31,12 @@ type Status = components['schemas']['BookingStatus'];
 
 export const BOARD_KEY = 'shop-board';
 
+// Loaded when opened (the drawer is on every board page; the bundle budget, D-144).
+const RescheduleDialog = dynamic(() => import('./BookingChangeDialogs').then((m) => m.RescheduleDialog), {
+  ssr: false,
+});
+const MoveDialog = dynamic(() => import('./BookingChangeDialogs').then((m) => m.MoveDialog), { ssr: false });
+
 const NOTE_MAX = 500;
 
 const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' | 'danger'>> = {
@@ -44,17 +51,24 @@ const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' 
  * One appointment (s-appointments drawer 2344–2393): time, customer name, item, professional, source, the snapshot price
  * paid at the shop, "customer number not available" (spec §7), status actions from the API's `allowedTransitions` only
  * (DV-S08; cancelling asks for a reason), internal notes and the history. Actions are optimistic: the badge changes at
- * once and rolls back if the API refuses (a stale version, or a time rule).
+ * once and rolls back if the API refuses (a stale version, or a time rule). A booking that has not started can get a new
+ * time or go to another barber of the shop (D-145), each in its own dialog; the customer is told.
  */
 export function AppointmentDrawer({
   bookingId,
   timeZone,
   canUpdate,
+  canReschedule = false,
+  canMove = false,
   onClose,
 }: {
   bookingId: string | null;
   timeZone: string;
   canUpdate: boolean;
+  /** `Shop.Bookings.Reschedule`: a new time with the same barber. */
+  canReschedule?: boolean;
+  /** `Shop.Bookings.ChangeProfessional`: the same time with another barber. */
+  canMove?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations('shopBoard.drawer');
@@ -70,6 +84,7 @@ export function AppointmentDrawer({
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [changing, setChanging] = useState<'reschedule' | 'move' | null>(null);
   const key = [BOARD_KEY, 'booking', bookingId];
 
   const detail = useQuery({
@@ -147,7 +162,13 @@ export function AppointmentDrawer({
         ? t('history.created')
         : h.kind === 'Rescheduled'
           ? t('history.rescheduled')
-          : t('history.status', { status: tStatus(h.toStatus) }),
+          : h.kind === 'ProfessionalChanged'
+            ? t('history.professionalChanged', {
+                previous: h.previousProfessional
+                  ? localizedName(locale, h.previousProfessional.nameAr, h.previousProfessional.nameEn)
+                  : '',
+              })
+            : t('history.status', { status: tStatus(h.toStatus) }),
     meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} · ${t(`actor.${h.actorType}`)}${h.reason ? ` · ${h.reason}` : ''}`,
     tone:
       h.toStatus === 'Completed'
@@ -158,6 +179,21 @@ export function AppointmentDrawer({
             ? 'neutral'
             : 'brand',
   }));
+
+  // Pending or Confirmed, and not started when it was read: the API's rule for both changes (it has the last word).
+  const changeable =
+    booking !== undefined &&
+    (booking.status === 'Pending' || booking.status === 'Confirmed') &&
+    Date.parse(booking.startsAt) > detail.dataUpdatedAt;
+  const target = booking
+    ? {
+        id: booking.id,
+        version: booking.version,
+        startsAt: booking.startsAt,
+        customerName: booking.customerName,
+      }
+    : null;
+  const changed = () => queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
 
   return (
     <Sheet
@@ -276,6 +312,26 @@ export function AppointmentDrawer({
               </section>
             )}
 
+            {changeable && (canReschedule || canMove) && (
+              <section aria-labelledby="change-actions" className="flex flex-col gap-2">
+                <h3 id="change-actions" className="text-label font-bold text-text-primary">
+                  {t('change.title')}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {canReschedule && (
+                    <Button size="sm" variant="outline" onClick={() => setChanging('reschedule')}>
+                      {t('change.reschedule')}
+                    </Button>
+                  )}
+                  {canMove && (
+                    <Button size="sm" variant="outline" onClick={() => setChanging('move')}>
+                      {t('change.move')}
+                    </Button>
+                  )}
+                </div>
+              </section>
+            )}
+
             {canUpdate && (
               <section aria-labelledby="notes-title" className="flex flex-col gap-2">
                 <h3 id="notes-title" className="text-label font-bold text-text-primary">
@@ -324,6 +380,23 @@ export function AppointmentDrawer({
           </>
         )}
       </div>
+
+      {target && changing === 'reschedule' && (
+        <RescheduleDialog
+          booking={target}
+          timeZone={timeZone}
+          onClose={() => setChanging(null)}
+          onChanged={changed}
+        />
+      )}
+      {target && changing === 'move' && (
+        <MoveDialog
+          booking={target}
+          timeZone={timeZone}
+          onClose={() => setChanging(null)}
+          onChanged={changed}
+        />
+      )}
 
       {booking && (
         <ConfirmDialog

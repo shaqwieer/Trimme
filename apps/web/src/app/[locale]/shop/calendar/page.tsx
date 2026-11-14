@@ -27,6 +27,8 @@ export default async function ShopCalendarPage({ params }: PageProps<'/[locale]/
               timeZone={shop.timeZone}
               canWalkIn={me.permissions.includes('Shop.Bookings.CreateWalkIn')}
               canUpdate={me.permissions.includes('Shop.Bookings.UpdateStatus')}
+              canReschedule={me.permissions.includes('Shop.Bookings.Reschedule')}
+              canMove={me.permissions.includes('Shop.Bookings.ChangeProfessional')}
             />
           </Suspense>
         )

@@ -2251,13 +2251,37 @@
         "title": "History",
         "created": "Appointment created",
         "rescheduled": "Time changed",
-        "status": "Status: {status}"
+        "status": "Status: {status}",
+        "professionalChanged": "Given to another barber (was with {previous})"
       },
       "actor": {
         "Customer": "Customer",
         "ShopUser": "Shop",
         "PlatformAdmin": "Platform team",
         "System": "System"
+      },
+      "change": {
+        "title": "Change the booking",
+        "reschedule": "Change the time",
+        "move": "Give to another barber",
+        "rescheduleTitle": "A new time for {name}",
+        "rescheduleBody": "Same barber, same service. The customer is told the new time.",
+        "current": "Current time: {when}",
+        "pickDay": "Choose the day",
+        "pickTime": "Choose the time",
+        "noDates": "This barber has no free times in the coming days.",
+        "blocked": "This booking cannot get a new time now.",
+        "taken": "That time was just taken. Choose another.",
+        "confirmReschedule": "Save the new time",
+        "moveTitle": "Give {name}'s booking to another barber",
+        "moveBody": "At the same time ({when}). The customer is told, and may cancel or change it until it starts.",
+        "free": "Free",
+        "busy": "Busy at this time",
+        "noColleagues": "No other barber in the shop does this service.",
+        "busyNow": "That barber is now busy at this time. Choose another.",
+        "confirmMove": "Give the booking",
+        "keep": "Keep as is",
+        "loading": "Loading…"
       },
       "cancel": {
         "title": "Cancel the appointment?",

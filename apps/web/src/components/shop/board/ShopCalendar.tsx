@@ -70,11 +70,15 @@ export function ShopCalendar({
   timeZone,
   canWalkIn,
   canUpdate,
+  canReschedule = false,
+  canMove = false,
 }: {
   today: string;
   timeZone: string;
   canWalkIn: boolean;
   canUpdate: boolean;
+  canReschedule?: boolean;
+  canMove?: boolean;
 }) {
   const t = useTranslations('shopBoard.calendar');
   const locale = useLocale() as AppLocale;
@@ -223,6 +227,8 @@ export function ShopCalendar({
         bookingId={bookingId}
         timeZone={timeZone}
         canUpdate={canUpdate}
+        canReschedule={canReschedule}
+        canMove={canMove}
         onClose={() => update({ booking: null })}
       />
     </div>
