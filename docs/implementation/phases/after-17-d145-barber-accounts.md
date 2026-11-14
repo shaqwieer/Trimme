@@ -1,6 +1,6 @@
 # After Phase 17 — D-145: barber accounts replace the desk; the shop changes bookings for the customer; walk-in confirmations
 
-**Status:** [~] (started Session 26, 2026-11-14) · requested by the user after D-144 · decision: D-145
+**Status:** [x] (Session 26, 2026-11-14) · requested by the user after D-144 · decision: D-145
 
 ## The request (user, Session 26)
 - No desk account: every barber signs in and works as their own desk inside the shop.
@@ -36,7 +36,7 @@
 - [x] 5. Messages: `ProfessionalChanged` event/template/switch/notice; old/new barber; walk-in recipient port; per-user barber notifications — with tests
 - [x] 6. Web: sign-in identifier; barber dashboard (overview, appointments, calendar, walk-in, breaks, notifications); drawer actions (change time, move, cancel); owner «الحلاقون» page; admin professional login card; customer after-move actions — unit tests
 - [x] 7. Desk removal: migration, roles, forms, seed, tests, permissions-matrix doc, E2E (barber role in the route audit)
-- [ ] 8. Verification: .NET (Release, unit, architecture, integration), web gates, bundle budget, E2E codes on and off, route audit; docs (D-145, TRACEABILITY, deviations, STATUS, handoff)
+- [x] 8. Verification: .NET (Release, unit, architecture, integration), web gates, bundle budget, E2E codes on and off, route audit; docs (D-145, TRACEABILITY, deviations, STATUS, handoff)
 
 ## Deploy notes (for the user, before deploying)
 - Removing the desk role disables desk accounts at that deploy. Suggest two deploys: first barber logins (desk still works) up to commit `8eec53c` (the last commit before the desk removal; it closes the invite hole below), enable each barber's login and check their numbers; then the desk removal (migration `RemoveShopDesk`).
@@ -84,3 +84,9 @@
   - Web: the admin's add-account form has no role choice (owner only, with a note on barbers' logins); `SEED_ROLES` lists ShopBarber; copy and comments.
   - E2E (run in slice 8): admin-operations' walk-in by the Barber House owner; services, shop-dashboard (Omar) and shop-schedule (Sultan) by barbers' mobile sign-in through the UI; tenancy creates an owner account; the route audit gains the `barber` role (Majed) and `/shop/barbers` for the owner.
   - Docs: permissions matrix without the desk column; README demo accounts.
+  - **On the local compose volume** (a days-old volume with the demo desks and two desks made by earlier E2E runs), `migrate` from the D-144 schema (24 migrations in total) and the seed: before, 4 ShopStaff accounts enabled with 11 active sessions, 0 pending desk invitations, 4 owners, 6 roles; after, no ShopStaff role, the 4 accounts disabled with no role, 11 sessions revoked `LoginDisabled`, 0 active sessions of disabled shop users, 4 owners enabled, 5 barber logins (the seed), 6 roles (ShopBarber in place of ShopStaff).
+- **Slice 8 (verification):**
+  - .NET: Release build of `Trimme.slnx` 0 warnings; unit 475/475; architecture 69/69; integration 236/236; `has-pending-model-changes`: none.
+  - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 522/522; `build` + `bundle:check` 83 routes within budget (largest `/admin/shops/[shopId]` 328.7 KB) after `ef0754a` (the drawer dialogs imported statically; `next/dynamic` had added a duplicated 12 KB chunk to most pages, bisected to `1b8df9b`).
+  - Local stack rebuilt from this tree (`up -d --build`): migrate (24 migrations) and seed ran; desk counts before/after above.
+  - E2E: on the local stack rebuilt from this tree, with 2 workers (a first full run with the default workers was stopped by Claude Code for low system memory): smoke + flows 86 passed, 1 skipped (the codes-off spec, by design), 1 failed: the barber-breaks flow expected a barber picker, but a card with one barber names him instead (the app was right; the test now checks Sultan's name and no picker; the card's instruction now says «اختر اليوم» when there is one barber); rerun `shop-schedule` 2/2. Keyboard pass + route audit light and dark, with the new `barber` role and `/shop/barbers`: 25/25 (axe 0 serious). Codes off (API recreated with `TRIMME_OTP_ENABLED=false`, as on groomhere.sa): `phone-sign-in`, `shop-dashboard` (Omar by mobile), `services`, `shop-schedule` 8/8; codes back on afterwards.

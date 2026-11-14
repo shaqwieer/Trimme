@@ -198,7 +198,8 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
     >
       <div className="flex flex-col gap-1">
         <h2 className="text-h3 font-bold text-text-primary">{t('title')}</h2>
-        <p className="text-caption text-text-secondary">{t('body')}</p>
+        {/* One barber (a barber's own login, D-145, or a one-barber shop): nothing to choose but the day. */}
+        <p className="text-caption text-text-secondary">{barbers.length > 1 ? t('body') : t('bodyOne')}</p>
       </div>
 
       {barbers.length > 1 ? (

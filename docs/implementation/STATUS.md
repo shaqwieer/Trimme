@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-14 (Session 26: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
+- **Updated:** 2026-11-14 (Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145). Before it: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -60,6 +60,13 @@
   - **Location:** a pasted Google Maps link (full or short) fills the coordinates and the address; short links are followed through Google hosts only.
   - **Directions** open Google Maps from the visitor's location; **QR files** are named `groomhere-qr-…`.
   - Migration 21 (`CustomerAccountAndLegalPages`, additive). Committed locally; **not pushed or deployed** (the user has not asked yet).
+- **Session 26, second request (D-145), at the user's request:**
+  - **Barbers sign in** with the WhatsApp number on their profile and a password (temporary at first); the owner («الحلاقون») or the admin turns logins on and off.
+  - **A barber is their own desk:** their overview, appointments, day and week calendar, walk-ins, breaks and notifications, never a colleague's.
+  - **The shop changes a booking for the customer:** a new time with the same barber, or «نقل الحجز إلى حلاق آخر» at the same time; the customer is told (new WhatsApp template, in-app) and may cancel or change it until it starts.
+  - **Walk-ins with a mobile** get «تأكيد الحجز» (and changes, cancellation); both barbers hear about a move; the owner hears what barbers did.
+  - **The desk role is removed** (migration `RemoveShopDesk` disables its accounts). Three migrations in all.
+  - Committed locally; **not pushed or deployed**. .NET, web and end-to-end gates pass (codes on and off).
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

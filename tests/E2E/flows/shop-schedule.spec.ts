@@ -185,7 +185,9 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     await expect(page.getByText('الإجازات والتعطيل')).toHaveCount(0);
 
     // Sultan, on the target day: 24 hours, he works noon to 10 PM.
-    await card.getByLabel('الحلاق').selectOption(SULTAN);
+    // His own login has no barber picker: the card names him (D-145).
+    await expect(card.getByLabel('الحلاق')).toHaveCount(0);
+    await expect(card).toContainText('سلطان الحربي');
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
     const ahead = Math.round((Date.parse(target.iso) - Date.parse(today)) / 86_400_000);
     for (let day = 0; day < ahead; day++) {

@@ -1442,6 +1442,7 @@
     "barberDay": {
       "title": "Berberlerin molaları",
       "body": "Berberi ve günü seçin, bir saate dokunun ve molanın dakikalarını 5’er dakika seçin, ardından onaylayın. Sebep gerekmez ve hiçbir randevu iptal edilmez.",
+      "bodyOne": "Günü seçin, bir saate dokunun ve molanın dakikalarını 5’er dakika seçin, ardından onaylayın. Sebep gerekmez ve hiçbir randevu iptal edilmez.",
       "barber": "Berber",
       "today": "Bugün",
       "previous": "Önceki gün",

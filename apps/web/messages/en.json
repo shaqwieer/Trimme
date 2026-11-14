@@ -1442,6 +1442,7 @@
     "barberDay": {
       "title": "Barbers' breaks",
       "body": "Choose the barber and the day, tap an hour and pick the break’s minutes, 5 at a time, then confirm. No reason is needed, and no appointment is cancelled.",
+      "bodyOne": "Choose the day, tap an hour and pick the break’s minutes, 5 at a time, then confirm. No reason is needed, and no appointment is cancelled.",
       "barber": "Barber",
       "today": "Today",
       "previous": "Previous day",

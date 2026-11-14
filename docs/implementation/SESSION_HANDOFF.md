@@ -1,11 +1,12 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-14 (Session 26: eleven changes from the client's review (D-144); before it, Session 25: sign-up and sign-in without a code (D-143); Session 24: per-shop WhatsApp switches and a 365-day sign-in (D-142); after Phase 17)
+- **Updated:** 2026-11-14 (Session 26, second request: barber accounts replace the desk (D-145); first request: eleven changes from the client's review (D-144); before it, Session 25: sign-up and sign-in without a code (D-143); Session 24: per-shop WhatsApp switches and a 365-day sign-in (D-142); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
   - **Session 26 (D-144) is committed locally only: not pushed, not deployed.** It has migration 21; take a database backup on the VPS before deploying.
+  - **Session 26, second request (D-145) is committed locally only: not pushed, not deployed.** Three more migrations (`BarberLogins`, `BookingProfessionalChanges`, `RemoveShopDesk`); back up first. Deploy step one may stop at `8eec53c` (see below).
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
@@ -17,6 +18,28 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145)
+- **The request** (from the user): no desk account, every barber is their own desk: they sign in and see their own appointments, notifications, breaks, day and week calendar and overview, and book walk-ins. A barber (and the owner) changes or cancels a customer's appointment and the customer is told. New: «نقل حجز إلى حلاق آخر معه في المحل»; the customer is told and decides. A walk-in («حضوري») gets «تأكيد الحجز».
+- **The user's answers:** mobile + password (temporary first); the admin and the owner turn logins on and off; remove the desk and disable its accounts; a new WhatsApp template for the move.
+- **What was built** (details in D-145 and `phases/after-17-d145-barber-accounts.md`):
+  - **Identity:** role `ShopBarber` linked to one professional; sign-in by email or mobile; `/shop|admin/professionals/{id}/login`; invites and manual accounts are owners only; migration `BarberLogins`.
+  - **Scoping:** a barber's bookings, board, walk-ins and breaks are their own (`BarberScope`, reviewed by `BarberScopeTests`); the shop inbox is the owner's.
+  - **Operations:** shop reschedule and «نقل الحجز إلى حلاق آخر» (idempotent, versioned); the after-move customer window; migration `BookingProfessionalChanges`.
+  - **Messages:** template `trimme_customer_booking_professional_changed` (ar/en) + switch + notice; both barbers told; walk-in confirmations; barber in-app notices; the owner hears barbers' actions.
+  - **Web:** sign-in identifier; barber inbox and scoped screens; drawer dialogs; «الحلاقون»; admin login card; the customer's after-move policy line.
+  - **Desk removal:** migration `RemoveShopDesk`; the admin's form makes owners only; demo seed owners + barbers.
+- **To tell the client:**
+  - two deploys are possible: first up to `8eec53c` (barber logins with the desk still working; the bundle fix `ef0754a` is web-only and can come with step two), turn on each barber's login and check their numbers; then the desk removal. Back up the VPS database first (three migrations);
+  - each barber needs a WhatsApp number on their profile (the admin sets it) before their login can be turned on; a forgotten password = the owner turns the login on again with a new temporary password;
+  - registering `trimme_customer_booking_professional_changed` with Meta uses the client's token: ask before doing it. Until it is approved, each change of barber fails that WhatsApp (no retry) and raises the admins' «تعذّر إرسال» notice; the customer still gets the in-app notice; the per-shop switch can turn it off meanwhile;
+  - walk-in messages are paid WhatsApp messages, go to whatever number was typed, follow the shop's customer switches, and carry no reminder.
+- **Evidence:**
+  - .NET: Release build of `Trimme.slnx` 0 warnings; unit 475/475; architecture 69/69; integration 236/236 (new: `BarberLoginTests` 2, `BarberScopeTests` 2, `ShopBookingChangeTests` 3, `BarberMessagesTests` 2, `RemoveShopDeskTests` 1; the desk's uses moved to the owner or a real barber login); `has-pending-model-changes`: none; OpenAPI regenerated.
+  - Web: `format:check`, `lint`, `typecheck`, `openapi:check` clean; `pnpm test` 522/522; `build` + `bundle:check`: 83 routes within budget (largest `/admin/shops/[shopId]` 328.7 KB) after importing the drawer dialogs statically (with `next/dynamic` most pages gained a duplicated 12 KB chunk, bisected to `1b8df9b`).
+  - Local compose volume: rebuilt from this tree (`up -d --build`), migrations applied (24), desk counts before/after in the plan file; left running with codes **on**.
+  - E2E: on the local stack rebuilt from this tree, with 2 workers (a first full run with the default workers was stopped by Claude Code for low system memory): smoke + flows 86 passed, 1 skipped (the codes-off spec, by design), 1 failed: the barber-breaks flow expected a barber picker, but a card with one barber names him instead (the app was right; the test now checks Sultan's name and no picker; the card's instruction now says «اختر اليوم» when there is one barber); rerun `shop-schedule` 2/2. Keyboard pass + route audit light and dark, with the new `barber` role and `/shop/barbers`: 25/25 (axe 0 serious). Codes off (API recreated with `TRIMME_OTP_ENABLED=false`, as on groomhere.sa): `phone-sign-in`, `shop-dashboard` (Omar by mobile), `services`, `shop-schedule` 8/8; codes back on afterwards.
+- **Incident in this session (my error, repaired):** to build a baseline of the web app I created a git worktree whose `node_modules` were junctions to this checkout's; `git worktree remove --force` then deleted package files through the junctions (`apps/web/node_modules` and part of `node_modules/.pnpm`). Restored with `pnpm install --frozen-lockfile --force --offline` (777 resolved from the local store, nothing downloaded); typecheck, lint and the web tests pass again. No source or git data was affected.
 
 ## Session 26: eleven changes from the client's review (D-144)
 - **The request** (from the user, with screenshots of groomhere.sa): «احجز» → the services step; no time count under the hours; rescheduling like booking; delete account; no «إشعارات واتساب» row; email and number in personal info with a sign-in warning; rich-text terms and privacy edited by the admin; a Google Maps link fills the shop location; QR files named Groom Here; signed-in users kept off the landing and sign-in pages; directions in Google Maps.
@@ -483,6 +506,7 @@ The rest is recorded in DV-C11 and DV-T14.
 - **Carried over:** a backplane for the hubs; a dead-letter replay screen; "any professional" does not retry; packages across professionals (D-020); grace days and limits (D-077).
 
 ## Exact next action
+0. **D-145 is complete and committed locally.** Ask the user before pushing or deploying (two-step option at `8eec53c`, back up first) and before registering `trimme_customer_booking_professional_changed` with Meta (client token). The D-144 deploy question is still open.
 0. Done: Sessions 17 and 18 pushed and deployed. Confirm with the client:
    - that «نقاط أول زيارة» (a rule for every customer's first visit) is what they meant;
    - per-barber logins (see Session 18).
