@@ -1,5 +1,6 @@
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
@@ -29,6 +30,7 @@ internal sealed record GetWalkInOptionsQuery(Guid? ServiceId, Guid? PackageId, D
 /// </summary>
 internal sealed class GetWalkInOptionsHandler(
     ICurrentTenant tenant,
+    ICurrentUser user,
     IShopDirectory shops,
     IBookableOfferCatalog catalog,
     IProfessionalDirectory professionals,
@@ -64,7 +66,10 @@ internal sealed class GetWalkInOptionsHandler(
 
         var eligible = offer.EligibleProfessionalIds.ToHashSet();
         var candidates = (await professionals.ListByShopAsync(shopId, cancellationToken))
-            .Where(p => p.IsActive && eligible.Contains(p.Id)).ToList();
+            .Where(p => p.IsActive && eligible.Contains(p.Id))
+            // A barber books walk-ins for themselves only (D-145).
+            .Where(p => user.ProfessionalId is null || p.Id.Value == user.ProfessionalId)
+            .ToList();
         var step = (await settings.GetAsync(cancellationToken)).SlotStepMinutes;
         var (calendar, calendars) = await loader.CalendarsAsync(shopId, zone, [.. candidates.Select(p => p.Id)], date, date, cancellationToken);
 

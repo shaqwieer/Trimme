@@ -17,6 +17,9 @@ namespace Trimme.BuildingBlocks.Web.Realtime;
 [Authorize]
 public sealed class NotificationsHub(IPermissionResolver permissions, IShopDirectory shops) : Hub
 {
+    /// <summary>The shop's inbox is the owner's (D-145); a barber hears only their own account's notices.</summary>
+    public const string ShopInboxPermission = "Shop.Notifications.Manage";
+
     public const string Path = "/hubs/notifications";
     public const string EventName = "notificationsChanged";
 
@@ -49,7 +52,7 @@ public sealed class NotificationsHub(IPermissionResolver permissions, IShopDirec
         if (user.FindFirst(TrimmeClaims.UserType)?.Value == UserTypes.ShopUser
             && Guid.TryParse(user.FindFirst(TrimmeClaims.ShopId)?.Value, out var shopId)
             && await shops.FindAsync(new ShopId(shopId), Context.ConnectionAborted) is { Status: not ShopStatus.Suspended }
-            && (await permissions.GetPermissionsAsync(userId, Context.ConnectionAborted)).Contains(OperationsHub.ShopPermission))
+            && (await permissions.GetPermissionsAsync(userId, Context.ConnectionAborted)).Contains(ShopInboxPermission))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, ShopGroup(shopId));
         }

@@ -12,8 +12,15 @@ namespace Trimme.BuildingBlocks.Application.Realtime;
 /// <param name="Status">Its status after the change.</param>
 /// <param name="StartsAt">Its start after the change.</param>
 /// <param name="EndsAt">Its end after the change.</param>
+/// <param name="PreviousProfessionalId">The professional the booking was taken from, when it moved to another barber (D-145).</param>
 public sealed record OperationsEvent(
-    string Kind, Guid ShopId, Guid BookingId, Guid ProfessionalId, string Status, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+    string Kind, Guid ShopId, Guid BookingId, Guid ProfessionalId, string Status, DateTimeOffset StartsAt, DateTimeOffset EndsAt,
+    Guid? PreviousProfessionalId = null)
+{
+    /// <summary>The barbers whose day this changes (D-145): the booking's, and the one it was taken from.</summary>
+    public IEnumerable<Guid> Professionals() =>
+        PreviousProfessionalId is { } previous && previous != ProfessionalId ? [ProfessionalId, previous] : [ProfessionalId];
+}
 
 /// <summary>
 /// Turns an outbox message a module wrote into a live operations event, or <see langword="null"/> for messages that are

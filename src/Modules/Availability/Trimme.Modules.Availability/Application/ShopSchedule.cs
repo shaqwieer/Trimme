@@ -3,6 +3,7 @@ using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Scheduling;
+using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Primitives;
 using Trimme.BuildingBlocks.Domain.Results;
@@ -62,7 +63,8 @@ internal sealed record ShopScope(ShopSummary Shop, ShopClock Clock, DateTimeOffs
 }
 
 /// <summary>Shared lookups of the shop schedule handlers.</summary>
-internal sealed class ShopScheduleContext(ICurrentTenant tenant, IShopDirectory shops, IProfessionalDirectory professionals, TimeProvider clock)
+internal sealed class ShopScheduleContext(
+    ICurrentTenant tenant, ICurrentUser user, IShopDirectory shops, IProfessionalDirectory professionals, TimeProvider clock)
 {
     public async Task<ShopScope?> ScopeAsync(CancellationToken cancellationToken)
     {
@@ -76,9 +78,15 @@ internal sealed class ShopScheduleContext(ICurrentTenant tenant, IShopDirectory 
         return new ShopScope(shop, shopClock, now, shopClock.Date(now));
     }
 
-    /// <summary>One of the shop's own professionals (tenant-filtered), or <see langword="null"/>.</summary>
+    /// <summary>
+    /// One of the shop's own professionals (tenant-filtered), or <see langword="null"/>. A barber's login reaches only
+    /// their own (D-145): a colleague answers as not found.
+    /// </summary>
     public async Task<ProfessionalSummary?> ProfessionalAsync(ShopScope scope, Guid professionalId, CancellationToken cancellationToken) =>
-        await professionals.FindAsync(new ProfessionalId(professionalId), cancellationToken) is { } found && found.ShopId == scope.Id ? found : null;
+        (user.ProfessionalId is null || user.ProfessionalId == professionalId)
+        && await professionals.FindAsync(new ProfessionalId(professionalId), cancellationToken) is { } found && found.ShopId == scope.Id
+            ? found
+            : null;
 
     /// <summary>The time off span: all day from local midnight when no minutes are given, otherwise the exact local times.</summary>
     public static Result<(InstantRange Span, bool AllDay)> TimeOffSpan(ShopClock clock, TimeOffInput input)

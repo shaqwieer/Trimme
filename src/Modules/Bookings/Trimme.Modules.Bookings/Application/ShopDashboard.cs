@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Scheduling;
+using Trimme.BuildingBlocks.Application.Security;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -100,7 +101,7 @@ internal sealed class BusinessDays(IReadOnlyList<ShopDayPlan> plans, TimeZoneInf
 
 /// <summary>Loads what the overview and the calendar share: the shop, its professionals, day plans and bookings.</summary>
 internal sealed class ShopBoardLoader(
-    TrimmeDbContext db, ICurrentTenant tenant, IShopDirectory shops, IProfessionalDirectory professionals, IShopDayPlanReader plans)
+    TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, IShopDirectory shops, IProfessionalDirectory professionals, IShopDayPlanReader plans)
 {
     /// <summary>The signed-in user's shop and its time zone, or <see langword="null"/> without an operable shop.</summary>
     public async Task<(ShopSummary Shop, TimeZoneInfo Zone)?> ShopAsync(CancellationToken cancellationToken) =>
@@ -108,12 +109,17 @@ internal sealed class ShopBoardLoader(
             ? (shop, TimeZoneInfo.FindSystemTimeZoneById(shop.TimeZone))
             : null;
 
-    /// <summary>The business days <paramref name="from"/>…<paramref name="to"/>, optionally for one professional.</summary>
+    /// <summary>
+    /// The business days <paramref name="from"/>…<paramref name="to"/>, optionally for one professional. A barber always
+    /// gets their own lane and bookings only (D-145).
+    /// </summary>
     public async Task<ShopBoard> LoadAsync(
         ShopSummary shop, TimeZoneInfo zone, DateOnly from, DateOnly to, Guid? professionalId, CancellationToken cancellationToken)
     {
+        professionalId = user.Narrow(professionalId);
+
         // From the first day's midnight to the day after the last: the last day's windows may pass midnight.
-        var bookings = await db.Set<Booking>().AsNoTracking()
+        var bookings = await db.Set<Booking>().AsNoTracking().OwnOnly(user)
             .Where(b => b.StartsAt >= BusinessDays.StartOf(from, zone) && b.StartsAt < BusinessDays.StartOf(to.AddDays(2), zone))
             .OrderBy(b => b.StartsAt).ThenBy(b => b.Id)
             .ToListAsync(cancellationToken);
@@ -138,7 +144,8 @@ internal sealed record ShopBoard(ShopSummary Shop, TimeZoneInfo Zone, IReadOnlyL
 /// The overview (s-overview, D-100). Load is minutes-based: booked minutes against the professional's available minutes
 /// (working time outside breaks and time off); free capacity is what remains, never below zero per professional.
 /// </summary>
-internal sealed class GetShopOverviewHandler(TrimmeDbContext db, ShopBoardLoader loader, ShopBookingReader reader, CustomerVisits visits, TimeProvider clock)
+internal sealed class GetShopOverviewHandler(
+    TrimmeDbContext db, ICurrentUser user, ShopBoardLoader loader, ShopBookingReader reader, CustomerVisits visits, TimeProvider clock)
     : IQueryHandler<GetShopOverviewQuery, Result<ShopOverviewResponse>>
 {
     public const int UpcomingLimit = 8;
@@ -169,7 +176,8 @@ internal sealed class GetShopOverviewHandler(TrimmeDbContext db, ShopBoardLoader
                 working, working && lane!.TimeOff.Count > 0 && lane.AvailableMinutes <= 0);
         }).ToList();
 
-        var pending = await db.Set<Booking>().AsNoTracking().CountAsync(b => b.Status == BookingStatus.Pending && b.StartsAt >= now, cancellationToken);
+        var pending = await db.Set<Booking>().AsNoTracking().OwnOnly(user)
+            .CountAsync(b => b.Status == BookingStatus.Pending && b.StartsAt >= now, cancellationToken);
         var kpis = new ShopOverviewKpis(
             today.Count,
             kept.Count(b => board.Days.Of(b.StartsAt) == date.AddDays(-1)),

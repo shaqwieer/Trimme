@@ -37,7 +37,8 @@ internal static class NotificationEndpoints
     private const string TemplatesActivate = "Admin.WhatsApp.Templates.Activate";
     private const string TestSend = "Admin.WhatsApp.TestSend";
     private const string DispatchesRetry = "Admin.WhatsApp.Dispatches.Retry";
-    private const string ShopRead = "Shop.Bookings.Read";
+    // The shop's inbox is the owner's (D-145): a barber's notices are their own, in /me/notifications.
+    private const string ShopRead = "Shop.Notifications.Manage";
 
     // The account's own inbox is mapped with full paths (no group), so its routes carry no trailing slash.
     private const string MyInbox = "/me/notifications";

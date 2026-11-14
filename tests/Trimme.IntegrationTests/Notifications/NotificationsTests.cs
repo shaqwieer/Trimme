@@ -122,10 +122,13 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         // Mark read: shared by the shop's users; another shop cannot touch it.
         var noticeId = shopInbox.GetProperty("items")[0].GetProperty("id").GetGuid();
         await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/notifications/{noticeId}/read", null, ct), HttpStatusCode.NotFound, "notification.not_found", ct);
-        (await OkAsync(w.StaffA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(3);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(3);
         await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/notifications/{noticeId}/read", null, ct), ct, HttpStatusCode.NoContent);
-        (await OkAsync(w.StaffA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(2);
-        await OkAsync(w.StaffA.PostAsync("/api/v1/shop/notifications/read-all", null, ct), ct, HttpStatusCode.NoContent);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(2);
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/notifications/read-all", null, ct), ct, HttpStatusCode.NoContent);
+
+        // The shop's inbox is the owner's (D-145).
+        await FailsAsync(w.StaffA.GetAsync("/api/v1/shop/notifications/unread-count", ct), HttpStatusCode.Forbidden, null, ct);
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(0);
 
         // The admin booking page lists the booking's messages and reminder jobs; masked recipients only.

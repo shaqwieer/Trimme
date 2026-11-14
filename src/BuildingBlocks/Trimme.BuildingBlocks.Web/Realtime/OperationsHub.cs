@@ -35,6 +35,9 @@ public sealed class OperationsHub(IPermissionResolver permissions, IShopDirector
 
     public static string ShopGroup(Guid shopId) => $"shop:{shopId}";
 
+    /// <summary>A barber's login hears only their own bookings' changes (D-145), not the whole shop's.</summary>
+    public static string ProfessionalGroup(Guid shopId, Guid professionalId) => $"shop:{shopId}:professional:{professionalId}";
+
     public override async Task OnConnectedAsync()
     {
         string? group;
@@ -74,7 +77,9 @@ public sealed class OperationsHub(IPermissionResolver permissions, IShopDirector
                 when Guid.TryParse(user.FindFirst(TrimmeClaims.ShopId)?.Value, out var shopId)
                      && await OperableAsync(new ShopId(shopId))
                      && await AllowedAsync(user, ShopPermission):
-                return ShopGroup(shopId);
+                return Guid.TryParse(user.FindFirst(TrimmeClaims.ProfessionalId)?.Value, out var professionalId)
+                    ? ProfessionalGroup(shopId, professionalId)
+                    : ShopGroup(shopId);
             case UserTypes.PlatformAdmin when await AllowedAsync(user, AdminPermission):
                 return AdminGroup;
             default:
@@ -99,8 +104,9 @@ internal sealed class HubOperationsPublisher(IHubContext<OperationsHub> hub) : I
         foreach (var e in events)
         {
             var message = new OperationsMessage(e.Kind, e.ShopId, e.BookingId, e.ProfessionalId, e.Status, e.StartsAt, e.EndsAt);
-            await hub.Clients.Groups(OperationsHub.ShopGroup(e.ShopId), OperationsHub.AdminGroup)
-                .SendAsync(OperationsHub.EventName, message, cancellationToken);
+            List<string> groups = [OperationsHub.ShopGroup(e.ShopId), OperationsHub.AdminGroup];
+            groups.AddRange(e.Professionals().Select(p => OperationsHub.ProfessionalGroup(e.ShopId, p)));
+            await hub.Clients.Groups(groups).SendAsync(OperationsHub.EventName, message, cancellationToken);
         }
     }
 }

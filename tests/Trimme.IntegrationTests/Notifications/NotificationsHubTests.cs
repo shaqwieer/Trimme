@@ -79,11 +79,12 @@ public sealed class NotificationsHubTests(PostgresFixture postgres)
         await using var shopB = await ConnectAsync(w.Factory, w.OwnerB, ct);
         await using var customer = await ConnectAsync(w.Factory, noura, ct);
 
-        // The customer books at shop A: both of A's users are signalled, B and the customer are not.
+        // The customer books at shop A: the owner, whose inbox it is, is signalled (D-145: not the desk); B and the
+        // customer are not.
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
         await ProcessOutboxAsync(w.Factory, ct);
         await shopA.NextAsync(ct);
-        await staffA.NextAsync(ct);
+        staffA.HasSignal.ShouldBeFalse("the shop's inbox is the owner's");
         shopB.HasSignal.ShouldBeFalse();
         customer.HasSignal.ShouldBeFalse("the customer is not told about their own booking");
 

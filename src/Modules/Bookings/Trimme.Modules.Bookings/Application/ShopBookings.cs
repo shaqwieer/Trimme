@@ -102,7 +102,7 @@ internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker
 /// or reference search, paged by start. The status chips' counts use every filter except the status, so each chip shows
 /// what it would list; the cancelled chip counts both cancellation statuses.
 /// </summary>
-internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant tenant, IShopDirectory shops, ShopBookingReader reader)
+internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, IShopDirectory shops, ShopBookingReader reader)
     : IQueryHandler<ListShopBookingsQuery, ShopBookingListResponse?>
 {
     public async Task<ShopBookingListResponse?> Handle(ListShopBookingsQuery query, CancellationToken cancellationToken)
@@ -115,7 +115,8 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
         var zone = TimeZoneInfo.FindSystemTimeZoneById(shop.TimeZone);
         DateTimeOffset? Start(DateOnly? date) =>
             date is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), zone.GetUtcOffset(d.ToDateTime(TimeOnly.MinValue))).ToUniversalTime() : null;
-        var unfiltered = ShopBookingReader.Filter(db.Set<Booking>().AsNoTracking(), Start(query.From), Start(query.To?.AddDays(1)), null, query.ProfessionalId, query.Search);
+        var unfiltered = ShopBookingReader.Filter(
+            db.Set<Booking>().AsNoTracking().OwnOnly(user), Start(query.From), Start(query.To?.AddDays(1)), null, query.ProfessionalId, query.Search);
         var byStatus = await unfiltered.GroupBy(b => b.Status).Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         int Count(params BookingStatus[] statuses) => statuses.Sum(s => byStatus.GetValueOrDefault(s));
@@ -135,12 +136,13 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
     }
 }
 
-internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopBookingReader reader) : IQueryHandler<GetShopBookingQuery, ShopBookingDetailResponse?>
+internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader)
+    : IQueryHandler<GetShopBookingQuery, ShopBookingDetailResponse?>
 {
     public async Task<ShopBookingDetailResponse?> Handle(GetShopBookingQuery query, CancellationToken cancellationToken)
     {
         var id = new BookingId(query.BookingId);
-        return tenant.ShopId is not null && await db.Set<Booking>().AsNoTracking().SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
+        return tenant.ShopId is not null && await db.Set<Booking>().AsNoTracking().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
             ? await reader.DetailAsync(booking, cancellationToken)
             : null;
     }
@@ -219,7 +221,7 @@ internal sealed class CreateWalkInHandler(
         }
 
         var professional = await professionals.FindAsync(new ProfessionalId(command.ProfessionalId), cancellationToken);
-        if (professional is not { IsActive: true } || professional.ShopId != shopId)
+        if (professional is not { IsActive: true } || professional.ShopId != shopId || (user.Own() is { } own && professional.Id != own))
         {
             return Error.NotFound("professional.not_found", "The professional was not found.");
         }
@@ -291,7 +293,7 @@ internal sealed class TransitionShopBookingHandler(TrimmeDbContext db, ICurrentT
     public async Task<Result<ShopBookingResponse>> Handle(TransitionShopBookingCommand command, CancellationToken cancellationToken)
     {
         var id = new BookingId(command.BookingId);
-        if (tenant.ShopId is not { } shopId || await db.Set<Booking>().SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        if (tenant.ShopId is not { } shopId || await db.Set<Booking>().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
         {
             return BookingErrors.NotFound();
         }
@@ -317,7 +319,7 @@ internal sealed class AddBookingNoteHandler(TrimmeDbContext db, ICurrentTenant t
     {
         var id = new BookingId(command.BookingId);
         if (tenant.ShopId is not { } shopId || user.UserId is not { } userId
-            || !await db.Set<Booking>().AnyAsync(b => b.Id == id, cancellationToken))
+            || !await db.Set<Booking>().OwnOnly(user).AnyAsync(b => b.Id == id, cancellationToken))
         {
             return BookingErrors.NotFound();
         }

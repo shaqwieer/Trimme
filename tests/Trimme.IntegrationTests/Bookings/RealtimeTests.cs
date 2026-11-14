@@ -122,6 +122,26 @@ public sealed class RealtimeTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task ABarber_HearsOnlyTheirOwnBookings_TheOwnerHearsTheWholeShop()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "rt_barber", ct);
+        using var faisal = await Identity.BarberLoginTests.BarberAsync(w, w.Faisal, "+966512340021", ct);
+        await using var barber = await ConnectAsync(w.Factory, faisal, ct);
+        await using var owner = await ConnectAsync(w.Factory, w.OwnerA, ct);
+
+        // A colleague's booking reaches the owner, not the barber (D-145).
+        var omars = await WalkInAsync(w.OwnerA, w.Haircut, w.Omar, At(Target, 10), ct);
+        (await owner.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(omars.GetProperty("id").GetGuid());
+
+        // The barber's own booking reaches both; it is the first thing the barber hears.
+        var own = await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 11), ct);
+        (await barber.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(own.GetProperty("id").GetGuid());
+        (await owner.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(own.GetProperty("id").GetGuid());
+        barber.HasMessage.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Customers_AndAnonymousCallers_CannotConnect()
     {
         var ct = TestContext.Current.CancellationToken;
