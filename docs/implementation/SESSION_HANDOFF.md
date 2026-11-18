@@ -34,8 +34,9 @@
   - the password is shown once; if it is lost, «كلمة مرور مؤقتة جديدة» makes another (and signs the barber out);
   - a number another barber already has, in any shop, is refused («هذا الرقم مسجّل لحلاق آخر») without saying where; so an owner can learn that a number belongs to some barber;
   - plan limits on the number of barbers are not enforced; ask if they should be;
-  - deploying needs no migration and no backup step beyond the usual: `migrate` resets the owner's grants.
-- **Evidence:** in the plan file. .NET: Release build 0 warnings; unit 477/477; architecture 69/69; integration 240/240 (final code). Web: format, lint, typecheck, openapi:check clean; 525/525; build + bundle budget 85 routes (largest 329.2/330 KB, the owner's barber page). E2E on a fresh stack: targeted 9/9; full 112 passed, 1 skipped by design, 1 load flake in `account-legal` (2/2 alone).
+  - deploying needs no migration and no backup step beyond the usual: `migrate` resets the owner's grants, and permissions are read per request (`PermissionResolver`), so signed-in owners lose walk-ins at once, with no sign-out;
+  - deploy the api and web images **together**: an old web build turns a login on without showing the generated password (it still sends a typed one, which the API now ignores).
+- **Evidence:** in the plan file. .NET: Release build 0 warnings; unit 477/477; architecture 69/69; integration 240/240 (final code). Web: format, lint, typecheck, openapi:check clean; 525/525; build + bundle budget 85 routes (largest 329.3/330 KB, the owner's barber page: little headroom left). E2E on a fresh stack: targeted 9/9; full 112 passed, 1 skipped by design, 1 load flake in `account-legal` (2/2 alone).
 
 ## Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145)
 - **The request** (from the user): no desk account, every barber is their own desk: they sign in and see their own appointments, notifications, breaks, day and week calendar and overview, and book walk-ins. A barber (and the owner) changes or cancels a customer's appointment and the customer is told. New: «نقل حجز إلى حلاق آخر معه في المحل»; the customer is told and decides. A walk-in («حضوري») gets «تأكيد الحجز».
