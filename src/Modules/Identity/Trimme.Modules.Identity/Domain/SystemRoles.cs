@@ -17,6 +17,21 @@ public static class SystemRoles
     public const string ShopBarber = "ShopBarber";
     public const string Customer = "Customer";
 
+    /// <summary>
+    /// The shop permissions only barbers hold (D-147: «صاحب المحل للمتابعة بس»). Declared before <see cref="All"/>, which
+    /// reads it: static initializers run in textual order.
+    /// </summary>
+    public static IReadOnlyList<string> OperatedByBarbers { get; } =
+    [
+        Permissions.Shop.BookingsCreateWalkIn,
+        Permissions.Shop.BookingsUpdateStatus,
+        Permissions.Shop.BookingsResendNotification,
+        Permissions.Shop.BookingsReschedule,
+        Permissions.Shop.BookingsChangeProfessional,
+        Permissions.Shop.BreaksManage,
+        Permissions.Shop.OnlineBookingPause,
+    ];
+
     public static IReadOnlyList<RoleDefinition> All { get; } =
     [
         new(SuperAdmin, UserType.PlatformAdmin, Managed: true,
@@ -43,22 +58,25 @@ public static class SystemRoles
             Permissions.Admin.QrView,
             Permissions.Admin.WhatsAppView,
         ]),
-        // Every shop permission but walk-ins: the barbers book those themselves (D-146).
+        // The owner watches and manages the shop; the barbers operate the bookings (D-146, D-147): no walk-ins, no status
+        // changes or notes, no change of time or barber, no barber's breaks and no pause for the owner.
         new(ShopOwner, UserType.ShopUser, Managed: true,
             Permissions.All
                 .Where(p => p.UserType == UserType.ShopUser)
                 .Select(p => p.Code)
-                .Except([Permissions.Shop.BookingsCreateWalkIn])
+                .Except(OperatedByBarbers)
                 .ToArray()),
         new(ShopBarber, UserType.ShopUser, Managed: true,
         [
-            // Scoped to the barber's own professional by the handlers (D-145): never a colleague's booking or day.
+            // Scoped to the barber's own professional by the handlers (D-145), with the reviewed exceptions of D-147: the
+            // shop's pending and red bookings, and walk-in or phone bookings made for a free colleague.
             Permissions.Shop.BookingsRead,
             Permissions.Shop.BookingsUpdateStatus,
             Permissions.Shop.BookingsCreateWalkIn,
             Permissions.Shop.BookingsReschedule,
             Permissions.Shop.BookingsChangeProfessional,
             Permissions.Shop.BreaksManage,
+            Permissions.Shop.OnlineBookingPause,
         ]),
         new(Customer, UserType.Customer, Managed: true, []),
     ];

@@ -102,9 +102,12 @@ public sealed class RealtimeTests(PostgresFixture postgres)
         var online = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 11), ct), ct, HttpStatusCode.Created);
         (await shopA.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(online.GetProperty("id").GetGuid());
 
-        // A status change too.
-        await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{walkIn.GetProperty("id").GetGuid()}/transitions",
-            new { to = "CancelledByShop", reason = "اختبار", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);
+        // A status change too, by the booking's barber (D-147).
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{walkIn.GetProperty("id").GetGuid()}/transitions",
+                new { to = "CancelledByShop", reason = "اختبار", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);
+        }
         (await shopA.NextAsync(ct)).GetProperty("kind").GetString().ShouldBe("booking.cancelled");
 
         // Shop B saw none of that: the first thing it receives is its own booking (R-TEN-06).

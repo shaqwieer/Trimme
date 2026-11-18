@@ -190,7 +190,8 @@ internal sealed class RevealWalkInContactHandler(TrimmeDbContext db, IAdminDataS
 /// from an hour before, NoShow once started, never "cancelled by the customer"), a reason for every intervention, the
 /// PlatformAdmin actor in the history, an audit entry and the outbox event.
 /// </summary>
-internal sealed class AdminTransitionBookingHandler(TrimmeDbContext db, IAdminDataScope scope, ICurrentUser user, IAuditLog audit, AdminBookingMapper mapper, TimeProvider clock)
+internal sealed class AdminTransitionBookingHandler(
+    TrimmeDbContext db, IAdminDataScope scope, IAuditLog audit, AdminBookingMapper mapper, BookingActors actors, TimeProvider clock)
     : ICommandHandler<AdminTransitionBookingCommand, Result<AdminBookingResponse>>
 {
     public async Task<Result<AdminBookingResponse>> Handle(AdminTransitionBookingCommand command, CancellationToken cancellationToken)
@@ -210,7 +211,7 @@ internal sealed class AdminTransitionBookingHandler(TrimmeDbContext db, IAdminDa
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
         var now = clock.GetUtcNow();
         var from = booking.Status;
-        var moved = booking.ApplyShopTransition(command.To, new BookingActor(user.UserId, ActorType.PlatformAdmin), command.Reason, now);
+        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), command.Reason, now);
         if (moved.IsFailure)
         {
             return moved.Error;
@@ -241,6 +242,7 @@ internal sealed class AdminRescheduleBookingHandler(
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
     AdminBookingMapper mapper,
+    BookingActors actors,
     TimeProvider clock)
     : ICommandHandler<AdminRescheduleBookingCommand, Result<AdminRescheduleResult>>
 {
@@ -300,7 +302,8 @@ internal sealed class AdminRescheduleBookingHandler(
         }
 
         var previous = booking.StartsAt;
-        var moved = booking.Reschedule(command.StartsAt, target.Value, new BookingActor(adminId, ActorType.PlatformAdmin), now, cutoffMinutes: null, command.Reason);
+        var moved = booking.Reschedule(
+            command.StartsAt, target.Value, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), now, cutoffMinutes: null, command.Reason);
         if (moved.IsFailure)
         {
             return moved.Error;

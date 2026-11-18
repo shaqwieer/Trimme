@@ -51,10 +51,18 @@ function useFailureMessage() {
 
 /**
  * A new time for a customer's booking, with the same barber and service (D-145): the free starts the server offers
- * (the booking's own time does not block it), by day and then hour and minute, as the booking screens show them. The
- * customer is told. A time taken meanwhile refreshes the times.
+ * (the booking's own time does not block it), by day and then hour and minute, as the booking screens show them. A
+ * walk-in or phone booking moves at once (the customer agreed in the shop or on the phone). A customer's online booking
+ * gets an offer instead (`offer`, D-147): the time is held for them until an hour before the appointment, and they
+ * accept or decline it. A time taken meanwhile refreshes the times.
  */
-export function RescheduleDialog({ booking, timeZone, onClose, onChanged }: DialogProps) {
+export function RescheduleDialog({
+  booking,
+  timeZone,
+  onClose,
+  onChanged,
+  offer = false,
+}: DialogProps & { offer?: boolean }) {
   const t = useTranslations('shopBoard.drawer.change');
   const tb = useTranslations('booking');
   const locale = useLocale() as AppLocale;
@@ -105,10 +113,15 @@ export function RescheduleDialog({ booking, timeZone, onClose, onChanged }: Dial
     setPending(true);
     try {
       ensureOk(
-        await browserApi.POST('/api/v1/shop/bookings/{bookingId}/reschedule', {
-          params: { path: { bookingId: booking.id }, header: { 'Idempotency-Key': keyed.current.key } },
-          body: { startsAt: start, version: booking.version },
-        }),
+        offer
+          ? await browserApi.POST('/api/v1/shop/bookings/{bookingId}/postpone', {
+              params: { path: { bookingId: booking.id } },
+              body: { startsAt: start, version: booking.version },
+            })
+          : await browserApi.POST('/api/v1/shop/bookings/{bookingId}/reschedule', {
+              params: { path: { bookingId: booking.id }, header: { 'Idempotency-Key': keyed.current.key } },
+              body: { startsAt: start, version: booking.version },
+            }),
       );
       await onChanged();
       onClose();
@@ -128,8 +141,12 @@ export function RescheduleDialog({ booking, timeZone, onClose, onChanged }: Dial
       open
       onOpenChange={(open) => !open && onClose()}
       size="lg"
-      title={t('rescheduleTitle', { name: booking.customerName })}
-      description={t('rescheduleBody')}
+      title={
+        offer
+          ? t('offerTitle', { name: booking.customerName })
+          : t('rescheduleTitle', { name: booking.customerName })
+      }
+      description={offer ? t('offerBody') : t('rescheduleBody')}
       footer={
         <>
           <Button
@@ -138,7 +155,7 @@ export function RescheduleDialog({ booking, timeZone, onClose, onChanged }: Dial
             disabled={!chosen || blocked}
             onClick={() => void save()}
           >
-            {t('confirmReschedule')}
+            {offer ? t('confirmOffer') : t('confirmReschedule')}
           </Button>
           <Button variant="outline" className="flex-1" onClick={onClose}>
             {t('keep')}

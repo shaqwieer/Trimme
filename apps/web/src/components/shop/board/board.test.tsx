@@ -94,13 +94,13 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
       within(drawer)
         .getAllByRole('button')
         .map((b) => b.textContent),
-    ).toEqual(expect.arrayContaining(['حضر العميل', 'لم يحضر', 'إلغاء الموعد']));
+    ).toEqual(expect.arrayContaining(['وصل', 'الزبون ما حضر (تأخر أكثر من ربع ساعة)', 'إلغاء الموعد']));
     expect(within(drawer).queryByRole('button', { name: 'انتهت الخدمة' })).not.toBeInTheDocument();
     await expectNoAxeViolations(drawer);
 
-    await user.click(within(drawer).getByRole('button', { name: 'حضر العميل' }));
+    await user.click(within(drawer).getByRole('button', { name: 'وصل' }));
     await waitFor(() =>
-      expect(within(drawer).queryByRole('button', { name: 'حضر العميل' })).not.toBeInTheDocument(),
+      expect(within(drawer).queryByRole('button', { name: 'وصل' })).not.toBeInTheDocument(),
     );
     expect(within(drawer).getAllByText('حضر العميل').length).toBeGreaterThan(0);
     await waitFor(() =>
@@ -138,9 +138,53 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     renderWithQuery(<AppointmentDrawer bookingId="b1" timeZone="Asia/Riyadh" canUpdate onClose={() => {}} />);
 
     const drawer = await screen.findByTestId('appointment-drawer');
-    await user.click(await within(drawer).findByRole('button', { name: 'لم يحضر' }));
+    await user.click(await within(drawer).findByRole('button', { name: 'وصل' }));
     expect(await within(drawer).findByRole('alert')).toHaveTextContent('تغيّر الموعد قبل قليل');
-    expect(within(drawer).getByRole('button', { name: 'لم يحضر' })).toBeEnabled();
+    expect(within(drawer).getByRole('button', { name: 'وصل' })).toBeEnabled();
+  });
+
+  it('asks before «ما حضر», shows a walk-in’s mobile to a barber, and lets the owner only watch (D-147)', async () => {
+    const user = userEvent.setup();
+    const walkIn = detail();
+    walkIn.booking = {
+      ...walkIn.booking,
+      channel: 'Phone',
+      customerPhone: '+966501234567',
+    } as typeof walkIn.booking;
+    api.GET.mockResolvedValue(ok(walkIn));
+    api.POST.mockResolvedValue(ok({}));
+    const { unmount } = renderWithQuery(
+      <AppointmentDrawer
+        bookingId="b1"
+        timeZone="Asia/Riyadh"
+        canUpdate
+        ownProfessionalId="p1"
+        onClose={() => {}}
+      />,
+    );
+    const drawer = await screen.findByTestId('appointment-drawer');
+    expect(await within(drawer).findByTestId('customer-phone')).toHaveTextContent('+966501234567');
+    await user.click(within(drawer).getByRole('button', { name: 'الزبون ما حضر (تأخر أكثر من ربع ساعة)' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'عبدالله الشمري ما حضر؟' });
+    expect(api.POST).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'نعم، ما حضر' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
+        params: { path: { bookingId: 'b1' } },
+        body: { to: 'NoShow', reason: null, version: 4 },
+      }),
+    );
+    unmount();
+
+    // The owner (no update permission) sees the booking, its notes and its log, and no button to act.
+    renderWithQuery(
+      <AppointmentDrawer bookingId="b1" timeZone="Asia/Riyadh" canUpdate={false} onClose={() => {}} />,
+    );
+    const watched = await screen.findByTestId('appointment-drawer');
+    await within(watched).findByText('عبدالله الشمري');
+    expect(within(watched).queryByRole('button', { name: 'وصل' })).not.toBeInTheDocument();
+    expect(within(watched).queryByRole('button', { name: 'إلغاء الموعد' })).not.toBeInTheDocument();
+    expect(within(watched).queryByLabelText('ملاحظة جديدة')).not.toBeInTheDocument();
   });
 
   it('asks for a reason before cancelling, and staff without the permission see no actions', async () => {
@@ -218,7 +262,49 @@ const options = {
   ],
 };
 
-describe('WalkInFlow (s-walkin, D-035, D-134)', () => {
+describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
+  it('numbers its five steps whatever is chosen, adds several services up, and books a phone appointment for a colleague', async () => {
+    const user = userEvent.setup();
+    const offers: WalkInOffer[] = [
+      ...OFFERS,
+      {
+        kind: 'service',
+        id: 's2',
+        nameAr: 'تحديد لحية',
+        nameEn: 'Beard',
+        price: 35,
+        currency: 'SAR',
+        durationMinutes: 20,
+      },
+    ];
+    api.GET.mockResolvedValue(ok(options));
+    api.POST.mockResolvedValue(ok({ id: 'w2', reference: 'TR-1002', version: 1 }, 201));
+    renderWithQuery(
+      <WalkInFlow offers={offers} today="2026-10-08" timeZone="Asia/Riyadh" ownProfessionalId="p1" />,
+    );
+
+    // The steps read ١ to ٥ before a barber is picked (the «١، ٢، ٤» bug).
+    const legends = screen.getAllByRole('group').map((g) => g.querySelector('legend')?.textContent ?? '');
+    expect(legends.filter((l) => /^[١٢٣٤٥]\./.test(l)).map((l) => l[0])).toEqual(['١', '٢', '٣', '٤', '٥']);
+
+    await user.click(screen.getByRole('radio', { name: /بالتلفون/ }));
+    await user.click(screen.getByRole('checkbox', { name: /تحديد لحية/ }));
+    expect(screen.getByTestId('walk-in-total')).toHaveTextContent(/خدمتان.*95/);
+    expect(await screen.findByRole('radio', { name: /فيصل القحطاني.*\(أنت\)/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /سلطان الحربي/ }));
+    await user.click(within(screen.getByTestId('walk-in-times')).getByRole('radio', { name: /٥:١٥|5:15/ }));
+    await user.type(screen.getByLabelText('اسم العميل'), 'خالد');
+    await user.click(screen.getByRole('button', { name: 'تسجيل الموعد' }));
+    expect(await screen.findByText('سُجّل الموعد بالتلفون')).toBeInTheDocument();
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({
+      serviceIds: ['s1', 's2'],
+      packageId: null,
+      professionalId: 'p2',
+      startsAt: '2026-10-08T14:15:00Z',
+      channel: 'Phone',
+    });
+  });
+
   it('takes the mobile for the platform only, starts now with the free professional, and sends an idempotent walk-in', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(options));
@@ -250,13 +336,15 @@ describe('WalkInFlow (s-walkin, D-035, D-134)', () => {
     expect(container).not.toHaveTextContent(/551|٥٥١/);
     const [, init] = api.POST.mock.calls[0]!;
     expect(init.body).toEqual({
-      serviceId: 's1',
+      serviceId: null,
+      serviceIds: ['s1'],
       packageId: null,
       professionalId: 'p2',
       startsAt: null,
       customerName: 'سعود الرشيد',
       customerPhone: '+966551234567',
       note: null,
+      channel: 'WalkIn',
     });
     expect(init.params.header['Idempotency-Key']).toMatch(/[0-9a-f-]{32,36}/);
 

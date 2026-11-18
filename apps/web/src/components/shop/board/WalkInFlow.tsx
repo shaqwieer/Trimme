@@ -2,12 +2,12 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { isValidSaudiMobile, toE164 } from '@/components/ui/digits';
 import { PhoneField, TextareaField, TextField } from '@/components/ui/inputs';
-import { RadioCard } from '@/components/ui/selection';
+import { CheckboxCard, RadioCard } from '@/components/ui/selection';
 import { EmptyState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
@@ -16,7 +16,7 @@ import { endOf } from '@/lib/booking/format';
 import { keyFor, type KeyedIntent, newIdempotencyKey } from '@/lib/booking/wizard';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
-import { BOARD_KEY } from './AppointmentDrawer';
+import { BOARD_KEY } from './boardKey';
 
 export type WalkInOffer = {
   kind: 'service' | 'package';
@@ -28,17 +28,20 @@ export type WalkInOffer = {
   durationMinutes: number;
 };
 
+type Kind = 'WalkIn' | 'Phone';
+
 const NOW = 'now';
 const NAME_MAX = 120;
 const NOTE_MAX = 500;
+const MAX_SERVICES = 10;
 
 /**
- * Walk-in booking (s-walkin 2397–2459, D-035, D-088): service → professional (free now, busy until…, next free time) →
- * time ("start now" or one of the day's free starts, from the same rules as the command) → the customer's name
- * (required), their mobile if they give it, and an optional note, with a summary. The mobile goes one way, to the
- * platform team, at the client's request (D-134): the shop never sees it again, and it is cleared once the booking is
- * saved. The time is blocked from online booking at once. On a phone the summary follows the form; it stays in view
- * beside it from `lg` up.
+ * A booking the barber records (s-walkin 2397–2459, D-035, D-088, D-147), numbered 1 to 5 whatever is chosen:
+ * (1) «حضوري» — the customer is here, the time is taken at once (now, or the barber's next free start today) — or
+ * «بالتلفون», an appointment on another day or time; (2) several services, added up, or one package; (3) the barber
+ * themselves or a free colleague who does all of it; (4) the time; (5) the customer's name (required), mobile (optional)
+ * and a note. The mobile is stored encrypted; the barbers see it on the booking until it is closed, the owner never
+ * (D-147). On a phone the summary follows the form; it stays in view beside it from `lg` up.
  */
 export function WalkInFlow({
   offers,
@@ -47,10 +50,13 @@ export function WalkInFlow({
   initialProfessionalId,
   initialStart,
   initialDate,
+  ownProfessionalId,
 }: {
   offers: WalkInOffer[];
   today: string;
   timeZone: string;
+  /** The barber's own professional, marked «أنت» among the colleagues. */
+  ownProfessionalId?: string;
   initialProfessionalId?: string;
   initialStart?: string;
   initialDate?: string;
@@ -60,7 +66,14 @@ export function WalkInFlow({
   const locale = useLocale() as AppLocale;
   const apiMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
-  const [offerKey, setOfferKey] = useState<string>(offers[0] ? `${offers[0].kind}:${offers[0].id}` : '');
+  const [kind, setKind] = useState<Kind>(initialDate && initialDate !== today ? 'Phone' : 'WalkIn');
+  const [serviceIds, setServiceIds] = useState<string[]>(() => {
+    const first = offers.find((o) => o.kind === 'service');
+    return first ? [first.id] : [];
+  });
+  const [packageId, setPackageId] = useState<string | null>(() =>
+    offers.some((o) => o.kind === 'service') ? null : (offers[0]?.id ?? null),
+  );
   const [date, setDate] = useState(initialDate ?? today);
   const [professionalId, setProfessionalId] = useState(initialProfessionalId ?? '');
   const [start, setStart] = useState(initialStart ?? '');
@@ -70,21 +83,31 @@ export function WalkInFlow({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
-  const [created, setCreated] = useState<{ id: string; reference: string } | null>(null);
+  const [created, setCreated] = useState<{ id: string; reference: string; kind: Kind } | null>(null);
   const keyed = useRef<KeyedIntent | undefined>(undefined);
 
-  const offer = offers.find((o) => `${o.kind}:${o.id}` === offerKey);
+  const services = offers.filter((o) => o.kind === 'service');
+  const packages = offers.filter((o) => o.kind === 'package');
+  const chosen: WalkInOffer[] = packageId
+    ? offers.filter((o) => o.kind === 'package' && o.id === packageId)
+    : serviceIds.map((id) => services.find((s) => s.id === id)).filter((s): s is WalkInOffer => Boolean(s));
+  const duration = chosen.reduce((sum, o) => sum + o.durationMinutes, 0);
+  const price = chosen.reduce((sum, o) => sum + o.price, 0);
+  const currency = chosen[0]?.currency ?? 'SAR';
+  const offerKey = packageId ? `package:${packageId}` : `services:${serviceIds.join(',')}`;
+  const day = kind === 'WalkIn' ? today : date;
+
   const options = useQuery({
-    queryKey: [BOARD_KEY, 'walk-in', offerKey, date],
-    enabled: Boolean(offer),
+    queryKey: [BOARD_KEY, 'walk-in', offerKey, day],
+    enabled: chosen.length > 0,
     queryFn: async () =>
       ensureOk(
         await browserApi.GET('/api/v1/shop/availability/walk-in', {
           params: {
             query: {
-              serviceId: offer!.kind === 'service' ? offer!.id : undefined,
-              packageId: offer!.kind === 'package' ? offer!.id : undefined,
-              date,
+              serviceIds: packageId ? undefined : serviceIds,
+              packageId: packageId ?? undefined,
+              date: day,
             },
           },
         }),
@@ -97,31 +120,55 @@ export function WalkInFlow({
     name.trim().length === 0 ? undefined : name.trim().length > NAME_MAX ? t('nameTooLong') : undefined;
   const phoneValid = phone === '' || isValidSaudiMobile(phone);
   const phoneError = phoneTouched && !phoneValid ? tv('phoneInvalid') : undefined;
-  const ready = Boolean(offer && professional && startsAt && name.trim() && !nameError && phoneValid);
+  const ready = Boolean(
+    chosen.length > 0 && professional && startsAt && name.trim() && !nameError && phoneValid,
+  );
 
   if (offers.length === 0) {
     return <EmptyState icon="tag" title={t('noServices')} />;
   }
 
+  const resetTime = () => {
+    setStart('');
+  };
+  const toggleService = (id: string) => {
+    setPackageId(null);
+    setServiceIds((current) =>
+      current.includes(id)
+        ? current.filter((s) => s !== id)
+        : current.length >= MAX_SERVICES
+          ? current
+          : [...current, id],
+    );
+    resetTime();
+  };
+  const choosePackage = (id: string) => {
+    setPackageId(id);
+    setServiceIds([]);
+    resetTime();
+  };
+
   const submit = async () => {
-    if (!offer || !professional || !startsAt) return;
+    if (chosen.length === 0 || !professional || !startsAt) return;
     setError(undefined);
     setSubmitting(true);
     const body = {
-      serviceId: offer.kind === 'service' ? offer.id : null,
-      packageId: offer.kind === 'package' ? offer.id : null,
+      serviceId: null,
+      serviceIds: packageId ? [] : serviceIds,
+      packageId,
       professionalId: professional.id,
       startsAt: start === NOW ? null : start,
       customerName: name.trim(),
       customerPhone: phone ? toE164(phone) : null,
       note: note.trim() || null,
+      channel: kind,
     };
     keyed.current = keyFor(
       keyed.current,
       {
-        offerId: offer.id,
+        offerId: offerKey,
         pro: professional.id,
-        startsAt: start,
+        startsAt: `${kind}|${start}`,
         note: `${name.trim()}|${phone}|${note.trim()}`,
       },
       newIdempotencyKey,
@@ -133,7 +180,7 @@ export function WalkInFlow({
           body,
         }),
       );
-      setCreated({ id: booking.id, reference: booking.reference });
+      setCreated({ id: booking.id, reference: booking.reference, kind });
       setPhone('');
       setPhoneTouched(false);
       await queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
@@ -157,7 +204,9 @@ export function WalkInFlow({
         role="status"
       >
         <Icon name="check" className="size-10 text-success-700" />
-        <h2 className="text-h3 font-bold text-navy-900">{t('done.title')}</h2>
+        <h2 className="text-h3 font-bold text-navy-900">
+          {created.kind === 'Phone' ? t('done.phoneTitle') : t('done.title')}
+        </h2>
         <p className="text-label text-text-secondary">{t('done.body', { reference: created.reference })}</p>
         <div className="flex flex-wrap justify-center gap-2">
           <ButtonLink href={`/shop/appointments?booking=${created.id}`} variant="primary" size="md">
@@ -181,59 +230,133 @@ export function WalkInFlow({
     );
   }
 
+  // Every step renders, so the numbers in the copy always read 1 to 5 (the «١، ٢، ٤» bug: step 3 used to appear only
+  // after a barber was picked).
+  const fieldset = (label: string, children: ReactNode, testId?: string) => (
+    <fieldset className="flex min-w-0 flex-col gap-2.5" data-testid={testId}>
+      <legend className="pb-2 text-label font-bold text-text-strong">{label}</legend>
+      {children}
+    </fieldset>
+  );
+
   return (
     <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1.6fr_1fr]" data-testid="walk-in">
       <div className="flex flex-col gap-6 rounded-card border border-border bg-surface p-5 shadow-e1">
         <p className="text-helper text-text-secondary">{t('intro')}</p>
 
-        <fieldset className="flex min-w-0 flex-col gap-2.5">
-          <legend className="pb-2 text-label font-bold text-text-strong">{t('steps.service')}</legend>
+        {fieldset(
+          t('steps.kind'),
           <div className="grid gap-2.5 sm:grid-cols-2">
-            {offers.map((o) => (
+            {(['WalkIn', 'Phone'] as const).map((k) => (
               <RadioCard
-                key={`${o.kind}:${o.id}`}
-                name="walk-in-offer"
-                value={`${o.kind}:${o.id}`}
-                checked={offerKey === `${o.kind}:${o.id}`}
+                key={k}
+                name="walk-in-kind"
+                value={k}
+                checked={kind === k}
                 onChange={() => {
-                  setOfferKey(`${o.kind}:${o.id}`);
-                  setProfessionalId('');
+                  setKind(k);
                   setStart('');
+                  if (k === 'WalkIn') setDate(today);
                 }}
-                aside={
-                  <span className="font-latin text-label font-bold text-navy-900">
-                    {formatPrice(o.price, locale, o.currency)}
-                  </span>
-                }
               >
-                <span className="block text-label font-bold text-text-primary">
-                  {localizedName(locale, o.nameAr, o.nameEn)}
-                </span>
-                <span className="block text-helper text-text-secondary">
-                  {formatDurationMinutes(o.durationMinutes, locale)}
-                </span>
+                <span className="block text-label font-bold text-text-primary">{t(`kinds.${k}.title`)}</span>
+                <span className="block text-helper text-text-secondary">{t(`kinds.${k}.body`)}</span>
               </RadioCard>
             ))}
-          </div>
-        </fieldset>
+          </div>,
+          'walk-in-kind',
+        )}
 
-        <TextField
-          label={t('date')}
-          type="date"
-          value={date}
-          min={today}
-          className="max-w-[220px]"
-          onChange={(event) => {
-            if (event.target.value) {
-              setDate(event.target.value);
-              setStart('');
-            }
-          }}
-        />
+        {fieldset(
+          t('steps.service'),
+          <>
+            {services.length > 0 && (
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {services.map((o) => (
+                  <CheckboxCard
+                    key={o.id}
+                    name="walk-in-service"
+                    value={o.id}
+                    checked={!packageId && serviceIds.includes(o.id)}
+                    onChange={() => toggleService(o.id)}
+                    aside={
+                      <span className="font-latin text-label font-bold text-navy-900">
+                        {formatPrice(o.price, locale, o.currency)}
+                      </span>
+                    }
+                  >
+                    <span className="block text-label font-bold text-text-primary">
+                      {localizedName(locale, o.nameAr, o.nameEn)}
+                    </span>
+                    <span className="block text-helper text-text-secondary">
+                      {formatDurationMinutes(o.durationMinutes, locale)}
+                    </span>
+                  </CheckboxCard>
+                ))}
+              </div>
+            )}
+            {packages.length > 0 && (
+              <>
+                <p className="pt-1 text-helper font-bold text-text-secondary">{t('packages')}</p>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {packages.map((o) => (
+                    <RadioCard
+                      key={o.id}
+                      name="walk-in-package"
+                      value={o.id}
+                      checked={packageId === o.id}
+                      onChange={() => choosePackage(o.id)}
+                      aside={
+                        <span className="font-latin text-label font-bold text-navy-900">
+                          {formatPrice(o.price, locale, o.currency)}
+                        </span>
+                      }
+                    >
+                      <span className="block text-label font-bold text-text-primary">
+                        {localizedName(locale, o.nameAr, o.nameEn)}
+                      </span>
+                      <span className="block text-helper text-text-secondary">
+                        {formatDurationMinutes(o.durationMinutes, locale)}
+                      </span>
+                    </RadioCard>
+                  ))}
+                </div>
+              </>
+            )}
+            {chosen.length > 0 && (
+              <p className="text-label font-bold text-navy-900" data-testid="walk-in-total">
+                {t('chosen', {
+                  count: chosen.length,
+                  duration: formatDurationMinutes(duration, locale),
+                  price: formatPrice(price, locale, currency),
+                })}
+              </p>
+            )}
+          </>,
+          'walk-in-services',
+        )}
 
-        <fieldset className="flex min-w-0 flex-col gap-2.5">
-          <legend className="pb-2 text-label font-bold text-text-strong">{t('steps.professional')}</legend>
-          {options.isPending ? (
+        {kind === 'Phone' && (
+          <TextField
+            label={t('date')}
+            type="date"
+            value={date}
+            min={today}
+            className="max-w-[220px]"
+            onChange={(event) => {
+              if (event.target.value) {
+                setDate(event.target.value);
+                setStart('');
+              }
+            }}
+          />
+        )}
+
+        {fieldset(
+          t('steps.professional'),
+          chosen.length === 0 ? (
+            <p className="text-helper text-text-secondary">{t('pickServiceFirst')}</p>
+          ) : options.isPending ? (
             <SkeletonList rows={2} label={t('loading')} />
           ) : options.isError ? (
             <InlineAlert tone="danger" title={t('loadError')} />
@@ -242,7 +365,8 @@ export function WalkInFlow({
           ) : (
             <div className="grid gap-2.5 sm:grid-cols-2">
               {options.data.professionals.map((p) => {
-                const meta = p.freeNow
+                const freeNow = kind === 'WalkIn' && p.freeNow;
+                const meta = freeNow
                   ? t('freeNow')
                   : p.nextFreeAt
                     ? t('freeAt', { time: formatTime(p.nextFreeAt, locale, timeZone) })
@@ -253,17 +377,20 @@ export function WalkInFlow({
                     name="walk-in-professional"
                     value={p.id}
                     checked={professionalId === p.id}
-                    disabled={!p.freeNow && !p.nextFreeAt}
+                    disabled={!freeNow && !p.nextFreeAt}
                     onChange={() => {
                       setProfessionalId(p.id);
-                      setStart(p.freeNow ? NOW : '');
+                      setStart(freeNow ? NOW : '');
                     }}
                   >
                     <span className="block text-label font-bold text-text-primary">
                       {localizedName(locale, p.nameAr, p.nameEn)}
+                      {p.id === ownProfessionalId && (
+                        <span className="ms-1.5 text-helper font-normal text-text-tertiary">{t('you')}</span>
+                      )}
                     </span>
                     <span
-                      className={`block text-helper ${p.freeNow ? 'font-bold text-success-700' : 'text-text-secondary'}`}
+                      className={`block text-helper ${freeNow ? 'font-bold text-success-700' : 'text-text-secondary'}`}
                     >
                       {meta}
                     </span>
@@ -271,14 +398,16 @@ export function WalkInFlow({
                 );
               })}
             </div>
-          )}
-        </fieldset>
+          ),
+        )}
 
-        {professional && (
-          <fieldset className="flex min-w-0 flex-col gap-2.5">
-            <legend className="pb-2 text-label font-bold text-text-strong">{t('steps.time')}</legend>
+        {fieldset(
+          t('steps.time'),
+          !professional ? (
+            <p className="text-helper text-text-secondary">{t('pickProfessionalFirst')}</p>
+          ) : (
             <div className="flex flex-wrap gap-2" data-testid="walk-in-times">
-              {professional.freeNow && (
+              {kind === 'WalkIn' && professional.freeNow && (
                 <label className="relative inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-button border-[1.5px] border-navy-900 bg-surface px-4 text-label font-bold text-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]">
                   <input
                     type="radio"
@@ -311,38 +440,40 @@ export function WalkInFlow({
                 </label>
               ))}
             </div>
-          </fieldset>
+          ),
         )}
 
-        <fieldset className="flex min-w-0 flex-col gap-3">
-          <legend className="pb-2 text-label font-bold text-text-strong">{t('steps.customer')}</legend>
-          <TextField
-            label={t('name')}
-            value={name}
-            maxLength={NAME_MAX}
-            autoComplete="off"
-            error={nameError}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <PhoneField
-            label={t('phone')}
-            optional
-            autoComplete="off"
-            value={phone}
-            error={phoneError}
-            onValueChange={(national) => setPhone(national)}
-            onBlur={() => setPhoneTouched(true)}
-          />
-          <TextareaField
-            label={t('note')}
-            optional
-            placeholder={t('notePlaceholder')}
-            maxLength={NOTE_MAX}
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </fieldset>
+        {fieldset(
+          t('steps.customer'),
+          <>
+            <TextField
+              label={t('name')}
+              value={name}
+              maxLength={NAME_MAX}
+              autoComplete="off"
+              error={nameError}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <PhoneField
+              label={t('phone')}
+              optional
+              autoComplete="off"
+              value={phone}
+              error={phoneError}
+              onValueChange={(national) => setPhone(national)}
+              onBlur={() => setPhoneTouched(true)}
+            />
+            <TextareaField
+              label={t('note')}
+              optional
+              placeholder={t('notePlaceholder')}
+              maxLength={NOTE_MAX}
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </>,
+        )}
       </div>
 
       <aside
@@ -354,7 +485,13 @@ export function WalkInFlow({
         </h2>
         <dl className="flex flex-col divide-y divide-border-row text-label">
           {[
-            [t('summary.service'), offer ? localizedName(locale, offer.nameAr, offer.nameEn) : '—'],
+            [t('summary.kind'), t(`kinds.${kind}.title`)],
+            [
+              t('summary.service'),
+              chosen.length > 0
+                ? chosen.map((o) => localizedName(locale, o.nameAr, o.nameEn)).join(' + ')
+                : '—',
+            ],
             [
               t('summary.professional'),
               professional ? localizedName(locale, professional.nameAr, professional.nameEn) : '—',
@@ -362,19 +499,19 @@ export function WalkInFlow({
             [t('summary.starts'), startsAt ? formatTime(startsAt, locale, timeZone) : '—'],
             [
               t('summary.ends'),
-              startsAt && offer ? formatTime(endOf(startsAt, offer.durationMinutes), locale, timeZone) : '—',
+              startsAt && duration > 0 ? formatTime(endOf(startsAt, duration), locale, timeZone) : '—',
             ],
-            [t('summary.total'), offer ? formatPrice(offer.price, locale, offer.currency) : '—'],
+            [t('summary.total'), chosen.length > 0 ? formatPrice(price, locale, currency) : '—'],
           ].map(([label, value]) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2">
               <dt className="text-text-secondary">{label}</dt>
-              <dd className="font-bold text-text-primary">{value}</dd>
+              <dd className="text-end font-bold text-text-primary">{value}</dd>
             </div>
           ))}
         </dl>
         {error && <InlineAlert tone="danger" title={error} />}
         <Button size="lg" fullWidth disabled={!ready} loading={submitting} onClick={submit}>
-          {t('submit')}
+          {kind === 'Phone' ? t('submitPhone') : t('submit')}
         </Button>
         <p className="text-helper text-text-tertiary">{t('blocksOnline')}</p>
       </aside>

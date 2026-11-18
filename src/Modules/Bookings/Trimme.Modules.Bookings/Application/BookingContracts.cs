@@ -8,7 +8,8 @@ using Trimme.Modules.Bookings.Domain;
 
 namespace Trimme.Modules.Bookings.Application;
 
-public sealed record BookedPackageItemResponse(Guid ServiceId, string NameAr, string? NameEn);
+/// <summary>One booked service, with its own price and length when it has them, and whether the barber added it at the visit (D-147).</summary>
+public sealed record BookedPackageItemResponse(Guid ServiceId, string NameAr, string? NameEn, decimal? Price = null, int? DurationMinutes = null, bool Added = false);
 
 /// <summary>What was booked, as it was at booking time (R-BKG-01).</summary>
 public sealed record BookingItemResponse(
@@ -36,7 +37,8 @@ public sealed record BookingHistoryResponse(
     ActorType ActorType,
     string? Reason,
     DateTimeOffset OccurredAt,
-    BookingProfessionalResponse? PreviousProfessional = null);
+    BookingProfessionalResponse? PreviousProfessional = null,
+    string? ActorName = null);
 
 public enum CustomerBookingAction
 {
@@ -48,7 +50,9 @@ public enum CustomerBookingAction
 }
 
 /// <summary>What a customer response needs besides the booking: the clock, the policy and the customer's own ratings.</summary>
-internal sealed record CustomerBookingView(DateTimeOffset Now, int CutoffMinutes, int ReviewWindowDays, IReadOnlyDictionary<Guid, int> Ratings);
+internal sealed record CustomerBookingView(
+    DateTimeOffset Now, int CutoffMinutes, int ReviewWindowDays, IReadOnlyDictionary<Guid, int> Ratings,
+    IReadOnlyDictionary<Guid, PostponementOfferResponse>? Offers = null);
 
 /// <summary>
 /// A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
@@ -76,7 +80,8 @@ public sealed record CustomerBookingResponse(
     DateTimeOffset? ReviewDeadline,
     BookingLoyaltyRewardResponse? LoyaltyReward,
     uint Version,
-    DateTimeOffset? ProfessionalChangedAt = null);
+    DateTimeOffset? ProfessionalChangedAt = null,
+    PostponementOfferResponse? Postponement = null);
 
 /// <summary>
 /// A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). <c>AllowedTransitions</c> is
@@ -84,6 +89,11 @@ public sealed record CustomerBookingResponse(
 /// <c>OutsideSchedule</c> flags an active booking that no longer fits the professional's
 /// hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. <c>Visit</c> says whether an
 /// online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
+/// <para>
+/// D-147: <c>ActualStartAt</c> (when «وصل» was pressed, or a walk-in started at once) and <c>ActualEndAt</c> (when
+/// «انتهت الخدمة» was pressed); <c>Overdue</c> (red: open 15 minutes past its end); <c>CancelledLate</c> («إلغاء متأخر»);
+/// <c>ClosedLate</c> («انقفل متأخر») and <c>ClosedBy</c> (the name of who closed it).
+/// </para>
 /// </summary>
 public sealed record ShopBookingResponse(
     Guid Id,
@@ -102,9 +112,28 @@ public sealed record ShopBookingResponse(
     bool OutsideSchedule,
     BookingLoyaltyRewardResponse? LoyaltyReward,
     CustomerVisit? Visit,
-    uint Version);
+    uint Version,
+    DateTimeOffset? ActualStartAt = null,
+    DateTimeOffset? ActualEndAt = null,
+    bool Overdue = false,
+    bool CancelledLate = false,
+    bool ClosedLate = false,
+    string? ClosedBy = null,
+    string? CustomerPhone = null,
+    PostponementOfferResponse? Postponement = null)
+{
+    /// <summary>Never print the number (records list every member by default).</summary>
+    public override string ToString() => $"{nameof(ShopBookingResponse)} {{ Id = {Id}, Status = {Status} }}";
+}
 
 public sealed record BookingNoteResponse(Guid Id, string Text, DateTimeOffset CreatedAt);
+
+/// <summary>
+/// The latest postponement offer of a booking (D-147): the new time held for the customer, until when they may answer,
+/// its state and who offered it. <c>Live</c>: still open and holding the time.
+/// </summary>
+public sealed record PostponementOfferResponse(
+    Guid Id, DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTimeOffset ExpiresAt, PostponementStatus Status, string? OfferedBy, bool Live);
 
 /// <summary>How many bookings each status chip would list (every filter but the status applied).</summary>
 public sealed record ShopBookingCounts(int All, int Pending, int Confirmed, int Arrived, int Completed, int Cancelled, int NoShow);
@@ -133,7 +162,8 @@ internal sealed record BookingEvent(
     DateTimeOffset? PreviousStartsAt,
     string ActorType,
     Guid? PreviousProfessionalId = null,
-    Guid? ActorId = null);
+    Guid? ActorId = null,
+    DateTimeOffset? OfferedStartsAt = null);
 
 internal static class BookingEvents
 {
@@ -145,13 +175,29 @@ internal static class BookingEvents
     /// <summary>The booking was given to another barber at the same time (D-145); the payload names the previous one.</summary>
     public const string ProfessionalChanged = "booking.professional_changed";
 
-    public static void Add(TrimmeDbContext db, string type, Booking booking, DateTimeOffset now)
+    /// <summary>
+    /// A service was added at the visit or taken off (D-147): the end and the price moved. Only the live board listens;
+    /// nobody is messaged.
+    /// </summary>
+    public const string ServicesChanged = "booking.services_changed";
+
+    /// <summary>The barber offered the customer a new time (D-147); the payload carries it. The customer gets an in-app notice.</summary>
+    public const string PostponementOffered = "booking.postponement_offered";
+
+    /// <summary>The customer declined the offered time (D-147); the barber and the owner get an in-app notice.</summary>
+    public const string PostponementDeclined = "booking.postponement_declined";
+
+    public static void Add(TrimmeDbContext db, string type, Booking booking, DateTimeOffset now, DateTimeOffset? offeredStartsAt = null)
     {
         var last = booking.History[^1];
         db.Add(OutboxMessage.Create(type, new BookingEvent(
             booking.Id.Value, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, booking.StartsAt, booking.EndsAt,
-            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId, last.ActorId), now));
+            booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId, last.ActorId,
+            offeredStartsAt), now));
     }
+
+    public static PostponementOfferResponse Offer(PostponementOffer offer, Booking booking, DateTimeOffset now) =>
+        new(offer.Id, offer.StartsAt, offer.EndsAt, offer.ExpiresAt, offer.Status, offer.OfferedByName, offer.IsLive(booking, now));
 
     public static string ForStatus(BookingStatus status) => BookingRules.IsCancelled(status) ? Cancelled : StatusChanged;
 }
@@ -160,7 +206,7 @@ internal static class BookingMapping
 {
     public static BookingItemResponse Item(Booking b) =>
         new(b.ServiceId, b.PackageId, b.ItemNameAr, b.ItemNameEn, b.Price, b.Currency, b.DurationMinutes,
-            [.. b.PackageItems.Select(i => new BookedPackageItemResponse(i.ServiceId, i.NameAr, i.NameEn))]);
+            [.. b.PackageItems.Select(i => new BookedPackageItemResponse(i.ServiceId, i.NameAr, i.NameEn, i.Price, i.DurationMinutes, i.Added))]);
 
     public static BookingProfessionalResponse Professional(Booking b) => new(b.ProfessionalId.Value, b.ProfessionalNameAr, b.ProfessionalNameEn);
 
@@ -174,12 +220,16 @@ internal static class BookingMapping
                 h.Kind, h.FromStatus, h.ToStatus, h.PreviousStartsAt, h.ActorType, h.Reason, h.OccurredAt,
                 h.PreviousProfessionalId is { } previous
                     ? new BookingProfessionalResponse(previous, h.PreviousProfessionalNameAr ?? string.Empty, h.PreviousProfessionalNameEn ?? string.Empty)
-                    : null)),
+                    : null,
+                h.ActorName)),
     ];
 
-    public static ShopBookingResponse ToShop(Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null) =>
+    /// <summary>The shop's view; <paramref name="allowed"/> is what the viewer may do (a colleague's booking allows less, D-147).</summary>
+    public static ShopBookingResponse ToShop(
+        Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null, IReadOnlyList<BookingStatus>? allowed = null) =>
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
-            b.CancellationReason, b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), visit, b.Version);
+            b.CancellationReason, allowed ?? b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), visit, b.Version,
+            b.ActualStartAt, b.CompletedAt, b.IsOverdue(now), b.CancelledLate, b.ClosedLate, b.ClosingEntry?.ActorName);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
     {
@@ -195,7 +245,7 @@ internal static class BookingMapping
 
         return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
             b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version,
-            b.ProfessionalChangedAt);
+            b.ProfessionalChangedAt, view.Offers?.GetValueOrDefault(b.Id.Value));
     }
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>
@@ -203,7 +253,7 @@ internal static class BookingMapping
 
     public static BookedItem Snapshot(BookableOffer offer) =>
         new(offer.IsPackage ? null : offer.Id, offer.IsPackage ? offer.Id : null, offer.NameAr, offer.NameEn, offer.Price, offer.Currency,
-            offer.DurationMinutes, [.. offer.Items.Select(i => BookedPackageItem.Of(i.ServiceId, i.NameAr, i.NameEn))]);
+            offer.DurationMinutes, [.. offer.Items.Select(i => BookedPackageItem.Of(i.ServiceId, i.NameAr, i.NameEn, i.Price, i.DurationMinutes))]);
 }
 
 /// <summary>

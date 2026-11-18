@@ -40,6 +40,7 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<ProfessionalPicker>();
         services.AddScoped<CustomerVisits>();
         services.AddScoped<ShopBookingReader>();
+        services.AddScoped<BookingActors>();
         services.AddScoped<ShopBoardLoader>();
         services.AddScoped<AdminBookingMapper>();
         services.AddSingleton<BuildingBlocks.Application.Realtime.IOperationsEventProjector, BookingOperationsProjector>();

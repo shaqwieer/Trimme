@@ -57,7 +57,8 @@
       "subscription": "Abonelik",
       "notifications": "Bildirimler",
       "settings": "Salon ayarları",
-      "qr": "QR kodlar"
+      "qr": "QR kodlar",
+      "reports": "Raporlar"
     },
     "admin": {
       "overview": "Genel bakış",
@@ -556,7 +557,20 @@
     "auth_phone_change_otp_required": "Numara şu anda buradan değiştirilemez. Groom Here ekibiyle iletişime geçin.",
     "account_has_upcoming_bookings": "Yaklaşan randevularınız var. Onları iptal edin ya da bitmelerini bekleyin, sonra hesabınızı silin.",
     "legal_content_invalid": "Bu metin kaydedilemez: desteklenmeyen öğeleri veya güvenli olmayan bağlantıları kaldırın ve boş olmadığından emin olun.",
-    "legal_not_found": "Bu sayfa yok."
+    "legal_not_found": "Bu sayfa yok.",
+    "booking_arrival_required": "Önce «Geldi», sonra «Hizmet bitti»ye basın.",
+    "booking_add_after_arrival": "Hizmet, müşteri geldikten sonra eklenir.",
+    "booking_service_already_booked": "Bu hizmet randevuda zaten var.",
+    "booking_service_not_booked": "Bu hizmet randevuda yok.",
+    "booking_last_service": "Randevuda en az bir hizmet kalır.",
+    "booking_service_fixed": "Bu hizmet randevunun parçasıdır ve çıkarılamaz.",
+    "booking_services_closed": "Randevu kapandı; hizmetleri değişmez.",
+    "booking_postpone_online_only": "Dükkânda veya telefonla alınan randevunun saati, müşteri onaylayınca doğrudan değişir.",
+    "booking_consent_required": "Müşterinin uygulamadan aldığı randevu, kabul ettiği bir teklifle ertelenir.",
+    "booking_postpone_too_late": "Randevuya bir saatten az kaldı: bir meslektaşa aktarın veya iptal edin.",
+    "booking_postponement_gone": "Erteleme teklifi artık geçerli değil.",
+    "booking_postpone_same_time": "Bu, randevunun kendi saati.",
+    "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -990,7 +1004,22 @@
     "activeFor": "{name}: randevuya açık",
     "editItem": "{name} öğesini düzenle",
     "archiveItem": "{name} öğesini arşivle",
-    "deleteItem": "{name} öğesini sil"
+    "deleteItem": "{name} öğesini sil",
+    "packages": {
+      "title": "Paketler",
+      "add": "Paket ekle",
+      "empty": "Henüz paket yok. Paket, iki veya daha fazla hizmeti kendi fiyatı ve süresiyle bir araya getirir.",
+      "newTitle": "Yeni paket",
+      "editTitle": "Paketi düzenle",
+      "notFound": "Paket bulunamadı.",
+      "activate": "Aç",
+      "deactivate": "Kapat",
+      "archive": "Arşivle",
+      "archiveTitle": "Paket arşivlensin mi?",
+      "archiveBody": "Randevudan ve dükkân sayfasından kalkar, geçmiş randevularda kalır. Geri alınamaz.",
+      "archiveConfirm": "Evet, arşivle",
+      "keep": "Vazgeç"
+    }
   },
   "adminServices": {
     "title": "Hizmetler ve kategoriler",
@@ -2141,6 +2170,14 @@
         "from": "Mevcut randevu",
         "to": "Yeni randevu"
       }
+    },
+    "postponement": {
+      "title": "Berberiniz yeni bir saat öneriyor",
+      "body": "Berberiniz randevunuza yetişemiyor ve yerine {when} öneriyor. Bu saat {until} saatine kadar sizin için ayrıldı.",
+      "accept": "Yeni saati kabul et",
+      "decline": "Reddet",
+      "accepted": "Randevunuz yeni saate taşındı.",
+      "declined": "Yeni saati reddettiniz; randevunuz saatinde kaldı."
     }
   },
   "review": {
@@ -2272,13 +2309,17 @@
         "source": "Kaynak",
         "amount": "Tutar",
         "note": "Müşteri notu",
-        "cancellationReason": "İptal nedeni"
+        "cancellationReason": "İptal nedeni",
+        "actualStart": "Gerçek başlangıç",
+        "actualEnd": "Gerçek bitiş",
+        "closedBy": "Kapatan"
       },
       "amount": "{price} — salonda ödenir",
       "channel": {
         "Online": "Müşteri uygulaması",
         "WalkIn": "Randevusuz müşteri",
-        "Qr": "QR kod"
+        "Qr": "QR kod",
+        "Phone": "Telefonla"
       },
       "noPhone": {
         "title": "Müşterinin numarası mevcut değil",
@@ -2287,12 +2328,13 @@
       "changeStatus": "Durumu değiştir",
       "actions": {
         "Pending": "Onay bekliyor",
-        "Confirmed": "Onayla",
-        "Arrived": "Müşteri geldi",
+        "Confirmed": "Randevuyu kabul et",
+        "Arrived": "Geldi",
         "Completed": "Hizmet bitti",
-        "NoShow": "Gelmedi",
-        "CancelledByShop": "İptal et",
-        "CancelledByCustomer": "Müşteri iptal etti"
+        "NoShow": "Müşteri gelmedi (çeyrek saatten fazla gecikti)",
+        "CancelledByShop": "Randevuyu iptal et",
+        "CancelledByCustomer": "Müşteri iptal etti",
+        "reject": "Randevuyu reddet"
       },
       "stale": "Randevu az önce değişti — yeniledik; kontrol edip tekrar deneyin.",
       "notes": {
@@ -2306,7 +2348,12 @@
         "created": "Randevu oluşturuldu",
         "rescheduled": "Saat değiştirildi",
         "status": "Durum: {status}",
-        "professionalChanged": "Başka bir berbere verildi (önceki: {previous})"
+        "professionalChanged": "Başka bir berbere verildi (önceki: {previous})",
+        "serviceAdded": "Hizmet eklendi: {name}",
+        "serviceRemoved": "Hizmet çıkarıldı: {name}",
+        "postponementOffered": "Berber yeni bir saat teklif etti",
+        "postponementAccepted": "Müşteri yeni saati kabul etti",
+        "postponementDeclined": "Müşteri yeni saati reddetti"
       },
       "actor": {
         "Customer": "Müşteri",
@@ -2315,8 +2362,8 @@
         "System": "Sistem"
       },
       "change": {
-        "title": "Randevuyu değiştir",
-        "reschedule": "Saati değiştir",
+        "title": "Acil durum",
+        "reschedule": "Ertele",
         "move": "Başka bir berbere ver",
         "rescheduleTitle": "{name} için yeni saat",
         "rescheduleBody": "Aynı berber, aynı hizmet. Müşteriye yeni saat bildirilir.",
@@ -2335,20 +2382,64 @@
         "busyNow": "Bu berber artık bu saatte dolu. Başka birini seçin.",
         "confirmMove": "Randevuyu ver",
         "keep": "Vazgeç",
-        "loading": "Yükleniyor…"
+        "loading": "Yükleniyor…",
+        "order": "Sırayla: randevuyu boştaki bir meslektaşa aktar, ya da müşterinin onayıyla ertele; olmazsa sebebini yazarak iptal et.",
+        "offerTitle": "{name} randevusunu ertele",
+        "offerBody": "Aynı berberle yeni bir saat seçin. Müşteri için ayrılır; müşteriye bildirilir ve mevcut saatten bir saat öncesine kadar kabul veya reddeder. Reddederse ya da cevap vermezse randevu saatinde kalır.",
+        "confirmOffer": "Teklifi gönder"
       },
       "cancel": {
         "title": "Randevu iptal edilsin mi?",
-        "body": "Müşteriye bildirilir ve saat serbest bırakılır. Bu işlem geri alınamaz.",
+        "body": "Müşteriye bildirilir ve saat başkalarına açılır. Geri alınamaz.",
         "reason": "Neden",
         "confirm": "Evet, iptal et",
-        "keep": "Randevuyu koru"
+        "keep": "Randevuyu koru",
+        "late": "Başlangıçtan önceki son 15 dakikadaki iptal «geç iptal» olarak kaydedilir."
       },
       "finish": {
         "title": "{name} için hizmet bitti mi?",
         "body": "Randevu şimdi bitmiş olarak kaydedilir ve berberin kalan zamanı rezervasyona açılır. Geri alınamaz.",
         "confirm": "Evet, hizmet bitti",
         "keep": "Vazgeç"
+      },
+      "flags": {
+        "overdue": "Gecikti",
+        "closedLate": "Geç kapatıldı",
+        "cancelledLate": "Geç iptal"
+      },
+      "overdueNote": "Bu randevunun saati geçti ve kapatılmadı. Dükkândaki her berber kapatabilir; «geç kapatıldı» yazılır.",
+      "phone": {
+        "title": "Müşterinin cep telefonu",
+        "body": "Dükkân randevuyla birlikte kaydetti; «Hizmet bitti»den sonra kaybolur."
+      },
+      "reject": {
+        "title": "Randevu reddedilsin mi?",
+        "body": "Müşteriye dükkânın randevuyu kabul etmediği bildirilir ve saat açılır.",
+        "confirm": "Evet, reddet"
+      },
+      "noShow": {
+        "title": "{name} gelmedi mi?",
+        "body": "Müşteri gelmedi (çeyrek saatten fazla gecikti). Randevu «gelmedi» olarak kaydedilir ve zamanı açılır. Geri alınamaz.",
+        "confirm": "Evet, gelmedi"
+      },
+      "services": {
+        "title": "Hizmetler",
+        "added": "ziyarette eklendi",
+        "remove": "Çıkar",
+        "removeLabel": "{name} hizmetini randevudan çıkar",
+        "add": "Hizmet ekle",
+        "pick": "Hizmet",
+        "choose": "Bir hizmet seçin",
+        "loading": "Yükleniyor…",
+        "addHint": "Randevu uzar ve fiyatı artar. Ardından aynı saatte başka randevu varsa önce onu taşıyın.",
+        "confirmAdd": "Ekle",
+        "cancel": "Vazgeç",
+        "addAfterArrival": "Hizmet «Geldi»den sonra eklenir."
+      },
+      "postponement": {
+        "waiting": "{when} için erteleme teklif edildi; müşterinin cevabı {until} saatine kadar bekleniyor. Saat müşteri için ayrıldı.",
+        "declined": "Müşteri yeni saati reddetti. Randevuyu boştaki bir meslektaşa aktarın ya da sebebini yazarak iptal edin.",
+        "lapsed": "Erteleme teklifi cevapsız kaldı; randevu saatinde kaldı."
       }
     },
     "appointments": {
@@ -2382,26 +2473,51 @@
       "finishTitle": "{name} için hizmet bitti mi?",
       "finishBody": "Randevu şimdi bitmiş olarak kaydedilir ve berberin kalan zamanı rezervasyona açılır. Geri alınamaz.",
       "finishConfirm": "Evet, hizmet bitti",
-      "finishKeep": "Vazgeç"
+      "finishKeep": "Vazgeç",
+      "overdue": "Geciken randevular",
+      "overdueHint": "Saati geçti ve kapatılmadı. Dükkândaki her berber kapatabilir.",
+      "overdueBadge": "Gecikti",
+      "responsible": "Berber: {name}",
+      "pending": "Onay bekleyen randevular",
+      "pendingHint": "Dükkândaki her berber kabul edebilir veya reddedebilir.",
+      "closedLate": "Geç kapatılanlar (son 3 gün)",
+      "closedLateBy": "Berber: {responsible} · kapatan: {closer} · {status} · geç kapatıldı",
+      "actionLabel": "{action}: {name}",
+      "row": {
+        "Confirmed": "Kabul et",
+        "Arrived": "Geldi",
+        "Completed": "Hizmet bitti",
+        "NoShow": "Gelmedi"
+      },
+      "done": {
+        "Confirmed": "{name} randevusu kabul edildi.",
+        "Arrived": "{name} geldi olarak işaretlendi.",
+        "Completed": "{name} hizmeti bitti; berberin zamanı randevuya açıldı.",
+        "NoShow": "{name} gelmedi olarak işaretlendi."
+      },
+      "noShowTitle": "{name} gelmedi mi?",
+      "noShowBody": "Müşteri gelmedi (çeyrek saatten fazla gecikti). Randevu «gelmedi» olarak kaydedilir ve zamanı açılır. Geri alınamaz.",
+      "noShowConfirm": "Evet, gelmedi"
     },
     "visit": {
       "New": "Yeni müşteri",
       "Returning": "Tekrar gelen müşteri"
     },
     "walkIn": {
-      "title": "Randevusuz kayıt",
+      "title": "Dükkânda veya telefonla randevu",
       "noServices": "Aktif hizmet yok. Önce bir hizmet ekleyin.",
-      "intro": "Saat hemen ayrılır ve müşterilerin uygulamada gördüğü saatlerden kalkar.",
+      "intro": "Saati hemen ayırır ve uygulamada müşterilere gösterilen saatlerden kaldırır.",
       "steps": {
-        "service": "1. Hizmet",
-        "professional": "2. Berber",
-        "time": "3. Saat",
-        "customer": "4. Müşteri"
+        "service": "2. Hizmetler",
+        "professional": "3. Berber",
+        "time": "4. Saat",
+        "customer": "5. Müşteri",
+        "kind": "1. Tür"
       },
       "date": "Gün",
       "loading": "Saatler yükleniyor…",
       "loadError": "Saatler yüklenemedi.",
-      "noProfessionals": "Bu hizmeti sunan aktif berber yok.",
+      "noProfessionals": "Bu hizmetlerin hepsini yapan aktif berber yok.",
       "freeNow": "Şu anda müsait",
       "freeAt": "Müsait: {time}",
       "noTimes": "Bu gün müsait saat yok",
@@ -2413,11 +2529,12 @@
       "notePlaceholder": "ör. kısa fade",
       "summary": {
         "title": "Randevu özeti",
-        "service": "Hizmet",
+        "service": "Hizmetler",
         "professional": "Berber",
         "starts": "Başlangıç",
         "ends": "Bitiş",
-        "total": "Toplam"
+        "total": "Toplam",
+        "kind": "Tür"
       },
       "submit": "Randevuyu kaydet",
       "blocksOnline": "Bu saat online randevuya hemen kapatılır.",
@@ -2426,8 +2543,25 @@
         "title": "Randevusuz kayıt oluşturuldu",
         "body": "Randevu {reference}. Saat uygulamada kapatıldı.",
         "view": "Randevuyu görüntüle",
-        "another": "Yeni randevusuz kayıt"
-      }
+        "another": "Yeni randevusuz kayıt",
+        "phoneTitle": "Telefon randevusu kaydedildi"
+      },
+      "kinds": {
+        "WalkIn": {
+          "title": "Dükkânda",
+          "body": "Müşteri şu an burada; saat hemen ayrılır."
+        },
+        "Phone": {
+          "title": "Telefonla",
+          "body": "Başka bir gün veya saat için randevu."
+        }
+      },
+      "packages": "Ya da bir paket",
+      "chosen": "{count, plural, one {# hizmet} other {# hizmet}} · {duration} · {price}",
+      "pickServiceFirst": "Önce hizmetleri seçin.",
+      "pickProfessionalFirst": "Önce berberi seçin.",
+      "you": "(siz)",
+      "submitPhone": "Randevuyu kaydet"
     },
     "calendar": {
       "title": "Günlük ve haftalık takvim",
@@ -2987,13 +3121,16 @@
         "booking_confirmed_by_barber": "{professional}, {customer} adlı müşterinin randevusunu onayladı: {item}, {date} saat {time}",
         "booking_rescheduled_by_barber": "{professional}, {customer} adlı müşterinin randevusunu {date} saat {time} olarak değiştirdi ({item})",
         "booking_cancelled_by_barber": "{professional}, {customer} adlı müşterinin {date} saat {time} tarihli randevusunu iptal etti ({item})",
-        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}"
+        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}",
+        "booking_postponement_offered": "Bir berber {customer} için yeni saat önerdi: {offeredDate} {offeredTime}",
+        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı"
       },
       "customer": {
         "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
         "booking_rescheduled": "{shop} salonundaki randevunuz taşındı: {date} saat {time}",
         "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi",
-        "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz"
+        "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz",
+        "booking_postponement_offered": "{shop} randevunuz için yeni bir saat öneriyor: {date} {time} yerine {offeredDate} {offeredTime}. Randevu sayfasından kabul edin veya reddedin"
       },
       "barber": {
         "booking_created": "{customer} için yeni randevu: {item}, {date} saat {time}",
@@ -3001,7 +3138,8 @@
         "booking_confirmed": "{customer} adlı müşterinin randevusu onaylandı: {item}, {date} saat {time}",
         "booking_rescheduled": "{customer} adlı müşterinin randevusu artık {date} saat {time} ({item})",
         "booking_cancelled": "{customer} adlı müşterinin {date} saat {time} tarihli randevusu iptal edildi ({item})",
-        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}"
+        "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}",
+        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı. Bir meslektaşa aktarın veya iptal edin"
       },
       "admin": {
         "whatsapp_dispatch_failed": "Bir WhatsApp mesajı gönderilemedi ({event})",
@@ -3458,5 +3596,71 @@
     "customBadge": "Özel metin",
     "builtInBadge": "Yerleşik metin",
     "loading": "Düzenleyici yükleniyor…"
+  },
+  "shopReports": {
+    "title": "Raporlar ve beklenen gelir",
+    "periodLabel": "Dönem",
+    "periods": {
+      "day": "Gün",
+      "week": "Hafta",
+      "month": "Ay"
+    },
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "range": "{from} – {to}",
+    "expectedNote": "Gelir «beklenen»dir çünkü çevrim içi ödeme yok: tamamlanan randevuların fiyatı; sadakat ödülü ücretsiz hizmet sıfır sayılır.",
+    "minutes": "{count} dk",
+    "breaksValue": "{count} ({minutes} dk)",
+    "kpis": {
+      "income": "Beklenen gelir",
+      "completed": "Tamamlanan",
+      "average": "Ortalama hizmet süresi",
+      "noShows": "Gelmeyenler",
+      "lateCancellations": "Geç iptaller",
+      "short": "5 dakikadan kısa"
+    },
+    "barbersTitle": "Berber bazında",
+    "wholeShop": "Tüm dükkân",
+    "cols": {
+      "barber": "Berber",
+      "bookings": "Randevular",
+      "completed": "Tamamlanan",
+      "income": "Beklenen gelir",
+      "average": "Ortalama süre",
+      "short": "5 dk altı",
+      "movedOut": "Aktarılan",
+      "movedIn": "Aktarılan (gelen)",
+      "postponed": "Ertelenen",
+      "lateCancellations": "Geç iptal",
+      "noShows": "Gelmedi",
+      "closedLate": "Geç kapatıldı",
+      "unclosed": "Kapatılmadı",
+      "breaks": "Molalar"
+    },
+    "loyalty": {
+      "title": "Sadakat",
+      "summary": "Verilen damga: {stamps} · kullanılan ödül: {redemptions}",
+      "byActor": "{stamps} damga · {redemptions} ödül"
+    },
+    "visitsTitle": "Randevular",
+    "noVisits": "Bu dönemde randevu yok.",
+    "visit": {
+      "when": "Saat",
+      "customer": "Müşteri",
+      "service": "Hizmet",
+      "status": "Durum",
+      "start": "Gerçek başlangıç",
+      "end": "Gerçek bitiş",
+      "length": "Süre",
+      "notes": "Notlar"
+    },
+    "flags": {
+      "short": "5 dakikadan kısa (belki hizmetsiz bitirildi)",
+      "closedLate": "Geç kapatıldı (kapatan: {name})",
+      "cancelledLate": "Geç iptal",
+      "unclosed": "Kapatılmadı",
+      "loyalty": "Sadakat ödülü"
+    },
+    "truncated": "Yalnızca ilk {count} randevu listelenir; yukarıdaki rakamlar dönemin tüm randevularını kapsar."
   }
 }

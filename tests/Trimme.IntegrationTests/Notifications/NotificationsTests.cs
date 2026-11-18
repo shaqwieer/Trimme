@@ -44,6 +44,9 @@ public sealed class NotificationsTests(PostgresFixture postgres)
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "ntf_lifecycle", ct);
+
+        // Faisal's login (D-147: the barbers operate the bookings); its number is his WhatsApp, with messages on.
+        using var faisal = await BarberLoginTests.BarberAsync(w, w.Faisal, FaisalNumber, ct);
         await SetWhatsAppAsync(w.Admin, w.Faisal, FaisalNumber, ct);
         var customerPhone = IdentityTestData.NewPhone();
         using var noura = await CustomerWithPhoneAsync(w.Factory, "نورة القحطاني", customerPhone, ct);
@@ -100,18 +103,19 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         await ProcessOutboxAsync(w.Factory, ct);
         (await DispatchesAsync(w.Factory, second, ct)).Select(d => d.Audience).ShouldBe([MessageAudience.Customer]);
 
-        // The shop cancels: cancellations for both, reminders cancelled and their jobs deleted.
+        // The shop (the booking's barber, D-147) cancels: cancellations for both, reminders cancelled and their jobs deleted.
         version = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
-        await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{bookingId}/transitions", new { to = "CancelledByShop", reason = "إغلاق طارئ", version }, ct), ct);
+        await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{bookingId}/transitions", new { to = "CancelledByShop", reason = "إغلاق طارئ", version }, ct), ct);
         await ProcessOutboxAsync(w.Factory, ct);
         (await DispatchesAsync(w.Factory, bookingId, ct)).Where(d => d.Event == MessageEvent.BookingCancelled).Select(d => d.Audience)
             .ShouldBe([MessageAudience.Customer, MessageAudience.Professional], ignoreOrder: true);
         (await RemindersAsync(w.Factory, bookingId, ct)).ShouldAllBe(r => r.Status == ReminderStatus.Cancelled && JobState(w.Factory, r.JobId!) == "Deleted");
 
-        // In-app: the shop hears what the customer did, the customer hears what the shop did; nothing crosses shops.
+        // In-app: the shop hears what the customer and the barber did (D-145), the customer hears what the shop did;
+        // nothing crosses shops.
         var shopInbox = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct);
         shopInbox.GetProperty("items").EnumerateArray().Select(n => n.GetProperty("kind").GetString())
-            .ShouldBe(["booking.created", "booking.rescheduled", "booking.created"], ignoreOrder: true);
+            .ShouldBe(["booking.created", "booking.rescheduled", "booking.created", "booking.cancelled"], ignoreOrder: true);
         shopInbox.GetRawText().ShouldNotContain(customerPhone[4..]);
         shopInbox.GetRawText().ShouldNotContain("+966");
         var customerInbox = await OkAsync(noura.GetAsync("/api/v1/me/notifications", ct), ct);
@@ -122,9 +126,9 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         // Mark read: shared by the shop's users; another shop cannot touch it.
         var noticeId = shopInbox.GetProperty("items")[0].GetProperty("id").GetGuid();
         await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/notifications/{noticeId}/read", null, ct), HttpStatusCode.NotFound, "notification.not_found", ct);
-        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(3);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(4);
         await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/notifications/{noticeId}/read", null, ct), ct, HttpStatusCode.NoContent);
-        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(2);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications/unread-count", ct), ct)).GetProperty("unread").GetInt32().ShouldBe(3);
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/notifications/read-all", null, ct), ct, HttpStatusCode.NoContent);
 
         // The shop's inbox is the owner's (D-145).

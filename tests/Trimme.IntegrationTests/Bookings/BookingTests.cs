@@ -226,11 +226,12 @@ public sealed class BookingTests(PostgresFixture postgres)
 
         // Shop B guesses shop A's booking id.
         await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/bookings/{id}", ct), HttpStatusCode.NotFound, null, ct);
-        await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = "guess", version }, ct), HttpStatusCode.NotFound, null, ct);
-        await FailsAsync(w.OwnerB.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "x" }, ct), HttpStatusCode.NotFound, null, ct);
         (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/bookings", ct), ct)).GetProperty("total").GetInt32().ShouldBe(0);
         using (var barberB = await w.BarberAsync(w.ProB, ct))
         {
+            // Shop B's barber, who may change bookings (D-147), still cannot reach shop A's.
+            await FailsAsync(barberB.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = "guess", version }, ct), HttpStatusCode.NotFound, null, ct);
+            await FailsAsync(barberB.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "x" }, ct), HttpStatusCode.NotFound, null, ct);
             await FailsAsync(barberB.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "x", customerPhone = "0501234567" }, ct), HttpStatusCode.NotFound, null, ct);
         }
 
@@ -263,7 +264,6 @@ public sealed class BookingTests(PostgresFixture postgres)
         // Jump to 10:00 on the target day (the clock only moves forward), then sign in again.
         clock.SetUtcNow(At(Target, 10).ToUniversalTime());
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
 
         // Walk-ins are booked by the barbers themselves (D-146).
         using var faisal = await w.BarberAsync(w.Faisal, ct);
@@ -284,18 +284,19 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(omar.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(Target, 21), customerName = "x", customerPhone = "0501234567" }, ct),
             HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
 
-        // Transitions (R-BKG-02): complete the arrived one; refuse what the machine forbids; time rules; reason required.
+        // Transitions (R-BKG-02), by the booking's own barber (D-147): complete the arrived one; refuse what the machine
+        // forbids; time rules; reason required.
         var nowId = now.GetProperty("id").GetGuid();
-        var completed = await OkAsync(staff.PostAsync($"/api/v1/shop/bookings/{nowId}/transitions", new { to = "Completed", version = now.GetProperty("version").GetUInt32() }, ct), ct);
+        var completed = await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{nowId}/transitions", new { to = "Completed", version = now.GetProperty("version").GetUInt32() }, ct), ct);
         completed.GetProperty("status").GetString().ShouldBe("Completed");
-        await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{nowId}/transitions", new { to = "Arrived", version = completed.GetProperty("version").GetUInt32() }, ct),
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{nowId}/transitions", new { to = "Arrived", version = completed.GetProperty("version").GetUInt32() }, ct),
             HttpStatusCode.Conflict, "booking.invalid_transition", ct);
         var laterId = later.GetProperty("id").GetGuid();
         var laterVersion = later.GetProperty("version").GetUInt32();
-        await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "NoShow", version = laterVersion }, ct), HttpStatusCode.UnprocessableEntity, "booking.too_early", ct);
-        await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "CancelledByShop", version = laterVersion }, ct), HttpStatusCode.BadRequest, "validation.reason_required", ct);
-        await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "CancelledByShop", reason = "stale", version = laterVersion - 1 }, ct), HttpStatusCode.Conflict, null, ct);
-        var noted = await OkAsync(staff.PostAsync($"/api/v1/shop/bookings/{laterId}/notes", new { text = "يفضّل المقص" }, ct), ct, HttpStatusCode.Created);
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "NoShow", version = laterVersion }, ct), HttpStatusCode.UnprocessableEntity, "booking.too_early", ct);
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "CancelledByShop", version = laterVersion }, ct), HttpStatusCode.BadRequest, "validation.reason_required", ct);
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "CancelledByShop", reason = "stale", version = laterVersion - 1 }, ct), HttpStatusCode.Conflict, null, ct);
+        var noted = await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{laterId}/notes", new { text = "يفضّل المقص" }, ct), ct, HttpStatusCode.Created);
         noted.GetProperty("text").GetString().ShouldBe("يفضّل المقص");
 
         // DV-S22: time off over a booking flags it for the shop; nothing is cancelled.
@@ -307,10 +308,10 @@ public sealed class BookingTests(PostgresFixture postgres)
         flagged.GetProperty("notes").GetArrayLength().ShouldBe(1);
         flagged.GetProperty("history").GetArrayLength().ShouldBe(1);
 
-        // Arrived is allowed from an hour before; a no-show after the start.
-        clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
-        using var staffLater = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct); // the access cookie is short-lived
-        var arrived = await OkAsync(staffLater.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "NoShow", version = laterVersion }, ct), ct);
+        // Arrived is allowed from an hour before; a no-show a quarter hour after the start (D-147).
+        clock.SetUtcNow(At(Target, 10, 50).ToUniversalTime());
+        using var faisalLater = await w.BarberAsync(w.Faisal, ct); // the access cookie is short-lived
+        var arrived = await OkAsync(faisalLater.PostAsync($"/api/v1/shop/bookings/{laterId}/transitions", new { to = "NoShow", version = laterVersion }, ct), ct);
         arrived.GetProperty("status").GetString().ShouldBe("NoShow");
         (await OutboxAsync(w.Factory, ct)).Select(m => m.Split('|')[0]).ShouldBe(["booking.created", "booking.created", "booking.status_changed", "booking.status_changed"]);
     }
@@ -337,10 +338,11 @@ public sealed class BookingTests(PostgresFixture postgres)
         var body = await created.Content.ReadAsStringAsync(ct);
         var id = JsonDocument.Parse(body).RootElement.GetProperty("id").GetGuid();
 
-        // It never goes back to the shop: not in the answer, the booking, the list or the outbox event.
+        // D-147: the barber who typed it reads it on the open booking (the answer here); the owner never does, and the
+        // outbox event never carries it.
+        JsonDocument.Parse(body).RootElement.GetProperty("customerPhone").GetString().ShouldBe("+966" + Digits);
         string[] shopViews =
         [
-            body,
             await (await w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct)).Content.ReadAsStringAsync(ct),
             await (await w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}", ct)).Content.ReadAsStringAsync(ct),
             .. await OutboxAsync(w.Factory, ct),
@@ -404,21 +406,24 @@ public sealed class BookingTests(PostgresFixture postgres)
         var walkInOptions = $"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}";
         FreeNow(await OkAsync(staff.GetAsync(walkInOptions, ct), ct)).ShouldBeFalse();
 
-        // «انتهت الخدمة» (D-135): finished from Confirmed in one step; the visit ends now and Faisal is free at once.
+        // «انتهت الخدمة» (D-135) after «وصل» (D-147): the visit ends now and Faisal is free at once.
         var id = first.GetProperty("id").GetGuid();
         var detail = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct);
-        detail.GetProperty("booking").GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldContain("Completed");
+        detail.GetProperty("booking").GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldBe(["Arrived", "CancelledByShop"]);
+        var arrived = await OkAsync(staff.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
+            new { to = "Arrived", version = detail.GetProperty("booking").GetProperty("version").GetUInt32() }, ct), ct);
+        arrived.GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldBe(["Completed"]);
         var finished = await OkAsync(staff.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
-            new { to = "Completed", version = detail.GetProperty("booking").GetProperty("version").GetUInt32() }, ct), ct);
+            new { to = "Completed", version = arrived.GetProperty("version").GetUInt32() }, ct), ct);
         finished.GetProperty("status").GetString().ShouldBe("Completed");
         finished.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 12, 10));
         FreeNow(await OkAsync(staff.GetAsync(walkInOptions, ct), ct)).ShouldBeTrue();
         await OkAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر" }, ct),
             ct, HttpStatusCode.Created);
 
-        // A later booking can't be finished before it starts.
+        // A booking can't be finished without «وصل» (D-147).
         await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{again.GetProperty("id").GetGuid()}/transitions",
-            new { to = "Completed", version = again.GetProperty("version").GetUInt32() }, ct), HttpStatusCode.UnprocessableEntity, "booking.too_early", ct);
+            new { to = "Completed", version = again.GetProperty("version").GetUInt32() }, ct), HttpStatusCode.UnprocessableEntity, "booking.arrival_required", ct);
 
         // The owner sees who is new and who is returning; a barber's login does not (D-135, D-145).
         var list = $"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target.AddDays(1))}";
@@ -447,12 +452,20 @@ public sealed class BookingTests(PostgresFixture postgres)
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 13), ct), ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
 
-        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), ct);
+        // Any barber pauses the shop's online booking for a while (D-147); the owner no longer does.
+        using (var omar = await w.BarberAsync(w.Omar, ct))
+        {
+            await OkAsync(omar.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), ct);
+        }
+
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 14), ct), HttpStatusCode.UnprocessableEntity, "shop.paused", ct);
         await FailsAsync(noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{id}/reschedule", new { startsAt = At(Target, 14), version = booking.GetProperty("version").GetUInt32() }, ct, headers: Key()),
             HttpStatusCode.UnprocessableEntity, "booking.shop_not_accepting", ct);
         (await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("status").GetString().ShouldBe("Confirmed");
-        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            await OkAsync(faisal.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
+        }
 
         // R-SUB-05: a suspended subscription blocks new online bookings only; walk-ins still work (D-014).
         var subscription = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription", ct), ct);
@@ -532,7 +545,7 @@ public sealed class BookingTests(PostgresFixture postgres)
         var version = booking.GetProperty("version").GetUInt32();
         var longReason = new string('x', 301);
         await FailsAsync(noura.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
-        await FailsAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
         await FailsAsync(w.Admin.PostAsync($"/api/v1/admin/bookings/{id}/cancel", new { reason = longReason, version }, ct), HttpStatusCode.BadRequest, "validation.too_long", ct);
         (await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("status").GetString().ShouldBe("Confirmed");
     }

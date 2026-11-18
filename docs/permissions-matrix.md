@@ -67,27 +67,27 @@
 
 | Permission | ShopOwner | ShopBarber (D-145) |
 |---|---|---|
-| `Shop.Bookings.Read` | ✓ | ✓ own bookings |
-| `Shop.Bookings.UpdateStatus` | ✓ | ✓ own bookings |
-| `Shop.Bookings.CreateWalkIn` | — (D-146: the barbers book walk-ins) | ✓ for themselves |
-| `Shop.Bookings.ResendNotification` | ✓ | — |
-| `Shop.Bookings.Reschedule` | ✓ | ✓ own bookings |
-| `Shop.Bookings.ChangeProfessional` | ✓ | ✓ own bookings, to a colleague |
+| `Shop.Bookings.Read` | ✓ view only (D-147) | ✓ own bookings, plus the shop's pending and red ones (D-147) |
+| `Shop.Bookings.UpdateStatus` | — (D-147: the owner only watches) | ✓ own bookings; a colleague's: accept/reject while pending, close once red (D-147); notes and a booking's services: own only |
+| `Shop.Bookings.CreateWalkIn` | — (D-146: the barbers book walk-ins) | ✓ walk-in and phone bookings, for themselves or a free colleague (D-147) |
+| `Shop.Bookings.ResendNotification` | — (D-147) | — |
+| `Shop.Bookings.Reschedule` | — (D-147) | ✓ own bookings: walk-in/phone directly; online by a postponement offer (D-147) |
+| `Shop.Bookings.ChangeProfessional` | — (D-147) | ✓ own bookings, to a colleague |
 | `Shop.Schedule.Read` | ✓ | — |
-| `Shop.Schedule.Manage` | ✓ | — |
-| `Shop.Breaks.Manage` | ✓ | ✓ own breaks |
-| `Shop.OnlineBooking.Pause` | ✓ | — |
+| `Shop.Schedule.Manage` | ✓ hours, weekly breaks, time off, closures (one-off breaks are the barbers', D-147) | — |
+| `Shop.Breaks.Manage` | — (D-147) | ✓ own breaks |
+| `Shop.OnlineBooking.Pause` | — (D-147) | ✓ the shop-wide pause (D-147) |
 | `Shop.Services.Manage` | ✓ | — |
 | `Shop.Profile.Edit` | ✓ | — |
 | `Shop.Location.Edit` | ✓ | — |
 | `Shop.Subscription.Read` | ✓ | — |
 | `Shop.Notifications.Manage` | ✓ | — |
 | `Shop.Qr.View` | ✓ | — |
-| `Shop.Insights.View` | ✓ | — |
+| `Shop.Insights.View` | ✓ new/returning customers (D-135), reports and expected income (D-147) | — |
 | `Shop.Barbers.ManageLogin` | ✓ (generated temporary password, D-146) | — |
 | `Shop.Barbers.Manage` | ✓ add and edit the shop's own barbers (D-146) | — |
 
-A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings, breaks and figures (D-145). It signs in with the professional's WhatsApp number.
+A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings and breaks (D-145). It signs in with the professional's WhatsApp number. D-147 adds three reviewed exceptions (`BarberScope`, `BarberScopeTests`): any barber of the shop may open, accept or reject a colleague's pending booking and close a colleague's red booking (open 15 minutes past its end, for 3 days), and may record a walk-in or phone booking for a free colleague. A barber sees no figures and no income: the overview's KPIs, load and hours are empty for them. The customer's mobile of a walk-in or phone booking reaches barbers (never the owner) while the booking is open (D-147).
 
 ## Customer
 
@@ -152,7 +152,7 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/public/service-categories` | Anonymous · active categories |
 | `GET /api/v1/public/shops/{slug}/services`, `.../packages` | Anonymous · active shop; active, visible, non-archived items; packages only when every item is available |
 | `GET /api/v1/shop/services`, `GET /api/v1/shop/services/{id}`, `GET /api/v1/shop/packages`, `GET /api/v1/shop/packages/{id}` | User type ShopUser (owner and staff) · own shop only; 404 while suspended |
-| `POST/PUT /api/v1/shop/services(/{id})`, `POST .../{id}/activate|deactivate|archive`, `DELETE .../{id}`, `PUT .../order` | `Shop.Services.Manage` (the owner; the owner's pages are back, D-137) · `professionalIds` on create and edit: the shop's own barbers only (D-137) · same for `/shop/packages` (no delete; no shop UI, D-130) · another shop's id → 404 |
+| `POST/PUT /api/v1/shop/services(/{id})`, `POST .../{id}/activate|deactivate|archive`, `DELETE .../{id}`, `PUT .../order` | `Shop.Services.Manage` (the owner; the owner's pages are back, D-137) · `professionalIds` on create and edit: the shop's own barbers only (D-137) · same for `/shop/packages` (no delete; the owner's pages are back, D-147) · another shop's id → 404 |
 | `GET /api/v1/admin/service-categories` | `Admin.ShopServices.View` |
 | `POST /api/v1/admin/service-categories`, `PUT .../{id}`, `POST .../{id}/activate|deactivate` | `Admin.ServiceCategories.Manage` · audited |
 | `GET /api/v1/admin/services`, `GET /api/v1/admin/services/{id}`, `GET /api/v1/admin/packages` | `Admin.ShopServices.View` · paged |
@@ -176,7 +176,12 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `GET /api/v1/admin/bookings`, `GET /api/v1/admin/bookings/{id}` | `Admin.Bookings.View` · search by name or reference only; detail with history and notes; no customer phone, a walk-in's number masked only (D-134) |
 | `POST /api/v1/admin/bookings/{id}/walk-in-contact/reveal` | `Admin.Customers.ViewContact` · the number the desk took for a walk-in (D-134) · reason required (5–300) · audited · `no-store` |
 | `GET /api/v1/shop/schedule/barber-day`, `PUT /api/v1/shop/schedule/barber-day` | `Shop.Breaks.Manage` · one of the shop's own barbers, one date: working time, own one-off breaks (replaced as a whole, no reason), the shop's breaks, booked time and time off; never a past date for the PUT (D-134) |
-| `POST /api/v1/shop/bookings/walk-in` | `Shop.Bookings.CreateWalkIn` · the customer's name, and the mobile if the customer gives it; the mobile is stored encrypted and never returned to the shop (D-134) |
+| `POST /api/v1/shop/bookings/walk-in` | `Shop.Bookings.CreateWalkIn` · `channel` `WalkIn` or `Phone` (D-147), a service, several services or a package, for the barber or a free colleague · the customer's name, and the mobile if the customer gives it; stored encrypted; barbers read it on the open booking, the owner never (D-147) |
+| `GET /api/v1/shop/bookings/attention` | `Shop.Bookings.Read` · the shop's pending, red and closed-late bookings of the last 3 days, whoever's (D-147) |
+| `POST /api/v1/shop/bookings/{id}/services`, `POST …/services/{serviceId}/delete` | `Shop.Bookings.UpdateStatus` · own bookings · add after «وصل», remove until «انتهت الخدمة» (D-147) |
+| `POST /api/v1/shop/bookings/{id}/postpone` | `Shop.Bookings.Reschedule` · own online booking, more than an hour before it starts: a held offer the customer answers (D-147) |
+| `POST /api/v1/me/bookings/{id}/postponement/accept`, `…/decline` | Customer, own booking · while the offer is live (D-147) |
+| `GET /api/v1/shop/reports?from&to` | `Shop.Insights.View` (the owner) · at most 31 shop-local days (D-147) |
 | `GET /api/v1/shop/bookings`, `GET .../{id}`, `GET /api/v1/shop/dashboard/overview` | `Shop.Bookings.Read`; with `Shop.Insights.View` (the owner) each online booking also says whether the customer is new or returning, and the overview adds the last 30 days' new customers and returning visits (D-135) |
 | `POST /api/v1/admin/bookings/{id}/transitions`, `POST .../cancel` | `Admin.Bookings.Intervene` · reason required (5–300) · the shop's state machine · audited (D-103) |
 | `GET /api/v1/admin/bookings/{id}/reschedule/options`, `POST .../reschedule` | `Admin.Bookings.Intervene` · reschedule: `Idempotency-Key`, reason, collision rules, not in the past · audited (D-103) |

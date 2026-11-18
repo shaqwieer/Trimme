@@ -107,6 +107,12 @@ public interface IStaffDirectory
 
     /// <summary>The enabled login of a barber (D-145), if the professional has one; their in-app notices go to it.</summary>
     Task<Guid?> BarberAccountAsync(ProfessionalId professionalId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether the account is a barber's login (any barber of any shop): the owner hears what a barber did, also on a
+    /// colleague's booking (D-147), but not their own actions.
+    /// </summary>
+    Task<bool> IsBarberAsync(Guid userId, CancellationToken cancellationToken);
 }
 
 /// <summary>

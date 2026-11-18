@@ -23,9 +23,14 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         return await OkAsync(barber.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر الحي", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
     }
 
-    private static async Task CancelAsync(ApiSession owner, JsonElement booking, CancellationToken ct) =>
-        await OkAsync(owner.PostAsync($"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/transitions",
+    /// <summary>The booking's own barber cancels it: the owner only watches (D-147).</summary>
+    private static async Task CancelAsync(BookingWorld w, JsonElement booking, CancellationToken ct)
+    {
+        var id = booking.GetProperty("id").GetGuid();
+        using var barber = await w.BarberOfAsync(id, ct);
+        await OkAsync(barber.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
             new { to = "CancelledByShop", reason = "إغلاق مبكر", version = booking.GetProperty("version").GetUInt32() }, ct), ct);
+    }
 
     private static JsonElement Lane(JsonElement list, Guid id) =>
         list.EnumerateArray().Single(p => p.GetProperty("id").GetGuid() == id);
@@ -37,16 +42,17 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         await using var w = await ArrangeAsync(postgres, "board_overview", ct);
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
 
-        // A shop-wide break 13:00–14:00 on the day, and Faisal on leave the day after.
+        // A weekly break for everyone 13:00–14:00 on the day's weekday (the owner's breaks are weekly, D-147), and Faisal on
+        // leave the day after.
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/breaks",
-            new { professionalId = (Guid?)null, label = "صلاة الظهر", weekdays = (string[]?)null, date = Iso(Target), startMinute = 780, endMinute = 840 }, ct), ct, HttpStatusCode.Created);
+            new { professionalId = (Guid?)null, label = "صلاة الظهر", weekdays = new[] { Target.DayOfWeek.ToString() }, startMinute = 780, endMinute = 840 }, ct), ct, HttpStatusCode.Created);
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/time-off",
             new { professionalId = w.Faisal, kind = "Vacation", startDate = Iso(Target.AddDays(1)), endDate = Iso(Target.AddDays(1)) }, ct), ct, HttpStatusCode.Created);
 
         await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
         await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 11), ct);
         var cancelled = await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 10), ct);
-        await CancelAsync(w.OwnerA, cancelled, ct);
+        await CancelAsync(w, cancelled, ct);
         await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created);
         await WalkInAsync(w, w.Haircut, w.Faisal, At(Target.AddDays(-1), 10), ct);
 
@@ -104,7 +110,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         var night = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target.AddDays(1), 0, 30), ct);
         var morning = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
         var cancelled = await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 11), ct);
-        await CancelAsync(w.OwnerA, cancelled, ct);
+        await CancelAsync(w, cancelled, ct);
 
         var calendar = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/calendar?from={Iso(Target)}", ct), ct);
         calendar.ToString().ShouldNotContain("+966");
@@ -144,7 +150,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         now.GetProperty("status").GetString().ShouldBe("Arrived");
         await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 12), ct);
         await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 13), ct);
-        await CancelAsync(owner, await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 14), ct), ct);
+        await CancelAsync(w, await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 14), ct), ct);
 
         var list = await OkAsync(owner.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}&status=Confirmed&status=Arrived", ct), ct);
         list.GetProperty("total").GetInt32().ShouldBe(3);
@@ -181,19 +187,19 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, customerName = "زائر الحي" }, ct),
             HttpStatusCode.Forbidden, null, ct);
 
-        // Each barber is offered themselves only (D-145): busy until 10:30, or free now.
+        // Each barber is offered themselves first, then the colleagues they may book for (D-147): busy until 10:30, or free now.
         var options = await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct);
         options.GetProperty("date").GetString().ShouldBe(Iso(Target));
         options.GetProperty("durationMinutes").GetInt32().ShouldBe(30);
-        var own = options.GetProperty("professionals").EnumerateArray().ShouldHaveSingleItem();
-        own.GetProperty("id").GetGuid().ShouldBe(w.Faisal);
+        options.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Faisal, w.Omar]);
+        var own = options.GetProperty("professionals")[0];
         own.GetProperty("freeNow").GetBoolean().ShouldBeFalse();
         own.GetProperty("nextFreeAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 30));
         own.GetProperty("starts").EnumerateArray().Select(s => s.GetDateTimeOffset()).ShouldNotContain(At(Target, 10, 15));
-        var omars = (await OkAsync(omar.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct))
-            .GetProperty("professionals").EnumerateArray().ShouldHaveSingleItem();
-        omars.GetProperty("id").GetGuid().ShouldBe(w.Omar);
-        omars.GetProperty("freeNow").GetBoolean().ShouldBeTrue();
+        options.GetProperty("professionals")[1].GetProperty("freeNow").GetBoolean().ShouldBeTrue("Omar is free now, so Faisal may book him");
+        var omars = (await OkAsync(omar.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct)).GetProperty("professionals");
+        omars.EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar, w.Faisal]);
+        omars[0].GetProperty("freeNow").GetBoolean().ShouldBeTrue();
 
         // A service that cannot be booked online is still offered at the shop, to the barbers who do it.
         var deskOnly = (await OkAsync(owner.PostAsync("/api/v1/shop/services", new { nameAr = "حلاقة سريعة", price = 20m, durationMinutes = 15, onlineBookable = false }, ct), ct, HttpStatusCode.Created))
@@ -205,7 +211,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         desk.GetProperty("professionals")[0].GetProperty("freeNow").GetBoolean().ShouldBeFalse("not today");
         desk.GetProperty("professionals")[0].GetProperty("starts").GetArrayLength().ShouldBeGreaterThan(0);
         (await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={deskOnly}&date={Iso(Target.AddDays(1))}", ct), ct))
-            .GetProperty("professionals").GetArrayLength().ShouldBe(0, "Faisal does not do it");
+            .GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar], "Faisal does not do it, Omar does");
 
         await FailsAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}&date={Iso(Target.AddDays(-1))}", ct), HttpStatusCode.BadRequest, "validation.out_of_range", ct);
         await FailsAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.ServiceB}", ct), HttpStatusCode.NotFound, null, ct);

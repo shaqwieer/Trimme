@@ -25,12 +25,24 @@ internal sealed record ListShopBookingsQuery(
 
 internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingDetailResponse?>;
 
+/// <summary>The shop's bookings that need any barber (D-147): pending ones to accept or reject, and red ones to close.</summary>
+internal sealed record GetShopAttentionQuery : IQuery<ShopAttentionResponse?>;
+
+/// <summary>
+/// Pending bookings (oldest start first), red bookings («متأخر»: open 15 minutes past their end) and those closed while
+/// red («انقفل متأخر», with who closed them), all started within the last 3 days, whoever's barber they are (D-147).
+/// Every barber of the shop sees them and may act on the open ones; the owner sees them read-only.
+/// </summary>
+public sealed record ShopAttentionResponse(
+    IReadOnlyList<ShopBookingResponse> Pending, IReadOnlyList<ShopBookingResponse> Overdue, IReadOnlyList<ShopBookingResponse> ClosedLate);
+
 internal sealed record CreateWalkInCommand(
-    Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note, string? IdempotencyKey)
+    Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note, string? IdempotencyKey,
+    IReadOnlyList<Guid> ServiceIds, BookingChannel Channel = BookingChannel.WalkIn)
     : ICommand<Result<ShopBookingResponse>>
 {
     /// <summary>Never print the number (records list every member by default).</summary>
-    public override string ToString() => $"{nameof(CreateWalkInCommand)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt} }}";
+    public override string ToString() => $"{nameof(CreateWalkInCommand)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt}, Channel = {Channel} }}";
 }
 
 internal sealed record TransitionShopBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version) : ICommand<Result<ShopBookingResponse>>;
@@ -38,16 +50,65 @@ internal sealed record TransitionShopBookingCommand(Guid BookingId, BookingStatu
 internal sealed record AddBookingNoteCommand(Guid BookingId, string Text) : ICommand<Result<BookingNoteResponse>>;
 
 /// <summary>Shared queries of the shop's booking views.</summary>
-internal sealed class ShopBookingReader(TrimmeDbContext db, IAvailabilityChecker availability, CustomerVisits visits, TimeProvider clock)
+internal sealed class ShopBookingReader(
+    TrimmeDbContext db, IAvailabilityChecker availability, CustomerVisits visits, ICurrentUser user, IPersonalDataProtector protector, TimeProvider clock)
 {
-    /// <summary>Maps bookings, flagging the active ones that no longer fit the schedule (DV-S22); for the owner, new or returning customers (D-135).</summary>
+    /// <summary>
+    /// Maps bookings, flagging the active ones that no longer fit the schedule (DV-S22); for the owner, new or returning
+    /// customers (D-135); for a barber, the mobile of an open walk-in or phone booking (D-147).
+    /// </summary>
     public async Task<IReadOnlyList<ShopBookingResponse>> MapAsync(ShopId shopId, IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         var active = bookings.Where(b => b.IsActive && b.EndsAt > now).Select(b => new ScheduledTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt)).ToList();
         var outside = await availability.OutsideScheduleAsync(shopId, active, cancellationToken);
         var labels = await visits.LabelsAsync(bookings, cancellationToken);
-        return [.. bookings.Select(b => BookingMapping.ToShop(b, now, outside.Contains(b.Id.Value), labels.TryGetValue(b.Id, out var visit) ? visit : null))];
+        var phones = await PhonesForBarberAsync(bookings, cancellationToken);
+        var offers = await LatestOffersAsync(bookings, cancellationToken);
+        return [.. bookings.Select(b => BookingMapping.ToShop(
+                b, now, outside.Contains(b.Id.Value), labels.TryGetValue(b.Id, out var visit) ? visit : null, b.AllowedFor(user, now))
+            with
+            {
+                CustomerPhone = phones.GetValueOrDefault(b.Id),
+                Postponement = offers.TryGetValue(b.Id, out var offer) ? BookingEvents.Offer(offer, b, now) : null,
+            })];
+    }
+
+    /// <summary>Each online booking's latest postponement offer (D-147), in one query.</summary>
+    private async Task<IReadOnlyDictionary<BookingId, PostponementOffer>> LatestOffersAsync(IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
+    {
+        var ids = bookings.Where(b => b.Channel == BookingChannel.Online).Select(b => b.Id).ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<BookingId, PostponementOffer>();
+        }
+
+        var offers = await db.Set<PostponementOffer>().AsNoTracking().Where(o => ids.Contains(o.BookingId)).ToListAsync(cancellationToken);
+        return offers.GroupBy(o => o.BookingId).ToDictionary(g => g.Key, g => g.OrderByDescending(o => o.CreatedAt).First());
+    }
+
+    /// <summary>
+    /// The one reviewed way a customer's number reaches a shop (D-147, the client's table, overriding D-134 and spec §7 for
+    /// shop-recorded bookings only): a barber's login reads the mobile typed into a walk-in or phone booking while that
+    /// booking is open (Pending, Confirmed or Arrived). Never for the owner, never for an online customer, never once the
+    /// booking is completed, missed or cancelled; never in an event, a notification or a log.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<BookingId, string>> PhonesForBarberAsync(IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
+    {
+        if (user.Own() is null)
+        {
+            return new Dictionary<BookingId, string>();
+        }
+
+        var ids = bookings.Where(b => b.IsShopRecorded && b.IsActive).Select(b => b.Id).ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<BookingId, string>();
+        }
+
+        var contacts = await db.Set<WalkInContact>().AsNoTracking().Where(c => ids.Contains(c.BookingId))
+            .Select(c => new { c.BookingId, c.ProtectedPhone }).ToListAsync(cancellationToken);
+        return contacts.ToDictionary(c => c.BookingId, c => protector.Unprotect(c.ProtectedPhone, PersonalDataPurposes.WalkInPhone));
     }
 
     public async Task<ShopBookingDetailResponse> DetailAsync(Booking booking, CancellationToken cancellationToken)
@@ -136,25 +197,61 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
     }
 }
 
-internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader)
+internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, TimeProvider clock)
     : IQueryHandler<GetShopBookingQuery, ShopBookingDetailResponse?>
 {
     public async Task<ShopBookingDetailResponse?> Handle(GetShopBookingQuery query, CancellationToken cancellationToken)
     {
         var id = new BookingId(query.BookingId);
-        return tenant.ShopId is not null && await db.Set<Booking>().AsNoTracking().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
+        return tenant.ShopId is not null
+            && await db.Set<Booking>().AsNoTracking().Reachable(user, clock.GetUtcNow()).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
             ? await reader.DetailAsync(booking, cancellationToken)
             : null;
     }
 }
 
+internal sealed class GetShopAttentionHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopBookingReader reader, TimeProvider clock)
+    : IQueryHandler<GetShopAttentionQuery, ShopAttentionResponse?>
+{
+    /// <summary>Enough for any shop's three days; a list this long is a shop that stopped closing its bookings.</summary>
+    private const int Limit = 200;
+
+    public async Task<ShopAttentionResponse?> Handle(GetShopAttentionQuery query, CancellationToken cancellationToken)
+    {
+        if (tenant.ShopId is not { } shopId)
+        {
+            return null;
+        }
+
+        var now = clock.GetUtcNow();
+        var bookings = await db.Set<Booking>().AsNoTracking().NeedingAttention(now)
+            .OrderBy(b => b.StartsAt).ThenBy(b => b.Id).Take(Limit).ToListAsync(cancellationToken);
+
+        // Closed after they turned red: the last change (the closing one) came after the end plus the grace. The exact
+        // rule is the domain's (ClosedLate), applied after loading.
+        var visibleFrom = now - BookingRules.OverdueVisibleFor;
+        var open = BookingRules.Active.ToArray();
+        var grace = (int)BookingRules.OverdueAfter.TotalMinutes;
+        var closed = await db.Set<Booking>().AsNoTracking()
+            .Where(b => b.StartsAt >= visibleFrom && !open.Contains(b.Status) && b.UpdatedAt > b.EndsAt.AddMinutes(grace))
+            .OrderByDescending(b => b.UpdatedAt).Take(Limit).ToListAsync(cancellationToken);
+        var mapped = await reader.MapAsync(shopId, [.. bookings, .. closed.Where(b => b.ClosedLate)], cancellationToken);
+        return new ShopAttentionResponse(
+            [.. mapped.Where(b => b.Status == BookingStatus.Pending && !b.Overdue)],
+            [.. mapped.Where(b => b.Overdue)],
+            [.. mapped.Where(b => b.ClosedLate)]);
+    }
+}
+
 /// <summary>
-/// A walk-in (spec §11, R-BKG-07): the same collision checks as an online booking (hours, breaks, time off, closures,
-/// bookings, and the exclusion constraint), at any minute and starting now if no start is given (D-035, D-088). The
-/// subscription and pause gate does not apply (D-014). The customer's name, and their mobile if they give it (optional,
-/// D-134): the mobile is stored encrypted in <see cref="WalkInContact"/> and is not in the response, the outbox event or
-/// any notification. The request hash for the idempotency key uses the number's keyed hash, so no plain hash of it is
-/// stored either.
+/// A walk-in or phone booking (spec §11, R-BKG-07, D-147): the same collision checks as an online booking (hours, breaks,
+/// time off, closures, bookings, and the exclusion constraint), at any minute and starting now if no start is given
+/// (D-035, D-088; a phone booking always names its start). The subscription and pause gate does not apply (D-014). A
+/// service, several services or a package; for the barber themselves or a free colleague (the availability check is what
+/// makes them free). The customer's name, and their mobile if they give it (optional, D-134): the mobile is stored
+/// encrypted in <see cref="WalkInContact"/> and is not in the outbox event or any notification; barbers read it on the
+/// booking until it is closed (D-147). The request hash for the idempotency key uses the number's keyed hash, so no plain
+/// hash of it is stored either.
 /// </summary>
 internal sealed class CreateWalkInHandler(
     TrimmeDbContext db,
@@ -166,6 +263,7 @@ internal sealed class CreateWalkInHandler(
     IAvailabilityChecker availability,
     ShopBookingReader reader,
     IPersonalDataProtector protector,
+    BookingActors actors,
     TimeProvider clock)
     : ICommandHandler<CreateWalkInCommand, Result<ShopBookingResponse>>
 {
@@ -199,6 +297,24 @@ internal sealed class CreateWalkInHandler(
             return tooLong;
         }
 
+        if (command.Channel is not (BookingChannel.WalkIn or BookingChannel.Phone))
+        {
+            return Error.Validation("validation.failed", "A shop booking is a walk-in or a phone booking.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["channel"] = ["validation.invalid"] });
+        }
+
+        if (command.Channel == BookingChannel.Phone && command.StartsAt is null)
+        {
+            return Error.Validation("validation.failed", "A phone booking needs its start.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["startsAt"] = ["validation.required"] });
+        }
+
+        if (BookableOfferRequest.Services(command.ServiceId, command.ServiceIds, command.PackageId) is not { } services)
+        {
+            return Error.Validation("validation.failed", "Choose up to 10 services, or one package.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["serviceIds"] = ["validation.invalid"] });
+        }
+
         var now = clock.GetUtcNow();
         var startsNow = command.StartsAt is null;
         var start = command.StartsAt ?? now;
@@ -214,14 +330,16 @@ internal sealed class CreateWalkInHandler(
             return replay.IsFailure ? replay.Error : await ExistingAsync(shopId, replay.Value, cancellationToken);
         }
 
-        var offer = await catalog.FindAsync(shopId, command.ServiceId, command.PackageId, cancellationToken);
+        var offer = await catalog.FindAsync(shopId, services, command.PackageId, cancellationToken);
         if (offer is null)
         {
             return BookingErrors.OfferNotFound();
         }
 
+        // A barber may book themselves or a colleague of the same shop (D-147); the availability check below is what
+        // makes the colleague "free".
         var professional = await professionals.FindAsync(new ProfessionalId(command.ProfessionalId), cancellationToken);
-        if (professional is not { IsActive: true } || professional.ShopId != shopId || (user.Own() is { } own && professional.Id != own))
+        if (professional is not { IsActive: true } || professional.ShopId != shopId)
         {
             return Error.NotFound("professional.not_found", "The professional was not found.");
         }
@@ -254,7 +372,7 @@ internal sealed class CreateWalkInHandler(
 
         var booking = Booking.CreateWalkIn(
             EntityId.New<BookingId>(), shopId, command.CustomerName, new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn),
-            BookingMapping.Snapshot(offer), start, startsNow, command.Note, new BookingActor(userId, ActorType.ShopUser), now);
+            BookingMapping.Snapshot(offer), start, startsNow, command.Note, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now, command.Channel);
         db.Add(booking);
         if (phone is not null)
         {
@@ -286,21 +404,31 @@ internal sealed class CreateWalkInHandler(
     }
 }
 
-/// <summary>Confirm, arrived, completed, no-show or cancel (with a reason), per the state machine and its time rules (D-087).</summary>
-internal sealed class TransitionShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, TimeProvider clock)
+/// <summary>
+/// Confirm, arrived, completed, no-show or cancel (with a reason), per the state machine and its time rules (D-087,
+/// D-147). A barber acts on their own bookings, and on a colleague's only to accept or reject it while pending or to close
+/// it once red (<see cref="BarberScope.AllowedFor"/>); the actor's name goes into the history.
+/// </summary>
+internal sealed class TransitionShopBookingHandler(
+    TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, BookingActors actors, TimeProvider clock)
     : ICommandHandler<TransitionShopBookingCommand, Result<ShopBookingResponse>>
 {
     public async Task<Result<ShopBookingResponse>> Handle(TransitionShopBookingCommand command, CancellationToken cancellationToken)
     {
         var id = new BookingId(command.BookingId);
-        if (tenant.ShopId is not { } shopId || await db.Set<Booking>().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        var now = clock.GetUtcNow();
+        if (tenant.ShopId is not { } shopId || await db.Set<Booking>().Reachable(user, now).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
         {
             return BookingErrors.NotFound();
         }
 
+        if (user.Own() is { } own && booking.ProfessionalId != own && !booking.AllowedFor(user, now).Contains(command.To))
+        {
+            return BookingErrors.InvalidTransition(booking.Status, command.To);
+        }
+
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
-        var now = clock.GetUtcNow();
-        var moved = booking.ApplyShopTransition(command.To, new BookingActor(user.UserId, ActorType.ShopUser), command.Reason, now);
+        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), command.Reason, now);
         if (moved.IsFailure)
         {
             return moved.Error;

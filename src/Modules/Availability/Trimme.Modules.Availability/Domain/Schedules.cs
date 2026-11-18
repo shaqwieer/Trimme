@@ -503,6 +503,14 @@ public static class ScheduleErrors
 
     public static Error BreakNotFound() => Error.NotFound("schedule.break_not_found", "The break was not found.");
 
+    /// <summary>
+    /// The owner's breaks are weekly, a shop setting like the hours; a break on one day is the barber's own, set from their
+    /// day (D-147: «الحلاق يحط بريكاته هو»).
+    /// </summary>
+    public static Error OneOffBreaksAreTheBarbers() =>
+        Error.Validation("validation.failed", "A break on one day is set by the barber.",
+            new Dictionary<string, string[]>(StringComparer.Ordinal) { ["date"] = ["schedule.one_off_break_is_barbers"] });
+
     public static Error TimeOffNotFound() => Error.NotFound("schedule.time_off_not_found", "The time off was not found.");
 
     public static Error ProfessionalNotFound() => Error.NotFound("professional.not_found", "The professional was not found.");

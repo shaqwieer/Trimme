@@ -34,7 +34,8 @@ internal sealed record BookingOutboxEvent(
     DateTimeOffset? PreviousStartsAt,
     string ActorType,
     Guid? PreviousProfessionalId = null,
-    Guid? ActorId = null)
+    Guid? ActorId = null,
+    DateTimeOffset? OfferedStartsAt = null)
 {
     /// <summary>The barber the booking left, when this change gave it to another one (D-145).</summary>
     public Guid? LeftProfessionalId => PreviousProfessionalId is { } previous && previous != ProfessionalId ? previous : null;
@@ -135,7 +136,7 @@ internal sealed partial class DispatchFactory(
                     : null;
             }
 
-            return booking.Channel == WalkInChannel
+            return IsShopRecorded(booking.Channel)
                    && @event is MessageEvent.BookingConfirmed or MessageEvent.BookingRescheduled or MessageEvent.BookingCancelled
                    && await walkIns.FindMobileAsync(booking.Id, cancellationToken) is { } walkIn
                 ? new Recipient(walkIn, platform.DefaultLocale, null, null)
@@ -147,8 +148,11 @@ internal sealed partial class DispatchFactory(
             : null;
     }
 
-    /// <summary>Bookings' <c>BookingChannel.WalkIn</c>.</summary>
-    private const string WalkInChannel = "WalkIn";
+    /// <summary>
+    /// Bookings' <c>BookingChannel.WalkIn</c> and <c>Phone</c> (D-147): recorded by the shop, with the customer's mobile in a
+    /// walk-in contact row rather than an account. Both get the walk-in messages and are the shop's own actions.
+    /// </summary>
+    internal static bool IsShopRecorded(string channel) => channel is "WalkIn" or "Phone";
 
     /// <summary>Where a message goes; <c>Id</c> is the customer's or professional's id (none for a walk-in).</summary>
     private readonly record struct Recipient(string E164, string Locale, Guid? Id, ProfessionalContactCard? Professional);
@@ -200,7 +204,8 @@ internal sealed class BookingNotificationsConsumer(
     public string Name => ConsumerName;
 
     public bool Handles(string messageType) =>
-        messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed" or "booking.professional_changed";
+        messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed" or "booking.professional_changed"
+            or "booking.postponement_offered" or "booking.postponement_declined";
 
     public async Task HandleAsync(OutboxEnvelope message, OutboxConsumerContext context, CancellationToken cancellationToken)
     {
@@ -328,6 +333,8 @@ internal sealed class BookingNotificationsConsumer(
             "booking.rescheduled" => NoticeKinds.BookingRescheduled,
             "booking.cancelled" => NoticeKinds.BookingCancelled,
             "booking.professional_changed" => NoticeKinds.BookingProfessionalChanged,
+            "booking.postponement_offered" => NoticeKinds.BookingPostponementOffered,
+            "booking.postponement_declined" => NoticeKinds.BookingPostponementDeclined,
             _ => null,
         };
         if (kind is null)
@@ -349,6 +356,11 @@ internal sealed class BookingNotificationsConsumer(
         if (change.PreviousStartsAt is { } previous)
         {
             parameters["previousStartsAt"] = previous.ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        if (change.OfferedStartsAt is { } offered)
+        {
+            parameters["offeredStartsAt"] = offered.ToString("O", CultureInfo.InvariantCulture);
         }
 
         var left = change.LeftProfessionalId is { } leftId ? new ProfessionalId(leftId) : (ProfessionalId?)null;
@@ -373,8 +385,10 @@ internal sealed class BookingNotificationsConsumer(
 
         // The shop's own actions are not echoed back to its inbox (the owner's), but a barber's are (D-145): the owner hears
         // when a barber confirms, changes, moves or cancels a customer's booking. Walk-ins are the shop's own.
-        var byBarber = change.ActorType == ShopActor && change.ActorId is { } actor && barbers.Contains(actor);
-        if ((change.ActorType != ShopActor || byBarber) && change.Channel != "WalkIn")
+        // Any barber of the shop counts, including one acting on a colleague's pending or red booking (D-147).
+        var byBarber = change.ActorType == ShopActor && change.ActorId is { } actor
+            && (barbers.Contains(actor) || await staff.IsBarberAsync(actor, cancellationToken));
+        if ((change.ActorType != ShopActor || byBarber) && !DispatchFactory.IsShopRecorded(change.Channel))
         {
             var forShop = new Dictionary<string, string>(parameters, StringComparer.Ordinal) { ["customerName"] = booking.CustomerName };
             await center.NotifyShopAsync(booking.ShopId, new InAppNotice(kind, dedupe, forShop, booking.Id), cancellationToken);

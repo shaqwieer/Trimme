@@ -3,7 +3,11 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { isActive, rebookHref } from '@/components/booking/BookingCards';
-import { CancelBookingButton, Countdown } from '@/components/booking/BookingDetailClient';
+import {
+  CancelBookingButton,
+  Countdown,
+  PostponementOfferCard,
+} from '@/components/booking/BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from '@/components/booking/BookingDetailParts';
 import { Ltr } from '@/components/text/Ltr';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -89,6 +93,20 @@ export default async function BookingDetailPage({
       {firstParam(query.rescheduled) === '1' && <InlineAlert tone="success" title={t('rescheduled')} />}
       {firstParam(query.cancelled) === '1' && <InlineAlert tone="success" title={t('cancelled')} />}
       {firstParam(query.reviewed) === '1' && <InlineAlert tone="success" title={t('reviewed')} />}
+      {firstParam(query.postponement) === 'accepted' && (
+        <InlineAlert tone="success" title={tList('postponement.accepted')} />
+      )}
+      {firstParam(query.postponement) === 'declined' && (
+        <InlineAlert tone="info" title={tList('postponement.declined')} />
+      )}
+      {booking.postponement?.live && (
+        <PostponementOfferCard
+          bookingId={booking.id}
+          version={booking.version}
+          when={`${formatDate(booking.postponement.startsAt, locale, { timeZone })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`}
+          until={`${formatDate(booking.postponement.expiresAt, locale, { timeZone })} ${formatTime(booking.postponement.expiresAt, locale, timeZone)}`}
+        />
+      )}
 
       <section
         aria-labelledby="booking-when"

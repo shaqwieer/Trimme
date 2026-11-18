@@ -63,7 +63,72 @@ beforeEach(() => {
   );
 });
 
-describe('SimpleAppointments (D-134)', () => {
+describe('SimpleAppointments (D-134, D-147)', () => {
+  it("puts the shop's red and pending bookings first, with their barber, and who closed the late ones", async () => {
+    const user = userEvent.setup();
+    const red = {
+      ...booking('9', 'بندر السبيعي', '2026-10-20T07:00:00Z'),
+      professional: { id: 'p2', nameAr: 'عمر', nameEn: 'Omar' },
+      overdue: true,
+      allowedTransitions: ['Completed', 'NoShow', 'CancelledByShop'],
+    };
+    const pending = {
+      ...booking('3', 'فهد الدوسري', '2026-10-22T09:00:00Z', 'Pending'),
+      allowedTransitions: ['Confirmed', 'CancelledByShop'],
+    };
+    const closed = {
+      ...booking('8', 'مشعل', '2026-10-19T07:00:00Z', 'Completed'),
+      closedLate: true,
+      closedBy: 'سلطان',
+      allowedTransitions: [],
+    };
+    api.GET.mockImplementation((path: string, init: { params: { query: { from: string } } }) =>
+      Promise.resolve(
+        path === '/api/v1/shop/bookings/attention'
+          ? ok({ pending: [pending], overdue: [red], closedLate: [closed] })
+          : path === '/api/v1/shop/bookings'
+            ? ok({
+                items: init.params.query.from === '2026-10-21' ? week : [],
+                page: 1,
+                pageSize: 100,
+                total: week.length,
+              })
+            : ok(null),
+      ),
+    );
+    api.POST.mockResolvedValue(ok({}));
+    renderList();
+
+    const overdue = await screen.findByTestId('attention-overdue');
+    expect(overdue).toHaveTextContent('بندر السبيعي');
+    expect(overdue).toHaveTextContent('الحلاق المسؤول: عمر');
+    expect(within(overdue).getByRole('button', { name: 'انتهت الخدمة: بندر السبيعي' })).toBeInTheDocument();
+    expect(screen.getByTestId('attention-closed-late')).toHaveTextContent('قفله: سلطان');
+
+    // A pending booking is shown once, in its own section, where any barber accepts it.
+    const waiting = screen.getByTestId('attention-pending');
+    expect(screen.getAllByText('فهد الدوسري')).toHaveLength(1);
+    await user.click(within(waiting).getByRole('button', { name: 'قبول: فهد الدوسري' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
+        params: { path: { bookingId: '3' } },
+        body: { to: 'Confirmed', reason: null, version: 3 },
+      }),
+    );
+  });
+
+  it('gives the owner nothing to press (D-147: the owner only watches)', async () => {
+    renderWithIntl(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <SimpleAppointments today="2026-10-21" timeZone="Asia/Riyadh" canUpdate={false} />
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId('coming-today');
+    expect(
+      screen.queryByRole('button', { name: /^(وصل|انتهت الخدمة|ما حضر|قبول):/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("lists today's bookings, then the coming days, with names only: no filters, no cancellations", async () => {
     const { container } = renderList();
 
@@ -128,13 +193,13 @@ describe('SimpleAppointments (D-134)', () => {
     expect(screen.getByText('زبون عائد')).toBeInTheDocument();
 
     // Only the visit under way offers it; the coming ones do not. «تراجع» sends nothing.
-    expect(screen.getAllByRole('button', { name: /^انتهت خدمة/ })).toHaveLength(1);
-    await user.click(screen.getByRole('button', { name: 'انتهت خدمة سعود الرشيد' }));
+    expect(screen.getAllByRole('button', { name: /^انتهت الخدمة:/ })).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'انتهت الخدمة: سعود الرشيد' }));
     const dialog = await screen.findByRole('alertdialog', { name: 'انتهت خدمة سعود الرشيد؟' });
     await user.click(within(dialog).getByRole('button', { name: 'تراجع' }));
     expect(api.POST).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'انتهت خدمة سعود الرشيد' }));
+    await user.click(screen.getByRole('button', { name: 'انتهت الخدمة: سعود الرشيد' }));
     await user.click(
       within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'نعم، انتهت الخدمة' }),
     );

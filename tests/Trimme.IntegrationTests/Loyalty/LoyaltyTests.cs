@@ -39,10 +39,20 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         }
     }
 
-    private static async Task CompleteAsync(BookingWorld w, FakeTimeProvider clock, Guid bookingId, DateTimeOffset start, CancellationToken ct, string? staffEmail = null)
+    /// <summary>Every barber of the world gets a login before the clock moves past the admin's and owners' sessions.</summary>
+    private static async Task EnsureBarbersAsync(BookingWorld w, CancellationToken ct)
+    {
+        foreach (var professional in new[] { w.Faisal, w.Omar, w.ProB })
+        {
+            await w.EnsureBarberLoginAsync(professional, ct);
+        }
+    }
+
+    /// <summary>The visit's own barber marks it «وصل» then «انتهت الخدمة» (D-147: the owner only watches).</summary>
+    private static async Task CompleteAsync(BookingWorld w, FakeTimeProvider clock, Guid bookingId, DateTimeOffset start, CancellationToken ct)
     {
         clock.SetUtcNow(start.AddMinutes(40).ToUniversalTime());
-        using var staff = await IdentityTestData.SignInStaffAsync(w.Factory, staffEmail ?? w.Shops.A.OwnerEmail, ct);
+        using var staff = await w.BarberOfAsync(bookingId, ct);
         foreach (var to in new[] { "Arrived", "Completed" })
         {
             var current = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
@@ -72,6 +82,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_card", ct, clock);
+        await EnsureBarbersAsync(w, ct);
         await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty", Terms(), ct), ct);
         var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
 
@@ -149,6 +160,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_bonus", ct, clock);
+        await EnsureBarbersAsync(w, ct);
         // Salon A: four circles, and the first visit fills three of them. Salon B: three circles, no bonus.
         await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty", Terms(visits: 4, firstVisit: 3), ct), ct);
         await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}/loyalty", Terms(visits: 3), ct), ct);
@@ -178,7 +190,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         // The first visit at A fills three circles; the first at B fills one: two salons, two cards.
         await CompleteAsync(w, clock, first, At(Target, 10), ct);
         Stamps(await CardsAsync(), w.SlugA).ShouldBe(3);
-        await CompleteAsync(w, clock, atB, At(Target, 11), ct, w.Shops.B.OwnerEmail);
+        await CompleteAsync(w, clock, atB, At(Target, 11), ct);
         var cards = await CardsAsync();
         cards.GetArrayLength().ShouldBe(2);
         Stamps(cards, w.SlugA).ShouldBe(3);
@@ -207,6 +219,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_admin", ct, clock);
+        await EnsureBarbersAsync(w, ct);
         var url = $"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty";
 
         await FailsAsync(w.OwnerA.PutAsync(url, Terms(), ct), HttpStatusCode.Forbidden, null, ct);

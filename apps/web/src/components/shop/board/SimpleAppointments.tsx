@@ -3,9 +3,9 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { LoyaltyChip } from '@/components/loyalty/LoyaltyChip';
-import { StatusBadge } from '@/components/ui/Badge';
+import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button, IconButton } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/overlays';
 import { EmptyState, InlineAlert, SkeletonList } from '@/components/ui/states';
@@ -16,19 +16,28 @@ import type { components } from '@/lib/api/schema';
 import { type AppLocale, formatNumber, formatTime } from '@/lib/i18n/format';
 import { addDays, formatLocalDate, type LocalDate, todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
+import { cn } from '@/lib/cn';
 import { useOperationsEvents } from '../live/OperationsLive';
 import { AppointmentDrawer, BOARD_KEY } from './AppointmentDrawer';
 import { CustomerVisitBadge } from './CustomerVisitBadge';
 
 type Booking = components['schemas']['ShopBookingResponse'];
+type Status = components['schemas']['BookingStatus'];
 
 /** Still to come: no cancelled, finished or missed appointments on this page (D-134). */
 const COMING: Booking['status'][] = ['Pending', 'Confirmed', 'Arrived'];
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
 const WEEK = 7;
-/** Refetch each minute, so a visit that has just started offers «انتهت الخدمة». */
+/** Refetch each minute, so «وصل», «ما حضر» and red bookings appear on time. */
 const REFRESH_MS = 60_000;
+
+/** The row's quick actions, in the order a visit goes (D-147); rejecting and cancelling ask for a reason in the details. */
+const QUICK: Status[] = ['Confirmed', 'Arrived', 'Completed', 'NoShow'];
+/** A red booking's row closes it (D-147). */
+const OVERDUE_QUICK: Status[] = ['Completed', 'NoShow'];
+/** These ask first: they cannot be undone. */
+const CONFIRM_FIRST: Status[] = ['Completed', 'NoShow'];
 
 async function comingBetween(from: LocalDate, to: LocalDate): Promise<Booking[]> {
   const items: Booking[] = [];
@@ -45,12 +54,12 @@ async function comingBetween(from: LocalDate, to: LocalDate): Promise<Booking[]>
 }
 
 /**
- * The shop's appointments, kept simple at the client's request, for the desk (D-134) and the owner (D-136): today's
- * bookings, then the coming days of the week, each with the time, the customer's name, the service and the barber, and
- * for the owner whether the customer is new or returning (D-135). A week at a time, with next and previous week;
- * nothing cancelled, finished or missed. Tapping one opens its details. A visit under way has «انتهت الخدمة» on its row
- * (D-135); after a confirmation it finishes the visit, so the rest of the booked time is free at once for the desk and
- * online. Counts and other figures stay on the overview.
+ * The shop's appointments, kept simple at the client's request (D-134, D-136). A barber (D-145, D-147) sees first what
+ * any barber of the shop may act on: bookings waiting to be accepted, red ones (open a quarter hour past their end, for
+ * three days, with the barber they belong to) and those closed late (with who closed them); then their own day and the
+ * coming days of the week. On a row: «قبول», «وصل», then «انتهت الخدمة» (once; the booking then leaves the list) and,
+ * from a quarter hour late, «ما حضر». The owner sees the same lists with nothing to press (D-147: «صاحب المحل للمتابعة
+ * بس»), and whether each customer is new or returning (D-135). Tapping a row opens its details.
  */
 export function SimpleAppointments({
   today,
@@ -58,24 +67,28 @@ export function SimpleAppointments({
   canUpdate,
   canReschedule = false,
   canMove = false,
+  ownProfessionalId = null,
 }: {
   today: LocalDate;
   timeZone: string;
   canUpdate: boolean;
   canReschedule?: boolean;
   canMove?: boolean;
+  /** A barber's own professional (D-145): their colleagues' bookings allow less. */
+  ownProfessionalId?: string | null;
 }) {
   const t = useTranslations('shopBoard.simple');
   const tBoard = useTranslations('shopBoard.appointments');
+  const tActions = useTranslations('shopBoard.drawer.actions');
   const locale = useLocale() as AppLocale;
   const apiMessage = useApiErrorMessage();
   const params = useSearchParams();
   const queryClient = useQueryClient();
   const [start, setStart] = useState(today);
   const [bookingId, setBookingId] = useState(params.get('booking'));
-  const [finishing, setFinishing] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<Booking | null>(null);
-  const [finished, setFinished] = useState<string>();
+  const [acting, setActing] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<{ booking: Booking; to: Status } | null>(null);
+  const [done, setDone] = useState<string>();
   const [error, setError] = useState<string>();
   const end = addDays(start, WEEK - 1);
 
@@ -85,23 +98,28 @@ export function SimpleAppointments({
     refetchInterval: REFRESH_MS,
     queryFn: () => comingBetween(start, end),
   });
+  const attention = useQuery({
+    queryKey: [BOARD_KEY, 'attention'],
+    refetchInterval: REFRESH_MS,
+    queryFn: async () => ensureOk(await browserApi.GET('/api/v1/shop/bookings/attention')),
+  });
 
-  const finish = async (b: Booking) => {
+  const act = async (b: Booking, to: Status) => {
     setError(undefined);
-    setFinished(undefined);
-    setFinishing(b.id);
+    setDone(undefined);
+    setActing(b.id);
     try {
       ensureOk(
         await browserApi.POST('/api/v1/shop/bookings/{bookingId}/transitions', {
           params: { path: { bookingId: b.id } },
-          body: { to: 'Completed', reason: null, version: b.version },
+          body: { to, reason: null, version: b.version },
         }),
       );
-      setFinished(t('finished', { name: b.customerName }));
+      setDone(t(`done.${to as 'Confirmed' | 'Arrived' | 'Completed' | 'NoShow'}`, { name: b.customerName }));
     } catch (failure) {
       setError(apiMessage(failure instanceof ApiError ? failure : 'server.unexpected'));
     } finally {
-      setFinishing(null);
+      setActing(null);
       setConfirming(null);
       await queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
     }
@@ -125,15 +143,30 @@ export function SimpleAppointments({
     day === addDays(today, 1)
       ? t('tomorrow')
       : formatLocalDate(day, locale, { weekday: 'long', day: 'numeric', month: 'long' });
-  const items = list.data ?? [];
+  const pending = attention.data?.pending ?? [];
+  const overdue = attention.data?.overdue ?? [];
+  const closedLate = attention.data?.closedLate ?? [];
+  // Shown once: a booking in the shop-wide sections leaves the day lists.
+  const shown = new Set([...pending, ...overdue].map((b) => b.id));
+  const items = (list.data ?? []).filter((b) => !shown.has(b.id));
   const todays = start === today ? items.filter((b) => dayOf(b) <= today) : [];
   const later = items.filter((b) => !todays.includes(b));
   const days = [...new Set(later.map(dayOf))];
 
-  const rows = (bookings: Booking[]) => (
+  // A red booking is closed, not started: «انتهت الخدمة» or «ما حضر» (a pending one is rejected from its details).
+  const quick = (b: Booking) =>
+    canUpdate
+      ? (b.overdue ? OVERDUE_QUICK : QUICK).filter((to) => b.allowedTransitions.includes(to)).slice(0, 2)
+      : [];
+
+  const rows = (bookings: Booking[], extra?: (b: Booking) => ReactNode) => (
     <ul className="flex flex-col divide-y divide-border-row">
       {bookings.map((b) => (
-        <li key={b.id} className="flex items-center gap-2" data-testid="coming-appointment">
+        <li
+          key={b.id}
+          className="flex flex-wrap items-center gap-2 sm:flex-nowrap"
+          data-testid="coming-appointment"
+        >
           <button
             type="button"
             onClick={() => open(b.id)}
@@ -153,25 +186,61 @@ export function SimpleAppointments({
                 {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
                 {localizedName(locale, b.professional.nameAr, b.professional.nameEn)}
               </span>
+              {extra?.(b)}
             </span>
-            {b.status !== 'Confirmed' && <StatusBadge kind="booking" status={b.status} size="sm" />}
+            {b.overdue ? (
+              <Badge tone="danger" size="sm">
+                {t('overdueBadge')}
+              </Badge>
+            ) : (
+              b.status !== 'Confirmed' && <StatusBadge kind="booking" status={b.status} size="sm" />
+            )}
           </button>
-          {canUpdate && b.allowedTransitions.includes('Completed') && (
-            <Button
-              size="sm"
-              icon="check"
-              className="shrink-0"
-              loading={finishing === b.id}
-              disabled={finishing !== null}
-              aria-label={t('finishLabel', { name: b.customerName })}
-              onClick={() => setConfirming(b)}
-            >
-              {t('finish')}
-            </Button>
+          {quick(b).length > 0 && (
+            <span className="flex shrink-0 gap-1.5">
+              {quick(b).map((to) => (
+                <Button
+                  key={to}
+                  size="sm"
+                  variant={to === 'NoShow' ? 'outline' : 'primary'}
+                  icon={to === 'Completed' ? 'check' : undefined}
+                  loading={acting === b.id && confirming?.to !== to}
+                  disabled={acting !== null}
+                  aria-label={t('actionLabel', {
+                    action: t(`row.${to as 'Confirmed'}`),
+                    name: b.customerName,
+                  })}
+                  onClick={() =>
+                    CONFIRM_FIRST.includes(to) ? setConfirming({ booking: b, to }) : void act(b, to)
+                  }
+                >
+                  {t(`row.${to as 'Confirmed'}`)}
+                </Button>
+              ))}
+            </span>
           )}
         </li>
       ))}
     </ul>
+  );
+
+  const section = (id: string, title: string, children: ReactNode, tone?: 'danger' | 'muted') => (
+    <section
+      className={cn(
+        'flex flex-col gap-2 rounded-card border p-4 shadow-e1',
+        tone === 'danger' ? 'border-danger-border bg-danger-50' : 'border-border bg-surface',
+      )}
+      aria-labelledby={id}
+      data-testid={id}
+    >
+      <h2
+        id={id}
+        className={cn('text-h3 font-bold', tone === 'danger' ? 'text-danger-700' : 'text-navy-900')}
+      >
+        {title}
+      </h2>
+      {children}
+    </section>
   );
 
   return (
@@ -209,13 +278,39 @@ export function SimpleAppointments({
       <p
         role="status"
         className={
-          finished
+          done
             ? 'rounded-card bg-status-completed-bg p-3 text-label font-bold text-status-completed-fg'
             : 'sr-only'
         }
       >
-        {finished ?? ''}
+        {done ?? ''}
       </p>
+
+      {overdue.length > 0 &&
+        section(
+          'attention-overdue',
+          `${t('overdue')} (${formatNumber(overdue.length, locale)})`,
+          <>
+            <p className="text-helper text-danger-700">{t('overdueHint')}</p>
+            {rows(overdue, (b) => (
+              <span className="text-helper font-bold text-danger-700">
+                {t('responsible', {
+                  name: localizedName(locale, b.professional.nameAr, b.professional.nameEn),
+                })}
+              </span>
+            ))}
+          </>,
+          'danger',
+        )}
+      {pending.length > 0 &&
+        section(
+          'attention-pending',
+          `${t('pending')} (${formatNumber(pending.length, locale)})`,
+          <>
+            <p className="text-helper text-text-secondary">{t('pendingHint')}</p>
+            {rows(pending)}
+          </>,
+        )}
 
       {list.isPending ? (
         <SkeletonList rows={5} label={tBoard('loading')} />
@@ -223,31 +318,20 @@ export function SimpleAppointments({
         <InlineAlert tone="danger" title={tBoard('loadError')} />
       ) : (
         <>
-          {start === today && (
-            <section
-              className="flex flex-col gap-2 rounded-card border border-border bg-surface p-4 shadow-e1"
-              aria-labelledby="coming-today"
-              data-testid="coming-today"
-            >
-              <h2 id="coming-today" className="text-h3 font-bold text-navy-900">
-                {t('today')} <span className="font-latin">({formatNumber(todays.length, locale)})</span>
-              </h2>
-              {todays.length === 0 ? (
+          {start === today &&
+            section(
+              'coming-today',
+              `${t('today')} (${formatNumber(todays.length, locale)})`,
+              todays.length === 0 ? (
                 <p className="text-caption text-text-secondary">{t('noneToday')}</p>
               ) : (
                 rows(todays)
-              )}
-            </section>
-          )}
-          <section
-            className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-e1"
-            aria-labelledby="coming-later"
-            data-testid="coming-later"
-          >
-            <h2 id="coming-later" className="text-h3 font-bold text-navy-900">
-              {t('upcoming')}
-            </h2>
-            {days.length === 0 ? (
+              ),
+            )}
+          {section(
+            'coming-later',
+            t('upcoming'),
+            days.length === 0 ? (
               start === today ? (
                 <p className="text-caption text-text-secondary">{t('noneUpcoming')}</p>
               ) : (
@@ -262,21 +346,55 @@ export function SimpleAppointments({
                   {rows(later.filter((b) => dayOf(b) === day))}
                 </div>
               ))
-            )}
-          </section>
+            ),
+          )}
         </>
       )}
 
+      {closedLate.length > 0 &&
+        section(
+          'attention-closed-late',
+          t('closedLate'),
+          <ul className="flex flex-col divide-y divide-border-row">
+            {closedLate.map((b) => (
+              <li key={b.id}>
+                <button
+                  type="button"
+                  onClick={() => open(b.id)}
+                  className="flex w-full flex-col items-start gap-0.5 px-1 py-2.5 text-start hover:bg-bg-subtle focus-visible:shadow-[var(--focus-ring)]"
+                >
+                  <span className="text-label font-bold text-text-primary">
+                    {formatLocalDate(dayOf(b), locale, { day: 'numeric', month: 'long' })} ·{' '}
+                    {formatTime(b.startsAt, locale, timeZone)} · {b.customerName}
+                  </span>
+                  <span className="text-helper text-text-secondary">
+                    {t('closedLateBy', {
+                      responsible: localizedName(locale, b.professional.nameAr, b.professional.nameEn),
+                      closer: b.closedBy ?? '—',
+                      status: tActions(b.status),
+                    })}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>,
+          'muted',
+        )}
+
       <ConfirmDialog
         open={confirming !== null}
-        onOpenChange={(open) => !open && finishing === null && setConfirming(null)}
-        tone="default"
-        title={t('finishTitle', { name: confirming?.customerName ?? '' })}
-        body={t('finishBody')}
-        confirmLabel={t('finishConfirm')}
+        onOpenChange={(open) => !open && acting === null && setConfirming(null)}
+        tone={confirming?.to === 'NoShow' ? 'danger' : 'default'}
+        title={
+          confirming?.to === 'NoShow'
+            ? t('noShowTitle', { name: confirming.booking.customerName })
+            : t('finishTitle', { name: confirming?.booking.customerName ?? '' })
+        }
+        body={confirming?.to === 'NoShow' ? t('noShowBody') : t('finishBody')}
+        confirmLabel={confirming?.to === 'NoShow' ? t('noShowConfirm') : t('finishConfirm')}
         cancelLabel={t('finishKeep')}
-        loading={finishing !== null}
-        onConfirm={() => confirming && void finish(confirming)}
+        loading={acting !== null}
+        onConfirm={() => confirming && void act(confirming.booking, confirming.to)}
       />
 
       <AppointmentDrawer
@@ -285,6 +403,7 @@ export function SimpleAppointments({
         canUpdate={canUpdate}
         canReschedule={canReschedule}
         canMove={canMove}
+        ownProfessionalId={ownProfessionalId}
         onClose={() => open(null)}
       />
     </div>

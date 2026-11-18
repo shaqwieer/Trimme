@@ -57,8 +57,8 @@ export function calendarDaysUntil(
  * credited to a QR scan shows «رمز QR» (D-114).
  */
 export function bookingSource(booking: {
-  channel: 'Online' | 'WalkIn';
+  channel: 'Online' | 'WalkIn' | 'Phone';
   viaQr: boolean;
-}): 'Online' | 'WalkIn' | 'Qr' {
+}): 'Online' | 'WalkIn' | 'Phone' | 'Qr' {
   return booking.channel === 'Online' && booking.viaQr ? 'Qr' : booking.channel;
 }

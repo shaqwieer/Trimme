@@ -31,12 +31,26 @@ public sealed record RescheduleBookingRequest(DateTimeOffset StartsAt, Guid? Pro
 
 public sealed record CancelBookingRequest(string? Reason, uint Version);
 
+/// <summary>The booking's version, to answer a postponement offer (D-147).</summary>
+public sealed record AnswerPostponementRequest(uint Version);
+
+/// <summary>The new time the barber offers the customer, with the booking's version (D-147).</summary>
+public sealed record PostponeBookingRequest(DateTimeOffset StartsAt, uint Version);
+
 /// <summary>
-/// A walk-in (D-035): without <c>StartsAt</c> it starts now and is marked Arrived; otherwise it is Confirmed. The
-/// customer's name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned
-/// to the shop. An <c>Idempotency-Key</c> header is honoured when sent.
+/// A booking the shop records (D-035, D-147). <c>Channel</c> <c>WalkIn</c> (the default): without <c>StartsAt</c> it
+/// starts now and is marked Arrived; otherwise it is Confirmed. <c>Phone</c>: an appointment at <c>StartsAt</c>, Confirmed.
+/// A service, several services (<c>ServiceIds</c>, added up with one barber) or a package; for the barber or a free
+/// colleague. The customer's name and, if given, mobile number (D-134): stored encrypted; barbers see it on the booking
+/// until it is closed, the owner never (D-147). An <c>Idempotency-Key</c> header is honoured when sent.
 /// </summary>
-public sealed record WalkInRequest(Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note);
+public sealed record WalkInRequest(
+    Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note,
+    IReadOnlyList<Guid>? ServiceIds = null, BookingChannel Channel = BookingChannel.WalkIn)
+{
+    /// <summary>Never print the number (records list every member by default).</summary>
+    public override string ToString() => $"{nameof(WalkInRequest)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt}, Channel = {Channel} }}";
+}
 
 /// <summary>Why the admin needs the walk-in's number (5–300 characters); audited.</summary>
 public sealed record RevealWalkInContactRequest(string? Reason);
@@ -45,6 +59,12 @@ public sealed record RevealWalkInContactRequest(string? Reason);
 public sealed record BookingTransitionRequest(BookingStatus To, string? Reason, uint Version);
 
 public sealed record BookingNoteRequest(string Text);
+
+/// <summary>A service of the shop to add to the booking at the visit (D-147), with the booking's version.</summary>
+public sealed record AddBookingServiceRequest(Guid ServiceId, uint Version);
+
+/// <summary>The booking's version, to take one of its services off (D-147).</summary>
+public sealed record RemoveBookingServiceRequest(uint Version);
 
 public sealed record AdminCancelBookingRequest(string Reason, uint Version);
 
@@ -68,6 +88,7 @@ internal static class BookingEndpoints
     private const string ShopWalkIn = "Shop.Bookings.CreateWalkIn";
     private const string ShopReschedule = "Shop.Bookings.Reschedule";
     private const string ShopChangeProfessional = "Shop.Bookings.ChangeProfessional";
+    private const string ShopInsights = "Shop.Insights.View";
     private const string AdminView = "Admin.Bookings.View";
     private const string AdminIntervene = "Admin.Bookings.Intervene";
     private const string AdminViewContact = "Admin.Customers.ViewContact";
@@ -107,6 +128,18 @@ internal static class BookingEndpoints
             .RequireUserType(UserTypes.Customer)
             .WithName("GetMyBooking").WithSummary("One of the customer's own bookings with the actions still allowed; another customer's id is 404.")
             .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        foreach (var (action, accept) in new[] { ("accept", true), ("decline", false) })
+        {
+            mine.MapPost($"/{{bookingId:guid}}/postponement/{action}", async (Guid bookingId, AnswerPostponementRequest r, IDispatcher d, CancellationToken ct) =>
+                    (await d.Send(new AnswerPostponementCommand(bookingId, accept, r.Version), ct)).ToHttpResult())
+                .RequireUserType(UserTypes.Customer)
+                .WithName(accept ? "AcceptPostponement" : "DeclinePostponement")
+                .WithSummary(accept
+                    ? "Takes the new time the barber offered (D-147): the booking moves there. 409 booking.postponement_gone once it lapsed."
+                    : "Declines the new time the barber offered (D-147): the booking stays and the held time is free.")
+                .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        }
+
         mine.MapPost("/{bookingId:guid}/cancel", async (Guid bookingId, CancelBookingRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CancelMyBookingCommand(bookingId, r.Reason, r.Version), ct)).ToHttpResult())
             .RequireUserType(UserTypes.Customer)
@@ -151,6 +184,12 @@ internal static class BookingEndpoints
             .WithName("ListShopBookings")
             .WithSummary("The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip.")
             .Produces<ShopBookingListResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapGet("/attention", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetShopAttentionQuery(), ct) is { } attention ? TypedResults.Ok(attention) : BookingErrors.NotFound().ToProblem())
+            .RequirePermission(ShopRead)
+            .WithName("GetShopAttention")
+            .WithSummary("The shop's pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever's barber they are (D-147).")
+            .Produces<ShopAttentionResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
@@ -159,16 +198,31 @@ internal static class BookingEndpoints
         group.MapPost("/walk-in", async ([FromHeader(Name = IdempotencyHeader)] string? key, WalkInRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CreateWalkInCommand(
                         r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.CustomerName ?? string.Empty, r.CustomerPhone, r.Note,
-                        string.IsNullOrWhiteSpace(key) ? null : key), ct))
+                        string.IsNullOrWhiteSpace(key) ? null : key, r.ServiceIds ?? [], r.Channel), ct))
                     .ToHttpResult(b => TypedResults.Created($"/api/v1/shop/bookings/{b.Id}", b)))
             .RequirePermission(ShopWalkIn)
-            .WithName("CreateWalkIn").WithSummary("Records a walk-in with the same collision checks as online bookings (R-BKG-07).")
+            .WithName("CreateWalkIn").WithSummary("Records a walk-in or phone booking with the same collision checks as online bookings (R-BKG-07, D-147).")
             .Produces<ShopBookingResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapPost("/{bookingId:guid}/transitions", async (Guid bookingId, BookingTransitionRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new TransitionShopBookingCommand(bookingId, r.To, r.Reason, r.Version), ct)).ToHttpResult())
             .RequirePermission(ShopUpdateStatus)
             .WithName("TransitionShopBooking").WithSummary("Moves the booking along the state machine (D-016); invalid transitions answer 409.")
+            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/services", async (Guid bookingId, AddBookingServiceRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AddBookingServiceCommand(bookingId, r.ServiceId, r.Version), ct)).ToHttpResult())
+            .RequirePermission(ShopUpdateStatus)
+            .WithName("AddBookingService")
+            .WithSummary("Adds a service at the visit, once the customer has arrived (D-147); the barber must do it and be free for the extra time (409).")
+            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        // "delete", not "remove": no route may contain "move" (R-NEG-01, the no-transfer guard).
+        group.MapPost("/{bookingId:guid}/services/{serviceId:guid}/delete", async (Guid bookingId, Guid serviceId, RemoveBookingServiceRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new RemoveBookingServiceCommand(bookingId, serviceId, r.Version), ct)).ToHttpResult())
+            .RequirePermission(ShopUpdateStatus)
+            .WithName("RemoveBookingService")
+            .WithSummary("Takes a service off an open booking until «انتهت الخدمة» (D-147); at least one stays, a package's own services stay.")
             .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapPost("/{bookingId:guid}/notes", async (Guid bookingId, BookingNoteRequest r, IDispatcher d, CancellationToken ct) =>
@@ -197,6 +251,13 @@ internal static class BookingEndpoints
             .RequirePermission(ShopReschedule)
             .WithName("ShopRescheduleBooking")
             .WithSummary("Gives the booking a new time with the same barber; the customer is told. Idempotency-Key required; 409 booking.slot_unavailable when taken.")
+            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/{bookingId:guid}/postpone", async (Guid bookingId, PostponeBookingRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new PostponeBookingCommand(bookingId, r.StartsAt, r.Version), ct)).ToHttpResult())
+            .RequirePermission(ShopReschedule)
+            .WithName("PostponeBooking")
+            .WithSummary("Offers a customer's online booking a new time with the same barber (D-147); it is held for the customer until an hour before the start. 409 booking.slot_unavailable when the time is taken.")
             .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapGet("/{bookingId:guid}/professional-options", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
@@ -233,6 +294,12 @@ internal static class BookingEndpoints
 
     private static void MapBoard(IEndpointRouteBuilder api)
     {
+        api.MapGet("/shop/reports", async (DateOnly from, DateOnly to, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetShopReportQuery(from, to), ct)).ToHttpResult())
+            .RequirePermission(ShopInsights).WithTags("Shop: bookings")
+            .WithName("GetShopReport")
+            .WithSummary("The owner's report for shop-local dates from..to (at most 31): per barber and shop, moves, postponements, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).")
+            .Produces<ShopReportResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         api.MapGet("/shop/dashboard/overview", async (DateOnly? date, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new GetShopOverviewQuery(date), ct)).ToHttpResult())
             .RequirePermission(ShopRead).WithTags("Shop: bookings")

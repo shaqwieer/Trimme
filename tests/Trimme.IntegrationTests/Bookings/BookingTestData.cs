@@ -1,11 +1,16 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
+using Trimme.BuildingBlocks.Application.Tenancy;
+using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
 using Trimme.IntegrationTests.Tenancy;
+using Trimme.Modules.Bookings.Domain;
 using Trimme.Modules.Identity.Domain;
 
 namespace Trimme.IntegrationTests.Bookings;
@@ -53,6 +58,19 @@ internal sealed record BookingWorld(
     /// <summary>Turns the barber's login on now (see <see cref="BarberAsync"/>), for a test that moves its clock before signing in.</summary>
     public async Task EnsureBarberLoginAsync(Guid professionalId, CancellationToken ct) => (await BarberAsync(professionalId, ct)).Dispose();
 
+    /// <summary>The booking's own barber, signed in: the barbers operate the bookings and the owner only watches (D-147).</summary>
+    public async Task<ApiSession> BarberOfAsync(Guid bookingId, CancellationToken ct) => await BarberAsync(await ProfessionalOfAsync(bookingId, ct), ct);
+
+    /// <summary>Whose booking it is now, read as the system (no session needed).</summary>
+    public async Task<Guid> ProfessionalOfAsync(Guid bookingId, CancellationToken ct)
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        using var system = scope.ServiceProvider.GetRequiredService<ISystemDataScope>().Begin();
+        var id = new BookingId(bookingId);
+        return (await scope.ServiceProvider.GetRequiredService<TrimmeDbContext>().Set<Booking>().AsNoTracking()
+            .Where(b => b.Id == id).Select(b => b.ProfessionalId).SingleAsync(ct)).Value;
+    }
+
     /// <summary>The world's barber logins' numbers: a range no test types by hand.</summary>
     private static string BarberNumber(int index) => $"+96655500{index + 1:0000}";
 
@@ -83,6 +101,14 @@ internal static class BookingTestData
         using var response = await call;
         response.StatusCode.ShouldBe(status, await response.Content.ReadAsStringAsync(ct));
         return status == HttpStatusCode.NoContent ? default : await response.JsonAsync(ct);
+    }
+
+    /// <summary>A shop transition at the booking's current version (D-016), by whoever <paramref name="staff"/> is.</summary>
+    public static async Task<JsonElement> TransitionAsync(ApiSession staff, Guid bookingId, string to, CancellationToken ct, string? reason = null)
+    {
+        var current = await OkAsync(staff.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
+        return await OkAsync(
+            staff.PostAsync($"/api/v1/shop/bookings/{bookingId}/transitions", new { to, reason, version = current.GetProperty("booking").GetProperty("version").GetUInt32() }, ct), ct);
     }
 
     public static async Task<string> FailsAsync(Task<HttpResponseMessage> call, HttpStatusCode status, string? contains, CancellationToken ct)

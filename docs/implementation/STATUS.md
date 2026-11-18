@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-18 (Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146). Before it, Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145). Before it: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
+- **Updated:** 2026-11-18 (Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -73,6 +73,14 @@
   - **A login is made with every barber the owner adds:** the server generates the temporary password (12 easy-to-read characters), shows it once with «نسخ», and the barber replaces it at the first sign-in. «تفعيل الدخول» and «كلمة مرور مؤقتة جديدة» (owner and admin) also generate it now.
   - No migration. .NET, web and end-to-end gates pass (details in `phases/after-17-d146-owner-barbers.md`). Pushed (`07c1151`) and **deployed to groomhere.sa on 2026-11-18** after a backup.
   - **groomhere.sa data cleanup (same day, the user's choices):** the 5 demo barbers deleted with all their history (every booking on the site: 25; reviews and ratings); the 3 demo customers deleted; two customers kept (+966 53 017 8784 and «Sulaiman aa»); sign-in emails `admin@groomhere.sa`, `alasala@groomhere.sa`, `barberhouse@groomhere.sa`. The shops have no barbers until the owners add them.
+- **Session 28 (D-147), at the user's request** (the client's document, sections 2-1 … 2-4):
+  - **The owner watches, the barbers operate.** The owner keeps the overview, appointments and calendar (read-only), the new reports, services and packages, barbers and settings; every booking action, the barbers' breaks and the pause are the barbers' (the API refuses the owner, 403). The owner's breaks are weekly only.
+  - **A barber's visit:** «وصل» then «انتهت الخدمة» (actual start and end recorded); «ما حضر» from a quarter hour late; «إلغاء متأخر» in the last quarter hour; no cancellation once arrived. Any barber accepts or rejects the shop's pending bookings and closes its red ones (open 15 minutes past their end, shown 3 days, «انقفل متأخر» with who closed it). Every log line names who did it. A barber sees no figures or income.
+  - **Walk-in and phone bookings:** «حضوري» or «بالتلفون», several services or a package, for themselves or a free colleague, steps numbered ١–٥; the customer's mobile reaches barbers (never the owner) while the booking is open — a reviewed exception to the phone rule, recorded in CLAUDE.md, MASTER_PLAN, TRACEABILITY and security.md.
+  - **A booking's services:** add after «وصل», remove until «انتهت الخدمة».
+  - **Postponement with consent:** the barber offers an online booking a new time, held for the customer (database triggers under a per-barber lock) until an hour before the original start; the customer accepts or declines on the booking page (in-app notice; no WhatsApp template yet).
+  - **Reports and expected income** (`/shop/reports`): day, week, month; per barber and shop; loyalty by who closed the visit. **The owner's packages** pages.
+  - Migration 25 `BarberOperations` (additive). .NET, web and E2E gates in `phases/after-17-d147-barber-operations.md`. Committed locally, **not pushed or deployed**.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

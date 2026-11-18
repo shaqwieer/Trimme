@@ -72,6 +72,7 @@ export function ShopCalendar({
   canUpdate,
   canReschedule = false,
   canMove = false,
+  ownProfessionalId = null,
 }: {
   today: string;
   timeZone: string;
@@ -79,6 +80,8 @@ export function ShopCalendar({
   canUpdate: boolean;
   canReschedule?: boolean;
   canMove?: boolean;
+  /** A barber's own professional (D-145, D-147); null for the owner, who only watches. */
+  ownProfessionalId?: string | null;
 }) {
   const t = useTranslations('shopBoard.calendar');
   const locale = useLocale() as AppLocale;
@@ -229,6 +232,7 @@ export function ShopCalendar({
         canUpdate={canUpdate}
         canReschedule={canReschedule}
         canMove={canMove}
+        ownProfessionalId={ownProfessionalId}
         onClose={() => update({ booking: null })}
       />
     </div>

@@ -92,14 +92,14 @@ describe('AppointmentDrawer changes (D-145)', () => {
         onClose={() => {}}
       />,
     );
-    expect(await screen.findByRole('button', { name: 'تغيير الموعد' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'تأجيل الموعد' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'نقل الحجز إلى حلاق آخر' })).toBeInTheDocument();
     expect(screen.getByText('نُقل الحجز من عمر')).toBeInTheDocument();
     unmount();
 
     renderWithQuery(<AppointmentDrawer bookingId="b1" timeZone="Asia/Riyadh" canUpdate onClose={() => {}} />);
     await screen.findByText('TR-48219');
-    expect(screen.queryByRole('button', { name: 'تغيير الموعد' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'تأجيل الموعد' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'نقل الحجز إلى حلاق آخر' })).toBeNull();
   });
 
@@ -116,7 +116,7 @@ describe('AppointmentDrawer changes (D-145)', () => {
       />,
     );
     await screen.findByText('TR-48219');
-    expect(screen.queryByRole('button', { name: 'تغيير الموعد' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'تأجيل الموعد' })).toBeNull();
   });
 });
 

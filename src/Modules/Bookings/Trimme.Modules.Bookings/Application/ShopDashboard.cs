@@ -39,13 +39,14 @@ public sealed record HourCountResponse(int Hour, int Count);
 /// <summary>
 /// The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
 /// last seven days by starting hour (local time; cancellations left out). <c>Customers</c>, for the owner only, counts
-/// the last 30 days' new customers and returning visits (D-135); it is null for the desk.
+/// the last 30 days' new customers and returning visits (D-135). A barber sees what comes next only: no figures, so
+/// <c>Kpis</c> is null and the load and hours are empty (D-147: «ما يشوف إحصائيات ولا دخل»).
 /// </summary>
 public sealed record ShopOverviewResponse(
     DateOnly Date,
     string TimeZone,
     DateTimeOffset Now,
-    ShopOverviewKpis Kpis,
+    ShopOverviewKpis? Kpis,
     IReadOnlyList<ShopBookingResponse> Upcoming,
     IReadOnlyList<ProfessionalLoadResponse> Professionals,
     IReadOnlyList<HourCountResponse> Hourly,
@@ -194,9 +195,10 @@ internal sealed class GetShopOverviewHandler(
 
         var customers = await visits.MixAsync(
             BusinessDays.StartOf(date.AddDays(-(CustomerVisits.MixDays - 1)), zone), BusinessDays.StartOf(date.AddDays(1), zone), cancellationToken);
-        return new ShopOverviewResponse(
-            date, board.Shop.TimeZone, now, kpis, await reader.MapAsync(board.Shop.Id, upcoming, cancellationToken), load, hourly,
-            board.Shop.OnlineBookingPaused, customers);
+        var upcomingMapped = await reader.MapAsync(board.Shop.Id, upcoming, cancellationToken);
+        return user.Own() is null
+            ? new ShopOverviewResponse(date, board.Shop.TimeZone, now, kpis, upcomingMapped, load, hourly, board.Shop.OnlineBookingPaused, customers)
+            : new ShopOverviewResponse(date, board.Shop.TimeZone, now, null, upcomingMapped, [], [], board.Shop.OnlineBookingPaused, null);
     }
 }
 

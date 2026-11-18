@@ -13,7 +13,8 @@ internal sealed class BookingOperationsProjector : IOperationsEventProjector
     public OperationsEvent? Project(string outboxType, string payload)
     {
         if (outboxType is not (BookingEvents.Created or BookingEvents.Rescheduled or BookingEvents.Cancelled or BookingEvents.StatusChanged
-            or BookingEvents.ProfessionalChanged))
+            or BookingEvents.ProfessionalChanged or BookingEvents.ServicesChanged or BookingEvents.PostponementOffered
+            or BookingEvents.PostponementDeclined))
         {
             return null;
         }

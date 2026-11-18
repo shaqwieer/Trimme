@@ -73,9 +73,12 @@ public sealed class BookingDomainTests
     [MemberData(nameof(EveryPair))]
     public void ShopTransitions_FollowTheStateMachine_AndRecordHistory(BookingStatus from, BookingStatus to, bool allowed)
     {
+        // Long enough after the 30-minute booking for every time rule to allow it: it is red, so even Confirmed → Completed
+        // (closing it late, D-147) is open.
+        var at = Start.AddMinutes(50);
         var booking = InStatus(from);
         var historyBefore = booking.History.Count;
-        var result = booking.ApplyShopTransition(to, ShopUser, "العميل اتصل", Start.AddMinutes(1));
+        var result = booking.ApplyShopTransition(to, ShopUser, "العميل اتصل", at);
 
         // Customers cancel through their own command, never through a shop transition.
         var expected = allowed && to != BookingStatus.CancelledByCustomer;
@@ -89,7 +92,7 @@ public sealed class BookingDomainTests
                 h => h.ToStatus.ShouldBe(to),
                 h => h.ActorId.ShouldBe(ShopUser.Id),
                 h => h.ActorType.ShouldBe(ActorType.ShopUser),
-                h => h.OccurredAt.ShouldBe(Start.AddMinutes(1)));
+                h => h.OccurredAt.ShouldBe(at));
         }
         else
         {
@@ -100,10 +103,11 @@ public sealed class BookingDomainTests
     }
 
     [Fact]
-    public void FinishingEarly_EndsTheVisitThen_InOneStepFromConfirmed()
+    public void FinishingEarly_AfterArrival_EndsTheVisitThen()
     {
-        // «انتهت الخدمة» (D-135): a 30-minute visit finished after 20½ minutes ends at the 20th minute.
+        // «انتهت الخدمة» (D-135) after «وصل» (D-147): a 30-minute visit finished after 20½ minutes ends at the 20th minute.
         var early = Online();
+        early.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start).IsSuccess.ShouldBeTrue();
         early.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(20).AddSeconds(30)).IsSuccess.ShouldBeTrue();
         early.Status.ShouldBe(BookingStatus.Completed);
         early.EndsAt.ShouldBe(Start.AddMinutes(20));
@@ -111,6 +115,7 @@ public sealed class BookingDomainTests
 
         // Finished late, or before the start after an early arrival: the booked times stay.
         var late = Online();
+        late.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start).IsSuccess.ShouldBeTrue();
         late.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(45)).IsSuccess.ShouldBeTrue();
         late.EndsAt.ShouldBe(Start.AddMinutes(30));
         var arrivedEarly = Online();
@@ -145,20 +150,67 @@ public sealed class BookingDomainTests
     }
 
     [Fact]
-    public void TimeRules_ArrivedFromAnHourBefore_NoShowOnlyAfterTheStart_CancelNeedsAReason()
+    public void TimeRules_ArrivedFromAnHourBefore_NoShowAQuarterHourLate_FinishAfterArrival_CancelNeedsAReason()
     {
         var booking = Online();
         booking.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start.AddMinutes(-61)).Error!.Code.ShouldBe("booking.too_early");
-        booking.ApplyShopTransition(BookingStatus.NoShow, ShopUser, null, Start.AddMinutes(-1)).Error!.Code.ShouldBe("booking.too_early");
+        booking.ApplyShopTransition(BookingStatus.NoShow, ShopUser, null, Start.AddMinutes(14)).Error!.Code.ShouldBe("booking.too_early");
         booking.AllowedShopTransitions(Start.AddMinutes(-90)).ShouldBe([BookingStatus.CancelledByShop]);
-        booking.AllowedShopTransitions(Start).ShouldBe([BookingStatus.Arrived, BookingStatus.Completed, BookingStatus.NoShow, BookingStatus.CancelledByShop]);
-        booking.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(-1)).Error!.Code.ShouldBe("booking.too_early");
+        booking.AllowedShopTransitions(Start).ShouldBe([BookingStatus.Arrived, BookingStatus.CancelledByShop]);
+        booking.AllowedShopTransitions(Start.AddMinutes(15)).ShouldBe([BookingStatus.Arrived, BookingStatus.NoShow, BookingStatus.CancelledByShop]);
+        booking.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(1)).Error!.Code.ShouldBe("booking.arrival_required");
         booking.ApplyShopTransition(BookingStatus.CancelledByShop, ShopUser, " ", Now).Error!.Code.ShouldBe("validation.failed");
 
         booking.ApplyShopTransition(BookingStatus.Arrived, ShopUser, null, Start.AddMinutes(-60)).IsSuccess.ShouldBeTrue();
         booking.ApplyShopTransition(BookingStatus.Completed, ShopUser, null, Start.AddMinutes(30)).IsSuccess.ShouldBeTrue();
         BookingStateMachine.IsTerminal(booking.Status).ShouldBeTrue();
         booking.AllowedShopTransitions(Start.AddHours(1)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void RedBookings_ActualTimes_LateFlags_AndNames_D147()
+    {
+        var sultan = new BookingActor(Guid.CreateVersion7(), ActorType.ShopUser, "  سلطان  ");
+
+        // A walk-in that starts now started now; a phone booking never starts at once.
+        Booking.CreateWalkIn(new BookingId(Guid.CreateVersion7()), Shop, "زائر", Faisal, Haircut(), Now, startsNow: true, null, sultan, Now)
+            .ShouldSatisfyAllConditions(b => b.ActualStartAt.ShouldBe(Now), b => b.IsShopRecorded.ShouldBeTrue(), b => b.History[0].ActorName.ShouldBe("سلطان"));
+        Booking.CreateWalkIn(new BookingId(Guid.CreateVersion7()), Shop, "زائر", Faisal, Haircut(), Start, startsNow: true, null, sultan, Now, BookingChannel.Phone)
+            .ShouldSatisfyAllConditions(b => b.Status.ShouldBe(BookingStatus.Confirmed), b => b.Channel.ShouldBe(BookingChannel.Phone), b => b.ActualStartAt.ShouldBeNull());
+        Should.Throw<ArgumentOutOfRangeException>(() =>
+            Booking.CreateWalkIn(new BookingId(Guid.CreateVersion7()), Shop, "زائر", Faisal, Haircut(), Start, false, null, sultan, Now, BookingChannel.Online));
+
+        // «وصل» then «انتهت الخدمة»: the actual start and end, on time.
+        var served = Online();
+        served.ApplyShopTransition(BookingStatus.Arrived, sultan, null, Start.AddMinutes(2)).IsSuccess.ShouldBeTrue();
+        served.ApplyShopTransition(BookingStatus.Completed, sultan, null, Start.AddMinutes(25)).IsSuccess.ShouldBeTrue();
+        served.ShouldSatisfyAllConditions(
+            b => b.ActualStartAt.ShouldBe(Start.AddMinutes(2)),
+            b => b.CompletedAt.ShouldBe(Start.AddMinutes(25)),
+            b => b.ClosedLate.ShouldBeFalse(),
+            b => b.ClosingEntry!.ActorName.ShouldBe("سلطان"));
+
+        // Red 15 minutes after the booked end; closed then, even from Confirmed, it is «انقفل متأخر».
+        var forgotten = Online();
+        forgotten.IsOverdue(Start.AddMinutes(45)).ShouldBeFalse();
+        forgotten.IsOverdue(Start.AddMinutes(46)).ShouldBeTrue();
+        forgotten.AllowedShopTransitions(Start.AddMinutes(46)).ShouldContain(BookingStatus.Completed);
+        forgotten.ApplyShopTransition(BookingStatus.Completed, sultan, null, Start.AddHours(5)).IsSuccess.ShouldBeTrue();
+        forgotten.ShouldSatisfyAllConditions(
+            b => b.ClosedLate.ShouldBeTrue(), b => b.ActualStartAt.ShouldBeNull(), b => b.IsOverdue(Start.AddHours(6)).ShouldBeFalse());
+
+        // A cancellation in the last quarter hour (or after the start) is late; one before it is not.
+        var early = Online();
+        early.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "مرض", Start.AddMinutes(-16)).IsSuccess.ShouldBeTrue();
+        early.CancelledLate.ShouldBeFalse();
+        var late = Online();
+        late.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "مرض", Start.AddMinutes(-14)).IsSuccess.ShouldBeTrue();
+        late.CancelledLate.ShouldBeTrue();
+
+        // Once arrived, it cannot be cancelled.
+        var arrived = Online();
+        arrived.ApplyShopTransition(BookingStatus.Arrived, sultan, null, Start).IsSuccess.ShouldBeTrue();
+        arrived.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "مرض", Start.AddMinutes(1)).Error!.Code.ShouldBe("booking.invalid_transition");
     }
 
     [Fact]

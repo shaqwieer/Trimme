@@ -13,29 +13,41 @@ namespace Trimme.IntegrationTests.Identity;
 /// <summary>
 /// D-145: a barber's login reaches only their own professional's bookings, breaks and figures. Every endpoint a barber can
 /// reach is reviewed here, as scoped to the barber (checked below with a colleague's booking and day) or shop-wide by
-/// design; a new endpoint a barber can reach fails until it is classified.
+/// design; a new endpoint a barber can reach fails until it is classified. D-147 adds three reviewed exceptions: the
+/// shop's pending bookings (any barber accepts or rejects them), the shop's red bookings (any barber closes them), and a
+/// walk-in or phone booking made for a free colleague. A barber's overview carries no figures.
 /// </summary>
 public sealed class BarberScopeTests(PostgresFixture postgres)
 {
     private const string Scoped = "scoped to the barber";
+
+    private const string PendingAndRed = "scoped to the barber, plus the shop's pending and red bookings (D-147 exceptions 1 and 2)";
 
     /// <summary>The reviewed list: every endpoint a ShopBarber login can call, and why that is safe.</summary>
     private static readonly Dictionary<string, string> BarberReachable = new(StringComparer.Ordinal)
     {
         // Scoped: a colleague's booking answers 404, lists and boards hold only the barber's own (tested below).
         ["GET /api/v1/shop/bookings/"] = Scoped,
-        ["GET /api/v1/shop/bookings/{bookingId:guid}"] = Scoped,
-        ["POST /api/v1/shop/bookings/{bookingId:guid}/transitions"] = Scoped,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}"] = PendingAndRed,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/transitions"] = PendingAndRed + ": on a colleague's, only accept or reject while pending, close once red",
         ["POST /api/v1/shop/bookings/{bookingId:guid}/notes"] = Scoped,
-        ["POST /api/v1/shop/bookings/walk-in"] = Scoped,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/services"] = Scoped,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/services/{serviceId:guid}/delete"] = Scoped,
+        ["POST /api/v1/shop/bookings/walk-in"] = "the barber, or a free colleague of the same shop (D-147 exception 3)",
         ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/dates"] = Scoped,
         ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/slots"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/reschedule"] = Scoped,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/postpone"] = Scoped,
         ["GET /api/v1/shop/bookings/{bookingId:guid}/professional-options"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/professional"] = Scoped,
-        ["GET /api/v1/shop/dashboard/overview"] = Scoped,
+        ["GET /api/v1/shop/dashboard/overview"] = Scoped + ", with no figures (D-147)",
         ["GET /api/v1/shop/calendar"] = Scoped,
-        ["GET /api/v1/shop/availability/walk-in"] = Scoped,
+        ["GET /api/v1/shop/availability/walk-in"] = "the shop's barbers who do it, to book a free colleague (D-147 exception 3); no customer data",
+
+        // Shop-wide by design (D-147): what any barber of the shop may act on, and the shop's temporary online pause.
+        ["GET /api/v1/shop/bookings/attention"] = "the shop's pending and red bookings, any barber's (D-147 exceptions 1 and 2)",
+        ["POST /api/v1/shop/online-booking/pause"] = "the shop's temporary online pause, any barber (D-147)",
+        ["POST /api/v1/shop/online-booking/resume"] = "the shop's temporary online pause, any barber (D-147)",
         ["GET /api/v1/shop/schedule/barber-day/"] = Scoped,
         ["PUT /api/v1/shop/schedule/barber-day/"] = Scoped,
 
@@ -118,18 +130,26 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         var calendar = await OkAsync(faisal.GetAsync($"/api/v1/shop/calendar?from={iso}&professionalId={w.Omar}", ct), ct);
         calendar.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Faisal]);
         calendar.GetProperty("days")[0].GetProperty("bookings").EnumerateArray().Select(b => b.GetProperty("id").GetGuid()).ShouldBe([mine]);
+        // The barber's overview has what comes next, and no figures: no counts, no load, no hours (D-147).
         var overview = await OkAsync(faisal.GetAsync($"/api/v1/shop/dashboard/overview?date={iso}", ct), ct);
-        overview.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Faisal]);
-        overview.GetProperty("kpis").GetProperty("total").GetInt32().ShouldBe(1);
+        overview.GetProperty("kpis").ValueKind.ShouldBe(JsonValueKind.Null);
+        overview.GetProperty("professionals").GetArrayLength().ShouldBe(0);
+        overview.GetProperty("hourly").GetArrayLength().ShouldBe(0);
         overview.GetProperty("customers").ValueKind.ShouldBe(JsonValueKind.Null);
         (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/dashboard/overview?date={iso}", ct), ct)).GetProperty("kpis").GetProperty("total").GetInt32().ShouldBe(2);
 
-        // Walk-ins are for the barber themselves.
+        // Walk-ins: for the barber, or a free colleague of the same shop (D-147), never another shop's barber.
         var options = await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}&date={iso}", ct), ct);
-        options.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Faisal]);
-        await FailsAsync(
+        options.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Faisal, w.Omar]);
+        var forOmar = await OkAsync(
             faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
                 new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(day, 15), customerName = "زائر" }, ct, headers: Key()),
+            ct, HttpStatusCode.Created);
+        forOmar.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar);
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{forOmar.GetProperty("id").GetGuid()}", ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(
+            faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+                new { serviceId = w.Haircut, professionalId = w.ProB, startsAt = At(day, 15), customerName = "زائر" }, ct, headers: Key()),
             HttpStatusCode.NotFound, "professional.not_found", ct);
         await OkAsync(
             faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",

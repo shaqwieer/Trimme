@@ -110,6 +110,12 @@ public static class NoticeKinds
 
     /// <summary>The booking was given to another barber (D-145); carries the previous barber's names.</summary>
     public const string BookingProfessionalChanged = "booking.professional_changed";
+
+    /// <summary>The barber offered a new time (D-147); carries <c>offeredStartsAt</c>. In-app only: no WhatsApp template yet.</summary>
+    public const string BookingPostponementOffered = "booking.postponement_offered";
+
+    /// <summary>The customer declined the offered time (D-147): the booking stays, the barber decides what next.</summary>
+    public const string BookingPostponementDeclined = "booking.postponement_declined";
     public const string SubscriptionExpiring = "subscription.expiring";
     public const string SubscriptionExpired = "subscription.expired";
     public const string DispatchFailed = "whatsapp.dispatch_failed";

@@ -60,11 +60,15 @@ function recordTraffic(page: Page) {
   return seen;
 }
 
+/**
+ * No customer number in what the page saw. The one reviewed exception (D-147) is a barber's own view of an open
+ * walk-in or phone booking, so this checks the owner's screens and the calendar: the field may exist, always null.
+ */
 function expectNoPhones(traffic: Array<{ source: string; body: string }>) {
   expect(traffic.length).toBeGreaterThan(0);
   for (const { source, body } of traffic) {
     for (const phone of CUSTOMER_PHONES) expect(body, source).not.toContain(phone);
-    expect(body, source).not.toMatch(/"(customer)?(phone|mobile)[A-Za-z]*"\s*:/i);
+    expect(body, source).not.toMatch(/"(customer)?(phone|mobile)[A-Za-z]*"\s*:\s*"/i);
     expect(body, source).not.toMatch(/"customerId"\s*:/);
   }
 }
@@ -77,7 +81,7 @@ function riyadhDate(days: number): string {
 }
 
 test.describe('shop operations dashboard (E2, Phase 13)', () => {
-  test('E2: a walk-in appears live on another screen, in the calendar and the drawer; cancelled with a reason; no phones, no export', async ({
+  test("E2: a phone booking appears live on the owner's screen, in the calendar and the drawer; cancelled with a reason; the number for the barber only; no export", async ({
     page,
     browser,
   }) => {
@@ -85,7 +89,8 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const customer = `زائر ${Date.now().toString(36).slice(-5)}`;
     await staffSignIn(page, OMAR_LOGIN);
     await expect(page.getByTestId('shop-overview')).toBeVisible();
-    await expect(page.getByTestId('shop-kpis')).toBeVisible();
+    // A barber sees what comes next, no figures (D-147).
+    await expect(page.getByTestId('shop-kpis')).toHaveCount(0);
     await expect(page.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
     });
@@ -105,10 +110,15 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const watched = watcher.getByTestId('coming-appointment').filter({ hasText: customer });
     await expect(watched).toHaveCount(0);
 
-    // Omar's walk-in: service, himself (the only barber offered), the last free time that day, the name and the mobile (D-134).
+    // Omar's phone booking two days ahead (D-147): the kind, the service, himself, the last free time that day, the
+    // name and the mobile (D-134).
     await page.goto('/ar/shop/walk-in');
     await expect(page.getByTestId('walk-in')).toBeVisible();
-    await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
+    await page.locator('label').filter({ hasText: 'بالتلفون' }).click();
+    // The first service may be ticked already: a label click would untick it.
+    if (!(await page.getByRole('checkbox', { name: /قص وتصفيف/ }).isChecked()))
+      await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
+    await expect(page.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
     await page.getByLabel('اليوم', { exact: true }).fill(date);
     await page.locator('label').filter({ hasText: 'عمر السالم' }).click();
     // The day's last free time: the first ones can belong to the previous business day when its opening window runs
@@ -119,19 +129,26 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await page.getByLabel('اسم العميل').fill(customer);
     await page.getByLabel('جوال العميل').fill(`0${WALK_IN_PHONE}`);
     await expectNoSeriousAxe(page, 'walk-in');
-    await page.getByRole('button', { name: 'تسجيل الحجز' }).click();
-    await expect(page.getByText('سُجل الحجز الحضوري')).toBeVisible();
+    await page.getByRole('button', { name: 'تسجيل الموعد' }).click();
+    await expect(page.getByText('سُجّل الموعد بالتلفون')).toBeVisible();
     await expect(page.locator('main')).not.toContainText(/551 ?000|٥٥١/);
 
     // The other screen shows it without a reload (live, R-SD-10).
     await expect(watched).toHaveCount(1, { timeout: 15_000 });
     await expectNoSeriousAxe(watcher, 'appointments');
 
-    // The drawer: details without a phone, an internal note, then cancel with a reason.
+    // The barber's drawer: the number he typed, while the booking is open (D-147), an internal note, then cancel with a
+    // reason. The owner's drawer: no number.
     await page.getByRole('link', { name: 'عرض الموعد' }).click();
     const drawer = page.getByTestId('appointment-drawer');
     await expect(drawer).toContainText(customer);
-    await expect(drawer.getByTestId('no-phone-note')).toBeVisible();
+    await expect(drawer.getByTestId('customer-phone')).toContainText(`+966${WALK_IN_PHONE}`);
+    await watched.click();
+    await expect(watcher.getByTestId('appointment-drawer').getByTestId('no-phone-note')).toBeVisible();
+    await expect(
+      watcher.getByTestId('appointment-drawer').getByRole('button', { name: 'إلغاء الموعد' }),
+    ).toHaveCount(0);
+    await watcher.keyboard.press('Escape');
     await expectNoSeriousAxe(page, 'drawer');
     await drawer.getByLabel('ملاحظة جديدة').fill('يفضّل المقص');
     await drawer.getByRole('button', { name: 'إضافة الملاحظة' }).click();
@@ -165,8 +182,12 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     expect(foreign.status()).toBe(404);
     expect((await page.request.get(`/api/v1/shop/bookings/${bookingId}`)).status()).toBe(200);
 
-    // No customer phone in any dashboard payload or live message; no export anywhere (R-NEG-03).
-    expectNoPhones([...traffic, ...watcherTraffic, ...calendarTraffic]);
+    // No customer phone in the owner's payloads, the calendar or any live message; no export anywhere (R-NEG-03).
+    expectNoPhones([
+      ...watcherTraffic,
+      ...calendarTraffic,
+      ...traffic.filter((t) => t.source.startsWith('ws ')),
+    ]);
     for (const path of ['/ar/shop', '/ar/shop/appointments', '/ar/shop/calendar']) {
       await page.goto(path);
       await expect(page.getByText(/تصدير|Export|CSV/)).toHaveCount(0);
@@ -185,6 +206,8 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
         // The owner has no walk-in page (D-146); their barbers' list instead.
         '/ar/shop/barbers',
         '/ar/shop/qr',
+        // The owner's reports (D-147): wide tables scroll inside their card, never the page.
+        '/ar/shop/reports',
       ]) {
         await page.goto(path, { waitUntil: 'load' });
         await page.evaluate(() => document.fonts.ready);

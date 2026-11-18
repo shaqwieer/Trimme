@@ -79,8 +79,11 @@ public sealed record BookableOffer(
     string Currency,
     IReadOnlyList<BookableOfferItem> Items);
 
-/// <summary>One service of a package, for the booking snapshot and reporting.</summary>
-public sealed record BookableOfferItem(Guid ServiceId, string NameAr, string? NameEn);
+/// <summary>
+/// One service of a package or of several services booked together, for the booking snapshot and reporting. Services
+/// booked together carry their own price and length (D-147), so one can later be taken off the booking.
+/// </summary>
+public sealed record BookableOfferItem(Guid ServiceId, string NameAr, string? NameEn, decimal? Price = null, int? DurationMinutes = null);
 
 /// <summary>
 /// Existing, non-cancelled appointments, for availability and the schedule conflict preview. The Bookings module
@@ -190,3 +193,15 @@ public sealed record ShopDayPlan(DateOnly Date, bool Closed, IReadOnlyList<TimeW
 /// <param name="AvailableMinutes">Minutes they can take bookings: the working time outside breaks and time off.</param>
 public sealed record ProfessionalDayPlan(
     ProfessionalId ProfessionalId, IReadOnlyList<TimeWindow> Working, IReadOnlyList<TimeWindow> Breaks, IReadOnlyList<TimeWindow> TimeOff, int AvailableMinutes);
+
+/// <summary>
+/// Each barber's own breaks on a run of shop-local dates, for the owner's reports (implemented by the Availability module,
+/// D-147): how many and how many minutes. Only the one-off breaks a barber sets on a day; the shop's weekly breaks are
+/// the owner's setting, not a barber's.
+/// </summary>
+public interface IBarberBreakReport
+{
+    Task<IReadOnlyDictionary<ProfessionalId, BreakTotals>> TotalsAsync(ShopId shopId, DateOnly from, DateOnly to, CancellationToken cancellationToken);
+}
+
+public sealed record BreakTotals(int Count, int Minutes);

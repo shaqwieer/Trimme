@@ -8,6 +8,7 @@ using Shouldly;
 using Trimme.BuildingBlocks.Web.Security;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
+using Trimme.Modules.Bookings.Application;
 using Trimme.Modules.Identity.Domain;
 
 namespace Trimme.IntegrationTests.Tenancy;
@@ -29,6 +30,21 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
         // customer's; owner only (Shop.Barbers.Manage), never a barber's login.
         ["ShopBarberResponse.WhatsApp"] = "The shop's own barber's WhatsApp number, masked, for the owner (D-146).",
         ["ShopBarberCreatedResponse.Barber.WhatsApp"] = "The same, in the answer that adds the barber (D-146).",
+    };
+
+    /// <summary>
+    /// Reviewed phone-named members of one type, wherever that type appears. Adding one is a reviewed decision.
+    /// <para>
+    /// D-147 (the client's table, overriding D-134 and spec §7 for shop-recorded bookings only): a barber's login reads the
+    /// mobile typed into a walk-in or phone booking while that booking is open. The server fills it only for a barber, only
+    /// for <c>WalkIn</c>/<c>Phone</c> bookings, only while Pending, Confirmed or Arrived; never for the owner (the live
+    /// scan below runs as the owner), never for an online customer, never in an event or a notification.
+    /// </para>
+    /// </summary>
+    private static readonly Dictionary<(Type Type, string Member), string> AllowedTypeMembers = new()
+    {
+        [(typeof(ShopBookingResponse), nameof(ShopBookingResponse.CustomerPhone))] =
+            "A walk-in or phone booking's mobile, for barbers while the booking is open (D-147).",
     };
 
     [Fact]
@@ -79,6 +95,10 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
     {
         // Non-vacuity: the scanner must catch a phone buried in a nested collection.
         PhoneLikeMembers(typeof(ProbeBooking), nameof(ProbeBooking), []).ShouldBe(["ProbeBooking.Customers.MobileNumber"]);
+
+        // The D-147 exception is that one member of that one type: the same name elsewhere is still caught.
+        PhoneLikeMembers(typeof(ProbeShopBooking), nameof(ProbeShopBooking), []).ShouldBe(["ProbeShopBooking.CustomerPhone"]);
+        PhoneLikeMembers(typeof(ShopBookingResponse), nameof(ShopBookingResponse), []).ShouldBeEmpty();
         PhoneInText().IsMatch("""{"customer":"+966 50 214 8830"}""").ShouldBeTrue();
         PhoneInText().IsMatch("""{"customer":"0502148830"}""").ShouldBeTrue();
     }
@@ -116,7 +136,7 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             var propertyPath = $"{path}.{property.Name}";
-            if (PhoneName().IsMatch(property.Name))
+            if (PhoneName().IsMatch(property.Name) && !AllowedTypeMembers.ContainsKey((type, property.Name)))
             {
                 yield return propertyPath;
             }
@@ -141,4 +161,6 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
     }
 
     private sealed record ProbeCustomer(string Name, string MobileNumber);
+
+    private sealed record ProbeShopBooking(Guid Id, string? CustomerPhone);
 }

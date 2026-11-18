@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
-import { StatusBadge } from '@/components/ui/Badge';
+import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Timeline, type TimelineItem } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
@@ -23,19 +23,21 @@ import {
 } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 import { bookingSource } from '@/lib/booking/format';
+import { BOARD_KEY } from './boardKey';
 import { MoveDialog, RescheduleDialog } from './BookingChangeDialogs';
+import { BookingServicesEditor } from './BookingServicesEditor';
 import { CustomerVisitBadge } from './CustomerVisitBadge';
+
+export { BOARD_KEY };
 
 type Detail = components['schemas']['ShopBookingDetailResponse'];
 type Status = components['schemas']['BookingStatus'];
-
-export const BOARD_KEY = 'shop-board';
 
 const NOTE_MAX = 500;
 
 const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' | 'danger'>> = {
   Confirmed: 'primary',
-  Arrived: 'secondary',
+  Arrived: 'primary',
   Completed: 'primary',
   NoShow: 'outline',
   CancelledByShop: 'danger',
@@ -43,10 +45,13 @@ const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' 
 
 /**
  * One appointment (s-appointments drawer 2344–2393): time, customer name, item, professional, source, the snapshot price
- * paid at the shop, "customer number not available" (spec §7), status actions from the API's `allowedTransitions` only
- * (DV-S08; cancelling asks for a reason), internal notes and the history. Actions are optimistic: the badge changes at
- * once and rolls back if the API refuses (a stale version, or a time rule). A booking that has not started can get a new
- * time or go to another barber of the shop (D-145), each in its own dialog; the customer is told.
+ * paid at the shop, status actions from the API's `allowedTransitions` only (DV-S08), internal notes and the history.
+ * D-147: the owner only watches (no actions, notes read-only); a barber's visit goes «وصل» then «انتهت الخدمة», with
+ * «الزبون ما حضر» a quarter hour late; emergencies come in the client's order — another barber, a new time, then a
+ * cancellation with a reason (in the last quarter hour it is «إلغاء متأخر»; once arrived, never). The customer's mobile
+ * shows for a walk-in or phone booking while it is open, to barbers only (the API decides); otherwise «رقم العميل غير
+ * متاح». The log names who did each thing. On a colleague's booking a barber may only accept or reject it while pending,
+ * or close it once red.
  */
 export function AppointmentDrawer({
   bookingId,
@@ -54,6 +59,7 @@ export function AppointmentDrawer({
   canUpdate,
   canReschedule = false,
   canMove = false,
+  ownProfessionalId = null,
   onClose,
 }: {
   bookingId: string | null;
@@ -63,6 +69,8 @@ export function AppointmentDrawer({
   canReschedule?: boolean;
   /** `Shop.Bookings.ChangeProfessional`: the same time with another barber. */
   canMove?: boolean;
+  /** A barber's own professional (D-145); null for the owner. */
+  ownProfessionalId?: string | null;
   onClose: () => void;
 }) {
   const t = useTranslations('shopBoard.drawer');
@@ -74,7 +82,7 @@ export function AppointmentDrawer({
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState<Status | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [finishOpen, setFinishOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState<'Completed' | 'NoShow' | null>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -110,7 +118,7 @@ export function AppointmentDrawer({
         }),
       );
       setCancelOpen(false);
-      setFinishOpen(false);
+      setConfirmOpen(null);
       setReason('');
     } catch (failure) {
       queryClient.setQueryData<Detail>(key, current);
@@ -162,8 +170,18 @@ export function AppointmentDrawer({
                   ? localizedName(locale, h.previousProfessional.nameAr, h.previousProfessional.nameEn)
                   : '',
               })
-            : t('history.status', { status: tStatus(h.toStatus) }),
-    meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} · ${t(`actor.${h.actorType}`)}${h.reason ? ` · ${h.reason}` : ''}`,
+            : h.kind === 'ServiceAdded'
+              ? t('history.serviceAdded', { name: h.reason ?? '' })
+              : h.kind === 'ServiceRemoved'
+                ? t('history.serviceRemoved', { name: h.reason ?? '' })
+                : h.kind === 'PostponementOffered'
+                  ? t('history.postponementOffered')
+                  : h.kind === 'PostponementAccepted'
+                    ? t('history.postponementAccepted')
+                    : h.kind === 'PostponementDeclined'
+                      ? t('history.postponementDeclined')
+                      : t('history.status', { status: tStatus(h.toStatus) }),
+    meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} · ${h.actorName ?? t(`actor.${h.actorType}`)}${h.reason && h.kind !== 'ServiceAdded' && h.kind !== 'ServiceRemoved' ? ` · ${h.reason}` : ''}`,
     tone:
       h.toStatus === 'Completed'
         ? 'success'
@@ -174,11 +192,20 @@ export function AppointmentDrawer({
             : 'brand',
   }));
 
+  // A barber's own booking (the owner, with no professional, has no actions at all).
+  const mine = booking !== undefined && (!ownProfessionalId || booking.professional.id === ownProfessionalId);
+  const allowed = canUpdate && booking ? booking.allowedTransitions : [];
+  // «رفض» for a pending booking sits with the status actions; any other cancellation is the last emergency step.
+  const rejects = booking?.status === 'Pending';
+  const statusActions = allowed.filter((to) => to !== 'CancelledByShop' || rejects);
+  const canCancel = allowed.includes('CancelledByShop') && !rejects;
   // Pending or Confirmed, and not started when it was read: the API's rule for both changes (it has the last word).
   const changeable =
     booking !== undefined &&
+    mine &&
     (booking.status === 'Pending' || booking.status === 'Confirmed') &&
     Date.parse(booking.startsAt) > detail.dataUpdatedAt;
+  const showEmergencies = (changeable && (canReschedule || canMove)) || canCancel;
   const target = booking
     ? {
         id: booking.id,
@@ -188,6 +215,11 @@ export function AppointmentDrawer({
       }
     : null;
   const changed = () => queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
+  const editableServices =
+    canUpdate &&
+    mine &&
+    booking !== undefined &&
+    ['Pending', 'Confirmed', 'Arrived'].includes(booking.status);
 
   return (
     <Sheet
@@ -222,8 +254,28 @@ export function AppointmentDrawer({
                 {formatDate(booking.startsAt, locale, { timeZone })} ·{' '}
                 {formatDurationMinutes(booking.item.durationMinutes, locale)}
               </span>
-              <StatusBadge kind="booking" status={booking.status} className="mt-1 self-start" />
+              <span className="mt-1 flex flex-wrap gap-1.5">
+                <StatusBadge kind="booking" status={booking.status} />
+                {booking.overdue && <Badge tone="danger">{t('flags.overdue')}</Badge>}
+                {booking.closedLate && <Badge tone="warning">{t('flags.closedLate')}</Badge>}
+                {booking.cancelledLate && <Badge tone="danger">{t('flags.cancelledLate')}</Badge>}
+              </span>
             </div>
+            {booking.overdue && <InlineAlert tone="danger" title={t('overdueNote')} />}
+            {booking.postponement &&
+              (booking.postponement.live ? (
+                <InlineAlert
+                  tone="info"
+                  title={t('postponement.waiting', {
+                    when: `${formatDate(booking.postponement.startsAt, locale, { timeZone })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`,
+                    until: formatTime(booking.postponement.expiresAt, locale, timeZone),
+                  })}
+                />
+              ) : booking.postponement.status === 'Declined' ? (
+                <InlineAlert tone="warning" title={t('postponement.declined')} />
+              ) : booking.postponement.status === 'Open' ? (
+                <InlineAlert tone="warning" title={t('postponement.lapsed')} />
+              ) : null)}
             {booking.outsideSchedule && <InlineAlert tone="warning" title={t('outsideSchedule')} />}
             {booking.loyaltyReward && (
               <InlineAlert
@@ -253,6 +305,13 @@ export function AppointmentDrawer({
                     t('rows.amount'),
                     t('amount', { price: formatPrice(booking.item.price, locale, booking.item.currency) }),
                   ],
+                  ...(booking.actualStartAt
+                    ? [[t('rows.actualStart'), formatTime(booking.actualStartAt, locale, timeZone)]]
+                    : []),
+                  ...(booking.actualEndAt
+                    ? [[t('rows.actualEnd'), formatTime(booking.actualEndAt, locale, timeZone)]]
+                    : []),
+                  ...(booking.closedBy ? [[t('rows.closedBy'), booking.closedBy]] : []),
                   ...(booking.note ? [[t('rows.note'), booking.note]] : []),
                   ...(booking.cancellationReason
                     ? [[t('rows.cancellationReason'), booking.cancellationReason]]
@@ -265,26 +324,46 @@ export function AppointmentDrawer({
                 </div>
               ))}
             </dl>
-            <p
-              className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
-              data-testid="no-phone-note"
-            >
-              <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
-              <span>
-                <strong className="block text-text-strong">{t('noPhone.title')}</strong>
-                {t('noPhone.body')}
-              </span>
-            </p>
+            {booking.customerPhone ? (
+              <p
+                className="flex items-start gap-2 rounded-card bg-bg-subtle p-3 text-helper text-text-secondary"
+                data-testid="customer-phone"
+              >
+                <Icon name="phone" className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  <strong className="block text-text-strong">{t('phone.title')}</strong>
+                  <a
+                    href={`tel:${booking.customerPhone}`}
+                    dir="ltr"
+                    className="font-latin text-label font-bold text-brand-700 hover:underline"
+                  >
+                    {booking.customerPhone}
+                  </a>
+                  <span className="block">{t('phone.body')}</span>
+                </span>
+              </p>
+            ) : (
+              <p
+                className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
+                data-testid="no-phone-note"
+              >
+                <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  <strong className="block text-text-strong">{t('noPhone.title')}</strong>
+                  {t('noPhone.body')}
+                </span>
+              </p>
+            )}
 
             {error && <InlineAlert tone="danger" title={error} />}
 
-            {canUpdate && booking.allowedTransitions.length > 0 && (
+            {statusActions.length > 0 && (
               <section aria-labelledby="status-actions" className="flex flex-col gap-2">
                 <h3 id="status-actions" className="text-label font-bold text-text-primary">
                   {t('changeStatus')}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {booking.allowedTransitions.map((to) => (
+                  {statusActions.map((to) => (
                     <Button
                       key={to}
                       size="sm"
@@ -294,39 +373,53 @@ export function AppointmentDrawer({
                       onClick={() =>
                         to === 'CancelledByShop'
                           ? setCancelOpen(true)
-                          : to === 'Completed'
-                            ? setFinishOpen(true)
+                          : to === 'Completed' || to === 'NoShow'
+                            ? setConfirmOpen(to)
                             : void transition(to)
                       }
                     >
-                      {t(`actions.${to}`)}
+                      {to === 'CancelledByShop' ? t('actions.reject') : t(`actions.${to}`)}
                     </Button>
                   ))}
                 </div>
               </section>
             )}
 
-            {changeable && (canReschedule || canMove) && (
+            {editableServices && (
+              <BookingServicesEditor
+                booking={booking}
+                ownProfessionalId={ownProfessionalId}
+                onChanged={() => queryClient.invalidateQueries({ queryKey: [BOARD_KEY] })}
+              />
+            )}
+
+            {showEmergencies && (
               <section aria-labelledby="change-actions" className="flex flex-col gap-2">
                 <h3 id="change-actions" className="text-label font-bold text-text-primary">
                   {t('change.title')}
                 </h3>
+                <p className="text-helper text-text-secondary">{t('change.order')}</p>
                 <div className="flex flex-wrap gap-2">
-                  {canReschedule && (
+                  {changeable && canMove && (
+                    <Button size="sm" variant="outline" onClick={() => setChanging('move')}>
+                      {t('change.move')}
+                    </Button>
+                  )}
+                  {changeable && canReschedule && (
                     <Button size="sm" variant="outline" onClick={() => setChanging('reschedule')}>
                       {t('change.reschedule')}
                     </Button>
                   )}
-                  {canMove && (
-                    <Button size="sm" variant="outline" onClick={() => setChanging('move')}>
-                      {t('change.move')}
+                  {canCancel && (
+                    <Button size="sm" variant="danger" onClick={() => setCancelOpen(true)}>
+                      {t('actions.CancelledByShop')}
                     </Button>
                   )}
                 </div>
               </section>
             )}
 
-            {canUpdate && (
+            {(data!.notes.length > 0 || (canUpdate && mine)) && (
               <section aria-labelledby="notes-title" className="flex flex-col gap-2">
                 <h3 id="notes-title" className="text-label font-bold text-text-primary">
                   {t('notes.title')}
@@ -344,24 +437,28 @@ export function AppointmentDrawer({
                     ))}
                   </ul>
                 )}
-                <TextareaField
-                  label={t('notes.add')}
-                  helper={t('notes.internal')}
-                  maxLength={NOTE_MAX}
-                  rows={2}
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  loading={savingNote}
-                  disabled={!note.trim()}
-                  onClick={addNote}
-                >
-                  {t('notes.save')}
-                </Button>
+                {canUpdate && mine && (
+                  <>
+                    <TextareaField
+                      label={t('notes.add')}
+                      helper={t('notes.internal')}
+                      maxLength={NOTE_MAX}
+                      rows={2}
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="self-start"
+                      loading={savingNote}
+                      disabled={!note.trim()}
+                      onClick={addNote}
+                    >
+                      {t('notes.save')}
+                    </Button>
+                  </>
+                )}
               </section>
             )}
 
@@ -379,6 +476,7 @@ export function AppointmentDrawer({
         <RescheduleDialog
           booking={target}
           timeZone={timeZone}
+          offer={booking?.channel === 'Online'}
           onClose={() => setChanging(null)}
           onChanged={changed}
         />
@@ -394,15 +492,19 @@ export function AppointmentDrawer({
 
       {booking && (
         <ConfirmDialog
-          open={finishOpen}
-          onOpenChange={setFinishOpen}
-          tone="default"
-          title={t('finish.title', { name: booking.customerName })}
-          body={t('finish.body')}
-          confirmLabel={t('finish.confirm')}
+          open={confirmOpen !== null}
+          onOpenChange={(open) => !open && setConfirmOpen(null)}
+          tone={confirmOpen === 'NoShow' ? 'danger' : 'default'}
+          title={
+            confirmOpen === 'NoShow'
+              ? t('noShow.title', { name: booking.customerName })
+              : t('finish.title', { name: booking.customerName })
+          }
+          body={confirmOpen === 'NoShow' ? t('noShow.body') : t('finish.body')}
+          confirmLabel={confirmOpen === 'NoShow' ? t('noShow.confirm') : t('finish.confirm')}
           cancelLabel={t('finish.keep')}
-          loading={pending === 'Completed'}
-          onConfirm={() => void transition('Completed')}
+          loading={pending === 'Completed' || pending === 'NoShow'}
+          onConfirm={() => confirmOpen && void transition(confirmOpen)}
         />
       )}
 
@@ -410,18 +512,18 @@ export function AppointmentDrawer({
         open={cancelOpen}
         onOpenChange={setCancelOpen}
         size="sm"
-        title={t('cancel.title')}
-        description={t('cancel.body')}
+        title={rejects ? t('reject.title') : t('cancel.title')}
+        description={rejects ? t('reject.body') : t('cancel.body')}
         footer={
           <>
             <Button
               variant="dangerSolid"
               className="flex-1"
-              disabled={!reason.trim()}
+              disabled={reason.trim().length < 3}
               loading={pending === 'CancelledByShop'}
               onClick={() => void transition('CancelledByShop', reason.trim())}
             >
-              {t('cancel.confirm')}
+              {rejects ? t('reject.confirm') : t('cancel.confirm')}
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => setCancelOpen(false)}>
               {t('cancel.keep')}
@@ -431,6 +533,7 @@ export function AppointmentDrawer({
       >
         <TextareaField
           label={t('cancel.reason')}
+          helper={rejects ? undefined : t('cancel.late')}
           maxLength={NOTE_MAX}
           rows={2}
           value={reason}

@@ -51,7 +51,7 @@ Status marks:
 ## Non-negotiables (quick reference; details in spec §7 and MASTER_PLAN §2)
 
 - Tenant isolation is enforced in the API and data layer. The shop is resolved from claims only.
-- The customer phone number never reaches any shop-facing payload or log.
+- The customer phone number never reaches any shop-facing payload or log. One reviewed exception (D-147, the client's request): a barber's login reads the mobile typed into an open walk-in or phone booking (`ShopBookingResponse.customerPhone`); never the owner, never an online customer, never once the booking is closed, never in an event, notification or log.
 - No barber transfer, in any form. `Professional.ShopId` is immutable.
 - Services are shop-owned, with shop-set prices and durations. Subscription plan pricing is managed by SuperAdmin only and is versioned.
 - Availability is computed on the server. Double booking is prevented by a transactional recheck, an exclusion constraint and idempotency.

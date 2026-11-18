@@ -16,17 +16,20 @@ namespace Trimme.Modules.Availability.Application;
 /// </summary>
 public sealed record WalkInProfessionalResponse(Guid Id, string NameAr, string NameEn, bool FreeNow, DateTimeOffset? NextFreeAt, IReadOnlyList<DateTimeOffset> Starts);
 
-/// <summary>Walk-in choices for a service or package on one shop-local date (s-walkin).</summary>
+/// <summary>Walk-in and phone-booking choices for a service, several services or a package on one shop-local date (s-walkin, D-147).</summary>
 public sealed record WalkInOptionsResponse(
     DateOnly Date, string TimeZone, DateTimeOffset Now, int DurationMinutes, int SlotStepMinutes, IReadOnlyList<WalkInProfessionalResponse> Professionals);
 
-internal sealed record GetWalkInOptionsQuery(Guid? ServiceId, Guid? PackageId, DateOnly? Date) : IQuery<Result<WalkInOptionsResponse>>;
+internal sealed record GetWalkInOptionsQuery(Guid? ServiceId, Guid? PackageId, DateOnly? Date, IReadOnlyList<Guid>? ServiceIds = null)
+    : IQuery<Result<WalkInOptionsResponse>>;
 
 /// <summary>
 /// The walk-in step's professionals and times (spec §13, D-088): the active professionals assigned to the item (for a
 /// package, to every item), with the same collision rules as the walk-in command — hours, breaks, time off, closures and
 /// bookings — at any minute for "now" and on the slot grid for later times. Online-only rules (lead time, horizon, the
-/// online-bookable flag, the pause) do not apply to the shop's own desk. The shop comes from the session.
+/// online-bookable flag, the pause) do not apply to the shop's own desk. The shop comes from the session. Several
+/// services add up as one appointment with one barber who does them all (D-125, D-147). A barber sees every colleague who
+/// can do it, to book a free colleague (D-147; it was their own lane only under D-145).
 /// </summary>
 internal sealed class GetWalkInOptionsHandler(
     ICurrentTenant tenant,
@@ -48,8 +51,8 @@ internal sealed class GetWalkInOptionsHandler(
             return ScheduleErrors.ShopNotFound();
         }
 
-        if ((query.ServiceId is null) == (query.PackageId is null)
-            || await catalog.FindAsync(shopId, query.ServiceId, query.PackageId, cancellationToken) is not { } offer)
+        if (BookableOfferRequest.Services(query.ServiceId, query.ServiceIds, query.PackageId) is not { } services
+            || await catalog.FindAsync(shopId, services, query.PackageId, cancellationToken) is not { } offer)
         {
             return Error.NotFound("availability.offer_not_found", "The service or package was not found.");
         }
@@ -67,8 +70,8 @@ internal sealed class GetWalkInOptionsHandler(
         var eligible = offer.EligibleProfessionalIds.ToHashSet();
         var candidates = (await professionals.ListByShopAsync(shopId, cancellationToken))
             .Where(p => p.IsActive && eligible.Contains(p.Id))
-            // A barber books walk-ins for themselves only (D-145).
-            .Where(p => user.ProfessionalId is null || p.Id.Value == user.ProfessionalId)
+            // A barber first, then the colleagues they may book for (D-147).
+            .OrderByDescending(p => p.Id.Value == user.ProfessionalId)
             .ToList();
         var step = (await settings.GetAsync(cancellationToken)).SlotStepMinutes;
         var (calendar, calendars) = await loader.CalendarsAsync(shopId, zone, [.. candidates.Select(p => p.Id)], date, date, cancellationToken);

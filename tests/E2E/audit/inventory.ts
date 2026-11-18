@@ -104,6 +104,11 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         // The owner adds and edits their barbers (D-146).
         { path: '/shop/barbers/new' },
         { path: `/shop/barbers/${SEED.omar.id}` },
+        // The owner's reports and packages (D-147).
+        { path: '/shop/reports' },
+        { path: '/shop/reports?period=month' },
+        { path: '/shop/packages/new' },
+        { path: `/shop/packages/${SEED.barberHousePackage}` },
       ];
     case 'barber':
       // A barber's own login (D-145): their overview, appointments, calendar, walk-ins, breaks and notifications.

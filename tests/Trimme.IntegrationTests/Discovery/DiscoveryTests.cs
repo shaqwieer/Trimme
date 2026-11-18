@@ -194,8 +194,12 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
         top.EnumerateArray().Select(p => p.GetProperty("slug").GetString()).ShouldBe(["faisal"], "only professionals with stored ratings");
         top[0].GetProperty("shopSlug").GetString().ShouldBe(d.SlugA);
 
-        // Paused (D-013): the page stays, discovery hides it, the status says why.
-        await OkAsync(d.OwnerB.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "صيانة" }, ct), ct);
+        // Paused (D-013) by one of its barbers (D-147): the page stays, discovery hides it, the status says why.
+        using (var salem = await BarberLoginTests.BarberAsync(d.W.Factory, d.Admin, d.OwnerB, d.W.ProB, "+966512386002", ct))
+        {
+            await OkAsync(salem.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "صيانة" }, ct), ct);
+        }
+
         var paused = await OkAsync(visitor.GetAsync($"/api/v1/public/shops/{d.SlugB}/status", ct), ct);
         paused.GetProperty("acceptsOnlineBookings").GetBoolean().ShouldBeFalse();
         paused.GetProperty("blockedReason").GetString().ShouldBe("shop.paused");
@@ -402,7 +406,7 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
             await db.SaveChangesAsync(ct);
         }
 
-        /// <summary>A walk-in Faisal books himself (D-146) that starts now (Arrived) and is completed.</summary>
+        /// <summary>A walk-in Faisal books himself (D-146) that starts now (Arrived) and completes (D-147: the barber does).</summary>
         public async Task<Guid> CompletedVisitAsync(CancellationToken ct)
         {
             // With this world's own sessions: the clock jumped past the booking world's at setup.
@@ -411,7 +415,7 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
                 faisal.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = W.Haircut, professionalId = W.Faisal, customerName = "سعد العتيبي", customerPhone = "0501234567" }, ct),
                 ct, HttpStatusCode.Created);
             var id = walkIn.GetProperty("id").GetGuid();
-            await OkAsync(OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "Completed", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);
+            await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "Completed", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);
             return id;
         }
 

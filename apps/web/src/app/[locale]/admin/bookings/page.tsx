@@ -19,7 +19,7 @@ import { bookingSource } from '@/lib/booking/format';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 const PAGE_SIZE = 20;
-const CHANNELS = ['Online', 'WalkIn'] as const;
+const CHANNELS = ['Online', 'WalkIn', 'Phone'] as const;
 
 /**
  * Bookings across every shop (a-appointments, DV-A09, R-AD-05): status chips with counts, a date range on the platform

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { ShopPackageList } from '@/components/catalog/ShopPackages';
 import { ShopServiceList } from '@/components/catalog/ShopServices';
 import { ShopFrame } from '@/components/shop/ShopFrame';
 import { ButtonLink } from '@/components/ui/Button';
@@ -13,7 +14,8 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * The owner's services (s-services, corrected per DV-S03; back with D-137): the shop sets names, prices, durations and
- * who does each, turns them on and off, reorders and archives them. The desk has no access; packages stay the admin's.
+ * who does each, turns them on and off, reorders and archives them; and its packages (D-147; the admin keeps them too).
+ * Barbers have no access.
  */
 export default async function ShopServicesPage({
   params,
@@ -28,7 +30,10 @@ export default async function ShopServicesPage({
       {async (me) => {
         if (!me.permissions.includes('Shop.Services.Manage')) return <PermissionDenied homeHref="/shop" />;
         const api = await getServerApi();
-        const { data } = await api.GET('/api/v1/shop/services', { params: { query: { includeArchived } } });
+        const [{ data }, { data: packages }] = await Promise.all([
+          api.GET('/api/v1/shop/services', { params: { query: { includeArchived } } }),
+          api.GET('/api/v1/shop/packages', { params: { query: { includeArchived } } }),
+        ]);
         if (!data) return <ErrorState />;
 
         return (
@@ -53,6 +58,20 @@ export default async function ShopServicesPage({
               ) : (
                 <ShopServiceList items={data} />
               )}
+            </section>
+            <section
+              className="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-4 shadow-e1 md:px-6"
+              aria-labelledby="packages-title"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="packages-title" className="text-h3 font-bold text-navy-900">
+                  {t('packages.title')}
+                </h2>
+                <ButtonLink href="/shop/packages/new" size="sm" variant="outline" icon="plus">
+                  {t('packages.add')}
+                </ButtonLink>
+              </div>
+              <ShopPackageList items={packages ?? []} />
             </section>
           </div>
         );

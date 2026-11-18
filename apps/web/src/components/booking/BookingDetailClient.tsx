@@ -138,3 +138,81 @@ export function CancelBookingButton({
     </Dialog>
   );
 }
+
+/**
+ * The barber's postponement offer on the customer's booking (D-147): the new time held for them and until when to answer.
+ * Accepting moves the booking there; declining keeps it as it is. An offer that lapsed meanwhile answers 409 and the page
+ * reloads without it.
+ */
+export function PostponementOfferCard({
+  bookingId,
+  version,
+  when,
+  until,
+}: {
+  bookingId: string;
+  version: number;
+  /** The offered day and time, formatted on the shop's calendar. */
+  when: string;
+  /** The deadline, formatted on the shop's calendar. */
+  until: string;
+}) {
+  const t = useTranslations('bookings.postponement');
+  const router = useRouter();
+  const apiMessage = useApiErrorMessage();
+  const [pending, setPending] = useState<'accept' | 'decline' | null>(null);
+  const [error, setError] = useState<string>();
+
+  const answer = async (action: 'accept' | 'decline') => {
+    setPending(action);
+    setError(undefined);
+    try {
+      const options = { params: { path: { bookingId } }, body: { version } };
+      ensureOk(
+        action === 'accept'
+          ? await browserApi.POST('/api/v1/me/bookings/{bookingId}/postponement/accept', options)
+          : await browserApi.POST('/api/v1/me/bookings/{bookingId}/postponement/decline', options),
+      );
+      router.replace(
+        `/account/bookings/${bookingId}?postponement=${action === 'accept' ? 'accepted' : 'declined'}`,
+      );
+      router.refresh();
+    } catch (failure) {
+      setError(apiMessage(failure instanceof ApiError ? failure : 'server.unexpected'));
+      if (failure instanceof ApiError && failure.status === 409) router.refresh();
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="postponement-title"
+      className="flex flex-col gap-3 rounded-card border border-warning-border bg-warning-50 p-5 shadow-e1"
+      data-testid="postponement-offer"
+    >
+      <h2 id="postponement-title" className="text-h3 font-bold text-warning-700">
+        {t('title')}
+      </h2>
+      <p className="text-label text-text-strong">{t('body', { when, until })}</p>
+      {error && <InlineAlert tone="danger" title={error} />}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          loading={pending === 'accept'}
+          disabled={pending !== null}
+          onClick={() => void answer('accept')}
+        >
+          {t('accept')}
+        </Button>
+        <Button
+          variant="outline"
+          loading={pending === 'decline'}
+          disabled={pending !== null}
+          onClick={() => void answer('decline')}
+        >
+          {t('decline')}
+        </Button>
+      </div>
+    </section>
+  );
+}

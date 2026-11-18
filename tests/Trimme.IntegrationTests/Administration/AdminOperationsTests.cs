@@ -60,6 +60,8 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         var day2 = day1.AddDays(1);
         var clock = new FakeTimeProvider(At(day1, 8).ToUniversalTime());
         await using var w = await ArrangeAsync(postgres, "adm_overview", ct, clock);
+        await w.EnsureBarberLoginAsync(w.Faisal, ct);
+        await w.EnsureBarberLoginAsync(w.Omar, ct);
 
         // Shop A opens 09:00–02:00, so it has bookings on both sides of Riyadh midnight (both on the same UTC date).
         var schedule = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct);
@@ -94,13 +96,22 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
 
         // 01:00 on day 2 in Riyadh: day 1's visits are over.
         clock.SetUtcNow(At(day2, 1).ToUniversalTime());
+        // Each visit's own barber closes it (D-147: the owner only watches).
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            await ShopTransitionAsync(faisal, completed, "Arrived", ct);
+            await ShopTransitionAsync(faisal, completed, "Completed", ct);
+            await ShopTransitionAsync(faisal, noShow, "NoShow", ct);
+        }
+
+        using (var omar = await w.BarberAsync(w.Omar, ct))
+        {
+            await ShopTransitionAsync(omar, cancelled, "CancelledByShop", ct, "Barber unwell");
+            await ShopTransitionAsync(omar, lateNight, "Arrived", ct);
+            await ShopTransitionAsync(omar, lateNight, "Completed", ct);
+        }
+
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
-        await ShopTransitionAsync(owner, completed, "Arrived", ct);
-        await ShopTransitionAsync(owner, completed, "Completed", ct);
-        await ShopTransitionAsync(owner, noShow, "NoShow", ct);
-        await ShopTransitionAsync(owner, cancelled, "CancelledByShop", ct, "Barber unwell");
-        await ShopTransitionAsync(owner, lateNight, "Arrived", ct);
-        await ShopTransitionAsync(owner, lateNight, "Completed", ct);
 
         using var support = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.Support, ct);
         var today = await OkAsync(support.GetAsync("/api/v1/admin/dashboard/overview", ct), ct);
@@ -177,7 +188,10 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         var (noura, _) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
-        await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "يفضّل المقص" }, ct), ct, HttpStatusCode.Created);
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "يفضّل المقص" }, ct), ct, HttpStatusCode.Created);
+        }
 
         using var support = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.Support, ct);
         var customerId = (await OkAsync(support.GetAsync($"/api/v1/admin/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("customerId").GetGuid();
@@ -395,6 +409,8 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "adm_reviews", ct, clock);
+        await w.EnsureBarberLoginAsync(w.Faisal, ct);
+        await w.EnsureBarberLoginAsync(w.Omar, ct);
         var (noura, nouraPhone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var (sara, saraPhone) = await NamedCustomerAsync(w.Factory, "سارة", ct);
         var first = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
@@ -403,13 +419,11 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         sara.Dispose();
 
         clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
-        using (var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
+        foreach (var visit in new[] { first, second })
         {
-            foreach (var visit in new[] { first, second })
-            {
-                await ShopTransitionAsync(staff, visit, "Arrived", ct);
-                await ShopTransitionAsync(staff, visit, "Completed", ct);
-            }
+            using var barber = await w.BarberOfAsync(visit, ct);
+            await ShopTransitionAsync(barber, visit, "Arrived", ct);
+            await ShopTransitionAsync(barber, visit, "Completed", ct);
         }
 
         using var nouraAgain = await IdentityTestData.SignInCustomerAsync(w.Factory, nouraPhone, ct);

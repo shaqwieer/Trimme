@@ -44,9 +44,9 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         (await KindsAsync(omar, ct)).ShouldBeEmpty();
         (await DispatchesAsync(w.Factory, id, ct)).Select(Describe).ShouldBe(["BookingConfirmed:Customer", $"BookingConfirmed:Professional:{w.Faisal}"], ignoreOrder: true);
 
-        // The owner gives it to Omar at the same time.
+        // Faisal gives it to Omar at the same time (D-147: the owner only watches).
         await OkAsync(
-            w.OwnerA.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/professional", new { professionalId = w.Omar, version = booking.GetProperty("version").GetUInt32() }, ct,
+            faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/professional", new { professionalId = w.Omar, version = booking.GetProperty("version").GetUInt32() }, ct,
                 headers: Key()),
             ct);
         await ProcessOutboxAsync(w.Factory, ct);
@@ -64,14 +64,14 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         toCustomer.Buttons.ShouldContain(b => b.Url.EndsWith($"/ar/account/bookings/{id}", StringComparison.Ordinal));
         afterMove.Single(d => d.Event == MessageEvent.BookingCancelled).Body.ShouldNotBeNull().ShouldContain("نورة");
 
-        // In-app: the customer, both barbers; not the shop's inbox (the shop did it).
+        // In-app: the customer, Omar, and the owner (a barber did it, D-145); Faisal gets no notice of his own action.
         var customerNotice = (await NoticesAsync(noura, ct)).Single(n => n.GetProperty("kind").GetString() == "booking.professional_changed");
         customerNotice.GetProperty("parameters").GetProperty("professionalNameEn").GetString().ShouldBe("Omar");
         customerNotice.GetProperty("parameters").GetProperty("previousProfessionalNameAr").GetString().ShouldNotBeNullOrEmpty();
-        (await KindsAsync(faisal, ct)).ShouldBe(["booking.professional_changed", "booking.created"]);
+        (await KindsAsync(faisal, ct)).ShouldBe(["booking.created"]);
         (await KindsAsync(omar, ct)).ShouldBe(["booking.professional_changed"]);
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
-            .ShouldNotContain(n => n.GetProperty("kind").GetString() == "booking.professional_changed");
+            .ShouldContain(n => n.GetProperty("kind").GetString() == "booking.professional_changed");
 
         // Omar cancels it himself: the customer and Omar's WhatsApp are told (Omar heard of it), Faisal is not (no longer his);
         // Omar's login gets no notice of his own action.
@@ -84,14 +84,14 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         (await DispatchesAsync(w.Factory, id, ct)).Skip(afterMove.Count).Select(Describe)
             .ShouldBe(["BookingCancelled:Customer", $"BookingCancelled:Professional:{w.Omar}"], ignoreOrder: true);
         (await KindsAsync(omar, ct)).ShouldBe(["booking.professional_changed"]);
-        (await KindsAsync(faisal, ct)).ShouldBe(["booking.professional_changed", "booking.created"]);
+        (await KindsAsync(faisal, ct)).ShouldBe(["booking.created"]);
         (await NoticesAsync(noura, ct)).Select(n => n.GetProperty("kind").GetString()).ShouldContain("booking.cancelled");
 
         // The owner hears what the barber did (not what the owner did): the cancellation, with the barber's name.
         var ownerInbox = (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
             .Where(n => n.GetProperty("bookingId").ValueKind == JsonValueKind.String && n.GetProperty("bookingId").GetGuid() == id)
             .ToList();
-        ownerInbox.Select(n => n.GetProperty("kind").GetString()).ShouldBe(["booking.cancelled", "booking.created"]);
+        ownerInbox.Select(n => n.GetProperty("kind").GetString()).ShouldBe(["booking.cancelled", "booking.professional_changed", "booking.created"]);
         ownerInbox[0].GetProperty("parameters").GetProperty("actor").GetString().ShouldBe("ShopUser");
         ownerInbox[0].GetProperty("parameters").GetProperty("professionalNameEn").GetString().ShouldBe("Omar");
     }
@@ -136,18 +136,53 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
             .ShouldNotContain(n => n.GetProperty("bookingId").ValueKind == JsonValueKind.String && n.GetProperty("bookingId").GetGuid() == id);
 
-        // The owner cancels it: the walk-in is told, and so is the barber (in-app too: the owner did it).
-        await OkAsync(
+        // The barber cancels it (D-147: the owner only watches): the walk-in is told, and so is the barber's WhatsApp; no
+        // in-app notice of his own action, and none for the owner (walk-ins are the shop's own).
+        await FailsAsync(
             w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
+                new { to = "CancelledByShop", reason = "إغلاق طارئ", version = withMobile.GetProperty("version").GetUInt32() }, ct),
+            HttpStatusCode.Forbidden, null, ct);
+        await OkAsync(
+            faisal.PostAsync($"/api/v1/shop/bookings/{id}/transitions",
                 new { to = "CancelledByShop", reason = "إغلاق طارئ", version = withMobile.GetProperty("version").GetUInt32() }, ct),
             ct);
         await ProcessOutboxAsync(w.Factory, ct);
-        (await DispatchesAsync(w.Factory, id, ct)).Skip(dispatches.Count).Select(Describe)
-            .ShouldBe(["BookingCancelled:Customer", $"BookingCancelled:Professional:{w.Faisal}"], ignoreOrder: true);
-        var notices = await NoticesAsync(faisal, ct);
-        notices.Select(n => n.GetProperty("kind").GetString()).ShouldBe(["booking.cancelled"]);
+        var cancelled = (await DispatchesAsync(w.Factory, id, ct)).Skip(dispatches.Count).ToList();
+        cancelled.Select(Describe).ShouldBe(["BookingCancelled:Customer", $"BookingCancelled:Professional:{w.Faisal}"], ignoreOrder: true);
         var digits = walkInPhone[4..];
-        notices[0].GetProperty("parameters").EnumerateObject().ShouldNotContain(p => p.Value.GetString()!.Contains(digits, StringComparison.Ordinal));
+        cancelled.Single(d => d.Audience == MessageAudience.Professional).Body.ShouldNotBeNull().ShouldNotContain(digits);
+        (await KindsAsync(faisal, ct)).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task APhoneBooking_IsMessagedLikeAWalkIn_AndIsTheShopsOwn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "ntf_phone", ct);
+        using var faisal = await BarberWithMessagesAsync(w, w.Faisal, FaisalNumber, ct);
+        var callerPhone = IdentityTestData.NewPhone();
+
+        // D-147: the customer called; Faisal records the appointment with their mobile.
+        var booked = await OkAsync(
+            faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+                new { channel = "Phone", serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "متصل", customerPhone = callerPhone }, ct,
+                headers: Key()),
+            ct, HttpStatusCode.Created);
+        var id = booked.GetProperty("id").GetGuid();
+        await ProcessOutboxAsync(w.Factory, ct);
+
+        // The caller gets «تأكيد الحجز» with the shop's page (they have no account), like a walk-in; no reminder for them.
+        var dispatches = await DispatchesAsync(w.Factory, id, ct);
+        dispatches.Select(Describe).ShouldBe(["BookingConfirmed:Customer", $"BookingConfirmed:Professional:{w.Faisal}"], ignoreOrder: true);
+        var confirmation = dispatches.Single(d => d.Audience == MessageAudience.Customer);
+        confirmation.RecipientMasked.ShouldEndWith(callerPhone[^2..]);
+        confirmation.Buttons.ShouldContain(b => b.Url.EndsWith($"/ar/shops/{w.SlugA}", StringComparison.Ordinal));
+        confirmation.Buttons.ShouldNotContain(b => b.Url.Contains("/account/bookings/", StringComparison.Ordinal));
+        (await RemindersAsync(w.Factory, id, ct)).Select(r => r.Audience).ShouldBe([MessageAudience.Professional]);
+
+        // The shop's own booking: not echoed to the owner's inbox.
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .ShouldNotContain(n => n.GetProperty("bookingId").ValueKind == JsonValueKind.String && n.GetProperty("bookingId").GetGuid() == id);
     }
 
     // ------------------------------------------------------------------ helpers

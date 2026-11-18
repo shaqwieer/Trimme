@@ -7,7 +7,7 @@ import { Button, IconButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { Checkbox, SelectField, TextareaField, TextField } from '@/components/ui/inputs';
 import { ConfirmDialog, Dialog } from '@/components/ui/overlays';
-import { Chip, SegmentedControl } from '@/components/ui/selection.client';
+import { Chip } from '@/components/ui/selection.client';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
@@ -202,7 +202,9 @@ export function BreaksCard({
                 </>
               }
               actions={
-                canManage && (
+                // A barber's break on one day is theirs (D-147): the owner sees it and manages weekly breaks only.
+                canManage &&
+                !b.date && (
                   <>
                     <IconButton
                       icon="edit"
@@ -251,14 +253,7 @@ export function BreaksCard({
           {t('breaks.add')}
         </Button>
       )}
-      {draft && (
-        <BreakDialog
-          draft={draft}
-          professionals={professionals}
-          today={today}
-          onClose={() => setDraft(null)}
-        />
-      )}
+      {draft && <BreakDialog draft={draft} professionals={professionals} onClose={() => setDraft(null)} />}
       <DeleteDialog
         target={removing ? { name: nameOf(removing.professionalId) } : null}
         onClose={() => setRemoving(null)}
@@ -277,12 +272,10 @@ export function BreaksCard({
 function BreakDialog({
   draft: initial,
   professionals,
-  today,
   onClose,
 }: {
   draft: BreakDraft;
   professionals: Professional[];
-  today: LocalDate;
   onClose: () => void;
 }) {
   const t = useTranslations('shopSchedule');
@@ -350,17 +343,8 @@ function BreakDialog({
             </option>
           ))}
         </SelectField>
-        <SegmentedControl
-          legend={t('breaks.repeat')}
-          name="break-mode"
-          value={draft.mode}
-          onValueChange={(mode) => set({ mode: mode as BreakDraft['mode'] })}
-          options={[
-            { value: 'weekly', label: t('breaks.weekly') },
-            { value: 'once', label: t('breaks.once') },
-          ]}
-        />
-        {draft.mode === 'weekly' ? (
+        {/* Weekly only: a break on one day is the barber's own (D-147). */}
+        {draft.mode === 'weekly' && (
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-label font-bold text-text-primary">{t('breaks.days')}</legend>
             <div className="flex flex-wrap gap-2">
@@ -377,15 +361,6 @@ function BreakDialog({
               ))}
             </div>
           </fieldset>
-        ) : (
-          <TextField
-            label={t('breaks.date')}
-            type="date"
-            dir="ltr"
-            min={today}
-            value={draft.date}
-            onChange={(e) => set({ date: e.target.value })}
-          />
         )}
         <div className="flex flex-wrap gap-3">
           <TextField

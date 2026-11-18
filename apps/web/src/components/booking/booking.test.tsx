@@ -8,7 +8,7 @@ import type { WizardOffer } from '@/lib/booking/wizard';
 import { addDays, formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
-import { CancelBookingButton } from './BookingDetailClient';
+import { CancelBookingButton, PostponementOfferCard } from './BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from './BookingDetailParts';
 import { HourMinutePicker } from '@/components/ui/booking';
 import { BookingWizard, type WizardPro } from './BookingWizard';
@@ -566,6 +566,35 @@ describe('CancelBookingButton (c-rate cancel sheet, D-015)', () => {
     await user.click(screen.getByRole('button', { name: 'إلغاء الموعد' }));
     await user.click(screen.getByRole('button', { name: 'نعم، ألغِ الموعد' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('انتهت مهلة الإلغاء');
+  });
+});
+
+describe('PostponementOfferCard (D-147)', () => {
+  it('accepts the held time with the version read, and says when the offer lapsed meanwhile', async () => {
+    const user = userEvent.setup();
+    api.POST.mockResolvedValueOnce(ok({ id: 'b1' }));
+    renderWithIntl(
+      <PostponementOfferCard
+        bookingId="b1"
+        version={9}
+        when="الجمعة ٩ أكتوبر ٦:٠٠ م"
+        until="الخميس ٨ أكتوبر ٤:٠٠ م"
+      />,
+    );
+    expect(screen.getByTestId('postponement-offer')).toHaveTextContent('الجمعة ٩ أكتوبر ٦:٠٠ م');
+    await user.click(screen.getByRole('button', { name: 'قبول الموعد الجديد' }));
+    await waitFor(() =>
+      expect(router.replace).toHaveBeenCalledWith('/account/bookings/b1?postponement=accepted'),
+    );
+    expect(api.POST).toHaveBeenCalledWith('/api/v1/me/bookings/{bookingId}/postponement/accept', {
+      params: { path: { bookingId: 'b1' } },
+      body: { version: 9 },
+    });
+
+    api.POST.mockResolvedValueOnce(fail(409, 'booking.postponement_gone'));
+    await user.click(screen.getByRole('button', { name: 'رفض' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('لم يعد عرض التأجيل متاحاً');
+    expect(router.refresh).toHaveBeenCalled();
   });
 });
 

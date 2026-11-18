@@ -29,6 +29,7 @@ export default async function ShopCalendarPage({ params }: PageProps<'/[locale]/
               canUpdate={me.permissions.includes('Shop.Bookings.UpdateStatus')}
               canReschedule={me.permissions.includes('Shop.Bookings.Reschedule')}
               canMove={me.permissions.includes('Shop.Bookings.ChangeProfessional')}
+              ownProfessionalId={me.professionalId ?? null}
             />
           </Suspense>
         )

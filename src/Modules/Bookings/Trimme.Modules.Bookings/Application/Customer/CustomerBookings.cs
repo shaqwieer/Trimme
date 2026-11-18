@@ -92,7 +92,19 @@ internal sealed class CustomerBookingSupport(
         var platform = await settings.GetAsync(cancellationToken);
         var completed = bookings.Where(b => b.Status == BookingStatus.Completed).Select(b => b.Id.Value).ToList();
         var ratings = completed.Count == 0 ? new Dictionary<Guid, int>() : await reviews.RatingsByBookingAsync(completed, cancellationToken);
-        return new CustomerBookingView(Now, platform.CancellationCutoffMinutes, platform.ReviewWindowDays, ratings);
+
+        // The customer's live postponement offers on these bookings (D-147): the new time and until when to answer.
+        var now = Now;
+        var waiting = bookings.Where(b => b.Status is BookingStatus.Pending or BookingStatus.Confirmed).ToDictionary(b => b.Id);
+        var ids = waiting.Keys.ToList();
+        var offers = ids.Count == 0
+            ? []
+            : await db.Set<PostponementOffer>().AsNoTracking()
+                .Where(o => ids.Contains(o.BookingId) && o.Status == PostponementStatus.Open && o.ExpiresAt > now).ToListAsync(cancellationToken);
+        var live = offers.Where(o => o.IsLive(waiting[o.BookingId], now))
+            .GroupBy(o => o.BookingId)
+            .ToDictionary(g => g.Key.Value, g => BookingEvents.Offer(g.OrderByDescending(o => o.CreatedAt).First(), waiting[g.Key], now));
+        return new CustomerBookingView(now, platform.CancellationCutoffMinutes, platform.ReviewWindowDays, ratings, live);
     }
 
     public async Task<CustomerBookingResponse> ResponseAsync(Booking booking, CancellationToken cancellationToken) =>
@@ -374,7 +386,7 @@ internal sealed class RescheduleMyBookingHandler(
             target = new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn);
         }
 
-        var moved = booking.Reschedule(command.StartsAt, target, new BookingActor(customerId, ActorType.Customer), now, cutoff);
+        var moved = booking.Reschedule(command.StartsAt, target, new BookingActor(customerId, ActorType.Customer, booking.CustomerName), now, cutoff);
         if (moved.IsFailure)
         {
             return moved.Error;

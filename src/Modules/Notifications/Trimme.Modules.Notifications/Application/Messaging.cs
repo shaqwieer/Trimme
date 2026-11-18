@@ -112,7 +112,7 @@ public static class MessageComposer
 
     /// <summary>The customer's booking page; a walk-in has no account to open it from, so the shop's page (D-145).</summary>
     private static string ManageUrl(string baseUrl, string locale, NotifiableBooking booking, ShopSummary shop) =>
-        booking.Channel == "WalkIn" ? ShopUrl(baseUrl, locale, shop.Slug) : $"{baseUrl.TrimEnd('/')}/{locale}/account/bookings/{booking.Id}";
+        booking.Channel is "WalkIn" or "Phone" ? ShopUrl(baseUrl, locale, shop.Slug) : $"{baseUrl.TrimEnd('/')}/{locale}/account/bookings/{booking.Id}";
 
     private static string ShopUrl(string baseUrl, string locale, string slug) => $"{baseUrl.TrimEnd('/')}/{locale}/shops/{slug}";
 }

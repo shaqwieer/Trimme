@@ -10,8 +10,8 @@ namespace Trimme.IntegrationTests.Bookings;
 
 /// <summary>
 /// D-145: the shop changes a booking for its customer: a new time with the same barber, or the same time with another
-/// barber of the shop. A barber changes only their own bookings. After a change of barber the customer may cancel or
-/// change the booking even inside the cancellation window, until it starts.
+/// barber of the shop. A barber changes only their own bookings; the owner only watches (D-147). After a change of barber
+/// the customer may cancel or change the booking even inside the cancellation window, until it starts.
 /// </summary>
 public sealed class ShopBookingChangeTests(PostgresFixture postgres)
 {
@@ -46,61 +46,79 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task TheOwnerAndTheBarber_GiveABookingANewTime_TheCustomerSeesIt_AndAColleaguesBookingIsOutOfReach()
+    public async Task TheBarber_GivesAPhoneBookingANewTime_AnOnlineOneNeedsConsent_TheOwnerOnlyWatches_AndAColleaguesBookingIsOutOfReach()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "shop_reschedule", ct);
+        using var faisal = await BarberLoginTests.BarberAsync(w, w.Faisal, "+966512340031", ct);
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
         var day = TodayAt(DateTimeOffset.UtcNow).AddDays(3);
-        var booking = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 10), ct), ct, HttpStatusCode.Created);
+
+        // A customer's online booking gets a new time only with their consent: an offer, not a change (D-147).
+        var online = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 9), ct), ct, HttpStatusCode.Created);
+        await FailsAsync(RescheduleAsync(faisal, online.GetProperty("id").GetGuid(), At(day, 14), online.GetProperty("version").GetUInt32(), ct),
+            HttpStatusCode.UnprocessableEntity, "booking.consent_required", ct);
+        (await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{online.GetProperty("id").GetGuid()}", ct), ct)).GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 9));
+
+        // A phone booking is changed directly, once the customer has agreed on the phone.
+        var booking = await OkAsync(
+            faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+                new { channel = "Phone", serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(day, 10), customerName = "متصل", customerPhone = "0551234567" }, ct,
+                headers: Key()),
+            ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
         var version = booking.GetProperty("version").GetUInt32();
 
+        // The owner only watches (D-147): no choices, no change.
+        await FailsAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(RescheduleAsync(w.OwnerA, id, At(day, 12), version, ct), HttpStatusCode.Forbidden, null, ct);
+
         // The dates and starts on the desk's rules, its own time not blocking it.
-        var dates = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/dates?from={Iso(day)}&to={Iso(day.AddDays(1))}", ct), ct);
+        var dates = await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/dates?from={Iso(day)}&to={Iso(day.AddDays(1))}", ct), ct);
         dates.GetProperty("dates")[0].GetProperty("slotCount").GetInt32().ShouldBeGreaterThan(0);
-        var slots = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), ct);
+        var slots = await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), ct);
         slots.GetProperty("slots").EnumerateArray().Select(s => s.GetProperty("localTime").GetString()).ShouldContain("10:00");
 
-        // The owner moves it; the same key replays; a stale version is refused.
-        const string key = "owner-move-1";
-        var moved = await OkAsync(RescheduleAsync(w.OwnerA, id, At(day, 12), version, ct, key), ct);
+        // The barber moves it; the same key replays; a stale version is refused.
+        const string key = "barber-move-1";
+        var moved = await OkAsync(RescheduleAsync(faisal, id, At(day, 12), version, ct, key), ct);
         moved.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 12));
-        using (var again = await RescheduleAsync(w.OwnerA, id, At(day, 12), version, ct, key))
+        using (var again = await RescheduleAsync(faisal, id, At(day, 12), version, ct, key))
         {
             again.StatusCode.ShouldBe(HttpStatusCode.OK);
             again.Headers.GetValues("Idempotent-Replayed").ShouldBe(["true"]);
         }
 
-        await FailsAsync(RescheduleAsync(w.OwnerA, id, At(day, 13), version, ct), HttpStatusCode.Conflict, null, ct);
-        await FailsAsync(RescheduleAsync(w.OwnerA, id, DateTimeOffset.UtcNow.AddHours(-1), moved.GetProperty("version").GetUInt32(), ct), HttpStatusCode.BadRequest, "validation.date_in_past", ct);
-        using (var noKey = await w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/reschedule", new { startsAt = At(day, 13), version }, ct))
+        await FailsAsync(RescheduleAsync(faisal, id, At(day, 13), version, ct), HttpStatusCode.Conflict, null, ct);
+        await FailsAsync(RescheduleAsync(faisal, id, DateTimeOffset.UtcNow.AddHours(-1), moved.GetProperty("version").GetUInt32(), ct), HttpStatusCode.BadRequest, "validation.date_in_past", ct);
+        using (var noKey = await faisal.PostAsync($"/api/v1/shop/bookings/{id}/reschedule", new { startsAt = At(day, 13), version }, ct))
         {
             noKey.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         }
 
-        // The customer's booking shows the new time; the history says the shop moved it; the outbox tells the customer.
-        (await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 12));
+        // The owner sees the new time; the history says who moved it; the outbox tells the customer.
         var detail = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct);
+        detail.GetProperty("booking").GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 12));
         var last = detail.GetProperty("history").EnumerateArray().Last();
         last.GetProperty("kind").GetString().ShouldBe("Rescheduled");
         last.GetProperty("actorType").GetString().ShouldBe("ShopUser");
+        last.GetProperty("actorName").GetString().ShouldBe("فيصل", "the log names who did it (D-147)");
         (await ScalarAsync(w.Factory, "SELECT count(*) FROM infra.outbox_messages WHERE type = 'booking.rescheduled' AND payload::text LIKE '%' || @p || '%'", ct, id.ToString()))
             .ShouldBe(1L);
 
         // A taken time is refused.
         await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 15), ct), ct, HttpStatusCode.Created);
         var current = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
-        await FailsAsync(RescheduleAsync(w.OwnerA, id, At(day, 15), current, ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        await FailsAsync(RescheduleAsync(faisal, id, At(day, 15), current, ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
 
         // A barber moves their own booking, never a colleague's.
-        using var faisal = await BarberLoginTests.BarberAsync(w, w.Faisal, "+966512340031", ct);
         await OkAsync(RescheduleAsync(faisal, id, At(day, 17), current, ct), ct);
         var omars = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Omar, At(day, 11), ct), ct, HttpStatusCode.Created);
         var omarsId = omars.GetProperty("id").GetGuid();
         await FailsAsync(RescheduleAsync(faisal, omarsId, At(day, 18), omars.GetProperty("version").GetUInt32(), ct), HttpStatusCode.NotFound, null, ct);
         await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{omarsId}/reschedule/dates", ct), HttpStatusCode.NotFound, null, ct);
-        await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), HttpStatusCode.NotFound, null, ct);
+        using var salem = await w.BarberAsync(w.ProB, ct);
+        await FailsAsync(salem.GetAsync($"/api/v1/shop/bookings/{id}/reschedule/slots?date={Iso(day)}", ct), HttpStatusCode.NotFound, null, ct);
     }
 
     [Fact]
@@ -135,7 +153,8 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
             (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}/professional-options", ct), ct))
                 .GetProperty("professionals")[0].GetProperty("free").GetBoolean().ShouldBeFalse();
             await FailsAsync(ChangeAsync(faisal, id, w.Omar, booking.GetProperty("version").GetUInt32(), ct), HttpStatusCode.Conflict, "booking.professional_busy", ct);
-            await OkAsync(w.OwnerA.PostAsync(
+            using var omarLogin = await w.BarberAsync(w.Omar, ct);
+            await OkAsync(omarLogin.PostAsync(
                 $"/api/v1/shop/bookings/{taken.GetProperty("id").GetGuid()}/transitions",
                 new { to = "CancelledByShop", reason = "إغلاق", version = taken.GetProperty("version").GetUInt32() }, ct), ct);
         }
@@ -182,7 +201,9 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
         await FailsAsync(customer.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { version = booking.GetProperty("version").GetUInt32() }, ct),
             HttpStatusCode.UnprocessableEntity, "booking.cancellation_cutoff_passed", ct);
 
-        var changed = await OkAsync(ChangeAsync(w.OwnerA, id, w.Omar, booking.GetProperty("version").GetUInt32(), ct), ct);
+        await FailsAsync(ChangeAsync(w.OwnerA, id, w.Omar, booking.GetProperty("version").GetUInt32(), ct), HttpStatusCode.Forbidden, null, ct);
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        var changed = await OkAsync(ChangeAsync(faisal, id, w.Omar, booking.GetProperty("version").GetUInt32(), ct), ct);
         var version = (await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("version").GetUInt32();
         var cancelled = await OkAsync(customer.PostAsync($"/api/v1/me/bookings/{id}/cancel", new { version }, ct), ct);
         cancelled.GetProperty("status").GetString().ShouldBe("CancelledByCustomer");

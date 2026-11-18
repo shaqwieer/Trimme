@@ -1017,7 +1017,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "The professionals who can do a walk-in of this service or package: free now, next free time and the day\u0027s free starts.",
+        "summary": "The professionals who can do a walk-in or phone booking of this service, these services (serviceIds) or package: free now, next free time and the day\u0027s free starts.",
         "operationId": "GetWalkInOptions",
         "parameters": [
           {
@@ -1026,6 +1026,17 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "serviceIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
             }
           },
           {
@@ -1220,6 +1231,67 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/reports": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The owner\u0027s report for shop-local dates from..to (at most 31): per barber and shop, moves, postponements, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).",
+        "operationId": "GetShopReport",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10085,6 +10157,130 @@
         }
       }
     },
+    "/api/v1/me/bookings/{bookingId}/postponement/accept": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Takes the new time the barber offered (D-147): the booking moves there. 409 booking.postponement_gone once it lapsed.",
+        "operationId": "AcceptPostponement",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerPostponementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/bookings/{bookingId}/postponement/decline": {
+      "post": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "Declines the new time the barber offered (D-147): the booking stays and the held time is free.",
+        "operationId": "DeclinePostponement",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerPostponementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/bookings/{bookingId}/cancel": {
       "post": {
         "tags": [
@@ -10507,6 +10703,37 @@
         }
       }
     },
+    "/api/v1/shop/bookings/attention": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The shop\u0027s pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever\u0027s barber they are (D-147).",
+        "operationId": "GetShopAttention",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopAttentionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/bookings/{bookingId}": {
       "get": {
         "tags": [
@@ -10554,7 +10781,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "Records a walk-in with the same collision checks as online bookings (R-BKG-07).",
+        "summary": "Records a walk-in or phone booking with the same collision checks as online bookings (R-BKG-07, D-147).",
         "operationId": "CreateWalkIn",
         "parameters": [
           {
@@ -10652,6 +10879,159 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BookingTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/services": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Adds a service at the visit, once the customer has arrived (D-147); the barber must do it and be free for the extra time (409).",
+        "operationId": "AddBookingService",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBookingServiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/services/{serviceId}/delete": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Takes a service off an open booking until \u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB (D-147); at least one stays, a package\u0027s own services stay.",
+        "operationId": "RemoveBookingService",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveBookingServiceRequest"
               }
             }
           },
@@ -10942,6 +11322,88 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ShopRescheduleBookingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/postpone": {
+      "post": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "Offers a customer\u0027s online booking a new time with the same barber (D-147); it is held for the customer until an hour before the start. 409 booking.slot_unavailable when the time is taken.",
+        "operationId": "PostponeBooking",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostponeBookingRequest"
               }
             }
           },
@@ -14368,6 +14830,24 @@
           "System"
         ]
       },
+      "AddBookingServiceRequest": {
+        "required": [
+          "serviceId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A service of the shop to add to the booking at the visit (D-147), with the booking\u0027s version."
+      },
       "AddPlanPriceRequest": {
         "required": [
           "amount",
@@ -16166,6 +16646,19 @@
         },
         "description": "An upcoming booking that a new break, time off or closure would overlap. Never carries a phone number."
       },
+      "AnswerPostponementRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The booking\u0027s version, to answer a postponement offer (D-147)."
+      },
       "ApiMetaResponse": {
         "required": [
           "name",
@@ -16629,6 +17122,30 @@
         },
         "description": "A barber\u0027s login as the owner and the admin see it (D-145). \u0060HasNumber\u0060: the professional has a WhatsApp number\nto sign in with. Never the number or the password."
       },
+      "BarberReportResponse": {
+        "required": [
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ReportCountsResponse"
+          }
+        }
+      },
       "BillingIntervalUnit": {
         "enum": [
           "Day",
@@ -16655,13 +17172,33 @@
               "null",
               "string"
             ]
+          },
+          "price": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "durationMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "added": {
+            "type": "boolean",
+            "default": false
           }
-        }
+        },
+        "description": "One booked service, with its own price and length when it has them, and whether the barber added it at the visit (D-147)."
       },
       "BookingChannel": {
         "enum": [
           "Online",
-          "WalkIn"
+          "WalkIn",
+          "Phone"
         ]
       },
       "BookingEventKind": {
@@ -16669,7 +17206,12 @@
           "Created",
           "StatusChanged",
           "Rescheduled",
-          "ProfessionalChanged"
+          "ProfessionalChanged",
+          "ServiceAdded",
+          "ServiceRemoved",
+          "PostponementOffered",
+          "PostponementAccepted",
+          "PostponementDeclined"
         ]
       },
       "BookingHistoryResponse": {
@@ -16728,6 +17270,12 @@
               {
                 "$ref": "#/components/schemas/BookingProfessionalResponse"
               }
+            ]
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -18118,6 +18666,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "postponement": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostponementOfferResponse"
+              }
+            ]
           }
         },
         "description": "A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a\ncompleted visit until \u0060ReviewDeadline\u0060. \u0060ReviewRating\u0060 is the stars they gave, once reviewed.\n\u0060ProfessionalChangedAt\u0060: the shop gave the booking to another barber since the customer last chose it (D-145);\nuntil it starts they may cancel or change it whatever the cutoff."
@@ -19053,6 +19611,28 @@
         ],
         "description": "How the location point was chosen in the picker."
       },
+      "LoyaltyByActorResponse": {
+        "required": [
+          "name",
+          "stamps",
+          "redemptions"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "stamps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "redemptions": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Who closed the visits that stamped loyalty circles or used rewards, by name."
+      },
       "LoyaltyProgramResponse": {
         "required": [
           "isActive",
@@ -19105,6 +19685,30 @@
           }
         },
         "description": "A shop\u0027s loyalty terms (D-132): after \u0060RequiredVisits\u0060 circles, the reward named by the title. The first visit\nfills \u0060FirstVisitStamps\u0060 circles (1 when there is no welcome bonus, D-133), every later visit one."
+      },
+      "LoyaltyReportResponse": {
+        "required": [
+          "stamps",
+          "redemptions",
+          "byActor"
+        ],
+        "type": "object",
+        "properties": {
+          "stamps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "redemptions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "byActor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoyaltyByActorResponse"
+            }
+          }
+        }
       },
       "LoyaltyRewardKind": {
         "enum": [
@@ -20699,6 +21303,75 @@
         },
         "description": "A platform category offered nearby, with the lowest price among those shops (DV-S11, D-025: never a global price)."
       },
+      "PostponeBookingRequest": {
+        "required": [
+          "startsAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The new time the barber offers the customer, with the booking\u0027s version (D-147)."
+      },
+      "PostponementOfferResponse": {
+        "required": [
+          "id",
+          "startsAt",
+          "endsAt",
+          "expiresAt",
+          "status",
+          "offeredBy",
+          "live"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PostponementStatus"
+          },
+          "offeredBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "live": {
+            "type": "boolean"
+          }
+        },
+        "description": "The latest postponement offer of a booking (D-147): the new time held for the customer, until when they may answer,\nits state and who offered it. \u0060Live\u0060: still open and holding the time."
+      },
+      "PostponementStatus": {
+        "enum": [
+          "Open",
+          "Accepted",
+          "Declined",
+          "Withdrawn"
+        ]
+      },
       "PreviewTemplateRequest": {
         "required": [
           "body",
@@ -22116,6 +22789,19 @@
           "Skipped"
         ]
       },
+      "RemoveBookingServiceRequest": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The booking\u0027s version, to take one of its services off (D-147)."
+      },
       "RenderedButton": {
         "required": [
           "label",
@@ -22204,6 +22890,220 @@
           }
         },
         "description": "Every non-archived item of the shop, in the new order."
+      },
+      "ReportCountsResponse": {
+        "required": [
+          "bookings",
+          "completed",
+          "noShows",
+          "cancelled",
+          "lateCancellations",
+          "movedIn",
+          "movedOut",
+          "postponed",
+          "closedLate",
+          "unclosed",
+          "breaks",
+          "breakMinutes",
+          "averageMinutes",
+          "shortVisits",
+          "expectedIncome"
+        ],
+        "type": "object",
+        "properties": {
+          "bookings": {
+            "type": "integer",
+            "description": "Bookings that started in the period, cancellations included.",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "description": "Finished (\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB).",
+            "format": "int32"
+          },
+          "noShows": {
+            "type": "integer",
+            "description": "\u00AB\u0645\u0627 \u062D\u0636\u0631\u00BB.",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "description": "Cancelled by the customer or the shop.",
+            "format": "int32"
+          },
+          "lateCancellations": {
+            "type": "integer",
+            "description": "Cancelled in the last quarter hour before the start, or after it.",
+            "format": "int32"
+          },
+          "movedIn": {
+            "type": "integer",
+            "description": "Bookings given to this barber by a colleague (\u00AB\u0646\u0642\u0644 \u0627\u0644\u062D\u062C\u0632\u00BB).",
+            "format": "int32"
+          },
+          "movedOut": {
+            "type": "integer",
+            "description": "Bookings this barber gave to a colleague.",
+            "format": "int32"
+          },
+          "postponed": {
+            "type": "integer",
+            "description": "Times a booking got a new time from the shop: a walk-in or phone booking changed, or an offer the customer accepted.",
+            "format": "int32"
+          },
+          "closedLate": {
+            "type": "integer",
+            "description": "Closed while red (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB).",
+            "format": "int32"
+          },
+          "unclosed": {
+            "type": "integer",
+            "description": "Still open a quarter hour past their end.",
+            "format": "int32"
+          },
+          "breaks": {
+            "type": "integer",
+            "description": "The barber\u0027s own breaks on those days.",
+            "format": "int32"
+          },
+          "breakMinutes": {
+            "type": "integer",
+            "description": "Their minutes.",
+            "format": "int32"
+          },
+          "averageMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Average actual length (\u00AB\u0648\u0635\u0644\u00BB to \u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB) of completed visits not closed late; null without any.",
+            "format": "int32"
+          },
+          "shortVisits": {
+            "type": "integer",
+            "description": "Completed visits shorter than five minutes (perhaps finished without a service).",
+            "format": "int32"
+          },
+          "expectedIncome": {
+            "type": "number",
+            "description": "Expected income of completed visits.",
+            "format": "double"
+          }
+        }
+      },
+      "ReportVisitResponse": {
+        "required": [
+          "id",
+          "reference",
+          "professionalId",
+          "professionalNameAr",
+          "professionalNameEn",
+          "customerName",
+          "itemNameAr",
+          "itemNameEn",
+          "channel",
+          "status",
+          "startsAt",
+          "actualStartAt",
+          "actualEndAt",
+          "actualMinutes",
+          "underFiveMinutes",
+          "closedLate",
+          "closedBy",
+          "cancelledLate",
+          "unclosed",
+          "expectedIncome",
+          "loyaltyReward"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "professionalNameAr": {
+            "type": "string"
+          },
+          "professionalNameEn": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "itemNameAr": {
+            "type": "string"
+          },
+          "itemNameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "channel": {
+            "$ref": "#/components/schemas/BookingChannel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookingStatus"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualStartAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "actualEndAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "actualMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "underFiveMinutes": {
+            "type": "boolean"
+          },
+          "closedLate": {
+            "type": "boolean"
+          },
+          "closedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "cancelledLate": {
+            "type": "boolean"
+          },
+          "unclosed": {
+            "type": "boolean"
+          },
+          "expectedIncome": {
+            "type": "number",
+            "format": "double"
+          },
+          "loyaltyReward": {
+            "type": "boolean"
+          }
+        },
+        "description": "One booking of the period: its outcome, its actual times and length, and what it is expected to bring in."
       },
       "RequestOtpRequest": {
         "required": [
@@ -22796,6 +23696,35 @@
           "PrayerArea"
         ]
       },
+      "ShopAttentionResponse": {
+        "required": [
+          "pending",
+          "overdue",
+          "closedLate"
+        ],
+        "type": "object",
+        "properties": {
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          },
+          "overdue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          },
+          "closedLate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
+          }
+        },
+        "description": "Pending bookings (oldest start first), red bookings (\u00AB\u0645\u062A\u0623\u062E\u0631\u00BB: open 15 minutes past their end) and those closed while\nred (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB, with who closed them), all started within the last 3 days, whoever\u0027s barber they are (D-147).\nEvery barber of the shop sees them and may act on the open ones; the owner sees them read-only."
+      },
       "ShopBarberCreatedResponse": {
         "required": [
           "barber",
@@ -23114,9 +24043,57 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "actualStartAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "actualEndAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "overdue": {
+            "type": "boolean",
+            "default": false
+          },
+          "cancelledLate": {
+            "type": "boolean",
+            "default": false
+          },
+          "closedLate": {
+            "type": "boolean",
+            "default": false
+          },
+          "closedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "postponement": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PostponementOfferResponse"
+              }
+            ]
           }
         },
-        "description": "A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\nwhat the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n\u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\nhours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\nonline booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135)."
+        "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open 15 minutes past its end); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB) and ClosedBy (the name of who closed it)."
       },
       "ShopCalendarResponse": {
         "required": [
@@ -23350,10 +24327,17 @@
             ]
           },
           "stats": {
-            "$ref": "#/components/schemas/LoyaltyStatsResponse"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyStatsResponse"
+              }
+            ]
           }
         },
-        "description": "The shop\u0027s own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none."
+        "description": "The shop\u0027s own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none. A\nbarber reads the terms but not the figures (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A\u00BB): \u0060Stats\u0060 is null for them."
       },
       "ShopMessageResponse": {
         "required": [
@@ -23504,7 +24488,14 @@
             "format": "date-time"
           },
           "kpis": {
-            "$ref": "#/components/schemas/ShopOverviewKpis"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopOverviewKpis"
+              }
+            ]
           },
           "upcoming": {
             "type": "array",
@@ -23538,7 +24529,7 @@
             ]
           }
         },
-        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135); it is null for the desk."
+        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135). A barber sees what comes next only: no figures, so\n\u0060Kpis\u0060 is null and the load and hours are empty (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0644\u0627 \u062F\u062E\u0644\u00BB)."
       },
       "ShopOwnProfileResponse": {
         "required": [
@@ -23919,6 +24910,65 @@
             "type": "string"
           }
         }
+      },
+      "ShopReportResponse": {
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "currency",
+          "shop",
+          "barbers",
+          "visits",
+          "loyalty"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "shop": {
+            "$ref": "#/components/schemas/ReportCountsResponse"
+          },
+          "barbers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BarberReportResponse"
+            }
+          },
+          "visits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportVisitResponse"
+            }
+          },
+          "loyalty": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoyaltyReportResponse"
+              }
+            ]
+          },
+          "visitsTruncated": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "The owner\u0027s report for the shop-local dates \u0060From\u0060\u2026\u0060To\u0060 (at most 31). The counts and the income cover every\nbooking of the period; the \u0060Visits\u0060 table lists the first int GetShopReportHandler.MaxVisits of them\n(\u0060VisitsTruncated\u0060 when there were more). \u0060Loyalty\u0060 is null when the programme is off."
       },
       "ShopRescheduleBookingRequest": {
         "required": [
@@ -25973,7 +27023,7 @@
             }
           }
         },
-        "description": "Walk-in choices for a service or package on one shop-local date (s-walkin)."
+        "description": "Walk-in and phone-booking choices for a service, several services or a package on one shop-local date (s-walkin, D-147)."
       },
       "WalkInProfessionalResponse": {
         "required": [
@@ -26067,9 +27117,22 @@
               "null",
               "string"
             ]
+          },
+          "serviceIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "channel": {
+            "$ref": "#/components/schemas/BookingChannel"
           }
         },
-        "description": "A walk-in (D-035): without \u0060StartsAt\u0060 it starts now and is marked Arrived; otherwise it is Confirmed. The\ncustomer\u0027s name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned\nto the shop. An \u0060Idempotency-Key\u0060 header is honoured when sent."
+        "description": "A booking the shop records (D-035, D-147). \u0060Channel\u0060\u0060WalkIn\u0060 (the default): without \u0060StartsAt\u0060 it\nstarts now and is marked Arrived; otherwise it is Confirmed. \u0060Phone\u0060: an appointment at \u0060StartsAt\u0060, Confirmed.\nA service, several services (\u0060ServiceIds\u0060, added up with one barber) or a package; for the barber or a free\ncolleague. The customer\u0027s name and, if given, mobile number (D-134): stored encrypted; barbers see it on the booking\nuntil it is closed, the owner never (D-147). An \u0060Idempotency-Key\u0060 header is honoured when sent."
       },
       "WhatsAppVerification": {
         "enum": [

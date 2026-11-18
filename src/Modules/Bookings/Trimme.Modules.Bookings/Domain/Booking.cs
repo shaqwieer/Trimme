@@ -28,7 +28,12 @@ public enum BookingStatus
 public enum BookingChannel
 {
     Online,
+
+    /// <summary>The customer is in the shop: a barber records it and the time is taken at once (or later that day).</summary>
     WalkIn,
+
+    /// <summary>The customer called: a barber records an appointment at another time (D-147). Like a walk-in, «سجّله المحل».</summary>
+    Phone,
 }
 
 public enum ActorType
@@ -53,10 +58,28 @@ public enum BookingEventKind
 
     /// <summary>The booking was given to another barber of the same shop, at the same time (D-145).</summary>
     ProfessionalChanged,
+
+    /// <summary>A service added at the visit, after «وصل» (D-147); the reason holds its name.</summary>
+    ServiceAdded,
+
+    /// <summary>A service taken off before «انتهت الخدمة» (D-147); the reason holds its name.</summary>
+    ServiceRemoved,
+
+    /// <summary>The barber offered the customer a new time (D-147); the offer holds it until an hour before the start.</summary>
+    PostponementOffered,
+
+    /// <summary>The customer took the offered time: the booking moved (the previous start is kept).</summary>
+    PostponementAccepted,
+
+    /// <summary>The customer declined the offered time: the booking stays.</summary>
+    PostponementDeclined,
 }
 
-/// <summary>Who did something to a booking. The id is the user's (null for the system).</summary>
-public sealed record BookingActor(Guid? Id, ActorType Type)
+/// <summary>
+/// Who did something to a booking. The id is the user's (null for the system); the name is a snapshot of their display
+/// name at the time (D-147), so the log still names a barber who was later renamed or removed.
+/// </summary>
+public sealed record BookingActor(Guid? Id, ActorType Type, string? Name = null)
 {
     public static readonly BookingActor System = new(null, ActorType.System);
 }
@@ -64,7 +87,11 @@ public sealed record BookingActor(Guid? Id, ActorType Type)
 /// <summary>What was booked, as it was at booking time (R-BKG-01): later edits to the service never change it.</summary>
 public sealed record BookedItem(Guid? ServiceId, Guid? PackageId, string NameAr, string? NameEn, decimal Price, string Currency, int DurationMinutes, IReadOnlyList<BookedPackageItem> PackageItems);
 
-/// <summary>One service of a booked package (reporting, D-072).</summary>
+/// <summary>
+/// One service of a booked package (reporting, D-072), of several services booked together (D-125), or added at the visit
+/// (D-147). Services booked together and added ones carry their own price and length, so they can be taken off again;
+/// a package's own services and items booked before D-147 have none.
+/// </summary>
 public sealed class BookedPackageItem
 {
     public Guid ServiceId { get; set; }
@@ -73,7 +100,15 @@ public sealed class BookedPackageItem
 
     public string? NameEn { get; set; }
 
-    public static BookedPackageItem Of(Guid serviceId, string nameAr, string? nameEn) => new() { ServiceId = serviceId, NameAr = nameAr, NameEn = nameEn };
+    public decimal? Price { get; set; }
+
+    public int? DurationMinutes { get; set; }
+
+    /// <summary>Added by the barber after «وصل» (D-147).</summary>
+    public bool Added { get; set; }
+
+    public static BookedPackageItem Of(Guid serviceId, string nameAr, string? nameEn, decimal? price = null, int? durationMinutes = null) =>
+        new() { ServiceId = serviceId, NameAr = nameAr, NameEn = nameEn, Price = price, DurationMinutes = durationMinutes };
 }
 
 /// <summary>The professional as named at booking time (and after a reschedule to another professional).</summary>
@@ -95,6 +130,7 @@ public sealed class BookingHistoryEntry
         PreviousProfessionalNameEn = previousProfessional?.NameEn;
         ActorId = actor.Id;
         ActorType = actor.Type;
+        ActorName = string.IsNullOrWhiteSpace(actor.Name) ? null : actor.Name.Trim()[..Math.Min(actor.Name.Trim().Length, BookingRules.MaxNameLength)];
         Reason = reason;
         OccurredAt = at.ToUniversalTime();
     }
@@ -125,6 +161,9 @@ public sealed class BookingHistoryEntry
 
     public ActorType ActorType { get; private set; }
 
+    /// <summary>The actor's display name when it happened (D-147); null for the system and for entries made before D-147.</summary>
+    public string? ActorName { get; private set; }
+
     public string? Reason { get; private set; }
 
     public DateTimeOffset OccurredAt { get; private set; }
@@ -140,6 +179,21 @@ public static class BookingRules
 
     /// <summary>A booked professional may be marked arrived from this long before the start.</summary>
     public static readonly TimeSpan ArrivalWindow = TimeSpan.FromMinutes(60);
+
+    /// <summary>«ما حضر» is offered once the customer is this late (D-147: «تأخر أكثر من ربع ساعة»).</summary>
+    public static readonly TimeSpan NoShowAfter = TimeSpan.FromMinutes(15);
+
+    /// <summary>A cancellation this close to the start (or after it) is a late cancellation, «إلغاء متأخر» (D-147).</summary>
+    public static readonly TimeSpan LateCancellationWindow = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// An open booking whose booked end passed this long ago is red («متأخر», D-147): any barber of the shop may close it,
+    /// and one closed then is «انقفل متأخر» and leaves the speed figures.
+    /// </summary>
+    public static readonly TimeSpan OverdueAfter = TimeSpan.FromMinutes(15);
+
+    /// <summary>Red bookings stay in every barber's list for this long after their start; then only the owner's reports show them.</summary>
+    public static readonly TimeSpan OverdueVisibleFor = TimeSpan.FromDays(3);
 
     /// <summary>Unambiguous characters (no 0/O, 1/I/L) for references read out over the phone.</summary>
     private const string ReferenceAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -168,8 +222,9 @@ public static class BookingRules
 }
 
 /// <summary>
-/// The allowed transitions (D-016). Anything else is refused with 409 <c>booking.invalid_transition</c>. A confirmed visit
-/// can be finished in one step once it has started («انتهت الخدمة», D-135), without marking the arrival first.
+/// The allowed transitions (D-016). Anything else is refused with 409 <c>booking.invalid_transition</c>. Confirmed →
+/// Completed is used only to close a red booking late (D-147); otherwise «وصل» comes first, so the visit has an actual
+/// start (this replaces D-135's one-tap finish).
 /// </summary>
 public static class BookingStateMachine
 {
@@ -325,17 +380,25 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         var booking = new Booking(id, shopId, customerId, customerName.Trim(), professional, item, startsAt, status, BookingChannel.Online, Clean(customerNote), now);
         booking.QrLinkId = qrScan?.LinkId;
         booking.QrVisitId = qrScan?.VisitId;
-        booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, new BookingActor(customerId, ActorType.Customer), null, now));
+        booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, new BookingActor(customerId, ActorType.Customer, customerName), null, now));
         return booking;
     }
 
-    /// <summary>D-035: a walk-in that starts now is Arrived; a later one is Confirmed.</summary>
+    /// <summary>
+    /// D-035: a walk-in that starts now is Arrived (its actual start is now); a later one, and every phone booking (D-147),
+    /// is Confirmed.
+    /// </summary>
     public static Booking CreateWalkIn(
         BookingId id, ShopId shopId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, bool startsNow, string? note, BookingActor actor, DateTimeOffset now)
+        DateTimeOffset startsAt, bool startsNow, string? note, BookingActor actor, DateTimeOffset now, BookingChannel channel = BookingChannel.WalkIn)
     {
-        var status = startsNow ? BookingStatus.Arrived : BookingStatus.Confirmed;
-        var booking = new Booking(id, shopId, null, customerName.Trim(), professional, item, startsAt, status, BookingChannel.WalkIn, Clean(note), now);
+        if (channel == BookingChannel.Online)
+        {
+            throw new ArgumentOutOfRangeException(nameof(channel), "A shop-recorded booking is a walk-in or a phone booking.");
+        }
+
+        var status = startsNow && channel == BookingChannel.WalkIn ? BookingStatus.Arrived : BookingStatus.Confirmed;
+        var booking = new Booking(id, shopId, null, customerName.Trim(), professional, item, startsAt, status, channel, Clean(note), now);
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, actor, null, now));
         return booking;
     }
@@ -384,6 +447,9 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public bool IsActive => BookingRules.IsActive(Status);
 
+    /// <summary>Recorded by the shop: a walk-in or a phone booking (D-147), as opposed to the customer's own online booking.</summary>
+    public bool IsShopRecorded => Channel is BookingChannel.WalkIn or BookingChannel.Phone;
+
     /// <summary>When the shop marked the visit Completed (from the history); null while it is not Completed.</summary>
     public DateTimeOffset? CompletedAt =>
         Status == BookingStatus.Completed
@@ -391,9 +457,32 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             : null;
 
     /// <summary>
-    /// A shop's transition (D-016, D-087): confirm, mark arrived (from an hour before the start), complete (a confirmed
-    /// visit once it has started, D-135), mark a no-show (once the start has passed) or cancel (with a reason). Admins cancel
-    /// through the same rule with their own actor. A visit finished before its booked end ends then (<see cref="FinishAt"/>).
+    /// The actual start (D-147): when «وصل» was pressed, or when a walk-in that started at once was recorded. Null when the
+    /// arrival was never marked (a red booking closed late from Confirmed).
+    /// </summary>
+    public DateTimeOffset? ActualStartAt =>
+        _history.Where(h => h.ToStatus == BookingStatus.Arrived && h.Kind is BookingEventKind.StatusChanged or BookingEventKind.Created)
+            .Select(h => (DateTimeOffset?)h.OccurredAt).FirstOrDefault();
+
+    /// <summary>The entry that closed the booking (completed, no-show or cancelled); null while it is open.</summary>
+    public BookingHistoryEntry? ClosingEntry =>
+        BookingStateMachine.IsTerminal(Status) ? _history.LastOrDefault(h => h.Kind == BookingEventKind.StatusChanged && h.ToStatus == Status) : null;
+
+    /// <summary>Red (D-147): still open more than <see cref="BookingRules.OverdueAfter"/> after its booked end.</summary>
+    public bool IsOverdue(DateTimeOffset now) => IsActive && now > EndsAt + BookingRules.OverdueAfter;
+
+    /// <summary>Closed while red, «انقفل متأخر» (D-147): its times are not counted in the speed figures.</summary>
+    public bool ClosedLate => ClosingEntry is { } closing && closing.OccurredAt > EndsAt + BookingRules.OverdueAfter;
+
+    /// <summary>Cancelled less than <see cref="BookingRules.LateCancellationWindow"/> before the start, or after it: «إلغاء متأخر» (D-147).</summary>
+    public bool CancelledLate =>
+        BookingRules.IsCancelled(Status) && ClosingEntry is { } closing && closing.OccurredAt > StartsAt - BookingRules.LateCancellationWindow;
+
+    /// <summary>
+    /// A shop's transition (D-016, D-087, D-147): confirm, mark arrived (from an hour before the start), complete (after
+    /// «وصل»; from Confirmed only to close a red booking late), mark a no-show (15 minutes after the start) or cancel (with
+    /// a reason; never once arrived). Admins cancel through the same rule with their own actor. A visit finished before its
+    /// booked end ends then (<see cref="FinishAt"/>).
     /// </summary>
     public Result ApplyShopTransition(BookingStatus to, BookingActor actor, string? reason, DateTimeOffset now)
     {
@@ -405,9 +494,10 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         switch (to)
         {
             case BookingStatus.Arrived when now < StartsAt - BookingRules.ArrivalWindow:
-            case BookingStatus.NoShow when now < StartsAt:
-            case BookingStatus.Completed when Status == BookingStatus.Confirmed && now < StartsAt:
+            case BookingStatus.NoShow when now < StartsAt + BookingRules.NoShowAfter:
                 return BookingErrors.TooEarly(to);
+            case BookingStatus.Completed when Status == BookingStatus.Confirmed && !IsOverdue(now):
+                return BookingErrors.ArrivalRequired();
             case BookingStatus.CancelledByShop when string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 3:
                 return BookingErrors.ReasonRequired();
         }
@@ -444,7 +534,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             return tooLong;
         }
 
-        Move(BookingStatus.CancelledByCustomer, new BookingActor(customerId, ActorType.Customer), Clean(reason), now);
+        Move(BookingStatus.CancelledByCustomer, new BookingActor(customerId, ActorType.Customer, CustomerName), Clean(reason), now);
         return Result.Success();
     }
 
@@ -517,6 +607,176 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         return Result.Success();
     }
 
+    /// <summary>
+    /// Adds a service at the visit (D-147): only once the customer has arrived («إضافة خدمة مسموحة بعد وصل بس»). The booking
+    /// gets longer and dearer by the service's own length and price; the caller has checked that the barber does it and is
+    /// free for the extra time (the exclusion constraint has the last word).
+    /// </summary>
+    public Result AddService(BookedPackageItem service, BookingActor actor, DateTimeOffset now)
+    {
+        if (Status != BookingStatus.Arrived)
+        {
+            return BookingErrors.AddAfterArrival();
+        }
+
+        if (service.Price is not { } price || service.DurationMinutes is not { } minutes || minutes <= 0)
+        {
+            throw new ArgumentException("An added service carries its price and length.", nameof(service));
+        }
+
+        if (ServiceId == service.ServiceId || PackageItems.Any(i => i.ServiceId == service.ServiceId))
+        {
+            return BookingErrors.ServiceAlreadyBooked();
+        }
+
+        // A single service becomes the first of a list, with its own price and length.
+        List<BookedPackageItem> items = PackageItems.Count == 0 && ServiceId is { } first
+            ? [BookedPackageItem.Of(first, ItemNameAr, ItemNameEn, Price, DurationMinutes)]
+            : [.. PackageItems];
+        items.Add(new BookedPackageItem
+        {
+            ServiceId = service.ServiceId, NameAr = service.NameAr, NameEn = service.NameEn, Price = price, DurationMinutes = minutes, Added = true,
+        });
+        PackageItems = items;
+        Price += price;
+        AmountDue = Price;
+        DurationMinutes += minutes;
+        EndsAt = EndsAt.AddMinutes(minutes);
+        Rename(PackageId is null ? null : service, null);
+        UpdatedAt = now;
+        _history.Add(new BookingHistoryEntry(BookingEventKind.ServiceAdded, Status, Status, null, actor, Truncated(service.NameAr), now));
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Takes a service off an open booking until «انتهت الخدمة» (D-147). At least one service stays; a package's own
+    /// services stay with it (only services added to it can go); items booked before D-147 have no price of their own and
+    /// stay too.
+    /// </summary>
+    public Result RemoveService(Guid serviceId, BookingActor actor, DateTimeOffset now)
+    {
+        if (!IsActive)
+        {
+            return BookingErrors.ServicesClosed(Status);
+        }
+
+        if (PackageItems.Count == 0)
+        {
+            return ServiceId == serviceId ? BookingErrors.LastService() : BookingErrors.ServiceNotBooked();
+        }
+
+        if (PackageItems.FirstOrDefault(i => i.ServiceId == serviceId) is not { } item)
+        {
+            return BookingErrors.ServiceNotBooked();
+        }
+
+        if (PackageId is not null && !item.Added)
+        {
+            return BookingErrors.PackageServiceFixed();
+        }
+
+        if (PackageId is null && PackageItems.Count == 1)
+        {
+            return BookingErrors.LastService();
+        }
+
+        if (item.Price is not { } price || item.DurationMinutes is not { } minutes)
+        {
+            return BookingErrors.PackageServiceFixed();
+        }
+
+        List<BookedPackageItem> items = [.. PackageItems.Where(i => i != item)];
+        Price -= price;
+        AmountDue = Price;
+        DurationMinutes -= minutes;
+        EndsAt = EndsAt.AddMinutes(-minutes);
+        if (PackageId is null)
+        {
+            ServiceId = items[0].ServiceId;
+            if (items.Count == 1)
+            {
+                // Back to one service: the plain single-service form (D-125).
+                ItemNameAr = items[0].NameAr;
+                ItemNameEn = items[0].NameEn;
+                items = [];
+            }
+        }
+
+        PackageItems = items;
+        if (PackageId is not null || items.Count > 0)
+        {
+            Rename(null, PackageId is null ? null : item);
+        }
+
+        UpdatedAt = now;
+        _history.Add(new BookingHistoryEntry(BookingEventKind.ServiceRemoved, Status, Status, null, actor, Truncated(item.NameAr), now));
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// The barber offers a customer's online booking a new time with them (D-147). Only a Pending or Confirmed online
+    /// booking more than an hour before its start; the offer itself is a <see cref="PostponementOffer"/> the caller saves.
+    /// </summary>
+    public Result OfferPostponement(DateTimeOffset newStart, BookingActor actor, DateTimeOffset now)
+    {
+        if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
+        {
+            return BookingErrors.NotReschedulable(Status);
+        }
+
+        if (Channel != BookingChannel.Online || CustomerId is null)
+        {
+            return PostponementErrors.OnlineOnly();
+        }
+
+        if (now >= StartsAt - PostponementOffer.AnswerBefore)
+        {
+            return PostponementErrors.TooLate();
+        }
+
+        if (newStart.ToUniversalTime() == StartsAt)
+        {
+            return PostponementErrors.SameTime();
+        }
+
+        UpdatedAt = now;
+        _history.Add(new BookingHistoryEntry(BookingEventKind.PostponementOffered, Status, Status, null, actor, null, now));
+        return Result.Success();
+    }
+
+    /// <summary>The customer takes the offered time (D-147): the booking moves there, whatever their own change window.</summary>
+    public Result AcceptPostponement(PostponementOffer offer, Guid customerId, DateTimeOffset now)
+    {
+        if (CustomerId != customerId || !offer.IsLive(this, now))
+        {
+            return PostponementErrors.Gone();
+        }
+
+        var previous = StartsAt;
+        StartsAt = offer.StartsAt;
+        EndsAt = offer.EndsAt;
+        UpdatedAt = now;
+        offer.Close(PostponementStatus.Accepted, now);
+        _history.Add(new BookingHistoryEntry(
+            BookingEventKind.PostponementAccepted, Status, Status, previous, new BookingActor(customerId, ActorType.Customer, CustomerName), null, now));
+        return Result.Success();
+    }
+
+    /// <summary>The customer declines the offered time (D-147): the booking stays as it was, and the time is free again.</summary>
+    public Result DeclinePostponement(PostponementOffer offer, Guid customerId, DateTimeOffset now)
+    {
+        if (CustomerId != customerId || !offer.IsLive(this, now))
+        {
+            return PostponementErrors.Gone();
+        }
+
+        UpdatedAt = now;
+        offer.Close(PostponementStatus.Declined, now);
+        _history.Add(new BookingHistoryEntry(
+            BookingEventKind.PostponementDeclined, Status, Status, null, new BookingActor(customerId, ActorType.Customer, CustomerName), null, now));
+        return Result.Success();
+    }
+
     /// <summary>The barber as the booking names them now.</summary>
     public BookedProfessional CurrentProfessional => new(ProfessionalId, ProfessionalNameAr, ProfessionalNameEn);
 
@@ -527,15 +787,15 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public bool CutoffApplies(DateTimeOffset now, int cutoffMinutes) =>
         now > StartsAt.AddMinutes(-cutoffMinutes) && !(ProfessionalChangedAt is not null && now < StartsAt);
 
-    /// <summary>What the given actor may do next (the UI renders only these, DV-S08).</summary>
+    /// <summary>What the shop may do next (the UI renders only these, DV-S08), by the time rules of <see cref="ApplyShopTransition"/>.</summary>
     public IReadOnlyList<BookingStatus> AllowedShopTransitions(DateTimeOffset now) =>
     [
         .. BookingStateMachine.Next(Status).Where(to => to switch
         {
             BookingStatus.CancelledByCustomer => false,
             BookingStatus.Arrived => now >= StartsAt - BookingRules.ArrivalWindow,
-            BookingStatus.NoShow => now >= StartsAt,
-            BookingStatus.Completed => Status == BookingStatus.Arrived || now >= StartsAt,
+            BookingStatus.NoShow => now >= StartsAt + BookingRules.NoShowAfter,
+            BookingStatus.Completed => Status == BookingStatus.Arrived || IsOverdue(now),
             _ => true,
         }),
     ];
@@ -574,6 +834,51 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string Truncated(string value) => value.Length <= BookingRules.MaxReasonLength ? value : value[..BookingRules.MaxReasonLength];
+
+    private static string Joined(IEnumerable<string> names)
+    {
+        var joined = string.Join(" + ", names);
+        return joined.Length <= BookingRules.MaxNameLength ? joined : joined[..BookingRules.MaxNameLength];
+    }
+
+    /// <summary>
+    /// The booked item's name after a change (D-125's « + »): services booked together are named from their items; a
+    /// package keeps its own name, with the added service appended or the removed one taken off its end.
+    /// </summary>
+    private void Rename(BookedPackageItem? appended, BookedPackageItem? removed)
+    {
+        if (PackageId is null)
+        {
+            ItemNameAr = Joined(PackageItems.Select(i => i.NameAr));
+            ItemNameEn = PackageItems.All(i => !string.IsNullOrWhiteSpace(i.NameEn)) ? Joined(PackageItems.Select(i => i.NameEn!)) : null;
+            return;
+        }
+
+        if (appended is not null)
+        {
+            ItemNameAr = Joined([ItemNameAr, appended.NameAr]);
+            ItemNameEn = ItemNameEn is not null && appended.NameEn is not null ? Joined([ItemNameEn, appended.NameEn]) : ItemNameEn;
+        }
+        else if (removed is not null)
+        {
+            ItemNameAr = Without(ItemNameAr, removed.NameAr)!;
+            ItemNameEn = Without(ItemNameEn, removed.NameEn);
+        }
+
+        static string? Without(string? name, string? part)
+        {
+            if (name is null || part is null)
+            {
+                return name;
+            }
+
+            var suffix = $" + {part}";
+            var at = name.LastIndexOf(suffix, StringComparison.Ordinal);
+            return at > 0 ? name.Remove(at, suffix.Length) : name;
+        }
+    }
 }
 
 /// <summary>A shop-internal note on a booking (never shown to the customer).</summary>
@@ -652,6 +957,22 @@ public static class BookingErrors
         Error.Conflict("booking.invalid_transition", $"A {from} booking cannot become {to}.").WithDetail("status", from.ToString());
 
     public static Error TooEarly(BookingStatus to) => Error.BusinessRule("booking.too_early", $"It is too early to mark the booking {to}.");
+
+    public static Error ArrivalRequired() => Error.BusinessRule("booking.arrival_required", "Mark the customer arrived before finishing the visit.");
+
+    public static Error AddAfterArrival() => Error.BusinessRule("booking.add_after_arrival", "A service is added once the customer has arrived.");
+
+    public static Error ServiceAlreadyBooked() => Error.Conflict("booking.service_already_booked", "The service is already on the booking.");
+
+    public static Error ServiceNotBooked() => Error.NotFound("booking.service_not_booked", "The service is not on the booking.");
+
+    public static Error LastService() => Error.BusinessRule("booking.last_service", "A booking keeps at least one service.");
+
+    public static Error PackageServiceFixed() =>
+        Error.BusinessRule("booking.service_fixed", "This service stays with the booking (a package's own service, or booked before services could be removed).");
+
+    public static Error ServicesClosed(BookingStatus status) =>
+        Error.Conflict("booking.services_closed", $"A {status} booking's services cannot change.").WithDetail("status", status.ToString());
 
     public static Error ReasonRequired() =>
         Error.Validation("validation.failed", "A reason is required.", new Dictionary<string, string[]>(StringComparer.Ordinal) { ["reason"] = ["validation.reason_required"] });

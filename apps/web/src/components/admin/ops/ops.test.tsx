@@ -40,8 +40,8 @@ describe('BookingIntervention', () => {
       />,
       { locale: 'en' },
     );
-    expect(screen.queryByRole('button', { name: 'Customer arrived' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Arrived' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel appointment' }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Confirm' }));
     expect(within(dialog).getByLabelText('Reason')).toHaveAttribute('aria-invalid', 'true');

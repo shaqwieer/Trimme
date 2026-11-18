@@ -17,6 +17,7 @@ const BOOKING_KINDS = [
   'booking.rescheduled',
   'booking.cancelled',
   'booking.professional_changed',
+  'booking.postponement_declined',
 ] as const;
 
 /** Booking changes the owner's inbox words as a barber's when a shop user made them (D-145). */
@@ -31,11 +32,20 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'booking.rescheduled',
     'booking.cancelled',
     'booking.professional_changed',
+    'booking.postponement_offered',
+    'booking.postponement_declined',
     'subscription.expiring',
     'subscription.expired',
     'admin.message',
   ],
-  customer: ['booking.confirmed', 'booking.rescheduled', 'booking.cancelled', 'booking.professional_changed'],
+  customer: [
+    'booking.confirmed',
+    'booking.rescheduled',
+    'booking.cancelled',
+    'booking.professional_changed',
+    // The barber offers a new time (D-147): the customer accepts or declines it on the booking's page.
+    'booking.postponement_offered',
+  ],
   barber: BOOKING_KINDS,
   admin: [
     'whatsapp.dispatch_failed',
@@ -64,6 +74,7 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
   const p = notice.parameters as Record<string, string | undefined>;
   const at = p.startsAt;
   const previous = p.previousStartsAt;
+  const offered = p.offeredStartsAt;
   return {
     customer: p.customerName ?? '',
     item: localizedName(locale, p.itemNameAr ?? '', p.itemNameEn),
@@ -78,6 +89,8 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     time: at ? formatTime(at, locale) : '',
     previousDate: previous ? formatDate(previous, locale) : '',
     previousTime: previous ? formatTime(previous, locale) : '',
+    offeredDate: offered ? formatDate(offered, locale) : '',
+    offeredTime: offered ? formatTime(offered, locale) : '',
     reference: p.reference ?? '',
     days: Number(p.daysLeft ?? 0),
     endDate: p.endDate

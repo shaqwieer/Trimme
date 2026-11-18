@@ -79,6 +79,7 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "acct_review", ct, clock);
+        await w.EnsureBarberLoginAsync(w.Faisal, ct);
         var (noura, nouraPhone) = await NamedCustomerAsync(w.Factory, "نورة السبيعي", ct);
         var (khalid, _) = await NamedCustomerAsync(w.Factory, "خالد", ct);
         var visit = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
@@ -89,9 +90,9 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
         noura.Dispose();
         khalid.Dispose();
 
-        // The visit happens and the shop completes it.
+        // The visit happens and its barber completes it (D-147: the owner only watches).
         clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
-        using (var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
+        using (var staff = await w.BarberAsync(w.Faisal, ct))
         {
             await TransitionAsync(staff, visit, "Arrived", ct);
             (await TransitionAsync(staff, visit, "Completed", ct)).GetProperty("status").GetString().ShouldBe("Completed");
@@ -133,7 +134,7 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
 
         // The second visit is completed too, but the review window (7 days) passes first.
         clock.SetUtcNow(At(Target, 12, 40).ToUniversalTime());
-        using (var staff = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
+        using (var staff = await w.BarberAsync(w.Faisal, ct))
         {
             await TransitionAsync(staff, later, "Arrived", ct);
             await TransitionAsync(staff, later, "Completed", ct);

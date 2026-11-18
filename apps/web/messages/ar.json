@@ -57,7 +57,8 @@
       "subscription": "الاشتراك",
       "notifications": "الإشعارات",
       "settings": "إعدادات المحل",
-      "qr": "رموز QR"
+      "qr": "رموز QR",
+      "reports": "التقارير"
     },
     "admin": {
       "overview": "نظرة عامة",
@@ -556,7 +557,20 @@
     "auth_phone_change_otp_required": "لا يمكن تغيير الرقم من هنا الآن. تواصل مع فريق Groom Here.",
     "account_has_upcoming_bookings": "لديك مواعيد قادمة. ألغِها أو انتظر حتى تنتهي، ثم احذف حسابك.",
     "legal_content_invalid": "لا يمكن حفظ هذا النص: أزل العناصر غير المدعومة أو الروابط غير الآمنة وتأكد أنه غير فارغ.",
-    "legal_not_found": "هذه الصفحة غير موجودة."
+    "legal_not_found": "هذه الصفحة غير موجودة.",
+    "booking_arrival_required": "اضغط «وصل» أولاً، ثم «انتهت الخدمة».",
+    "booking_add_after_arrival": "إضافة خدمة تكون بعد وصول الزبون.",
+    "booking_service_already_booked": "هذه الخدمة موجودة في الحجز.",
+    "booking_service_not_booked": "هذه الخدمة ليست في الحجز.",
+    "booking_last_service": "يبقى في الحجز خدمة واحدة على الأقل.",
+    "booking_service_fixed": "هذه الخدمة جزء من الحجز ولا تُحذف منه.",
+    "booking_services_closed": "انقفل الحجز ولا تتغير خدماته.",
+    "booking_postpone_online_only": "الحجز الحضوري أو بالتلفون يتغير موعده مباشرة بعد موافقة الزبون.",
+    "booking_consent_required": "حجز الزبون من التطبيق يتأجل بعرض يوافق عليه الزبون.",
+    "booking_postpone_too_late": "باقي على الموعد أقل من ساعة: انقل الحجز لزميل أو ألغِه.",
+    "booking_postponement_gone": "لم يعد عرض التأجيل متاحاً.",
+    "booking_postpone_same_time": "هذا هو موعد الحجز نفسه.",
+    "schedule_one_off_break_is_barbers": "البريك ليوم واحد يحطه الحلاق بنفسه. صاحب المحل يضيف البريكات الأسبوعية فقط."
   },
   "shopStatus": {
     "Draft": "مسودة",
@@ -990,7 +1004,22 @@
     "activeFor": "{name}: متاحة للحجز",
     "editItem": "تعديل {name}",
     "archiveItem": "أرشفة {name}",
-    "deleteItem": "حذف {name}"
+    "deleteItem": "حذف {name}",
+    "packages": {
+      "title": "الباقات",
+      "add": "إضافة باقة",
+      "empty": "لا باقات بعد. الباقة تجمع خدمتين أو أكثر بسعر ومدة خاصين بها.",
+      "newTitle": "باقة جديدة",
+      "editTitle": "تعديل الباقة",
+      "notFound": "الباقة غير موجودة.",
+      "activate": "تشغيل الباقة",
+      "deactivate": "إيقاف الباقة",
+      "archive": "أرشفة الباقة",
+      "archiveTitle": "أرشفة الباقة؟",
+      "archiveBody": "تختفي من الحجز ومن صفحة المحل، وتبقى في الحجوزات السابقة. لا يمكن التراجع.",
+      "archiveConfirm": "نعم، أرشفها",
+      "keep": "تراجع"
+    }
   },
   "adminServices": {
     "title": "الخدمات والتصنيفات",
@@ -2141,6 +2170,14 @@
         "from": "الموعد الحالي",
         "to": "الموعد الجديد"
       }
+    },
+    "postponement": {
+      "title": "الحلاق يقترح موعداً جديداً",
+      "body": "اعتذر الحلاق عن موعدك، ويقترح {when} بدلاً منه. الموعد محجوز لك حتى {until}.",
+      "accept": "قبول الموعد الجديد",
+      "decline": "رفض",
+      "accepted": "تم نقل حجزك إلى الموعد الجديد.",
+      "declined": "رفضت الموعد الجديد، وبقي حجزك في موعده."
     }
   },
   "review": {
@@ -2272,13 +2309,17 @@
         "source": "المصدر",
         "amount": "المبلغ",
         "note": "ملاحظة العميل",
-        "cancellationReason": "سبب الإلغاء"
+        "cancellationReason": "سبب الإلغاء",
+        "actualStart": "البداية الفعلية",
+        "actualEnd": "النهاية الفعلية",
+        "closedBy": "قفله"
       },
       "amount": "{price} — يُدفع في المحل",
       "channel": {
         "Online": "تطبيق العميل",
         "WalkIn": "حضوري",
-        "Qr": "رمز QR"
+        "Qr": "رمز QR",
+        "Phone": "بالتلفون"
       },
       "noPhone": {
         "title": "رقم العميل غير متاح",
@@ -2287,12 +2328,13 @@
       "changeStatus": "تغيير الحالة",
       "actions": {
         "Pending": "بانتظار التأكيد",
-        "Confirmed": "تأكيد الموعد",
-        "Arrived": "حضر العميل",
+        "Confirmed": "قبول الحجز",
+        "Arrived": "وصل",
         "Completed": "انتهت الخدمة",
-        "NoShow": "لم يحضر",
+        "NoShow": "الزبون ما حضر (تأخر أكثر من ربع ساعة)",
         "CancelledByShop": "إلغاء الموعد",
-        "CancelledByCustomer": "ألغاه العميل"
+        "CancelledByCustomer": "ألغاه العميل",
+        "reject": "رفض الحجز"
       },
       "stale": "تغيّر الموعد قبل قليل — حدّثنا البيانات، راجعها ثم أعد المحاولة.",
       "notes": {
@@ -2306,7 +2348,12 @@
         "created": "أُنشئ الموعد",
         "rescheduled": "تغيّر وقت الموعد",
         "status": "الحالة: {status}",
-        "professionalChanged": "نُقل الحجز من {previous}"
+        "professionalChanged": "نُقل الحجز من {previous}",
+        "serviceAdded": "أُضيفت خدمة: {name}",
+        "serviceRemoved": "حُذفت خدمة: {name}",
+        "postponementOffered": "عرض الحلاق موعداً جديداً",
+        "postponementAccepted": "قبل الزبون الموعد الجديد",
+        "postponementDeclined": "رفض الزبون الموعد الجديد"
       },
       "actor": {
         "Customer": "العميل",
@@ -2315,8 +2362,8 @@
         "System": "النظام"
       },
       "change": {
-        "title": "تعديل الحجز",
-        "reschedule": "تغيير الموعد",
+        "title": "طوارئ",
+        "reschedule": "تأجيل الموعد",
         "move": "نقل الحجز إلى حلاق آخر",
         "rescheduleTitle": "موعد جديد لـ {name}",
         "rescheduleBody": "مع نفس الحلاق ولنفس الخدمة. يصل العميلَ إشعار بالموعد الجديد.",
@@ -2335,20 +2382,64 @@
         "busyNow": "أصبح هذا الحلاق مشغولاً في هذا الوقت. اختر غيره.",
         "confirmMove": "نقل الحجز",
         "keep": "تراجع",
-        "loading": "جارٍ التحميل…"
+        "loading": "جارٍ التحميل…",
+        "order": "بالترتيب: انقل الحجز لزميل فاضي، أو أجّله بموافقة الزبون، وإلا ألغِه مع ذكر السبب.",
+        "offerTitle": "تأجيل حجز {name}",
+        "offerBody": "اختر موعداً جديداً مع نفس الحلاق. يُحجز للزبون، ويصله إشعار ليقبله أو يرفضه حتى قبل الموعد الحالي بساعة. إن رفض أو لم يرد يبقى الحجز في موعده.",
+        "confirmOffer": "إرسال العرض للزبون"
       },
       "cancel": {
         "title": "إلغاء الموعد؟",
         "body": "يُخطر العميل ويُتاح الوقت لغيره. لا يمكن التراجع.",
         "reason": "سبب الإلغاء",
         "confirm": "نعم، ألغِ الموعد",
-        "keep": "إبقاء الموعد"
+        "keep": "إبقاء الموعد",
+        "late": "الإلغاء في آخر ١٥ دقيقة قبل الموعد يُسجَّل «إلغاء متأخر»."
       },
       "finish": {
         "title": "انتهت خدمة {name}؟",
         "body": "سيُسجَّل الموعد منتهياً الآن، ويصير باقي وقت الحلاق متاحاً للحجز. لا يمكن التراجع.",
         "confirm": "نعم، انتهت الخدمة",
         "keep": "تراجع"
+      },
+      "flags": {
+        "overdue": "متأخر",
+        "closedLate": "انقفل متأخر",
+        "cancelledLate": "إلغاء متأخر"
+      },
+      "overdueNote": "فات وقت هذا الحجز وما انقفل. أي حلاق في المحل يقدر يقفله، ويُكتب عليه «انقفل متأخر».",
+      "phone": {
+        "title": "جوال العميل",
+        "body": "سجّله المحل مع الحجز، ويختفي بعد «انتهت الخدمة»."
+      },
+      "reject": {
+        "title": "رفض الحجز؟",
+        "body": "يُخطر العميل بأن المحل لم يقبل الحجز، ويُتاح الوقت لغيره.",
+        "confirm": "نعم، ارفض الحجز"
+      },
+      "noShow": {
+        "title": "{name} ما حضر؟",
+        "body": "الزبون ما حضر (تأخر أكثر من ربع ساعة). يُسجَّل الموعد «لم يحضر»، ويصير وقته متاحاً. لا يمكن التراجع.",
+        "confirm": "نعم، ما حضر"
+      },
+      "services": {
+        "title": "خدمات الحجز",
+        "added": "أُضيفت في الزيارة",
+        "remove": "حذف",
+        "removeLabel": "حذف {name} من الحجز",
+        "add": "إضافة خدمة",
+        "pick": "الخدمة",
+        "choose": "اختر خدمة",
+        "loading": "جارٍ التحميل…",
+        "addHint": "تطول مدة الحجز ويزيد سعره. إن كان بعده حجز في الوقت نفسه انقله أولاً.",
+        "confirmAdd": "إضافة",
+        "cancel": "تراجع",
+        "addAfterArrival": "إضافة خدمة تكون بعد «وصل»."
+      },
+      "postponement": {
+        "waiting": "عرض تأجيل إلى {when} بانتظار رد الزبون حتى الساعة {until}. الوقت محجوز له.",
+        "declined": "رفض الزبون موعد التأجيل. انقل الحجز لزميل فاضي أو ألغِه مع ذكر السبب.",
+        "lapsed": "انتهت مهلة عرض التأجيل دون رد، وبقي الحجز في موعده."
       }
     },
     "appointments": {
@@ -2382,26 +2473,51 @@
       "finishTitle": "انتهت خدمة {name}؟",
       "finishBody": "سيُسجَّل الموعد منتهياً الآن، ويصير باقي وقت الحلاق متاحاً للحجز. لا يمكن التراجع.",
       "finishConfirm": "نعم، انتهت الخدمة",
-      "finishKeep": "تراجع"
+      "finishKeep": "تراجع",
+      "overdue": "حجوزات متأخرة",
+      "overdueHint": "فات وقتها وما انقفلت. أي حلاق في المحل يقدر يقفلها.",
+      "overdueBadge": "متأخر",
+      "responsible": "الحلاق المسؤول: {name}",
+      "pending": "حجوزات تنتظر القبول",
+      "pendingHint": "أي حلاق في المحل يقدر يقبلها أو يرفضها.",
+      "closedLate": "انقفلت متأخرة (آخر ٣ أيام)",
+      "closedLateBy": "الحلاق المسؤول: {responsible} · قفله: {closer} · {status} · انقفل متأخر",
+      "actionLabel": "{action}: {name}",
+      "row": {
+        "Confirmed": "قبول",
+        "Arrived": "وصل",
+        "Completed": "انتهت الخدمة",
+        "NoShow": "ما حضر"
+      },
+      "done": {
+        "Confirmed": "قُبل حجز {name}.",
+        "Arrived": "سُجّل وصول {name}.",
+        "Completed": "انتهت خدمة {name}، وصار وقت الحلاق متاحاً للحجز.",
+        "NoShow": "سُجّل أن {name} ما حضر."
+      },
+      "noShowTitle": "{name} ما حضر؟",
+      "noShowBody": "الزبون ما حضر (تأخر أكثر من ربع ساعة). يُسجَّل الموعد «لم يحضر»، ويصير وقته متاحاً. لا يمكن التراجع.",
+      "noShowConfirm": "نعم، ما حضر"
     },
     "visit": {
       "New": "زبون جديد",
       "Returning": "زبون عائد"
     },
     "walkIn": {
-      "title": "حجز عميل حضوري",
+      "title": "حجز حضوري أو بالتلفون",
       "noServices": "لا خدمات نشطة. أضف خدمة أولاً.",
       "intro": "يحجز الوقت فوراً ويختفي من الأوقات المتاحة أمام العملاء في التطبيق.",
       "steps": {
-        "service": "١. الخدمة",
-        "professional": "٢. الحلاق",
-        "time": "٣. الوقت",
-        "customer": "٤. بيانات العميل"
+        "service": "٢. الخدمات",
+        "professional": "٣. الحلاق",
+        "time": "٤. الوقت",
+        "customer": "٥. بيانات العميل",
+        "kind": "١. نوع الحجز"
       },
       "date": "اليوم",
       "loading": "جارٍ تحميل الأوقات…",
       "loadError": "تعذّر تحميل الأوقات.",
-      "noProfessionals": "لا يوجد حلاق نشط مخصص لهذه الخدمة.",
+      "noProfessionals": "لا يوجد حلاق نشط يقدّم كل هذه الخدمات.",
       "freeNow": "متاح الآن",
       "freeAt": "متاح {time}",
       "noTimes": "لا أوقات في هذا اليوم",
@@ -2413,11 +2529,12 @@
       "notePlaceholder": "مثال: تدريج قصير",
       "summary": {
         "title": "ملخص الحجز",
-        "service": "الخدمة",
+        "service": "الخدمات",
         "professional": "الحلاق",
         "starts": "يبدأ",
         "ends": "ينتهي",
-        "total": "الإجمالي"
+        "total": "الإجمالي",
+        "kind": "النوع"
       },
       "submit": "تسجيل الحجز",
       "blocksOnline": "يُحجب هذا الوقت فوراً عن الحجز الإلكتروني.",
@@ -2426,8 +2543,25 @@
         "title": "سُجل الحجز الحضوري",
         "body": "رقم الحجز {reference}. حُجب الوقت عن التطبيق.",
         "view": "عرض الموعد",
-        "another": "حجز حضوري آخر"
-      }
+        "another": "حجز حضوري آخر",
+        "phoneTitle": "سُجّل الموعد بالتلفون"
+      },
+      "kinds": {
+        "WalkIn": {
+          "title": "حضوري",
+          "body": "الزبون موجود الحين، ويُقفل الوقت فوراً."
+        },
+        "Phone": {
+          "title": "بالتلفون",
+          "body": "موعد ليوم أو وقت ثاني."
+        }
+      },
+      "packages": "أو باقة",
+      "chosen": "{count, plural, one {خدمة واحدة} two {خدمتان} few {# خدمات} many {# خدمة} other {# خدمة}} · {duration} · {price}",
+      "pickServiceFirst": "اختر الخدمات أولاً.",
+      "pickProfessionalFirst": "اختر الحلاق أولاً.",
+      "you": "(أنت)",
+      "submitPhone": "تسجيل الموعد"
     },
     "calendar": {
       "title": "تقويم اليوم والأسبوع",
@@ -2987,13 +3121,16 @@
         "booking_confirmed_by_barber": "أكّد {professional} حجز {customer}: {item} يوم {date} الساعة {time}",
         "booking_rescheduled_by_barber": "غيّر {professional} موعد {customer} إلى {date} الساعة {time} ({item})",
         "booking_cancelled_by_barber": "ألغى {professional} حجز {customer} يوم {date} الساعة {time} ({item})",
-        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}"
+        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}",
+        "booking_postponement_offered": "عرض الحلاق على {customer} تأجيل حجزه إلى {offeredDate} الساعة {offeredTime}",
+        "booking_postponement_declined": "رفض {customer} تأجيل حجزه، وبقي في موعده {date} الساعة {time}"
       },
       "customer": {
         "booking_confirmed": "أكّد {shop} حجزك: {item} يوم {date} الساعة {time}",
         "booking_rescheduled": "تم تعديل موعدك في {shop} إلى {date} الساعة {time}",
         "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}",
-        "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ"
+        "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ",
+        "booking_postponement_offered": "يقترح {shop} موعداً جديداً لحجزك: {offeredDate} الساعة {offeredTime} بدلاً من {date} الساعة {time}. اقبله أو ارفضه من صفحة الحجز"
       },
       "barber": {
         "booking_created": "حجز جديد لـ {customer}: {item} يوم {date} الساعة {time}",
@@ -3001,7 +3138,8 @@
         "booking_confirmed": "تأكّد حجز {customer}: {item} يوم {date} الساعة {time}",
         "booking_rescheduled": "تغيّر موعد {customer} إلى {date} الساعة {time} ({item})",
         "booking_cancelled": "أُلغي حجز {customer} يوم {date} الساعة {time} ({item})",
-        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}"
+        "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}",
+        "booking_postponement_declined": "رفض {customer} موعد التأجيل، وبقي حجزه {date} الساعة {time}. انقله لزميل أو ألغِه"
       },
       "admin": {
         "whatsapp_dispatch_failed": "تعذّر إرسال رسالة واتساب ({event})",
@@ -3458,5 +3596,71 @@
     "customBadge": "نص مخصص",
     "builtInBadge": "النص الافتراضي",
     "loading": "جارٍ تحميل المحرر…"
+  },
+  "shopReports": {
+    "title": "التقارير والدخل المتوقع",
+    "periodLabel": "الفترة",
+    "periods": {
+      "day": "يوم",
+      "week": "أسبوع",
+      "month": "شهر"
+    },
+    "previous": "السابق",
+    "next": "التالي",
+    "range": "من {from} إلى {to}",
+    "expectedNote": "الدخل «متوقع» لأن ما فيه دفع إلكتروني: سعر الحجوزات المكتملة، والخدمة المجانية من الولاء تُحسب صفراً.",
+    "minutes": "{count} د",
+    "breaksValue": "{count} ({minutes} د)",
+    "kpis": {
+      "income": "الدخل المتوقع",
+      "completed": "حجوزات مكتملة",
+      "average": "متوسط مدة الخدمة",
+      "noShows": "ما حضر",
+      "lateCancellations": "إلغاء متأخر",
+      "short": "أقل من ٥ دقائق"
+    },
+    "barbersTitle": "لكل حلاق",
+    "wholeShop": "المحل كامل",
+    "cols": {
+      "barber": "الحلاق",
+      "bookings": "الحجوزات",
+      "completed": "المكتملة",
+      "income": "الدخل المتوقع",
+      "average": "متوسط المدة",
+      "short": "أقل من ٥ د",
+      "movedOut": "نُقل منه",
+      "movedIn": "نُقل له",
+      "postponed": "تأجيل",
+      "lateCancellations": "إلغاء متأخر",
+      "noShows": "ما حضر",
+      "closedLate": "انقفل متأخر",
+      "unclosed": "لم يُقفل",
+      "breaks": "البريكات"
+    },
+    "loyalty": {
+      "title": "الولاء",
+      "summary": "أختام أُعطيت: {stamps} · مكافآت استُخدمت: {redemptions}",
+      "byActor": "أختام {stamps} · مكافآت {redemptions}"
+    },
+    "visitsTitle": "الحجوزات",
+    "noVisits": "لا حجوزات في هذه الفترة.",
+    "visit": {
+      "when": "الموعد",
+      "customer": "الزبون",
+      "service": "الخدمة",
+      "status": "الحالة",
+      "start": "البداية الفعلية",
+      "end": "النهاية الفعلية",
+      "length": "المدة",
+      "notes": "ملاحظات"
+    },
+    "flags": {
+      "short": "أقل من ٥ دقائق (ممكن «انتهت» انضغطت بدون خدمة)",
+      "closedLate": "انقفل متأخر (قفله {name})",
+      "cancelledLate": "إلغاء متأخر",
+      "unclosed": "لم يُقفل",
+      "loyalty": "مكافأة ولاء"
+    },
+    "truncated": "يظهر أول {count} حجز فقط؛ الأرقام أعلاه تشمل كل حجوزات الفترة."
   }
 }

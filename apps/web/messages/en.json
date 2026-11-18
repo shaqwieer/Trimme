@@ -57,7 +57,8 @@
       "subscription": "Subscription",
       "notifications": "Notifications",
       "settings": "Shop settings",
-      "qr": "QR codes"
+      "qr": "QR codes",
+      "reports": "Reports"
     },
     "admin": {
       "overview": "Overview",
@@ -556,7 +557,20 @@
     "auth_phone_change_otp_required": "The number cannot be changed here right now. Contact the Groom Here team.",
     "account_has_upcoming_bookings": "You have upcoming appointments. Cancel them or wait until they are over, then delete your account.",
     "legal_content_invalid": "This text cannot be saved: remove unsupported elements or unsafe links, and make sure it is not empty.",
-    "legal_not_found": "This page does not exist."
+    "legal_not_found": "This page does not exist.",
+    "booking_arrival_required": "Press «Arrived» first, then «Service finished».",
+    "booking_add_after_arrival": "A service is added once the customer has arrived.",
+    "booking_service_already_booked": "This service is already on the booking.",
+    "booking_service_not_booked": "This service is not on the booking.",
+    "booking_last_service": "A booking keeps at least one service.",
+    "booking_service_fixed": "This service is part of the booking and stays.",
+    "booking_services_closed": "The booking is closed; its services cannot change.",
+    "booking_postpone_online_only": "A walk-in or phone booking gets its new time directly once the customer agrees.",
+    "booking_consent_required": "A customer’s online booking is postponed by an offer they accept.",
+    "booking_postpone_too_late": "Less than an hour to go: move the booking to a colleague or cancel it.",
+    "booking_postponement_gone": "The postponement offer is no longer open.",
+    "booking_postpone_same_time": "That is the booking’s own time.",
+    "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -990,7 +1004,22 @@
     "activeFor": "{name}: bookable",
     "editItem": "Edit {name}",
     "archiveItem": "Archive {name}",
-    "deleteItem": "Delete {name}"
+    "deleteItem": "Delete {name}",
+    "packages": {
+      "title": "Packages",
+      "add": "Add a package",
+      "empty": "No packages yet. A package groups two or more services at its own price and length.",
+      "newTitle": "New package",
+      "editTitle": "Edit package",
+      "notFound": "The package was not found.",
+      "activate": "Turn on",
+      "deactivate": "Turn off",
+      "archive": "Archive",
+      "archiveTitle": "Archive the package?",
+      "archiveBody": "It leaves booking and the shop page, and stays on past bookings. This cannot be undone.",
+      "archiveConfirm": "Yes, archive it",
+      "keep": "Go back"
+    }
   },
   "adminServices": {
     "title": "Services & categories",
@@ -2141,6 +2170,14 @@
         "from": "Current time",
         "to": "New time"
       }
+    },
+    "postponement": {
+      "title": "Your barber suggests a new time",
+      "body": "Your barber can’t make your appointment and suggests {when} instead. It is held for you until {until}.",
+      "accept": "Accept the new time",
+      "decline": "Decline",
+      "accepted": "Your booking moved to the new time.",
+      "declined": "You declined the new time; your booking keeps its time."
     }
   },
   "review": {
@@ -2272,13 +2309,17 @@
         "source": "Source",
         "amount": "Amount",
         "note": "Customer's note",
-        "cancellationReason": "Cancellation reason"
+        "cancellationReason": "Cancellation reason",
+        "actualStart": "Actual start",
+        "actualEnd": "Actual end",
+        "closedBy": "Closed by"
       },
       "amount": "{price} — paid at the shop",
       "channel": {
         "Online": "Customer app",
         "WalkIn": "Walk-in",
-        "Qr": "QR code"
+        "Qr": "QR code",
+        "Phone": "By phone"
       },
       "noPhone": {
         "title": "The customer's number isn't available",
@@ -2287,12 +2328,13 @@
       "changeStatus": "Change status",
       "actions": {
         "Pending": "Awaiting confirmation",
-        "Confirmed": "Confirm",
-        "Arrived": "Customer arrived",
+        "Confirmed": "Accept booking",
+        "Arrived": "Arrived",
         "Completed": "Service finished",
-        "NoShow": "No-show",
-        "CancelledByShop": "Cancel",
-        "CancelledByCustomer": "Cancelled by customer"
+        "NoShow": "Customer didn't come (over a quarter hour late)",
+        "CancelledByShop": "Cancel appointment",
+        "CancelledByCustomer": "Cancelled by customer",
+        "reject": "Reject booking"
       },
       "stale": "The appointment changed a moment ago — we refreshed it; check and try again.",
       "notes": {
@@ -2306,7 +2348,12 @@
         "created": "Appointment created",
         "rescheduled": "Time changed",
         "status": "Status: {status}",
-        "professionalChanged": "Given to another barber (was with {previous})"
+        "professionalChanged": "Given to another barber (was with {previous})",
+        "serviceAdded": "Service added: {name}",
+        "serviceRemoved": "Service removed: {name}",
+        "postponementOffered": "The barber offered a new time",
+        "postponementAccepted": "The customer took the new time",
+        "postponementDeclined": "The customer declined the new time"
       },
       "actor": {
         "Customer": "Customer",
@@ -2315,8 +2362,8 @@
         "System": "System"
       },
       "change": {
-        "title": "Change the booking",
-        "reschedule": "Change the time",
+        "title": "Emergencies",
+        "reschedule": "Postpone",
         "move": "Give to another barber",
         "rescheduleTitle": "A new time for {name}",
         "rescheduleBody": "Same barber, same service. The customer is told the new time.",
@@ -2335,20 +2382,64 @@
         "busyNow": "That barber is now busy at this time. Choose another.",
         "confirmMove": "Give the booking",
         "keep": "Keep as is",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "order": "In order: move the booking to a free colleague, or postpone it with the customer’s consent, otherwise cancel it with a reason.",
+        "offerTitle": "Postpone {name}’s booking",
+        "offerBody": "Choose a new time with the same barber. It is held for the customer, who is told and accepts or declines it until an hour before the current time. If they decline or do not answer, the booking keeps its time.",
+        "confirmOffer": "Send the offer"
       },
       "cancel": {
         "title": "Cancel the appointment?",
-        "body": "The customer is told and the time is released. This cannot be undone.",
+        "body": "The customer is told and the time becomes free. This cannot be undone.",
         "reason": "Reason",
         "confirm": "Yes, cancel it",
-        "keep": "Keep it"
+        "keep": "Keep it",
+        "late": "A cancellation in the last 15 minutes before the start is recorded as a late cancellation."
       },
       "finish": {
         "title": "Is {name}'s service finished?",
         "body": "The visit is recorded as finished now, and the rest of the barber's time becomes free to book. This can't be undone.",
         "confirm": "Yes, service finished",
         "keep": "Go back"
+      },
+      "flags": {
+        "overdue": "Overdue",
+        "closedLate": "Closed late",
+        "cancelledLate": "Late cancellation"
+      },
+      "overdueNote": "This booking's time has passed and it was not closed. Any barber of the shop can close it; it is marked «closed late».",
+      "phone": {
+        "title": "Customer's mobile",
+        "body": "The shop recorded it with the booking; it disappears after «Service finished»."
+      },
+      "reject": {
+        "title": "Reject the booking?",
+        "body": "The customer is told the shop did not accept the booking, and the time becomes free.",
+        "confirm": "Yes, reject it"
+      },
+      "noShow": {
+        "title": "Did {name} not come?",
+        "body": "The customer didn't come (more than a quarter hour late). The booking is recorded as a no-show and its time is free. This can't be undone.",
+        "confirm": "Yes, they didn't come"
+      },
+      "services": {
+        "title": "Services",
+        "added": "added at the visit",
+        "remove": "Remove",
+        "removeLabel": "Remove {name} from the booking",
+        "add": "Add a service",
+        "pick": "Service",
+        "choose": "Choose a service",
+        "loading": "Loading…",
+        "addHint": "The booking gets longer and its price goes up. If another booking follows at that time, move it first.",
+        "confirmAdd": "Add",
+        "cancel": "Cancel",
+        "addAfterArrival": "Services are added after «Arrived»."
+      },
+      "postponement": {
+        "waiting": "Postponement to {when} offered; waiting for the customer until {until}. The time is held for them.",
+        "declined": "The customer declined the new time. Move the booking to a free colleague or cancel it with a reason.",
+        "lapsed": "The postponement offer lapsed without an answer; the booking kept its time."
       }
     },
     "appointments": {
@@ -2382,26 +2473,51 @@
       "finishTitle": "Is {name}'s service finished?",
       "finishBody": "The visit is recorded as finished now, and the rest of the barber's time becomes free to book. This can't be undone.",
       "finishConfirm": "Yes, service finished",
-      "finishKeep": "Go back"
+      "finishKeep": "Go back",
+      "overdue": "Overdue bookings",
+      "overdueHint": "Their time has passed and they were not closed. Any barber of the shop can close them.",
+      "overdueBadge": "Overdue",
+      "responsible": "Barber: {name}",
+      "pending": "Waiting to be accepted",
+      "pendingHint": "Any barber of the shop can accept or reject them.",
+      "closedLate": "Closed late (last 3 days)",
+      "closedLateBy": "Barber: {responsible} · closed by: {closer} · {status} · closed late",
+      "actionLabel": "{action}: {name}",
+      "row": {
+        "Confirmed": "Accept",
+        "Arrived": "Arrived",
+        "Completed": "Service finished",
+        "NoShow": "No-show"
+      },
+      "done": {
+        "Confirmed": "{name}'s booking was accepted.",
+        "Arrived": "{name} is marked arrived.",
+        "Completed": "{name}'s visit is done, and the barber's time is free to book.",
+        "NoShow": "{name} is marked as a no-show."
+      },
+      "noShowTitle": "Did {name} not come?",
+      "noShowBody": "The customer didn't come (more than a quarter hour late). The booking is recorded as a no-show and its time is free. This can't be undone.",
+      "noShowConfirm": "Yes, they didn't come"
     },
     "visit": {
       "New": "New customer",
       "Returning": "Returning customer"
     },
     "walkIn": {
-      "title": "Walk-in booking",
+      "title": "Walk-in or phone booking",
       "noServices": "No active services. Add a service first.",
-      "intro": "The time is taken at once and disappears from the times customers see in the app.",
+      "intro": "Takes the time at once and removes it from the times customers see in the app.",
       "steps": {
-        "service": "1. Service",
-        "professional": "2. Barber",
-        "time": "3. Time",
-        "customer": "4. Customer"
+        "service": "2. Services",
+        "professional": "3. Barber",
+        "time": "4. Time",
+        "customer": "5. Customer",
+        "kind": "1. Type"
       },
       "date": "Day",
       "loading": "Loading times…",
       "loadError": "Couldn't load the times.",
-      "noProfessionals": "No active barber offers this service.",
+      "noProfessionals": "No active barber does all of these services.",
       "freeNow": "Available now",
       "freeAt": "Available {time}",
       "noTimes": "No times this day",
@@ -2413,11 +2529,12 @@
       "notePlaceholder": "e.g. short fade",
       "summary": {
         "title": "Booking summary",
-        "service": "Service",
+        "service": "Services",
         "professional": "Barber",
         "starts": "Starts",
         "ends": "Ends",
-        "total": "Total"
+        "total": "Total",
+        "kind": "Type"
       },
       "submit": "Record booking",
       "blocksOnline": "This time is blocked from online booking at once.",
@@ -2426,8 +2543,25 @@
         "title": "Walk-in recorded",
         "body": "Booking {reference}. The time is blocked in the app.",
         "view": "View appointment",
-        "another": "Another walk-in"
-      }
+        "another": "Another walk-in",
+        "phoneTitle": "Phone booking recorded"
+      },
+      "kinds": {
+        "WalkIn": {
+          "title": "Walk-in",
+          "body": "The customer is here now; the time is taken at once."
+        },
+        "Phone": {
+          "title": "By phone",
+          "body": "An appointment on another day or time."
+        }
+      },
+      "packages": "Or a package",
+      "chosen": "{count, plural, one {# service} other {# services}} · {duration} · {price}",
+      "pickServiceFirst": "Choose the services first.",
+      "pickProfessionalFirst": "Choose the barber first.",
+      "you": "(you)",
+      "submitPhone": "Book the appointment"
     },
     "calendar": {
       "title": "Day & week calendar",
@@ -2987,13 +3121,16 @@
         "booking_confirmed_by_barber": "{professional} confirmed {customer}'s booking: {item} on {date} at {time}",
         "booking_rescheduled_by_barber": "{professional} changed {customer}'s booking to {date} at {time} ({item})",
         "booking_cancelled_by_barber": "{professional} cancelled {customer}'s booking on {date} at {time} ({item})",
-        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}"
+        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}",
+        "booking_postponement_offered": "A barber offered {customer} a new time: {offeredDate} at {offeredTime}",
+        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}"
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
         "booking_rescheduled": "Your booking at {shop} was moved to {date} at {time}",
         "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled",
-        "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts"
+        "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts",
+        "booking_postponement_offered": "{shop} suggests a new time for your booking: {offeredDate} at {offeredTime} instead of {date} at {time}. Accept or decline it on the booking page"
       },
       "barber": {
         "booking_created": "New booking for {customer}: {item} on {date} at {time}",
@@ -3001,7 +3138,8 @@
         "booking_confirmed": "{customer}'s booking is confirmed: {item} on {date} at {time}",
         "booking_rescheduled": "{customer}'s booking is now on {date} at {time} ({item})",
         "booking_cancelled": "{customer}'s booking on {date} at {time} was cancelled ({item})",
-        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}"
+        "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}",
+        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}. Move it to a colleague or cancel it"
       },
       "admin": {
         "whatsapp_dispatch_failed": "A WhatsApp message could not be sent ({event})",
@@ -3458,5 +3596,71 @@
     "customBadge": "Custom text",
     "builtInBadge": "Built-in text",
     "loading": "Loading the editor…"
+  },
+  "shopReports": {
+    "title": "Reports and expected income",
+    "periodLabel": "Period",
+    "periods": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "previous": "Previous",
+    "next": "Next",
+    "range": "{from} to {to}",
+    "expectedNote": "Income is «expected» because there is no online payment: the price of completed bookings, with a free loyalty service at zero.",
+    "minutes": "{count} min",
+    "breaksValue": "{count} ({minutes} min)",
+    "kpis": {
+      "income": "Expected income",
+      "completed": "Completed",
+      "average": "Average service length",
+      "noShows": "No-shows",
+      "lateCancellations": "Late cancellations",
+      "short": "Under 5 minutes"
+    },
+    "barbersTitle": "By barber",
+    "wholeShop": "Whole shop",
+    "cols": {
+      "barber": "Barber",
+      "bookings": "Bookings",
+      "completed": "Completed",
+      "income": "Expected income",
+      "average": "Average length",
+      "short": "Under 5 min",
+      "movedOut": "Moved away",
+      "movedIn": "Moved to",
+      "postponed": "Postponed",
+      "lateCancellations": "Late cancellations",
+      "noShows": "No-shows",
+      "closedLate": "Closed late",
+      "unclosed": "Not closed",
+      "breaks": "Breaks"
+    },
+    "loyalty": {
+      "title": "Loyalty",
+      "summary": "Stamps given: {stamps} · rewards used: {redemptions}",
+      "byActor": "{stamps} stamps · {redemptions} rewards"
+    },
+    "visitsTitle": "Bookings",
+    "noVisits": "No bookings in this period.",
+    "visit": {
+      "when": "Time",
+      "customer": "Customer",
+      "service": "Service",
+      "status": "Status",
+      "start": "Actual start",
+      "end": "Actual end",
+      "length": "Length",
+      "notes": "Notes"
+    },
+    "flags": {
+      "short": "Under 5 minutes (perhaps finished without a service)",
+      "closedLate": "Closed late (by {name})",
+      "cancelledLate": "Late cancellation",
+      "unclosed": "Not closed",
+      "loyalty": "Loyalty reward"
+    },
+    "truncated": "Only the first {count} bookings are listed; the figures above cover every booking of the period."
   }
 }

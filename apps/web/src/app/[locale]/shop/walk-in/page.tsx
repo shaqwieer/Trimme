@@ -11,9 +11,10 @@ import { todayLocal } from '@/lib/i18n/localDate';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Walk-in booking (s-walkin, spec §13), a barber's own (D-145): the shop's active services and packages (online-bookable or
- * not: the shop is not online) that the barber does, and their times from the walk-in rules. The owner books no walk-ins
- * (D-146): the page answers «no access», like the API. The calendar can prefill `professionalId`, `startsAt` and `date`.
+ * Walk-in and phone bookings (s-walkin, spec §13), the barbers' (D-145, D-147): the shop's active services and packages
+ * (online-bookable or not: the shop is not online), for the barber or a free colleague who does them, and their times
+ * from the walk-in rules. The owner books none (D-146): the page answers «no access», like the API. The calendar can
+ * prefill `professionalId`, `startsAt` and `date`.
  */
 export default async function ShopWalkInPage({ params, searchParams }: PageProps<'/[locale]/shop/walk-in'>) {
   const [{ locale: raw }, query] = await Promise.all([params, searchParams]);
@@ -33,9 +34,8 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
         ]);
         const offers: WalkInOffer[] = [
           ...(services ?? [])
-            // A barber's login books walk-ins for themselves, so only what they do (D-145).
+            // Every service: a colleague may do what this barber does not (D-147); step 3 lists who does them all.
             .filter((s) => s.isActive && !s.isArchived && s.moderation === 'Visible')
-            .filter((s) => !me.professionalId || s.professionalIds.includes(me.professionalId))
             .map((s) => ({
               kind: 'service' as const,
               id: s.id,
@@ -64,7 +64,8 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
             offers={offers}
             today={today}
             timeZone={shop.timeZone}
-            initialProfessionalId={me.professionalId ?? firstParam(query.professionalId)}
+            initialProfessionalId={firstParam(query.professionalId) ?? me.professionalId ?? undefined}
+            ownProfessionalId={me.professionalId ?? undefined}
             initialStart={firstParam(query.startsAt)}
             initialDate={date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= today ? date : undefined}
           />

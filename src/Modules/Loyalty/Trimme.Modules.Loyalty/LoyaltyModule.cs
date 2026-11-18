@@ -26,6 +26,7 @@ public sealed class LoyaltyModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<ILoyaltyRewardHolder, LoyaltyRewardHolder>();
+        services.AddScoped<ILoyaltyReportSource, Application.Shop.LoyaltyReportSource>();
         services.AddScoped<CustomerLoyaltyReader>();
         services.AddScoped<IOutboxConsumer, LoyaltyBookingConsumer>();
     }

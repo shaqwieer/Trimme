@@ -78,7 +78,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         schedule.GetProperty("timeZone").GetString().ShouldBe("Asia/Riyadh");
         schedule.GetProperty("professionals")[0].GetProperty("followsShopHours").GetBoolean().ShouldBeTrue();
         await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), HttpStatusCode.Forbidden, null, ct);
-        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
+        // The temporary pause is the barbers' now; the owner only watches (D-147).
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
 
         // Opening hours 09:00–12:00 every day: a 30-minute service on the 5-minute grid, 09:00 … 11:30.
         await FailsAsync(s.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = new[] { new { day = "Sunday", startMinute = 540, endMinute = 530 } } }, ct),
@@ -115,14 +116,14 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         schedule.GetProperty("timeOff").GetArrayLength().ShouldBe(1);
         schedule.GetProperty("closures")[0].GetProperty("reason").GetString().ShouldBe("اليوم الوطني");
 
-        // Pause: no slots and a reason; the shop page itself stays reachable (D-013). Resume restores them.
+        // Pause, by a barber (D-147): no slots and a reason; the shop page itself stays reachable (D-013). Resume restores them.
         var profileVersion = (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/profile", ct), ct)).GetProperty("version").GetUInt32();
-        var paused = await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "ازدحام" }, ct), ct);
+        var paused = await OkAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "ازدحام" }, ct), ct);
         paused.GetProperty("paused").GetBoolean().ShouldBeTrue();
         paused.GetProperty("reason").GetString().ShouldBe("ازدحام");
         (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/profile", ct), ct)).GetProperty("version").GetUInt32()
             .ShouldBe(profileVersion, "pausing never makes an open profile form stale (D-083)");
-        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Conflict, "shop.online_booking_already_paused", ct);
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Conflict, "shop.online_booking_already_paused", ct);
         var blocked = await SlotsAsync(anonymous, s.SlugA, $"serviceId={s.ServiceA}", Target.AddDays(2), ct);
         blocked.GetProperty("bookable").GetBoolean().ShouldBeFalse();
         blocked.GetProperty("blockedReason").GetString().ShouldBe("shop.paused");
@@ -136,7 +137,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         await OkAsync(s.Admin.PutAsync("/api/v1/admin/settings", SettingsBody(settings, hidePaused: false), ct), ct);
         (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, true, "shop.paused"));
         (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("onlineBookingPaused").GetBoolean().ShouldBeTrue();
-        await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), HttpStatusCode.Forbidden, null, ct);
+        await OkAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
 
         // Removing the time off and the closure brings the slots back.
         await OkAsync(s.OwnerA.DeleteAsync($"/api/v1/shop/schedule/time-off/{timeOff.GetProperty("id").GetGuid()}", ct), ct, HttpStatusCode.NoContent);
@@ -293,11 +295,14 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         using var anonymous = ApiSession.Create(s.Factory);
         var day = $"/api/v1/shop/schedule/barber-day?professionalId={s.ProA}&date={Iso(Target)}";
 
-        // Open 09:00–12:00 every day; the owner keeps a weekly break for everyone (10:15–10:30) and gives the barber
-        // a labelled one-off break on the date (09:00–09:15). A booking holds 11:00–11:30.
+        // Open 09:00–12:00 every day; the owner keeps a weekly break for everyone (10:15–10:30). A break on one day is the
+        // barber's own (D-147): the owner's is refused, and the barber sets 09:00–09:15. A booking holds 11:00–11:30.
         await OkAsync(s.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), ct);
         await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", new { weekdays = new[] { Target.DayOfWeek.ToString() }, startMinute = 615, endMinute = 630 }, ct), ct, HttpStatusCode.Created);
-        await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, label = "موعد", date = Iso(Target), startMinute = 540, endMinute = 555 }, ct), ct, HttpStatusCode.Created);
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/schedule/breaks", new { professionalId = s.ProA, label = "موعد", date = Iso(Target), startMinute = 540, endMinute = 555 }, ct),
+            HttpStatusCode.BadRequest, "schedule.one_off_break_is_barbers", ct);
+        await OkAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day",
+            new { professionalId = s.ProA, date = Iso(Target), breaks = new[] { new { startMinute = 540, endMinute = 555 } } }, ct), ct);
         var eleven = new DateTimeOffset(Target.ToDateTime(new TimeOnly(11, 0)), TimeSpan.FromHours(3));
         s.Bookings.Appointments.Add(new BookedAppointment(Guid.NewGuid(), new ProfessionalId(s.ProA), eleven, eleven.AddMinutes(30), "Test Customer", "حلاقة", "Haircut"));
 
@@ -310,8 +315,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         Windows(read, "timeOff").ShouldBeEmpty();
         read.GetProperty("passedMinutes").GetInt32().ShouldBe(0, "the date is ahead");
 
-        // Two hours as breaks (10:00–11:00 and 11:00–12:00 join), no reason; the owner's break of the date goes, the
-        // weekly one for everyone stays, and the public slots follow.
+        // Two hours as breaks (10:00–11:00 and 11:00–12:00 join), no reason; the barber's earlier break of the date goes,
+        // the weekly one for everyone stays, and the public slots follow.
         var saved = await OkAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/barber-day", new
         {
             professionalId = s.ProA,
@@ -324,7 +329,12 @@ public sealed class ScheduleTests(PostgresFixture postgres)
             [.. Enumerable.Range(0, 7).Select(i => $"09:{i * 5:00}")], "09:00–09:30 is free again and 10:00–12:00 is a break");
         var breaks = (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("breaks").EnumerateArray().ToList();
         breaks.Count.ShouldBe(2);
-        breaks.Single(b => b.GetProperty("date").ValueKind != JsonValueKind.Null).GetProperty("label").GetString().ShouldBe(string.Empty);
+        var oneOff = breaks.Single(b => b.GetProperty("date").ValueKind != JsonValueKind.Null);
+        oneOff.GetProperty("label").GetString().ShouldBe(string.Empty);
+
+        // The owner sees the barber's break of the day but neither changes nor removes it (D-147).
+        await FailsAsync(s.OwnerA.DeleteAsync($"/api/v1/shop/schedule/breaks/{oneOff.GetProperty("id").GetGuid()}", ct),
+            HttpStatusCode.BadRequest, "schedule.one_off_break_is_barbers", ct);
 
         // The whole day, then nothing: an empty list clears the barber's breaks of that date only.
         var whole = new { professionalId = s.ProA, date = Iso(Target), breaks = new[] { new { startMinute = 0, endMinute = 1440 } } };

@@ -120,7 +120,7 @@ Exact results are in `docs/implementation/phases/phase-17-hardening.md` (Complet
 | `dotnet list package --vulnerable --include-transitive` | Every project |
 | gitleaks (`dir` and `git`) | The working tree and the full history |
 | OWASP ZAP baseline (`zap-baseline.py`, spider 3 min) | The compose web app at `/ar`, through the same-origin `/api` |
-| Phone-leak sweep | API and web container logs, exported spans, Hangfire job arguments and states, outbox payloads; shop pages in the route audit |
+| Phone-leak sweep | API and web container logs, exported spans, Hangfire job arguments and states, outbox payloads; shop pages in the route audit. Since D-147 a barber's own view of an open walk-in or phone booking carries the mobile typed into it (`customerPhone`, by design, the client's request): a sweep finds it only there, never in the owner's pages, logs, spans, jobs, outbox or live messages |
 
 ### ZAP findings and their handling
 

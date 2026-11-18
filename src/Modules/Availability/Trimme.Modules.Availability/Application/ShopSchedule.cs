@@ -368,6 +368,11 @@ internal sealed class CreateBreakHandler(TrimmeDbContext db, ShopScheduleContext
         }
 
         var input = command.Input;
+        if (input.Date is not null)
+        {
+            return ScheduleErrors.OneOffBreaksAreTheBarbers();
+        }
+
         ProfessionalId? professionalId = null;
         if (input.ProfessionalId is { } requested)
         {
@@ -404,6 +409,11 @@ internal sealed class UpdateBreakHandler(TrimmeDbContext db, ShopScheduleContext
         }
 
         var input = command.Input;
+        if (input.Date is not null || entry.Date is not null)
+        {
+            return ScheduleErrors.OneOffBreaksAreTheBarbers();
+        }
+
         ProfessionalId? professionalId = null;
         if (input.ProfessionalId is { } requested)
         {
@@ -436,6 +446,12 @@ internal sealed class DeleteBreakHandler(TrimmeDbContext db, ShopScheduleContext
             || await db.Set<ScheduleBreak>().SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } entry)
         {
             return ScheduleErrors.BreakNotFound();
+        }
+
+        // A barber's one-off break is theirs to remove, from their day (D-147).
+        if (entry.Date is not null)
+        {
+            return ScheduleErrors.OneOffBreaksAreTheBarbers();
         }
 
         db.Remove(entry);

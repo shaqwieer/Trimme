@@ -1101,6 +1101,90 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("booking_notes", "bookings");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.PostponementOffer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AnsweredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("answered_at");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTimeOffset>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("OfferedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("offered_by");
+
+                    b.Property<string>("OfferedByName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("offered_by_name");
+
+                    b.Property<DateTimeOffset>("OriginalStartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("original_starts_at");
+
+                    b.Property<Guid>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_postponement_offers");
+
+                    b.HasIndex("BookingId", "CreatedAt")
+                        .HasDatabaseName("ix_postponement_offers_booking_id_created_at");
+
+                    b.HasIndex("CustomerId", "CreatedAt")
+                        .HasDatabaseName("ix_postponement_offers_customer_id_created_at");
+
+                    b.HasIndex("ProfessionalId", "StartsAt")
+                        .HasDatabaseName("ix_postponement_offers_professional_id_starts_at")
+                        .HasFilter("status = 'Open'");
+
+                    b.HasIndex("ShopId", "BookingId")
+                        .HasDatabaseName("ix_postponement_offers_shop_id_booking_id");
+
+                    b.ToTable("postponement_offers", "bookings", t =>
+                        {
+                            t.HasCheckConstraint("ck_postponement_offers_range", "ends_at > starts_at");
+                        });
+                });
+
             modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>
                 {
                     b.Property<Guid>("BookingId")
@@ -3980,10 +4064,16 @@ namespace Trimme.Migrations.Migrations
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd();
 
+                            b1.Property<bool>("Added");
+
+                            b1.Property<int?>("DurationMinutes");
+
                             b1.Property<string>("NameAr")
                                 .IsRequired();
 
                             b1.Property<string>("NameEn");
+
+                            b1.Property<decimal?>("Price");
 
                             b1.Property<Guid>("ServiceId");
 
@@ -4012,6 +4102,11 @@ namespace Trimme.Migrations.Migrations
                             b1.Property<Guid?>("ActorId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("actor_id");
+
+                            b1.Property<string>("ActorName")
+                                .HasMaxLength(120)
+                                .HasColumnType("character varying(120)")
+                                .HasColumnName("actor_name");
 
                             b1.Property<string>("ActorType")
                                 .IsRequired()
@@ -4101,6 +4196,24 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_booking_notes_bookings_shop_id_booking_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.PostponementOffer", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_postponement_offers_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Bookings.Domain.Booking", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "BookingId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_postponement_offers_bookings_shop_id_booking_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>

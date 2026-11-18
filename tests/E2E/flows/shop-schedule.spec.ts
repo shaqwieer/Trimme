@@ -64,12 +64,13 @@ async function slots(request: APIRequestContext, date: string, professionalId?: 
   };
 }
 
-/** Undo anything a failed earlier run left behind (pause, Faisal's own hours, Faisal's time off). */
+/**
+ * Undo anything a failed earlier run left behind (Faisal's own hours, Faisal's time off). A pause left behind is the
+ * barbers' to lift (D-147): the barber's test resumes first.
+ */
 async function resetSchedule(page: Page, context: BrowserContext) {
   const headers = { 'X-CSRF-Token': await csrf(context, page.request) };
   const schedule = await (await page.request.get('/api/v1/shop/schedule')).json();
-  if (schedule.onlineBookingPaused)
-    await page.request.post('/api/v1/shop/online-booking/resume', { headers });
   for (const entry of schedule.timeOff.filter((t: { professionalId: string }) => t.professionalId === FAISAL))
     await page.request.delete(`/api/v1/shop/schedule/time-off/${entry.id}`, { headers });
   const faisal = schedule.professionals.find((p: { professionalId: string }) => p.professionalId === FAISAL);
@@ -81,7 +82,7 @@ async function resetSchedule(page: Page, context: BrowserContext) {
 }
 
 test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', () => {
-  test('owner edits hours, time off and the pause; the public slots follow each change', async ({
+  test('owner edits hours and time off and only sees the pause; the public slots follow each change', async ({
     page,
     context,
   }) => {
@@ -147,17 +148,18 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     await expect(entry).toBeHidden(SAVE);
     expect((await slots(page.request, target.iso, FAISAL)).slots.length).toBe(before.slots.length);
 
-    // Pause: no slots and a reason; resume restores them.
+    // The pause is the barbers' now (D-147): the owner sees its state, with no button, and the API refuses it.
     const pause = page.getByTestId('pause-card');
-    await pause.getByRole('button', { name: 'Pause' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Pause now' }).click();
-    await expect(pause).toHaveAttribute('data-paused', 'true', SAVE);
-    const paused = await slots(page.request, target.iso);
-    expect(paused.bookable).toBe(false);
-    expect(paused.blockedReason).toBe('shop.paused');
-    await pause.getByRole('button', { name: 'Resume online booking' }).click();
-    await expect(pause).toHaveAttribute('data-paused', 'false', SAVE);
-    expect((await slots(page.request, target.iso)).bookable).toBe(true);
+    await expect(pause).toBeVisible();
+    await expect(pause.getByRole('button')).toHaveCount(0);
+    const headers = { 'X-CSRF-Token': await csrf(context, page.request) };
+    expect(
+      (await page.request.post('/api/v1/shop/online-booking/pause', { headers, data: {} })).status(),
+    ).toBe(403);
+    // Nor does the owner set a barber's one-off break: the breaks card adds weekly breaks only.
+    await page.getByTestId('breaks').getByRole('button', { name: 'Add break' }).click();
+    await expect(page.getByRole('dialog').getByLabel('Date')).toHaveCount(0);
+    await page.keyboard.press('Escape');
   });
 
   test('a barber sets their own breaks every 5 minutes with a confirmation and no reason, and sees nothing else of the schedule (D-134, D-137, D-145)', async ({
@@ -172,16 +174,19 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
       (await page.request.put('/api/v1/shop/schedule/barber-day', { headers, data: clear })).status(),
     ).toBe(200);
     expect((await page.request.get('/api/v1/shop/schedule')).status()).toBe(403);
+    const state = await (await page.request.get('/api/v1/shop/online-booking')).json();
+    if (state.paused) await page.request.post('/api/v1/shop/online-booking/resume', { headers });
 
-    // Only the barbers' days: no shop hours, barbers' hours, fixed breaks, time off, closures or pause.
+    // Only their own day and the pause (D-147): no shop hours, barbers' hours, fixed breaks, time off or closures.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/ar/shop/schedule');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('البريكات');
     const card = page.getByTestId('barber-day');
     await expect(card).toBeVisible();
-    for (const testId of ['opening-hours', 'professional-hours', 'breaks', 'pause-card'])
+    for (const testId of ['opening-hours', 'professional-hours', 'breaks'])
       await expect(page.getByTestId(testId)).toHaveCount(0);
+    await expect(page.getByTestId('pause-card')).toBeVisible();
     await expect(page.getByText('الإجازات والتعطيل')).toHaveCount(0);
 
     // Sultan, on the target day: 24 hours, he works noon to 10 PM.
@@ -241,5 +246,17 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
+
+    // The shop's pause is the barbers' (D-147): no slots while paused; resuming brings them back.
+    const pause = page.getByTestId('pause-card');
+    await pause.getByRole('button', { name: 'إيقاف مؤقت' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'إيقاف الآن' }).click();
+    await expect(pause).toHaveAttribute('data-paused', 'true', SAVE);
+    const paused = await slots(page.request, target.iso);
+    expect(paused.bookable).toBe(false);
+    expect(paused.blockedReason).toBe('shop.paused');
+    await pause.getByRole('button', { name: 'إعادة تفعيل الحجز' }).click();
+    await expect(pause).toHaveAttribute('data-paused', 'false', SAVE);
+    expect((await slots(page.request, target.iso)).bookable).toBe(true);
   });
 });

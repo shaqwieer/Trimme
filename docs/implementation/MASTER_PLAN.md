@@ -12,7 +12,7 @@ Build TRIMME: an Arabic-first (RTL), mobile-responsive marketplace where custome
 ## 2. Non-negotiable constraints
 
 1. **Tenant isolation** — a shop can never read, write, reference or infer another shop's data; tenant resolved from claims only; enforced in API + data layer; proven by IDOR tests.
-2. **Customer phone privacy** — the customer phone number never reaches any shop-facing DTO, log, export, SignalR message, HTML or browser payload. Proven by DTO contract tests.
+2. **Customer phone privacy** — the customer phone number never reaches any shop-facing DTO, log, export, SignalR message, HTML or browser payload. Proven by DTO contract tests. One reviewed exception since D-147 (the client's request): a barber reads the mobile typed into an open walk-in or phone booking; never the owner, never an online customer, never once closed.
 3. **No barber transfer** — each professional belongs to exactly one shop; `Professional.ShopId` is immutable; no transfer route, permission, UI, doc or scaffold.
 4. **Shop-owned services** — shops set their own service names/descriptions/prices/durations; no global price/duration; history kept via booking snapshots.
 5. **Server-calculated availability**; double booking impossible under concurrency (transactional recheck + PostgreSQL exclusion constraint + idempotency).
@@ -108,7 +108,7 @@ Full matrix: `docs/permissions-matrix.md` (created in Phase 4). Seeds (D-018, D-
 | User type | Seed roles | Scope |
 |---|---|---|
 | Customer | `Customer` | Own profile, own bookings, own reviews (completed, once), favorites |
-| Shop | `ShopOwner`, `ShopStaff` | Own shop only (tenant from claims). Owner: services, hours, breaks/time off, pause, profile fields permitted by admin policy, location (if permitted). Staff: booking operations + walk-ins. Neither: professionals CRUD/assignment, customer phone, exports, other shops. |
+| Shop | `ShopOwner`, `ShopBarber` (the desk `ShopStaff` was removed by D-145) | Own shop only (tenant from claims). Since D-147 the owner watches and manages: appointments and calendar read-only, reports and expected income, services and packages, barbers (D-146), hours, weekly breaks, time off, profile and location (as permitted). Barbers operate their own bookings (plus the shop's pending and red ones), walk-in and phone bookings, their breaks and the pause, and see no figures. Neither: moving a barber, exports, other shops; the customer's phone only for a barber on an open walk-in/phone booking (D-147). |
 | Platform Admin | `SuperAdmin` (مدير عام), `OperationsManager`, `Support` | Permission-based (`Admin.*`). `SuperAdmin.SubscriptionPlans.Manage` + subscription overrides are SuperAdmin-only. |
 
 Explicitly **never** in the catalogue: any transfer permission, customer export, shop access to customer contact.
@@ -147,6 +147,8 @@ Cross-cutting gates owned **from Phase 1/2 onward** (not deferred to the end): d
 | 15 | WhatsApp, outbox, Hangfire & notifications | [x] | 100/100 | 14 | `phases/phase-15-notifications-whatsapp.md` §Evidence (build 0 warnings; 395 unit / 65 architecture / 172 integration; migration `Notifications`; web 357; E4 green; fresh `down -v` stack E2E 69/69 ×2, no retries, no 5xx or 429; no-transfer and R-NEG-08 gates and gitleaks clean) | `4c2744e` (+ CI fix `1e457e1`) | CI green after the push (Session 12) |
 | 16 | QR codes & attribution analytics | [x] | 100/100 | 15 | `phases/phase-16-qr-analytics.md` §Evidence (build 0 warnings; 420 unit / 65 architecture / 175 integration ×3; migration `Qr`; web 366; fresh `down -v` stack E2E 72/72 ×2, no retries, no 5xx or 429; Linux Chromium 19/19 on the affected specs; grep gates and gitleaks clean) | `c7f266c` (+ review follow-up) | — |
 | 17 | Localization, SEO, a11y, security, observability, performance | [x] | 98/100 | 16 | `phases/phase-17-hardening.md` §Evidence (build 0 warnings; 429 unit / 65 architecture / 199 integration incl. N+1 budgets; migration `PerformanceIndexes`; web 385; fresh `down -v` stack E2E 85/85 (runs 1, 2 and 5; run 4 found a pagination overflow, fixed) incl. Linux Chromium 26/26, the route audit (81 routes × 2 locales, axe 0 serious) and keyboard pass; ZAP 0 FAIL; audits, gitleaks and the phone-leak sweep clean; NVDA pass not run, 2 points held back) | see STATUS | Push when the user asks; run the NVDA checklist |
+
+**After Phase 17:** user requests are recorded as decisions with their own plan files, not phases: the latest is D-147 (`phases/after-17-d147-barber-operations.md`: the owner watches, the barbers operate; reports; packages; postponement offers).
 
 **Platform total: 1798 / 1800 points.** Phase 18 (full regression, deployment docs, handover) was removed at the user's request (D-116); Phase 17 is the last phase.
 

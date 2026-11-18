@@ -225,8 +225,11 @@ internal sealed class ShopBookingChanger(
     }
 }
 
-/// <summary>A new time with the same barber (D-145): «تعديل الموعد». The customer gets «تم تغيير موعد حجزك».</summary>
-internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, ICurrentUser user, IAvailabilityChecker availability, TimeProvider clock)
+/// <summary>
+/// A new time with the same barber (D-145) for a walk-in or phone booking, once the customer agreed (D-147: an online
+/// booking gets a postponement offer instead). A walk-in with a mobile gets «تم تغيير موعد حجزك».
+/// </summary>
+internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, BookingActors actors, IAvailabilityChecker availability, TimeProvider clock)
     : ICommandHandler<ShopRescheduleBookingCommand, Result<ShopBookingChangeResult>>
 {
     private const string Scope = "bookings.shop_reschedule";
@@ -242,6 +245,13 @@ internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, I
         var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty, Version = 0 });
         return changer.ChangeAsync(Scope, command.IdempotencyKey, hash, command.BookingId, command.Version, async booking =>
         {
+            // A customer's online booking gets a new time only with their consent: the barber offers it (D-147). A walk-in
+            // or phone booking is changed here, once the customer has agreed in the shop or on the phone.
+            if (booking.Channel == BookingChannel.Online)
+            {
+                return PostponementErrors.ConsentRequired();
+            }
+
             var free = await availability.FreeProfessionalsAsync(
                 booking.ShopId, [booking.ProfessionalId], command.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value, cancellationToken);
             if (free.Count == 0)
@@ -249,7 +259,8 @@ internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, I
                 return BookingErrors.SlotUnavailable();
             }
 
-            var moved = booking.Reschedule(command.StartsAt, booking.CurrentProfessional, new BookingActor(user.UserId, ActorType.ShopUser), now, cutoffMinutes: null);
+            var moved = booking.Reschedule(
+                command.StartsAt, booking.CurrentProfessional, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now, cutoffMinutes: null);
             if (moved.IsFailure)
             {
                 return moved.Error;
@@ -267,7 +278,7 @@ internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, I
 /// </summary>
 internal sealed class ChangeBookingProfessionalHandler(
     ShopBookingChanger changer,
-    ICurrentUser user,
+    BookingActors actors,
     IBookableOfferCatalog catalog,
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
@@ -298,7 +309,7 @@ internal sealed class ChangeBookingProfessionalHandler(
                 return BookingErrors.ProfessionalBusy();
             }
 
-            var changed = booking.ChangeProfessional(target.Value, new BookingActor(user.UserId, ActorType.ShopUser), clock.GetUtcNow());
+            var changed = booking.ChangeProfessional(target.Value, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), clock.GetUtcNow());
             if (changed.IsFailure)
             {
                 return changed.Error;

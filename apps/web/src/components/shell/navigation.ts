@@ -28,14 +28,14 @@ import type { Messages } from 'next-intl';
 type NavMessageKey<S extends keyof Messages['nav']> = keyof Messages['nav'][S] & string;
 
 /**
- * A navigation entry. `permission` is checked against the signed-in user's permissions from Phase 04;
- * the server remains the authority — hiding an item is only a convenience (spec §7).
+ * A navigation entry. `permission` is checked against the signed-in user's permissions from Phase 04 (a list means any
+ * of them); the server remains the authority — hiding an item is only a convenience (spec §7).
  */
 export type NavItem<S extends keyof Messages['nav']> = {
   key: NavMessageKey<S>;
   href: string;
   icon: LucideIcon;
-  permission?: string;
+  permission?: string | readonly string[];
 };
 
 export const customerNav: NavItem<'customer'>[] = [
@@ -50,9 +50,17 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'overview', href: '/shop', icon: BarChart3, permission: 'Shop.Bookings.Read' },
   { key: 'calendar', href: '/shop/calendar', icon: CalendarDays, permission: 'Shop.Bookings.Read' },
   { key: 'appointments', href: '/shop/appointments', icon: List, permission: 'Shop.Bookings.Read' },
+  // The owner's reports and expected income (D-147); barbers see no figures.
+  { key: 'reports', href: '/shop/reports', icon: FileText, permission: 'Shop.Insights.View' },
   // A barber's own walk-ins; the owner books none (D-146).
   { key: 'walkIn', href: '/shop/walk-in', icon: Plus, permission: 'Shop.Bookings.CreateWalkIn' },
-  { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Breaks.Manage' },
+  // The owner's hours and weekly breaks, or a barber's own breaks and the pause (D-147).
+  {
+    key: 'schedule',
+    href: '/shop/schedule',
+    icon: Clock,
+    permission: ['Shop.Schedule.Manage', 'Shop.Breaks.Manage'],
+  },
   // The owner's own services again (D-137; D-130 had given them to the admin only). A barber's login has no permission.
   { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
   // The owner adds and edits the shop's barbers and their logins (D-145, D-146).
@@ -112,7 +120,13 @@ export function visibleItems<S extends keyof Messages['nav']>(
     return items;
   }
   const granted = new Set(permissions);
-  return items.filter((item) => !item.permission || granted.has(item.permission));
+  return items.filter(
+    (item) =>
+      !item.permission ||
+      (typeof item.permission === 'string'
+        ? granted.has(item.permission)
+        : item.permission.some((p) => granted.has(p))),
+  );
 }
 
 /** Longest-prefix match so `/shop/calendar` does not also activate `/shop`. */

@@ -370,7 +370,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The professionals who can do a walk-in of this service or package: free now, next free time and the day's free starts. */
+        /** The professionals who can do a walk-in or phone booking of this service, these services (serviceIds) or package: free now, next free time and the day's free starts. */
         get: operations["GetWalkInOptions"];
         put?: never;
         post?: never;
@@ -408,6 +408,23 @@ export interface paths {
         put?: never;
         /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken. */
         post: operations["CreateBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's report for shop-local dates from..to (at most 31): per barber and shop, moves, postponements, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147). */
+        get: operations["GetShopReport"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2812,6 +2829,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/bookings/{bookingId}/postponement/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Takes the new time the barber offered (D-147): the booking moves there. 409 booking.postponement_gone once it lapsed. */
+        post: operations["AcceptPostponement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/bookings/{bookingId}/postponement/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Declines the new time the barber offered (D-147): the booking stays and the held time is free. */
+        post: operations["DeclinePostponement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/bookings/{bookingId}/cancel": {
         parameters: {
             query?: never;
@@ -2914,6 +2965,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/bookings/attention": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever's barber they are (D-147). */
+        get: operations["GetShopAttention"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/bookings/{bookingId}": {
         parameters: {
             query?: never;
@@ -2940,7 +3008,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Records a walk-in with the same collision checks as online bookings (R-BKG-07). */
+        /** Records a walk-in or phone booking with the same collision checks as online bookings (R-BKG-07, D-147). */
         post: operations["CreateWalkIn"];
         delete?: never;
         options?: never;
@@ -2959,6 +3027,40 @@ export interface paths {
         put?: never;
         /** Moves the booking along the state machine (D-016); invalid transitions answer 409. */
         post: operations["TransitionShopBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a service at the visit, once the customer has arrived (D-147); the barber must do it and be free for the extra time (409). */
+        post: operations["AddBookingService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/services/{serviceId}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Takes a service off an open booking until «انتهت الخدمة» (D-147); at least one stays, a package's own services stay. */
+        post: operations["RemoveBookingService"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3027,6 +3129,23 @@ export interface paths {
         put?: never;
         /** Gives the booking a new time with the same barber; the customer is told. Idempotency-Key required; 409 booking.slot_unavailable when taken. */
         post: operations["ShopRescheduleBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/postpone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Offers a customer's online booking a new time with the same barber (D-147); it is held for the customer until an hour before the start. 409 booking.slot_unavailable when the time is taken. */
+        post: operations["PostponeBooking"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3937,6 +4056,13 @@ export interface components {
         };
         /** @enum {unknown} */
         ActorType: "Customer" | "ShopUser" | "PlatformAdmin" | "System";
+        /** @description A service of the shop to add to the booking at the visit (D-147), with the booking's version. */
+        AddBookingServiceRequest: {
+            /** Format: uuid */
+            serviceId: string;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description A new price version in the platform currency, effective from today or a later date. */
         AddPlanPriceRequest: {
             /** Format: double */
@@ -4461,6 +4587,11 @@ export interface components {
             itemNameAr: string;
             itemNameEn: null | string;
         };
+        /** @description The booking's version, to answer a postponement offer (D-147). */
+        AnswerPostponementRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
         ApiMetaResponse: {
             name: string;
             version: string;
@@ -4608,18 +4739,32 @@ export interface components {
             mustChangePassword: boolean;
             hasNumber: boolean;
         };
+        BarberReportResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            nameAr: string;
+            nameEn: string;
+            counts: components["schemas"]["ReportCountsResponse"];
+        };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
+        /** @description One booked service, with its own price and length when it has them, and whether the barber added it at the visit (D-147). */
         BookedPackageItemResponse: {
             /** Format: uuid */
             serviceId: string;
             nameAr: string;
             nameEn: null | string;
+            /** Format: double */
+            price?: null | number;
+            /** Format: int32 */
+            durationMinutes?: null | number;
+            /** @default false */
+            added: boolean;
         };
         /** @enum {unknown} */
-        BookingChannel: "Online" | "WalkIn";
+        BookingChannel: "Online" | "WalkIn" | "Phone";
         /** @enum {unknown} */
-        BookingEventKind: "Created" | "StatusChanged" | "Rescheduled" | "ProfessionalChanged";
+        BookingEventKind: "Created" | "StatusChanged" | "Rescheduled" | "ProfessionalChanged" | "ServiceAdded" | "ServiceRemoved" | "PostponementOffered" | "PostponementAccepted" | "PostponementDeclined";
         BookingHistoryResponse: {
             kind: components["schemas"]["BookingEventKind"];
             fromStatus: null | components["schemas"]["BookingStatus"];
@@ -4631,6 +4776,7 @@ export interface components {
             /** Format: date-time */
             occurredAt: string;
             previousProfessional?: null | components["schemas"]["BookingProfessionalResponse"];
+            actorName?: null | string;
         };
         /** @description What was booked, as it was at booking time (R-BKG-01). */
         BookingItemResponse: {
@@ -5018,6 +5164,7 @@ export interface components {
             version: number;
             /** Format: date-time */
             professionalChangedAt?: null | string;
+            postponement?: null | components["schemas"]["PostponementOfferResponse"];
         };
         /** @description The customer's full mobile in E.164, returned once to an authorized admin (never cached, never logged). */
         CustomerContactResponse: {
@@ -5303,6 +5450,14 @@ export interface components {
          * @enum {unknown}
          */
         LocationSource: "Manual" | "Geocoded" | "Device";
+        /** @description Who closed the visits that stamped loyalty circles or used rewards, by name. */
+        LoyaltyByActorResponse: {
+            name: string;
+            /** Format: int32 */
+            stamps: number;
+            /** Format: int32 */
+            redemptions: number;
+        };
         /**
          * @description A shop's loyalty terms (D-132): after `RequiredVisits` circles, the reward named by the title. The first visit
          *     fills `FirstVisitStamps` circles (1 when there is no welcome bonus, D-133), every later visit one.
@@ -5320,6 +5475,13 @@ export interface components {
             rewardTitleEn: null | string;
             /** Format: int32 */
             rewardValidityDays: null | number;
+        };
+        LoyaltyReportResponse: {
+            /** Format: int32 */
+            stamps: number;
+            /** Format: int32 */
+            redemptions: number;
+            byActor: components["schemas"]["LoyaltyByActorResponse"][];
         };
         /**
          * @description What a full card gives: a free service, or a percentage off; the title says which (e.g. «حلاقة مجانية»).
@@ -5840,6 +6002,32 @@ export interface components {
             /** Format: int32 */
             shopCount: number;
         };
+        /** @description The new time the barber offers the customer, with the booking's version (D-147). */
+        PostponeBookingRequest: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /**
+         * @description The latest postponement offer of a booking (D-147): the new time held for the customer, until when they may answer,
+         *     its state and who offered it. `Live`: still open and holding the time.
+         */
+        PostponementOfferResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            status: components["schemas"]["PostponementStatus"];
+            offeredBy: null | string;
+            live: boolean;
+        };
+        /** @enum {unknown} */
+        PostponementStatus: "Open" | "Accepted" | "Declined" | "Withdrawn";
         /** @description Text and buttons to validate and render with sample data (nothing is saved). */
         PreviewTemplateRequest: {
             body: null | string;
@@ -6277,6 +6465,11 @@ export interface components {
         };
         /** @enum {unknown} */
         ReminderStatus: "Scheduled" | "Cancelled" | "Sent" | "Skipped";
+        /** @description The booking's version, to take one of its services off (D-147). */
+        RemoveBookingServiceRequest: {
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description A button as rendered into a dispatch: its label and the URL the platform built. */
         RenderedButton: {
             label: string;
@@ -6303,6 +6496,114 @@ export interface components {
         /** @description Every non-archived item of the shop, in the new order. */
         ReorderRequest: {
             orderedIds: string[];
+        };
+        ReportCountsResponse: {
+            /**
+             * Format: int32
+             * @description Bookings that started in the period, cancellations included.
+             */
+            bookings: number;
+            /**
+             * Format: int32
+             * @description Finished («انتهت الخدمة»).
+             */
+            completed: number;
+            /**
+             * Format: int32
+             * @description «ما حضر».
+             */
+            noShows: number;
+            /**
+             * Format: int32
+             * @description Cancelled by the customer or the shop.
+             */
+            cancelled: number;
+            /**
+             * Format: int32
+             * @description Cancelled in the last quarter hour before the start, or after it.
+             */
+            lateCancellations: number;
+            /**
+             * Format: int32
+             * @description Bookings given to this barber by a colleague («نقل الحجز»).
+             */
+            movedIn: number;
+            /**
+             * Format: int32
+             * @description Bookings this barber gave to a colleague.
+             */
+            movedOut: number;
+            /**
+             * Format: int32
+             * @description Times a booking got a new time from the shop: a walk-in or phone booking changed, or an offer the customer accepted.
+             */
+            postponed: number;
+            /**
+             * Format: int32
+             * @description Closed while red («انقفل متأخر»).
+             */
+            closedLate: number;
+            /**
+             * Format: int32
+             * @description Still open a quarter hour past their end.
+             */
+            unclosed: number;
+            /**
+             * Format: int32
+             * @description The barber's own breaks on those days.
+             */
+            breaks: number;
+            /**
+             * Format: int32
+             * @description Their minutes.
+             */
+            breakMinutes: number;
+            /**
+             * Format: int32
+             * @description Average actual length («وصل» to «انتهت الخدمة») of completed visits not closed late; null without any.
+             */
+            averageMinutes: null | number;
+            /**
+             * Format: int32
+             * @description Completed visits shorter than five minutes (perhaps finished without a service).
+             */
+            shortVisits: number;
+            /**
+             * Format: double
+             * @description Expected income of completed visits.
+             */
+            expectedIncome: number;
+        };
+        /** @description One booking of the period: its outcome, its actual times and length, and what it is expected to bring in. */
+        ReportVisitResponse: {
+            /** Format: uuid */
+            id: string;
+            reference: string;
+            /** Format: uuid */
+            professionalId: string;
+            professionalNameAr: string;
+            professionalNameEn: string;
+            customerName: string;
+            itemNameAr: string;
+            itemNameEn: null | string;
+            channel: components["schemas"]["BookingChannel"];
+            status: components["schemas"]["BookingStatus"];
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            actualStartAt: null | string;
+            /** Format: date-time */
+            actualEndAt: null | string;
+            /** Format: int32 */
+            actualMinutes: null | number;
+            underFiveMinutes: boolean;
+            closedLate: boolean;
+            closedBy: null | string;
+            cancelledLate: boolean;
+            unclosed: boolean;
+            /** Format: double */
+            expectedIncome: number;
+            loyaltyReward: boolean;
         };
         RequestOtpRequest: {
             phone: string;
@@ -6486,6 +6787,16 @@ export interface components {
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
         /**
+         * @description Pending bookings (oldest start first), red bookings («متأخر»: open 15 minutes past their end) and those closed while
+         *     red («انقفل متأخر», with who closed them), all started within the last 3 days, whoever's barber they are (D-147).
+         *     Every barber of the shop sees them and may act on the open ones; the owner sees them read-only.
+         */
+        ShopAttentionResponse: {
+            pending: components["schemas"]["ShopBookingResponse"][];
+            overdue: components["schemas"]["ShopBookingResponse"][];
+            closedLate: components["schemas"]["ShopBookingResponse"][];
+        };
+        /**
          * @description A barber the owner just added, and the temporary password of the login made with them (D-146). The password is in this
          *     one answer only, for the owner to hand to the barber, who replaces it at the first sign-in.
          */
@@ -6556,10 +6867,13 @@ export interface components {
         };
         /**
          * @description A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). `AllowedTransitions` is
-         *     what the UI may offer (DV-S08); `ViaQr` marks an online booking credited to a QR scan (the design's «رمز QR» source);
-         *     `OutsideSchedule` flags an active booking that no longer fits the professional's
-         *     hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. `Visit` says whether an
-         *     online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
+         *                 what the UI may offer (DV-S08); `ViaQr` marks an online booking credited to a QR scan (the design's «رمز QR» source);
+         *                 `OutsideSchedule` flags an active booking that no longer fits the professional's
+         *                 hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. `Visit` says whether an
+         *                 online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
+         *                 D-147: ActualStartAt (when «وصل» was pressed, or a walk-in started at once) and ActualEndAt (when
+         *     «انتهت الخدمة» was pressed); Overdue (red: open 15 minutes past its end); CancelledLate («إلغاء متأخر»);
+         *     ClosedLate («انقفل متأخر») and ClosedBy (the name of who closed it).
          */
         ShopBookingResponse: {
             /** Format: uuid */
@@ -6583,6 +6897,19 @@ export interface components {
             visit: null | components["schemas"]["CustomerVisit"];
             /** Format: uint32 */
             version: number;
+            /** Format: date-time */
+            actualStartAt?: null | string;
+            /** Format: date-time */
+            actualEndAt?: null | string;
+            /** @default false */
+            overdue: boolean;
+            /** @default false */
+            cancelledLate: boolean;
+            /** @default false */
+            closedLate: boolean;
+            closedBy?: null | string;
+            customerPhone?: null | string;
+            postponement?: null | components["schemas"]["PostponementOfferResponse"];
         };
         /** @description Business days `From`…`To` (at most seven) with lanes per professional and their bookings (s-calendar). */
         ShopCalendarResponse: {
@@ -6651,10 +6978,13 @@ export interface components {
             /** Format: date-time */
             confirmedAt: string;
         };
-        /** @description The shop's own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none. */
+        /**
+         * @description The shop's own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none. A
+         *     barber reads the terms but not the figures (D-147: «ما يشوف إحصائيات»): `Stats` is null for them.
+         */
         ShopLoyaltyResponse: {
             program: null | components["schemas"]["LoyaltyProgramResponse"];
-            stats: components["schemas"]["LoyaltyStatsResponse"];
+            stats: null | components["schemas"]["LoyaltyStatsResponse"];
         };
         /** @description One switch: an audience and event, whether it is on, and the Arabic message it sends (Meta name and active text). */
         ShopMessageResponse: {
@@ -6716,7 +7046,8 @@ export interface components {
         /**
          * @description The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
          *     last seven days by starting hour (local time; cancellations left out). `Customers`, for the owner only, counts
-         *     the last 30 days' new customers and returning visits (D-135); it is null for the desk.
+         *     the last 30 days' new customers and returning visits (D-135). A barber sees what comes next only: no figures, so
+         *     `Kpis` is null and the load and hours are empty (D-147: «ما يشوف إحصائيات ولا دخل»).
          */
         ShopOverviewResponse: {
             /** Format: date */
@@ -6724,7 +7055,7 @@ export interface components {
             timeZone: string;
             /** Format: date-time */
             now: string;
-            kpis: components["schemas"]["ShopOverviewKpis"];
+            kpis: null | components["schemas"]["ShopOverviewKpis"];
             upcoming: components["schemas"]["ShopBookingResponse"][];
             professionals: components["schemas"]["ProfessionalLoadResponse"][];
             hourly: components["schemas"]["HourCountResponse"][];
@@ -6841,6 +7172,25 @@ export interface components {
             /** Format: double */
             amount: number;
             currency: string;
+        };
+        /**
+         * @description The owner's report for the shop-local dates `From`…`To` (at most 31). The counts and the income cover every
+         *     booking of the period; the `Visits` table lists the first int GetShopReportHandler.MaxVisits of them
+         *     (`VisitsTruncated` when there were more). `Loyalty` is null when the programme is off.
+         */
+        ShopReportResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            timeZone: string;
+            currency: string;
+            shop: components["schemas"]["ReportCountsResponse"];
+            barbers: components["schemas"]["BarberReportResponse"][];
+            visits: components["schemas"]["ReportVisitResponse"][];
+            loyalty: null | components["schemas"]["LoyaltyReportResponse"];
+            /** @default false */
+            visitsTruncated: boolean;
         };
         /** @description The shop gives the booking a new time with the same barber (D-145). Send the version read. */
         ShopRescheduleBookingRequest: {
@@ -7415,7 +7765,7 @@ export interface components {
         WalkInContactResponse: {
             phone: string;
         };
-        /** @description Walk-in choices for a service or package on one shop-local date (s-walkin). */
+        /** @description Walk-in and phone-booking choices for a service, several services or a package on one shop-local date (s-walkin, D-147). */
         WalkInOptionsResponse: {
             /** Format: date */
             date: string;
@@ -7443,9 +7793,11 @@ export interface components {
             starts: string[];
         };
         /**
-         * @description A walk-in (D-035): without `StartsAt` it starts now and is marked Arrived; otherwise it is Confirmed. The
-         *     customer's name and, if given, mobile number (D-134); the number is stored encrypted for the platform team and never returned
-         *     to the shop. An `Idempotency-Key` header is honoured when sent.
+         * @description A booking the shop records (D-035, D-147). `Channel``WalkIn` (the default): without `StartsAt` it
+         *     starts now and is marked Arrived; otherwise it is Confirmed. `Phone`: an appointment at `StartsAt`, Confirmed.
+         *     A service, several services (`ServiceIds`, added up with one barber) or a package; for the barber or a free
+         *     colleague. The customer's name and, if given, mobile number (D-134): stored encrypted; barbers see it on the booking
+         *     until it is closed, the owner never (D-147). An `Idempotency-Key` header is honoured when sent.
          */
         WalkInRequest: {
             /** Format: uuid */
@@ -7459,6 +7811,8 @@ export interface components {
             customerName: string;
             customerPhone: null | string;
             note: null | string;
+            serviceIds?: null | string[];
+            channel?: components["schemas"]["BookingChannel"];
         };
         /**
          * @description Delivery state of the WhatsApp number, set by the notification worker (Phase 15).
@@ -8186,6 +8540,7 @@ export interface operations {
         parameters: {
             query?: {
                 serviceId?: string;
+                serviceIds?: string[];
                 packageId?: string;
                 date?: string;
             };
@@ -8330,6 +8685,47 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopReport: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopReportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14829,6 +15225,94 @@ export interface operations {
             };
         };
     };
+    AcceptPostponement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerPostponementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeclinePostponement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerPostponementRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CancelMyBooking: {
         parameters: {
             query?: never;
@@ -15099,6 +15583,35 @@ export interface operations {
             };
         };
     };
+    GetShopAttention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopAttentionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     GetShopBooking: {
         parameters: {
             query?: never;
@@ -15204,6 +15717,113 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BookingTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddBookingService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddBookingServiceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveBookingService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveBookingServiceRequest"];
             };
         };
         responses: {
@@ -15406,6 +16026,68 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ShopRescheduleBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PostponeBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostponeBookingRequest"];
             };
         };
         responses: {

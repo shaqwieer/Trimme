@@ -96,7 +96,7 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
         return new BookableOffer(
             services[0].Id.Value, IsPackage: false, services.Sum(s => s.DurationMinutes), services.All(s => s.OnlineBookable), eligible,
             Joined(services.Select(s => s.NameAr)), nameEn, services.Sum(s => s.Price), currency,
-            [.. services.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn))]);
+            [.. services.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))]);
     }
 
     /// <summary>The services' names as one booked item name, shortened to the snapshot's length.</summary>

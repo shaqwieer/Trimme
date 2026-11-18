@@ -90,13 +90,16 @@ public sealed class NotificationsHubTests(PostgresFixture postgres)
         shopB.HasSignal.ShouldBeFalse();
         customer.HasSignal.ShouldBeFalse("the customer is not told about their own booking");
 
-        // Shop A cancels: the customer's own group is signalled; A is not told about its own action; B hears nothing.
+        // Faisal, the booking's barber, cancels it (D-147: the owner only watches): the customer's own group is signalled,
+        // and the owner hears what a barber did (D-145); Omar and shop B hear nothing.
         var id = booking.GetProperty("id").GetGuid();
-        var version = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
-        await OkAsync(w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = "إغلاق طارئ", version }, ct), ct);
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        var version = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
+        await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "CancelledByShop", reason = "إغلاق طارئ", version }, ct), ct);
         await ProcessOutboxAsync(w.Factory, ct);
         await customer.NextAsync(ct);
-        shopA.HasSignal.ShouldBeFalse();
+        await shopA.NextAsync(ct);
+        omar.HasSignal.ShouldBeFalse();
         shopB.HasSignal.ShouldBeFalse();
 
         // No group can be requested: the hub has no client-callable methods.
