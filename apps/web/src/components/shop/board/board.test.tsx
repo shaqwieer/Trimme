@@ -305,6 +305,49 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     });
   });
 
+  it('books a package together with another service, and never a service the package already holds (D-148)', async () => {
+    const user = userEvent.setup();
+    const offers: WalkInOffer[] = [
+      OFFERS[0]!,
+      {
+        kind: 'service',
+        id: 's2',
+        nameAr: 'تحديد لحية',
+        nameEn: 'Beard',
+        price: 35,
+        currency: 'SAR',
+        durationMinutes: 20,
+      },
+      { ...OFFERS[1]!, itemIds: ['s1'] },
+    ];
+    api.GET.mockResolvedValue(ok(options));
+    api.POST.mockResolvedValue(ok({ id: 'w3', reference: 'GH-4K7QM', version: 1 }, 201));
+    renderWithQuery(<WalkInFlow offers={offers} today="2026-10-08" timeZone="Asia/Riyadh" />);
+
+    // The haircut is chosen first; the package holds it, so choosing the package takes it off and says so.
+    expect(screen.getByRole('checkbox', { name: /حلاقة شعر/ })).toBeChecked();
+    await user.click(screen.getByRole('checkbox', { name: /باقة شعر ولحية/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('شلنا حلاقة شعر لأنها داخل «باقة شعر ولحية»');
+    expect(screen.getByRole('checkbox', { name: /حلاقة شعر/ })).not.toBeChecked();
+    await user.click(screen.getByRole('checkbox', { name: /حلاقة شعر/ }));
+    expect(screen.getByRole('checkbox', { name: /حلاقة شعر/ })).not.toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('«حلاقة شعر» موجودة في «باقة شعر ولحية»');
+
+    // Another service goes with the package: one booking, the lengths and prices added.
+    await user.click(screen.getByRole('checkbox', { name: /تحديد لحية/ }));
+    expect(screen.getByTestId('walk-in-total')).toHaveTextContent(/خدمتان.*١٢٠/);
+    await waitFor(() =>
+      expect(api.GET).toHaveBeenLastCalledWith('/api/v1/shop/availability/walk-in', {
+        params: { query: { serviceIds: ['s2'], packageId: 'k1', date: '2026-10-08' } },
+      }),
+    );
+    await user.click(await screen.findByRole('radio', { name: /سلطان الحربي/ }));
+    await user.type(screen.getByLabelText('اسم العميل'), 'خالد');
+    await user.click(screen.getByRole('button', { name: 'تسجيل الحجز' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalled());
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({ serviceIds: ['s2'], packageId: 'k1' });
+  });
+
   it('takes the mobile for the platform only, starts now with the free professional, and sends an idempotent walk-in', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(options));

@@ -73,7 +73,7 @@
   - D-147 and D-148 are both undeployed, with two migrations (`BarberOperations`, `CustomerPages`).
   - Back up the VPS database first. Then `git pull`, build api and web **together**, `run --rm migrate`, `up -d`.
   - Turn on «محل تجريبي» for the demo shops.
-- **Evidence:** in the plan file. .NET Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256; no pending model changes. Web: format, lint, typecheck and openapi:check clean; 535/535; 88 routes within the bundle budget. E2E on the rebuilt stack: 112 passed and 1 skipped by design; the one failure, `shop_page_sections` on its earlier spec, then passed. The route audit, keyboard pass and touch targets pass.
+- **Evidence:** in the plan file. .NET Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256; no pending model changes. Web: format, lint, typecheck and openapi:check clean; 536/536 after the review follow-up (walk-in package with services, privacy text checked against the code, «جديد» at zero); 88 routes within the bundle budget. E2E on the rebuilt stack: 112 passed and 1 skipped by design; the one failure, `shop_page_sections` on its earlier spec, then passed. The route audit, keyboard pass and touch targets pass.
 
 ## Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports; the owner's packages (D-147)
 - **The request** (from the user: four screenshots of the client's document, sections 2-1 … 2-4, with its table of who does what). Details and defaults in D-147 and `phases/after-17-d147-barber-operations.md`.

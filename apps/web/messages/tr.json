@@ -2009,7 +2009,7 @@
         },
         "data": {
           "title": "Topladıklarımız",
-          "body": "Cep telefonu numaranız ve adınız, eklerseniz e-postanız ve tercih ettiğiniz dil. Randevularınız: salon, hizmetler, uzman, saat, notunuz ve randevu durumu. Değerlendirmeleriniz, favorileriniz, sadakat kartlarınız ve ödülleri. Hesabınızı güvenle çalıştırmak için gereken teknik veriler: oturumlar, cihaz ve tarayıcı türü. Bir salon sizin için dükkânda veya telefonla randevu alırsa, adınızı ve cep numaranızı randevuyla birlikte kaydedebilir."
+          "body": "Cep telefonu numaranız ve adınız, eklerseniz e-postanız ve tercih ettiğiniz dil. Randevularınız: salon, hizmetler, uzman, saat, notunuz ve randevu durumu. Değerlendirmeleriniz, favorileriniz, sadakat kartlarınız ve ödülleri. Hesabınızı güvenle çalıştırmak için gereken teknik veriler: oturumlar, cihaz ve tarayıcı türü ile IP adresinin adresin kendisini göstermeyen şifrelenmiş bir biçimi. Bir salon sizin için dükkânda veya telefonla randevu alırsa, adınızı ve cep numaranızı randevuyla birlikte kaydedebilir."
         },
         "purposes": {
           "title": "Neden topluyoruz",
@@ -2029,7 +2029,7 @@
         },
         "location": {
           "title": "Konumunuz",
-          "body": "Seçtiğiniz konum yalnızca cihazınızda, salonları mesafeye göre sıralamak için saklanır; sunucularımızda tutulmaz."
+          "body": "Seçtiğiniz konum, yaklaşık 100 metreye yuvarlanarak cihazınızdaki bir çerezde saklanır ve salonları mesafeye göre sıralamak için gezinirken gönderilir. Hesabınızda veya kayıtlarımızda saklamayız."
         },
         "messages": {
           "title": "Mesajlar",
@@ -2037,7 +2037,7 @@
         },
         "cookies": {
           "title": "Çerezler",
-          "body": "Yalnızca Groom Here’ın kendi çerezlerini kullanırız; reklam veya üçüncü taraf çerezi yoktur: oturum ve güvenlik çerezleri, site dili ve teması, süren randevu seçimlerinizi bitirene kadar saklayan bir çerez ve bir salonun QR kodunu taradığınızda randevunuzun o koda sayılması için ziyaret numarasını 7 gün saklayan bir çerez. Kodu tarayanın IP adresini saklamayız."
+          "body": "Yalnızca Groom Here’ın kendi çerezlerini kullanırız; reklam veya üçüncü taraf çerezi yoktur: oturum ve güvenlik çerezleri, site dili ve teması, seçtiğiniz konum (yuvarlanmış), süren randevu seçimlerinizi bitirene kadar saklayan bir çerez ve bir salonun QR kodunu taradığınızda randevunuzun o koda sayılması için ziyaret numarasını 7 gün saklayan bir çerez. Kodu tarayanın IP adresini saklamayız; ziyaretleri saymak için yalnızca her gün değişen şifrelenmiş bir değerini tutarız."
         },
         "security": {
           "title": "Verilerinizin güvenliği",

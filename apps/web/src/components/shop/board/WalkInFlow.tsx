@@ -26,6 +26,8 @@ export type WalkInOffer = {
   price: number;
   currency: string;
   durationMinutes: number;
+  /** A package's services (D-148: a package goes with other services, never with one it already holds). */
+  itemIds?: string[];
 };
 
 type Kind = 'WalkIn' | 'Phone';
@@ -62,6 +64,7 @@ export function WalkInFlow({
   initialDate?: string;
 }) {
   const t = useTranslations('shopBoard.walkIn');
+  const tCatalog = useTranslations('booking.catalog');
   const tv = useTranslations('validation');
   const locale = useLocale() as AppLocale;
   const apiMessage = useApiErrorMessage();
@@ -83,18 +86,22 @@ export function WalkInFlow({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  const [offerNote, setOfferNote] = useState<string>();
   const [created, setCreated] = useState<{ id: string; reference: string; kind: Kind } | null>(null);
   const keyed = useRef<KeyedIntent | undefined>(undefined);
 
   const services = offers.filter((o) => o.kind === 'service');
   const packages = offers.filter((o) => o.kind === 'package');
-  const chosen: WalkInOffer[] = packageId
-    ? offers.filter((o) => o.kind === 'package' && o.id === packageId)
-    : serviceIds.map((id) => services.find((s) => s.id === id)).filter((s): s is WalkInOffer => Boolean(s));
+  // A package and other services together (D-148): the package first, then the services it does not hold.
+  const chosenPackage = packages.find((p) => p.id === packageId);
+  const chosen: WalkInOffer[] = [
+    ...(chosenPackage ? [chosenPackage] : []),
+    ...serviceIds.map((id) => services.find((s) => s.id === id)).filter((s): s is WalkInOffer => Boolean(s)),
+  ];
   const duration = chosen.reduce((sum, o) => sum + o.durationMinutes, 0);
   const price = chosen.reduce((sum, o) => sum + o.price, 0);
   const currency = chosen[0]?.currency ?? 'SAR';
-  const offerKey = packageId ? `package:${packageId}` : `services:${serviceIds.join(',')}`;
+  const offerKey = `package:${packageId ?? ''}|services:${serviceIds.join(',')}`;
   const day = kind === 'WalkIn' ? today : date;
 
   const options = useQuery({
@@ -105,7 +112,7 @@ export function WalkInFlow({
         await browserApi.GET('/api/v1/shop/availability/walk-in', {
           params: {
             query: {
-              serviceIds: packageId ? undefined : serviceIds,
+              serviceIds: serviceIds.length > 0 ? serviceIds : undefined,
               packageId: packageId ?? undefined,
               date: day,
             },
@@ -131,8 +138,15 @@ export function WalkInFlow({
   const resetTime = () => {
     setStart('');
   };
+  const offerName = (o: WalkInOffer) => localizedName(locale, o.nameAr, o.nameEn);
   const toggleService = (id: string) => {
-    setPackageId(null);
+    const service = services.find((s) => s.id === id);
+    if (chosenPackage?.itemIds?.includes(id) && service) {
+      // Already in the chosen package: say so rather than add it twice.
+      setOfferNote(tCatalog('inPackage', { service: offerName(service), package: offerName(chosenPackage) }));
+      return;
+    }
+    setOfferNote(undefined);
     setServiceIds((current) =>
       current.includes(id)
         ? current.filter((s) => s !== id)
@@ -142,9 +156,25 @@ export function WalkInFlow({
     );
     resetTime();
   };
-  const choosePackage = (id: string) => {
+  const togglePackage = (id: string) => {
+    if (packageId === id) {
+      setPackageId(null);
+      setOfferNote(undefined);
+      resetTime();
+      return;
+    }
+    const pkg = packages.find((p) => p.id === id);
+    const dropped = services.filter((s) => serviceIds.includes(s.id) && pkg?.itemIds?.includes(s.id));
     setPackageId(id);
-    setServiceIds([]);
+    setServiceIds((current) => current.filter((s) => !dropped.some((d) => d.id === s)));
+    setOfferNote(
+      pkg && dropped.length > 0
+        ? tCatalog('dropped', {
+            services: dropped.map(offerName).join(locale === 'ar' ? '، ' : ', '),
+            package: offerName(pkg),
+          })
+        : undefined,
+    );
     resetTime();
   };
 
@@ -154,7 +184,7 @@ export function WalkInFlow({
     setSubmitting(true);
     const body = {
       serviceId: null,
-      serviceIds: packageId ? [] : serviceIds,
+      serviceIds,
       packageId,
       professionalId: professional.id,
       startsAt: start === NOW ? null : start,
@@ -277,7 +307,7 @@ export function WalkInFlow({
                     key={o.id}
                     name="walk-in-service"
                     value={o.id}
-                    checked={!packageId && serviceIds.includes(o.id)}
+                    checked={serviceIds.includes(o.id)}
                     onChange={() => toggleService(o.id)}
                     aside={
                       <span className="font-latin text-label font-bold text-navy-900">
@@ -300,12 +330,12 @@ export function WalkInFlow({
                 <p className="pt-1 text-helper font-bold text-text-secondary">{t('packages')}</p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   {packages.map((o) => (
-                    <RadioCard
+                    <CheckboxCard
                       key={o.id}
                       name="walk-in-package"
                       value={o.id}
                       checked={packageId === o.id}
-                      onChange={() => choosePackage(o.id)}
+                      onChange={() => togglePackage(o.id)}
                       aside={
                         <span className="font-latin text-label font-bold text-navy-900">
                           {formatPrice(o.price, locale, o.currency)}
@@ -318,10 +348,15 @@ export function WalkInFlow({
                       <span className="block text-helper text-text-secondary">
                         {formatDurationMinutes(o.durationMinutes, locale)}
                       </span>
-                    </RadioCard>
+                    </CheckboxCard>
                   ))}
                 </div>
               </>
+            )}
+            {offerNote && (
+              <p role="status" className="rounded-card bg-warning-50 p-3 text-label text-warning-700">
+                {offerNote}
+              </p>
             )}
             {chosen.length > 0 && (
               <p className="text-label font-bold text-navy-900" data-testid="walk-in-total">

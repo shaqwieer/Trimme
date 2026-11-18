@@ -71,3 +71,9 @@
   - `/ar/privacy` and `/en/terms` render 12 sections each;
   - a phone-width screenshot of the shop page's catalog shows the tabs wrapping onto two lines, packages last, and «توفّر ١٠ ⃁»;
   - the computed font stack has no Arial face.
+- **Review follow-up** (advisor, after the first commit `b122179`):
+  - the barber's walk-in and phone form now books a package with other services. D-148's default had claimed it while the form kept them exclusive; it now has a `board.test.tsx` test.
+  - the privacy text was checked against the code and corrected: the location cookie, the coded IP on QR scans and sessions, and the location sent with visits;
+  - «جديد» on the shop header at zero ratings;
+  - no change needed: JSON-LD keeps raw numbers; the OG image is static; the calendar file is built by the API.
+  - Then: web unit **536/536**; format, lint, typecheck clean; build and bundle check (88 routes within budget); after a web rebuild, E2E flows `public-discovery`, `shop-dashboard`, `customer-booking`, `account-legal` **17/17**; keyboard pass and touch targets 5/5; anonymous route audit 2/2.

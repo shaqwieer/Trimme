@@ -1700,7 +1700,8 @@ This refines D-126.
     - `toggleItem` drops services that the chosen package contains, and says so;
     - a service already in the package is refused with «… موجودة في …»;
     - a package shows «توفّر ١٥» against its services' prices;
-    - the API takes `packageId` with `serviceIds` everywhere (availability, booking, reschedule, walk-in), and answers `booking.service_in_package` (400) on overlap.
+    - the API takes `packageId` with `serviceIds` everywhere (availability, booking, reschedule, walk-in), and answers `booking.service_in_package` (400) on overlap;
+    - the barber's walk-in and phone form does the same: the package is a checkbox beside the services, with the same messages (`WalkInOffer.itemIds` from the shop's packages).
   - **«كل الخدمات» (D-130) is removed.**
 - **5. Times and days (4-3, 4-5, 4-6).**
   - Slot responses carry `open` (the shop's opening windows that day). The hour picker lists every open hour in order; a taken hour is greyed, struck through and not pressable. Minutes were already greyed (D-130).
@@ -1711,7 +1712,7 @@ This refines D-126.
   - A restored draft opens at its first incomplete step. The cookie is cleared when the booking is made.
 - **7. Other items.**
   - **4-8:** the named service in «ما فيه مختص واحد يسوي «…»» (`blockingItem`).
-  - **4-9:** «جديد» below 3 ratings (`MIN_RATINGS`), on shops and barbers.
+  - **4-9:** «جديد» below 3 ratings (`MIN_RATINGS`), on shops and barbers, none included (the shop header no longer says «لا تقييمات»).
   - **4-10:** WhatsApp share link (`wa.me/?text=`).
   - **4-11:** `shops/[slug]/not-found.tsx` («المحل غير متاح حالياً», a link to nearby shops).
   - **4-12:** `PUT /admin/shops/{id}/demo` (`Admin.Shops.Edit`, audited `shop.demo_changed`), `isDemo` on public shapes, and a «تجريبي» mark on cards, the shop page and the admin page.
@@ -1724,6 +1725,12 @@ This refines D-126.
     - who sees what: shops never see an online customer's number, and barbers see a walk-in or phone number until the visit ends;
     - processing outside the Kingdom (Meta);
     - retention, security, cookies (including the draft and QR cookies), rights, account deletion and contact.
+  - Checked against the code:
+    - the cookies listed are the ones that exist, the location cookie included;
+    - QR scans keep a keyed hash of the day and the IP, never the IP itself;
+    - sessions keep a hashed IP;
+    - admin phone reveals are audited;
+    - request logs record the path without the query, so search coordinates are not logged.
   - **Not legal advice: a Saudi lawyer must review them before launch** (PDPL).
 - **9. Cancelling until the start (4-17).**
   - `PlatformSettings.CancellationCutoffMinutes` defaults to 0.

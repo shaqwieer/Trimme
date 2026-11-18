@@ -2009,7 +2009,7 @@
         },
         "data": {
           "title": "What we collect",
-          "body": "Your mobile number and name, your email if you add one, and your preferred language. Your bookings: the salon, services, specialist, time, your note and the booking’s status. Your reviews, favourites, loyalty cards and rewards. Technical data needed to run your account safely, such as sign-in sessions and the device and browser type. If a salon books for you in person or by phone, it may record your name and mobile number with the booking."
+          "body": "Your mobile number and name, your email if you add one, and your preferred language. Your bookings: the salon, services, specialist, time, your note and the booking’s status. Your reviews, favourites, loyalty cards and rewards. Technical data needed to run your account safely, such as sign-in sessions, the device and browser type, and a coded form of the IP address that does not reveal the address itself. If a salon books for you in person or by phone, it may record your name and mobile number with the booking."
         },
         "purposes": {
           "title": "Why we collect it",
@@ -2029,7 +2029,7 @@
         },
         "location": {
           "title": "Your location",
-          "body": "The location you choose is stored on your device only, to sort salons by distance; we do not store it on our servers."
+          "body": "The location you choose is kept in a cookie on your device, rounded to about 100 metres, and sent as you browse to sort salons by distance. We do not save it in your account or in our records."
         },
         "messages": {
           "title": "Messages",
@@ -2037,7 +2037,7 @@
         },
         "cookies": {
           "title": "Cookies",
-          "body": "We use only Groom Here’s own cookies, no advertising or third-party cookies: sign-in session and security cookies, the site language and theme, one that keeps your current booking choices until you finish, and, when you scan a salon’s QR code, one that keeps that visit’s number for 7 days so your booking is credited to the code. We do not store the IP address of whoever scans a code."
+          "body": "We use only Groom Here’s own cookies, no advertising or third-party cookies: sign-in session and security cookies, the site language and theme, the location you chose (rounded), one that keeps your current booking choices until you finish, and, when you scan a salon’s QR code, one that keeps that visit’s number for 7 days so your booking is credited to the code. We do not store the IP address of whoever scans a code, only a coded value of it that changes every day, to count visits."
         },
         "security": {
           "title": "Keeping your data safe",

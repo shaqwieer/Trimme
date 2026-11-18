@@ -296,12 +296,8 @@ ${url}`)}`}
               </span>
             </div>
             <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">
-              {shop.rating.count > 0 ? (
-                // Under three ratings this says «جديد» (D-148).
-                <RatingStars value={shop.rating.average} count={shop.rating.count} />
-              ) : (
-                <span>{t('noReviews')}</span>
-              )}
+              {/* «جديد» until three ratings, none included (D-148, «٤-٩»). */}
+              <RatingStars value={shop.rating.average} count={shop.rating.count} />
               {shop.location && (
                 <ShopDistance latitude={shop.location.latitude} longitude={shop.location.longitude} />
               )}

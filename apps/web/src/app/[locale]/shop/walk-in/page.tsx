@@ -55,6 +55,7 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
               price: p.price,
               currency: p.currency,
               durationMinutes: p.durationMinutes,
+              itemIds: p.items.map((item) => item.serviceId),
             })),
         ];
         const today = todayLocal(shop.timeZone);
