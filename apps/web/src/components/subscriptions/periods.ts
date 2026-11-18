@@ -30,6 +30,6 @@ export function priceOn(prices: readonly PlanPrice[], date: LocalDate): PlanPric
     .sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1))[0];
 }
 
-/** "٣٠ سبتمبر ٢٠٢٧" (ar) · "30 September 2027" (en). */
+/** "٣٠ سبتمبر ٢٠٢٧" (ar) — "30 September 2027" (en). */
 export const longDate = (value: LocalDate, locale: AppLocale) =>
   formatLocalDate(value, locale, { day: 'numeric', month: 'long', year: 'numeric' });

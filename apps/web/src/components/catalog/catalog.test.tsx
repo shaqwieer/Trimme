@@ -75,10 +75,10 @@ describe('ServiceForm', () => {
   it('validates the price in the active language before calling the API', async () => {
     renderWithIntl(<ServiceForm categories={[]} onSubmitValues={async () => {}} />);
     await userEvent.type(screen.getByLabelText('اسم الخدمة بالعربية'), 'حلاقة');
-    await userEvent.type(screen.getByLabelText('السعر (ر.س)'), '10.005');
+    await userEvent.type(screen.getByLabelText('السعر (⃁)'), '10.005');
     await userEvent.click(screen.getByRole('button', { name: 'إنشاء الخدمة' }));
     expect(
-      await screen.findByText('أدخل سعراً من 0 إلى 100000 بمنزلتين عشريتين على الأكثر'),
+      await screen.findByText('أدخل سعراً من ٠ إلى ١٠٠٬٠٠٠ بمنزلتين عشريتين على الأكثر'),
     ).toBeInTheDocument();
     expect(api.POST).not.toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe('AdminServiceEditor (D-127)', () => {
     await expectNoAxeViolations(container);
 
     await userEvent.type(screen.getByLabelText('اسم الخدمة بالعربية'), 'صبغة');
-    await userEvent.type(screen.getByLabelText('السعر (ر.س)'), '90');
+    await userEvent.type(screen.getByLabelText('السعر (⃁)'), '90');
     await userEvent.click(screen.getByRole('button', { name: 'إضافة الخدمة' }));
     await waitFor(() => expect(api.POST).toHaveBeenCalled());
     const [path, init] = api.POST.mock.calls[0]!;
@@ -182,7 +182,7 @@ describe('the owner’s services (D-137)', () => {
     expect(screen.getByRole('checkbox', { name: 'فيصل' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'عمر' })).toBeChecked();
     await userEvent.type(screen.getByLabelText('اسم الخدمة بالعربية'), 'حلاقة أطفال');
-    await userEvent.type(screen.getByLabelText('السعر (ر.س)'), '٤٠');
+    await userEvent.type(screen.getByLabelText('السعر (⃁)'), '٤٠');
     await userEvent.click(screen.getByRole('checkbox', { name: 'عمر' }));
     await expectNoAxeViolations();
     await userEvent.click(screen.getByRole('button', { name: 'إنشاء الخدمة' }));
@@ -234,7 +234,7 @@ describe('the owner’s services (D-137)', () => {
         body: { orderedIds: ['b', 'a'] },
       }),
     );
-    expect(await screen.findByText('أصبحت لحية في الموضع 1')).toBeInTheDocument();
+    expect(await screen.findByText('أصبحت لحية في الموضع ١')).toBeInTheDocument();
     const rows = screen.getAllByTestId(/catalog-row-/);
     expect(rows.map((row) => row.dataset.testid)).toEqual(['catalog-row-b', 'catalog-row-a']);
   });

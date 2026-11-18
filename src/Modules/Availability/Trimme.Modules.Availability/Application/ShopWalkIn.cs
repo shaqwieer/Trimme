@@ -51,6 +51,12 @@ internal sealed class GetWalkInOptionsHandler(
             return ScheduleErrors.ShopNotFound();
         }
 
+        if (BookableOfferRequest.Services(query.ServiceId, query.ServiceIds, query.PackageId) is { } chosen
+            && await catalog.OverlapsPackageAsync(shopId, chosen, query.PackageId, cancellationToken))
+        {
+            return BookableOfferRequest.ServiceInPackage();
+        }
+
         if (BookableOfferRequest.Services(query.ServiceId, query.ServiceIds, query.PackageId) is not { } services
             || await catalog.FindAsync(shopId, services, query.PackageId, cancellationToken) is not { } offer)
         {

@@ -40,7 +40,8 @@ internal sealed record ChangeBookingProfessionalCommand(Guid BookingId, Guid Pro
     : ICommand<Result<ShopBookingChangeResult>>;
 
 /// <summary>The free starts for the booking's barber and duration (its own time does not block it), on the desk's rules.</summary>
-internal sealed class ShopRescheduleAvailability(TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IShopDirectory shops, ISlotProbe probe, TimeProvider clock)
+internal sealed class ShopRescheduleAvailability(
+    TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IShopDirectory shops, ISlotProbe probe, IShopDayPlanReader plans, TimeProvider clock)
 {
     private const int MaxSlots = 10_000;
 
@@ -68,7 +69,7 @@ internal sealed class ShopRescheduleAvailability(TrimmeDbContext db, ICurrentUse
 
         var slots = await probe.ProbeAsync(
             shop.Id, shop.TimeZone, booking.DurationMinutes, [booking.ProfessionalId], start, end, MaxSlots, cancellationToken, ignoreBookingId: booking.Id.Value);
-        return new RescheduleRun(true, null, shop.TimeZone, start, end, slots);
+        return new RescheduleRun(true, null, shop.TimeZone, start, end, slots, await plans.GetAsync(shop.Id, shop.TimeZone, [], start, end, cancellationToken));
     }
 }
 
@@ -88,7 +89,7 @@ internal sealed class GetShopRescheduleDatesHandler(ShopRescheduleAvailability a
             true, null, result.TimeZone,
             [.. Enumerable.Range(0, result.To.DayNumber - result.From.DayNumber + 1)
                 .Select(result.From.AddDays)
-                .Select(d => new RescheduleDateResponse(d, counts.GetValueOrDefault(d)))]);
+                .Select(d => new RescheduleDateResponse(d, counts.GetValueOrDefault(d), result.ClosedOn(d)))]);
     }
 }
 
@@ -105,7 +106,7 @@ internal sealed class GetShopRescheduleSlotsHandler(ShopRescheduleAvailability a
         var result = run.Value;
         return new RescheduleSlotsResponse(
             true, null, result.TimeZone, query.Date,
-            [.. result.Slots.Select(s => new RescheduleSlotResponse(s.StartsAt, s.LocalTime, s.Period))]);
+            [.. result.Slots.Select(s => new RescheduleSlotResponse(s.StartsAt, s.LocalTime, s.Period))], result.OpenOn(query.Date));
     }
 }
 

@@ -171,7 +171,8 @@ export default async function LandingPage({ params }: PageProps<'/[locale]'>) {
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="text-eyebrow font-bold tracking-[0.14em] text-brand-700 uppercase">
-              {t('topRated.eyebrow')}
+              {/* «رائج بالقرب منك» only when the visitor gave a location (D-148, «٤-١٥»). */}
+              {location ? t('topRated.eyebrow') : t('topRated.eyebrowCity')}
             </span>
             <h2
               id="top-heading"

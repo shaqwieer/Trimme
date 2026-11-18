@@ -119,7 +119,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
       ? tb('today')
       : formatLocalDate(day, locale, { weekday: 'long', day: 'numeric', month: 'long' });
   const when = (instant: string) =>
-    `${formatDate(instant, locale, { timeZone })} · ${formatTime(instant, locale, timeZone)}`;
+    `${formatDate(instant, locale, { timeZone })} — ${formatTime(instant, locale, timeZone)}`;
 
   const pick = (day: string, instant: string | undefined) => {
     setDate(day);
@@ -192,7 +192,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
               {step === 'date' ? t('title') : t('reviewTitle')}
             </h1>
             <p className="truncate text-helper text-text-secondary">
-              {[booking.shopName, booking.area].filter(Boolean).join(' · ')}
+              {[booking.shopName, booking.area].filter(Boolean).join(' — ')}
             </p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
                     <div className="min-w-0 flex-1">
                       <p className="text-helper font-bold text-brand-700">{tb('nearest.title')}</p>
                       <p className="text-[0.9375rem] font-bold text-text-primary">
-                        {dayLabel(nearestDate)} · {formatTime(nearestSlot.startsAt, locale, timeZone)}
+                        {dayLabel(nearestDate)} — {formatTime(nearestSlot.startsAt, locale, timeZone)}
                       </p>
                     </div>
                     <Button
@@ -251,7 +251,11 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
                 <DateStrip
                   name="reschedule-date"
                   today={today}
-                  days={dates.data.dates.map((d) => ({ date: d.date, available: d.slotCount > 0 }))}
+                  days={dates.data.dates.map((d) => ({
+                    date: d.date,
+                    available: d.slotCount > 0,
+                    closed: d.closed,
+                  }))}
                   value={dateOk ? date : undefined}
                   onValueChange={(next) => {
                     scrollToTimes.current = true;
@@ -284,6 +288,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
                         name="reschedule-time"
                         timeZone={timeZone}
                         slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
+                        open={slots.data.open}
                         value={start}
                         onValueChange={(instant) => {
                           setStart(instant);
@@ -316,7 +321,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
                 label={t('summary.to')}
                 value={
                   <span>
-                    {date ? dayLabel(date) : formatDate(start, locale, { timeZone })} ·{' '}
+                    {date ? dayLabel(date) : formatDate(start, locale, { timeZone })} —{' '}
                     {formatTime(start, locale, timeZone)} —{' '}
                     {formatTime(endOf(start, booking.durationMinutes), locale, timeZone)}
                   </span>

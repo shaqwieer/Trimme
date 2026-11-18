@@ -987,10 +987,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.Property<string>("Reference")
                         .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character(8)")
-                        .HasColumnName("reference")
-                        .IsFixedLength();
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("reference");
 
                     b.Property<Guid?>("ServiceId")
                         .HasColumnType("uuid")
@@ -3354,6 +3353,10 @@ namespace Trimme.Migrations.Migrations
                         .IsRequired()
                         .HasColumnType("uuid[]")
                         .HasColumnName("gallery_media_ids");
+
+                    b.Property<bool>("IsDemo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_demo");
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("boolean")

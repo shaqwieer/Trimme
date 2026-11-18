@@ -87,7 +87,7 @@ function AffectedList({ bookings }: { bookings: Affected[] }) {
       <ul className="mt-2 flex flex-col gap-1" data-testid="affected-bookings">
         {bookings.map((b) => (
           <li key={b.bookingId}>
-            <bdi>{b.customerName}</bdi> · {localizedName(locale, b.itemNameAr, b.itemNameEn)} ·{' '}
+            <bdi>{b.customerName}</bdi> — {localizedName(locale, b.itemNameAr, b.itemNameEn)} —{' '}
             <bdi>{formatTime(b.startsAt, locale)}</bdi>
           </li>
         ))}
@@ -195,7 +195,7 @@ export function BreaksCard({
               title={nameOf(b.professionalId)}
               when={
                 <>
-                  {days(b)} ·{' '}
+                  {days(b)} —{' '}
                   <span>
                     {formatMinutes(b.startMinute, locale)} – {formatMinutes(b.endMinute, locale)}
                   </span>
@@ -470,11 +470,11 @@ export function TimeOffCard({
               badge={state(entry.state)}
               when={
                 <>
-                  {t(`timeOff.kind.${entry.kind}`)} · {dateRange(entry.startDate, entry.endDate, locale)}
+                  {t(`timeOff.kind.${entry.kind}`)} — {dateRange(entry.startDate, entry.endDate, locale)}
                   {!entry.allDay && entry.startMinute !== null && entry.endMinute !== null && (
                     <span>
                       {' '}
-                      · {formatMinutes(entry.startMinute, locale)} – {formatMinutes(entry.endMinute, locale)}
+                      — {formatMinutes(entry.startMinute, locale)} – {formatMinutes(entry.endMinute, locale)}
                     </span>
                   )}
                 </>
@@ -534,7 +534,7 @@ export function TimeOffCard({
                   {entry.reason && (
                     <>
                       {' '}
-                      · <bdi>{entry.reason}</bdi>
+                      — <bdi>{entry.reason}</bdi>
                     </>
                   )}
                 </>

@@ -80,10 +80,10 @@ describe('booking controls', () => {
 
   it('Stepper marks the current step', () => {
     renderWithIntl(<Stepper steps={['الخدمة', 'الحلاق', 'التاريخ', 'الوقت', 'المراجعة']} current={2} />);
-    expect(screen.getByText('الخطوة 3 من 5')).toBeInTheDocument();
+    expect(screen.getByText('الخطوة ٣ من ٥')).toBeInTheDocument();
     expect(screen.getByText('التاريخ').closest('li')).toHaveAttribute('aria-current', 'step');
     // Step 3 of 5 fills three fifths (step 1 used to show an empty bar, Phase 17 visual review).
-    const fill = screen.getByText('الخطوة 3 من 5').nextElementSibling?.firstElementChild as HTMLElement;
+    const fill = screen.getByText('الخطوة ٣ من ٥').nextElementSibling?.firstElementChild as HTMLElement;
     expect(fill.style.width).toBe('60%');
   });
 
@@ -143,12 +143,12 @@ describe('Radix primitives follow the reading direction (D-048)', () => {
         value={[25, 90]}
         onValueChange={() => {}}
         thumbLabels={['أقل سعر', 'أعلى سعر']}
-        format={(v) => `${v} ر.س`}
+        format={(v) => `${v} \u20C1`}
       />,
     );
     const [low, high] = screen.getAllByRole('slider');
     expect(low).toHaveAccessibleName('أقل سعر');
-    expect(high).toHaveAttribute('aria-valuetext', '90 ر.س');
+    expect(high).toHaveAttribute('aria-valuetext', '90 \u20C1');
   });
 });
 

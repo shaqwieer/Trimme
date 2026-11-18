@@ -103,9 +103,7 @@ export default async function FavoritesPage({ params }: PageProps<'/[locale]/acc
                           {name}
                         </Link>
                         <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">
-                          {shop.reviewCount > 0 && (
-                            <RatingStars value={shop.rating} count={shop.reviewCount} />
-                          )}
+                          <RatingStars value={shop.rating} count={shop.reviewCount} />
                           {shop.district && <span>{shop.district}</span>}
                         </p>
                         <p className="flex flex-wrap items-center gap-2">
@@ -152,7 +150,7 @@ export default async function FavoritesPage({ params }: PageProps<'/[locale]/acc
                         </Link>
                         <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">
                           <span>{localizedName(locale, pro.shopNameAr, pro.shopNameEn)}</span>
-                          {pro.reviewCount > 0 && <RatingStars value={pro.rating} count={pro.reviewCount} />}
+                          <RatingStars value={pro.rating} count={pro.reviewCount} />
                         </p>
                       </div>
                       <ButtonLink

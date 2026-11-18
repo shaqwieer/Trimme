@@ -160,6 +160,7 @@ These colours were measured in the WCAG check. The design's identity colours are
 This follows the design's numeral rule (design/analysis/01 §1.5):
 - **Arabic-Indic digits** for clock times and date text, on a 12-hour clock, for example `٥:٣٠ م` and `الجمعة، ١٨ سبتمبر`.
 - **Latin digits** for measurable quantities: price (`85 ر.س`), distance (`2.4 كم`), rating, counts, calendar day numbers and phone numbers.
+- *Superseded by D-148 (Session 28):* Arabic now uses Arabic-Indic digits for every quantity and the Riyal sign (U+20C1); phone numbers, references and codes stay Latin.
 - English uses Latin digits everywhere.
 - Service durations follow the clock rule (`٣٠ دقيقة`).
 - The **Gregorian calendar is always forced** (`-u-ca-gregory`), because plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar.
@@ -1657,3 +1658,81 @@ This refines D-126.
 - **Migration** `BarberOperations` (additive): `booking_history.actor_name`, `bookings.postponement_offers`, the hold functions and triggers.
 - **To tell the client:** a shop whose barbers have no login can now do nothing with its bookings (turn each login on from «الحلاقون»); barbers see walk-in and phone customers' numbers until the visit is closed; the offer message is in-app only until a WhatsApp template is approved; red = 15 minutes after the booked end (a constant, easy to change); log lines from before this change carry no names.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d147-barber-operations.md`. .NET Release build 0 warnings; unit 478/478; architecture 69/69; integration 250/250. Web: format, lint, typecheck, openapi:check clean; 534/534; 88 routes within the bundle budget. E2E on the rebuilt stack: 109 passed, 1 skipped by design; route audit and keyboard pass light and dark 25/25 after the reports fix. Committed locally; not pushed or deployed.
+
+## D-148 — The customer's pages: category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts — Accepted (Session 28, after Phase 17, at the user's request)
+- **The request** (from the user: five screenshots of the client's document, sections 3 and 4). Section 3 (the customer's number) was already D-147's rule and needed nothing. Section 4 has seventeen items, listed in the plan file.
+- **The user's answers** (AskUserQuestion):
+  - the Riyal sign comes from a small bundled font, not an image;
+  - the reference is «GH-» plus 5 characters;
+  - demo data gets a «تجريبي» switch per shop, and nothing is deleted;
+  - a past appointment nobody closed reads «بانتظار تأكيد المحل».
+- **Defaults recorded, not asked:**
+  - the cancellation window becomes 0 by default, with a data migration;
+  - «جديد» applies to shops as well as barbers;
+  - the booking draft lives in a first-party cookie;
+  - a package with services works for walk-ins too;
+  - Turkish keeps Latin digits.
+- **1. Numerals (supersedes D-040's quantity rule).**
+  - **Arabic UI:** Arabic-Indic digits for every quantity: prices, durations, distances, ratings, counts, day numbers and percentages.
+    - `formatNumber`, `formatPrice`, `formatDistanceKm`, `formatRating` and `formatDayNumber` use `ar-SA-u-nu-arab`.
+  - **Messages:** in `ar`, ICU prints a bare `{count}` and a plural's `#` in Latin digits.
+    - ar.json now writes numeric arguments as `{count, number, arab}` (`arabPlain` for the year and pixel sizes).
+    - Every plural was rewritten by a script working from the parser's offsets.
+    - The simple arguments were converted only where every call site passes a number. Pre-formatted strings (prices, times, the `…Text` arguments) keep `{x}`, because `number` on a string prints NaN.
+    - The formats (`src/i18n/formats.ts`) are registered in the request config, inherited by the client provider, and passed to the test helper.
+    - Two call sites passed a formatted string into a plural variable (the rating count and the rating distribution); that broke Arabic plural choice. They now pass the number.
+    - Literal Latin digits in Arabic copy were rewritten («من ٥», «١٠ أحرف», «٥ ميغابايت»).
+  - **Stay Latin:** phone numbers and the «5X…» placeholder, «+966», references, codes, slugs, coordinates, «A5», and every English and Turkish text.
+- **2. The Riyal sign.**
+  - Arabic prices read «٨٥ ⃁» (U+20C1); English «SAR 85»; Turkish «85 SAR».
+  - `apps/web/src/app/fonts/saudi-riyal.woff2`: 508 bytes, one glyph, built with fontTools from the public-domain SVG on Wikimedia Commons. That SVG is SAMA's published symbol; SHA-1 recorded in the plan.
+  - Loaded with `next/font/local`: `unicode-range: U+20C1`, `display: block`, no preload. It is first in `--font-arabic`, `--font-latin` and `--font-sans`, so it draws only that character.
+  - `adjustFontFallback: false`, `fallback: []`. next/font's generated "riyal Fallback" face is local Arial with no `unicode-range`. Sitting first in every stack, it drew all the text in Arial. The E2E touch-target audit caught it, because links and tabs came out narrower.
+  - `--font-latin` now includes Tajawal for Arabic-Indic digits.
+- **3. Separators.** «·» beside numbers became «—» in the code and the Arabic copy (117 places).
+- **4. Catalog (4-1, 4-2).**
+  - `lib/booking/catalog.ts` groups items: the platform's categories in order, then «أخرى», then packages.
+  - **Booking service step:** `ServiceCatalog` with the client `CatalogTabs`, and choosable tiles two to a row. A tab's count circle is hidden from screen readers; its meaning is in visually hidden text, and it never shows «٠».
+  - **Shop page:** `ShopServiceCatalog` is drawn on the server with CSS-only tabs: native radios inside the pills, a fieldset named «الخدمات», and `label:has(:checked) + panel` shows the tiles. The pills are 44 px tall.
+    - This keeps the public page within its bundle budget: the client tabs cost 0.5 KB and took it to 220.2 KB against 220.
+    - It also keeps every service in the HTML for search engines.
+  - **A package with services:**
+    - `toggleItem` drops services that the chosen package contains, and says so;
+    - a service already in the package is refused with «… موجودة في …»;
+    - a package shows «توفّر ١٥» against its services' prices;
+    - the API takes `packageId` with `serviceIds` everywhere (availability, booking, reschedule, walk-in), and answers `booking.service_in_package` (400) on overlap.
+  - **«كل الخدمات» (D-130) is removed.**
+- **5. Times and days (4-3, 4-5, 4-6).**
+  - Slot responses carry `open` (the shop's opening windows that day). The hour picker lists every open hour in order; a taken hour is greyed, struck through and not pressable. Minutes were already greyed (D-130).
+  - Date responses carry `closed`: an unavailable day reads «مغلق» or «مكتمل».
+  - A closing time of 24:00 reads «منتصف الليل»; past midnight it reads «٢ فجر الجمعة».
+- **6. The draft (4-7).**
+  - The cookie `gh-booking-draft` holds `slug|query` (ids and the chosen time only) for 7 days. It is not HttpOnly because the wizard reads it; it holds no token or personal data.
+  - A restored draft opens at its first incomplete step. The cookie is cleared when the booking is made.
+- **7. Other items.**
+  - **4-8:** the named service in «ما فيه مختص واحد يسوي «…»» (`blockingItem`).
+  - **4-9:** «جديد» below 3 ratings (`MIN_RATINGS`), on shops and barbers.
+  - **4-10:** WhatsApp share link (`wa.me/?text=`).
+  - **4-11:** `shops/[slug]/not-found.tsx` («المحل غير متاح حالياً», a link to nearby shops).
+  - **4-12:** `PUT /admin/shops/{id}/demo` (`Admin.Shops.Edit`, audited `shop.demo_changed`), `isDemo` on public shapes, and a «تجريبي» mark on cards, the shop page and the admin page.
+  - **4-13:** new references `GH-` + 5 characters from the unambiguous alphabet. The column is `varchar(12)` and old ones still work. A taken reference is drawn again (the unique index is the check; a savepoint keeps the transaction).
+  - **4-14:** an active booking past its end reads «بانتظار تأكيد المحل» to the customer.
+  - **4-15:** «رائج في الرياض» without a location.
+- **8. Legal texts (4-16).**
+  - Built-in terms have 12 sections; privacy has 12, in ar, en and tr. They cover:
+    - what is collected and why, and the legal bases;
+    - who sees what: shops never see an online customer's number, and barbers see a walk-in or phone number until the visit ends;
+    - processing outside the Kingdom (Meta);
+    - retention, security, cookies (including the draft and QR cookies), rights, account deletion and contact.
+  - **Not legal advice: a Saudi lawyer must review them before launch** (PDPL).
+- **9. Cancelling until the start (4-17).**
+  - `PlatformSettings.CancellationCutoffMinutes` defaults to 0.
+  - Migration `CustomerPages` sets the existing row to 0. **This changes groomhere.sa at its next deploy.**
+  - The admin can still set a window.
+  - Texts with 0 read «حتى يبدأ الموعد»; after the start, «بدأ الموعد».
+- **D-147 adjusted:** a service on a package booking is removable when it has its own price (it was added at the visit or booked with the package). The package's own services still answer `booking.service_fixed`.
+- **Migration** `CustomerPages`:
+  - `shops.is_demo`;
+  - `bookings.reference` widened to `varchar(12)`;
+  - the cutoff set to 0.
+- **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d148-customer-pages.md`. .NET: Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256. Web: 535/535; 88 routes within budget. E2E: everything passes but the one test skipped by design.

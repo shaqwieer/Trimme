@@ -6,7 +6,9 @@ import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
 import { LoyaltyProgramForm } from '@/components/admin/LoyaltyProgramForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
+import { DemoShopSwitch } from '@/components/admin/DemoShopSwitch';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
+import { DemoMark } from '@/components/ui/cards';
 import { ShopWhatsAppMessagesForm } from '@/components/admin/ShopWhatsAppMessagesForm';
 import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
@@ -329,7 +331,13 @@ export default async function AdminShopPage({
                     {t('verifiedBadge')}
                   </Badge>
                 )}
+                {shop.isDemo && <DemoMark />}
               </div>
+              <DemoShopSwitch
+                shopId={shop.id}
+                isDemo={shop.isDemo}
+                canEdit={me.permissions.includes('Admin.Shops.Edit')}
+              />
               <dl className="grid gap-3 text-caption sm:grid-cols-4">
                 <div>
                   <dt className="text-helper text-text-tertiary">{t('columns.slug')}</dt>

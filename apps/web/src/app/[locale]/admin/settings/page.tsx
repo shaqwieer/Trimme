@@ -86,7 +86,7 @@ export default async function PlatformSettingsPage({ params }: PageProps<'/[loca
                           .join(lang === 'ar' ? '، ' : ', ') || t('recent.changed'),
                       meta: (
                         <>
-                          <bdi>{entry.actorName ?? '—'}</bdi> ·{' '}
+                          <bdi>{entry.actorName ?? '—'}</bdi> —{' '}
                           {formatDate(entry.occurredAt, lang, { withWeekday: false })}{' '}
                           {formatTime(entry.occurredAt, lang)}
                         </>

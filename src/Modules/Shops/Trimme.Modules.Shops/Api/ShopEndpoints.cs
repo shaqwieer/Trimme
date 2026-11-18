@@ -59,6 +59,9 @@ public sealed record ShopLocationRequest(
 
 public sealed record EditablePolicyRequest(IReadOnlyList<ShopProfileField> EditableFields);
 
+/// <summary>Whether the shop is a demo (D-148): its card and page say «تجريبي».</summary>
+public sealed record ShopDemoRequest(bool IsDemo);
+
 /// <summary>Pausing online booking; the optional reason is the shop's own note (≤ 300 characters).</summary>
 public sealed record PauseOnlineBookingRequest(string? Reason);
 
@@ -138,6 +141,10 @@ internal static class ShopEndpoints
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         admin.MapPut("/{shopId:guid}/location", SetLocation).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopLocation").WithSummary("Sets the confirmed map point and address (audited).")
+            .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapPut("/{shopId:guid}/demo", (Guid shopId, ShopDemoRequest request, IDispatcher dispatcher, CancellationToken ct) =>
+                SendAdmin(new SetShopDemoCommand(shopId, request.IsDemo), dispatcher, ct)).RequirePermission(ShopsEdit)
+            .WithName("AdminSetShopDemo").WithSummary("Marks the shop as a demo, so its card and page say «تجريبي» (D-148; audited).")
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         admin.MapPut("/{shopId:guid}/editable-policy", SetPolicy).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopEditablePolicy").WithSummary("Sets which profile fields the shop may edit itself (audited).")

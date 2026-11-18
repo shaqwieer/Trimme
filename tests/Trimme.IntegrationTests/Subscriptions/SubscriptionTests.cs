@@ -515,7 +515,7 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         defaults.GetProperty("minLeadTimeMinutes").GetInt32().ShouldBe(60);
         defaults.GetProperty("bookingHorizonDays").GetInt32().ShouldBe(30);
         defaults.GetProperty("slotStepMinutes").GetInt32().ShouldBe(5);
-        defaults.GetProperty("cancellationCutoffMinutes").GetInt32().ShouldBe(120);
+        defaults.GetProperty("cancellationCutoffMinutes").GetInt32().ShouldBe(0); // until the start (D-148; it was 120, D-015)
         defaults.GetProperty("reviewWindowDays").GetInt32().ShouldBe(7);
         defaults.GetProperty("reminderOffsetMinutes").GetInt32().ShouldBe(30);
         defaults.GetProperty("expiringSoonThresholdDays").GetInt32().ShouldBe(14);

@@ -208,7 +208,7 @@ export function PackageForm({
                 <Checkbox
                   key={service.id}
                   label={localizedName(locale, service.nameAr, service.nameEn)}
-                  description={`${formatPrice(service.price, lang, service.currency)} · ${formatDurationMinutes(service.durationMinutes, lang)}`}
+                  description={`${formatPrice(service.price, lang, service.currency)} — ${formatDurationMinutes(service.durationMinutes, lang)}`}
                   checked={field.value.includes(service.id)}
                   onChange={(event) =>
                     field.onChange(

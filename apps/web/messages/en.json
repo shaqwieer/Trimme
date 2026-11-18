@@ -117,7 +117,8 @@
       "value": "Rated {value} out of 5",
       "count": "({count, plural, one {{count} review} other {{count} reviews}})",
       "input": "Choose your rating",
-      "stars": "{value} out of 5"
+      "stars": "{value} out of 5",
+      "new": "New"
     },
     "upload": {
       "prompt": "Drag the cover image here or choose a file",
@@ -149,7 +150,8 @@
     "dateStrip": {
       "label": "Choose a day",
       "today": "Today",
-      "closed": "Closed"
+      "closed": "Closed",
+      "full": "Full"
     },
     "stepper": {
       "label": "Booking steps",
@@ -168,7 +170,8 @@
       "verified": "Verified salon",
       "addFavorite": "Add to favorites",
       "removeFavorite": "Remove from favorites",
-      "from": "From {price}"
+      "from": "From {price}",
+      "demo": "Demo"
     },
     "professional": {
       "unavailable": "On leave"
@@ -570,7 +573,8 @@
     "booking_postpone_too_late": "Less than an hour to go: move the booking to a colleague or cancel it.",
     "booking_postponement_gone": "The postponement offer is no longer open.",
     "booking_postpone_same_time": "That is the booking’s own time.",
-    "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only."
+    "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only.",
+    "booking_service_in_package": "This service is already in the chosen package."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -693,6 +697,10 @@
       "cancelHint": "Sent only if the barber got the new-booking or rescheduled message.",
       "save": "Save messages",
       "saved": "This salon’s WhatsApp messages are saved."
+    },
+    "demo": {
+      "label": "Demo shop",
+      "hint": "Customers see “Demo” on the shop’s card and page, so its data never passes for real. Turn it off or archive the shop at launch."
     }
   },
   "shopCategory": {
@@ -1637,7 +1645,9 @@
     "closed": "Closed",
     "open": "Open",
     "openNow": "Open now",
-    "closesAt": "Closes {time}"
+    "closesAt": "Closes {time}",
+    "midnight": "midnight",
+    "afterMidnight": "{time} on {day}"
   },
   "landing": {
     "meta": {
@@ -1668,7 +1678,8 @@
       "titleCity": "Top-rated salons in {city}",
       "body": "Compare ratings, services and prices, then choose the appointment that fits your day.",
       "viewAll": "View all nearby salons",
-      "empty": "No published salons match this view yet. Browse all salons to keep looking."
+      "empty": "No published salons match this view yet. Browse all salons to keep looking.",
+      "eyebrowCity": "Trending in Riyadh"
     },
     "faq": {
       "eyebrow": "Good to know",
@@ -1877,7 +1888,8 @@
       "cancel": "Free cancellation up to {duration} before the appointment",
       "payAtShop": "Pay at the salon",
       "amenities": "Amenities",
-      "category": "Type"
+      "category": "Type",
+      "cancelUntilStart": "Free cancellation and changes until the appointment starts"
     },
     "footer": {
       "book": "Book now",
@@ -1894,6 +1906,12 @@
     "duration": {
       "hours": "{count, plural, one {# hour} other {# hours}}",
       "minutes": "{count, plural, one {# minute} other {# minutes}}"
+    },
+    "share": "Share {name} on WhatsApp",
+    "unavailable": {
+      "title": "This shop is not available right now",
+      "body": "The link may be wrong, or the shop is not taking bookings at the moment. Browse shops near you and book with another.",
+      "nearby": "Shops near you"
     }
   },
   "proPage": {
@@ -1931,21 +1949,53 @@
       "title": "Terms of use",
       "description": "The terms for using Groom Here to book salon appointments.",
       "sections": {
+        "intro": {
+          "title": "About these terms",
+          "body": "These terms govern your use of the Groom Here platform (the website and its services) for booking appointments at salons and barbershops in Saudi Arabia. By using the platform or creating an account you accept them and the privacy policy."
+        },
         "service": {
           "title": "The service",
-          "body": "Groom Here shows the times that are free at participating salons and records your booking. The salon provides the service and sets its own prices and durations."
+          "body": "Groom Here shows the free times of participating salons, records your booking and sends you confirmations. The service itself is provided by the salon, which is responsible for its quality, prices, durations and specialists. The platform is a booking intermediary and provides no grooming services."
         },
         "account": {
           "title": "Your account",
-          "body": "You sign in with your mobile number and a code sent on WhatsApp. You are responsible for your details and for bookings made from your account."
+          "body": "You sign up with your Saudi mobile number; we may ask for a verification code when needed. You are responsible for the accuracy of your details and for bookings made from your account, and you should tell us if you think someone else is using it. You must be 18 or older, or have a guardian book for you."
         },
         "bookings": {
-          "title": "Bookings and cancellation",
-          "body": "You can cancel or change an appointment until the stated time before it. After that, contact the Groom Here team. There are no payments through the platform in this version; you pay at the salon."
+          "title": "Bookings",
+          "body": "A booking holds a time with a specific specialist for one or more services. Some bookings need the salon’s confirmation; their status shows on “My appointments”. Prices are the salon’s at the time of booking, and you pay at the salon; no money is paid through the platform."
+        },
+        "cancel": {
+          "title": "Cancelling and changing",
+          "body": "You can cancel or change your appointment for free from the booking page until it starts, unless another deadline was shown when you booked. If you have not arrived a quarter of an hour after the start, the salon may record a no-show."
+        },
+        "changes": {
+          "title": "Changes by the salon",
+          "body": "In an emergency the salon may give your booking to another specialist at the same time, or offer you a new time. After a change of specialist you are told and may cancel or change until the appointment starts. An offered new time applies only if you accept it, and is held for you until an hour before your original appointment. The salon may also cancel a booking, giving a reason."
         },
         "reviews": {
           "title": "Reviews",
-          "body": "You can review a completed visit once. Reviews show your first name and the initial of your family name, and reviews that break the rules may be hidden."
+          "body": "You can review a completed visit once within the review period. Reviews show your first name and the initial of your family name. Write an honest review of your experience; we may hide abusive or misleading reviews, or reviews containing personal data."
+        },
+        "loyalty": {
+          "title": "Loyalty programmes",
+          "body": "A salon may offer a loyalty card stamped by your completed visits through the platform; a full card becomes a reward whose terms and validity the salon sets. Rewards cannot be exchanged for cash or moved to another account."
+        },
+        "conduct": {
+          "title": "Acceptable use",
+          "body": "Do not use the platform for fake or repeated bookings meant to harm a salon, and do not try to reach other people’s data or disrupt the platform. We may suspend an account that breaks these terms."
+        },
+        "liability": {
+          "title": "Liability",
+          "body": "We take reasonable care that times and information are correct, but they come from the salons and may change. To the extent the law allows, we are not responsible for the service given at the salon or for arrangements made directly between the customer and the salon."
+        },
+        "updates": {
+          "title": "Changes to these terms",
+          "body": "We may update these terms and show the date of the last update at the top of the page. We will tell you about material changes before they take effect; continuing to use the platform afterwards means you accept them."
+        },
+        "law": {
+          "title": "Governing law and contact",
+          "body": "These terms are governed by the laws of the Kingdom of Saudi Arabia. For any question or complaint, contact the Groom Here team through the platform’s WhatsApp number your booking messages come from, or from your account page."
         }
       }
     },
@@ -1953,25 +2003,53 @@
       "title": "Privacy policy",
       "description": "How Groom Here handles your personal data.",
       "sections": {
+        "intro": {
+          "title": "About this policy",
+          "body": "This policy explains how the Groom Here platform collects, uses and protects your personal data, and your rights over it, under Saudi Arabia’s Personal Data Protection Law and its regulations."
+        },
         "data": {
           "title": "What we collect",
-          "body": "Your mobile number, name, bookings and reviews. Salons never see your mobile number."
+          "body": "Your mobile number and name, your email if you add one, and your preferred language. Your bookings: the salon, services, specialist, time, your note and the booking’s status. Your reviews, favourites, loyalty cards and rewards. Technical data needed to run your account safely, such as sign-in sessions and the device and browser type. If a salon books for you in person or by phone, it may record your name and mobile number with the booking."
+        },
+        "purposes": {
+          "title": "Why we collect it",
+          "body": "To create your account and carry out your bookings; to send confirmations, reminders and changes by WhatsApp and in the platform; to protect accounts and prevent misuse; to improve the service with statistics that do not identify you; and to meet legal obligations. We process your data to provide the service you asked for, for our legitimate interest in the platform’s security, and with your consent where required."
+        },
+        "sharing": {
+          "title": "Who sees it",
+          "body": "The salon you booked sees your name, the booking and your note, never your mobile number. The only exception: a booking the salon recorded itself, in person or by phone, shows that number to the barber until the visit is finished, then it disappears from the shop. Authorised Groom Here staff see your data only when needed; service providers we use (such as hosting and Meta’s WhatsApp messaging) see what they need; and authorities may receive it on a lawful request. We do not sell your data or share it for advertising."
+        },
+        "transfer": {
+          "title": "Processing outside the Kingdom",
+          "body": "Some data may be processed by providers outside Saudi Arabia, such as WhatsApp messages sent through Meta, under the legal safeguards for data sent abroad and only as far as needed to provide the service."
+        },
+        "retention": {
+          "title": "How long we keep it",
+          "body": "We keep your data while your account exists. When you delete your account we delete your personal data or make it no longer linked to you, keeping only what the law requires or what an open dispute needs, and only for as long as needed. Booking records the salons need remain without your mobile number."
         },
         "location": {
           "title": "Your location",
-          "body": "The location you choose is kept on your device only, to sort salons by distance. We don't store it on our servers."
+          "body": "The location you choose is stored on your device only, to sort salons by distance; we do not store it on our servers."
         },
         "messages": {
           "title": "Messages",
-          "body": "We send verification codes, booking confirmations and reminders on WhatsApp to your number only."
+          "body": "We send booking confirmations, reminders and changes by WhatsApp to your number only, and notices in the platform. We send no marketing messages without your consent."
         },
         "cookies": {
           "title": "Cookies",
-          "body": "We use Groom Here's own cookies only, no advertising or third-party cookies: sign-in session and security cookies, the site language, and, after you scan a salon's QR code, a cookie that keeps that visit's number for 7 days so a booking from the code is credited to it. We don't keep the IP address of anyone who scans a code."
+          "body": "We use only Groom Here’s own cookies, no advertising or third-party cookies: sign-in session and security cookies, the site language and theme, one that keeps your current booking choices until you finish, and, when you scan a salon’s QR code, one that keeps that visit’s number for 7 days so your booking is credited to the code. We do not store the IP address of whoever scans a code."
+        },
+        "security": {
+          "title": "Keeping your data safe",
+          "body": "We encrypt your mobile number when storing it, use encrypted connections, limit our staff’s access by role, and log every time our staff reveals a mobile number. No protection is perfect; if a breach affects your data we will tell you and the authorities as the law requires."
         },
         "rights": {
           "title": "Your rights",
-          "body": "You can edit your details and end your sessions from your account page, and ask support to delete your account."
+          "body": "You may know how we process your data, see it and ask for a copy, correct it from your account page, delete your account from “My details” once your coming bookings are cancelled or over, and withdraw your consent where processing relies on it. You may also complain to the Saudi Data and AI Authority (SDAIA)."
+        },
+        "contact": {
+          "title": "Contact and updates",
+          "body": "For any request about your data, contact the Groom Here team through the platform’s WhatsApp number your booking messages come from; we reply within the legal period. We may update this policy and show the date of the last update at the top of the page, and we will tell you about material changes before they take effect."
         }
       }
     },
@@ -2001,8 +2079,6 @@
     "retry": "Try again",
     "services": "Services",
     "packages": "Packages",
-    "servicesHint": "Pick one or more services for the same visit.",
-    "packagesHint": "A package is booked on its own.",
     "selectedCount": "{count, plural, one {1 service} other {# services}}",
     "noCommonProfessional": "No single specialist offers all of these services together. Remove one, or book it as a separate visit.",
     "today": "Today",
@@ -2058,7 +2134,8 @@
     },
     "policy": {
       "title": "Cancelling and payment",
-      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the salon — there is no payment in Groom Here."
+      "body": "You can cancel or change the time for free up to {window} before your appointment. You pay at the salon — there is no payment in Groom Here.",
+      "bodyUntilStart": "You can cancel or change your appointment for free until it starts. You pay at the salon, not through Groom Here."
     },
     "window": {
       "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -2066,12 +2143,20 @@
     },
     "signInNote": "When you confirm we ask for your mobile number and send a code on WhatsApp, then bring you back to this step.",
     "customersOnly": "Only customer accounts can book. Sign in with a customer account.",
-    "allServices": "All services",
     "withPro": {
       "title": "Booking with {name}",
       "body": "Only the services they offer are shown.",
       "change": "Change specialist"
-    }
+    },
+    "catalog": {
+      "other": "Other",
+      "packages": "Packages",
+      "saves": "Save {amount}",
+      "chosenCount": "{count, plural, one {# chosen} other {# chosen}}",
+      "inPackage": "“{service}” is already in “{package}”, which you chose.",
+      "dropped": "We took off {services}: it is part of “{package}”."
+    },
+    "noCommonProfessionalFor": "No single specialist does “{service}” with your other services. Remove it or book it at another time."
   },
   "bookings": {
     "title": "My appointments",
@@ -2117,7 +2202,9 @@
         "title": "Cancellation policy",
         "before": "You can cancel or reschedule in Groom Here for free until {time}.",
         "moved": "Your booking was given to {professional} at the same time. You can cancel it or change the time on Groom Here until it starts ({time}).",
-        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the Groom Here team."
+        "after": "The online cancel and reschedule window has closed ({window} before the appointment). To change it, contact the Groom Here team.",
+        "untilStart": "Cancelling or changing is free through Groom Here until the appointment starts ({time}).",
+        "started": "The appointment has started, so it can no longer be cancelled or changed through Groom Here. Contact the Groom Here team to change it."
       },
       "window": {
         "hours": "{count, plural, one {1 hour} other {# hours}}",
@@ -2178,7 +2265,8 @@
       "decline": "Decline",
       "accepted": "Your booking moved to the new time.",
       "declined": "You declined the new time; your booking keeps its time."
-    }
+    },
+    "awaitingShop": "Awaiting the shop"
   },
   "review": {
     "title": "Rate the visit",

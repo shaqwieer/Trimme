@@ -12,7 +12,7 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { dispatchTone } from '@/lib/admin/whatsapp';
 import { getServerApi } from '@/lib/api/server';
-import { formatDate, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
+import { formatDate, formatDurationMinutes, formatNumber, formatPrice, formatTime } from '@/lib/i18n/format';
 import { todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 import { bookingSource } from '@/lib/booking/format';
@@ -78,7 +78,7 @@ export default async function AdminBookingPage({
                 : tDrawer('history.status', { status: tStatus(h.toStatus) }),
           meta: (
             <>
-              {tDrawer(`actor.${h.actorType}`)} · {formatDate(h.occurredAt, lang, { withWeekday: false })}{' '}
+              {tDrawer(`actor.${h.actorType}`)} — {formatDate(h.occurredAt, lang, { withWeekday: false })}{' '}
               {formatTime(h.occurredAt, lang)}
               {h.reason && (
                 <span className="block text-text-secondary">{t('history.reason', { reason: h.reason })}</span>
@@ -104,7 +104,7 @@ export default async function AdminBookingPage({
                 </div>
                 <dl className="grid gap-x-6 gap-y-3 text-caption sm:grid-cols-2">
                   <Row label={tDrawer('when')}>
-                    {formatDate(booking.startsAt, lang, { withYear: true })} ·{' '}
+                    {formatDate(booking.startsAt, lang, { withYear: true })} —{' '}
                     {formatTime(booking.startsAt, lang)} – {formatTime(booking.endsAt, lang)}
                   </Row>
                   <Row label={tDrawer('rows.customer')}>
@@ -131,7 +131,7 @@ export default async function AdminBookingPage({
                     {localizedName(lang, booking.professional.nameAr, booking.professional.nameEn)}
                   </Row>
                   <Row label={tDrawer('rows.service')}>
-                    {localizedName(lang, booking.item.nameAr, booking.item.nameEn)} ·{' '}
+                    {localizedName(lang, booking.item.nameAr, booking.item.nameEn)} —{' '}
                     {formatDurationMinutes(booking.item.durationMinutes, lang)}
                   </Row>
                   <Row label={tDrawer('rows.amount')}>
@@ -208,11 +208,11 @@ export default async function AdminBookingPage({
                               {tWhatsApp(`event.${dispatch.event}`)}
                             </Link>
                             <span className="text-text-secondary">
-                              · {tWhatsApp(`audience.${dispatch.audience}`)}
+                              — {tWhatsApp(`audience.${dispatch.audience}`)}
                             </span>
                             <span className="text-text-secondary">
                               {tWhatsApp('dispatches.versionShort', {
-                                number: dispatch.templateVersionNumber,
+                                number: formatNumber(dispatch.templateVersionNumber, lang),
                               })}
                             </span>
                             <Badge size="sm" tone={dispatchTone(dispatch.status)} className="ms-auto">

@@ -1,9 +1,10 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { StatusBadge } from '@/components/ui/Badge';
+import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import type { components } from '@/lib/api/schema';
 import { cn } from '@/lib/cn';
+import { hasPassed } from '@/lib/booking/format';
 import { bookHref } from '@/lib/booking/links';
 import {
   type AppLocale,
@@ -20,6 +21,30 @@ const ACTIVE = new Set(['Pending', 'Confirmed', 'Arrived']);
 
 export function isActive(booking: Pick<CustomerBooking, 'status'>): boolean {
   return ACTIVE.has(booking.status);
+}
+
+/**
+ * The customer's status badge (D-148, «٤-١٤»): an open booking whose time has passed is not «مؤكد» any more but «بانتظار
+ * تأكيد المحل», until a barber closes it as completed, no-show or cancelled.
+ */
+export function CustomerStatusBadge({
+  booking,
+  size,
+  className,
+}: {
+  booking: Pick<CustomerBooking, 'status' | 'endsAt'>;
+  size?: 'sm' | 'md';
+  className?: string;
+}) {
+  const t = useTranslations('bookings');
+  if (isActive(booking) && hasPassed(booking.endsAt)) {
+    return (
+      <Badge tone="warning" size={size} className={className}>
+        {t('awaitingShop')}
+      </Badge>
+    );
+  }
+  return <StatusBadge kind="booking" status={booking.status} size={size} className={className} />;
 }
 
 /**
@@ -84,10 +109,10 @@ export function BookingListItem({ booking }: { booking: CustomerBooking }) {
                   {service}
                 </Link>
               </h3>
-              <StatusBadge kind="booking" status={booking.status} size="sm" />
+              <CustomerStatusBadge booking={booking} size="sm" />
             </div>
             <p className="truncate text-helper text-text-secondary">
-              {localizedName(locale, booking.shop.nameAr, booking.shop.nameEn)} ·{' '}
+              {localizedName(locale, booking.shop.nameAr, booking.shop.nameEn)} —{' '}
               {localizedName(locale, booking.professional.nameAr, booking.professional.nameEn)}
             </p>
             <p className="flex items-center gap-1.5 text-helper font-bold text-text-strong">

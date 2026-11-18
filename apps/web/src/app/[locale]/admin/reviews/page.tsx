@@ -81,7 +81,7 @@ export default async function AdminReviewsPage({
               label={t('queues')}
               tabs={QUEUES.map((value) => ({
                 href: hrefWith({ queue: value === 'NeedsReview' ? undefined : value, page: undefined }),
-                label: `${t(`queue.${value}`)} · ${formatNumber(countOf[value], lang)}`,
+                label: `${t(`queue.${value}`)} — ${formatNumber(countOf[value], lang)}`,
                 active: value === queue,
               }))}
             />
@@ -149,8 +149,8 @@ export default async function AdminReviewsPage({
                             {review.authorName}
                           </h2>
                           <p className="text-helper text-text-secondary">
-                            {localizedName(lang, review.shopNameAr, review.shopNameEn)} ·{' '}
-                            {localizedName(lang, review.professionalNameAr, review.professionalNameEn)} ·{' '}
+                            {localizedName(lang, review.shopNameAr, review.shopNameEn)} —{' '}
+                            {localizedName(lang, review.professionalNameAr, review.professionalNameEn)} —{' '}
                             {formatDate(review.createdAt, lang, { withWeekday: false })}
                           </p>
                         </div>
@@ -175,7 +175,7 @@ export default async function AdminReviewsPage({
                         {t('item', { name: localizedName(lang, review.itemNameAr, review.itemNameEn) })}
                         {me.permissions.includes('Admin.Bookings.View') && (
                           <>
-                            {' · '}
+                            {' — '}
                             <Link
                               href={`/admin/bookings/${review.bookingId}`}
                               className="font-bold text-brand-700 hover:underline"

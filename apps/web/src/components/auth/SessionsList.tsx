@@ -115,7 +115,7 @@ export function SessionsList() {
               </p>
               <p className="text-helper text-text-tertiary">
                 {t('lastActive', {
-                  date: `${formatDate(session.lastSeenAt, locale)} · ${formatTime(session.lastSeenAt, locale)}`,
+                  date: `${formatDate(session.lastSeenAt, locale)} — ${formatTime(session.lastSeenAt, locale)}`,
                 })}
               </p>
             </div>

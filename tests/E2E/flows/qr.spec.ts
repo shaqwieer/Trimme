@@ -167,7 +167,7 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await staffSignIn(owner, BARBER_HOUSE_OWNER, DEMO_PASSWORD);
     await owner.goto('/ar/shop/qr');
     const card = owner.getByTestId('qr-code-card').filter({ hasText: `/q/${code}` });
-    await expect(card).toContainText('1 مسح · 1 حجز');
+    await expect(card).toContainText('١ مسح — ١ حجز');
     await expect(owner.getByText(AL_ASALA_CODE)).toHaveCount(0);
 
     // Clean up: the visitor cancels, so the time is free for the next run.

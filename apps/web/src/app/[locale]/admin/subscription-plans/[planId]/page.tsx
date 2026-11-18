@@ -101,7 +101,7 @@ export default async function SubscriptionPlanPage({
                         number: price.versionNumber,
                         price: formatPrice(price.amount, lang, price.currency),
                       }),
-                      meta: `${t('detail.effective', { date: longDate(price.effectiveFrom, lang) })} · ${t(`detail.${state}`)}`,
+                      meta: `${t('detail.effective', { date: longDate(price.effectiveFrom, lang) })} — ${t(`detail.${state}`)}`,
                     };
                   })}
                 />

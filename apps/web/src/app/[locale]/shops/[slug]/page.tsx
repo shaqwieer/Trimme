@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
+import { DemoMark } from '@/components/ui/cards';
 import { RatingStars } from '@/components/ui/Rating';
 import { InlineAlert, Skeleton } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
@@ -152,7 +153,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const api = await getPublicApi();
   const signedIn = await mayBeSignedIn();
   const path = { params: { path: { slug: shop.slug } } };
-  const [services, packages, professionals, reviews, loyalty] = await Promise.all([
+  const [services, packages, professionals, reviews, loyalty, categories] = await Promise.all([
     optional(() => api.GET('/api/v1/public/shops/{slug}/services', path), 'services'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/packages', path), 'packages'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/professionals', path), 'professionals'),
@@ -164,6 +165,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
       'reviews',
     ),
     optional(() => api.GET('/api/v1/public/shops/{slug}/loyalty', path), 'loyalty'),
+    optional(() => api.GET('/api/v1/public/service-categories'), 'categories'),
   ]);
 
   const name = shopName(shop, locale);
@@ -259,6 +261,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
             <div className="flex items-start justify-between gap-3">
               <h1 className="flex flex-wrap items-center gap-2 text-h1 font-bold text-navy-900">
                 {name}
+                {shop.isDemo && <DemoMark className="text-helper" />}
                 {shop.isVerified && (
                   <span
                     className="inline-flex items-center gap-1 rounded-pill bg-brand-100 px-2.5 py-1 text-helper font-bold text-brand-700"
@@ -270,12 +273,31 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
                   </span>
                 )}
               </h1>
-              {shop.listedInDiscovery && (
-                <FavoriteButton target={{ kind: 'shop', id: shop.id }} name={name} mayBeSignedIn={signedIn} />
-              )}
+              <span className="flex items-center gap-1">
+                {/* Share the shop on WhatsApp (D-148, «٤-١٠»): the link carries its own preview (Open Graph). */}
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`${name}
+${url}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('share', { name })}
+                  className="inline-flex size-11 items-center justify-center rounded-full text-text-strong hover:bg-bg-subtle focus-visible:shadow-[var(--focus-ring)]"
+                  data-testid="share-shop"
+                >
+                  <Icon name="msg" className="size-5" />
+                </a>
+                {shop.listedInDiscovery && (
+                  <FavoriteButton
+                    target={{ kind: 'shop', id: shop.id }}
+                    name={name}
+                    mayBeSignedIn={signedIn}
+                  />
+                )}
+              </span>
             </div>
             <p className="flex flex-wrap items-center gap-2 text-helper text-text-secondary">
               {shop.rating.count > 0 ? (
+                // Under three ratings this says «جديد» (D-148).
                 <RatingStars value={shop.rating.average} count={shop.rating.count} />
               ) : (
                 <span>{t('noReviews')}</span>
@@ -346,6 +368,10 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
                     services={services ?? []}
                     packages={packages ?? []}
                     bookable={shop.listedInDiscovery}
+                    categories={(categories ?? [])
+                      .filter((c) => c.isActive)
+                      .sort((a, b) => a.displayOrder - b.displayOrder)
+                      .map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn }))}
                   />
                 ),
               },

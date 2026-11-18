@@ -155,9 +155,9 @@ describe('selection controls', () => {
 });
 
 describe('Rating', () => {
-  it('announces the rating once with Latin digits', () => {
+  it('announces the rating once with Arabic-Indic digits in Arabic (D-148)', () => {
     renderWithIntl(<RatingStars value={4.8} count={346} />);
-    expect(screen.getByRole('img', { name: 'التقييم 4.8 من 5' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'التقييم ٤٫٨ من ٥' })).toBeInTheDocument();
   });
 
   it('RatingInput exposes five labelled radios', () => {

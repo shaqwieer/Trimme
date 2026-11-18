@@ -84,7 +84,7 @@ export function LoyaltyRewardRow({ reward }: { reward: Reward }) {
           <bdi dir="ltr" className="font-mono font-bold tracking-wider text-text-primary">
             {reward.code}
           </bdi>
-          {' · '}
+          {' — '}
           {reward.expiresAt
             ? t('expires', {
                 date: formatDate(reward.expiresAt, locale, { withYear: true, withWeekday: false }),

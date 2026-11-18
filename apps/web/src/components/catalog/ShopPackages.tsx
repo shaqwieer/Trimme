@@ -65,7 +65,7 @@ export function ShopPackageList({ items }: { items: Package[] }) {
           </Link>
           <span className="flex items-center gap-3">
             <span className="text-helper text-text-secondary">
-              {formatDurationMinutes(p.durationMinutes, locale)} ·{' '}
+              {formatDurationMinutes(p.durationMinutes, locale)} —{' '}
               <span className="font-latin font-bold text-navy-900">
                 {formatPrice(p.price, locale, p.currency)}
               </span>

@@ -181,7 +181,7 @@ export function AppointmentDrawer({
                     : h.kind === 'PostponementDeclined'
                       ? t('history.postponementDeclined')
                       : t('history.status', { status: tStatus(h.toStatus) }),
-    meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} · ${h.actorName ?? t(`actor.${h.actorType}`)}${h.reason && h.kind !== 'ServiceAdded' && h.kind !== 'ServiceRemoved' ? ` · ${h.reason}` : ''}`,
+    meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} — ${h.actorName ?? t(`actor.${h.actorType}`)}${h.reason && h.kind !== 'ServiceAdded' && h.kind !== 'ServiceRemoved' ? ` — ${h.reason}` : ''}`,
     tone:
       h.toStatus === 'Completed'
         ? 'success'
@@ -251,7 +251,7 @@ export function AppointmentDrawer({
                 {formatTime(booking.endsAt, locale, timeZone)}
               </span>
               <span className="text-helper text-text-strong">
-                {formatDate(booking.startsAt, locale, { timeZone })} ·{' '}
+                {formatDate(booking.startsAt, locale, { timeZone })} —{' '}
                 {formatDurationMinutes(booking.item.durationMinutes, locale)}
               </span>
               <span className="mt-1 flex flex-wrap gap-1.5">

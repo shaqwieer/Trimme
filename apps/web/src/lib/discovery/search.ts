@@ -63,7 +63,7 @@ export function parseSearchFilters(params: Params, hasLocation: boolean): Search
   };
 }
 
-/** The number shown on the "Filters · N" chip: every filter the drawer sets that differs from the default. */
+/** The number shown on the "Filters — N" chip: every filter the drawer sets that differs from the default. */
 export function activeFilterCount(filters: SearchFilters): number {
   return [
     filters.category !== null,

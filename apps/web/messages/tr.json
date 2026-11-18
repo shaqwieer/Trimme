@@ -117,7 +117,8 @@
       "value": "Puan: 5 üzerinden {value}",
       "count": "({count, plural, one {{count} değerlendirme} other {{count} değerlendirme}})",
       "input": "Puanınızı seçin",
-      "stars": "5 üzerinden {value}"
+      "stars": "5 üzerinden {value}",
+      "new": "Yeni"
     },
     "upload": {
       "prompt": "Kapak görselini buraya sürükleyin veya bir dosya seçin",
@@ -149,7 +150,8 @@
     "dateStrip": {
       "label": "Bir gün seçin",
       "today": "Bugün",
-      "closed": "Kapalı"
+      "closed": "Kapalı",
+      "full": "Dolu"
     },
     "stepper": {
       "label": "Randevu adımları",
@@ -168,7 +170,8 @@
       "verified": "Doğrulanmış salon",
       "addFavorite": "Favorilere ekle",
       "removeFavorite": "Favorilerden çıkar",
-      "from": "Başlangıç: {price}"
+      "from": "Başlangıç: {price}",
+      "demo": "Deneme"
     },
     "professional": {
       "unavailable": "İzinde"
@@ -570,7 +573,8 @@
     "booking_postpone_too_late": "Randevuya bir saatten az kaldı: bir meslektaşa aktarın veya iptal edin.",
     "booking_postponement_gone": "Erteleme teklifi artık geçerli değil.",
     "booking_postpone_same_time": "Bu, randevunun kendi saati.",
-    "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler."
+    "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler.",
+    "booking_service_in_package": "Bu hizmet seçilen pakette zaten var."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -693,6 +697,10 @@
       "cancelHint": "Yalnızca berbere yeni randevu veya saat değişikliği mesajı gittiyse gönderilir.",
       "save": "Mesajları kaydet",
       "saved": "Bu salonun WhatsApp mesajları kaydedildi."
+    },
+    "demo": {
+      "label": "Deneme dükkânı",
+      "hint": "Müşteriler dükkânın kartında ve sayfasında “Deneme” görür; verileri gerçekmiş gibi görünmez. Yayına geçerken kapatın veya dükkânı arşivleyin."
     }
   },
   "shopCategory": {
@@ -1637,7 +1645,9 @@
     "closed": "Kapalı",
     "open": "Açık",
     "openNow": "Şu an açık",
-    "closesAt": "Kapanış {time}"
+    "closesAt": "Kapanış {time}",
+    "midnight": "gece yarısı",
+    "afterMidnight": "{day} {time}"
   },
   "landing": {
     "meta": {
@@ -1668,7 +1678,8 @@
       "titleCity": "{city} şehrindeki en yüksek puanlı salonlar",
       "body": "Puanları, hizmetleri ve fiyatları karşılaştırın, ardından gününüze uyan randevuyu seçin.",
       "viewAll": "Yakındaki tüm salonları görüntüle",
-      "empty": "Bu görünümde henüz yayımlanmış salon yok. Aramaya devam etmek için tüm salonlara göz atın."
+      "empty": "Bu görünümde henüz yayımlanmış salon yok. Aramaya devam etmek için tüm salonlara göz atın.",
+      "eyebrowCity": "Riyad’da popüler"
     },
     "faq": {
       "eyebrow": "Bilmekte fayda var",
@@ -1877,7 +1888,8 @@
       "cancel": "Randevudan {duration} öncesine kadar ücretsiz iptal",
       "payAtShop": "Ödeme salonda",
       "amenities": "Olanaklar",
-      "category": "Tür"
+      "category": "Tür",
+      "cancelUntilStart": "Randevu başlayana kadar ücretsiz iptal ve değişiklik"
     },
     "footer": {
       "book": "Hemen randevu al",
@@ -1894,6 +1906,12 @@
     "duration": {
       "hours": "{count, plural, one {# saat} other {# saat}}",
       "minutes": "{count, plural, one {# dakika} other {# dakika}}"
+    },
+    "share": "{name} dükkânını WhatsApp ile paylaş",
+    "unavailable": {
+      "title": "Bu dükkân şu anda kullanılamıyor",
+      "body": "Bağlantı hatalı olabilir ya da dükkân şu an randevu almıyor. Yakınınızdaki dükkânlara göz atın.",
+      "nearby": "Yakınınızdaki dükkânlar"
     }
   },
   "proPage": {
@@ -1931,21 +1949,53 @@
       "title": "Kullanım koşulları",
       "description": "Salon randevusu almak için Groom Here platformunu kullanma koşulları.",
       "sections": {
+        "intro": {
+          "title": "Bu koşullar hakkında",
+          "body": "Bu koşullar, Suudi Arabistan’daki kuaför ve berberlerde randevu almak için Groom Here platformunu (web sitesi ve hizmetleri) kullanımınızı düzenler. Platformu kullanarak veya hesap açarak bu koşulları ve gizlilik politikasını kabul etmiş olursunuz."
+        },
         "service": {
           "title": "Hizmet",
-          "body": "Groom Here, katılımcı salonlardaki müsait saatleri gösterir ve randevunuzu kaydeder. Hizmeti salon sunar ve kendi fiyatlarını ve sürelerini kendisi belirler."
+          "body": "Groom Here, katılımcı salonların boş saatlerini gösterir, randevunuzu kaydeder ve size onay gönderir. Hizmetin kendisini salon verir; kalitesinden, fiyatlarından, sürelerinden ve uzmanlarından salon sorumludur. Platform bir randevu aracısıdır ve bakım hizmeti vermez."
         },
         "account": {
           "title": "Hesabınız",
-          "body": "Cep telefonu numaranız ve WhatsApp üzerinden gönderilen bir kodla giriş yaparsınız. Bilgilerinizden ve hesabınızdan yapılan randevulardan siz sorumlusunuz."
+          "body": "Suudi cep telefonu numaranızla kaydolursunuz; gerektiğinde doğrulama kodu isteyebiliriz. Bilgilerinizin doğruluğundan ve hesabınızdan alınan randevulardan siz sorumlusunuz; hesabınızı başkasının kullandığını düşünüyorsanız bize bildirin. 18 yaşında veya daha büyük olmalısınız ya da randevunuzu veliniz almalıdır."
         },
         "bookings": {
-          "title": "Randevular ve iptal",
-          "body": "Bir randevuyu, randevudan önce belirtilen süreye kadar iptal edebilir veya değiştirebilirsiniz. Bu süreden sonra Groom Here ekibiyle iletişime geçin. Bu sürümde platform üzerinden ödeme yapılmaz; ödemeyi salonda yaparsınız."
+          "title": "Randevular",
+          "body": "Randevu, bir veya daha fazla hizmet için belirli bir uzmanla bir saati ayırır. Bazı randevular salonun onayını gerektirir; durumları “Randevularım” sayfasında görünür. Fiyatlar randevu anındaki salon fiyatlarıdır ve ödeme salonda yapılır; platform üzerinden ödeme alınmaz."
+        },
+        "cancel": {
+          "title": "İptal ve değişiklik",
+          "body": "Randevu sırasında başka bir süre gösterilmediyse, randevunuzu başlayana kadar randevu sayfasından ücretsiz iptal edebilir veya değiştirebilirsiniz. Başlangıçtan çeyrek saat sonra gelmediyseniz salon “gelmedi” olarak kaydedebilir."
+        },
+        "changes": {
+          "title": "Salonun yaptığı değişiklikler",
+          "body": "Acil bir durumda salon randevunuzu aynı saatte başka bir uzmana verebilir veya size yeni bir saat önerebilir. Uzman değişikliğinde size bildirilir ve randevu başlayana kadar iptal edebilir veya değiştirebilirsiniz. Önerilen yeni saat yalnızca kabul ederseniz geçerli olur ve asıl randevunuzdan bir saat öncesine kadar sizin için ayrılır. Salon sebebini belirterek randevuyu iptal de edebilir."
         },
         "reviews": {
           "title": "Değerlendirmeler",
-          "body": "Tamamlanmış bir ziyareti bir kez değerlendirebilirsiniz. Değerlendirmelerde adınız ve soyadınızın baş harfi gösterilir; kurallara aykırı değerlendirmeler gizlenebilir."
+          "body": "Tamamlanan bir ziyareti değerlendirme süresi içinde bir kez değerlendirebilirsiniz. Değerlendirmeler adınızı ve soyadınızın baş harfini gösterir. Deneyiminizi dürüstçe yazın; kötü niyetli, yanıltıcı veya kişisel veri içeren değerlendirmeleri gizleyebiliriz."
+        },
+        "loyalty": {
+          "title": "Sadakat programları",
+          "body": "Salon, platform üzerinden tamamlanan ziyaretlerinizle damgalanan bir sadakat kartı sunabilir; dolu kart, koşullarını ve geçerliliğini salonun belirlediği bir ödüle dönüşür. Ödüller nakde çevrilemez ve başka bir hesaba aktarılamaz."
+        },
+        "conduct": {
+          "title": "Kabul edilebilir kullanım",
+          "body": "Platformu bir salona zarar vermek amacıyla sahte veya tekrarlı randevular için kullanmayın; başkalarının verilerine erişmeye veya platformu bozmaya çalışmayın. Bu koşulları ihlal eden hesabı askıya alabiliriz."
+        },
+        "liability": {
+          "title": "Sorumluluk",
+          "body": "Saatlerin ve bilgilerin doğru olması için makul özeni gösteririz, ancak bunlar salonlardan gelir ve değişebilir. Yasaların izin verdiği ölçüde, salonda verilen hizmetten veya müşteri ile salon arasında doğrudan yapılan anlaşmalardan sorumlu değiliz."
+        },
+        "updates": {
+          "title": "Koşullardaki değişiklikler",
+          "body": "Bu koşulları güncelleyebilir ve son güncelleme tarihini sayfanın üstünde gösterebiliriz. Önemli değişiklikleri yürürlüğe girmeden önce size bildiririz; sonrasında kullanmaya devam etmeniz kabul ettiğiniz anlamına gelir."
+        },
+        "law": {
+          "title": "Uygulanacak hukuk ve iletişim",
+          "body": "Bu koşullar Suudi Arabistan Krallığı yasalarına tabidir. Her türlü soru veya şikâyet için randevu mesajlarınızın geldiği platform WhatsApp numarasından ya da hesap sayfanızdan Groom Here ekibiyle iletişime geçin."
         }
       }
     },
@@ -1953,25 +2003,53 @@
       "title": "Gizlilik politikası",
       "description": "Kişisel verilerinizin Groom Here tarafından nasıl işlendiği.",
       "sections": {
+        "intro": {
+          "title": "Bu politika hakkında",
+          "body": "Bu politika, Groom Here platformunun kişisel verilerinizi nasıl topladığını, kullandığını ve koruduğunu ve bu verilerle ilgili haklarınızı, Suudi Arabistan Kişisel Verilerin Korunması Kanunu ve yönetmeliklerine göre açıklar."
+        },
         "data": {
-          "title": "Topladığımız veriler",
-          "body": "Cep telefonu numaranız, adınız, randevularınız ve değerlendirmeleriniz. Salonlar cep telefonu numaranızı asla görmez."
+          "title": "Topladıklarımız",
+          "body": "Cep telefonu numaranız ve adınız, eklerseniz e-postanız ve tercih ettiğiniz dil. Randevularınız: salon, hizmetler, uzman, saat, notunuz ve randevu durumu. Değerlendirmeleriniz, favorileriniz, sadakat kartlarınız ve ödülleri. Hesabınızı güvenle çalıştırmak için gereken teknik veriler: oturumlar, cihaz ve tarayıcı türü. Bir salon sizin için dükkânda veya telefonla randevu alırsa, adınızı ve cep numaranızı randevuyla birlikte kaydedebilir."
+        },
+        "purposes": {
+          "title": "Neden topluyoruz",
+          "body": "Hesabınızı oluşturmak ve randevularınızı gerçekleştirmek; onayları, hatırlatmaları ve değişiklikleri WhatsApp ve platform içinden göndermek; hesapları korumak ve kötüye kullanımı önlemek; sizi tanımlamayan istatistiklerle hizmeti geliştirmek ve yasal yükümlülükleri yerine getirmek için. Verilerinizi istediğiniz hizmeti sunmak, platform güvenliğindeki meşru menfaatimiz ve gerektiğinde onayınız temelinde işleriz."
+        },
+        "sharing": {
+          "title": "Kimler görür",
+          "body": "Randevu aldığınız salon adınızı, randevuyu ve notunuzu görür; cep numaranızı asla görmez. Tek istisna: salonun dükkânda veya telefonla kendisinin kaydettiği randevuda numara, hizmet bitene kadar berbere görünür ve sonra dükkândan kaybolur. Verilerinizi yalnızca gerektiğinde yetkili Groom Here ekibi, kullandığımız hizmet sağlayıcılar (barındırma ve Meta’nın WhatsApp mesajlaşması gibi) gerektiği kadarıyla ve yasal bir talep olduğunda resmî makamlar görür. Verilerinizi satmayız ve reklam amacıyla paylaşmayız."
+        },
+        "transfer": {
+          "title": "Krallık dışında işleme",
+          "body": "Bazı veriler, Meta üzerinden gönderilen WhatsApp mesajları gibi, Suudi Arabistan dışındaki sağlayıcılarda, yurt dışına veri gönderimine ilişkin yasal güvencelere uygun olarak ve yalnızca hizmet için gerektiği kadar işlenebilir."
+        },
+        "retention": {
+          "title": "Ne kadar saklıyoruz",
+          "body": "Hesabınız var olduğu sürece verilerinizi saklarız. Hesabınızı sildiğinizde kişisel verilerinizi siler veya sizinle ilişkisini keseriz; yalnızca yasanın gerektirdiğini veya süren bir uyuşmazlığın gerektirdiğini, gerektiği süre boyunca tutarız. Salonların ihtiyaç duyduğu randevu kayıtları cep numaranız olmadan kalır."
         },
         "location": {
           "title": "Konumunuz",
-          "body": "Seçtiğiniz konum, salonları uzaklığa göre sıralamak için yalnızca cihazınızda saklanır. Bu konumu sunucularımızda saklamayız."
+          "body": "Seçtiğiniz konum yalnızca cihazınızda, salonları mesafeye göre sıralamak için saklanır; sunucularımızda tutulmaz."
         },
         "messages": {
           "title": "Mesajlar",
-          "body": "Doğrulama kodlarını, randevu onaylarını ve hatırlatmaları WhatsApp üzerinden yalnızca sizin numaranıza göndeririz."
+          "body": "Randevu onaylarını, hatırlatmaları ve değişiklikleri yalnızca numaranıza WhatsApp ile ve platform içi bildirimlerle göndeririz. Onayınız olmadan pazarlama mesajı göndermeyiz."
         },
         "cookies": {
           "title": "Çerezler",
-          "body": "Yalnızca Groom Here platformunun kendi çerezlerini kullanırız (reklam veya üçüncü taraf çerezi kullanmayız): oturum açma ve güvenlik çerezleri, site dili ve bir salonun QR kodunu taradıktan sonra, bu koddan yapılan bir randevunun o ziyarete atfedilmesi için o ziyaretin numarasını 7 gün boyunca saklayan bir çerez. Bir kodu tarayan hiç kimsenin IP adresini saklamayız."
+          "body": "Yalnızca Groom Here’ın kendi çerezlerini kullanırız; reklam veya üçüncü taraf çerezi yoktur: oturum ve güvenlik çerezleri, site dili ve teması, süren randevu seçimlerinizi bitirene kadar saklayan bir çerez ve bir salonun QR kodunu taradığınızda randevunuzun o koda sayılması için ziyaret numarasını 7 gün saklayan bir çerez. Kodu tarayanın IP adresini saklamayız."
+        },
+        "security": {
+          "title": "Verilerinizin güvenliği",
+          "body": "Cep numaranızı saklarken şifreleriz, şifreli bağlantı kullanırız, ekibimizin erişimini rollerle sınırlar ve ekibimizin bir cep numarasını her açışını kaydederiz. Hiçbir koruma kusursuz değildir; verilerinizi etkileyen bir ihlal olursa yasanın gerektirdiği şekilde size ve yetkililere bildiririz."
         },
         "rights": {
           "title": "Haklarınız",
-          "body": "Hesap sayfanızdan bilgilerinizi düzenleyebilir ve oturumlarınızı sonlandırabilir, destek ekibinden hesabınızın silinmesini isteyebilirsiniz."
+          "body": "Verilerinizin nasıl işlendiğini öğrenme, görme ve bir kopyasını isteme, hesap sayfanızdan düzeltme, gelecek randevularınız iptal edildikten veya bittikten sonra “Bilgilerim” sayfasından hesabınızı silme ve işleme onaya dayanıyorsa onayınızı geri çekme hakkınız vardır. Suudi Veri ve Yapay Zekâ Otoritesine (SDAIA) şikâyette de bulunabilirsiniz."
+        },
+        "contact": {
+          "title": "İletişim ve güncellemeler",
+          "body": "Verilerinizle ilgili her talep için randevu mesajlarınızın geldiği platform WhatsApp numarasından Groom Here ekibiyle iletişime geçin; yasal süre içinde yanıt veririz. Bu politikayı güncelleyebilir, son güncelleme tarihini sayfanın üstünde gösterebilir ve önemli değişiklikleri yürürlüğe girmeden önce bildirebiliriz."
         }
       }
     },
@@ -2001,8 +2079,6 @@
     "retry": "Tekrar dene",
     "services": "Hizmetler",
     "packages": "Paketler",
-    "servicesHint": "Aynı ziyaret için bir veya daha fazla hizmet seçin.",
-    "packagesHint": "Paket için ayrı randevu alınır.",
     "selectedCount": "{count, plural, one {1 hizmet} other {# hizmet}}",
     "noCommonProfessional": "Bu hizmetlerin tümünü birlikte sunan tek bir uzman yok. Birini kaldırın veya ayrı bir ziyaret olarak randevu alın.",
     "today": "Bugün",
@@ -2058,7 +2134,8 @@
     },
     "policy": {
       "title": "İptal ve ödeme",
-      "body": "Randevunuzdan {window} öncesine kadar ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Ödemeyi salonda yaparsınız — Groom Here üzerinden ödeme yoktur."
+      "body": "Randevunuzdan {window} öncesine kadar ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Ödemeyi salonda yaparsınız — Groom Here üzerinden ödeme yoktur.",
+      "bodyUntilStart": "Randevunuzu başlayana kadar ücretsiz iptal edebilir veya değiştirebilirsiniz. Ödeme salonda yapılır, Groom Here üzerinden değil."
     },
     "window": {
       "hours": "{count, plural, one {1 saat} other {# saat}}",
@@ -2066,12 +2143,20 @@
     },
     "signInNote": "Onayladığınızda cep telefonu numaranızı ister ve WhatsApp üzerinden bir kod göndeririz, ardından sizi bu adıma geri getiririz.",
     "customersOnly": "Yalnızca müşteri hesapları randevu alabilir. Bir müşteri hesabıyla giriş yapın.",
-    "allServices": "Tüm hizmetler",
     "withPro": {
       "title": "{name} ile randevu",
       "body": "Yalnızca sunduğu hizmetler gösteriliyor.",
       "change": "Uzmanı değiştir"
-    }
+    },
+    "catalog": {
+      "other": "Diğer",
+      "packages": "Paketler",
+      "saves": "{amount} tasarruf",
+      "chosenCount": "{count, plural, one {# seçildi} other {# seçildi}}",
+      "inPackage": "“{service}” seçtiğiniz “{package}” içinde zaten var.",
+      "dropped": "{services} çıkarıldı: “{package}” içinde."
+    },
+    "noCommonProfessionalFor": "“{service}” hizmetini diğer hizmetlerinizle birlikte yapan tek bir uzman yok. Çıkarın ya da başka bir saate alın."
   },
   "bookings": {
     "title": "Randevularım",
@@ -2117,7 +2202,9 @@
         "title": "İptal politikası",
         "before": "Groom Here üzerinden ücretsiz iptal edebilir veya saatini değiştirebilirsiniz. Son tarih: {time}.",
         "moved": "Randevunuz aynı saatte {professional} adlı berbere verildi. Başlayana kadar ({time}) Groom Here üzerinden iptal edebilir veya saatini değiştirebilirsiniz.",
-        "after": "Online iptal ve saat değiştirme süresi sona erdi (randevudan {window} önce). Değiştirmek için Groom Here ekibiyle iletişime geçin."
+        "after": "Online iptal ve saat değiştirme süresi sona erdi (randevudan {window} önce). Değiştirmek için Groom Here ekibiyle iletişime geçin.",
+        "untilStart": "Groom Here üzerinden iptal veya değişiklik randevu başlayana kadar ücretsizdir ({time}).",
+        "started": "Randevu başladı; artık Groom Here üzerinden iptal edilemez veya değiştirilemez. Değiştirmek için Groom Here ekibiyle iletişime geçin."
       },
       "window": {
         "hours": "{count, plural, one {1 saat} other {# saat}}",
@@ -2178,7 +2265,8 @@
       "decline": "Reddet",
       "accepted": "Randevunuz yeni saate taşındı.",
       "declined": "Yeni saati reddettiniz; randevunuz saatinde kaldı."
-    }
+    },
+    "awaitingShop": "Dükkânın onayı bekleniyor"
   },
   "review": {
     "title": "Ziyareti değerlendir",

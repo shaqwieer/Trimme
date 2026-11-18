@@ -1,13 +1,15 @@
 using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Platform;
+using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.Modules.Bookings.Domain;
 
 namespace Trimme.Modules.Bookings.Application.Customer;
 
-public sealed record RescheduleDateResponse(DateOnly Date, int SlotCount);
+/// <summary>A date the booking can move to: its free starts, and whether the shop is closed then (D-148).</summary>
+public sealed record RescheduleDateResponse(DateOnly Date, int SlotCount, bool Closed);
 
 /// <summary>
 /// Dates the customer can move their booking to (same professional and duration), with the number of free starts on each.
@@ -17,10 +19,18 @@ public sealed record RescheduleDatesResponse(bool Bookable, string? BlockedReaso
 
 public sealed record RescheduleSlotResponse(DateTimeOffset StartsAt, string LocalTime, string Period);
 
-public sealed record RescheduleSlotsResponse(bool Bookable, string? BlockedReason, string TimeZone, DateOnly Date, IReadOnlyList<RescheduleSlotResponse> Slots);
+/// <summary>The free starts of one date, and the shop's opening windows that day so the taken times show greyed (D-148).</summary>
+public sealed record RescheduleSlotsResponse(
+    bool Bookable, string? BlockedReason, string TimeZone, DateOnly Date, IReadOnlyList<RescheduleSlotResponse> Slots, IReadOnlyList<TimeWindow> Open);
 
-/// <summary>What one reschedule availability request resolved to.</summary>
-internal sealed record RescheduleRun(bool Bookable, string? BlockedReason, string TimeZone, DateOnly From, DateOnly To, IReadOnlyList<ProbedSlot> Slots);
+/// <summary>What one reschedule availability request resolved to, with the shop's day plans (closed days, opening windows).</summary>
+internal sealed record RescheduleRun(
+    bool Bookable, string? BlockedReason, string TimeZone, DateOnly From, DateOnly To, IReadOnlyList<ProbedSlot> Slots, IReadOnlyList<ShopDayPlan> Plans)
+{
+    public bool ClosedOn(DateOnly date) => Plans.FirstOrDefault(p => p.Date == date) is { } plan && (plan.Closed || plan.Open.Count == 0);
+
+    public IReadOnlyList<TimeWindow> OpenOn(DateOnly date) => Plans.FirstOrDefault(p => p.Date == date)?.Open ?? [];
+}
 
 internal sealed record GetRescheduleDatesQuery(Guid BookingId, DateOnly? From, DateOnly? To) : IQuery<Result<RescheduleDatesResponse>>;
 
@@ -36,7 +46,8 @@ internal sealed class RescheduleAvailability(
     CustomerBookingSupport support,
     IPublicDataScope scope,
     IShopBookability bookability,
-    ISlotProbe probe)
+    ISlotProbe probe,
+    IShopDayPlanReader plans)
 {
     public const int DefaultDays = 14;
     public const int MaxDays = 31;
@@ -75,12 +86,12 @@ internal sealed class RescheduleAvailability(
         var gate = await bookability.GetAsync(shop.Id, cancellationToken);
         if (!gate.AcceptsOnlineBookings)
         {
-            return new RescheduleRun(false, gate.BlockedReason, shop.TimeZone, start, end, []);
+            return new RescheduleRun(false, gate.BlockedReason, shop.TimeZone, start, end, [], []);
         }
 
         var slots = await probe.ProbeAsync(
             shop.Id, shop.TimeZone, booking.DurationMinutes, [booking.ProfessionalId], start, end, MaxSlots, cancellationToken, ignoreBookingId: booking.Id.Value);
-        return new RescheduleRun(true, null, shop.TimeZone, start, end, slots);
+        return new RescheduleRun(true, null, shop.TimeZone, start, end, slots, await plans.GetAsync(shop.Id, shop.TimeZone, [], start, end, cancellationToken));
     }
 }
 
@@ -102,7 +113,7 @@ internal sealed class GetRescheduleDatesHandler(RescheduleAvailability availabil
             result.TimeZone,
             [.. Enumerable.Range(0, result.To.DayNumber - result.From.DayNumber + 1)
                 .Select(result.From.AddDays)
-                .Select(d => new RescheduleDateResponse(d, counts.GetValueOrDefault(d)))]);
+                .Select(d => new RescheduleDateResponse(d, counts.GetValueOrDefault(d), result.ClosedOn(d)))]);
     }
 }
 
@@ -119,6 +130,6 @@ internal sealed class GetRescheduleSlotsHandler(RescheduleAvailability availabil
         var result = run.Value;
         return new RescheduleSlotsResponse(
             result.Bookable, result.BlockedReason, result.TimeZone, query.Date,
-            [.. result.Slots.Select(s => new RescheduleSlotResponse(s.StartsAt, s.LocalTime, s.Period))]);
+            [.. result.Slots.Select(s => new RescheduleSlotResponse(s.StartsAt, s.LocalTime, s.Period))], result.OpenOn(query.Date));
     }
 }

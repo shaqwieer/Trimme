@@ -101,7 +101,7 @@ export default async function WhatsAppTemplatesPage({
                           <Link
                             href={`/admin/whatsapp/templates/${slot.id}`}
                             className="inline-flex min-h-11 items-center text-label font-bold text-brand-700 underline-offset-4 hover:underline"
-                            aria-label={`${t('templates.edit')}: ${t(`event.${event}`)} · ${t(`audience.${slot.audience}`)} · ${t(`locale.${localeKey(slot.locale)}`)}`}
+                            aria-label={`${t('templates.edit')}: ${t(`event.${event}`)} — ${t(`audience.${slot.audience}`)} — ${t(`locale.${localeKey(slot.locale)}`)}`}
                           >
                             {t('templates.edit')}
                           </Link>

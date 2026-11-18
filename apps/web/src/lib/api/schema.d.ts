@@ -1376,6 +1376,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Marks the shop as a demo, so its card and page say «تجريبي» (D-148; audited). */
+        put: operations["AdminSetShopDemo"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/shops/{shopId}/editable-policy": {
         parameters: {
             query?: never;
@@ -4467,6 +4484,8 @@ export interface components {
             updatedAt: null | string;
             /** Format: uint32 */
             version: number;
+            /** @default false */
+            isDemo: boolean;
         };
         /** @description A shop's programme as the admin edits it (null before the first save; send `Version` back) and its use. */
         AdminShopLoyaltyResponse: {
@@ -4492,6 +4511,8 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: null | string;
+            /** @default false */
+            isDemo: boolean;
         };
         /**
          * @description A shop's subscription for admins. `Exists` is false (status `None`) until a plan is assigned;
@@ -4662,11 +4683,13 @@ export interface components {
             period: components["schemas"]["DayPeriod"];
             professionalIds: string[];
         };
+        /** @description A date of the strip: its free starts, and whether the shop is closed then («مغلق»; open with none is «مكتمل», D-148). */
         AvailableDateResponse: {
             /** Format: date */
             date: string;
             /** Format: int32 */
             slotCount: number;
+            closed: boolean;
         };
         /** @description Every date from `From` to `To` with its number of bookable slots (0 = none), for the date strip. */
         AvailableDatesResponse: {
@@ -4681,7 +4704,8 @@ export interface components {
         };
         /**
          * @description Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force…),
-         *     `Bookable` is false, `BlockedReason` says why and there are no slots (D-013, D-078).
+         *     `Bookable` is false, `BlockedReason` says why and there are no slots (D-013, D-078). `Open` is the
+         *     shop's opening windows of that business day (D-148): the page lays every time out in order and greys the taken ones.
          */
         AvailableSlotsResponse: {
             /** Format: date */
@@ -4690,6 +4714,7 @@ export interface components {
             bookable: boolean;
             blockedReason: null | string;
             slots: components["schemas"]["AvailabilitySlotResponse"][];
+            open: components["schemas"]["TimeWindow"][];
         };
         /** @description A barber's own one-off breaks on one date, replacing the ones saved before (D-134). Empty clears them. */
         BarberDayBreaksRequest: {
@@ -6321,6 +6346,8 @@ export interface components {
             listedInDiscovery: boolean;
             /** Format: date-time */
             updatedAt: string;
+            /** @default false */
+            isDemo: boolean;
         };
         /**
          * @description The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is
@@ -6619,11 +6646,13 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A date the booking can move to: its free starts, and whether the shop is closed then (D-148). */
         RescheduleDateResponse: {
             /** Format: date */
             date: string;
             /** Format: int32 */
             slotCount: number;
+            closed: boolean;
         };
         /**
          * @description Dates the customer can move their booking to (same professional and duration), with the number of free starts on each.
@@ -6641,6 +6670,7 @@ export interface components {
             localTime: string;
             period: string;
         };
+        /** @description The free starts of one date, and the shop's opening windows that day so the taken times show greyed (D-148). */
         RescheduleSlotsResponse: {
             bookable: boolean;
             blockedReason: null | string;
@@ -6648,6 +6678,7 @@ export interface components {
             /** Format: date */
             date: string;
             slots: components["schemas"]["RescheduleSlotResponse"][];
+            open: components["schemas"]["TimeWindow"][];
         };
         ResetPasswordRequest: {
             /** Format: uuid */
@@ -6947,6 +6978,10 @@ export interface components {
             newCustomers: number;
             /** Format: int32 */
             returningVisits: number;
+        };
+        /** @description Whether the shop is a demo (D-148): its card and page say «تجريبي». */
+        ShopDemoRequest: {
+            isDemo: boolean;
         };
         ShopImageResponse: {
             /** Format: uuid */
@@ -7255,6 +7290,8 @@ export interface components {
             timeZone: string;
             coverUrl: null | string;
             logoUrl: null | string;
+            /** @default false */
+            isDemo: boolean;
         };
         ShopSearchResponse: {
             items: components["schemas"]["ShopSearchItemResponse"][];
@@ -7588,6 +7625,14 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        TimeWindow: {
+            /** Format: date-time */
+            start: string;
+            /** Format: date-time */
+            end: string;
+            /** Format: int32 */
+            minutes?: number;
+        };
         TimeWindowResponse: {
             /** Format: date-time */
             start: string;
@@ -7611,6 +7656,8 @@ export interface components {
             rating: number;
             /** Format: int32 */
             reviewCount: number;
+            /** @default false */
+            shopIsDemo: boolean;
         };
         UnreadCountResponse: {
             /** Format: int32 */
@@ -11073,6 +11120,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ShopLocationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminShopDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminSetShopDemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopDemoRequest"];
             };
         };
         responses: {

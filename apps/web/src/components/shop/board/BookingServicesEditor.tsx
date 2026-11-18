@@ -118,9 +118,9 @@ export function BookingServicesEditor({
               </span>
               {line.price != null && line.durationMinutes != null && (
                 <span className="text-helper text-text-secondary">
-                  {formatPrice(line.price, locale, item.currency)} ·{' '}
+                  {formatPrice(line.price, locale, item.currency)} —{' '}
                   {formatDurationMinutes(line.durationMinutes, locale)}
-                  {line.added && ` · ${t('added')}`}
+                  {line.added && ` — ${t('added')}`}
                 </span>
               )}
             </span>

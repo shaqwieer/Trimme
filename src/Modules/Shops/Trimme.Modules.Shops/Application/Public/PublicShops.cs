@@ -53,7 +53,8 @@ public sealed record PublicShopResponse(
     IReadOnlyList<OpeningIntervalResponse> OpeningHours,
     int CancellationCutoffMinutes,
     bool ListedInDiscovery,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool IsDemo = false);
 
 /// <summary>When a professional can next be booked online (today or tomorrow, their shortest bookable service).</summary>
 public sealed record ProfessionalAvailabilityResponse(Guid ProfessionalId, DateTimeOffset? NextAvailableAt);
@@ -138,7 +139,8 @@ internal sealed class GetPublicShopHandler(
             [.. week.Select(i => new OpeningIntervalResponse(i.Day, i.StartMinute, i.EndMinute))],
             platform.CancellationCutoffMinutes,
             gate.VisibleInDiscovery && shop.Location is not null && summary is not null,
-            shop.UpdatedAt ?? shop.CreatedAt);
+            shop.UpdatedAt ?? shop.CreatedAt,
+            shop.IsDemo);
     }
 }
 

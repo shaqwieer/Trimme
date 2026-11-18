@@ -54,7 +54,8 @@ public sealed record ShopSearchItemResponse(
     DateTimeOffset? EarliestSlotAt,
     string TimeZone,
     string? CoverUrl,
-    string? LogoUrl);
+    string? LogoUrl,
+    bool IsDemo = false);
 
 /// <summary>The lowest and highest pin price of the results before the price filter (the price slider's range).</summary>
 public sealed record PriceRangeResponse(decimal Min, decimal Max);
@@ -115,7 +116,8 @@ public sealed record TopProfessionalResponse(
     string ShopNameAr,
     string ShopNameEn,
     decimal Rating,
-    int ReviewCount);
+    int ReviewCount,
+    bool ShopIsDemo = false);
 
 internal static class DiscoveryRules
 {
@@ -293,7 +295,8 @@ internal sealed class SearchShopsHandler(DiscoveryCatalog catalog) : IQueryHandl
             earliest,
             s.Shop.TimeZone,
             DiscoveryCatalog.MediaUrl(s.Shop.CoverMediaId),
-            DiscoveryCatalog.MediaUrl(s.Shop.LogoMediaId));
+            DiscoveryCatalog.MediaUrl(s.Shop.LogoMediaId),
+            s.Shop.IsDemo);
 }
 
 /// <summary>Categories offered by the shops around a point (or everywhere), with their lowest price (DV-S11).</summary>
@@ -400,7 +403,8 @@ internal sealed class TopProfessionalsHandler(DiscoveryCatalog catalog, IProfess
                     .Take(Math.Clamp(query.Limit, 1, MaxLimit))
                     .Select(c => new TopProfessionalResponse(
                         c.Id.Value, c.Slug, c.NameAr, c.NameEn, c.SpecialtyAr, c.SpecialtyEn, c.AvatarUrl,
-                        shops[c.ShopId].Slug, shops[c.ShopId].NameAr, shops[c.ShopId].NameEn, rated[c.Id.Value].Average, rated[c.Id.Value].Count)),
+                        shops[c.ShopId].Slug, shops[c.ShopId].NameAr, shops[c.ShopId].NameEn, rated[c.Id.Value].Average, rated[c.Id.Value].Count,
+                        shops[c.ShopId].IsDemo)),
             ];
             return Result.Success(top);
         }

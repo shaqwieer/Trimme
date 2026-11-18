@@ -307,7 +307,7 @@ export default async function ShopReportsPage({ params, searchParams }: PageProp
                               v.status !== 'Completed' && !v.unclosed && tStatus(v.status),
                             ]
                               .filter(Boolean)
-                              .join(' · ')}
+                              .join(' — ')}
                           </td>
                         </tr>
                       ))}

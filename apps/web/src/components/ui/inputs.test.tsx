@@ -90,7 +90,7 @@ describe('OtpField', () => {
     renderWithIntl(<OtpField label="رمز التحقق" onComplete={onComplete} />);
     const input = screen.getByLabelText('رمز التحقق');
     expect(input).toHaveAttribute('autocomplete', 'one-time-code');
-    expect(input).toHaveAccessibleDescription('أدخل الرمز المكوّن من 6 أرقام');
+    expect(input).toHaveAccessibleDescription('أدخل الرمز المكوّن من ٦ أرقام');
 
     fireEvent.change(input, { target: { value: '12a3456789' } });
     expect(input).toHaveValue('123456');

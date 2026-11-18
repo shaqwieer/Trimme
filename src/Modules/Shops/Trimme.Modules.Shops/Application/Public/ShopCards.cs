@@ -51,7 +51,8 @@ internal sealed class ShopCards(DiscoveryCatalog catalog) : IShopCards
                 s.Opening?.NextOpensAt,
                 s.Shop.TimeZone,
                 DiscoveryCatalog.MediaUrl(s.Shop.CoverMediaId),
-                DiscoveryCatalog.MediaUrl(s.Shop.LogoMediaId))),
+                DiscoveryCatalog.MediaUrl(s.Shop.LogoMediaId),
+                s.Shop.IsDemo)),
         ];
     }
 }

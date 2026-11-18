@@ -20,7 +20,11 @@ import { Icon } from './icons';
 
 /* ---------------------------------------------------------------- Date strip */
 
-export type DayAvailability = { date: LocalDate; available: boolean };
+/**
+ * A day of the strip. `closed`: the shop is shut that day; an unavailable day that is not closed is full (D-148: the
+ * strip says «مغلق» or «مكتمل» under the number, rather than only striking it through).
+ */
+export type DayAvailability = { date: LocalDate; available: boolean; closed?: boolean };
 
 type DateStripProps = {
   name: string;
@@ -63,7 +67,7 @@ export function DateStrip({ name, days, value, onValueChange, today }: DateStrip
                 disabled={!day.available}
                 checked={value === day.date}
                 onChange={() => onValueChange(day.date)}
-                aria-label={`${formatLocalDate(day.date, locale, { weekday: 'long', day: 'numeric', month: 'long' })}${day.available ? '' : ` — ${t('closed')}`}`}
+                aria-label={`${formatLocalDate(day.date, locale, { weekday: 'long', day: 'numeric', month: 'long' })}${day.available ? '' : ` — ${t(day.closed === false ? 'full' : 'closed')}`}`}
                 className="sr-only"
               />
               <span aria-hidden="true" className="text-badge font-medium">
@@ -76,7 +80,9 @@ export function DateStrip({ name, days, value, onValueChange, today }: DateStrip
                 {formatDayNumber(toUtcNoon(day.date), locale, 'UTC')}
               </span>
               <span aria-hidden="true" className="text-[0.6875rem] font-medium opacity-80">
-                {formatLocalDate(day.date, locale, { month: 'short' })}
+                {day.available
+                  ? formatLocalDate(day.date, locale, { month: 'short' })
+                  : t(day.closed === false ? 'full' : 'closed')}
               </span>
             </label>
           );
@@ -193,7 +199,28 @@ type HourMinutePickerProps = {
   value?: string;
   onValueChange: (start: string) => void;
   timeZone?: string;
+  /** The shop's open windows that day (instants, D-148): every hour in them is shown, taken ones greyed. */
+  open?: { start: string; end: string }[];
 };
+
+/** Each hour (local "HH") the windows touch, with the instant it starts or the window opens in it. */
+function hoursOpen(
+  windows: { start: string; end: string }[],
+  timeZone: string,
+): { hour: string; start: string }[] {
+  const hours: { hour: string; start: string }[] = [];
+  for (const window of windows) {
+    let at = Date.parse(window.start);
+    const end = Date.parse(window.end);
+    while (at < end) {
+      const hour = String(hourInZone(new Date(at).toISOString(), timeZone)).padStart(2, '0');
+      if (!hours.some((h) => h.hour === hour)) hours.push({ hour, start: new Date(at).toISOString() });
+      const minute = new Date(at).getUTCMinutes();
+      at += (60 - minute) * 60_000 - new Date(at).getUTCSeconds() * 1000;
+    }
+  }
+  return hours;
+}
 
 /**
  * The booking wizard's time picker in two steps (D-125): the hours that have a free start, then that hour's free
@@ -206,6 +233,7 @@ export function HourMinutePicker({
   value,
   onValueChange,
   timeZone = OPERATING_TIME_ZONE,
+  open = [],
 }: HourMinutePickerProps) {
   const t = useTranslations('ui.slots');
   const locale = useLocale() as AppLocale;
@@ -223,15 +251,24 @@ export function HourMinutePicker({
   }
 
   const hourOf = (slot: TimedSlot) => slot.localTime.slice(0, 2);
-  const hours = [...new Set(slots.map(hourOf))];
+  const freeHours = new Set(slots.map(hourOf));
+  // Every hour the shop is open that day, in order (D-148, «٤-٣»): an hour with no free start stays in its place,
+  // greyed and struck through, so the day never looks emptier than it is.
+  const openHours = hoursOpen(open, timeZone);
+  const hourStart = (h: string) =>
+    slots.find((slot) => hourOf(slot) === h)?.start ?? openHours.find((o) => o.hour === h)!.start;
+  // In the day's order by the clock, so the hours after midnight of a late business day come last (D-100).
+  const hours = [...new Set([...openHours.map((h) => h.hour), ...freeHours])].sort(
+    (a, b) => Date.parse(hourStart(a)) - Date.parse(hourStart(b)),
+  );
   const chosen = slots.find((slot) => slot.start === value);
   const hour =
     picked && hours.includes(picked)
       ? picked
       : chosen
         ? hourOf(chosen)
-        : hours.length === 1
-          ? hours[0]
+        : freeHours.size === 1
+          ? [...freeHours][0]
           : undefined;
   // Every 5 minutes of the hour, :00 to :55 (D-130): the free ones can be picked, the rest are shown greyed out.
   const inHour = slots.filter((slot) => hourOf(slot) === hour);
@@ -256,20 +293,32 @@ export function HourMinutePicker({
       <fieldset className="flex min-w-0 flex-col">
         <legend className="pb-2.5 text-label font-bold text-text-strong">{t('hour')}</legend>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
-          {hours.map((h) => (
-            // The hour alone (D-144): how many minutes it has free shows once it is opened.
-            <label key={h} className={chip}>
-              <input
-                type="radio"
-                name={`${name}-hour`}
-                value={h}
-                checked={hour === h}
-                onChange={() => setPicked(h)}
-                className="sr-only"
-              />
-              {formatHour(slots.find((slot) => hourOf(slot) === h)!.start, locale, timeZone)}
-            </label>
-          ))}
+          {hours.map((h) =>
+            freeHours.has(h) ? (
+              // The hour alone (D-144): how many minutes it has free shows once it is opened.
+              <label key={h} className={chip}>
+                <input
+                  type="radio"
+                  name={`${name}-hour`}
+                  value={h}
+                  checked={hour === h}
+                  onChange={() => setPicked(h)}
+                  className="sr-only"
+                />
+                {formatHour(hourStart(h), locale, timeZone)}
+              </label>
+            ) : (
+              <span
+                key={h}
+                aria-disabled="true"
+                title={t('taken')}
+                className="flex min-h-11 cursor-not-allowed items-center justify-center rounded-field border-[1.5px] border-border-row bg-bg-muted px-2 text-[0.84375rem] font-bold text-text-disabled line-through"
+              >
+                <span className="sr-only">{t('taken')}: </span>
+                {formatHour(hourStart(h), locale, timeZone)}
+              </span>
+            ),
+          )}
         </div>
       </fieldset>
       {hour ? (

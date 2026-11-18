@@ -77,7 +77,7 @@ describe('QR components', () => {
     );
     expect(screen.getByRole('heading', { name: 'صفحة سلطان الحربي' })).toBeInTheDocument();
     expect(screen.getByText('groomhere.sa/q/aswn7qkd')).toHaveAttribute('dir', 'ltr');
-    expect(screen.getByText('42 مسح · 7 حجز')).toBeInTheDocument();
+    expect(screen.getByText('٤٢ مسح — ٧ حجز')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'رمز QR يفتح صفحة سلطان الحربي' })).toBeInTheDocument();
     const pdf = screen.getByRole('link', { name: 'تنزيل الرمز aswn7qkd بصيغة PDF' });
     expect(pdf).toHaveAttribute('href', '/api/v1/shop/qr/codes/c1/image?format=pdf');

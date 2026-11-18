@@ -175,7 +175,14 @@ public static class BookingRules
     public const int MaxNameLength = 120;
     public const int MaxNoteLength = 500;
     public const int MaxReasonLength = 300;
-    public const int ReferenceLength = 8;
+
+    /// <summary>The column's length: «GH-» and 5 characters today (D-148); the 8-character references made before stay valid.</summary>
+    public const int MaxReferenceLength = 12;
+
+    /// <summary>A short reference read out over the phone (D-148: «GH-4K7QM»).</summary>
+    public const string ReferencePrefix = "GH-";
+
+    public const int ReferenceCodeLength = 5;
 
     /// <summary>A booked professional may be marked arrived from this long before the start.</summary>
     public static readonly TimeSpan ArrivalWindow = TimeSpan.FromMinutes(60);
@@ -211,10 +218,15 @@ public static class BookingRules
 
     public static bool IsCancelled(BookingStatus status) => status is BookingStatus.CancelledByCustomer or BookingStatus.CancelledByShop;
 
+    /// <summary>
+    /// «GH-» and 5 unambiguous characters, about 28 million codes (D-148). The unique index refuses a repeat; the creation
+    /// paths then draw again (<see cref="Booking.RenewReference"/>).
+    /// </summary>
     public static string NewReference() =>
-        string.Create(ReferenceLength, 0, (chars, _) =>
+        string.Create(ReferencePrefix.Length + ReferenceCodeLength, 0, (chars, _) =>
         {
-            for (var i = 0; i < chars.Length; i++)
+            ReferencePrefix.AsSpan().CopyTo(chars);
+            for (var i = ReferencePrefix.Length; i < chars.Length; i++)
             {
                 chars[i] = ReferenceAlphabet[RandomNumberGenerator.GetInt32(ReferenceAlphabet.Length)];
             }
@@ -447,6 +459,16 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public bool IsActive => BookingRules.IsActive(Status);
 
+    /// <summary>
+    /// For a package booking, the services booked with it or added at the visit (D-148, D-147): the items that carry their
+    /// own price. Empty for any other booking.
+    /// </summary>
+    public IReadOnlyList<Guid> PackageExtras =>
+        PackageId is null ? [] : [.. PackageItems.Where(i => i.Price is not null && i.DurationMinutes is not null).Select(i => i.ServiceId)];
+
+    /// <summary>Draws a new reference before the booking is first saved, when the drawn one is taken (D-148).</summary>
+    internal void RenewReference() => Reference = BookingRules.NewReference();
+
     /// <summary>Recorded by the shop: a walk-in or a phone booking (D-147), as opposed to the customer's own online booking.</summary>
     public bool IsShopRecorded => Channel is BookingChannel.WalkIn or BookingChannel.Phone;
 
@@ -670,7 +692,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
             return BookingErrors.ServiceNotBooked();
         }
 
-        if (PackageId is not null && !item.Added)
+        // A package's own services stay with it; services booked with it (D-148) or added at the visit carry their own price.
+        if (PackageId is not null && item.Price is null)
         {
             return BookingErrors.PackageServiceFixed();
         }

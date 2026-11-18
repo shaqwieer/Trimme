@@ -56,6 +56,11 @@ export function calendarDaysUntil(
  * Where a booking came from, as the shop and admin lists label it (design «التطبيق / رمز QR / حضوري»): an online booking
  * credited to a QR scan shows «رمز QR» (D-114).
  */
+/** Whether an instant is in the past (now by default): a booking whose time has gone by (D-148). */
+export function hasPassed(instant: string, now: Date = new Date()): boolean {
+  return Date.parse(instant) < now.getTime();
+}
+
 export function bookingSource(booking: {
   channel: 'Online' | 'WalkIn' | 'Phone';
   viaQr: boolean;

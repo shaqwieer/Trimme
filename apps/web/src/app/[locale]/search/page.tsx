@@ -158,7 +158,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<'/[
           </span>
           {!location && (
             <>
-              {' · '}
+              {' — '}
               {t('noLocation')}{' '}
               <Link
                 href={{ pathname: '/onboarding/location', query: { returnTo: '/search' } }}

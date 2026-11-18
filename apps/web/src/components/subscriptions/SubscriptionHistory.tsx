@@ -41,7 +41,7 @@ export function SubscriptionHistory({ subscription }: { subscription: Subscripti
         p.notes,
       ]
         .filter(Boolean)
-        .join(' · '),
+        .join(' — '),
     } satisfies TimelineItem,
   }));
 

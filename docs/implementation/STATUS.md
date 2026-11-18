@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-18 (Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
+- **Updated:** 2026-11-19 (Session 28, second request: the customer's pages — category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts (D-148). Before it, Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -81,6 +81,23 @@
   - **Postponement with consent:** the barber offers an online booking a new time, held for the customer (database triggers under a per-barber lock) until an hour before the original start; the customer accepts or declines on the booking page (in-app notice; no WhatsApp template yet).
   - **Reports and expected income** (`/shop/reports`): day, week, month; per barber and shop; loyalty by who closed the visit. **The owner's packages** pages.
   - Migration 25 `BarberOperations` (additive). .NET, web and E2E gates in `phases/after-17-d147-barber-operations.md`. Committed locally, **not pushed or deployed**.
+- **Session 28, second request (D-148), at the user's request** (the client's document, sections 3 and 4):
+  - **Catalog:** category tabs over tiles, two to a row, packages last, on the shop page (CSS-only radios drawn on the server) and the booking step (ARIA tabs). A tab counts its chosen items. A package with other services in one booking, showing what it saves; a service already in the package is refused with a message. «كل الخدمات» is gone.
+  - **Numbers:** Arabic-Indic digits for every Arabic quantity (formatters and ICU messages); the Riyal sign U+20C1 from a bundled one-glyph font; «—» instead of «·». English stays Latin with «SAR».
+  - **Times:** taken hours greyed and struck through in place; «مغلق» and «مكتمل» days; «منتصف الليل» and «… فجر الجمعة».
+  - **Other items:**
+    - the draft survives leaving the page (a first-party cookie);
+    - the no-specialist message names the service;
+    - «جديد» below 3 ratings;
+    - «بانتظار تأكيد المحل»;
+    - WhatsApp share;
+    - the unavailable-shop page;
+    - «رائج في الرياض»;
+    - «تجريبي» marks and the admin switch;
+    - references «GH-xxxxx»;
+    - cancelling or changing until the start (platform window 0);
+    - full terms and privacy in ar, en and tr (a lawyer must review them).
+  - Migration 26 `CustomerPages` (adds `is_demo`, widens `reference`, sets the cancellation window to 0). Gates are in `phases/after-17-d148-customer-pages.md`. Committed locally, **not pushed or deployed**.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

@@ -294,7 +294,7 @@ export default async function AdminHomePage({ params, searchParams }: PageProps<
                       >
                         {t('followUp.expired', { count: counts.expired })}
                       </Link>
-                      {' · '}
+                      {' — '}
                       <Link
                         href="/admin/subscriptions?status=Suspended"
                         className="font-bold text-brand-700 hover:underline"

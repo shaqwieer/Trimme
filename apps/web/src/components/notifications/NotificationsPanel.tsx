@@ -127,11 +127,11 @@ export function NotificationsPanel({ audience, items, unread }: Props) {
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <p className={cn('text-body', read ? 'text-text-strong' : 'font-bold text-text-primary')}>
-                  {!read && <span className="sr-only">{t('unread')} · </span>}
+                  {!read && <span className="sr-only">{t('unread')} — </span>}
                   {text}
                 </p>
                 <p className="text-helper text-text-secondary">
-                  {formatDate(notice.createdAt, locale, { withWeekday: false })} ·{' '}
+                  {formatDate(notice.createdAt, locale, { withWeekday: false })} —{' '}
                   {formatTime(notice.createdAt, locale)}
                 </p>
                 <div className="flex flex-wrap gap-3">

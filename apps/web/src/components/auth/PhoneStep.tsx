@@ -29,7 +29,7 @@ const schema = (mode: Mode) =>
   });
 
 /**
- * Customer sign-up / sign-in, step 1 (design c-auth "SIGN UP · OTP REQUEST"): mobile number with the fixed +966
+ * Customer sign-up / sign-in, step 1 (design c-auth "SIGN UP — OTP REQUEST"): mobile number with the fixed +966
  * prefix; sign-up also asks for terms acceptance.
  * - Codes off (`otpRequired` false, the default, D-143): the number alone signs the customer in, or creates the
  *   account; a new customer continues to profile completion, as after the verify step.

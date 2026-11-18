@@ -172,4 +172,5 @@ public sealed record ShopCard(
     DateTimeOffset? NextOpensAt,
     string TimeZone,
     string? CoverUrl,
-    string? LogoUrl);
+    string? LogoUrl,
+    bool IsDemo = false);

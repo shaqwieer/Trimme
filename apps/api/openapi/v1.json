@@ -4375,6 +4375,58 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/demo": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Marks the shop as a demo, so its card and page say \u00AB\u062A\u062C\u0631\u064A\u0628\u064A\u00BB (D-148; audited).",
+        "operationId": "AdminSetShopDemo",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopDemoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/shops/{shopId}/editable-policy": {
       "put": {
         "tags": [
@@ -16229,6 +16281,10 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A shop with its full profile, location and shop-edit policy, as the platform admin edits it."
@@ -16328,6 +16384,10 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A shop in the admin list."
@@ -16901,7 +16961,8 @@
       "AvailableDateResponse": {
         "required": [
           "date",
-          "slotCount"
+          "slotCount",
+          "closed"
         ],
         "type": "object",
         "properties": {
@@ -16912,8 +16973,12 @@
           "slotCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "closed": {
+            "type": "boolean"
           }
-        }
+        },
+        "description": "A date of the strip: its free starts, and whether the shop is closed then (\u00AB\u0645\u063A\u0644\u0642\u00BB; open with none is \u00AB\u0645\u0643\u062A\u0645\u0644\u00BB, D-148)."
       },
       "AvailableDatesResponse": {
         "required": [
@@ -16961,7 +17026,8 @@
           "timeZone",
           "bookable",
           "blockedReason",
-          "slots"
+          "slots",
+          "open"
         ],
         "type": "object",
         "properties": {
@@ -16986,9 +17052,15 @@
             "items": {
               "$ref": "#/components/schemas/AvailabilitySlotResponse"
             }
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindow"
+            }
           }
         },
-        "description": "Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force\u2026),\n\u0060Bookable\u0060 is false, \u0060BlockedReason\u0060 says why and there are no slots (D-013, D-078)."
+        "description": "Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force\u2026),\n\u0060Bookable\u0060 is false, \u0060BlockedReason\u0060 says why and there are no slots (D-013, D-078). \u0060Open\u0060 is the\nshop\u0027s opening windows of that business day (D-148): the page lays every time out in order and greys the taken ones."
       },
       "BarberDayBreaksRequest": {
         "required": [
@@ -22354,6 +22426,10 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. No phone number\nat all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a\npublic contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed)."
@@ -23156,7 +23232,8 @@
       "RescheduleDateResponse": {
         "required": [
           "date",
-          "slotCount"
+          "slotCount",
+          "closed"
         ],
         "type": "object",
         "properties": {
@@ -23167,8 +23244,12 @@
           "slotCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "closed": {
+            "type": "boolean"
           }
-        }
+        },
+        "description": "A date the booking can move to: its free starts, and whether the shop is closed then (D-148)."
       },
       "RescheduleDatesResponse": {
         "required": [
@@ -23226,7 +23307,8 @@
           "blockedReason",
           "timeZone",
           "date",
-          "slots"
+          "slots",
+          "open"
         ],
         "type": "object",
         "properties": {
@@ -23251,8 +23333,15 @@
             "items": {
               "$ref": "#/components/schemas/RescheduleSlotResponse"
             }
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindow"
+            }
           }
-        }
+        },
+        "description": "The free starts of one date, and the shop\u0027s opening windows that day so the taken times show greyed (D-148)."
       },
       "ResetPasswordRequest": {
         "required": [
@@ -24188,6 +24277,18 @@
           }
         },
         "description": "The owner\u0027s figures for the last Days days: completed visits by customers coming for the first time\n(each one a new customer) and by customers who had been before."
+      },
+      "ShopDemoRequest": {
+        "required": [
+          "isDemo"
+        ],
+        "type": "object",
+        "properties": {
+          "isDemo": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether the shop is a demo (D-148): its card and page say \u00AB\u062A\u062C\u0631\u064A\u0628\u064A\u00BB."
       },
       "ShopImageResponse": {
         "required": [
@@ -25195,6 +25296,10 @@
               "null",
               "string"
             ]
+          },
+          "isDemo": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A shop in discovery results. \u0060PinPrice\u0060 is the matched offer\u0027s price, else the shop\u0027s lowest (the map pin and\nthe \u0022from\u0022 price, mapRules #1). \u0060DistanceKm\u0060 is set only when the search has a location. \u0060EarliestSlotAt\u0060 is\nthe first bookable start today or tomorrow (null when there is none, or when the shop was not probed). No phone numbers."
@@ -26324,6 +26429,27 @@
         },
         "description": "Time off. \u0060StartDate\u0060/\u0060EndDate\u0060 are the shop-local days it covers (inclusive); the minutes are null for an\nall-day entry."
       },
+      "TimeWindow": {
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "TimeWindowResponse": {
         "required": [
           "start",
@@ -26405,6 +26531,10 @@
           "reviewCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "shopIsDemo": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A highly rated professional of a listed shop (only stored ratings; no contact data)."

@@ -112,7 +112,7 @@ export default async function WhatsAppDispatchesPage({
                           : 'border-border-strong bg-surface text-text-strong'
                       }`}
                     >
-                      {t(`dispatches.status.${value ?? 'all'}`)} · {formatNumber(countOf(value), lang)}
+                      {t(`dispatches.status.${value ?? 'all'}`)} — {formatNumber(countOf(value), lang)}
                     </Link>
                   </li>
                 ))}
@@ -182,7 +182,7 @@ export default async function WhatsAppDispatchesPage({
                     >
                       {t(`event.${row.event}`)}
                       {row.kind !== 'Lifecycle' && (
-                        <span className="text-text-secondary"> · {t(`dispatches.kind.${row.kind}`)}</span>
+                        <span className="text-text-secondary"> — {t(`dispatches.kind.${row.kind}`)}</span>
                       )}
                     </Link>
                   ),

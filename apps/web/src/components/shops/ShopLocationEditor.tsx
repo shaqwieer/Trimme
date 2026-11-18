@@ -54,7 +54,7 @@ export function ShopLocationEditor({ mode, location, canEdit, locale }: ShopLoca
     <div className="flex flex-col gap-3">
       {location && (
         <p className="text-helper text-text-tertiary">
-          {t('source')}: {tSource(location.source)} · {t('confirmedAt')}:{' '}
+          {t('source')}: {tSource(location.source)} — {t('confirmedAt')}:{' '}
           {formatDate(location.confirmedAt, locale)}
         </p>
       )}

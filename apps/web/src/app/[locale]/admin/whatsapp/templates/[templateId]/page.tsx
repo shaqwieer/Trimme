@@ -31,7 +31,7 @@ export default async function WhatsAppTemplatePage({
           params: { path: { templateId } },
         });
         if (!data) return <ErrorState />;
-        const title = `${t('templates.editorTitle', { event: t(`event.${data.event}`) })} · ${t(`audience.${data.audience}`)} · ${t(`locale.${localeKey(data.locale)}`)}`;
+        const title = `${t('templates.editorTitle', { event: t(`event.${data.event}`) })} — ${t(`audience.${data.audience}`)} — ${t(`locale.${localeKey(data.locale)}`)}`;
         return (
           <div className="flex flex-col gap-4">
             <Breadcrumb

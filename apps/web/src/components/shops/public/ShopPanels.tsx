@@ -3,7 +3,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { ButtonLink } from '@/components/ui/Button';
 import { RatingDistribution } from '@/components/ui/charts';
 import { Pagination } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
@@ -22,12 +21,31 @@ import type {
 } from '@/lib/api/public-types';
 import { durationParts, minuteOfDay, relativeTime } from '@/lib/discovery/format';
 import { isTomorrow } from '@/lib/discovery/opening';
-import { bookHref, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
-import { type AppLocale, formatDurationMinutes, formatPrice, formatRating, formatTime } from '@/lib/i18n/format';
-import { langIfOther, type LocalizedText, localizedName, localizedText } from '@/lib/i18n/localized';
+import { getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
+import { type AppLocale, formatRating, formatTime } from '@/lib/i18n/format';
+import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
+import { ShopServiceCatalog } from '@/components/shops/public/ShopServiceCatalog';
+import type { CatalogCategory } from '@/lib/booking/catalog';
 import { ShopMiniMap } from './ShopMiniMap';
 
 const WEEK: OpeningInterval['day'][] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * A window's closing time as people say it (D-148): «منتصف الليل» rather than «١٢:٠٠ ص», and a close after midnight
+ * with the next day's name, «٢:٠٠ فجر الجمعة».
+ */
+function closingLabel(
+  window: OpeningInterval,
+  locale: AppLocale,
+  t: (key: 'midnight' | 'afterMidnight', values?: Record<string, string>) => string,
+  tDays: (day: OpeningInterval['day']) => string,
+): string {
+  const end = window.endMinute <= window.startMinute ? window.endMinute + 1440 : window.endMinute;
+  if (end === 1440) return t('midnight');
+  if (end < 1440) return minuteOfDay(end, locale);
+  const next = WEEK[(WEEK.indexOf(window.day) + 1) % WEEK.length]!;
+  return t('afterMidnight', { time: minuteOfDay(end, locale, { withPeriod: locale !== 'ar' }), day: tDays(next) });
+}
 
 /** Services then packages, each with price, duration and a booking link (DV-S12: packages get their own section). */
 export function ServicesPanel({
@@ -35,88 +53,51 @@ export function ServicesPanel({
   services,
   packages,
   bookable,
+  categories = [],
 }: {
   slug: string;
   services: PublicService[];
   packages: PublicPackage[];
   bookable: boolean;
+  /** The platform's service categories, in order: the tabs (D-148). */
+  categories?: CatalogCategory[];
 }) {
   const t = useTranslations('shopPage.services');
-  const locale = useLocale() as AppLocale;
   if (services.length === 0 && packages.length === 0) return <EmptyState icon="scissors" title={t('empty')} />;
-
-  const row = (key: string, name: string, detail: LocalizedText | null, price: number, currency: string, minutes: number, href: string | null) => (
-    <li key={key} className="flex items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 shadow-e1">
-      <div className="flex min-w-0 flex-col gap-1">
-        <h3 className="text-label font-bold text-text-primary">{name}</h3>
-        {detail && (
-          <p lang={langIfOther(detail, locale)} className="text-helper text-text-secondary">
-            {detail.text}
-          </p>
-        )}
-        <p className="text-helper text-text-tertiary">{formatDurationMinutes(minutes, locale)}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="font-latin text-[1.0625rem] font-extrabold text-navy-900">{formatPrice(price, locale, currency)}</span>
-        {href ? (
-          <ButtonLink href={href} variant="secondary" size="xs" aria-label={t('bookLabel', { name })}>
-            {t('book')}
-          </ButtonLink>
-        ) : (
-          <Badge tone="neutral" size="sm">
-            {t('walkInOnly')}
-          </Badge>
-        )}
-      </div>
-    </li>
-  );
-
+  // Category tabs and tiles, packages last (D-148, «٤-١»), as the booking's service step shows them.
   return (
-    <div className="flex flex-col gap-6">
-      {services.length > 0 && (
-        <section aria-labelledby="services-heading" className="flex flex-col gap-3">
-          <h2 id="services-heading" className="sr-only">
-            {t('title')}
-          </h2>
-          <ul className="flex flex-col gap-3">
-            {services.map((s) =>
-              row(
-                s.id,
-                localizedName(locale, s.nameAr, s.nameEn),
-                localizedText(locale, s.descriptionAr, s.descriptionEn),
-                s.price,
-                s.currency,
-                s.durationMinutes,
-                bookable && s.onlineBookable ? bookHref(slug, { service: s.id, step: 'service' }) : null,
-              ),
-            )}
-          </ul>
-        </section>
-      )}
-      {packages.length > 0 && (
-        <section aria-labelledby="packages-heading" className="flex flex-col gap-3">
-          <h2 id="packages-heading" className="text-h3 font-bold text-navy-900">
-            {t('packages')}
-          </h2>
-          <ul className="flex flex-col gap-3">
-            {packages.map((p) =>
-              row(
-                p.id,
-                localizedName(locale, p.nameAr, p.nameEn),
-                {
-                  text: t('includes', { items: p.items.map((i) => localizedName(locale, i.nameAr, i.nameEn)).join(locale === 'ar' ? '، ' : ', ') }),
-                  lang: locale,
-                },
-                p.price,
-                p.currency,
-                p.durationMinutes,
-                bookable ? bookHref(slug, { package: p.id }) : null,
-              ),
-            )}
-          </ul>
-        </section>
-      )}
-    </div>
+    <ShopServiceCatalog
+      slug={slug}
+      bookable={bookable}
+      categories={categories}
+      onlineIds={services.filter((s) => s.onlineBookable).map((s) => s.id)}
+      items={[
+        ...services.map((s) => ({
+          kind: 'service' as const,
+          id: s.id,
+          nameAr: s.nameAr,
+          nameEn: s.nameEn ?? null,
+          descriptionAr: s.descriptionAr ?? null,
+          descriptionEn: s.descriptionEn ?? null,
+          price: s.price,
+          currency: s.currency,
+          durationMinutes: s.durationMinutes,
+          categoryId: s.categoryId ?? null,
+        })),
+        ...packages.map((p) => ({
+          kind: 'package' as const,
+          id: p.id,
+          nameAr: p.nameAr,
+          nameEn: p.nameEn ?? null,
+          descriptionAr: p.descriptionAr ?? null,
+          descriptionEn: p.descriptionEn ?? null,
+          price: p.price,
+          currency: p.currency,
+          durationMinutes: p.durationMinutes,
+          itemIds: p.items.map((i) => i.serviceId),
+        })),
+      ]}
+    />
   );
 }
 
@@ -173,7 +154,7 @@ export function ProfessionalsPanel({
                 </Link>
               </h3>
               {specialty && <p className="text-helper text-text-secondary">{specialty}</p>}
-              {p.reviewCount > 0 && <RatingStars value={p.rating} count={p.reviewCount} />}
+              <RatingStars value={p.rating} count={p.reviewCount} />
             </div>
             <div className="shrink-0">{nextTimes[p.id]}</div>
           </li>
@@ -198,7 +179,7 @@ function ReviewItem({ review }: { review: PublicReview }) {
           </span>
           <span className="text-helper text-text-tertiary">
             {relativeTime(review.createdAt, locale)}
-            {' · '}
+            {' — '}
             {localizedName(locale, review.itemNameAr, review.itemNameEn)}
           </span>
         </div>
@@ -260,6 +241,7 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
   const tDays = useTranslations('shopSchedule.days');
   const tAmenity = useTranslations('amenity');
   const tCategory = useTranslations('shopCategory');
+  const tOpening = useTranslations('opening');
   const locale = useLocale() as AppLocale;
   const description = localizedText(locale, shop.descriptionAr, shop.descriptionEn);
   const cancel = durationParts(shop.cancellationCutoffMinutes);
@@ -297,7 +279,9 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
                     <td className="py-2.5 text-end text-text-strong">
                       {windows.length === 0
                         ? t('closed')
-                        : windows.map((w) => `${minuteOfDay(w.startMinute, locale)} — ${minuteOfDay(w.endMinute, locale)}`).join(locale === 'ar' ? '، ' : ', ')}
+                        : windows
+                            .map((w) => `${minuteOfDay(w.startMinute, locale)} — ${closingLabel(w, locale, tOpening, tDays)}`)
+                            .join(locale === 'ar' ? '، ' : ', ')}
                     </td>
                   </tr>
                 );
@@ -314,7 +298,8 @@ export function AboutPanel({ shop, name }: { shop: PublicShop; name: string }) {
         <ul className="flex flex-col gap-2 text-body text-text-strong">
           <li className="flex items-center gap-2">
             <Icon name="clock" className="size-5 text-brand-600" />
-            {t('cancel', { duration: cancelText })}
+            {/* Any time before the start (D-148, the client's decision): the platform's cutoff is 0. */}
+            {shop.cancellationCutoffMinutes === 0 ? t('cancelUntilStart') : t('cancel', { duration: cancelText })}
           </li>
           <li className="flex items-center gap-2">
             <Icon name="store" className="size-5 text-brand-600" />

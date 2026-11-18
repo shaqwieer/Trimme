@@ -14,7 +14,8 @@ internal static class RescheduleTargets
     {
         var staff = await professionals.ListByShopAsync(booking.ShopId, cancellationToken);
         var offer = await catalog.FindBookedAsync(
-            booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken);
+            booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken,
+            booking.PackageExtras);
         var eligible = offer?.EligibleProfessionalIds.ToHashSet() ?? [];
         return [.. staff.Where(p => p.Id == booking.ProfessionalId || (p.IsActive && eligible.Contains(p.Id)))];
     }

@@ -116,10 +116,12 @@
   --color-status-noshow-dot: #98a7b5;
 
   /* Typography — families are wired to next/font variables in globals.css */
-  --font-arabic: var(--font-tajawal), 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --font-latin: var(--font-inter), system-ui, sans-serif;
+  /* The Riyal sign font covers U+20C1 only (D-148), so it can lead every stack. */
+  --font-arabic: var(--font-riyal), var(--font-tajawal), 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  /* Arabic-Indic digits (D-148) fall through to Tajawal, which has them. */
+  --font-latin: var(--font-riyal), var(--font-inter), var(--font-tajawal), system-ui, sans-serif;
   /* Latin glyphs (incl. Latin digits) resolve to Inter, Arabic glyphs fall through to Tajawal. */
-  --font-sans: var(--font-inter), var(--font-tajawal), system-ui, sans-serif;
+  --font-sans: var(--font-riyal), var(--font-inter), var(--font-tajawal), system-ui, sans-serif;
 
   --text-display: 2rem; /* 32 */
   --text-display--line-height: 1.35;

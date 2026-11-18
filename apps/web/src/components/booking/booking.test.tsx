@@ -194,7 +194,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
 
     const review = await screen.findByTestId('booking-review');
     expect(review).toHaveTextContent('الإجمالي (يُدفع في الصالون)');
-    expect(review).toHaveTextContent('85 ر.س');
+    expect(review).toHaveTextContent('٨٥ \u20C1');
     expect(review).toHaveTextContent('أي مختص متاح — نحدده عند التأكيد');
     expect(review).toHaveTextContent('ساعتين');
     // R-NEG-02: nothing asks for a card or a payment.
@@ -390,7 +390,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
     await user.click(screen.getByRole('checkbox', { name: /تهذيب لحية/ }));
     expect(screen.getByTestId('wizard-footer-note')).toHaveTextContent('خدمتان');
-    expect(screen.getByText('125 ر.س')).toBeInTheDocument();
+    expect(screen.getByText('١٢٥ \u20C1')).toBeInTheDocument();
     expect(window.location.search).toBe('?service=svc-1&service=svc-2&step=service');
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
@@ -405,7 +405,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     const review = await screen.findByTestId('booking-review');
     expect(review).toHaveTextContent('قص وتصفيف');
     expect(review).toHaveTextContent('تهذيب لحية');
-    expect(review).toHaveTextContent('125 ر.س');
+    expect(review).toHaveTextContent('١٢٥ \u20C1');
     const datesCall = api.GET.mock.calls.find(([path]) => String(path).endsWith('/dates'))!;
     expect(datesCall[1].params.query).toMatchObject({ serviceIds: ['svc-1', 'svc-2'], serviceId: undefined });
     await user.click(screen.getByRole('button', { name: 'تأكيد الحجز' }));
@@ -416,24 +416,116 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     });
   });
 
-  it('"All services" picks every service one specialist does, so the set can be booked (D-130)', async () => {
+  it('shows the services in category tabs with packages last, counts the chosen ones, and books a package with a service (D-148)', async () => {
     const user = userEvent.setup();
     availability();
-    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'] };
+    const HAIR = { ...SERVICE, categoryId: 'hair' };
+    const TRIM = { ...BEARD, categoryId: 'beard' };
+    const WASH = {
+      ...BEARD,
+      id: 'svc-4',
+      nameAr: 'غسيل شعر',
+      price: 15,
+      durationMinutes: 10,
+      categoryId: null,
+    };
+    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'], categoryId: null };
+    const PACKAGE: WizardOffer = {
+      ...SERVICE,
+      kind: 'package',
+      id: 'pkg-1',
+      nameAr: 'باقة قص ولحية',
+      descriptionAr: null,
+      price: 110,
+      durationMinutes: 50,
+      professionalIds: ['omar'],
+      itemIds: ['svc-1', 'svc-2'],
+    };
     renderWizard(
       <BookingWizard
-        shop={{ ...SHOP, slug: 'all-services' }}
-        offers={[SERVICE, BEARD, COLOR]}
+        shop={{ ...SHOP, slug: 'catalog-tabs' }}
+        offers={[HAIR, TRIM, WASH, COLOR, PACKAGE]}
+        categories={[
+          { id: 'hair', nameAr: 'الشعر', nameEn: 'Hair' },
+          { id: 'beard', nameAr: 'اللحية', nameEn: 'Beard' },
+        ]}
         professionals={PROS}
         viewer="customer"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'كل الخدمات' }));
-    // Majed does the beard and the colour; Omar the cut and the beard: a tie keeps the first specialist, Omar.
-    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /تهذيب لحية/ })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /صبغة/ })).not.toBeChecked();
+
+    // «٤-١»: the shop's categories, then «أخرى», then the packages; no «كل الخدمات» list and no «٠» on a tab.
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'الشعر',
+      'اللحية',
+      'أخرى',
+      'الباقات',
+    ]);
+    expect(screen.queryByRole('button', { name: 'كل الخدمات' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
+    expect(screen.getByRole('tab', { name: /^الشعر.*خدمة مختارة$/ })).toHaveTextContent('١');
+
+    // «٤-٢»: the package says what it saves (١٢٥ for both services against ١١٠) and replaces the service inside it.
+    await user.click(screen.getByRole('tab', { name: 'الباقات' }));
+    expect(screen.getByText('توفّر ١٥ \u20C1')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /باقة قص ولحية/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('شلنا قص وتصفيف لأنها داخل «باقة قص ولحية»');
+    expect(screen.getByRole('tab', { name: 'الشعر' })).toHaveTextContent(/^الشعر$/);
+
+    // A service already in the package is not added twice, and says why.
+    await user.click(screen.getByRole('tab', { name: 'اللحية' }));
+    await user.click(screen.getByRole('checkbox', { name: /تهذيب لحية/ }));
+    expect(screen.getByRole('checkbox', { name: /تهذيب لحية/ })).not.toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('«تهذيب لحية» موجودة في «باقة قص ولحية»');
+
+    // Another service goes with the package: the prices and lengths add up, sent as one booking.
+    await user.click(screen.getByRole('tab', { name: 'أخرى' }));
+    await user.click(screen.getByRole('checkbox', { name: /غسيل شعر/ }));
+    expect(screen.getByText('١٢٥ \u20C1')).toBeInTheDocument();
+    expect(window.location.search).toBe('?package=pkg-1&service=svc-4&step=service');
     expect(screen.getByRole('button', { name: 'التالي' })).toBeEnabled();
+
+    // «٤-٨»: a service no one does with the rest is named.
+    await user.click(screen.getByRole('checkbox', { name: /صبغة/ }));
+    expect(screen.getByText(/ما فيه مختص واحد يسوي «صبغة» مع باقي خدماتك/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
+  });
+
+  it('keeps the choices in a first-party draft cookie (ids and step only) and restores them on a bare link (D-148)', async () => {
+    const user = userEvent.setup();
+    availability();
+    const draft = () =>
+      decodeURIComponent(
+        document.cookie
+          .split('; ')
+          .find((c) => c.startsWith('gh-booking-draft='))
+          ?.slice('gh-booking-draft='.length) ?? '',
+      );
+    const first = renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'draft-shop' }}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
+    expect(draft()).toBe('draft-shop|service=svc-1&step=service');
+    first.unmount();
+
+    // Another shop's draft, left by an earlier visit (only the cookie knows it): a bare link picks it up.
+    document.cookie = `gh-booking-draft=${encodeURIComponent('cookie-shop|service=svc-1&step=service')}; Path=/`;
+    window.history.replaceState(null, '', '/ar/shops/cookie-shop/book');
+    renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'cookie-shop' }}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+    await waitFor(() => expect(window.location.search).toContain('service=svc-1'));
+    expect(draft()).not.toMatch(/note|phone|name/);
   });
 
   it('says when no single specialist does every chosen service', async () => {
@@ -450,7 +542,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     );
     await user.click(screen.getByRole('checkbox', { name: /قص وتصفيف/ }));
     await user.click(screen.getByRole('checkbox', { name: /صبغة/ }));
-    expect(screen.getByText(/لا يوجد مختص واحد يقدّم كل هذه الخدمات/)).toBeInTheDocument();
+    expect(screen.getByText(/ما فيه مختص واحد يسوي «صبغة» مع باقي خدماتك/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
   });
 
@@ -512,7 +604,7 @@ describe('ReviewForm (c-rate, R-CUS-09)', () => {
     const { container } = renderWithIntl(<ReviewForm bookingId="b1" />);
 
     expect(screen.getByRole('button', { name: 'اختر عدد النجوم أولاً' })).toBeDisabled();
-    await user.click(screen.getByRole('radio', { name: '4 من 5' }));
+    await user.click(screen.getByRole('radio', { name: '٤ من ٥' }));
     expect(screen.getByTestId('star-label')).toHaveTextContent('ممتازة');
     await user.click(screen.getByRole('button', { name: 'النظافة' }));
     await user.click(screen.getByRole('button', { name: 'الالتزام بالوقت' }));
@@ -533,7 +625,7 @@ describe('ReviewForm (c-rate, R-CUS-09)', () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValue(fail(409, 'review.already_exists'));
     renderWithIntl(<ReviewForm bookingId="b1" />);
-    await user.click(screen.getByRole('radio', { name: '5 من 5' }));
+    await user.click(screen.getByRole('radio', { name: '٥ من ٥' }));
     await user.click(screen.getByRole('button', { name: 'إرسال التقييم' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('قيّمت هذه الزيارة من قبل.');
     expect(screen.getByRole('button', { name: 'إرسال التقييم' })).toBeDisabled();

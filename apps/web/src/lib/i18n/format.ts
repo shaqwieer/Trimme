@@ -4,10 +4,11 @@ import { OPERATING_CURRENCY, OPERATING_TIME_ZONE } from './config';
 /**
  * Locale-aware formatting (spec §5/§6, decision D-040).
  *
- * Numeral rule from the design (design/analysis/01 §1.5):
- * - Clock times and date text: Arabic-Indic digits in Arabic, 12-hour clock ("٥:٣٠ م").
- * - Measurable quantities (price, distance, rating, counts, phone): Latin digits ("85 ر.س", "2.4 كم").
- * - English and Turkish use Latin digits everywhere; Turkish keeps its 24-hour clock ("17:30") and decimal comma.
+ * Numeral rule (D-148, the client's review; it replaces design/analysis/01 §1.5's Latin quantities):
+ * - Arabic: Arabic-Indic digits everywhere — clock times, dates, prices, durations, distances, ratings, counts
+ *   ("٥:٣٠ م", "٨٥ ⃁", "٢٫٤ كم"), with the new Saudi Riyal sign (U+20C1, drawn by the bundled one-glyph font).
+ *   Phone numbers stay as typed (Latin, left to right).
+ * - English and Turkish use Latin digits everywhere and «SAR»; Turkish keeps its 24-hour clock ("17:30") and decimal comma.
  * The Gregorian calendar is always forced: plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar.
  */
 export type AppLocale = Locale;
@@ -27,13 +28,16 @@ export const RELATIVE_TIME_LOCALE: Record<AppLocale, string> = {
 };
 
 const QUANTITY_LOCALE: Record<AppLocale, string> = {
-  ar: 'ar-SA-u-nu-latn',
+  ar: 'ar-SA-u-nu-arab',
   en: 'en-US-u-nu-latn',
   tr: 'tr-TR-u-nu-latn',
 };
 
+/** The Riyal sign U+20C1 in Arabic (D-148): it follows the number, so it reads to its left. */
+export const RIYAL_SIGN = '\u20C1';
+
 const CURRENCY_LABEL: Record<AppLocale, Record<string, string>> = {
-  ar: { SAR: 'ر.س' },
+  ar: { SAR: RIYAL_SIGN },
   en: { SAR: 'SAR' },
   tr: { SAR: 'SAR' },
 };
@@ -56,7 +60,7 @@ type DateInput = Date | string | number;
 
 const toDate = (value: DateInput): Date => (value instanceof Date ? value : new Date(value));
 
-/** "٥:٣٠ م" (ar) · "5:30 pm" (en) · "17:30" (tr) */
+/** "٥:٣٠ م" (ar) — "5:30 pm" (en) — "17:30" (tr) */
 export function formatTime(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
   return new Intl.DateTimeFormat(TIME_LOCALE[locale], {
     ...CLOCK[locale],
@@ -65,12 +69,12 @@ export function formatTime(value: DateInput, locale: AppLocale, timeZone = OPERA
   }).format(toDate(value));
 }
 
-/** "٥ م" (ar) · "5 pm" (en) · "17" (tr): the hour of a time, for the hour-then-minutes time picker. */
+/** "٥ م" (ar) — "5 pm" (en) — "17" (tr): the hour of a time, for the hour-then-minutes time picker. */
 export function formatHour(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
   return new Intl.DateTimeFormat(TIME_LOCALE[locale], { ...CLOCK[locale], timeZone }).format(toDate(value));
 }
 
-/** "الجمعة ١٨ سبتمبر" (ar) · "Friday 18 September" (en); `withYear` appends the year. */
+/** "الجمعة ١٨ سبتمبر" (ar) — "Friday 18 September" (en); `withYear` appends the year. */
 export function formatDate(
   value: DateInput,
   locale: AppLocale,
@@ -110,7 +114,7 @@ export function formatNumber(value: number, locale: AppLocale, maximumFractionDi
   }).format(value);
 }
 
-/** "85 ر.س" (ar) · "SAR 85" (en) · "85 SAR" (tr). Prices are informational only — there is no payment in v1. */
+/** "٨٥ ⃁" (ar) — "SAR 85" (en) — "85 SAR" (tr). Prices are informational only — there is no payment in v1. */
 export function formatPrice(
   amount: number,
   locale: AppLocale,
@@ -121,12 +125,12 @@ export function formatPrice(
   return UNITS[locale].numberFirst ? `${number} ${label}` : `${label} ${number}`;
 }
 
-/** "2.4 كم" (ar) · "2.4 km" (en) · "2,4 km" (tr) */
+/** "2.4 كم" (ar) — "2.4 km" (en) — "2,4 km" (tr) */
 export function formatDistanceKm(kilometres: number, locale: AppLocale): string {
   return `${formatNumber(kilometres, locale, 1)} ${UNITS[locale].km}`;
 }
 
-/** "4.8" — always one decimal, Latin digits. */
+/** "٤٫٨" (ar) — "4.8" (en) — always one decimal. */
 export function formatRating(value: number, locale: AppLocale): string {
   return new Intl.NumberFormat(QUANTITY_LOCALE[locale], {
     minimumFractionDigits: 1,
@@ -134,7 +138,7 @@ export function formatRating(value: number, locale: AppLocale): string {
   }).format(value);
 }
 
-/** Service duration follows the clock-time digit rule: "٣٠ دقيقة" (ar) · "30 min" (en) · "30 dk" (tr). */
+/** Service duration follows the clock-time digit rule: "٣٠ دقيقة" (ar) — "30 min" (en) — "30 dk" (tr). */
 export function formatDurationMinutes(minutes: number, locale: AppLocale): string {
   return `${new Intl.NumberFormat(TIME_LOCALE[locale]).format(minutes)} ${UNITS[locale].minutes}`;
 }

@@ -203,9 +203,13 @@ internal sealed class CreateOnlineBookingHandler(
                 return BookingErrors.ShopNotAccepting(gate.BlockedReason);
             }
 
-            offer = BookableOfferRequest.Services(command.ServiceId, command.ServiceIds, command.PackageId) is { } services
-                ? await catalog.FindAsync(shop.Id, services, command.PackageId, cancellationToken)
-                : null;
+            var services = BookableOfferRequest.Services(command.ServiceId, command.ServiceIds, command.PackageId);
+            if (services is not null && await catalog.OverlapsPackageAsync(shop.Id, services, command.PackageId, cancellationToken))
+            {
+                return BookableOfferRequest.ServiceInPackage();
+            }
+
+            offer = services is not null ? await catalog.FindAsync(shop.Id, services, command.PackageId, cancellationToken) : null;
             if (offer is null)
             {
                 return BookingErrors.OfferNotFound();
@@ -268,7 +272,7 @@ internal sealed class CreateOnlineBookingHandler(
         BookingEvents.Add(db, BookingEvents.Created, booking, now);
         try
         {
-            await db.SaveChangesAsync(cancellationToken);
+            await BookingReferences.SaveNewAsync(db, booking, cancellationToken);
         }
         catch (Exception exception) when (DatabaseErrors.IsLostRace(exception))
         {
@@ -357,7 +361,8 @@ internal sealed class RescheduleMyBookingHandler(
             }
 
             var offer = await catalog.FindBookedAsync(
-                booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken);
+                booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken,
+                booking.PackageExtras);
             if (offer is null)
             {
                 return BookingErrors.OfferNotFound();

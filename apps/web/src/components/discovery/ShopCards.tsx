@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/Badge';
-import { ShopCard } from '@/components/ui/cards';
+import { DemoMark, ShopCard } from '@/components/ui/cards';
 import { Icon } from '@/components/ui/icons';
 import { ImagePlaceholder } from '@/components/ui/Avatar';
 import { RatingStars } from '@/components/ui/Rating';
@@ -43,6 +43,7 @@ export function DiscoveryShopCard({
         name: shopName(shop, locale),
         coverUrl: shop.coverUrl,
         verified: shop.isVerified,
+        demo: shop.isDemo,
         rating: shop.rating,
         reviewCount: shop.reviewCount,
         district: shop.district ?? shop.city ?? '',
@@ -57,17 +58,17 @@ export function DiscoveryShopCard({
 function RatingLine({ shop, locale }: { shop: ShopSearchItem; locale: AppLocale }) {
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-helper text-text-secondary">
-      {shop.reviewCount > 0 && <RatingStars value={shop.rating} count={shop.reviewCount} />}
+      <RatingStars value={shop.rating} count={shop.reviewCount} />
       {shop.reviewCount > 0 && shop.district && (
         <span aria-hidden="true" className="text-border-strong">
-          ·
+          —
         </span>
       )}
       {shop.district && <span>{shop.district}</span>}
       {shop.distanceKm != null && (
         <>
           <span aria-hidden="true" className="text-border-strong">
-            ·
+            —
           </span>
           <span className="font-latin font-semibold text-text-strong">
             {formatDistanceKm(shop.distanceKm, locale)}
@@ -104,6 +105,7 @@ export function ShopListCard({ shop }: { shop: ShopSearchItem }) {
           {shop.isVerified && (
             <Icon name="shield" label={tCard('verified')} className="size-4 shrink-0 text-brand-700" />
           )}
+          {shop.isDemo && <DemoMark />}
         </h3>
         <RatingLine shop={shop} locale={locale} />
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -117,7 +119,7 @@ export function ShopListCard({ shop }: { shop: ShopSearchItem }) {
 }
 
 /**
- * Search result card (c-home 1092–1110): name, rating · district · distance, open badge; then the matched service with
+ * Search result card (c-home 1092–1110): name, rating — district — distance, open badge; then the matched service with
  * its price and duration, and the earliest bookable time (computed live by the API, mapRules #2).
  */
 export function ShopResultCard({ shop }: { shop: ShopSearchItem }) {
@@ -138,6 +140,7 @@ export function ShopResultCard({ shop }: { shop: ShopSearchItem }) {
             {shop.isVerified && (
               <Icon name="shield" label={tCard('verified')} className="size-4 shrink-0 text-brand-700" />
             )}
+            {shop.isDemo && <DemoMark />}
           </h3>
           <RatingLine shop={shop} locale={locale} />
         </div>

@@ -293,7 +293,7 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     expect(again.status()).toBe(409);
     expect((await again.json()).errorCode).toBe('review.already_exists');
     await page.goto(`/ar/account/bookings/${bookingId}`);
-    await expect(page.getByText('تم التقييم ★ 5.0')).toBeVisible();
+    await expect(page.getByText('تم التقييم ★ ٥٫٠')).toBeVisible();
 
     // An upcoming visit cannot be rated.
     await page.goto(`/ar/account/bookings/${SARA_UPCOMING}/review`);

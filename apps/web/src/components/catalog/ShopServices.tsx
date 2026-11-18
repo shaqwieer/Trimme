@@ -101,8 +101,8 @@ export function ShopServiceList({ items }: { items: Service[] }) {
           <CatalogStatusBadge item={item} />
         </div>
         <span className="text-caption text-text-secondary">
-          {formatPrice(item.price, lang, item.currency)} · {formatDurationMinutes(item.durationMinutes, lang)}{' '}
-          · {t('assigned', { count: item.assignedProfessionalCount })}
+          {formatPrice(item.price, lang, item.currency)} — {formatDurationMinutes(item.durationMinutes, lang)}{' '}
+          — {t('assigned', { count: item.assignedProfessionalCount })}
         </span>
         {item.moderation === 'Hidden' && item.moderationReason && (
           <span className="text-helper text-danger-700">

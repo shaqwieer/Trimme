@@ -99,12 +99,12 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
             ),
             meta: (
               <>
-                <bdi>{entry.actorName ?? t(`actorType.${entry.actorType as 'System'}`)}</bdi> ·{' '}
+                <bdi>{entry.actorName ?? t(`actorType.${entry.actorType as 'System'}`)}</bdi> —{' '}
                 {formatDate(entry.occurredAt, lang, { withWeekday: false, withYear: true })}{' '}
                 {formatTime(entry.occurredAt, lang)}
                 {shop && (
                   <>
-                    {' · '}
+                    {' — '}
                     <bdi>{shop}</bdi>
                   </>
                 )}

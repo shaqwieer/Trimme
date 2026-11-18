@@ -57,7 +57,7 @@ export default async function WhatsAppDispatchPage({
               <Card as="section" className="flex flex-col gap-3 p-5" aria-labelledby="dispatch-facts">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 id="dispatch-facts" className="text-h3 font-bold text-navy-900">
-                    {t(`event.${d.event}`)} · {t(`audience.${d.audience}`)}
+                    {t(`event.${d.event}`)} — {t(`audience.${d.audience}`)}
                   </h2>
                   <Badge tone={dispatchTone(d.status)} className="self-start">
                     {t(`dispatches.status.${d.status}`)}

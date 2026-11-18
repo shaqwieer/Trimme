@@ -22,7 +22,7 @@ export function RatingDistribution({ counts }: RatingDistributionProps) {
     <ul aria-label={t('label')} className="flex flex-col gap-1.5">
       {([5, 4, 3, 2, 1] as const).map((stars) => (
         <li key={stars} className="flex items-center gap-2">
-          <span className="sr-only">{t('row', { stars, count: formatNumber(counts[stars], locale) })}</span>
+          <span className="sr-only">{t('row', { stars, count: counts[stars] })}</span>
           <span
             aria-hidden="true"
             className="w-3 font-latin text-[0.6875rem] font-semibold text-text-tertiary"

@@ -34,7 +34,8 @@ internal sealed record DiscoveryCandidate(
     Guid? CoverMediaId,
     Guid? LogoMediaId,
     DateTimeOffset UpdatedAt,
-    bool AcceptsOnlineBookings)
+    bool AcceptsOnlineBookings,
+    bool IsDemo = false)
 {
     public string SearchText { get; } = BuildingBlocks.Domain.Text.SearchText.Normalize($"{NameAr} {NameEn} {District} {Slug}");
 }
@@ -228,7 +229,8 @@ internal sealed class DiscoveryCatalog(
             s.CoverMediaId == null ? null : s.CoverMediaId.Value.Value,
             s.LogoMediaId == null ? null : s.LogoMediaId.Value.Value,
             s.UpdatedAt ?? s.CreatedAt,
-            AcceptsOnlineBookings: true);
+            AcceptsOnlineBookings: true,
+            IsDemo: s.IsDemo);
 
     public static string? MediaUrl(Guid? mediaId) => mediaId is { } id ? MediaRules.Url(new BuildingBlocks.Domain.Media.MediaId(id)) : null;
 }

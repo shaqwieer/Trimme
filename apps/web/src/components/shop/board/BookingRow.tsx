@@ -61,7 +61,7 @@ export function BookingRow({
           {booking.loyaltyReward && <LoyaltyChip reward={booking.loyaltyReward} />}
         </span>
         <span className="block truncate text-helper text-text-secondary">
-          {localizedName(locale, booking.item.nameAr, booking.item.nameEn)} · {professional.split(' ')[0]}
+          {localizedName(locale, booking.item.nameAr, booking.item.nameEn)} — {professional.split(' ')[0]}
         </span>
       </span>
       <span className="shrink-0 font-latin text-label font-bold text-navy-900">

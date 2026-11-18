@@ -94,8 +94,8 @@ function Gallery({ locale }: { locale: Locale }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [breaks, setBreaks] = useState([
-    tx('صلاة العصر · ٣:٣٠ — ٤:٠٠', 'Asr prayer · 3:30 — 4:00'),
-    tx('غداء · ١:٠٠ — ١:٤٥', 'Lunch · 1:00 — 1:45'),
+    tx('صلاة العصر — ٣:٣٠ — ٤:٠٠', 'Asr prayer — 3:30 — 4:00'),
+    tx('غداء — ١:٠٠ — ١:٤٥', 'Lunch — 1:00 — 1:45'),
   ]);
 
   const shopRows = [
@@ -126,7 +126,7 @@ function Gallery({ locale }: { locale: Locale }) {
     <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 py-8 md:px-6">
       <header className="flex flex-col gap-1">
         <p className="font-latin text-eyebrow font-bold tracking-[0.16em] text-text-tertiary">
-          GROOM HERE · DESIGN SYSTEM
+          GROOM HERE — DESIGN SYSTEM
         </p>
         <h1 className="text-h1 font-bold text-navy-900">{tx('مكتبة المكونات', 'Component library')}</h1>
       </header>
@@ -221,7 +221,7 @@ function Gallery({ locale }: { locale: Locale }) {
           />
         </Section>
 
-        <Section title={tx('التبويبات والقوائم', 'Tabs & menus')} eyebrow="TABS · MENU">
+        <Section title={tx('التبويبات والقوائم', 'Tabs & menus')} eyebrow="TABS — MENU">
           <SegmentedControl
             legend={tx('المواعيد', 'Appointments')}
             name="appointments-tab"
@@ -412,7 +412,7 @@ function Gallery({ locale }: { locale: Locale }) {
           </div>
         </Section>
 
-        <Section title={tx('بطاقة المحل والموعد', 'Shop & appointment cards')} eyebrow="SHOP · APPOINTMENT">
+        <Section title={tx('بطاقة المحل والموعد', 'Shop & appointment cards')} eyebrow="SHOP — APPOINTMENT">
           <ShopCard
             shop={{
               href: '/shops/al-asala',
@@ -518,7 +518,7 @@ function Gallery({ locale }: { locale: Locale }) {
           />
         </Section>
 
-        <Section title={tx('رمز QR والصور', 'QR & images')} eyebrow="QR · UPLOAD">
+        <Section title={tx('رمز QR والصور', 'QR & images')} eyebrow="QR — UPLOAD">
           <div className="flex items-center gap-3">
             <Avatar name={tx('صالون الأصالة', 'Al Asala')} size="xl" />
             <Avatar name="Faisal Alqahtani" size="lg" />
@@ -563,7 +563,7 @@ function Gallery({ locale }: { locale: Locale }) {
               </RemovableChip>
             ))}
             <AddChip
-              onClick={() => setBreaks([...breaks, tx('استراحة · ٦:٠٥ — ٦:٢٥', 'Break · 6:05 — 6:25')])}
+              onClick={() => setBreaks([...breaks, tx('استراحة — ٦:٠٥ — ٦:٢٥', 'Break — 6:05 — 6:25')])}
             >
               {tx('إضافة', 'Add')}
             </AddChip>
@@ -576,7 +576,7 @@ function Gallery({ locale }: { locale: Locale }) {
           </div>
         </Section>
 
-        <Section title={tx('التنبيهات والرسائل', 'Toasts & dialogs')} eyebrow="TOAST · TOOLTIP · DIALOG">
+        <Section title={tx('التنبيهات والرسائل', 'Toasts & dialogs')} eyebrow="TOAST — TOOLTIP — DIALOG">
           <div className="flex flex-wrap gap-2.5">
             <Button
               size="sm"
@@ -607,7 +607,7 @@ function Gallery({ locale }: { locale: Locale }) {
             </Tooltip>
             <Dialog
               title={tx('تفاصيل الموعد', 'Booking details')}
-              description={tx('باقة شعر ولحية · الجمعة ٥:٣٠ م', 'Hair & beard package · Friday 5:30 pm')}
+              description={tx('باقة شعر ولحية — الجمعة ٥:٣٠ م', 'Hair & beard package — Friday 5:30 pm')}
               trigger={
                 <Button size="sm" variant="secondary">
                   {tx('نافذة', 'Dialog')}
@@ -643,7 +643,7 @@ function Gallery({ locale }: { locale: Locale }) {
                   {
                     id: '1',
                     title: tx('تم إنشاء الحجز', 'Booking created'),
-                    meta: tx('عبر التطبيق · ٤:١٠ م', 'Online · 4:10 pm'),
+                    meta: tx('عبر التطبيق — ٤:١٠ م', 'Online — 4:10 pm'),
                   },
                   {
                     id: '2',
@@ -659,7 +659,7 @@ function Gallery({ locale }: { locale: Locale }) {
 
         <Section
           title={tx('الحالات الاستثنائية', 'Empty, error & loading')}
-          eyebrow="EMPTY · SKELETON · ERROR"
+          eyebrow="EMPTY — SKELETON — ERROR"
         >
           <EmptyState
             icon="calendar"
@@ -691,7 +691,7 @@ function Gallery({ locale }: { locale: Locale }) {
           </InlineAlert>
         </Section>
 
-        <Section title={tx('الصلاحيات والجلسة', 'Permission & session')} eyebrow="PERMISSION · SESSION">
+        <Section title={tx('الصلاحيات والجلسة', 'Permission & session')} eyebrow="PERMISSION — SESSION">
           <PermissionDenied />
           <ExpiredSession signInHref="/auth/sign-in" />
           <ErrorState />
@@ -699,7 +699,7 @@ function Gallery({ locale }: { locale: Locale }) {
 
         <Section
           title={tx('الجداول والتنقل الثانوي', 'Tables & secondary navigation')}
-          eyebrow="TABLE · PAGINATION · BREADCRUMB"
+          eyebrow="TABLE — PAGINATION — BREADCRUMB"
           wide
         >
           <Breadcrumb

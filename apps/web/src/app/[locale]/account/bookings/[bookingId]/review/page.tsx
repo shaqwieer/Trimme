@@ -66,8 +66,8 @@ export default async function ReviewPage({
           {t('heading', { name: professional.split(' ')[0] ?? professional })}
         </h1>
         <p className="text-helper text-text-secondary">
-          {localizedName(locale, booking.item.nameAr, booking.item.nameEn)} ·{' '}
-          {localizedName(locale, booking.shop.nameAr, booking.shop.nameEn)} ·{' '}
+          {localizedName(locale, booking.item.nameAr, booking.item.nameEn)} —{' '}
+          {localizedName(locale, booking.shop.nameAr, booking.shop.nameEn)} —{' '}
           {formatDate(booking.startsAt, locale)} {formatTime(booking.startsAt, locale)}
         </p>
       </div>

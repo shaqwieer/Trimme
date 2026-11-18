@@ -183,7 +183,7 @@ export function SimpleAppointments({
                 <CustomerVisitBadge visit={b.visit} />
               </span>
               <span className="text-helper text-text-secondary">
-                {localizedName(locale, b.item.nameAr, b.item.nameEn)} ·{' '}
+                {localizedName(locale, b.item.nameAr, b.item.nameEn)} —{' '}
                 {localizedName(locale, b.professional.nameAr, b.professional.nameEn)}
               </span>
               {extra?.(b)}
@@ -364,8 +364,8 @@ export function SimpleAppointments({
                   className="flex w-full flex-col items-start gap-0.5 px-1 py-2.5 text-start hover:bg-bg-subtle focus-visible:shadow-[var(--focus-ring)]"
                 >
                   <span className="text-label font-bold text-text-primary">
-                    {formatLocalDate(dayOf(b), locale, { day: 'numeric', month: 'long' })} ·{' '}
-                    {formatTime(b.startsAt, locale, timeZone)} · {b.customerName}
+                    {formatLocalDate(dayOf(b), locale, { day: 'numeric', month: 'long' })} —{' '}
+                    {formatTime(b.startsAt, locale, timeZone)} — {b.customerName}
                   </span>
                   <span className="text-helper text-text-secondary">
                     {t('closedLateBy', {

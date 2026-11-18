@@ -155,7 +155,7 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
         shop.GetProperty("minPrice").GetDecimal().ShouldBe(40m);
         shop.GetProperty("rating").GetProperty("count").GetInt32().ShouldBe(0);
         shop.GetProperty("openingHours").GetArrayLength().ShouldBe(7);
-        shop.GetProperty("cancellationCutoffMinutes").GetInt32().ShouldBe(120);
+        shop.GetProperty("cancellationCutoffMinutes").GetInt32().ShouldBe(0); // until the start (D-148)
         shop.GetProperty("listedInDiscovery").GetBoolean().ShouldBeTrue();
         shop.TryGetProperty("publicPhone", out _).ShouldBeFalse("customers reach a shop only through TRIMME (D-129)");
         shop.GetProperty("location").GetProperty("district").GetString().ShouldBe("الملقا");

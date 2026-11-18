@@ -68,6 +68,12 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     /// <summary>Set by an admin after checking the shop's documents; never editable by the shop.</summary>
     public bool IsVerified { get; private set; }
 
+    /// <summary>
+    /// A demo shop (D-148): its card and page say «تجريبي» so its data never passes for a real salon. Set by the platform
+    /// admin; turned off (or the shop archived) at launch.
+    /// </summary>
+    public bool IsDemo { get; private set; }
+
     public MediaId? LogoMediaId { get; private set; }
 
     public MediaId? CoverMediaId { get; private set; }
@@ -187,6 +193,12 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     public void SetVerified(bool verified, DateTimeOffset now)
     {
         IsVerified = verified;
+        UpdatedAt = now;
+    }
+
+    public void SetDemo(bool demo, DateTimeOffset now)
+    {
+        IsDemo = demo;
         UpdatedAt = now;
     }
 

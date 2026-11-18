@@ -148,7 +148,7 @@ export default async function ProfessionalPage({
           <Avatar name={name} src={pro.avatarUrl} size="xl" />
           <h1 className="text-h1 font-bold text-navy-900">{name}</h1>
           {specialty && <p className="text-body text-text-secondary">{specialty}</p>}
-          {pro.reviewCount > 0 && <RatingStars value={pro.rating} count={pro.reviewCount} size="md" />}
+          <RatingStars value={pro.rating} count={pro.reviewCount} size="md" />
           {bio && (
             <p lang={langIfOther(bio, locale)} className="max-w-[52ch] text-body text-text-strong">
               {bio.text}

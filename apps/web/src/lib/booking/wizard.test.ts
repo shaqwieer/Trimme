@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { safeReturnTo, withReturnTo } from '@/lib/auth/paths';
 import { calendarDaysUntil, changeDeadline, cutoffParts, endOf, timeUntil } from './format';
 import {
-  allServicesFor,
   ANY_PROFESSIONAL,
+  blockingItem,
   combineOffers,
   currentStep,
   eligibleProfessionals,
@@ -15,6 +15,7 @@ import {
   resolveStart,
   restoreSelection,
   selectionFrom,
+  toggleItem,
   wizardNotice,
   wizardPath,
   withItems,
@@ -46,9 +47,9 @@ const BEARD: WizardOffer = {
 const OFFERS = [HAIRCUT, PACKAGE, BEARD];
 const PROS = [{ id: 'omar' }, { id: 'majed' }, { id: 'sultan' }];
 
-const parse = (search: string) => {
+const parse = (search: string, offers = OFFERS) => {
   const query = readWizardQuery(new URLSearchParams(search));
-  const selection = selectionFrom(query, OFFERS, PROS);
+  const selection = selectionFrom(query, offers, PROS);
   return { query, selection, step: currentStep(query, selection) };
 };
 
@@ -161,11 +162,11 @@ describe('booking wizard URL state (D-028, D-096)', () => {
 });
 
 describe('several services in one booking (D-125)', () => {
-  it('reads repeated services in order, without repeats, and a package on its own', () => {
+  it('reads repeated services in order, without repeats, and a package first with other services (D-148)', () => {
     const { selection, step } = parse(`service=${HAIRCUT.id}&service=${BEARD.id}&service=${HAIRCUT.id}`);
     expect(selection.items.map((item) => item.id)).toEqual([HAIRCUT.id, BEARD.id]);
     expect(step).toBe('professional');
-    expect(parse(`package=pkg-1&service=${HAIRCUT.id}`).selection.items).toEqual([PACKAGE]);
+    expect(parse(`package=pkg-1&service=${HAIRCUT.id}`).selection.items).toEqual([PACKAGE, HAIRCUT]);
   });
 
   it('adds up durations and prices, joins the names, and keeps only professionals who do every service', () => {
@@ -184,12 +185,27 @@ describe('several services in one booking (D-125)', () => {
     expect(parse(`service=${HAIRCUT.id}&service=${BEARD.id}&pro=omar`).selection.pro).toBe(ANY_PROFESSIONAL);
   });
 
-  it('"All services" takes every service of the chosen specialist, or of the one who does the most', () => {
-    expect(allServicesFor(OFFERS, PROS, 'sultan').map((o) => o.id)).toEqual([BEARD.id]);
-    expect(allServicesFor(OFFERS, PROS, 'majed').map((o) => o.id)).toEqual([HAIRCUT.id, BEARD.id]);
-    expect(allServicesFor(OFFERS, PROS, ANY_PROFESSIONAL).map((o) => o.id)).toEqual([HAIRCUT.id, BEARD.id]);
-    // Packages are never part of it.
-    expect(allServicesFor(OFFERS, PROS, 'omar').every((o) => o.kind === 'service')).toBe(true);
+  it('books a package with other services; refuses a service already inside it; names the service no barber can join (D-148)', () => {
+    const pkg = { ...OFFERS.find((o) => o.kind === 'package')!, itemIds: [HAIRCUT.id] };
+    // Choosing the package keeps the other services and takes off the one it already holds.
+    const withPackage = toggleItem([HAIRCUT, BEARD], pkg);
+    expect(withPackage.items.map((i) => i.id)).toEqual([pkg.id, BEARD.id]);
+    expect(withPackage.dropped.map((i) => i.id)).toEqual([HAIRCUT.id]);
+    // A service inside the chosen package is refused, and the package stays.
+    const refused = toggleItem(withPackage.items, HAIRCUT);
+    expect(refused.inPackage?.id).toBe(pkg.id);
+    expect(refused.items).toBe(withPackage.items);
+    // Un-choosing the package keeps the services.
+    expect(toggleItem(withPackage.items, pkg).items.map((i) => i.id)).toEqual([BEARD.id]);
+    // The URL's package and services come back together, the package first.
+    const parsed = parse(`package=${pkg.id}&service=${BEARD.id}&service=${HAIRCUT.id}`, [
+      ...OFFERS.filter((o) => o.kind !== 'package'),
+      pkg,
+    ]);
+    expect(parsed.selection.items.map((i) => i.id)).toEqual([pkg.id, BEARD.id]);
+
+    const lonely = { ...BEARD, id: 'dye', nameAr: 'صبغة', professionalIds: ['nobody'] };
+    expect(blockingItem([HAIRCUT, lonely])?.id).toBe('dye');
   });
 
   it('writes every service into the URL and keys the request on all of them', () => {

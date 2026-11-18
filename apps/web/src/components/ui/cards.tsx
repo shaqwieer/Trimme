@@ -36,6 +36,8 @@ export type ShopCardData = {
   name: string;
   coverUrl?: string | null;
   verified: boolean;
+  /** A demo shop (D-148): marked «تجريبي» so it never passes for a real one. */
+  demo?: boolean;
   rating: number;
   reviewCount: number;
   district: string;
@@ -90,17 +92,18 @@ export function ShopCard({
             {shop.name}
           </Link>
           {shop.verified && <Icon name="shield" label={t('verified')} className="size-4 text-brand-700" />}
+          {shop.demo && <DemoMark />}
         </Heading>
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-helper text-text-secondary">
           <RatingStars value={shop.rating} count={shop.reviewCount} showValue />
           <span aria-hidden="true" className="text-border-strong">
-            ·
+            —
           </span>
           <span>{shop.district}</span>
           {shop.distanceKm != null && (
             <>
               <span aria-hidden="true" className="text-border-strong">
-                ·
+                —
               </span>
               <span className="font-latin font-semibold">{formatDistanceKm(shop.distanceKm, locale)}</span>
             </>
@@ -175,6 +178,8 @@ type ServiceTileProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'ch
   descriptionLang?: string;
   price: number;
   durationMinutes: number;
+  /** A short note under the name, for example what a package saves (D-148). */
+  badge?: string;
 };
 
 /**
@@ -187,6 +192,7 @@ export function ServiceTile({
   descriptionLang,
   price,
   durationMinutes,
+  badge,
   className,
   ...input
 }: ServiceTileProps) {
@@ -214,6 +220,7 @@ export function ServiceTile({
             {description}
           </span>
         )}
+        {badge && <span className="mt-1 block text-badge font-bold text-success-700">{badge}</span>}
       </span>
       <span className="flex items-baseline justify-between gap-2">
         <span className="font-latin text-[0.875rem] font-bold whitespace-nowrap text-navy-900">
@@ -287,7 +294,7 @@ export type AppointmentCardData = {
   timeRange: string;
 };
 
-/** Appointment list item (design 576–590): date block, service + status, shop · professional, time. */
+/** Appointment list item (design 576–590): date block, service + status, shop — professional, time. */
 export function AppointmentCard({ appointment }: { appointment: AppointmentCardData }) {
   return (
     <article className="relative flex items-center gap-3.5 rounded-card border border-border bg-surface px-4 py-3.5 shadow-e1 transition-shadow hover:shadow-e2">
@@ -305,7 +312,7 @@ export function AppointmentCard({ appointment }: { appointment: AppointmentCardD
           <StatusBadge kind="booking" status={appointment.status} />
         </div>
         <p className="truncate text-helper text-text-secondary">
-          {appointment.shopName} · {appointment.professionalName}
+          {appointment.shopName} — {appointment.professionalName}
         </p>
         <p className="text-helper font-bold text-text-strong">{appointment.timeRange}</p>
       </div>
@@ -351,5 +358,20 @@ export function KpiTile({ label, value, icon, delta }: KpiTileProps) {
         </span>
       )}
     </div>
+  );
+}
+
+/** «تجريبي» (D-148, «٤-١٢»): a demo shop or one of its barbers, so demo data never passes for real. */
+export function DemoMark({ className }: { className?: string }) {
+  const t = useTranslations('ui.shopCard');
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-badge bg-status-pending-bg px-2 py-0.5 text-badge font-bold text-status-pending-fg',
+        className,
+      )}
+    >
+      {t('demo')}
+    </span>
   );
 }

@@ -8,7 +8,7 @@ import type { DiscoveryArea } from '@/lib/api/public-types';
 import { LocationChooser } from './LocationChooser';
 
 /**
- * The home header's location switcher (c-home 1000–1004: "موقعك الحالي · حي الملقا، الرياض ▾"). It opens the location
+ * The home header's location switcher (c-home 1000–1004: "موقعك الحالي — حي الملقا، الرياض ▾"). It opens the location
  * sheet (DV-A21) and refreshes the page with the new origin.
  */
 export function LocationSheetButton({ label, areas }: { label: string | null; areas: DiscoveryArea[] }) {

@@ -18,6 +18,7 @@ const shop = (overrides: Partial<ShopSearchItem> = {}): ShopSearchItem => ({
   slug: 'al-asala',
   nameAr: 'صالون الأصالة للحلاقة',
   nameEn: 'Al Asala Barbershop',
+  isDemo: false,
   category: 'Barbershop',
   isVerified: true,
   district: 'الملقا',
@@ -62,8 +63,8 @@ describe('ShopResultCard (c-home search results)', () => {
       'href',
       '/ar/shops/al-asala',
     );
-    expect(screen.getByText(/تهذيب لحية · 35 ر.س · ٢٠ دقيقة/)).toBeInTheDocument();
-    expect(screen.getByText('2.4 كم')).toBeInTheDocument();
+    expect(screen.getByText(/تهذيب لحية — ٣٥ \u20C1 — ٢٠ دقيقة/)).toBeInTheDocument();
+    expect(screen.getByText('٢٫٤ كم')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'صالون موثّق' })).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
@@ -171,7 +172,7 @@ describe('FilterSheet (c-map filter drawer)', () => {
         activeCount={1}
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'فلاتر · 1' }));
+    await user.click(screen.getByRole('button', { name: 'فلاتر — ١' }));
     expect(screen.getByRole('dialog', { name: 'التصفية والترتيب' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'الأقرب مسافةً' })).toBeChecked();
     await user.click(screen.getByRole('switch', { name: 'صالونات موثّقة فقط' }));
@@ -186,6 +187,6 @@ describe('FilterSheet (c-map filter drawer)', () => {
         sort: 'Distance',
       }),
     );
-    await waitFor(() => expect(screen.getByRole('button', { name: 'عرض 7 نتائج' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'عرض ٧ نتائج' })).toBeInTheDocument());
   });
 });

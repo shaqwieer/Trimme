@@ -42,7 +42,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasIndex(b => new { b.QrLinkId, b.CreatedAt }).HasFilter("qr_link_id IS NOT NULL");
 
         builder.Property(b => b.CustomerName).HasMaxLength(BookingRules.MaxNameLength);
-        builder.Property(b => b.Reference).HasMaxLength(BookingRules.ReferenceLength).IsFixedLength();
+        builder.Property(b => b.Reference).HasMaxLength(BookingRules.MaxReferenceLength);
         builder.HasIndex(b => b.Reference).IsUnique();
         builder.Property(b => b.ProfessionalNameAr).HasMaxLength(BookingRules.MaxNameLength);
         builder.Property(b => b.ProfessionalNameEn).HasMaxLength(BookingRules.MaxNameLength);
@@ -86,6 +86,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         });
         builder.Navigation(b => b.History).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Ignore(b => b.IsActive);
+        builder.Ignore(b => b.PackageExtras);
     }
 }
 

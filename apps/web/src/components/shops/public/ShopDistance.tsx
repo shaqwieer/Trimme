@@ -27,7 +27,7 @@ export function ShopDistance({ latitude, longitude }: { latitude: number; longit
   return (
     <>
       <span aria-hidden="true" className="text-border-strong">
-        ·
+        —
       </span>
       <span className="font-latin font-semibold text-text-strong">{t('distance', { km: formatDistanceKm(km, locale) })}</span>
     </>

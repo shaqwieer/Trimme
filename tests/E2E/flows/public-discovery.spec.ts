@@ -89,7 +89,7 @@ test.describe('public discovery (Phase 11)', () => {
     expect(decodeURIComponent(cookie?.value ?? '')).toContain('"label":"حطين"');
     expect(await page.evaluate(() => localStorage.length + sessionStorage.length)).toBe(0);
 
-    await expect(page.getByText(/ضمن 10 كم/)).toBeVisible();
+    await expect(page.getByText(/ضمن ١٠ كم/)).toBeVisible();
     const first = page.getByRole('article').first();
     await expect(first.getByRole('link', { name: 'باربر هاوس' })).toBeVisible();
     await expect(first).toContainText('كم');
@@ -118,6 +118,11 @@ test.describe('public discovery (Phase 11)', () => {
     await drawer.getByRole('button', { name: /^عرض/ }).click();
     await expect(page).toHaveURL(/sort=rating/);
 
+    // D-148 «٤-٤»: a count inside a message rendered in the browser has Arabic-Indic digits (the `arab` format).
+    await page.goto('/ar/search?verified=1');
+    await expect(page.getByRole('button', { name: 'فلاتر — ١' })).toBeVisible();
+    await page.goto('/ar/search?sort=rating');
+
     await page.getByRole('link', { name: 'عرض الخريطة' }).click();
     await expect(page).toHaveURL(/view=map/);
     await expect(page.getByTestId('results-map')).toBeVisible();
@@ -144,12 +149,24 @@ test.describe('public discovery (Phase 11)', () => {
       /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=24\.\d+%2C46\.\d+$/,
     );
 
-    // Services and packages with the shop's own prices, each bookable.
+    // Services and packages with the shop's own prices, each bookable, in category tabs with packages last (D-148):
+    // native radios, no script, every service in the HTML.
     await expect(page.getByRole('heading', { name: 'قص وتصفيف' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'الباقات' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'احجز قص وتصفيف' })).toHaveAttribute(
       'href',
       /\/ar\/shops\/barber-house\/book\?service=/,
+    );
+    const categories = page.getByRole('group', { name: 'الخدمات' }).getByRole('radio');
+    await expect(categories.last()).toHaveAccessibleName('الباقات');
+    await expect(page.getByRole('heading', { name: 'باقة القص واللحية' })).toBeHidden();
+    // The radio is visually hidden inside its pill: tap the pill, as a visitor does.
+    await page.getByTestId('service-catalog').locator('label', { hasText: 'الباقات' }).click();
+    await expect(page.getByRole('radio', { name: 'الباقات' })).toBeChecked();
+    await expect(page.getByRole('heading', { name: 'باقة القص واللحية' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'قص وتصفيف' })).toBeHidden();
+    await expect(page.getByRole('link', { name: 'احجز باقة القص واللحية' })).toHaveAttribute(
+      'href',
+      /package=/,
     );
 
     // Barbers link to their profiles.
@@ -170,8 +187,8 @@ test.describe('public discovery (Phase 11)', () => {
     // About: hours past midnight, the cancellation policy from the platform settings, the map.
     await page.getByRole('tab', { name: 'عن الصالون' }).click();
     const about = page.getByRole('tabpanel', { name: 'عن الصالون' });
-    await expect(about).toContainText('الإلغاء مجاني حتى ساعتين قبل الموعد');
-    await expect(about.getByRole('row', { name: /الخميس/ })).toContainText('١:٠٠ ص');
+    await expect(about).toContainText('الإلغاء والتغيير مجانيان حتى يبدأ الموعد'); // D-148 «٤-١٧»: the platform window is 0
+    await expect(about.getByRole('row', { name: /الخميس/ })).toContainText('١:٠٠ فجر الجمعة'); // D-148 «٤-٥»: past midnight names the next day
     await expect(page.getByTestId('shop-mini-map')).toBeVisible();
 
     const data = await jsonLd(page);

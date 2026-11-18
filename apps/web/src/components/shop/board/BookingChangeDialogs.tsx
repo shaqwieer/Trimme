@@ -100,7 +100,7 @@ export function RescheduleDialog({
   const dateOk = Boolean(date && dates.data?.dates.some((d) => d.date === date && d.slotCount > 0));
   const chosen = slots.data?.slots.find((s) => s.startsAt === start);
   const when = (instant: string) =>
-    `${formatDate(instant, locale, { timeZone })} · ${formatTime(instant, locale, timeZone)}`;
+    `${formatDate(instant, locale, { timeZone })} — ${formatTime(instant, locale, timeZone)}`;
 
   const save = async () => {
     if (!start) return;
@@ -179,7 +179,11 @@ export function RescheduleDialog({
             <DateStrip
               name="shop-reschedule-date"
               today={today}
-              days={dates.data.dates.map((d) => ({ date: d.date, available: d.slotCount > 0 }))}
+              days={dates.data.dates.map((d) => ({
+                date: d.date,
+                available: d.slotCount > 0,
+                closed: d.closed,
+              }))}
               value={dateOk ? date : undefined}
               onValueChange={(next) => {
                 setDate(next);
@@ -190,7 +194,7 @@ export function RescheduleDialog({
             {dateOk && (
               <>
                 <p className="text-label font-bold text-text-strong">
-                  {t('pickTime')} ·{' '}
+                  {t('pickTime')} —{' '}
                   {formatLocalDate(date!, locale, { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
                 {slots.isPending ? (
@@ -203,6 +207,7 @@ export function RescheduleDialog({
                     name="shop-reschedule-time"
                     timeZone={timeZone}
                     slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
+                    open={slots.data.open}
                     value={start}
                     onValueChange={(instant) => {
                       setStart(instant);
@@ -276,7 +281,7 @@ export function MoveDialog({ booking, timeZone, onClose, onChanged }: DialogProp
     }
   };
 
-  const when = `${formatDate(booking.startsAt, locale, { timeZone })} · ${formatTime(booking.startsAt, locale, timeZone)}`;
+  const when = `${formatDate(booking.startsAt, locale, { timeZone })} — ${formatTime(booking.startsAt, locale, timeZone)}`;
 
   return (
     <Dialog

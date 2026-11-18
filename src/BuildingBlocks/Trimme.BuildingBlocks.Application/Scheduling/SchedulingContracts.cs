@@ -1,3 +1,4 @@
+using Trimme.BuildingBlocks.Domain.Results;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.BuildingBlocks.Application.Scheduling;
@@ -18,9 +19,18 @@ public interface IBookableOfferCatalog
     /// currencies differ.
     /// </summary>
     Task<BookableOffer?> FindServicesAsync(ShopId shopId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A package and other services booked together (D-148), as one appointment with one professional: durations and
+    /// prices add up (the package at its own price, each extra at its own), the eligible professionals do every service of
+    /// the package and every extra, and the items are the package's services followed by the extras with their own price
+    /// and length. <see langword="null"/> when any is not published, the currencies differ, or an extra is already in the
+    /// package (see <see cref="BookableOfferRequest.OverlapsPackageAsync"/>).
+    /// </summary>
+    Task<BookableOffer?> FindPackageWithServicesAsync(ShopId shopId, Guid packageId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken);
 }
 
-/// <summary>How a request names what it books: one service, several services, or one package.</summary>
+/// <summary>How a request names what it books: one service, several services, one package, or a package with services (D-148).</summary>
 public static class BookableOfferRequest
 {
     /// <summary>At most this many services in one booking.</summary>
@@ -28,30 +38,54 @@ public static class BookableOfferRequest
 
     /// <summary>
     /// <paramref name="serviceId"/> and <paramref name="serviceIds"/> as one list, in order and without repeats, or
-    /// <see langword="null"/> when the request is invalid: no item, both services and a package, or too many services.
+    /// <see langword="null"/> when the request is invalid: no item at all, or too many services. A package may come with
+    /// services (D-148).
     /// </summary>
     public static IReadOnlyList<Guid>? Services(Guid? serviceId, IEnumerable<Guid>? serviceIds, Guid? packageId)
     {
         List<Guid> services = [.. new[] { serviceId }.OfType<Guid>().Concat(serviceIds ?? []).Distinct()];
-        return (services.Count > 0) == (packageId is not null) || services.Count > MaxServices ? null : services;
+        return (services.Count == 0 && packageId is null) || services.Count > MaxServices ? null : services;
     }
 
-    /// <summary>The offer for validated <paramref name="serviceIds"/> (see <see cref="Services"/>) or a package.</summary>
+    /// <summary>The offer for validated <paramref name="serviceIds"/> (see <see cref="Services"/>), a package, or both.</summary>
     public static Task<BookableOffer?> FindAsync(
         this IBookableOfferCatalog catalog, ShopId shopId, IReadOnlyList<Guid> serviceIds, Guid? packageId, CancellationToken cancellationToken) =>
         packageId is { } package
-            ? catalog.FindAsync(shopId, null, package, cancellationToken)
+            ? serviceIds.Count > 0
+                ? catalog.FindPackageWithServicesAsync(shopId, package, serviceIds, cancellationToken)
+                : catalog.FindAsync(shopId, null, package, cancellationToken)
             : catalog.FindServicesAsync(shopId, serviceIds, cancellationToken);
 
     /// <summary>
-    /// The offer a booking was made for: its package, its services when several were booked together (the first is the
-    /// booking's service and all of them are its items), else its service.
+    /// Whether a chosen service is already inside the chosen package (D-148): the request answers
+    /// <see cref="ServiceInPackage"/> rather than dropping either.
+    /// </summary>
+    public static async Task<bool> OverlapsPackageAsync(
+        this IBookableOfferCatalog catalog, ShopId shopId, IReadOnlyList<Guid> serviceIds, Guid? packageId, CancellationToken cancellationToken) =>
+        packageId is { } package && serviceIds.Count > 0
+        && await catalog.FindAsync(shopId, null, package, cancellationToken) is { } offer
+        && serviceIds.Any(id => offer.Items.Any(item => item.ServiceId == id));
+
+    /// <summary>400: a chosen service is already in the chosen package (D-148).</summary>
+    public static Error ServiceInPackage() =>
+        Error.Validation("booking.service_in_package", "A chosen service is already in the package.",
+            new Dictionary<string, string[]>(StringComparer.Ordinal) { ["serviceIds"] = ["booking.service_in_package"] });
+
+    /// <summary>
+    /// The offer a booking was made for: its package (with the services booked with it, D-148: the items that carry their
+    /// own price), its services when several were booked together (the first is the booking's service and all of them are
+    /// its items), else its service.
     /// </summary>
     public static Task<BookableOffer?> FindBookedAsync(
-        this IBookableOfferCatalog catalog, ShopId shopId, Guid? serviceId, Guid? packageId, IReadOnlyList<Guid> itemServiceIds, CancellationToken cancellationToken) =>
-        packageId is null && itemServiceIds.Count > 1
-            ? catalog.FindServicesAsync(shopId, itemServiceIds, cancellationToken)
-            : catalog.FindAsync(shopId, serviceId, packageId, cancellationToken);
+        this IBookableOfferCatalog catalog, ShopId shopId, Guid? serviceId, Guid? packageId, IReadOnlyList<Guid> itemServiceIds, CancellationToken cancellationToken,
+        IReadOnlyList<Guid>? packageExtras = null) =>
+        packageId is { } package
+            ? packageExtras is { Count: > 0 }
+                ? catalog.FindPackageWithServicesAsync(shopId, package, packageExtras, cancellationToken)
+                : catalog.FindAsync(shopId, null, package, cancellationToken)
+            : itemServiceIds.Count > 1
+                ? catalog.FindServicesAsync(shopId, itemServiceIds, cancellationToken)
+                : catalog.FindAsync(shopId, serviceId, null, cancellationToken);
 }
 
 /// <param name="Id">The service or package id.</param>

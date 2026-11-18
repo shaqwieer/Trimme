@@ -31,23 +31,25 @@ describe('formatters_ar_en (R-WEB-06, D-040)', () => {
     expect(formatDate(appointment, 'en')).toBe('Friday 18 September');
   });
 
-  it('keeps calendar day numbers in Latin digits', () => {
-    expect(formatDayNumber(appointment, 'ar')).toBe('18');
+  // D-148: Arabic uses Arabic-Indic digits everywhere, and the new Riyal sign (U+20C1) after the number.
+  it('writes calendar day numbers with Arabic-Indic digits in Arabic', () => {
+    expect(formatDayNumber(appointment, 'ar')).toBe('١٨');
+    expect(formatDayNumber(appointment, 'en')).toBe('18');
   });
 
-  it('formats prices with Latin digits and the local currency label', () => {
-    expect(formatPrice(85, 'ar')).toBe('85 ر.س');
+  it('formats prices with the Riyal sign in Arabic and SAR in English', () => {
+    expect(formatPrice(85, 'ar')).toBe('٨٥ \u20C1');
     expect(formatPrice(85, 'en')).toBe('SAR 85');
-    expect(formatPrice(62.5, 'ar')).toBe('62.5 ر.س');
+    expect(formatPrice(62.5, 'ar')).toBe('٦٢٫٥ \u20C1');
     expect(formatPrice(2400, 'en')).toBe('SAR 2,400');
   });
 
-  it('formats distance, rating and counts with Latin digits', () => {
-    expect(formatDistanceKm(2.44, 'ar')).toBe('2.4 كم');
+  it('formats distance, rating and counts with Arabic-Indic digits in Arabic, Latin in English', () => {
+    expect(formatDistanceKm(2.44, 'ar')).toBe('٢٫٤ كم');
     expect(formatDistanceKm(2.44, 'en')).toBe('2.4 km');
-    expect(formatRating(4.8, 'ar')).toBe('4.8');
+    expect(formatRating(4.8, 'ar')).toBe('٤٫٨');
     expect(formatRating(5, 'en')).toBe('5.0');
-    expect(formatNumber(1280, 'ar')).toBe('1,280');
+    expect(formatNumber(1280, 'ar')).toBe('١٬٢٨٠');
   });
 
   it('formats durations with the clock-time digit rule', () => {

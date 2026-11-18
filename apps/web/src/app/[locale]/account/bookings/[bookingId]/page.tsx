@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
-import { isActive, rebookHref } from '@/components/booking/BookingCards';
+import { CustomerStatusBadge, isActive, rebookHref } from '@/components/booking/BookingCards';
 import {
   CancelBookingButton,
   Countdown,
@@ -10,7 +10,6 @@ import {
 } from '@/components/booking/BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from '@/components/booking/BookingDetailParts';
 import { Ltr } from '@/components/text/Ltr';
-import { StatusBadge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/data';
 import { Icon, type DesignIconName } from '@/components/ui/icons';
@@ -112,7 +111,7 @@ export default async function BookingDetailPage({
         aria-labelledby="booking-when"
         className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5 shadow-e1"
       >
-        <StatusBadge kind="booking" status={booking.status} className="self-start" />
+        <CustomerStatusBadge booking={booking} className="self-start" />
         <p className="text-label font-bold text-text-secondary">
           {formatDate(booking.startsAt, locale, { timeZone })}
         </p>

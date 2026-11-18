@@ -26,7 +26,8 @@ public sealed record AdminShopResponse(
     bool IsVerified,
     string? LogoUrl,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt);
+    DateTimeOffset? UpdatedAt,
+    bool IsDemo = false);
 
 /// <summary>A shop with its full profile, location and shop-edit policy, as the platform admin edits it.</summary>
 public sealed record AdminShopDetailResponse(
@@ -50,7 +51,8 @@ public sealed record AdminShopDetailResponse(
     bool RequireManualConfirmation,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    uint Version);
+    uint Version,
+    bool IsDemo = false);
 
 internal sealed record CreateShopCommand(string Slug, string NameAr, string NameEn, string? TimeZone) : ICommand<Result<AdminShopResponse>>;
 
@@ -89,6 +91,9 @@ internal sealed record SetShopLocationCommand(
     LocationSource Source) : ICommand<Result<AdminShopDetailResponse>>, IShopLocationFields;
 
 internal sealed record SetEditablePolicyCommand(Guid ShopId, IReadOnlyList<ShopProfileField> EditableFields) : ICommand<Result<AdminShopDetailResponse>>;
+
+/// <summary>Marks a shop as a demo or not (D-148: «تجريبي» on its card and page).</summary>
+internal sealed record SetShopDemoCommand(Guid ShopId, bool IsDemo) : ICommand<Result<AdminShopDetailResponse>>;
 
 /// <summary>Replaces the logo or cover; a null <paramref name="Content"/> removes it.</summary>
 internal sealed record ReplaceShopImageCommand(Guid ShopId, ShopImageSlot Slot, byte[]? Content) : ICommand<Result<AdminShopDetailResponse>>;
@@ -298,6 +303,18 @@ internal sealed class SetShopLocationHandler(TrimmeDbContext db, IAuditLog audit
     }
 }
 
+internal sealed class SetShopDemoHandler(TrimmeDbContext db, IAuditLog audit, TimeProvider clock)
+    : AdminShopEditHandler<SetShopDemoCommand>(db, audit)
+{
+    protected override Guid ShopIdOf(SetShopDemoCommand command) => command.ShopId;
+
+    protected override Result<AuditNote> Apply(Shop shop, SetShopDemoCommand command)
+    {
+        shop.SetDemo(command.IsDemo, clock.GetUtcNow());
+        return new AuditNote("shop.demo_changed", command.IsDemo ? "Marked as a demo shop" : "No longer a demo shop");
+    }
+}
+
 internal sealed class SetEditablePolicyHandler(TrimmeDbContext db, IAuditLog audit, TimeProvider clock)
     : AdminShopEditHandler<SetEditablePolicyCommand>(db, audit)
 {
@@ -363,7 +380,8 @@ internal static class ShopMapping
         shop.IsVerified,
         MediaRules.Url(shop.LogoMediaId),
         shop.CreatedAt,
-        shop.UpdatedAt);
+        shop.UpdatedAt,
+        shop.IsDemo);
 
     public static AdminShopDetailResponse ToAdminDetail(Shop shop) => new(
         shop.Id.Value,
@@ -386,5 +404,6 @@ internal static class ShopMapping
         shop.RequireManualConfirmation,
         shop.CreatedAt,
         shop.UpdatedAt,
-        shop.Version);
+        shop.Version,
+        shop.IsDemo);
 }

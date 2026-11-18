@@ -296,7 +296,7 @@ public sealed class SubscriptionDomainTests
         var settings = PlatformSettings.CreateDefault(Now);
         var snapshot = settings.ToSnapshot();
         snapshot.ShouldBe(new PlatformSettingsSnapshot(
-            60, 30, 5, 120, 7, 30, 14, SubscriptionEnforcement.HideAndBlockNewOnlineBookings, true, "ar", "SAR", "Asia/Riyadh", "SA", 24.7136, 46.6753, 11));
+            60, 30, 5, 0, 7, 30, 14, SubscriptionEnforcement.HideAndBlockNewOnlineBookings, true, "ar", "SAR", "Asia/Riyadh", "SA", 24.7136, 46.6753, 11)); // cutoff 0: until the start (D-148)
 
         var changed = settings.Update(settings.Editable with { ReminderOffsetMinutes = 45, MapDefaultZoom = 12 }, null, Now);
         changed.ShouldBe(["reminderOffsetMinutes", "mapDefaultZoom"]);

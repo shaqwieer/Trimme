@@ -1,6 +1,6 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/lib/cn';
-import { type AppLocale, formatNumber, formatRating } from '@/lib/i18n/format';
+import { type AppLocale, formatRating } from '@/lib/i18n/format';
 import { Icon } from './icons';
 
 type RatingStarsProps = {
@@ -11,12 +11,31 @@ type RatingStarsProps = {
   className?: string;
 };
 
-/** Read-only rating: stars + numeric value (+ review count). One accessible label for the group. */
+/** An average needs this many ratings before it is shown (D-148, «٤-٩»): fewer give a wrong picture. */
+export const MIN_RATINGS = 3;
+
+/**
+ * Read-only rating: stars + numeric value (+ review count). One accessible label for the group. An average of fewer than
+ * {@link MIN_RATINGS} ratings (when `count` is given) shows «جديد» instead (D-148); a single review's own stars have no
+ * count and always show.
+ */
 export function RatingStars({ value, count, size = 'sm', showValue = true, className }: RatingStarsProps) {
   const t = useTranslations('ui.rating');
   const locale = useLocale() as AppLocale;
   const rounded = Math.round(value);
   const formatted = formatRating(value, locale);
+  if (count !== undefined && count < MIN_RATINGS) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center rounded-badge bg-status-confirmed-bg px-2 py-0.5 text-badge font-bold text-status-confirmed-fg',
+          className,
+        )}
+      >
+        {t('new')}
+      </span>
+    );
+  }
 
   return (
     <span
@@ -43,7 +62,7 @@ export function RatingStars({ value, count, size = 'sm', showValue = true, class
       )}
       {count !== undefined && (
         <span aria-hidden="true" className="text-helper text-text-tertiary">
-          {t('count', { count: formatNumber(count, locale) })}
+          {t('count', { count })}
         </span>
       )}
     </span>

@@ -28,7 +28,7 @@ export default async function ShellPreview({ params }: PageProps<'/[locale]/dev/
             {lang === 'ar' ? 'صالون الأصالة للحلاقة' : 'Al Asala Barbers'}
           </h2>
           <p className="text-caption text-text-secondary">
-            {formatDate(SAMPLE_INSTANT, lang)} · {formatTime(SAMPLE_INSTANT, lang)}
+            {formatDate(SAMPLE_INSTANT, lang)} — {formatTime(SAMPLE_INSTANT, lang)}
           </p>
           <p className="mt-2 flex flex-wrap gap-3 text-caption text-text-strong">
             <span className="font-latin font-semibold">{formatPrice(85, lang)}</span>

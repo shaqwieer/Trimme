@@ -10,10 +10,38 @@ export function builtInSections(
   kind: 'terms' | 'privacy',
   t: (key: string) => string,
 ): Array<{ key: string; title: string; body: string }> {
+  // The full texts (D-148, «٤-١٦»): what is collected and why, who sees it, how long it is kept, deleting the account and
+  // how to reach the team, as the Personal Data Protection Law asks. To be reviewed by a lawyer before launch.
   const keys =
     kind === 'terms'
-      ? (['service', 'account', 'bookings', 'reviews'] as const)
-      : (['data', 'location', 'messages', 'cookies', 'rights'] as const);
+      ? ([
+          'intro',
+          'service',
+          'account',
+          'bookings',
+          'cancel',
+          'changes',
+          'reviews',
+          'loyalty',
+          'conduct',
+          'liability',
+          'updates',
+          'law',
+        ] as const)
+      : ([
+          'intro',
+          'data',
+          'purposes',
+          'sharing',
+          'transfer',
+          'retention',
+          'location',
+          'messages',
+          'cookies',
+          'security',
+          'rights',
+          'contact',
+        ] as const);
   return keys.map((key) => ({
     key,
     title: t(`${kind}.sections.${key}.title`),

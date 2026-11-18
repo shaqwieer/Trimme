@@ -156,7 +156,7 @@ export default async function AdminQrPage({ params, searchParams }: PageProps<'/
                               visits: formatNumber(s.visits, lang),
                               bookings: formatNumber(s.bookings, lang),
                             })}{' '}
-                            · {pct(s.conversionRate)}
+                            — {pct(s.conversionRate)}
                           </span>
                         </li>
                       ))}

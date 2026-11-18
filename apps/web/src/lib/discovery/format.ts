@@ -1,9 +1,19 @@
 import { type AppLocale, formatTime, RELATIVE_TIME_LOCALE } from '@/lib/i18n/format';
 
 /** A time of day from minutes after midnight ("٩:٠٠ ص"); minutes past 24:00 wrap to the next day (D-082). */
-export function minuteOfDay(minute: number, locale: AppLocale): string {
+export function minuteOfDay(
+  minute: number,
+  locale: AppLocale,
+  { withPeriod = true }: { withPeriod?: boolean } = {},
+): string {
   const wrapped = ((minute % 1440) + 1440) % 1440;
-  return formatTime(new Date(Date.UTC(2000, 0, 1, Math.floor(wrapped / 60), wrapped % 60)), locale, 'UTC');
+  const text = formatTime(
+    new Date(Date.UTC(2000, 0, 1, Math.floor(wrapped / 60), wrapped % 60)),
+    locale,
+    'UTC',
+  );
+  // Without «ص»/«م» (the caller words the part of the day itself, e.g. «فجر», D-148).
+  return withPeriod ? text : text.replace(/\s*[صم]$/u, '');
 }
 
 /** "قبل ٣ أيام" / "3 days ago" (clock-style digits in Arabic, D-040). */

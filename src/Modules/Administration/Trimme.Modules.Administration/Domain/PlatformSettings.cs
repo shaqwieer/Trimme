@@ -88,12 +88,15 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
 
     public uint Version { get; private set; }
 
-    /// <summary>The spec defaults (§6, §12, §15, §16; D-013, D-014, D-015, D-017): Riyadh map, Arabic, SAR.</summary>
+    /// <summary>
+    /// The spec defaults (§6, §12, §15, §16; D-013, D-014, D-015, D-017): Riyadh map, Arabic, SAR. The customer cancels or
+    /// changes until the start (D-148, the client's decision; it was 2 hours under D-015).
+    /// </summary>
     public static EditablePlatformSettings Defaults { get; } = new(
         MinLeadTimeMinutes: 60,
         BookingHorizonDays: 30,
         SlotStepMinutes: 5,
-        CancellationCutoffMinutes: 120,
+        CancellationCutoffMinutes: 0,
         ReviewWindowDays: 7,
         ReminderOffsetMinutes: 30,
         ExpiringSoonThresholdDays: 14,

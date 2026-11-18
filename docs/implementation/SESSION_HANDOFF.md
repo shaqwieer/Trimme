@@ -1,17 +1,19 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-18 (Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
+- **Updated:** 2026-11-19 (Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
   - Session 28 (D-147): committed locally on `main`, **not pushed, not deployed** (the user did not ask). One migration (`BarberOperations`): back up the VPS database before deploying.
+  - Session 28, second request (D-148): committed locally on `main` after D-147, **not pushed, not deployed** (the user did not ask). One migration (`CustomerPages`), which **sets the cancellation window to 0** on groomhere.sa when deployed. Back up the VPS database first.
   - Session 27 (D-146): pushed (`07c1151`) and **deployed to groomhere.sa on 2026-11-18** after a database backup (`/root/backups/trimme-before-d146-20261118-174737.sql.gz`); no migration (24); after `migrate` the owner role has `Shop.Barbers.Manage` and no `Shop.Bookings.CreateWalkIn`; smoke 200, 0 API errors. Then, at the user's request, a data cleanup (backup `/root/backups/trimme-before-cleanup-d146-20261118-175504.sql.gz`, `.env.bak-cleanup-d146-20261118-175504`): the 5 demo barbers deleted with all their history (all 25 bookings, 6 reviews and the ratings, schedules, service assignments, 3 barber QR codes with 215 scans); the 3 demo customers deleted; «faisal alhazzaa» (+966 53 017 8784) and «Sulaiman aa» kept (their bookings were with demo barbers and went with them); sign-in emails now `admin@groomhere.sa`, `alasala@groomhere.sa`, `barberhouse@groomhere.sa` (passwords unchanged; `TRIMME_BOOTSTRAP_ADMIN_EMAIL` in `.env` follows). The shops have **no barbers** until the owners add them. Never re-run the demo seed there: it would bring the demo barbers, customers and old-email owners back.
   - Session 26 (D-144) is pushed and deployed with D-145 (below).
   - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
 - **Working tree:** clean after the commit.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 28, second request, rebuilt api and web from its tree (`up -d --build`, no `down -v`): migrate applied `CustomerPages` (26 migrations), seed ran; codes **on**. The local cancellation window is now 0.
   - Session 28 rebuilt api and web from its tree (`up -d --build`, no `down -v`): migrate applied `BarberOperations` (25 migrations), seed ran; codes **on**. E2E runs added phone bookings on the shared volume.
   - Session 27 recreated it **fresh** from this tree (`down -v`, `up -d --build`: migrate (24 migrations) and seed ran); codes **on**. The E2E runs and the screenshots added barbers to Barber House and Al Asala; each was turned off afterwards.
   - Session 26 rebuilt the api and web images from its tree and started a **fresh** stack (`down -v`, then `up -d`: migrate (21 migrations) and seed ran), so the seeded subscriptions are current again. The API was left with codes **on** (the local default) after the codes-off runs.
@@ -22,6 +24,56 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 28, second request: the customer's pages (D-148)
+- **The request** (from the user: five screenshots of the client's document, sections 3 and 4). Section 3 (the customer's number) was already D-147's rule. Section 4 has seventeen items. Details and defaults are in D-148 and `phases/after-17-d148-customer-pages.md`.
+- **The user's answers (AskUserQuestion):**
+  - a bundled one-glyph font for the Riyal sign;
+  - «GH-» plus 5 characters for references;
+  - a «تجريبي» switch per shop;
+  - «بانتظار تأكيد المحل» for past appointments nobody closed.
+- **What was built:**
+  - **API** (a forked agent):
+    - references `GH-xxxxx`, with a retry on a taken one;
+    - the cancellation window defaults to 0, and migration `CustomerPages` sets the existing row to 0;
+    - `packageId` together with `serviceIds` everywhere, with `booking.service_in_package` on an overlap;
+    - `closed` on date responses and `open` windows on slot responses;
+    - `PUT /admin/shops/{id}/demo` and `isDemo` on the public shapes.
+  - **Catalog:**
+    - category tabs over tiles, two to a row, packages last;
+    - the booking step uses ARIA tabs (`CatalogTabs`); the public shop page uses CSS-only radio pills drawn on the server, so it stays within budget and every service is in the HTML;
+    - a package shows what it saves; services inside a chosen package are dropped, and a chosen service already in the package is refused, each with a message;
+    - «كل الخدمات» is gone.
+  - **Numerals:**
+    - Arabic-Indic digits for every Arabic quantity;
+    - ICU messages use `{x, number, arab}`; every plural was rewritten by script from the parser's offsets, and simple arguments only where every call site passes a number;
+    - the Riyal sign U+20C1 from `app/fonts/saudi-riyal.woff2`, with next/font's fallback face turned off (it had put all text in Arial);
+    - «—» instead of «·» beside numbers.
+  - **Pages:**
+    - greyed, struck-through taken hours;
+    - «مغلق» and «مكتمل» days;
+    - «منتصف الليل» and «… فجر الجمعة»;
+    - the draft cookie `gh-booking-draft`;
+    - the named service in the no-specialist message;
+    - «جديد» below 3 ratings;
+    - «بانتظار تأكيد المحل»;
+    - WhatsApp share;
+    - the unavailable-shop page;
+    - «رائج في الرياض»;
+    - «تجريبي» marks and the admin's «محل تجريبي» switch.
+  - **Legal:** full built-in terms (12 sections) and privacy (12 sections) in ar, en and tr.
+- **To tell the client:**
+  - **The legal texts are a draft for a Saudi lawyer** (PDPL) before launch.
+  - If an admin has saved its own text on the legal pages, that text is shown instead of the built-in one.
+  - **After deploying, customers can cancel or change until the start** (the migration sets the window to 0). The admin can set a window again on the settings page.
+  - **Demo shops look real until marked:** turn on «محل تجريبي» on each demo shop's admin page.
+  - New bookings get short references («GH-4K7QM»); old ones keep theirs.
+  - Prices in Arabic now show the new Riyal sign. A device whose system font lacks it still gets it from the bundled font.
+- **Deploying later (when asked):**
+  - D-147 and D-148 are both undeployed, with two migrations (`BarberOperations`, `CustomerPages`).
+  - Back up the VPS database first. Then `git pull`, build api and web **together**, `run --rm migrate`, `up -d`.
+  - Turn on «محل تجريبي» for the demo shops.
+- **Evidence:** in the plan file. .NET Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256; no pending model changes. Web: format, lint, typecheck and openapi:check clean; 535/535; 88 routes within the bundle budget. E2E on the rebuilt stack: 112 passed and 1 skipped by design; the one failure, `shop_page_sections` on its earlier spec, then passed. The route audit, keyboard pass and touch targets pass.
 
 ## Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports; the owner's packages (D-147)
 - **The request** (from the user: four screenshots of the client's document, sections 2-1 … 2-4, with its table of who does what). Details and defaults in D-147 and `phases/after-17-d147-barber-operations.md`.
@@ -514,6 +566,8 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
+- Session 28 (D-148): `20261118204915_CustomerPages` adds `shops.is_demo` (default false), widens `bookings.reference` from `char(8)` to `varchar(12)`, and sets `platform_settings.cancellation_cutoff_minutes` to 0. Applied on the local compose volume and from empty in the integration tests. **Not yet on groomhere.sa.**
+- Session 28 (D-147): `BarberOperations` (additive). Applied locally and in the integration tests; **not yet on groomhere.sa.**
 - Session 18: `20261021064349_WalkInContacts` (additive), applied on groomhere.sa (2026-10-21), on fresh verification volumes and from empty in the integration tests. Not yet on the local compose volume.
 - Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied on groomhere.sa (2026-10-21), the local compose volume, fresh verification volumes and from empty in the integration tests.
 - groomhere.sa data changes by SQL (2026-10-21, after the backup): the four seeded breaks deleted; online minimum lead time 15 minutes.

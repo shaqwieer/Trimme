@@ -45,13 +45,17 @@ export type WizardOffer = {
   durationMinutes: number;
   /** Professionals assigned to the service (or to every service of the package). */
   professionalIds: string[];
+  /** A service's category, its tab (D-148). */
+  categoryId?: string | null;
+  /** A package's services (D-148: what it saves, and a service chosen twice). */
+  itemIds?: string[];
 };
 
 export type WizardProfessional = { id: string };
 
 /** The selections the URL carries after validation against the shop's data. */
 export type WizardSelection = {
-  /** What is booked: one package, or one or more services. */
+  /** What is booked: one package and/or services (D-148), the package first. */
   items: WizardOffer[];
   /** The items as one offer (see {@link combineOffers}); undefined when nothing is chosen. */
   offer?: WizardOffer;
@@ -144,25 +148,6 @@ export function combineOffers(items: WizardOffer[]): WizardOffer | undefined {
 }
 
 /**
- * "All services" (D-130): every service one specialist does, so the whole set can be booked with them back to back —
- * the chosen specialist's, or (with "any") the specialist who does the most services, the first one on a tie.
- */
-export function allServicesFor<P extends WizardProfessional>(
-  offers: WizardOffer[],
-  pros: P[],
-  pro: string,
-): WizardOffer[] {
-  const services = offers.filter((o) => o.kind === 'service');
-  const candidates = pro === ANY_PROFESSIONAL ? pros.map((p) => p.id) : [pro];
-  let best: WizardOffer[] = [];
-  for (const id of candidates) {
-    const theirs = services.filter((s) => s.professionalIds.includes(id));
-    if (theirs.length > best.length) best = theirs;
-  }
-  return best.slice(0, MAX_SERVICES);
-}
-
-/**
  * The selection with these items. The professional stays when they do all of them, or while nothing is chosen (else
  * "any"); the date and time stay too, and the availability answers say whether they still fit (D-125).
  */
@@ -193,17 +178,51 @@ export function selectionFrom(
   pros: WizardProfessional[],
 ): WizardSelection {
   const pkg = query.package ? offers.find((o) => o.kind === 'package' && o.id === query.package) : undefined;
-  const items = pkg
-    ? [pkg]
-    : [...new Set(query.services)]
-        .map((id) => offers.find((o) => o.kind === 'service' && o.id === id))
-        .filter((o): o is WizardOffer => Boolean(o))
-        .slice(0, MAX_SERVICES);
+  // A package with other services in one booking (D-148); a service already inside the package is dropped.
+  const services = [...new Set(query.services)]
+    .map((id) => offers.find((o) => o.kind === 'service' && o.id === id))
+    .filter((o): o is WizardOffer => Boolean(o) && !pkg?.itemIds?.includes(o!.id))
+    .slice(0, MAX_SERVICES);
+  const items = pkg ? [pkg, ...services] : services;
   const offer = combineOffers(items);
   const pro = keptProfessional(query.pro, offer, pros);
   const date = offer && query.date && DATE.test(query.date) ? query.date : undefined;
   const time = date && query.time && TIME.test(query.time) ? query.time : undefined;
   return { items, offer, pro, date, time };
+}
+
+/**
+ * What choosing (or un-choosing) an item does to the items (D-148, «٤-٢»): one package at a time, together with other
+ * services; a service already inside the chosen package is refused with `inPackage` (the package stays), and choosing a
+ * package takes off the services it already holds (`dropped`).
+ */
+export function toggleItem(
+  items: WizardOffer[],
+  item: WizardOffer,
+): { items: WizardOffer[]; inPackage?: WizardOffer; dropped: WizardOffer[] } {
+  const chosen = items.some((i) => i.kind === item.kind && i.id === item.id);
+  const pkg = items.find((i) => i.kind === 'package');
+  const services = items.filter((i) => i.kind === 'service');
+  if (item.kind === 'package') {
+    if (chosen) return { items: services, dropped: [] };
+    const dropped = services.filter((s) => item.itemIds?.includes(s.id));
+    return { items: [item, ...services.filter((s) => !dropped.includes(s))], dropped };
+  }
+  if (chosen) return { items: items.filter((i) => !(i.kind === 'service' && i.id === item.id)), dropped: [] };
+  if (pkg?.itemIds?.includes(item.id)) return { items, inPackage: pkg, dropped: [] };
+  return { items: [...(pkg ? [pkg] : []), ...[...services, item].slice(0, MAX_SERVICES)], dropped: [] };
+}
+
+/**
+ * The item that leaves no single barber for the rest (D-148, «٤-٨»): the most recently chosen one whose removal lets
+ * one barber do all the others. Undefined when nothing on its own is the cause.
+ */
+export function blockingItem(items: WizardOffer[]): WizardOffer | undefined {
+  for (const candidate of [...items].reverse()) {
+    const rest = items.filter((i) => i !== candidate);
+    if (rest.length > 0 && (combineOffers(rest)?.professionalIds.length ?? 0) > 0) return candidate;
+  }
+  return undefined;
 }
 
 /** One string for the booked items, so a different set of services is a different choice and request. */

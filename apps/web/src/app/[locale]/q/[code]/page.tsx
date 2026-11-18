@@ -127,7 +127,7 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
         ...(packages ?? []).map((p) => ({ ...p, isPackage: true })),
       ];
   const opening = status ? openingLabel(tOpening, locale, status, shop.timeZone) : null;
-  const where = [shop.location?.district, opening].filter(Boolean).join(' · ');
+  const where = [shop.location?.district, opening].filter(Boolean).join(' — ');
 
   return (
     <PublicShell variant="marketing">

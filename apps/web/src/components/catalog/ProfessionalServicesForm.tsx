@@ -78,7 +78,7 @@ export function ProfessionalServicesForm({
           <Checkbox
             key={service.serviceId}
             label={localizedName(locale, service.nameAr, service.nameEn)}
-            description={`${formatPrice(service.price, lang, service.currency)} · ${formatDurationMinutes(service.durationMinutes, lang)}${service.isActive ? '' : ` · ${t('inactive')}`}`}
+            description={`${formatPrice(service.price, lang, service.currency)} — ${formatDurationMinutes(service.durationMinutes, lang)}${service.isActive ? '' : ` — ${t('inactive')}`}`}
             checked={selected.includes(service.serviceId)}
             onChange={(e) =>
               setSelected((current) =>

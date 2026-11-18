@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type CatalogCategory, ServiceCatalog } from '@/components/booking/ServiceCatalog';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button, IconButton } from '@/components/ui/Button';
 import { BookingProgress, DateStrip, HourMinutePicker } from '@/components/ui/booking';
@@ -19,11 +20,12 @@ import { ApiError } from '@/lib/api/problem';
 import { withReturnTo } from '@/lib/auth/paths';
 import {
   ANY_PROFESSIONAL,
+  blockingItem,
   currentStep,
   eligibleProfessionals,
+  firstIncompleteStep,
   keyFor,
   type KeyedIntent,
-  MAX_SERVICES,
   newIdempotencyKey,
   nextStep,
   offerKey,
@@ -33,6 +35,7 @@ import {
   resolveStart,
   restoreSelection,
   selectionFrom,
+  toggleItem,
   WIZARD_STEPS,
   type WizardNotice,
   wizardNotice,
@@ -41,12 +44,11 @@ import {
   type WizardStep,
   wizardPath,
   withItems,
-  allServicesFor,
 } from '@/lib/booking/wizard';
 import { cutoffParts, endOf } from '@/lib/booking/format';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
-import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
+import { localizedName } from '@/lib/i18n/localized';
 
 export type WizardShop = {
   slug: string;
@@ -97,13 +99,34 @@ function offerQuery(items: WizardOffer[], pro: string) {
  */
 const lastChoices = new Map<string, string>();
 
+/**
+ * The booking in progress also survives leaving the page or a reload (D-148, «٤-٧»), until it is made or emptied: a
+ * first-party cookie for the last shop (Web Storage stays banned, spec §9). It holds ids, the date and the time only.
+ */
+const DRAFT_COOKIE = 'gh-booking-draft';
+const DRAFT_DAYS = 7;
+
 function remember(slug: string, selection: WizardSelection) {
-  if (selection.items.length === 0) lastChoices.delete(slug);
-  else lastChoices.set(slug, wizardPath(slug, selection, 'service').split('?')[1] ?? '');
+  const query =
+    selection.items.length === 0 ? '' : (wizardPath(slug, selection, 'service').split('?')[1] ?? '');
+  if (query) lastChoices.set(slug, query);
+  else lastChoices.delete(slug);
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = query
+    ? `${DRAFT_COOKIE}=${encodeURIComponent(`${slug}|${query}`)}; Path=/; Max-Age=${DRAFT_DAYS * 86_400}; SameSite=Lax${secure}`
+    : `${DRAFT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
 function recall(slug: string): string | undefined {
-  return lastChoices.get(slug);
+  const memory = lastChoices.get(slug);
+  if (memory) return memory;
+  const raw = document.cookie
+    .split('; ')
+    .find((c) => c.startsWith(`${DRAFT_COOKIE}=`))
+    ?.slice(DRAFT_COOKIE.length + 1);
+  if (!raw) return undefined;
+  const [draftSlug, query] = decodeURIComponent(raw).split('|');
+  return draftSlug === slug ? query : undefined;
 }
 
 /**
@@ -121,12 +144,15 @@ export function BookingWizard({
   professionals,
   viewer,
   rewards = [],
+  categories = [],
 }: {
   shop: WizardShop;
   offers: WizardOffer[];
   professionals: WizardPro[];
   viewer: WizardViewer;
   rewards?: WizardReward[];
+  /** The platform's service categories, in order: the service step's tabs (D-148). */
+  categories?: CatalogCategory[];
 }) {
   const t = useTranslations('booking');
   const tl = useTranslations('loyalty.wizard');
@@ -175,7 +201,8 @@ export function BookingWizard({
       const bare = !query.package && query.services.length === 0 && !query.pro && !query.date;
       if (bare && stored) {
         const restored = selectionFrom(readWizardQuery(new URLSearchParams(stored)), offers, professionals);
-        if (restored.items.length > 0) go(restored, 'service', 'replace');
+        // Back where the customer left off: the first step still missing a choice (D-148).
+        if (restored.items.length > 0) go(restored, firstIncompleteStep(restored), 'replace');
       } else if (selection.items.length > 0) {
         remember(shop.slug, selection);
       }
@@ -265,6 +292,8 @@ export function BookingWizard({
 
   const eligible = eligibleProfessionals(offer, professionals);
   const noCommonPro = items.length > 1 && eligible.length === 0;
+  // Which choice leaves no single barber for the rest (D-148, «٤-٨»).
+  const blocking = noCommonPro ? blockingItem(items) : undefined;
   const chosenPro = professionals.find((p) => p.id === pro);
   const offerName = offer ? localizedName(locale, offer.nameAr, offer.nameEn) : '';
   const proName = chosenPro ? localizedName(locale, chosenPro.nameAr, chosenPro.nameEn) : t('any.title');
@@ -278,7 +307,7 @@ export function BookingWizard({
   const timeLabel = startsAt ? formatTime(startsAt, locale, shop.timeZone) : '';
   const itemsLabel =
     items.length > 1
-      ? `${t('selectedCount', { count: items.length })} · ${formatDurationMinutes(offer!.durationMinutes, locale)}`
+      ? `${t('selectedCount', { count: items.length })} — ${formatDurationMinutes(offer!.durationMinutes, locale)}`
       : offerName;
 
   const canContinue =
@@ -300,18 +329,23 @@ export function BookingWizard({
     }
   };
 
+  // A package with other services in one booking (D-148); a service inside the chosen package is refused with a message,
+  // never by dropping the package.
+  const [catalogNote, setCatalogNote] = useState<string>();
   const toggle = (item: WizardOffer) => {
-    const chosen = items.some((i) => i.kind === item.kind && i.id === item.id);
-    // A package is booked on its own; services are booked together (up to the API's limit).
-    const next =
-      item.kind === 'package'
-        ? chosen
-          ? []
-          : [item]
-        : chosen
-          ? items.filter((i) => !(i.kind === item.kind && i.id === item.id))
-          : [...items.filter((i) => i.kind === 'service'), item].slice(0, MAX_SERVICES);
-    go(withItems(selection, next, professionals), 'service', 'replace');
+    const result = toggleItem(items, item);
+    const name = (o: WizardOffer) => localizedName(locale, o.nameAr, o.nameEn);
+    setCatalogNote(
+      result.inPackage
+        ? t('catalog.inPackage', { service: name(item), package: name(result.inPackage) })
+        : result.dropped.length > 0
+          ? t('catalog.dropped', {
+              services: result.dropped.map(name).join(locale === 'ar' ? '، ' : ', '),
+              package: name(item),
+            })
+          : undefined,
+    );
+    if (!result.inPackage) go(withItems(selection, result.items, professionals), 'service', 'replace');
   };
 
   const confirm = async () => {
@@ -376,8 +410,8 @@ export function BookingWizard({
     step === 'service'
       ? itemsLabel
       : step === 'professional' || (step === 'date' && !dateOk)
-        ? [itemsLabel, proName].filter(Boolean).join(' · ')
-        : [dateLabel, timeLabel].filter(Boolean).join(' · ');
+        ? [itemsLabel, proName].filter(Boolean).join(' — ')
+        : [dateLabel, timeLabel].filter(Boolean).join(' — ');
 
   return (
     <div className="mx-auto flex w-full max-w-[720px] flex-1 flex-col">
@@ -404,7 +438,7 @@ export function BookingWizard({
               {t(`titles.${step}`)}
             </h1>
             <p className="truncate text-helper text-text-secondary">
-              {[shopName, shop.area].filter(Boolean).join(' · ')}
+              {[shopName, shop.area].filter(Boolean).join(' — ')}
             </p>
           </div>
         </div>
@@ -457,12 +491,25 @@ export function BookingWizard({
               offers={offersFor(offers, pro)}
               value={items}
               onToggle={toggle}
-              onSelectAll={() => {
-                const all = allServicesFor(offers, professionals, pro);
-                if (all.length > 0) go(withItems(selection, all, professionals), 'service', 'replace');
-              }}
+              categories={categories}
             />
-            {noCommonPro && <InlineAlert tone="warning" title={t('noCommonProfessional')} />}
+            {catalogNote && (
+              <p role="status" className="rounded-card bg-warning-50 p-3 text-label text-warning-700">
+                {catalogNote}
+              </p>
+            )}
+            {noCommonPro && (
+              <InlineAlert
+                tone="warning"
+                title={
+                  blocking
+                    ? t('noCommonProfessionalFor', {
+                        service: localizedName(locale, blocking.nameAr, blocking.nameEn),
+                      })
+                    : t('noCommonProfessional')
+                }
+              />
+            )}
           </>
         )}
 
@@ -546,7 +593,7 @@ export function BookingWizard({
                     <div className="min-w-0 flex-1">
                       <p className="text-helper font-bold text-brand-700">{t('nearest.title')}</p>
                       <p className="text-[0.9375rem] font-bold text-text-primary">
-                        {dayLabel(nearestDate)} · {formatTime(nearestSlot.startsAt, locale, shop.timeZone)}
+                        {dayLabel(nearestDate)} — {formatTime(nearestSlot.startsAt, locale, shop.timeZone)}
                       </p>
                     </div>
                     <Button
@@ -565,7 +612,11 @@ export function BookingWizard({
                 <DateStrip
                   name="date"
                   today={today}
-                  days={dates.data.dates.map((d) => ({ date: d.date, available: d.slotCount > 0 }))}
+                  days={dates.data.dates.map((d) => ({
+                    date: d.date,
+                    available: d.slotCount > 0,
+                    closed: d.closed,
+                  }))}
                   value={dateOk ? date : undefined}
                   onValueChange={(next) => {
                     scrollToTimes.current = true;
@@ -602,6 +653,7 @@ export function BookingWizard({
                         name="time"
                         timeZone={shop.timeZone}
                         slots={slots.data.slots.map((s) => ({ start: s.startsAt, localTime: s.localTime }))}
+                        open={slots.data.open}
                         value={startsAt}
                         onValueChange={(start) => {
                           const slot = slots.data.slots.find((s) => s.startsAt === start);
@@ -721,7 +773,9 @@ export function BookingWizard({
               onChange={(event) => setNote(event.target.value)}
             />
             <InlineAlert tone="info" title={t('policy.title')}>
-              {t('policy.body', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
+              {shop.cancellationCutoffMinutes === 0
+                ? t('policy.bodyUntilStart')
+                : t('policy.body', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
             </InlineAlert>
             {viewer === 'guest' && <p className="text-helper text-text-secondary">{t('signInNote')}</p>}
             {viewer === 'staff' && <InlineAlert tone="warning" title={t('customersOnly')} />}
@@ -788,64 +842,45 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/** Compact tiles (D-125): any number of services, booked together; a package is booked on its own. */
+/**
+ * The service step (D-125, D-148): the shop's services in category tabs, packages last, as tiles; several services and
+ * a package can be booked together. The tabs replace D-130's «كل الخدمات».
+ */
 function ServiceStep({
   offers,
   value,
   onToggle,
-  onSelectAll,
+  categories,
 }: {
   offers: WizardOffer[];
   value: WizardOffer[];
   onToggle: (offer: WizardOffer) => void;
-  onSelectAll: () => void;
+  categories: CatalogCategory[];
 }) {
   const t = useTranslations('booking');
-  const locale = useLocale() as AppLocale;
   if (offers.length === 0) {
     return <p className="text-helper text-text-secondary">{t('noServices')}</p>;
   }
-  const groups = (['service', 'package'] as const)
-    .map((kind) => ({ kind, items: offers.filter((o) => o.kind === kind) }))
-    .filter((group) => group.items.length > 0);
   return (
-    <div className="flex flex-col gap-5">
-      {groups.map((group) => (
-        <fieldset key={group.kind} className="flex min-w-0 flex-col">
-          <legend className="pb-1 text-label font-bold text-text-strong">
-            {t(group.kind === 'service' ? 'services' : 'packages')}
-          </legend>
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5">
-            <p className="text-helper text-text-secondary">
-              {t(group.kind === 'service' ? 'servicesHint' : 'packagesHint')}
-            </p>
-            {group.kind === 'service' && group.items.length > 1 && (
-              <Button variant="outline" size="sm" icon="check" onClick={onSelectAll}>
-                {t('allServices')}
-              </Button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3">
-            {group.items.map((o) => {
-              const description = localizedText(locale, o.descriptionAr, o.descriptionEn);
-              return (
-                <ServiceTile
-                  key={`${o.kind}-${o.id}`}
-                  name={group.kind === 'service' ? 'services' : 'package'}
-                  value={`${o.kind}:${o.id}`}
-                  checked={value.some((v) => v.kind === o.kind && v.id === o.id)}
-                  onChange={() => onToggle(o)}
-                  title={localizedName(locale, o.nameAr, o.nameEn)}
-                  description={description?.text}
-                  descriptionLang={description ? langIfOther(description, locale) : undefined}
-                  price={o.price}
-                  durationMinutes={o.durationMinutes}
-                />
-              );
-            })}
-          </div>
-        </fieldset>
-      ))}
-    </div>
+    <ServiceCatalog
+      items={offers}
+      categories={categories}
+      selected={value}
+      choice={({ item, name, description, badge, checked }) => (
+        <ServiceTile
+          name={item.kind === 'service' ? 'services' : 'package'}
+          value={`${item.kind}:${item.id}`}
+          checked={checked}
+          onChange={() => onToggle(offers.find((o) => o.kind === item.kind && o.id === item.id)!)}
+          title={name}
+          description={description?.text}
+          descriptionLang={description?.lang}
+          price={item.price}
+          durationMinutes={item.durationMinutes}
+          badge={badge}
+        />
+      )}
+      label={t('services')}
+    />
   );
 }

@@ -19,11 +19,14 @@ public sealed record AvailabilitySlotResponse(DateTimeOffset StartsAt, DateTimeO
 
 /// <summary>
 /// Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force…),
-/// <c>Bookable</c> is false, <c>BlockedReason</c> says why and there are no slots (D-013, D-078).
+/// <c>Bookable</c> is false, <c>BlockedReason</c> says why and there are no slots (D-013, D-078). <c>Open</c> is the
+/// shop's opening windows of that business day (D-148): the page lays every time out in order and greys the taken ones.
 /// </summary>
-public sealed record AvailableSlotsResponse(DateOnly Date, string TimeZone, bool Bookable, string? BlockedReason, IReadOnlyList<AvailabilitySlotResponse> Slots);
+public sealed record AvailableSlotsResponse(
+    DateOnly Date, string TimeZone, bool Bookable, string? BlockedReason, IReadOnlyList<AvailabilitySlotResponse> Slots, IReadOnlyList<TimeWindow> Open);
 
-public sealed record AvailableDateResponse(DateOnly Date, int SlotCount);
+/// <summary>A date of the strip: its free starts, and whether the shop is closed then («مغلق»; open with none is «مكتمل», D-148).</summary>
+public sealed record AvailableDateResponse(DateOnly Date, int SlotCount, bool Closed);
 
 /// <summary>Every date from <c>From</c> to <c>To</c> with its number of bookable slots (0 = none), for the date strip.</summary>
 public sealed record AvailableDatesResponse(DateOnly From, DateOnly To, string TimeZone, bool Bookable, string? BlockedReason, IReadOnlyList<AvailableDateResponse> Dates);
@@ -35,8 +38,18 @@ internal sealed record GetAvailableSlotsQuery(string ShopSlug, Guid? ServiceId, 
 internal sealed record GetAvailableDatesQuery(string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateOnly? From, DateOnly? To, IReadOnlyList<Guid>? ServiceIds = null)
     : IQuery<Result<AvailableDatesResponse>>;
 
-/// <summary>What one availability request resolved to: the shop and either a block reason or the computed slots.</summary>
-internal sealed record AvailabilityRun(ShopSummary Shop, TimeZoneInfo Zone, DateOnly From, DateOnly To, string? BlockedReason, IReadOnlyList<AvailableSlot> Slots);
+/// <summary>
+/// What one availability request resolved to: the shop and either a block reason or the computed slots, with the shop's
+/// calendar when it was read (for closed days and opening windows, D-148).
+/// </summary>
+internal sealed record AvailabilityRun(
+    ShopSummary Shop, TimeZoneInfo Zone, DateOnly From, DateOnly To, string? BlockedReason, IReadOnlyList<AvailableSlot> Slots, ShopCalendar? Calendar = null)
+{
+    public IReadOnlyList<TimeWindow> OpenOn(DateOnly date) =>
+        Calendar is null ? [] : [.. AvailabilityEngine.OpenWindows(Calendar, date).Ranges.Select(r => new TimeWindow(r.Start, r.End))];
+
+    public bool ClosedOn(DateOnly date) => Calendar is not null && AvailabilityEngine.OpenWindows(Calendar, date).Ranges.Count == 0;
+}
 
 /// <summary>
 /// Runs the engine for a public caller (anonymous or customer). Order of the gates: the shop is active; it takes
@@ -96,6 +109,11 @@ internal sealed class PublicAvailabilityService(
             return new AvailabilityRun(shop, zone, start, end, gate.BlockedReason, []);
         }
 
+        if (await catalog.OverlapsPackageAsync(shop.Id, services, packageId, cancellationToken))
+        {
+            return BookableOfferRequest.ServiceInPackage();
+        }
+
         var offer = await catalog.FindAsync(shop.Id, services, packageId, cancellationToken);
         if (offer is null)
         {
@@ -128,7 +146,7 @@ internal sealed class PublicAvailabilityService(
         var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
         var (shopCalendar, calendars) = await loader.CalendarsAsync(shop.Id, zone, candidates, start, end, cancellationToken);
         var slots = AvailabilityEngine.FindSlots(shopCalendar, calendars, new AvailabilityQuery(start, end, offer.DurationMinutes, now, policy));
-        return new AvailabilityRun(shop, zone, start, end, null, slots);
+        return new AvailabilityRun(shop, zone, start, end, null, slots, shopCalendar);
     }
 
     public static AvailabilitySlotResponse ToResponse(AvailableSlot slot) =>
@@ -148,7 +166,7 @@ internal sealed class GetAvailableSlotsHandler(PublicAvailabilityService availab
         var value = run.Value;
         return new AvailableSlotsResponse(
             query.Date, value.Shop.TimeZone, value.BlockedReason is null, value.BlockedReason,
-            [.. value.Slots.Select(PublicAvailabilityService.ToResponse)]);
+            [.. value.Slots.Select(PublicAvailabilityService.ToResponse)], value.OpenOn(query.Date));
     }
 }
 
@@ -166,7 +184,7 @@ internal sealed class GetAvailableDatesHandler(PublicAvailabilityService availab
         var counts = value.Slots.GroupBy(s => s.Date).ToDictionary(g => g.Key, g => g.Count());
         var dates = Enumerable.Range(0, value.To.DayNumber - value.From.DayNumber + 1)
             .Select(value.From.AddDays)
-            .Select(d => new AvailableDateResponse(d, counts.GetValueOrDefault(d)))
+            .Select(d => new AvailableDateResponse(d, counts.GetValueOrDefault(d), value.ClosedOn(d)))
             .ToList();
         return new AvailableDatesResponse(value.From, value.To, value.Shop.TimeZone, value.BlockedReason is null, value.BlockedReason, dates);
     }

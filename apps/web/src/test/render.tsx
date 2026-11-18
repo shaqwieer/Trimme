@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 import { DirectionProvider } from '@/components/providers/DirectionProvider';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { MESSAGE_FORMATS } from '@/i18n/formats';
 import { type Locale, localeDirection } from '@/i18n/routing';
 import ar from '../../messages/ar.json';
 import en from '../../messages/en.json';
@@ -74,7 +75,12 @@ export function renderWithIntl(
   document.documentElement.lang = locale;
   document.documentElement.dir = localeDirection[locale];
   return render(
-    <NextIntlClientProvider locale={locale} messages={MESSAGES[locale]} timeZone="Asia/Riyadh">
+    <NextIntlClientProvider
+      locale={locale}
+      messages={MESSAGES[locale]}
+      timeZone="Asia/Riyadh"
+      formats={MESSAGE_FORMATS}
+    >
       <ThemeProvider initial="system">
         <DirectionProvider dir={localeDirection[locale]}>{ui}</DirectionProvider>
       </ThemeProvider>

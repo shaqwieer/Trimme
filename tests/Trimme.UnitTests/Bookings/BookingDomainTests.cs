@@ -214,6 +214,25 @@ public sealed class BookingDomainTests
     }
 
     [Fact]
+    public void References_AreGhAndFiveUnambiguousCharacters_D148()
+    {
+        var references = Enumerable.Range(0, 200).Select(_ => BookingRules.NewReference()).ToList();
+        references.ShouldAllBe(r => System.Text.RegularExpressions.Regex.IsMatch(r, "^GH-[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$"));
+        references.Distinct().Count().ShouldBeGreaterThan(190, "drawn at random");
+        Online().Reference.Length.ShouldBeLessThanOrEqualTo(BookingRules.MaxReferenceLength);
+    }
+
+    [Fact]
+    public void WithNoWindow_TheCustomerCancelsAndChangesUntilTheStart_D148()
+    {
+        var booking = Online();
+        booking.CustomerCanChange(Start.AddMinutes(-1), 0).ShouldBeTrue();
+        booking.CustomerCanChange(Start.AddMinutes(1), 0).ShouldBeFalse();
+        booking.CancelByCustomer(Customer, null, Start.AddMinutes(1), 0).Error!.Code.ShouldBe("booking.cancellation_cutoff_passed");
+        booking.CancelByCustomer(Customer, null, Start.AddMinutes(-1), 0).IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
     public void CustomerCancel_WorksUntilTheCutoff_ExactlyAtTheBoundary()
     {
         var booking = Online();

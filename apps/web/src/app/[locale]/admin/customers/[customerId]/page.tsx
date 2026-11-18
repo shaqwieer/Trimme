@@ -80,8 +80,8 @@ export default async function AdminCustomerPage({
                       {localizedName(lang, b.booking.item.nameAr, b.booking.item.nameEn)}
                     </Link>
                     <p className="text-helper text-text-secondary">
-                      {formatDate(b.booking.startsAt, lang, { withWeekday: false })} ·{' '}
-                      {formatTime(b.booking.startsAt, lang)} ·{' '}
+                      {formatDate(b.booking.startsAt, lang, { withWeekday: false })} —{' '}
+                      {formatTime(b.booking.startsAt, lang)} —{' '}
                       {localizedName(lang, b.shop.nameAr, b.shop.nameEn)}
                     </p>
                   </div>
@@ -103,7 +103,7 @@ export default async function AdminCustomerPage({
                     {t('since', {
                       date: formatDate(customer.registeredAt, lang, { withWeekday: false, withYear: true }),
                     })}
-                    {customer.isDisabled && ` · ${t('disabled')}`}
+                    {customer.isDisabled && ` — ${t('disabled')}`}
                   </p>
                 </div>
               </div>

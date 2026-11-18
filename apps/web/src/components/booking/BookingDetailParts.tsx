@@ -53,6 +53,12 @@ export function BookingPolicy({
             time: `${formatDate(startsAt, locale, { timeZone })} ${formatTime(startsAt, locale, timeZone)}`,
           })}
         </p>
+      ) : canChange && cutoffMinutes === 0 ? (
+        <p className="text-helper leading-[1.8] text-text-secondary">
+          {t('policy.untilStart', {
+            time: `${formatDate(startsAt, locale, { timeZone })} ${formatTime(startsAt, locale, timeZone)}`,
+          })}
+        </p>
       ) : canChange ? (
         <p className="text-helper leading-[1.8] text-text-secondary">
           {t('policy.before', {
@@ -61,7 +67,9 @@ export function BookingPolicy({
         </p>
       ) : (
         <p className="text-helper leading-[1.8] text-text-secondary" data-testid="cutoff-passed">
-          {t('policy.after', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
+          {cutoffMinutes === 0
+            ? t('policy.started')
+            : t('policy.after', { window: t(`window.${cutoff.unit}`, { count: cutoff.count }) })}
         </p>
       )}
     </section>

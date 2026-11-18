@@ -330,6 +330,11 @@ internal sealed class CreateWalkInHandler(
             return replay.IsFailure ? replay.Error : await ExistingAsync(shopId, replay.Value, cancellationToken);
         }
 
+        if (await catalog.OverlapsPackageAsync(shopId, services, command.PackageId, cancellationToken))
+        {
+            return BookableOfferRequest.ServiceInPackage();
+        }
+
         var offer = await catalog.FindAsync(shopId, services, command.PackageId, cancellationToken);
         if (offer is null)
         {
@@ -383,7 +388,7 @@ internal sealed class CreateWalkInHandler(
         BookingEvents.Add(db, BookingEvents.Created, booking, now);
         try
         {
-            await db.SaveChangesAsync(cancellationToken);
+            await BookingReferences.SaveNewAsync(db, booking, cancellationToken);
         }
         catch (Exception exception) when (DatabaseErrors.IsLostRace(exception))
         {

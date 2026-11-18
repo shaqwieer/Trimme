@@ -10,7 +10,8 @@ namespace Trimme.Modules.Services.Infrastructure;
 /// <summary>
 /// <see cref="IBookableOfferCatalog"/> for the availability engine (D-082). Reads through the caller's data scope.
 /// Only published items qualify: active, not archived and not hidden; a package also needs every item service to be
-/// published (D-072). A package is online-bookable when every item service is; so are several services booked together.
+/// published (D-072). A package is online-bookable when every item service is; so are several services booked together,
+/// and a package with other services (D-148).
 /// </summary>
 internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferCatalog
 {
@@ -97,6 +98,49 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
             services[0].Id.Value, IsPackage: false, services.Sum(s => s.DurationMinutes), services.All(s => s.OnlineBookable), eligible,
             Joined(services.Select(s => s.NameAr)), nameEn, services.Sum(s => s.Price), currency,
             [.. services.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))]);
+    }
+
+    public async Task<BookableOffer?> FindPackageWithServicesAsync(ShopId shopId, Guid packageId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken)
+    {
+        if (await FindAsync(shopId, null, packageId, cancellationToken) is not { } package)
+        {
+            return null;
+        }
+
+        if (serviceIds.Count == 0)
+        {
+            return package;
+        }
+
+        // An extra already inside the package is the caller's 400 (BookableOfferRequest.OverlapsPackageAsync), never a silent drop.
+        if (serviceIds.Any(id => package.Items.Any(item => item.ServiceId == id)))
+        {
+            return null;
+        }
+
+        var ids = serviceIds.Select(id => new ShopServiceId(id)).Distinct().ToList();
+        var found = await db.Set<ShopService>().AsNoTracking()
+            .Where(s => s.ShopId == shopId && ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, cancellationToken);
+        if (ids.Count != serviceIds.Count || !ids.All(id => found.TryGetValue(id, out var s) && s.IsPubliclyAvailable && s.Currency == package.Currency))
+        {
+            return null;
+        }
+
+        var extras = ids.Select(id => found[id]).ToList();
+
+        // One professional does the package and every extra.
+        var assigned = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+            .Where(a => a.ShopId == shopId && ids.Contains(a.ServiceId)).ToListAsync(cancellationToken);
+        var eligible = package.EligibleProfessionalIds
+            .Where(p => assigned.Where(a => a.ProfessionalId == p).Select(a => a.ServiceId).Distinct().Count() == ids.Count)
+            .ToList();
+        var nameEn = package.NameEn is not null && extras.All(s => !string.IsNullOrWhiteSpace(s.NameEn))
+            ? Joined([package.NameEn, .. extras.Select(s => s.NameEn!)])
+            : null;
+        return new BookableOffer(
+            package.Id, IsPackage: true, package.DurationMinutes + extras.Sum(s => s.DurationMinutes), package.OnlineBookable && extras.All(s => s.OnlineBookable),
+            eligible, Joined([package.NameAr, .. extras.Select(s => s.NameAr)]), nameEn, package.Price + extras.Sum(s => s.Price), package.Currency,
+            [.. package.Items, .. extras.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))]);
     }
 
     /// <summary>The services' names as one booked item name, shortened to the snapshot's length.</summary>

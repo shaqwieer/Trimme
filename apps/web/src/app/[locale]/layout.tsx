@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Tajawal } from 'next/font/google';
+import localFont from 'next/font/local';
 import { locale as localeParam } from 'next/root-params';
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
@@ -39,6 +40,23 @@ const inter = Inter({
   preload: false,
 });
 
+/**
+ * The new Saudi Riyal sign (U+20C1, approved 20 February 2025; D-148): one glyph built from the official symbol (SAMA's
+ * public-domain SVG), first in every font stack but limited to that one code point, so prices show the sign wherever
+ * they are text. 508 bytes; browsers fetch it only when the sign is on the page.
+ */
+const riyal = localFont({
+  src: '../fonts/saudi-riyal.woff2',
+  variable: '--font-riyal',
+  display: 'block',
+  preload: false,
+  declarations: [{ prop: 'unicode-range', value: 'U+20C1' }],
+  // No generated "riyal Fallback" face: it would be local Arial without the unicode-range, first in every font stack,
+  // and would draw all the text in Arial. The real fonts after it in the stack are the fallback.
+  adjustFontFallback: false,
+  fallback: [],
+});
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -50,7 +68,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     // Canonical, hreflang and Open Graph URLs resolve against the public origin (R-WEB-10).
     metadataBase: siteUrl(),
-    title: { default: t('title'), template: `%s · ${t('appName')}` },
+    title: { default: t('title'), template: `%s — ${t('appName')}` },
     description: t('description'),
     applicationName: t('appName'),
     // Defaults for every page; public pages set their own title, description, URL and, where they have one, image.
@@ -109,7 +127,7 @@ export default async function LocaleLayout({ children }: LayoutProps<'/[locale]'
       lang={locale}
       dir={localeDirection[locale]}
       data-theme={themeAttribute(theme)}
-      className={`${tajawal.variable} ${inter.variable}`}
+      className={`${tajawal.variable} ${inter.variable} ${riyal.variable}`}
     >
       <body>
         <NextIntlClientProvider>

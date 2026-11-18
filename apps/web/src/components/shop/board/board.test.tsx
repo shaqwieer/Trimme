@@ -87,7 +87,7 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     const drawer = await screen.findByTestId('appointment-drawer');
     await within(drawer).findByText('عبدالله الشمري');
     expect(drawer).toHaveTextContent('زبون عائد');
-    expect(drawer).toHaveTextContent('85 ر.س — يُدفع في المحل');
+    expect(drawer).toHaveTextContent('٨٥ \u20C1 — يُدفع في المحل');
     expect(within(drawer).getByTestId('no-phone-note')).toHaveTextContent('رقم العميل غير متاح');
     expect(drawer.textContent).not.toMatch(/\+966|05\d{8}/);
     expect(
@@ -289,7 +289,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
 
     await user.click(screen.getByRole('radio', { name: /بالتلفون/ }));
     await user.click(screen.getByRole('checkbox', { name: /تحديد لحية/ }));
-    expect(screen.getByTestId('walk-in-total')).toHaveTextContent(/خدمتان.*95/);
+    expect(screen.getByTestId('walk-in-total')).toHaveTextContent(/خدمتان.*٩٥/);
     expect(await screen.findByRole('radio', { name: /فيصل القحطاني.*\(أنت\)/ })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /سلطان الحربي/ }));
     await user.click(within(screen.getByTestId('walk-in-times')).getByRole('radio', { name: /٥:١٥|5:15/ }));
@@ -398,7 +398,7 @@ describe('ShopBanners (spec §13, §15)', () => {
       <ShopBanners paused subscription={subscription('ExpiringSoon', false) as never} />,
     );
     expect(screen.getByText('الحجز الإلكتروني متوقف مؤقتاً')).toBeInTheDocument();
-    expect(screen.getByText('ينتهي اشتراكك بعد 9 أيام')).toBeInTheDocument();
+    expect(screen.getByText('ينتهي اشتراكك بعد ٩ أيام')).toBeInTheDocument();
     unmount();
 
     renderWithIntl(<ShopBanners paused={false} subscription={subscription('Expired', true) as never} />);

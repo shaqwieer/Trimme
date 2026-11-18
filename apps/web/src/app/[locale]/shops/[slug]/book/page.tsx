@@ -42,7 +42,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
 
   const api = await getPublicApi();
   const path = { params: { path: { slug } } };
-  const [services, packages, professionals, me, t] = await Promise.all([
+  const [services, packages, professionals, me, t, categories] = await Promise.all([
     api.GET('/api/v1/public/shops/{slug}/services', path).then((r) => dataOrNull(r, 'services') ?? []),
     api.GET('/api/v1/public/shops/{slug}/packages', path).then((r) => dataOrNull(r, 'packages') ?? []),
     api
@@ -50,6 +50,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
       .then((r) => dataOrNull(r, 'professionals') ?? []),
     getMe(),
     getTranslations({ locale, namespace: 'booking' }),
+    api.GET('/api/v1/public/service-categories').then((r) => dataOrNull(r, 'categories') ?? []),
   ]);
 
   const offers: WizardOffer[] = [
@@ -66,6 +67,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
         currency: s.currency,
         durationMinutes: s.durationMinutes,
         professionalIds: s.professionalIds,
+        categoryId: s.categoryId ?? null,
       })),
     ...packages.map((p) => ({
       kind: 'package' as const,
@@ -78,6 +80,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
       currency: p.currency,
       durationMinutes: p.durationMinutes,
       professionalIds: p.professionalIds,
+      itemIds: p.items.map((i) => i.serviceId),
     })),
   ];
 
@@ -122,6 +125,10 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
             }))}
             viewer={viewer}
             rewards={rewards}
+            categories={categories
+              .filter((c) => c.isActive)
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn }))}
           />
         </Suspense>
       </QueryProvider>

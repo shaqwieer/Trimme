@@ -21,7 +21,7 @@ describe('loyalty card (D-132)', () => {
     const { container } = renderWithIntl(<LoyaltyStamps required={6} stamps={2} />);
     const card = screen.getByTestId('loyalty-stamps');
     expect(card).toHaveAttribute('role', 'img');
-    expect(card.getAttribute('aria-label')).toContain('2');
+    expect(card.getAttribute('aria-label')).toContain('٢');
     expect(container.querySelectorAll('[data-stamp="filled"]')).toHaveLength(2);
     expect(container.querySelectorAll('[data-stamp="empty"]')).toHaveLength(4);
     await expectNoAxeViolations(container);

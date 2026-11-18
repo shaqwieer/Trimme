@@ -31,8 +31,8 @@ describe('cards', () => {
       '/ar/shops/al-asala',
     );
     expect(screen.getByRole('img', { name: 'صالون موثّق' })).toBeInTheDocument();
-    expect(screen.getByText('2.4 كم')).toBeInTheDocument();
-    expect(screen.getByText('من 35 ر.س')).toBeInTheDocument();
+    expect(screen.getByText('٢٫٤ كم')).toBeInTheDocument();
+    expect(screen.getByText('من ٣٥ \u20C1')).toBeInTheDocument();
     await expectNoAxeViolations(container);
   });
 
@@ -42,7 +42,7 @@ describe('cards', () => {
     );
     const radio = screen.getByRole('radio', { name: /باقة شعر ولحية/ });
     expect(radio).toBeInTheDocument();
-    expect(screen.getByText('85 ر.س')).toBeInTheDocument();
+    expect(screen.getByText('٨٥ \u20C1')).toBeInTheDocument();
     expect(screen.getByText('٥٠ دقيقة')).toBeInTheDocument();
   });
 
@@ -168,21 +168,21 @@ describe('data display', () => {
     renderWithIntl(
       <Pagination page={1} pageSize={4} total={128} hrefForPage={(p) => `/admin/shops?page=${p}`} />,
     );
-    expect(screen.getByRole('link', { name: 'الصفحة 1' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'الصفحة ١' })).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByRole('link', { name: 'الصفحة السابقة' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'الصفحة التالية' })).toHaveAttribute(
       'href',
       '/ar/admin/shops?page=2',
     );
-    expect(screen.getByText('عرض 1–4 من 128')).toBeInTheDocument();
+    expect(screen.getByText('عرض ١–٤ من ١٢٨')).toBeInTheDocument();
   });
 
   it('Pagination keeps only previous, current and next on a phone', () => {
     renderWithIntl(
       <Pagination page={3} pageSize={25} total={150} hrefForPage={(p) => `/admin/shops?page=${p}`} />,
     );
-    expect(screen.getByRole('link', { name: 'الصفحة 3' }).closest('li')).not.toHaveClass('max-md:hidden');
-    for (const other of [1, 2, 4, 5, 6]) {
+    expect(screen.getByRole('link', { name: 'الصفحة ٣' }).closest('li')).not.toHaveClass('max-md:hidden');
+    for (const other of ['١', '٢', '٤', '٥', '٦']) {
       expect(screen.getByRole('link', { name: `الصفحة ${other}` }).closest('li')).toHaveClass(
         'max-md:hidden',
       );
@@ -247,8 +247,8 @@ describe('charts (dataviz rules)', () => {
     renderWithIntl(<RatingDistribution counts={{ 5: 268, 4: 52, 3: 15, 2: 7, 1: 4 }} />);
     expect(screen.getByRole('list', { name: 'توزيع التقييمات' })).toBeInTheDocument();
     // Arabic plural forms (Phase 17): 268 takes «many», 7 takes «few».
-    expect(screen.getByText('5 نجوم: 268 تقييماً')).toBeInTheDocument();
-    expect(screen.getByText('2 نجوم: 7 تقييمات')).toBeInTheDocument();
+    expect(screen.getByText('٥ نجوم: ٢٦٨ تقييماً')).toBeInTheDocument();
+    expect(screen.getByText('٢ نجوم: ٧ تقييمات')).toBeInTheDocument();
   });
 
   it('BarChart ships an accessible data table and labels the peak', async () => {
