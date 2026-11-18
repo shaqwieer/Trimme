@@ -595,4 +595,46 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         using var omar = await w.BarberAsync(w.Omar, ct);
         await FailsAsync(Remove(omar, packageId, w.Haircut, package.GetProperty("version").GetUInt32()), HttpStatusCode.UnprocessableEntity, "booking.service_fixed", ct);
     }
+
+    /// <summary>
+    /// The hold cannot race (R-BKG-03 for offers): an offer and another customer's booking of the same time, sent together,
+    /// never both succeed. Both triggers take the same per-barber lock, so whichever commits second sees the first.
+    /// </summary>
+    [Fact]
+    public async Task Postponement_AndABookingOfTheSameTime_SentTogether_NeverBothWin()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "d147_race", ct);
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        var outcomes = new List<(bool Offered, bool Booked)>();
+        for (var round = 0; round < 5; round++)
+        {
+            var booking = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 10 + round), ct);
+            var contested = At(Target, 16 + round);
+            var responses = await Task.WhenAll(
+                Task.Run(() => faisal.PostAsync(
+                    $"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/postpone",
+                    new { startsAt = contested, version = booking.GetProperty("version").GetUInt32() }, ct), ct),
+                Task.Run(() => BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, contested, ct), ct));
+            foreach (var response in responses)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response.StatusCode.ShouldBe(HttpStatusCode.Conflict, body);
+                    body.ShouldContain("booking.slot_unavailable");
+                }
+            }
+
+            outcomes.Add((responses[0].IsSuccessStatusCode, responses[1].IsSuccessStatusCode));
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+
+        outcomes.ShouldAllBe(o => o.Offered != o.Booked, string.Join(", ", outcomes));
+    }
 }
