@@ -71,7 +71,8 @@
   - **No walk-ins for the owner:** the page, the menu entry and the tab are gone for the owner and the API refuses them (403); the barbers book their own. The owner's bottom bar shows «الحلاقون» in their place.
   - **The owner adds and edits barbers** («الحلاقون» → «إضافة حلاق», and each barber's page): profile, photo, WhatsApp number (masked; it is also the sign-in, so it can be changed but not removed), the services they do, the login, and whether they take bookings. No delete, no change of shop, no reveal. This overrides spec §7/§8 for the owner (recorded in D-146).
   - **A login is made with every barber the owner adds:** the server generates the temporary password (12 easy-to-read characters), shows it once with «نسخ», and the barber replaces it at the first sign-in. «تفعيل الدخول» and «كلمة مرور مؤقتة جديدة» (owner and admin) also generate it now.
-  - No migration. .NET, web and end-to-end gates pass (details in `phases/after-17-d146-owner-barbers.md`). Committed locally, **not pushed or deployed**.
+  - No migration. .NET, web and end-to-end gates pass (details in `phases/after-17-d146-owner-barbers.md`). Pushed (`07c1151`) and **deployed to groomhere.sa on 2026-11-18** after a backup.
+  - **groomhere.sa data cleanup (same day, the user's choices):** the 5 demo barbers deleted with all their history (every booking on the site: 25; reviews and ratings); the 3 demo customers deleted; two customers kept (+966 53 017 8784 and «Sulaiman aa»); sign-in emails `admin@groomhere.sa`, `alasala@groomhere.sa`, `barberhouse@groomhere.sa`. The shops have no barbers until the owners add them.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |
