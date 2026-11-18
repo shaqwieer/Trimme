@@ -80,7 +80,7 @@
   - **A booking's services:** add after «وصل», remove until «انتهت الخدمة».
   - **Postponement with consent:** the barber offers an online booking a new time, held for the customer (database triggers under a per-barber lock) until an hour before the original start; the customer accepts or declines on the booking page (in-app notice; no WhatsApp template yet).
   - **Reports and expected income** (`/shop/reports`): day, week, month; per barber and shop; loyalty by who closed the visit. **The owner's packages** pages.
-  - Migration 25 `BarberOperations` (additive). .NET, web and E2E gates in `phases/after-17-d147-barber-operations.md`. Committed locally, **not pushed or deployed**.
+  - Migration 25 `BarberOperations` (additive). .NET, web and E2E gates in `phases/after-17-d147-barber-operations.md`. Pushed and **deployed to groomhere.sa on 2026-11-18** with D-148.
 - **Session 28, second request (D-148), at the user's request** (the client's document, sections 3 and 4):
   - **Catalog:** category tabs over tiles, two to a row, packages last, on the shop page (CSS-only radios drawn on the server) and the booking step (ARIA tabs). A tab counts its chosen items. A package with other services in one booking, showing what it saves; a service already in the package is refused with a message. «كل الخدمات» is gone.
   - **Numbers:** Arabic-Indic digits for every Arabic quantity (formatters and ICU messages); the Riyal sign U+20C1 from a bundled one-glyph font; «—» instead of «·». English stays Latin with «SAR».
@@ -97,7 +97,7 @@
     - references «GH-xxxxx»;
     - cancelling or changing until the start (platform window 0);
     - full terms and privacy in ar, en and tr (a lawyer must review them).
-  - Migration 26 `CustomerPages` (adds `is_demo`, widens `reference`, sets the cancellation window to 0). Gates are in `phases/after-17-d148-customer-pages.md`. Committed locally, **not pushed or deployed**.
+  - Migration 26 `CustomerPages` (adds `is_demo`, widens `reference`, sets the cancellation window to 0). Gates are in `phases/after-17-d148-customer-pages.md`. Pushed (`972fcee`) and **deployed to groomhere.sa on 2026-11-18** with D-147, after a database backup.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

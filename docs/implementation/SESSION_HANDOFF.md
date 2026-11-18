@@ -5,8 +5,7 @@
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
-  - Session 28 (D-147): committed locally on `main`, **not pushed, not deployed** (the user did not ask). One migration (`BarberOperations`): back up the VPS database before deploying.
-  - Session 28, second request (D-148): committed locally on `main` after D-147, **not pushed, not deployed** (the user did not ask). One migration (`CustomerPages`), which **sets the cancellation window to 0** on groomhere.sa when deployed. Back up the VPS database first.
+  - Session 28 (D-147 and D-148): pushed (`972fcee`) and **deployed to groomhere.sa on 2026-11-18** at the user's request, after a database backup (`/root/backups/trimme-before-d147-d148-20261118-234810.sql.gz`). Migrations `BarberOperations` and `CustomerPages` applied (26). The cancellation window there is now 0. All five shops have `is_demo` false: no «تجريبي» switch has been turned on. The run was `/root/deploy-d147-d148.sh`; smoke from the VPS: pages 200, an unknown shop 404, 5 category tabs, the Riyal sign, «حتى يبدأ الموعد», 12 privacy sections.
   - Session 27 (D-146): pushed (`07c1151`) and **deployed to groomhere.sa on 2026-11-18** after a database backup (`/root/backups/trimme-before-d146-20261118-174737.sql.gz`); no migration (24); after `migrate` the owner role has `Shop.Barbers.Manage` and no `Shop.Bookings.CreateWalkIn`; smoke 200, 0 API errors. Then, at the user's request, a data cleanup (backup `/root/backups/trimme-before-cleanup-d146-20261118-175504.sql.gz`, `.env.bak-cleanup-d146-20261118-175504`): the 5 demo barbers deleted with all their history (all 25 bookings, 6 reviews and the ratings, schedules, service assignments, 3 barber QR codes with 215 scans); the 3 demo customers deleted; «faisal alhazzaa» (+966 53 017 8784) and «Sulaiman aa» kept (their bookings were with demo barbers and went with them); sign-in emails now `admin@groomhere.sa`, `alasala@groomhere.sa`, `barberhouse@groomhere.sa` (passwords unchanged; `TRIMME_BOOTSTRAP_ADMIN_EMAIL` in `.env` follows). The shops have **no barbers** until the owners add them. Never re-run the demo seed there: it would bring the demo barbers, customers and old-email owners back.
   - Session 26 (D-144) is pushed and deployed with D-145 (below).
   - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
@@ -69,10 +68,7 @@
   - **Demo shops look real until marked:** turn on «محل تجريبي» on each demo shop's admin page.
   - New bookings get short references («GH-4K7QM»); old ones keep theirs.
   - Prices in Arabic now show the new Riyal sign. A device whose system font lacks it still gets it from the bundled font.
-- **Deploying later (when asked):**
-  - D-147 and D-148 are both undeployed, with two migrations (`BarberOperations`, `CustomerPages`).
-  - Back up the VPS database first. Then `git pull`, build api and web **together**, `run --rm migrate`, `up -d`.
-  - Turn on «محل تجريبي» for the demo shops.
+- **Deployed 2026-11-18** with D-147 (`/root/deploy-d147-d148.sh`: backup, pull, build api and web, migrate, up, smoke). Still to do on groomhere.sa: turn on «محل تجريبي» for any demo shop. All five shops have it off.
 - **Evidence:** in the plan file. .NET Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256; no pending model changes. Web: format, lint, typecheck and openapi:check clean; 536/536 after the review follow-up (walk-in package with services, privacy text checked against the code, «جديد» at zero); 88 routes within the bundle budget. E2E on the rebuilt stack: 112 passed and 1 skipped by design; the one failure, `shop_page_sections` on its earlier spec, then passed. The route audit, keyboard pass and touch targets pass.
 
 ## Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports; the owner's packages (D-147)
@@ -94,7 +90,7 @@
   - "red" means 15 minutes past the booked end (a constant); a colleague's new pending or red booking reaches other barbers with the list's 60-second refresh, not live (barbers sit in their own live group, D-145);
   - log lines written before this change carry no names;
   - old services-booked-together bookings can't have a service removed (they have no per-service price).
-- **Deploying later (when asked):** a migration: back up the VPS database first, then `git pull`, build api and web **together**, `run --rm migrate`, `up -d`. `migrate` resets the managed roles, so owners lose their actions at once.
+- **Deployed 2026-11-18 with D-148** (see above). Before that, the note read: a migration: back up the VPS database first, then `git pull`, build api and web **together**, `run --rm migrate`, `up -d`. `migrate` resets the managed roles, so owners lose their actions at once.
 - **Evidence:** in the plan file. .NET Release build 0 warnings; unit 478/478; architecture 69/69; integration 250/250 (final code). Web: format, lint, typecheck, openapi:check clean; 534/534; build + bundle budget 88 routes (largest `/shop/barbers/[professionalId]` 329.4/330 KB). E2E on the stack rebuilt from this tree (2 workers): 109 passed, 1 skipped by design, 4 failed (the owner's route audit, ar/en, light/dark: the reports' scrollable tables); fixed, web rebuilt, route audit and keyboard pass 25/25.
 
 
@@ -566,8 +562,8 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
-- Session 28 (D-148): `20261118204915_CustomerPages` adds `shops.is_demo` (default false), widens `bookings.reference` from `char(8)` to `varchar(12)`, and sets `platform_settings.cancellation_cutoff_minutes` to 0. Applied on the local compose volume and from empty in the integration tests. **Not yet on groomhere.sa.**
-- Session 28 (D-147): `BarberOperations` (additive). Applied locally and in the integration tests; **not yet on groomhere.sa.**
+- Session 28 (D-148): `20261118204915_CustomerPages` adds `shops.is_demo` (default false), widens `bookings.reference` from `char(8)` to `varchar(12)`, and sets `platform_settings.cancellation_cutoff_minutes` to 0. Applied on groomhere.sa (2026-11-18), the local compose volume, and from empty in the integration tests.
+- Session 28 (D-147): `BarberOperations` (additive). Applied on groomhere.sa (2026-11-18), locally, and in the integration tests.
 - Session 18: `20261021064349_WalkInContacts` (additive), applied on groomhere.sa (2026-10-21), on fresh verification volumes and from empty in the integration tests. Not yet on the local compose volume.
 - Session 17: `20261020205012_LoyaltyFirstVisitStamps`, applied on groomhere.sa (2026-10-21), the local compose volume, fresh verification volumes and from empty in the integration tests.
 - groomhere.sa data changes by SQL (2026-10-21, after the backup): the four seeded breaks deleted; online minimum lead time 15 minutes.
