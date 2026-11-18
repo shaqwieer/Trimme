@@ -89,7 +89,7 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/appointments' },
         { path: '/shop/calendar' },
         { path: '/shop/calendar?view=week' },
-        { path: '/shop/walk-in' },
+        // No walk-in page: the barbers book walk-ins (D-146).
         { path: '/shop/schedule' },
         { path: '/shop/services' },
         { path: '/shop/services/new' },
@@ -101,6 +101,9 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/qr' },
         { path: `/shop/qr/${SEED.barberHouseQr.id}/poster` },
         { path: '/shop/barbers' },
+        // The owner adds and edits their barbers (D-146).
+        { path: '/shop/barbers/new' },
+        { path: `/shop/barbers/${SEED.omar.id}` },
       ];
     case 'barber':
       // A barber's own login (D-145): their overview, appointments, calendar, walk-ins, breaks and notifications.

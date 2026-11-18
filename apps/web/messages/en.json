@@ -333,7 +333,7 @@
       "forgot": "Forgot your password?",
       "customer": "A customer? Sign in with your mobile",
       "changeTitle": "Choose a new password",
-      "changeSubtitle": "The Groom Here team created your account with a temporary password. Choose your own password to continue.",
+      "changeSubtitle": "Your account was made with a temporary password. Choose your own password to continue.",
       "changeSubmit": "Save and sign in",
       "changeBack": "Back"
     },
@@ -878,7 +878,8 @@
       "reason": "Reason for showing it",
       "revealSubmit": "Show",
       "revealed": "Full number",
-      "hide": "Hide"
+      "hide": "Hide",
+      "newNumberHelperShop": "It is also the barber's sign-in: after saving they sign in with it and the same password."
     }
   },
   "shopSettings": {
@@ -1081,7 +1082,8 @@
       "empty": "This professional's shop has no services yet",
       "save": "Save assignment",
       "saved": "Service assignment saved.",
-      "inactive": "Off"
+      "inactive": "Off",
+      "emptyShop": "Your shop has no services yet. Add them under «Services»."
     }
   },
   "billing": {
@@ -1271,30 +1273,51 @@
   "barberLogins": {
     "title": "Barbers",
     "adminTitle": "Barber sign-in",
-    "intro": "Turn on each barber's sign-in so they can see their own appointments, notifications and day, and book walk-ins themselves. A barber signs in with the WhatsApp number on their profile and a temporary password you choose here, which they replace at their first sign-in.",
-    "empty": "The shop has no active barbers.",
     "state": {
       "off": "Sign-in off",
       "temporary": "On — waiting for the first sign-in",
       "on": "Sign-in on"
     },
-    "noNumberShop": "This barber has no WhatsApp number. Ask the Groom Here team to add it.",
-    "noNumberAdmin": "Add the barber's WhatsApp number first.",
     "enable": "Turn on sign-in",
     "newPassword": "New temporary password",
     "disable": "Turn off sign-in",
-    "enableTitle": "Turn on sign-in for {name}",
-    "newPasswordTitle": "New temporary password for {name}",
-    "passwordBody": "Give the barber this password. They sign in with the WhatsApp number on their profile, then choose their own password.",
-    "password": "Temporary password",
-    "passwordHint": "At least 10 characters.",
-    "passwordTooShort": "Use at least 10 characters",
-    "save": "Save",
+    "newPasswordTitle": "A new temporary password for {name}?",
     "cancel": "Cancel",
-    "saved": "{name}'s sign-in is saved. Give them the temporary password.",
+    "saved": "{name}'s login is on. Give them the temporary password.",
     "disabled": "{name}'s sign-in is turned off.",
     "disableTitle": "Turn off {name}'s sign-in?",
-    "disableBody": "The barber is signed out on every device at once, and cannot sign in until you turn it on again."
+    "disableBody": "The barber is signed out on every device at once, and cannot sign in until you turn it on again.",
+    "noNumber": "Add the barber's WhatsApp number first; it is their sign-in.",
+    "newPasswordBody": "A new temporary password is made and the old one stops working. The barber is signed out everywhere until they sign in with the new one and choose their own.",
+    "issued": {
+      "title": "{name}'s temporary password",
+      "body": "Give the barber this password. They sign in under «Team sign-in» with their WhatsApp number and this password, then choose their own.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "once": "This password is shown only once. If it is lost, make a new temporary password on the barber's page.",
+      "done": "Done"
+    }
+  },
+  "shopBarbers": {
+    "title": "Barbers",
+    "intro": "Add your shop's barbers and edit their details and services. Each barber has their own login with their WhatsApp number: they see their appointments, day and notifications, and book walk-ins themselves.",
+    "add": "Add a barber",
+    "empty": "The shop has no barbers yet.",
+    "emptyBody": "Add your first barber so customers can book with them.",
+    "manage": "Manage",
+    "manageAria": "Manage {name}",
+    "create": {
+      "title": "Add a barber",
+      "mobileHelper": "The barber's WhatsApp number, which they also sign in with. After saving it is shown partly hidden.",
+      "loginNote": "The barber's login is made when you save, and you see a temporary password once to give them. They change it at their first sign-in.",
+      "submit": "Add the barber"
+    },
+    "detail": {
+      "title": "Barber",
+      "notFound": "The barber was not found.",
+      "login": "Barber's login",
+      "disableBody": "The barber is no longer offered for new bookings, and their login stops and signs them out everywhere. Their upcoming appointments are not cancelled: change their barber or cancel them. You can turn the barber on again later."
+    }
   },
   "shopSubscription": {
     "title": "Subscription",

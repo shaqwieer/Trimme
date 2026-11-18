@@ -402,11 +402,13 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
             await db.SaveChangesAsync(ct);
         }
 
-        /// <summary>A walk-in with Faisal that starts now (Arrived) and is completed.</summary>
+        /// <summary>A walk-in Faisal books himself (D-146) that starts now (Arrived) and is completed.</summary>
         public async Task<Guid> CompletedVisitAsync(CancellationToken ct)
         {
+            // With this world's own sessions: the clock jumped past the booking world's at setup.
+            using var faisal = await BarberLoginTests.BarberAsync(W.Factory, Admin, OwnerA, W.Faisal, "+966512386001", ct);
             var walkIn = await OkAsync(
-                OwnerA.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = W.Haircut, professionalId = W.Faisal, customerName = "سعد العتيبي", customerPhone = "0501234567" }, ct),
+                faisal.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = W.Haircut, professionalId = W.Faisal, customerName = "سعد العتيبي", customerPhone = "0501234567" }, ct),
                 ct, HttpStatusCode.Created);
             var id = walkIn.GetProperty("id").GetGuid();
             await OkAsync(OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/transitions", new { to = "Completed", version = walkIn.GetProperty("version").GetUInt32() }, ct), ct);

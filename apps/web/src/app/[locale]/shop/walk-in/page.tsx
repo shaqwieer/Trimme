@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { WalkInFlow, type WalkInOffer } from '@/components/shop/board/WalkInFlow';
 import { ShopFrame } from '@/components/shop/ShopFrame';
-import { EmptyState } from '@/components/ui/states';
+import { EmptyState, PermissionDenied } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
@@ -11,8 +11,9 @@ import { todayLocal } from '@/lib/i18n/localDate';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Walk-in booking (s-walkin, spec §13): the shop's active services and packages (online-bookable or not — the desk is not
- * online), professionals and times from the walk-in rules. The calendar can prefill `professionalId`, `startsAt` and `date`.
+ * Walk-in booking (s-walkin, spec §13), a barber's own (D-145): the shop's active services and packages (online-bookable or
+ * not: the shop is not online) that the barber does, and their times from the walk-in rules. The owner books no walk-ins
+ * (D-146): the page answers «no access», like the API. The calendar can prefill `professionalId`, `startsAt` and `date`.
  */
 export default async function ShopWalkInPage({ params, searchParams }: PageProps<'/[locale]/shop/walk-in'>) {
   const [{ locale: raw }, query] = await Promise.all([params, searchParams]);
@@ -22,9 +23,9 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
   return (
     <ShopFrame locale={locale} path="/shop/walk-in" title={t('title')}>
       {async (me, shop) => {
-        if (shop.status === 'Suspended' || !me.permissions.includes('Shop.Bookings.CreateWalkIn')) {
-          return <EmptyState icon="shield" title={t('title')} />;
-        }
+        if (shop.status === 'Suspended') return <EmptyState icon="shield" title={t('title')} />;
+        if (!me.permissions.includes('Shop.Bookings.CreateWalkIn'))
+          return <PermissionDenied homeHref="/shop" />;
         const api = await getServerApi();
         const [{ data: services }, { data: packages }] = await Promise.all([
           api.GET('/api/v1/shop/services'),

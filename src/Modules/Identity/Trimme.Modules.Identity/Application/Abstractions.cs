@@ -54,7 +54,11 @@ public sealed record CustomerProfileUpdate(
 public sealed record BarberLogin(Guid UserId, bool Enabled, bool MustChangePassword, bool HasNumber);
 
 /// <summary>What turning a barber's login on writes (D-145). <c>LoginHash</c> is the professional's number under the login purpose.</summary>
-public sealed record NewBarberLogin(Guid ProfessionalId, Guid ShopId, string DisplayName, string LoginHash, string Password, string PreferredLocale);
+public sealed record NewBarberLogin(Guid ProfessionalId, Guid ShopId, string DisplayName, string LoginHash, string Password, string PreferredLocale)
+{
+    /// <summary>Never the password or the hash (D-146).</summary>
+    public override string ToString() => $"{nameof(NewBarberLogin)} {{ ProfessionalId = {ProfessionalId}, ShopId = {ShopId} }}";
+}
 
 public sealed record PasswordResetTicket(Guid UserId, string Email, string? DisplayName, string PreferredLocale, string Token);
 

@@ -30,6 +30,32 @@ internal sealed record BookingWorld(
     Guid Omar,
     Guid ProB) : IAsyncDisposable
 {
+    private readonly List<Guid> barberLogins = [];
+
+    /// <summary>
+    /// A barber's own signed-in login (D-145), for what only a barber does: walk-ins are theirs, not the owner's (D-146).
+    /// The first call turns the login on (with the admin and the owner, so before a test moves its clock past their
+    /// sessions); every call signs in again, so a test that moved its clock gets a fresh session. The caller disposes it.
+    /// </summary>
+    public async Task<ApiSession> BarberAsync(Guid professionalId, CancellationToken ct)
+    {
+        var index = barberLogins.IndexOf(professionalId);
+        if (index >= 0)
+        {
+            return await BarberLoginTests.SignInBarberAsync(Factory, BarberNumber(index), ct);
+        }
+
+        barberLogins.Add(professionalId);
+        return await BarberLoginTests.BarberAsync(
+            Factory, Admin, professionalId == ProB ? OwnerB : OwnerA, professionalId, BarberNumber(barberLogins.Count - 1), ct);
+    }
+
+    /// <summary>Turns the barber's login on now (see <see cref="BarberAsync"/>), for a test that moves its clock before signing in.</summary>
+    public async Task EnsureBarberLoginAsync(Guid professionalId, CancellationToken ct) => (await BarberAsync(professionalId, ct)).Dispose();
+
+    /// <summary>The world's barber logins' numbers: a range no test types by hand.</summary>
+    private static string BarberNumber(int index) => $"+96655500{index + 1:0000}";
+
     public async ValueTask DisposeAsync()
     {
         Admin.Dispose();

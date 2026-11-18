@@ -22,6 +22,14 @@ public static class DatabaseErrors
     public static bool IsUniqueViolation(Exception exception) =>
         Find(exception) is { SqlState: PostgresErrorCodes.UniqueViolation };
 
+    /// <summary>
+    /// A unique index whose name contains <paramref name="column"/> refused the row: a value another row already has, which
+    /// the caller's own query may not have seen (a tenant-filtered check sees one shop; the index sees them all, D-146).
+    /// </summary>
+    public static bool IsUniqueViolationOn(Exception exception, string column) =>
+        Find(exception) is { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } name }
+        && name.Contains(column, StringComparison.Ordinal);
+
     private static PostgresException? Find(Exception? exception)
     {
         for (var current = exception; current is not null; current = current.InnerException)

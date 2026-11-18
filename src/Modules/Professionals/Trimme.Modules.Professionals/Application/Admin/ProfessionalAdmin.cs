@@ -61,23 +61,6 @@ public sealed record AdminProfessionalResponse(
 /// <summary>The full number, returned once per audited reveal. Never cached.</summary>
 public sealed record RevealedWhatsAppResponse(string Number);
 
-internal interface IProfessionalProfileFields
-{
-    string NameAr { get; }
-
-    string NameEn { get; }
-
-    string? Slug { get; }
-
-    string? SpecialtyAr { get; }
-
-    string? SpecialtyEn { get; }
-
-    string? BioAr { get; }
-
-    string? BioEn { get; }
-}
-
 internal sealed record CreateProfessionalCommand(
     Guid ShopId,
     string NameAr,
@@ -115,25 +98,6 @@ internal sealed record ListProfessionalsQuery(PageRequest Page, Guid? ShopId, Pr
 
 internal sealed record GetProfessionalQuery(Guid ProfessionalId) : IQuery<AdminProfessionalResponse?>;
 
-internal sealed class ProfessionalProfileRules<T> : AbstractValidator<T>
-    where T : IProfessionalProfileFields
-{
-    public ProfessionalProfileRules()
-    {
-        RuleFor(p => p.NameAr).Must(n => !string.IsNullOrWhiteSpace(n)).WithErrorCode("validation.required")
-            .MaximumLength(Professional.MaxNameLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.NameEn).Must(n => !string.IsNullOrWhiteSpace(n)).WithErrorCode("validation.required")
-            .MaximumLength(Professional.MaxNameLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.Slug)
-            .Must(s => string.IsNullOrWhiteSpace(s) || Professional.IsValidSlug(s.Trim().ToLowerInvariant()))
-            .WithErrorCode("validation.slug_invalid");
-        RuleFor(p => p.SpecialtyAr).MaximumLength(Professional.MaxSpecialtyLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.SpecialtyEn).MaximumLength(Professional.MaxSpecialtyLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.BioAr).MaximumLength(Professional.MaxBioLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.BioEn).MaximumLength(Professional.MaxBioLength).WithErrorCode("validation.too_long");
-    }
-}
-
 internal sealed class CreateProfessionalValidator : AbstractValidator<CreateProfessionalCommand>
 {
     public CreateProfessionalValidator()
@@ -170,111 +134,11 @@ internal sealed class RevealProfessionalWhatsAppValidator : AbstractValidator<Re
             .MaximumLength(500).WithErrorCode("validation.too_long");
 }
 
-/// <summary>Shared steps of the admin professional use cases. Every one runs inside <see cref="IAdminDataScope"/>.</summary>
-internal sealed class ProfessionalAdminSupport(TrimmeDbContext db, IPersonalDataProtector protector, IShopDirectory shops)
-{
-    public Task<Professional?> FindAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var professionalId = new ProfessionalId(id);
-        return db.Set<Professional>().SingleOrDefaultAsync(p => p.Id == professionalId, cancellationToken);
-    }
-
-    public async Task<ProfessionalContact> ContactAsync(Professional professional, CancellationToken cancellationToken)
-    {
-        var contact = await db.Set<ProfessionalContact>().SingleOrDefaultAsync(c => c.ProfessionalId == professional.Id, cancellationToken);
-        if (contact is null)
-        {
-            contact = ProfessionalContact.For(professional);
-            db.Add(contact);
-        }
-
-        return contact;
-    }
-
-    /// <summary>The barber-login hash of a valid number (D-145), or <see langword="null"/> without one.</summary>
-    public string? LoginHashOf(string? input) =>
-        PhoneNumber.TryParseMobile(input, out var phone) ? protector.LookupHash(phone.E164, PersonalDataPurposes.BarberLogin) : null;
-
-    /// <summary>Encrypts a valid mobile number, or reports that another professional already has it.</summary>
-    public async Task<Result<ProtectedPhone?>> ProtectAsync(string? input, ProfessionalId owner, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return (ProtectedPhone?)null;
-        }
-
-        if (!PhoneNumber.TryParseMobile(input, out var phone))
-        {
-            return Error.Validation("validation.failed", "The number is invalid.",
-                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["whatsAppNumber"] = ["validation.phone_invalid"] });
-        }
-
-        var hash = protector.LookupHash(phone.E164, PersonalDataPurposes.ProfessionalWhatsApp);
-        if (await db.Set<ProfessionalContact>().AnyAsync(c => c.WhatsAppLookupHash == hash && c.ProfessionalId != owner, cancellationToken))
-        {
-            return ProfessionalErrors.WhatsAppTaken();
-        }
-
-        return new ProtectedPhone(protector.Protect(phone.E164, PersonalDataPurposes.ProfessionalWhatsApp), hash, phone.Masked);
-    }
-
-    public Task<bool> SlugTakenAsync(ShopId shopId, string slug, ProfessionalId? except, CancellationToken cancellationToken) =>
-        db.Set<Professional>().AnyAsync(p => p.ShopId == shopId && p.Slug == slug && (except == null || p.Id != except), cancellationToken);
-
-    /// <summary>The requested slug, or one derived from the English name that is free in the shop.</summary>
-    public async Task<Result<string>> ChooseSlugAsync(ShopId shopId, string? requested, string nameEn, ProfessionalId? except, CancellationToken cancellationToken)
-    {
-        if (!string.IsNullOrWhiteSpace(requested))
-        {
-            var slug = requested.Trim().ToLowerInvariant();
-            return await SlugTakenAsync(shopId, slug, except, cancellationToken) ? ProfessionalErrors.SlugTaken() : slug;
-        }
-
-        var baseSlug = Professional.SlugFrom(nameEn, $"pro-{Guid.NewGuid():N}"[..12]);
-        for (var suffix = 1; suffix < 20; suffix++)
-        {
-            var candidate = suffix == 1 ? baseSlug : $"{baseSlug}-{suffix}";
-            if (!await SlugTakenAsync(shopId, candidate, except, cancellationToken))
-            {
-                return candidate;
-            }
-        }
-
-        return $"{baseSlug}-{Guid.NewGuid():N}"[..Math.Min(baseSlug.Length + 9, 60)];
-    }
-
-    public async Task<AdminProfessionalResponse> ToResponseAsync(Professional professional, ProfessionalContact? contact, CancellationToken cancellationToken)
-    {
-        var shop = await shops.FindAsync(professional.ShopId, cancellationToken);
-        return new AdminProfessionalResponse(
-            professional.Id.Value,
-            professional.ShopId.Value,
-            shop?.Slug ?? string.Empty,
-            shop?.NameAr ?? string.Empty,
-            shop?.NameEn ?? string.Empty,
-            professional.Slug,
-            professional.NameAr,
-            professional.NameEn,
-            professional.SpecialtyAr,
-            professional.SpecialtyEn,
-            professional.BioAr,
-            professional.BioEn,
-            MediaRules.Url(professional.AvatarMediaId),
-            professional.Status,
-            WhatsApp(contact),
-            professional.CreatedAt,
-            professional.UpdatedAt,
-            professional.Version);
-    }
-
-    public static AdminWhatsAppResponse WhatsApp(ProfessionalContact? contact) =>
-        new(contact?.WhatsAppMasked, contact?.NotificationsEnabled ?? false, contact?.Verification ?? WhatsAppVerification.Unverified);
-}
 
 internal sealed class CreateProfessionalHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
-    ProfessionalAdminSupport support,
+    ProfessionalSupport support,
     IShopDirectory shops,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<CreateProfessionalCommand, Result<AdminProfessionalResponse>>
@@ -329,7 +193,7 @@ internal sealed class CreateProfessionalHandler(
 internal sealed class UpdateProfessionalHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
-    ProfessionalAdminSupport support,
+    ProfessionalSupport support,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<UpdateProfessionalCommand, Result<AdminProfessionalResponse>>
 {
@@ -368,7 +232,7 @@ internal sealed class UpdateProfessionalHandler(
 internal sealed class ChangeProfessionalStatusHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
-    ProfessionalAdminSupport support,
+    ProfessionalSupport support,
     IAuditLog audit,
     IBarberLoginSync logins,
     TimeProvider clock) : ICommandHandler<ChangeProfessionalStatusCommand, Result<AdminProfessionalResponse>>
@@ -407,7 +271,7 @@ internal sealed class ChangeProfessionalStatusHandler(
 internal sealed class SetProfessionalWhatsAppHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
-    ProfessionalAdminSupport support,
+    ProfessionalSupport support,
     IAuditLog audit,
     IBarberLoginSync logins,
     TimeProvider clock) : ICommandHandler<SetProfessionalWhatsAppCommand, Result<AdminProfessionalResponse>>
@@ -500,7 +364,7 @@ internal sealed class RevealProfessionalWhatsAppHandler(
 internal sealed class ReplaceProfessionalAvatarHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
-    ProfessionalAdminSupport support,
+    ProfessionalSupport support,
     IMediaStore media,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<ReplaceProfessionalAvatarCommand, Result<AdminProfessionalResponse>>
@@ -588,12 +452,12 @@ internal sealed class ListProfessionalsHandler(TrimmeDbContext db, IAdminDataSco
             p.SpecialtyEn,
             MediaRules.Url(p.AvatarMediaId),
             p.Status,
-            ProfessionalAdminSupport.WhatsApp(contacts.GetValueOrDefault(p.Id))));
+            ProfessionalSupport.WhatsApp(contacts.GetValueOrDefault(p.Id))));
         return new PagedResponse<AdminProfessionalListItem>([.. items], query.Page.Page, query.Page.PageSize, total);
     }
 }
 
-internal sealed class GetProfessionalHandler(TrimmeDbContext db, IAdminDataScope scope, ProfessionalAdminSupport support)
+internal sealed class GetProfessionalHandler(TrimmeDbContext db, IAdminDataScope scope, ProfessionalSupport support)
     : IQueryHandler<GetProfessionalQuery, AdminProfessionalResponse?>
 {
     public async Task<AdminProfessionalResponse?> Handle(GetProfessionalQuery query, CancellationToken cancellationToken)
@@ -609,10 +473,4 @@ internal sealed class GetProfessionalHandler(TrimmeDbContext db, IAdminDataScope
         var contact = await db.Set<ProfessionalContact>().AsNoTracking().SingleOrDefaultAsync(c => c.ProfessionalId == id, cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);
     }
-}
-
-internal static class ProfessionalMapping
-{
-    public static ProfessionalProfile Profile(IProfessionalProfileFields fields) =>
-        ProfessionalProfile.Create(fields.NameAr, fields.NameEn, fields.SpecialtyAr, fields.SpecialtyEn, fields.BioAr, fields.BioEn);
 }

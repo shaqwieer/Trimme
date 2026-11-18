@@ -24,8 +24,14 @@ public static class Permissions
         /// </summary>
         public const string BookingsChangeProfessional = "Shop.Bookings.ChangeProfessional";
 
-        /// <summary>The owner turns a barber's sign-in on or off and sets its temporary password (D-145).</summary>
+        /// <summary>The owner turns a barber's sign-in on or off and gets a new generated temporary password for it (D-145, D-146).</summary>
         public const string BarbersManageLogin = "Shop.Barbers.ManageLogin";
+
+        /// <summary>
+        /// The owner adds and edits the shop's own barbers (D-146): profile, photo, mobile, services, active or not. A new
+        /// barber gets a login at once. Never moves a barber to another shop (D-011), and never shows a number unmasked.
+        /// </summary>
+        public const string BarbersManage = "Shop.Barbers.Manage";
         public const string ScheduleRead = "Shop.Schedule.Read";
         public const string ScheduleManage = "Shop.Schedule.Manage";
 

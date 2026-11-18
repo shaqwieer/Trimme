@@ -24,6 +24,11 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
     private static readonly Dictionary<string, string> AllowedMembers = new(StringComparer.Ordinal)
     {
         ["ShopOwnProfileResponse.PublicPhone"] = "The shop's own public business number, which the shop itself edits (Phase 06).",
+
+        // D-146: the owner's own barber's WhatsApp settings: the number the owner typed, answered masked only, never a
+        // customer's; owner only (Shop.Barbers.Manage), never a barber's login.
+        ["ShopBarberResponse.WhatsApp"] = "The shop's own barber's WhatsApp number, masked, for the owner (D-146).",
+        ["ShopBarberCreatedResponse.Barber.WhatsApp"] = "The same, in the answer that adds the barber (D-146).",
     };
 
     [Fact]

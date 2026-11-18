@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-14 (Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145). Before it: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
+- **Updated:** 2026-11-18 (Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146). Before it, Session 26, second request: barber accounts replace the desk; the shop changes and moves bookings; walk-in confirmations (D-145). Before it: eleven changes from the client's review: booking and rescheduling screens, the customer's account, signed-in redirects, Google Maps links and directions, editable legal pages, Groom Here QR files (D-144))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -67,6 +67,11 @@
   - **Walk-ins with a mobile** get «تأكيد الحجز» (and changes, cancellation); both barbers hear about a move; the owner hears what barbers did.
   - **The desk role is removed** (migration `RemoveShopDesk` disables its accounts). Three migrations in all.
   - .NET, web and end-to-end gates pass (codes on and off). pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review.
+- **Session 27 (D-146), at the user's request:**
+  - **No walk-ins for the owner:** the page, the menu entry and the tab are gone for the owner and the API refuses them (403); the barbers book their own. The owner's bottom bar shows «الحلاقون» in their place.
+  - **The owner adds and edits barbers** («الحلاقون» → «إضافة حلاق», and each barber's page): profile, photo, WhatsApp number (masked; it is also the sign-in, so it can be changed but not removed), the services they do, the login, and whether they take bookings. No delete, no change of shop, no reveal. This overrides spec §7/§8 for the owner (recorded in D-146).
+  - **A login is made with every barber the owner adds:** the server generates the temporary password (12 easy-to-read characters), shows it once with «نسخ», and the barber replaces it at the first sign-in. «تفعيل الدخول» and «كلمة مرور مؤقتة جديدة» (owner and admin) also generate it now.
+  - No migration. .NET, web and end-to-end gates pass (details in `phases/after-17-d146-owner-barbers.md`). Committed locally, **not pushed or deployed**.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

@@ -50,6 +50,33 @@ public sealed record SetProfessionalWhatsAppRequest(string? WhatsAppNumber, bool
 
 public sealed record RevealProfessionalWhatsAppRequest(string Reason);
 
+/// <summary>
+/// The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made
+/// from the English name). The mobile is required: it is the barber's WhatsApp number and their sign-in.
+/// </summary>
+public sealed record CreateShopBarberRequest(
+    string NameAr,
+    string NameEn,
+    string? SpecialtyAr,
+    string? SpecialtyEn,
+    string? BioAr,
+    string? BioEn,
+    string WhatsAppNumber,
+    bool NotificationsEnabled)
+{
+    public override string ToString() => $"{nameof(CreateShopBarberRequest)} {{ NotificationsEnabled = {NotificationsEnabled} }}";
+}
+
+/// <summary>The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011).</summary>
+public sealed record UpdateShopBarberRequest(
+    string NameAr,
+    string NameEn,
+    string? SpecialtyAr,
+    string? SpecialtyEn,
+    string? BioAr,
+    string? BioEn,
+    uint Version);
+
 internal static class ProfessionalEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -59,6 +86,64 @@ internal static class ProfessionalEndpoints
     private const string Disable = "Admin.Professionals.Disable";
     private const string ManageWhatsApp = "Admin.Professionals.ManageWhatsApp";
     private const string RevealWhatsApp = "Admin.Professionals.RevealWhatsApp";
+    private const string ShopBarbersManage = "Shop.Barbers.Manage";
+
+    /// <summary>
+    /// The owner's barbers (D-146): their own shop only (the tenant filter; another shop's barber is 404). The number is
+    /// set and changed here but only ever answered masked; there is no reveal, no delete and no change of shop.
+    /// </summary>
+    private static void MapShopBarbers(RouteGroupBuilder shop)
+    {
+        shop.MapPost("/", async (CreateShopBarberRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(
+                    new CreateShopBarberCommand(
+                        r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn, r.WhatsAppNumber ?? string.Empty,
+                        r.NotificationsEnabled),
+                    ct)).ToHttpResult(created => TypedResults.Created($"/api/v1/shop/professionals/{created.Barber.Id}", created)))
+            .WithName("CreateShopBarber")
+            .WithSummary("Adds a barber to the owner's shop with their login: the generated temporary password is answered once (audited).")
+            .Produces<ShopBarberCreatedResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapGet("/{professionalId:guid}", async (Guid professionalId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetShopBarberQuery(professionalId), ct) is { } barber ? TypedResults.Ok(barber) : ProfessionalErrors.NotFound().ToProblem())
+            .WithName("GetShopBarber").WithSummary("One of the shop's barbers, with the WhatsApp number masked.")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapPut("/{professionalId:guid}", async (Guid professionalId, UpdateShopBarberRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(
+                    new UpdateShopBarberCommand(
+                        professionalId, r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn, r.Version),
+                    ct)).ToHttpResult())
+            .WithName("UpdateShopBarber").WithSummary("Edits the barber's profile (audited, optimistic concurrency). The shop cannot change.")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        shop.MapPut("/{professionalId:guid}/whatsapp", async (Guid professionalId, SetProfessionalWhatsAppRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new SetShopBarberWhatsAppCommand(professionalId, r.WhatsAppNumber, r.NotificationsEnabled, r.KeepCurrentNumber), ct)).ToHttpResult())
+            .WithName("SetShopBarberWhatsApp")
+            .WithSummary("Changes the barber's number (also their sign-in) or only the message toggle (audited, number never logged).")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapPost("/{professionalId:guid}/disable", async (Guid professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ChangeShopBarberStatusCommand(professionalId, Enable: false), ct)).ToHttpResult())
+            .WithName("DisableShopBarber").WithSummary("Hides the barber from booking and turns their login off (audited).")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        shop.MapPost("/{professionalId:guid}/enable", async (Guid professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ChangeShopBarberStatusCommand(professionalId, Enable: true), ct)).ToHttpResult())
+            .WithName("EnableShopBarber").WithSummary("Makes a disabled barber bookable again; their login stays off until turned on (audited).")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        shop.MapPut("/{professionalId:guid}/avatar", async (Guid professionalId, IFormFile? file, IDispatcher d, CancellationToken ct) =>
+                {
+                    var content = await ImageUpload.ReadAsync(file, ct);
+                    return content.IsFailure
+                        ? content.Error.ToProblem()
+                        : (await d.Send(new ReplaceShopBarberAvatarCommand(professionalId, content.Value), ct)).ToHttpResult();
+                })
+            .AcceptsImageUpload()
+            .WithName("UploadShopBarberAvatar").WithSummary("Replaces the barber's photo (JPEG, PNG or WebP, at most 5 MB; audited).")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapDelete("/{professionalId:guid}/avatar", async (Guid professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new ReplaceShopBarberAvatarCommand(professionalId, null), ct)).ToHttpResult())
+            .WithName("RemoveShopBarberAvatar").WithSummary("Removes the barber's photo (audited).")
+            .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+    }
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -103,6 +188,7 @@ internal static class ProfessionalEndpoints
         api.MapGet("/shop/professionals", ShopList).RequireUserType(UserTypes.ShopUser).WithTags("Shop")
             .WithName("ListShopProfessionals").WithSummary("The shop's own professionals, read-only and without contact data.")
             .Produces<IReadOnlyList<ShopProfessionalResponse>>();
+        MapShopBarbers(api.MapGroup("/shop/professionals").WithTags("Shop").RequirePermission(ShopBarbersManage));
 
         api.MapGet("/public/shops/{slug}/professionals", PublicList).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopProfessionals").WithSummary("Active professionals of an active shop. No contact data.")

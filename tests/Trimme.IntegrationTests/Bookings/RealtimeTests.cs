@@ -72,8 +72,12 @@ public sealed class RealtimeTests(PostgresFixture postgres)
         return client;
     }
 
-    private static async Task<JsonElement> WalkInAsync(ApiSession owner, Guid serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct) =>
-        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
+    /// <summary>A walk-in booked by the barber themselves (D-146).</summary>
+    private static async Task<JsonElement> WalkInAsync(BookingWorld w, Guid serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct)
+    {
+        using var barber = await w.BarberAsync(professionalId, ct);
+        return await OkAsync(barber.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
+    }
 
     [Fact]
     public async Task EachShop_ReceivesOnlyItsOwnBookings_AdminsReceiveAll_AndMessagesCarryNoCustomerData()
@@ -85,7 +89,7 @@ public sealed class RealtimeTests(PostgresFixture postgres)
         await using var admin = await ConnectAsync(w.Factory, w.Admin, ct);
 
         // A walk-in at shop A (one save, no explicit transaction) reaches A and the admins.
-        var walkIn = await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 10), ct);
+        var walkIn = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
         var seen = await shopA.NextAsync(ct);
         seen.GetProperty("kind").GetString().ShouldBe("booking.created");
         seen.GetProperty("bookingId").GetGuid().ShouldBe(walkIn.GetProperty("id").GetGuid());
@@ -105,7 +109,7 @@ public sealed class RealtimeTests(PostgresFixture postgres)
 
         // Shop B saw none of that: the first thing it receives is its own booking (R-TEN-06).
         shopB.HasMessage.ShouldBeFalse();
-        var own = await WalkInAsync(w.OwnerB, w.ServiceB, w.ProB, At(Target, 10), ct);
+        var own = await WalkInAsync(w, w.ServiceB, w.ProB, At(Target, 10), ct);
         var first = await shopB.NextAsync(ct);
         first.GetProperty("bookingId").GetGuid().ShouldBe(own.GetProperty("id").GetGuid());
         first.GetProperty("shopId").GetGuid().ShouldBe(w.Shops.B.ShopId);
@@ -126,16 +130,16 @@ public sealed class RealtimeTests(PostgresFixture postgres)
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "rt_barber", ct);
-        using var faisal = await Identity.BarberLoginTests.BarberAsync(w, w.Faisal, "+966512340021", ct);
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
         await using var barber = await ConnectAsync(w.Factory, faisal, ct);
         await using var owner = await ConnectAsync(w.Factory, w.OwnerA, ct);
 
         // A colleague's booking reaches the owner, not the barber (D-145).
-        var omars = await WalkInAsync(w.OwnerA, w.Haircut, w.Omar, At(Target, 10), ct);
+        var omars = await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 10), ct);
         (await owner.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(omars.GetProperty("id").GetGuid());
 
         // The barber's own booking reaches both; it is the first thing the barber hears.
-        var own = await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 11), ct);
+        var own = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 11), ct);
         (await barber.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(own.GetProperty("id").GetGuid());
         (await owner.NextAsync(ct)).GetProperty("bookingId").GetGuid().ShouldBe(own.GetProperty("id").GetGuid());
         barber.HasMessage.ShouldBeFalse();

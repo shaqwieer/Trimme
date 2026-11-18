@@ -219,7 +219,8 @@ export interface paths {
         /** The shop's own professionals, read-only and without contact data. */
         get: operations["ListShopProfessionals"];
         put?: never;
-        post?: never;
+        /** Adds a barber to the owner's shop with their login: the generated temporary password is answered once (audited). */
+        post: operations["CreateShopBarber"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1002,7 +1003,7 @@ export interface paths {
         };
         /** Whether the barber can sign in (with their WhatsApp number) and must still replace a temporary password. */
         get: operations["GetShopBarberLogin"];
-        /** Turns the barber's login on (or on again) with a temporary password they replace at the first sign-in; ends their sessions. */
+        /** Turns the barber's login on (or on again) with a generated temporary password, returned once and replaced at the first sign-in; ends their sessions. */
         put: operations["EnableShopBarberLogin"];
         post?: never;
         /** Turns the barber's login off and ends every session. */
@@ -1021,7 +1022,7 @@ export interface paths {
         };
         /** Whether the barber can sign in and must still replace a temporary password. */
         get: operations["GetAdminBarberLogin"];
-        /** Turns the barber's login on (or on again) with a temporary password; ends their sessions. */
+        /** Turns the barber's login on (or on again) with a generated temporary password, returned once; ends their sessions. */
         put: operations["EnableAdminBarberLogin"];
         post?: never;
         /** Turns the barber's login off and ends every session. */
@@ -1825,6 +1826,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/professionals/{professionalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the shop's barbers, with the WhatsApp number masked. */
+        get: operations["GetShopBarber"];
+        /** Edits the barber's profile (audited, optimistic concurrency). The shop cannot change. */
+        put: operations["UpdateShopBarber"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals/{professionalId}/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Changes the barber's number (also their sign-in) or only the message toggle (audited, number never logged). */
+        put: operations["SetShopBarberWhatsApp"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals/{professionalId}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides the barber from booking and turns their login off (audited). */
+        post: operations["DisableShopBarber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals/{professionalId}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Makes a disabled barber bookable again; their login stays off until turned on (audited). */
+        post: operations["EnableShopBarber"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals/{professionalId}/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the barber's photo (JPEG, PNG or WebP, at most 5 MB; audited). */
+        put: operations["UploadShopBarberAvatar"];
+        post?: never;
+        /** Removes the barber's photo (audited). */
+        delete: operations["RemoveShopBarberAvatar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shop/services": {
         parameters: {
             query?: never;
@@ -2027,6 +2115,24 @@ export interface paths {
         get?: never;
         /** Sets the display order from the full list of non-archived packages. */
         put: operations["ReorderShopPackages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/professionals/{professionalId}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's services and which of them the barber does. */
+        get: operations["GetShopBarberServices"];
+        /** Replaces the services the barber does; the shop's own services only (audited). */
+        put: operations["SetShopBarberServices"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4484,6 +4590,14 @@ export interface components {
             timeOff: components["schemas"]["MinuteWindowDto"][];
         };
         /**
+         * @description A barber's login just turned on (or on again) with a temporary password the server generated (D-146). The password is
+         *     in this one answer only, for the owner or admin to hand to the barber; it is never stored readable, logged or cached.
+         */
+        BarberLoginPasswordResponse: {
+            login: components["schemas"]["BarberLoginResponse"];
+            temporaryPassword: string;
+        };
+        /**
          * @description A barber's login as the owner and the admin see it (D-145). `HasNumber`: the professional has a WhatsApp number
          *     to sign in with. Never the number or the password.
          */
@@ -4806,6 +4920,20 @@ export interface components {
             professionalId: null | string;
             label: null | string;
         };
+        /**
+         * @description The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made
+         *     from the English name). The mobile is required: it is the barber's WhatsApp number and their sign-in.
+         */
+        CreateShopBarberRequest: {
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            whatsAppNumber: string;
+            notificationsEnabled: boolean;
+        };
         /** @description A package of 2–10 of the shop's own services, with its own price and total duration. */
         CreateShopPackageRequest: {
             nameAr: string;
@@ -5049,10 +5177,6 @@ export interface components {
         DispatchStatus: "Queued" | "Sent" | "Delivered" | "Read" | "Failed";
         EditablePolicyRequest: {
             editableFields: components["schemas"]["ShopProfileField"][];
-        };
-        /** @description The temporary password a barber replaces at their first sign-in (D-145). */
-        EnableBarberLoginRequest: {
-            password: string;
         };
         /** @description A saved professional with their shop; never a phone or WhatsApp number (R-PRO-02). */
         FavoriteProfessionalResponse: {
@@ -6361,6 +6485,42 @@ export interface components {
         };
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
+        /**
+         * @description A barber the owner just added, and the temporary password of the login made with them (D-146). The password is in this
+         *     one answer only, for the owner to hand to the barber, who replaces it at the first sign-in.
+         */
+        ShopBarberCreatedResponse: {
+            barber: components["schemas"]["ShopBarberResponse"];
+            temporaryPassword: string;
+        };
+        /**
+         * @description A barber as the shop's owner manages them (D-146): profile, photo, status and the masked WhatsApp number, which is also
+         *     their sign-in. Owner only (`Shop.Barbers.Manage`); the shop-wide list a barber reads stays without contact data.
+         */
+        ShopBarberResponse: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            avatarUrl: null | string;
+            status: components["schemas"]["ProfessionalStatus"];
+            whatsApp: components["schemas"]["ShopBarberWhatsAppResponse"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uint32 */
+            version: number;
+        };
+        /** @description The barber's WhatsApp settings as the owner sees them (D-146): the number masked only, with no reveal. */
+        ShopBarberWhatsAppResponse: {
+            masked: null | string;
+            notificationsEnabled: boolean;
+            verification: components["schemas"]["WhatsAppVerification"];
+        };
         /** @description How many bookings each status chip would list (every filter but the status applied). */
         ShopBookingCounts: {
             /** Format: int32 */
@@ -6621,8 +6781,8 @@ export interface components {
             version: number;
         };
         /**
-         * @description A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec §7).
-         *     Shop-facing contract: no contact data of any kind.
+         * @description A professional in the shop-wide list every shop user reads, its barbers too (no contact data). The owner adds and edits
+         *     barbers through `ShopBarbers` (D-146); nobody can move one to another shop (D-011).
          */
         ShopProfessionalResponse: {
             /** Format: uuid */
@@ -7186,6 +7346,17 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011). */
+        UpdateShopBarberRequest: {
+            nameAr: string;
+            nameEn: string;
+            specialtyAr: null | string;
+            specialtyEn: null | string;
+            bioAr: null | string;
+            bioEn: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
         UpdateShopPackageRequest: {
             nameAr: string;
             nameEn: null | string;
@@ -7700,6 +7871,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopProfessionalResponse"][];
+                };
+            };
+        };
+    };
+    CreateShopBarber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShopBarberRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberCreatedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -9392,11 +9605,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EnableBarberLoginRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -9404,7 +9613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BarberLoginResponse"];
+                    "application/json": components["schemas"]["BarberLoginPasswordResponse"];
                 };
             };
             /** @description Bad Request */
@@ -9507,11 +9716,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EnableBarberLoginRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -9519,7 +9724,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BarberLoginResponse"];
+                    "application/json": components["schemas"]["BarberLoginPasswordResponse"];
                 };
             };
             /** @description Bad Request */
@@ -11831,6 +12036,300 @@ export interface operations {
             };
         };
     };
+    GetShopBarber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateShopBarber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShopBarberRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetShopBarberWhatsApp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetProfessionalWhatsAppRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DisableShopBarber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EnableShopBarber: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UploadShopBarberAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Payload Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RemoveShopBarberAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBarberResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ListShopServices: {
         parameters: {
             query?: {
@@ -12444,6 +12943,81 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopBarberServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalServicesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetShopBarberServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                professionalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfessionalServicesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfessionalServicesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

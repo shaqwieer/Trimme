@@ -69,7 +69,7 @@
 |---|---|---|
 | `Shop.Bookings.Read` | ✓ | ✓ own bookings |
 | `Shop.Bookings.UpdateStatus` | ✓ | ✓ own bookings |
-| `Shop.Bookings.CreateWalkIn` | ✓ | ✓ for themselves |
+| `Shop.Bookings.CreateWalkIn` | — (D-146: the barbers book walk-ins) | ✓ for themselves |
 | `Shop.Bookings.ResendNotification` | ✓ | — |
 | `Shop.Bookings.Reschedule` | ✓ | ✓ own bookings |
 | `Shop.Bookings.ChangeProfessional` | ✓ | ✓ own bookings, to a colleague |
@@ -84,7 +84,8 @@
 | `Shop.Notifications.Manage` | ✓ | — |
 | `Shop.Qr.View` | ✓ | — |
 | `Shop.Insights.View` | ✓ | — |
-| `Shop.Barbers.ManageLogin` | ✓ | — |
+| `Shop.Barbers.ManageLogin` | ✓ (generated temporary password, D-146) | — |
+| `Shop.Barbers.Manage` | ✓ add and edit the shop's own barbers (D-146) | — |
 
 A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings, breaks and figures (D-145). It signs in with the professional's WhatsApp number.
 
@@ -135,7 +136,11 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `PUT/DELETE /api/v1/shop/profile/logo`, `.../cover`; `POST .../gallery`; `DELETE .../gallery/{mediaId}` | `Shop.Profile.Edit` · only if the policy opens the field · another shop's image → 404 |
 | `PUT /api/v1/shop/location` | `Shop.Location.Edit` · only if the policy opens Location |
 | `GET /api/v1/shop/geo/search`, `GET /api/v1/shop/geo/reverse` | `Shop.Location.Edit` · rate limit `geocode` |
-| `GET /api/v1/shop/professionals` | User type ShopUser · own professionals, read-only, no contact data |
+| `GET /api/v1/shop/professionals` | User type ShopUser · own professionals, no contact data |
+| `POST /api/v1/shop/professionals` | `Shop.Barbers.Manage` · adds a barber to the owner's own shop with their login; the generated temporary password is answered once (D-146) |
+| `GET/PUT /api/v1/shop/professionals/{id}`, `PUT …/whatsapp`, `POST …/disable`, `…/enable`, `PUT/DELETE …/avatar` | `Shop.Barbers.Manage` · own barbers only (another shop's is 404); the number answered masked, no reveal, no delete, no shop field (D-146) |
+| `GET/PUT /api/v1/shop/professionals/{id}/services` | `Shop.Barbers.Manage` · the services the barber does, the shop's own only (D-146) |
+| `GET/PUT/DELETE /api/v1/shop/professionals/{id}/login` | `Shop.Barbers.ManageLogin` · turning it on answers a generated temporary password once (D-145, D-146) |
 | `POST /api/v1/admin/professionals` | `Admin.Professionals.Create` · the one shop is chosen here · audited |
 | `GET /api/v1/admin/professionals`, `GET /api/v1/admin/professionals/{id}` | `Admin.Professionals.View` · WhatsApp masked |
 | `PUT /api/v1/admin/professionals/{id}` | `Admin.Professionals.Edit` · no shop field · optimistic concurrency · audited |

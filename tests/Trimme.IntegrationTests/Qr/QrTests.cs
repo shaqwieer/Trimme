@@ -184,9 +184,10 @@ public sealed class QrTests(PostgresFixture postgres)
         var shopView = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct);
         shopView.GetProperty("booking").GetProperty("viaQr").GetBoolean().ShouldBeTrue();
 
-        // A walk-in by a shop browser carrying the cookie is never credited.
-        w.OwnerA.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
-        var walkIn = await OkAsync(w.OwnerA.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+        // A walk-in by a shop browser (the barber's, D-146) carrying the cookie is never credited.
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        faisal.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
+        var walkIn = await OkAsync(faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
             new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "زائر", customerPhone = "0501234567" }, ct, headers: Key()), ct, HttpStatusCode.Created);
         (await InDbAsync(w.Factory, db => db.Set<Booking>().AsNoTracking().SingleAsync(b => b.Id == new BookingId(walkIn.GetProperty("id").GetGuid()), ct))).QrLinkId.ShouldBeNull();
 

@@ -7,8 +7,8 @@ using Trimme.Modules.Professionals.Domain;
 namespace Trimme.Modules.Professionals.Application;
 
 /// <summary>
-/// A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec §7).
-/// Shop-facing contract: no contact data of any kind.
+/// A professional in the shop-wide list every shop user reads, its barbers too (no contact data). The owner adds and edits
+/// barbers through <c>ShopBarbers</c> (D-146); nobody can move one to another shop (D-011).
 /// </summary>
 public sealed record ShopProfessionalResponse(
     Guid Id,

@@ -127,11 +127,13 @@ internal static class CatalogEndpoints
     private const string ServicesManage = "Admin.ShopServices.Manage";
     private const string ProfessionalsView = "Admin.Professionals.View";
     private const string AssignServices = "Admin.Professionals.AssignServices";
+    private const string ShopBarbersManage = "Shop.Barbers.Manage";
 
     public static void Map(IEndpointRouteBuilder api)
     {
         MapShopServices(api.MapGroup("/shop/services").WithTags("Shop: services"));
         MapShopPackages(api.MapGroup("/shop/packages").WithTags("Shop: services"));
+        MapShopBarberServices(api.MapGroup("/shop/professionals/{professionalId:guid}/services").WithTags("Shop: services").RequirePermission(ShopBarbersManage));
         MapAdmin(api);
 
         api.MapGet("/public/service-categories", PublicCategories).AllowAnonymous().CachePublicly().WithTags("Public")
@@ -143,6 +145,21 @@ internal static class CatalogEndpoints
         api.MapGet("/public/shops/{slug}/packages", PublicPackages).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopPackages").WithSummary("An active shop's published packages whose every service is available.")
             .Produces<IReadOnlyList<PublicPackageResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    /// <summary>The services one of the owner's barbers does, from the barber's page (D-146).</summary>
+    private static void MapShopBarberServices(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (Guid professionalId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetShopBarberServicesQuery(professionalId), ct) is { } result
+                    ? TypedResults.Ok(result)
+                    : Error.NotFound("professional.not_found", "The professional was not found.").ToProblem())
+            .WithName("GetShopBarberServices").WithSummary("The shop's services and which of them the barber does.")
+            .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPut("/", async (Guid professionalId, ProfessionalServicesRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new SetShopBarberServicesCommand(professionalId, r.ServiceIds ?? []), ct)).ToHttpResult())
+            .WithName("SetShopBarberServices").WithSummary("Replaces the services the barber does; the shop's own services only (audited).")
+            .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     private static void MapShopServices(RouteGroupBuilder group)

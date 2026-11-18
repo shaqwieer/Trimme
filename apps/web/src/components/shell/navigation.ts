@@ -50,12 +50,13 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'overview', href: '/shop', icon: BarChart3, permission: 'Shop.Bookings.Read' },
   { key: 'calendar', href: '/shop/calendar', icon: CalendarDays, permission: 'Shop.Bookings.Read' },
   { key: 'appointments', href: '/shop/appointments', icon: List, permission: 'Shop.Bookings.Read' },
+  // A barber's own walk-ins; the owner books none (D-146).
   { key: 'walkIn', href: '/shop/walk-in', icon: Plus, permission: 'Shop.Bookings.CreateWalkIn' },
   { key: 'schedule', href: '/shop/schedule', icon: Clock, permission: 'Shop.Breaks.Manage' },
   // The owner's own services again (D-137; D-130 had given them to the admin only). A barber's login has no permission.
   { key: 'services', href: '/shop/services', icon: Tag, permission: 'Shop.Services.Manage' },
-  // The owner turns barbers' logins on and off (D-145).
-  { key: 'barbers', href: '/shop/barbers', icon: Users, permission: 'Shop.Barbers.ManageLogin' },
+  // The owner adds and edits the shop's barbers and their logins (D-145, D-146).
+  { key: 'barbers', href: '/shop/barbers', icon: Users, permission: 'Shop.Barbers.Manage' },
   { key: 'subscription', href: '/shop/subscription', icon: CreditCard, permission: 'Shop.Subscription.Read' },
   { key: 'qr', href: '/shop/qr', icon: QrCode, permission: 'Shop.Qr.View' },
   { key: 'notifications', href: '/shop/notifications', icon: Bell },
@@ -64,9 +65,10 @@ export const shopNav: NavItem<'shop'>[] = [
 
 /**
  * The shop's four everyday tabs, as a bottom bar on phones and tablets (D-130), in reading order: the operational
- * overview first (right in Arabic), then hours and breaks, walk-in, and the appointments (left in Arabic).
+ * overview first (right in Arabic), then hours and breaks, walk-in for a barber or the barbers for the owner (D-146:
+ * each role has one of the two), and the appointments (left in Arabic).
  */
-export const shopTabKeys = ['overview', 'schedule', 'walkIn', 'appointments'] as const;
+export const shopTabKeys = ['overview', 'schedule', 'walkIn', 'barbers', 'appointments'] as const;
 
 export const adminNav: NavItem<'admin'>[] = [
   { key: 'overview', href: '/admin', icon: BarChart3, permission: 'Admin.Dashboard.View' },

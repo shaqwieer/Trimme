@@ -13,6 +13,15 @@ namespace Trimme.Modules.Identity.Application.Barbers;
 /// </summary>
 public sealed record BarberLoginResponse(Guid ProfessionalId, bool Enabled, bool MustChangePassword, bool HasNumber);
 
+/// <summary>
+/// A barber's login just turned on (or on again) with a temporary password the server generated (D-146). The password is
+/// in this one answer only, for the owner or admin to hand to the barber; it is never stored readable, logged or cached.
+/// </summary>
+public sealed record BarberLoginPasswordResponse(BarberLoginResponse Login, string TemporaryPassword)
+{
+    public override string ToString() => $"{nameof(BarberLoginPasswordResponse)} {{ Login = {Login} }}";
+}
+
 internal static class BarberLoginErrors
 {
     public static Error ProfessionalNotFound() => Error.NotFound("professional.not_found", "The professional was not found.");
@@ -27,8 +36,9 @@ internal static class BarberLoginErrors
 /// <summary>
 /// Turning a barber's login on and off (D-145), shared by the owner's and the admin's commands. The professional is read
 /// through the caller's scope: the owner's tenant, or the admin scope the admin command opens. A login is one account per
-/// professional, of the same shop, created on the first «تفعيل»; turning it on again sets a new temporary password, which
-/// the barber replaces at the first sign-in. Turning it off ends every session at once.
+/// professional, of the same shop, made with the barber (D-146) or on the first «تفعيل»; turning it on again sets a new
+/// temporary password, which the barber replaces at the first sign-in. The server generates every temporary password
+/// (D-146). Turning it off ends every session at once.
 /// </summary>
 internal sealed class BarberLoginManager(
     IAccountStore accounts,
@@ -47,7 +57,7 @@ internal sealed class BarberLoginManager(
         return await ResponseAsync(professionalId, cancellationToken);
     }
 
-    public async Task<Result<BarberLoginResponse>> EnableAsync(Guid professionalId, string password, CancellationToken cancellationToken)
+    public async Task<Result<BarberLoginPasswordResponse>> EnableAsync(Guid professionalId, CancellationToken cancellationToken)
     {
         var id = new ProfessionalId(professionalId);
         var professional = await professionals.FindAsync(id, cancellationToken);
@@ -66,6 +76,7 @@ internal sealed class BarberLoginManager(
             return BarberLoginErrors.NumberRequired();
         }
 
+        var password = TemporaryPasswords.New();
         var saved = await accounts.SetBarberLoginAsync(
             new NewBarberLogin(professionalId, professional.ShopId.Value, professional.NameAr, loginHash, password, "ar"), cancellationToken);
         if (saved.IsFailure)
@@ -74,9 +85,9 @@ internal sealed class BarberLoginManager(
         }
 
         // A new temporary password ends any session the barber still had; the revocation saves the audit entry with it.
-        audit.Record(new AuditRecord("barber_login.enabled", "Professional", professionalId.ToString(), professional.ShopId, "Login on, temporary password set"));
+        audit.Record(new AuditRecord("barber_login.enabled", "Professional", professionalId.ToString(), professional.ShopId, "Login on, temporary password generated"));
         await sessions.RevokeAllAsync(saved.Value, keep: null, SessionRevocationReason.LoginDisabled, cancellationToken);
-        return await ResponseAsync(professionalId, cancellationToken);
+        return new BarberLoginPasswordResponse(await ResponseAsync(professionalId, cancellationToken), password);
     }
 
     public async Task<Result<BarberLoginResponse>> DisableAsync(Guid professionalId, CancellationToken cancellationToken)

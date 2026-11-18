@@ -12,7 +12,8 @@ import { expect, test } from '../support/fixtures';
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@trimme.local';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'trimme local admin';
 const DEMO_PASSWORD = process.env.E2E_DEMO_PASSWORD ?? 'trimme local demo';
-const BARBER_HOUSE_OWNER = 'owner@barber-house.trimme.local';
+/** Omar's own login at Barber House: the WhatsApp number on his profile (D-145). */
+const OMAR = { id: '0199a0de-5a10-7000-8000-000000000201', login: '0500100201' };
 const SARA = { id: '0199a0de-5a10-7000-8000-000000000903', phone: '+966500100303' };
 
 async function staffSignIn(page: Page, email: string, password: string) {
@@ -51,18 +52,20 @@ test.describe('admin operations (Phase 14)', () => {
   test('overview KPIs; a booking rescheduled and cancelled on the shop’s behalf, with its audit trail', async ({
     browser,
   }) => {
-    // A walk-in at Barber House four days ahead (no other spec books there on that day), recorded by the shop.
+    // A walk-in at Barber House four days ahead (no other spec books there on that day), recorded by the shop: by Omar
+    // himself, since walk-ins are the barbers', not the owner's (D-146).
     const shopContext = await browser.newContext();
     const shopPage = await shopContext.newPage();
-    await staffSignIn(shopPage, BARBER_HOUSE_OWNER, DEMO_PASSWORD);
+    await staffSignIn(shopPage, OMAR.login, DEMO_PASSWORD);
     const request = shopPage.request;
     const token = await csrf(shopContext, request);
     const services = (await (await request.get('/api/v1/shop/services')).json()) as Array<{
       id: string;
       isActive: boolean;
       isArchived: boolean;
+      professionalIds: string[];
     }>;
-    const service = services.find((s) => s.isActive && !s.isArchived)!;
+    const service = services.find((s) => s.isActive && !s.isArchived && s.professionalIds.includes(OMAR.id))!;
     const day = riyadhDay(4);
     const options = (await (
       await request.get(`/api/v1/shop/availability/walk-in?serviceId=${service.id}&date=${day}`)

@@ -23,31 +23,61 @@ beforeEach(() => {
   router.refresh.mockReset();
 });
 
-describe('BarberLoginControls (D-145)', () => {
-  it('turns a barber login on with a temporary password of at least 10 characters', async () => {
+const issued = (password: string) =>
+  ok({ login: { ...off, enabled: true, mustChangePassword: true }, temporaryPassword: password });
+
+describe('BarberLoginControls (D-145, D-146)', () => {
+  it('turns a barber login on and shows the password the server generated, once, to copy', async () => {
     const user = userEvent.setup();
-    api.PUT.mockResolvedValue(ok({ ...off, enabled: true, mustChangePassword: true }));
+    api.PUT.mockResolvedValue(issued('k7m3p9x2qa4b'));
     renderWithIntl(<BarberLoginControls scope="shop" professionalId="p1" name="فيصل" login={off} />);
 
     expect(screen.getByText('الدخول غير مفعّل')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'تفعيل الدخول' }));
-    const field = await screen.findByLabelText('كلمة المرور المؤقتة');
-    await user.type(field, 'short');
-    expect(screen.getByRole('button', { name: 'حفظ' })).toBeDisabled();
-    expect(screen.getByText('استخدم 10 أحرف على الأقل')).toBeInTheDocument();
-    await expectNoAxeViolations(document.body);
-    await user.type(field, '-temp-2026');
-    await user.click(screen.getByRole('button', { name: 'حفظ' }));
 
-    expect(await screen.findByText('تم حفظ دخول فيصل. أعطه كلمة المرور المؤقتة.')).toBeInTheDocument();
+    // No password is typed: the request has no body, and the answer's password is shown in a dialog.
     expect(api.PUT).toHaveBeenCalledWith('/api/v1/shop/professionals/{professionalId}/login', {
       params: { path: { professionalId: 'p1' } },
-      body: { password: 'short-temp-2026' },
     });
+    const dialog = await screen.findByRole('dialog', { name: 'كلمة المرور المؤقتة لـ فيصل' });
+    expect(screen.getByTestId('temporary-password-value')).toHaveTextContent('k7m3p9x2qa4b');
+    await expectNoAxeViolations(document.body);
+    await user.click(screen.getByRole('button', { name: 'نسخ' }));
+    expect(await screen.findByRole('button', { name: 'تم النسخ' })).toBeInTheDocument();
+    await expect(navigator.clipboard.readText()).resolves.toBe('k7m3p9x2qa4b');
     expect(router.refresh).toHaveBeenCalled();
+
+    // Closed, it is gone for good.
+    await user.click(screen.getByRole('button', { name: 'تم' }));
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    expect(screen.queryByText('k7m3p9x2qa4b')).not.toBeInTheDocument();
+    expect(screen.getByText('تم تفعيل دخول فيصل. أعطه كلمة المرور المؤقتة.')).toBeInTheDocument();
   });
 
-  it('cannot turn it on without a WhatsApp number, and tells the owner who adds it', () => {
+  it('asks before a new temporary password, which signs the barber out', async () => {
+    const user = userEvent.setup();
+    api.PUT.mockResolvedValue(issued('n4w8pass2ttx'));
+    renderWithIntl(
+      <BarberLoginControls
+        scope="admin"
+        professionalId="p1"
+        name="فيصل"
+        login={{ ...off, enabled: true, mustChangePassword: false }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'كلمة مرور مؤقتة جديدة' }));
+    expect(await screen.findByText('كلمة مرور مؤقتة جديدة لـ فيصل؟')).toBeInTheDocument();
+    expect(api.PUT).not.toHaveBeenCalled();
+    await user.click(screen.getAllByRole('button', { name: 'كلمة مرور مؤقتة جديدة' }).at(-1)!);
+
+    expect(await screen.findByTestId('temporary-password-value')).toHaveTextContent('n4w8pass2ttx');
+    expect(api.PUT).toHaveBeenCalledWith('/api/v1/admin/professionals/{professionalId}/login', {
+      params: { path: { professionalId: 'p1' } },
+    });
+  });
+
+  it('cannot turn it on without a WhatsApp number, and says to add it', () => {
     renderWithIntl(
       <BarberLoginControls
         scope="shop"
@@ -57,9 +87,7 @@ describe('BarberLoginControls (D-145)', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'تفعيل الدخول' })).toBeDisabled();
-    expect(
-      screen.getByText('لا يوجد رقم واتساب لهذا الحلاق. اطلب من فريق Groom Here إضافته.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('أضف رقم واتساب الحلاق أولاً؛ هو رقم دخوله.')).toBeInTheDocument();
   });
 
   it('turns an admin-side login off after asking, through the admin endpoint', async () => {

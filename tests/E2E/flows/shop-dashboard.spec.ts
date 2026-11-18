@@ -182,7 +182,8 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
         '/ar/shop',
         '/ar/shop/calendar',
         '/ar/shop/appointments',
-        '/ar/shop/walk-in',
+        // The owner has no walk-in page (D-146); their barbers' list instead.
+        '/ar/shop/barbers',
         '/ar/shop/qr',
       ]) {
         await page.goto(path, { waitUntil: 'load' });

@@ -7,12 +7,13 @@ using static Trimme.IntegrationTests.Bookings.BookingTestData;
 namespace Trimme.IntegrationTests.Identity;
 
 /// <summary>
-/// D-145: a barber's own login. The owner (or the admin) turns it on with a temporary password; the barber signs in with
-/// the WhatsApp number on their profile, replaces the password, and is linked to their professional. The login follows
-/// the number, and ends when it is turned off or the barber is disabled.
+/// D-145: a barber's own login. The owner (or the admin) turns it on with a temporary password the server generates
+/// (D-146); the barber signs in with the WhatsApp number on their profile, replaces it, and is linked to their
+/// professional. The login follows the number, and ends when it is turned off or the barber is disabled.
 /// </summary>
 public sealed class BarberLoginTests(PostgresFixture postgres)
 {
+    /// <summary>Any password before a login exists: it signs nobody in.</summary>
     private const string Temporary = "barber-temp-2026";
     internal const string Chosen = "barber-chosen-2026";
 
@@ -28,14 +29,26 @@ public sealed class BarberLoginTests(PostgresFixture postgres)
     internal static Task<ApiSession> BarberAsync(BookingWorld w, Guid professionalId, string number, CancellationToken ct) =>
         BarberAsync(w.Factory, w.Admin, w.OwnerA, professionalId, number, ct);
 
-    /// <summary>The same in any test world: the admin sets the barber's number, their shop's owner turns the login on.</summary>
+    /// <summary>
+    /// The same in any test world: the admin sets the barber's number, their shop's owner turns the login on and reads the
+    /// generated temporary password (D-146), and the barber replaces it.
+    /// </summary>
     internal static async Task<ApiSession> BarberAsync(TrimmeApiFactory factory, ApiSession admin, ApiSession owner, Guid professionalId, string number, CancellationToken ct)
     {
         await SetNumberAsync(admin, professionalId, number, ct);
-        await OkAsync(owner.PutAsync($"/api/v1/shop/professionals/{professionalId}/login", new { password = Temporary }, ct), ct);
+        var temporary = await TurnOnAsync(owner, $"/api/v1/shop/professionals/{professionalId}/login", ct);
         var session = ApiSession.Create(factory);
-        await OkAsync(session.PostAsync("/api/v1/auth/password/change-temporary", new { phone = number, password = Temporary, newPassword = Chosen }, ct), ct);
+        await OkAsync(session.PostAsync("/api/v1/auth/password/change-temporary", new { phone = number, password = temporary, newPassword = Chosen }, ct), ct);
         return session;
+    }
+
+    /// <summary>Turns a login on (or on again) at <paramref name="path"/> and returns the temporary password the server generated.</summary>
+    internal static async Task<string> TurnOnAsync(ApiSession caller, string path, CancellationToken ct)
+    {
+        var on = await OkAsync(caller.PutAsync(path, body: null, ct), ct);
+        on.GetProperty("login").GetProperty("enabled").GetBoolean().ShouldBeTrue();
+        on.GetProperty("login").GetProperty("mustChangePassword").GetBoolean().ShouldBeTrue();
+        return on.GetProperty("temporaryPassword").GetString().ShouldNotBeNull();
     }
 
     /// <summary>A barber whose login is on signs in again (for example after the test clock moved past the access cookie).</summary>
@@ -73,17 +86,24 @@ public sealed class BarberLoginTests(PostgresFixture postgres)
             await FailsAsync(SignInAsync(none, number, Temporary, ct), HttpStatusCode.Unauthorized, "auth.invalid_credentials", ct);
         }
 
-        var on = await OkAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Faisal}/login", new { password = Temporary }, ct), ct);
-        on.GetProperty("enabled").GetBoolean().ShouldBeTrue();
-        on.GetProperty("mustChangePassword").GetBoolean().ShouldBeTrue();
-        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Faisal}/login", new { password = "short" }, ct), HttpStatusCode.BadRequest, null, ct);
+        // The server generates the temporary password (D-146): 12 easy-to-read characters, a new one each time, and the
+        // previous one stops working.
+        var first = await TurnOnAsync(w.OwnerA, $"/api/v1/shop/professionals/{w.Faisal}/login", ct);
+        var temporary = await TurnOnAsync(w.OwnerA, $"/api/v1/shop/professionals/{w.Faisal}/login", ct);
+        temporary.Length.ShouldBe(12);
+        temporary.ShouldAllBe(c => "abcdefghjkmnpqrstuvwxyz23456789".Contains(c));
+        temporary.ShouldNotBe(first);
+        using (var stale = ApiSession.Create(w.Factory))
+        {
+            await FailsAsync(SignInAsync(stale, number, first, ct), HttpStatusCode.Unauthorized, "auth.invalid_credentials", ct);
+        }
 
         // The temporary password starts no session; the number may be typed the local way.
         using var barber = ApiSession.Create(w.Factory);
-        await FailsAsync(SignInAsync(barber, "0512340001", Temporary, ct), HttpStatusCode.Forbidden, "auth.password_change_required", ct);
+        await FailsAsync(SignInAsync(barber, "0512340001", temporary, ct), HttpStatusCode.Forbidden, "auth.password_change_required", ct);
         await FailsAsync(barber.GetAsync("/api/v1/me", ct), HttpStatusCode.Unauthorized, null, ct);
         var signedIn = await OkAsync(
-            barber.PostAsync("/api/v1/auth/password/change-temporary", new { phone = "0512340001", password = Temporary, newPassword = Chosen }, ct), ct);
+            barber.PostAsync("/api/v1/auth/password/change-temporary", new { phone = "0512340001", password = temporary, newPassword = Chosen }, ct), ct);
         var me = signedIn.GetProperty("user");
         me.GetProperty("userType").GetString().ShouldBe("ShopUser");
         me.GetProperty("professionalId").GetGuid().ShouldBe(w.Faisal);
@@ -101,7 +121,7 @@ public sealed class BarberLoginTests(PostgresFixture postgres)
         (await OkAsync(barber.GetAsync("/api/v1/me", ct), ct)).GetProperty("professionalId").GetGuid().ShouldBe(w.Faisal);
 
         // A barber cannot turn logins on, theirs or a colleague's.
-        await FailsAsync(barber.PutAsync($"/api/v1/shop/professionals/{w.Omar}/login", new { password = Temporary }, ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(barber.PutAsync($"/api/v1/shop/professionals/{w.Omar}/login", body: null, ct), HttpStatusCode.Forbidden, null, ct);
 
         // Wrong password and unknown number answer alike.
         using var other = ApiSession.Create(w.Factory);
@@ -122,7 +142,7 @@ public sealed class BarberLoginTests(PostgresFixture postgres)
         await using var w = await ArrangeAsync(postgres, "barber_login_life", ct);
 
         // Without a number there is nothing to sign in with.
-        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Omar}/login", new { password = Temporary }, ct), HttpStatusCode.BadRequest, "barber.number_required", ct);
+        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Omar}/login", body: null, ct), HttpStatusCode.BadRequest, "barber.number_required", ct);
 
         using var barber = await BarberAsync(w, w.Faisal, "+966512340002", ct);
 
@@ -143,17 +163,16 @@ public sealed class BarberLoginTests(PostgresFixture postgres)
         }
 
         // On again (here by the admin): a new temporary password, replaced at the first sign-in.
-        var again = await OkAsync(w.Admin.PutAsync($"/api/v1/admin/professionals/{w.Faisal}/login", new { password = Temporary }, ct), ct);
-        again.GetProperty("mustChangePassword").GetBoolean().ShouldBeTrue();
+        var again = await TurnOnAsync(w.Admin, $"/api/v1/admin/professionals/{w.Faisal}/login", ct);
         using var back = ApiSession.Create(w.Factory);
-        await FailsAsync(SignInAsync(back, "+966512340003", Temporary, ct), HttpStatusCode.Forbidden, "auth.password_change_required", ct);
-        await OkAsync(back.PostAsync("/api/v1/auth/password/change-temporary", new { phone = "+966512340003", password = Temporary, newPassword = Chosen }, ct), ct);
+        await FailsAsync(SignInAsync(back, "+966512340003", again, ct), HttpStatusCode.Forbidden, "auth.password_change_required", ct);
+        await OkAsync(back.PostAsync("/api/v1/auth/password/change-temporary", new { phone = "+966512340003", password = again, newPassword = Chosen }, ct), ct);
         await OkAsync(back.GetAsync("/api/v1/me", ct), ct);
 
         // The admin disables the barber: their login ends with them, and is not turned back on by enabling them.
         await OkAsync(w.Admin.PostAsync($"/api/v1/admin/professionals/{w.Faisal}/disable", new { reason = "left the shop" }, ct), ct);
         await FailsAsync(back.GetAsync("/api/v1/me", ct), HttpStatusCode.Unauthorized, null, ct);
-        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Faisal}/login", new { password = Temporary }, ct), HttpStatusCode.Conflict, "barber.professional_inactive", ct);
+        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Faisal}/login", body: null, ct), HttpStatusCode.Conflict, "barber.professional_inactive", ct);
         await OkAsync(w.Admin.PostAsync($"/api/v1/admin/professionals/{w.Faisal}/enable", new { reason = "back" }, ct), ct);
         (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/professionals/{w.Faisal}/login", ct), ct)).GetProperty("enabled").GetBoolean().ShouldBeFalse();
     }

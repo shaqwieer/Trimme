@@ -16,8 +16,12 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
 {
     private static DateOnly Target => TodayAt(DateTimeOffset.UtcNow).AddDays(2);
 
-    private static async Task<JsonElement> WalkInAsync(ApiSession owner, Guid serviceId, Guid professionalId, DateTimeOffset? start, CancellationToken ct) =>
-        await OkAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر الحي", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
+    /// <summary>A walk-in booked by the barber themselves: walk-ins are the barbers', not the owner's (D-146).</summary>
+    private static async Task<JsonElement> WalkInAsync(BookingWorld w, Guid serviceId, Guid professionalId, DateTimeOffset? start, CancellationToken ct)
+    {
+        using var barber = await w.BarberAsync(professionalId, ct);
+        return await OkAsync(barber.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId, professionalId, startsAt = start, customerName = "زائر الحي", customerPhone = "0501234567" }, ct), ct, HttpStatusCode.Created);
+    }
 
     private static async Task CancelAsync(ApiSession owner, JsonElement booking, CancellationToken ct) =>
         await OkAsync(owner.PostAsync($"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/transitions",
@@ -39,12 +43,12 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/time-off",
             new { professionalId = w.Faisal, kind = "Vacation", startDate = Iso(Target.AddDays(1)), endDate = Iso(Target.AddDays(1)) }, ct), ct, HttpStatusCode.Created);
 
-        await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 10), ct);
-        await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 11), ct);
-        var cancelled = await WalkInAsync(w.OwnerA, w.Haircut, w.Omar, At(Target, 10), ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 11), ct);
+        var cancelled = await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 10), ct);
         await CancelAsync(w.OwnerA, cancelled, ct);
         await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created);
-        await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target.AddDays(-1), 10), ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target.AddDays(-1), 10), ct);
 
         var overview = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/dashboard/overview?date={Iso(Target)}", ct), ct);
         overview.ToString().ShouldNotContain("+966");
@@ -97,9 +101,9 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/time-off",
             new { professionalId = w.Omar, kind = "Sick", startDate = Iso(Target), endDate = Iso(Target), startMinute = 900, endMinute = 960 }, ct), ct, HttpStatusCode.Created);
 
-        var night = await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target.AddDays(1), 0, 30), ct);
-        var morning = await WalkInAsync(w.OwnerA, w.Haircut, w.Faisal, At(Target, 10), ct);
-        var cancelled = await WalkInAsync(w.OwnerA, w.Haircut, w.Omar, At(Target, 11), ct);
+        var night = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target.AddDays(1), 0, 30), ct);
+        var morning = await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
+        var cancelled = await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 11), ct);
         await CancelAsync(w.OwnerA, cancelled, ct);
 
         var calendar = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/calendar?from={Iso(Target)}", ct), ct);
@@ -131,14 +135,16 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "board_list", ct, clock);
+        await w.EnsureBarberLoginAsync(w.Omar, ct);
+        await w.EnsureBarberLoginAsync(w.Faisal, ct);
         clock.SetUtcNow(At(Target, 10, 2).ToUniversalTime());
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
 
-        var now = await WalkInAsync(owner, w.Haircut, w.Omar, null, ct);
+        var now = await WalkInAsync(w, w.Haircut, w.Omar, null, ct);
         now.GetProperty("status").GetString().ShouldBe("Arrived");
-        await WalkInAsync(owner, w.Haircut, w.Faisal, At(Target, 12), ct);
-        await WalkInAsync(owner, w.Haircut, w.Faisal, At(Target, 13), ct);
-        await CancelAsync(owner, await WalkInAsync(owner, w.Haircut, w.Omar, At(Target, 14), ct), ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 12), ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 13), ct);
+        await CancelAsync(owner, await WalkInAsync(w, w.Haircut, w.Omar, At(Target, 14), ct), ct);
 
         var list = await OkAsync(owner.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}&status=Confirmed&status=Arrived", ct), ct);
         list.GetProperty("total").GetInt32().ShouldBe(3);
@@ -156,41 +162,53 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task WalkInOptions_ListTheActiveAssignedProfessionals_WhetherFreeNow_AndTheDaysFreeStarts()
+    public async Task WalkInOptions_ShowEachBarberWhetherFreeNow_AndTheDaysFreeStarts_AndTheOwnerHasNone()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "board_walkin", ct, clock);
-        var nasser = (await OkAsync(w.Admin.PostAsync("/api/v1/admin/professionals", new { shopId = w.Shops.A.ShopId, nameAr = "ناصر", nameEn = "Nasser" }, ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        await OkAsync(w.Admin.PutAsync($"/api/v1/admin/professionals/{nasser}/services", new { serviceIds = new[] { w.Haircut } }, ct), ct);
-        await OkAsync(w.Admin.PostAsync($"/api/v1/admin/professionals/{nasser}/disable", new { reason = "إجازة طويلة" }, ct), ct);
+        await w.EnsureBarberLoginAsync(w.Faisal, ct);
+        await w.EnsureBarberLoginAsync(w.Omar, ct);
 
         clock.SetUtcNow(At(Target, 10, 2).ToUniversalTime());
         using var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct);
-        await WalkInAsync(owner, w.Haircut, w.Faisal, At(Target, 10), ct);
+        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        using var omar = await w.BarberAsync(w.Omar, ct);
+        await WalkInAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
 
-        var options = await OkAsync(owner.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct);
+        // Walk-ins are the barbers' (D-146): the owner neither sees the choices nor books one.
+        await FailsAsync(owner.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), HttpStatusCode.Forbidden, null, ct);
+        await FailsAsync(owner.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Omar, customerName = "زائر الحي" }, ct),
+            HttpStatusCode.Forbidden, null, ct);
+
+        // Each barber is offered themselves only (D-145): busy until 10:30, or free now.
+        var options = await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct);
         options.GetProperty("date").GetString().ShouldBe(Iso(Target));
         options.GetProperty("durationMinutes").GetInt32().ShouldBe(30);
-        var pros = options.GetProperty("professionals").EnumerateArray().ToDictionary(p => p.GetProperty("id").GetGuid());
-        pros.Keys.ShouldBe([w.Faisal, w.Omar], ignoreOrder: true);
-        pros[w.Faisal].GetProperty("freeNow").GetBoolean().ShouldBeFalse();
-        pros[w.Faisal].GetProperty("nextFreeAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 30));
-        pros[w.Omar].GetProperty("freeNow").GetBoolean().ShouldBeTrue();
-        pros[w.Faisal].GetProperty("starts").EnumerateArray().Select(s => s.GetDateTimeOffset()).ShouldNotContain(At(Target, 10, 15));
+        var own = options.GetProperty("professionals").EnumerateArray().ShouldHaveSingleItem();
+        own.GetProperty("id").GetGuid().ShouldBe(w.Faisal);
+        own.GetProperty("freeNow").GetBoolean().ShouldBeFalse();
+        own.GetProperty("nextFreeAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 30));
+        own.GetProperty("starts").EnumerateArray().Select(s => s.GetDateTimeOffset()).ShouldNotContain(At(Target, 10, 15));
+        var omars = (await OkAsync(omar.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct))
+            .GetProperty("professionals").EnumerateArray().ShouldHaveSingleItem();
+        omars.GetProperty("id").GetGuid().ShouldBe(w.Omar);
+        omars.GetProperty("freeNow").GetBoolean().ShouldBeTrue();
 
-        // A service that cannot be booked online is still offered at the desk.
+        // A service that cannot be booked online is still offered at the shop, to the barbers who do it.
         var deskOnly = (await OkAsync(owner.PostAsync("/api/v1/shop/services", new { nameAr = "حلاقة سريعة", price = 20m, durationMinutes = 15, onlineBookable = false }, ct), ct, HttpStatusCode.Created))
             .GetProperty("id").GetGuid();
         using var admin = await IdentityTestData.SignInNewStaffAsync(w.Factory, Trimme.Modules.Identity.Domain.SystemRoles.SuperAdmin, ct); // after the clock jump
         await OkAsync(admin.PutAsync($"/api/v1/admin/professionals/{w.Omar}/services", new { serviceIds = new[] { w.Haircut, w.Beard, deskOnly } }, ct), ct);
-        var desk = await OkAsync(owner.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={deskOnly}&date={Iso(Target.AddDays(1))}", ct), ct);
+        var desk = await OkAsync(omar.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={deskOnly}&date={Iso(Target.AddDays(1))}", ct), ct);
         desk.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar]);
         desk.GetProperty("professionals")[0].GetProperty("freeNow").GetBoolean().ShouldBeFalse("not today");
         desk.GetProperty("professionals")[0].GetProperty("starts").GetArrayLength().ShouldBeGreaterThan(0);
+        (await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={deskOnly}&date={Iso(Target.AddDays(1))}", ct), ct))
+            .GetProperty("professionals").GetArrayLength().ShouldBe(0, "Faisal does not do it");
 
-        await FailsAsync(owner.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}&date={Iso(Target.AddDays(-1))}", ct), HttpStatusCode.BadRequest, "validation.out_of_range", ct);
-        await FailsAsync(owner.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.ServiceB}", ct), HttpStatusCode.NotFound, null, ct);
-        await FailsAsync(owner.GetAsync("/api/v1/shop/availability/walk-in", ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}&date={Iso(Target.AddDays(-1))}", ct), HttpStatusCode.BadRequest, "validation.out_of_range", ct);
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.ServiceB}", ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(faisal.GetAsync("/api/v1/shop/availability/walk-in", ct), HttpStatusCode.NotFound, null, ct);
     }
 }

@@ -42,6 +42,33 @@ describe('DashboardShell', () => {
     expect(within(bar).getByRole('link', { name: 'حجز حضوري' })).toHaveAttribute('aria-current', 'page');
   });
 
+  it('gives the owner «الحلاقون» where a barber has the walk-in, and no walk-in anywhere (D-146)', () => {
+    setPathname('/ar/shop/barbers');
+    // The owner's grants: every shop permission but walk-ins.
+    renderWithIntl(
+      <DashboardShell
+        variant="shop"
+        title="الحلاقون"
+        permissions={[
+          'Shop.Bookings.Read',
+          'Shop.Breaks.Manage',
+          'Shop.Barbers.Manage',
+          'Shop.Services.Manage',
+        ]}
+      >
+        <p>content</p>
+      </DashboardShell>,
+    );
+    const bar = screen.getByTestId('shop-tab-bar');
+    expect(
+      within(bar)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['النظرة التشغيلية', 'الدوام والبريكات', 'الحلاقون', 'المواعيد']);
+    expect(within(bar).getByRole('link', { name: 'الحلاقون' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: 'حجز حضوري' })).not.toBeInTheDocument();
+  });
+
   it('has no tab bar on the admin dashboard', () => {
     renderWithIntl(
       <DashboardShell variant="admin" title="Overview">

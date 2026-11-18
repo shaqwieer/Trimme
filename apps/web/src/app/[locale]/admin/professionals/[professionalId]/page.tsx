@@ -2,7 +2,7 @@ import { BarberLoginControls } from '@/components/shop/BarberLoginControls';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
-import { ProfessionalServicesForm } from '@/components/admin/AdminCatalog';
+import { ProfessionalServicesForm } from '@/components/catalog/ProfessionalServicesForm';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import {
   EditProfessionalForm,
@@ -113,6 +113,7 @@ export default async function AdminProfessionalPage({
             {services && (
               <Card title={tServices('title')}>
                 <ProfessionalServicesForm
+                  scope="admin"
                   data={services}
                   canAssign={me.permissions.includes('Admin.Professionals.AssignServices')}
                 />

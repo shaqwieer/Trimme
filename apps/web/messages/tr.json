@@ -333,7 +333,7 @@
       "forgot": "Şifrenizi mi unuttunuz?",
       "customer": "Müşteri misiniz? Cep telefonunuzla giriş yapın",
       "changeTitle": "Yeni bir şifre seçin",
-      "changeSubtitle": "Groom Here ekibi hesabınızı geçici bir şifreyle oluşturdu. Devam etmek için kendi şifrenizi seçin.",
+      "changeSubtitle": "Hesabınız geçici bir şifreyle oluşturuldu. Devam etmek için kendi şifrenizi seçin.",
       "changeSubmit": "Kaydet ve giriş yap",
       "changeBack": "Geri"
     },
@@ -878,7 +878,8 @@
       "reason": "Gösterme nedeni",
       "revealSubmit": "Göster",
       "revealed": "Numaranın tamamı",
-      "hide": "Gizle"
+      "hide": "Gizle",
+      "newNumberHelperShop": "Bu aynı zamanda berberin giriş numarasıdır: kaydettikten sonra bu numara ve aynı şifreyle giriş yapar."
     }
   },
   "shopSettings": {
@@ -1081,7 +1082,8 @@
       "empty": "Bu uzmanın salonunda henüz hizmet yok",
       "save": "Atamayı kaydet",
       "saved": "Hizmet ataması kaydedildi.",
-      "inactive": "Kapalı"
+      "inactive": "Kapalı",
+      "emptyShop": "Dükkânınızda henüz hizmet yok. «Hizmetler» bölümünden ekleyin."
     }
   },
   "billing": {
@@ -1271,30 +1273,51 @@
   "barberLogins": {
     "title": "Berberler",
     "adminTitle": "Berber girişi",
-    "intro": "Her berberin girişini açın; kendi randevularını, bildirimlerini ve gününü görsün, gel-al randevularını kendisi eklesin. Berber, profilindeki WhatsApp numarası ve burada seçtiğiniz geçici bir şifreyle giriş yapar; ilk girişte şifresini değiştirir.",
-    "empty": "Salonda etkin berber yok.",
     "state": {
       "off": "Giriş kapalı",
       "temporary": "Açık — ilk giriş bekleniyor",
       "on": "Giriş açık"
     },
-    "noNumberShop": "Bu berberin WhatsApp numarası yok. Groom Here ekibinden eklemesini isteyin.",
-    "noNumberAdmin": "Önce berberin WhatsApp numarasını ekleyin.",
     "enable": "Girişi aç",
     "newPassword": "Yeni geçici şifre",
     "disable": "Girişi kapat",
-    "enableTitle": "{name} için girişi aç",
-    "newPasswordTitle": "{name} için yeni geçici şifre",
-    "passwordBody": "Bu şifreyi berbere verin. Profilindeki WhatsApp numarasıyla giriş yapar, ardından kendi şifresini seçer.",
-    "password": "Geçici şifre",
-    "passwordHint": "En az 10 karakter.",
-    "passwordTooShort": "En az 10 karakter kullanın",
-    "save": "Kaydet",
+    "newPasswordTitle": "{name} için yeni bir geçici şifre?",
     "cancel": "İptal",
-    "saved": "{name} için giriş kaydedildi. Geçici şifreyi kendisine verin.",
+    "saved": "{name} için giriş açıldı. Geçici şifreyi kendisine verin.",
     "disabled": "{name} için giriş kapatıldı.",
     "disableTitle": "{name} için giriş kapatılsın mı?",
-    "disableBody": "Berber tüm cihazlarda hemen oturumdan çıkar ve siz yeniden açana kadar giriş yapamaz."
+    "disableBody": "Berber tüm cihazlarda hemen oturumdan çıkar ve siz yeniden açana kadar giriş yapamaz.",
+    "noNumber": "Önce berberin WhatsApp numarasını ekleyin; giriş numarası budur.",
+    "newPasswordBody": "Yeni bir geçici şifre oluşturulur ve eskisi çalışmaz. Berber, yenisiyle giriş yapıp kendi şifresini seçene kadar tüm cihazlarından çıkarılır.",
+    "issued": {
+      "title": "{name} için geçici şifre",
+      "body": "Bu şifreyi berbere verin. «Ekip girişi» bölümünden WhatsApp numarası ve bu şifreyle giriş yapar, ardından kendi şifresini seçer.",
+      "copy": "Kopyala",
+      "copied": "Kopyalandı",
+      "once": "Bu şifre yalnızca bir kez gösterilir. Kaybolursa berberin sayfasından yeni bir geçici şifre oluşturun.",
+      "done": "Tamam"
+    }
+  },
+  "shopBarbers": {
+    "title": "Berberler",
+    "intro": "Dükkânınızın berberlerini ekleyin; bilgilerini ve hizmetlerini düzenleyin. Her berberin WhatsApp numarasıyla kendi girişi vardır: randevularını, gününü ve bildirimlerini görür, gelen müşteri kayıtlarını kendisi yapar.",
+    "add": "Berber ekle",
+    "empty": "Dükkânda henüz berber yok.",
+    "emptyBody": "Müşterilerin randevu alabilmesi için ilk berberinizi ekleyin.",
+    "manage": "Yönet",
+    "manageAria": "{name} kişisini yönet",
+    "create": {
+      "title": "Berber ekle",
+      "mobileHelper": "Berberin WhatsApp numarası; giriş de bu numarayla yapılır. Kaydedildikten sonra kısmen gizli gösterilir.",
+      "loginNote": "Berberin girişi kaydettiğinizde oluşturulur ve kendisine vermeniz için geçici bir şifre bir kez gösterilir. İlk girişinde değiştirir.",
+      "submit": "Berberi ekle"
+    },
+    "detail": {
+      "title": "Berber",
+      "notFound": "Berber bulunamadı.",
+      "login": "Berber girişi",
+      "disableBody": "Berber yeni randevular için sunulmaz; girişi durur ve tüm cihazlarından çıkarılır. Yaklaşan randevuları iptal edilmez: berberini değiştirin veya iptal edin. Berberi daha sonra yeniden açabilirsiniz."
+    }
   },
   "shopSubscription": {
     "title": "Abonelik",

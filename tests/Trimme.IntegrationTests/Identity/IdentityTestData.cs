@@ -17,7 +17,11 @@ internal static class IdentityTestData
     public const string StaffPassword = "correct horse battery";
 
     /// <summary>A unique, valid Saudi mobile in E.164.</summary>
-    public static string NewPhone() => "+9665" + RandomNumberGenerator.GetInt32(10_000_000, 100_000_000).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    /// <summary>
+    /// A random Saudi mobile in the 050 range: some +9665… ranges (052…, 0572…) are not mobile numbers to libphonenumber,
+    /// so a fully random draw failed mobile-only validation about one time in eight.
+    /// </summary>
+    public static string NewPhone() => "+96650" + RandomNumberGenerator.GetInt32(1_000_000, 10_000_000).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     public static string NewEmail(string prefix = "staff") => $"{prefix}.{Guid.NewGuid():N}@trimme.test";
 

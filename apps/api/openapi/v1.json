@@ -583,6 +583,55 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Adds a barber to the owner\u0027s shop with their login: the generated temporary password is answered once (audited).",
+        "operationId": "CreateShopBarber",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShopBarberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberCreatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/public/shops/{slug}/professionals": {
@@ -2734,7 +2783,7 @@
         "tags": [
           "Shop"
         ],
-        "summary": "Turns the barber\u0027s login on (or on again) with a temporary password they replace at the first sign-in; ends their sessions.",
+        "summary": "Turns the barber\u0027s login on (or on again) with a generated temporary password, returned once and replaced at the first sign-in; ends their sessions.",
         "operationId": "EnableShopBarberLogin",
         "parameters": [
           {
@@ -2747,23 +2796,13 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EnableBarberLoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BarberLoginResponse"
+                  "$ref": "#/components/schemas/BarberLoginPasswordResponse"
                 }
               }
             }
@@ -2886,7 +2925,7 @@
         "tags": [
           "Admin: shops"
         ],
-        "summary": "Turns the barber\u0027s login on (or on again) with a temporary password; ends their sessions.",
+        "summary": "Turns the barber\u0027s login on (or on again) with a generated temporary password, returned once; ends their sessions.",
         "operationId": "EnableAdminBarberLogin",
         "parameters": [
           {
@@ -2899,23 +2938,13 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EnableBarberLoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BarberLoginResponse"
+                  "$ref": "#/components/schemas/BarberLoginPasswordResponse"
                 }
               }
             }
@@ -6115,6 +6144,401 @@
         }
       }
     },
+    "/api/v1/shop/professionals/{professionalId}": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "One of the shop\u0027s barbers, with the WhatsApp number masked.",
+        "operationId": "GetShopBarber",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Edits the barber\u0027s profile (audited, optimistic concurrency). The shop cannot change.",
+        "operationId": "UpdateShopBarber",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShopBarberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals/{professionalId}/whatsapp": {
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Changes the barber\u0027s number (also their sign-in) or only the message toggle (audited, number never logged).",
+        "operationId": "SetShopBarberWhatsApp",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetProfessionalWhatsAppRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals/{professionalId}/disable": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Hides the barber from booking and turns their login off (audited).",
+        "operationId": "DisableShopBarber",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals/{professionalId}/enable": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Makes a disabled barber bookable again; their login stays off until turned on (audited).",
+        "operationId": "EnableShopBarber",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals/{professionalId}/avatar": {
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Replaces the barber\u0027s photo (JPEG, PNG or WebP, at most 5 MB; audited).",
+        "operationId": "UploadShopBarberAvatar",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Removes the barber\u0027s photo (audited).",
+        "operationId": "RemoveShopBarberAvatar",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBarberResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/services": {
       "get": {
         "tags": [
@@ -6915,6 +7339,108 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/professionals/{professionalId}/services": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "The shop\u0027s services and which of them the barber does.",
+        "operationId": "GetShopBarberServices",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalServicesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Replaces the services the barber does; the shop\u0027s own services only (audited).",
+        "operationId": "SetShopBarberServices",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfessionalServicesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfessionalServicesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -16062,6 +16588,22 @@
         },
         "description": "One barber\u0027s calendar date in minutes (D-134). \u0060Working\u0060 includes the part of the previous business day that\nruns past midnight. \u0060Breaks\u0060 are the barber\u0027s own one-off breaks on the date, the only ones the page edits;\n\u0060ShopBreaks\u0060 are the owner\u0027s (weekly, or for everyone). \u0060PassedMinutes\u0060 is how much of the date is\nalready over: 0 for a future date, 1440 for a past one."
       },
+      "BarberLoginPasswordResponse": {
+        "required": [
+          "login",
+          "temporaryPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "login": {
+            "$ref": "#/components/schemas/BarberLoginResponse"
+          },
+          "temporaryPassword": {
+            "type": "string"
+          }
+        },
+        "description": "A barber\u0027s login just turned on (or on again) with a temporary password the server generated (D-146). The password is\nin this one answer only, for the owner or admin to hand to the barber; it is never stored readable, logged or cached."
+      },
       "BarberLoginResponse": {
         "required": [
           "professionalId",
@@ -17217,6 +17759,58 @@
         },
         "description": "A shop code (no professional) or a code for one of the shop\u0027s active professionals, with an optional label."
       },
+      "CreateShopBarberRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "whatsAppNumber",
+          "notificationsEnabled"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "whatsAppNumber": {
+            "type": "string"
+          },
+          "notificationsEnabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made\nfrom the English name). The mobile is required: it is the barber\u0027s WhatsApp number and their sign-in."
+      },
       "CreateShopPackageRequest": {
         "required": [
           "nameAr",
@@ -18031,18 +18625,6 @@
             }
           }
         }
-      },
-      "EnableBarberLoginRequest": {
-        "required": [
-          "password"
-        ],
-        "type": "object",
-        "properties": {
-          "password": {
-            "type": "string"
-          }
-        },
-        "description": "The temporary password a barber replaces at their first sign-in (D-145)."
       },
       "FavoriteProfessionalResponse": {
         "required": [
@@ -22214,6 +22796,123 @@
           "PrayerArea"
         ]
       },
+      "ShopBarberCreatedResponse": {
+        "required": [
+          "barber",
+          "temporaryPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "barber": {
+            "$ref": "#/components/schemas/ShopBarberResponse"
+          },
+          "temporaryPassword": {
+            "type": "string"
+          }
+        },
+        "description": "A barber the owner just added, and the temporary password of the login made with them (D-146). The password is in this\none answer only, for the owner to hand to the barber, who replaces it at the first sign-in."
+      },
+      "ShopBarberResponse": {
+        "required": [
+          "id",
+          "slug",
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "avatarUrl",
+          "status",
+          "whatsApp",
+          "createdAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProfessionalStatus"
+          },
+          "whatsApp": {
+            "$ref": "#/components/schemas/ShopBarberWhatsAppResponse"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A barber as the shop\u0027s owner manages them (D-146): profile, photo, status and the masked WhatsApp number, which is also\ntheir sign-in. Owner only (\u0060Shop.Barbers.Manage\u0060); the shop-wide list a barber reads stays without contact data."
+      },
+      "ShopBarberWhatsAppResponse": {
+        "required": [
+          "masked",
+          "notificationsEnabled",
+          "verification"
+        ],
+        "type": "object",
+        "properties": {
+          "masked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notificationsEnabled": {
+            "type": "boolean"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/WhatsAppVerification"
+          }
+        },
+        "description": "The barber\u0027s WhatsApp settings as the owner sees them (D-146): the number masked only, with no reveal."
+      },
       "ShopBookingCounts": {
         "required": [
           "all",
@@ -23086,7 +23785,7 @@
             "$ref": "#/components/schemas/ProfessionalStatus"
           }
         },
-        "description": "A professional as the shop sees it (read-only: the shop cannot create, edit or move professionals, spec \u00A77).\nShop-facing contract: no contact data of any kind."
+        "description": "A professional in the shop-wide list every shop user reads, its barbers too (no contact data). The owner adds and edits\nbarbers through \u0060ShopBarbers\u0060 (D-146); nobody can move one to another shop (D-011)."
       },
       "ShopProfileField": {
         "enum": [
@@ -24974,6 +25673,55 @@
           }
         },
         "description": "Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop."
+      },
+      "UpdateShopBarberRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "specialtyAr",
+          "specialtyEn",
+          "bioAr",
+          "bioEn",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "specialtyAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "specialtyEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "bioEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "The owner\u0027s profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011)."
       },
       "UpdateShopPackageRequest": {
         "required": [

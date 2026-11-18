@@ -43,8 +43,13 @@ public static class SystemRoles
             Permissions.Admin.QrView,
             Permissions.Admin.WhatsAppView,
         ]),
+        // Every shop permission but walk-ins: the barbers book those themselves (D-146).
         new(ShopOwner, UserType.ShopUser, Managed: true,
-            Permissions.All.Where(p => p.UserType == UserType.ShopUser).Select(p => p.Code).ToArray()),
+            Permissions.All
+                .Where(p => p.UserType == UserType.ShopUser)
+                .Select(p => p.Code)
+                .Except([Permissions.Shop.BookingsCreateWalkIn])
+                .ToArray()),
         new(ShopBarber, UserType.ShopUser, Managed: true,
         [
             // Scoped to the barber's own professional by the handlers (D-145): never a colleague's booking or day.
