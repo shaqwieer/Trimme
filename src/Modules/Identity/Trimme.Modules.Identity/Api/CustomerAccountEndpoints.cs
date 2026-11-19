@@ -12,6 +12,9 @@ namespace Trimme.Modules.Identity.Api;
 /// <summary><c>Phone</c> empty keeps the number; another number moves the account to it (codes off only, D-144).</summary>
 public sealed record UpdateCustomerProfileRequest(string DisplayName, string PreferredLocale, string? Email, string? Phone);
 
+/// <summary>Whether the shops may send the customer «ندعوك للعودة» messages (D-155).</summary>
+public sealed record WinBackMessagesRequest(bool Enabled);
+
 /// <summary>The customer's own account (D-144): personal info with email and number, and deleting the account.</summary>
 internal static class CustomerAccountEndpoints
 {
@@ -27,6 +30,11 @@ internal static class CustomerAccountEndpoints
             .WithSummary("Saves the customer's name, language and email; a new number becomes the one they sign in with (while sign-in codes are off).")
             .Produces<CustomerProfileResponse>().ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status409Conflict);
+        me.MapPut("/win-back", async (WinBackMessagesRequest request, ICurrentUser user, IDispatcher dispatcher, CancellationToken ct) =>
+                (await dispatcher.Send(new SetWinBackMessagesCommand(user.UserId!.Value, request.Enabled), ct)).ToHttpResult())
+            .WithName("SetCustomerWinBackMessages")
+            .WithSummary("Turns the shops' «ندعوك للعودة» messages (the plans' win-back message, D-155) on or off for the customer; on by default.")
+            .Produces<CustomerProfileResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         api.MapDelete("/me", DeleteAccount).WithTags("Customer account").RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Auth)
             .WithName("DeleteCustomerAccount")
             .WithSummary("Deletes the customer's account: refused while bookings are ahead; erases the name, number and email, ends every session and clears the cookies.")

@@ -76,11 +76,16 @@ test.describe('the owner’s barbers (D-146)', () => {
     await expect(owner.getByText('On — waiting for the first sign-in')).toBeVisible();
     await expect(owner.getByTestId('whatsapp-masked')).not.toContainText(national);
 
-    // The services the barber does, from their page.
+    // The services the barber does, from their page: one save for the page (D-155, the client's 3-8), which says when
+    // something is left unsaved.
     const services = owner.getByTestId('professional-services');
+    const save = owner.getByTestId('barber-save');
+    await expect(save.getByRole('button', { name: 'Save changes' })).toBeDisabled();
     await services.getByRole('checkbox').first().check();
-    await services.getByRole('button', { name: 'Save assignment' }).click();
-    await expect(owner.getByText('Service assignment saved.')).toBeVisible();
+    await expect(save).toContainText('You have unsaved changes');
+    await save.getByRole('button', { name: 'Save changes' }).click();
+    await expect(save).toContainText('Changes saved.');
+    await expect(save).not.toContainText('You have unsaved changes');
     await expectNoSeriousAxeViolations(owner, 'barber page');
 
     // The barber: their number and the temporary password lead to the new-password step, then their own dashboard.

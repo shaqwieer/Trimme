@@ -32,6 +32,7 @@ public sealed class ProfessionalsModule : ModuleBase
         services.AddScoped<BuildingBlocks.Application.Notifications.IProfessionalContactReader, ProfessionalContactReader>();
         services.AddScoped<BuildingBlocks.Application.Reporting.IProfessionalStatistics, ProfessionalStatistics>();
         services.AddSingleton<IDevSeeder, DemoProfessionalsSeeder>();
+        services.AddSingleton<IReferenceDataSynchronizer, ProfessionalQrBackfill>();
     }
 
     public override void MapEndpoints(IEndpointRouteBuilder api) => ProfessionalEndpoints.Map(api);

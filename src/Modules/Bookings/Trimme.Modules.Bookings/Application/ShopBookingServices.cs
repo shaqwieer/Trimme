@@ -27,14 +27,14 @@ public sealed record BookingServiceCandidateResponse(
 
 /// <summary>
 /// What may be added to the booking at the visit: <c>RoomMinutes</c> is the time free after it (with its cleaning time)
-/// until the barber's next booking or held offer, null when nothing follows within a day.
+/// until the barber's next booking, null when nothing follows within a day.
 /// </summary>
 public sealed record BookingServiceCandidatesResponse(int? RoomMinutes, IReadOnlyList<BookingServiceCandidateResponse> Services);
 
 /// <summary>
 /// The one rule for how much a booking can grow at the visit (D-147, D-151), shared by the add and its candidates so they
 /// cannot drift: the minutes from the booking's blocked time (its end plus the cleaning time) to the start of the barber's
-/// next active booking or live postponement hold that reaches past it. A service fits when its length is at most that.
+/// next active booking that reaches past it. A service fits when its length is at most that.
 /// </summary>
 internal static class BookingRoom
 {
@@ -53,8 +53,8 @@ internal static class BookingRoom
 
 /// <summary>
 /// Adds one of the shop's services that the booking's barber does, at its own price and length. The extra time must be
-/// free of the barber's other open bookings and live postponement holds (<see cref="BookingRoom"/>): checked here, and by
-/// the exclusion constraint and the hold triggers when two changes race (409 <c>booking.professional_busy</c>, so the
+/// free of the barber's other open bookings (<see cref="BookingRoom"/>): checked here, and by the exclusion constraint
+/// when two changes race (409 <c>booking.professional_busy</c>, so the
 /// barber moves the next booking first). The schedule (hours, breaks) is not checked: the customer is in the chair, and
 /// the barber decides.
 /// </summary>

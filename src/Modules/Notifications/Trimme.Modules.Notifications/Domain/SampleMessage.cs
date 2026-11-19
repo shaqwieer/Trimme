@@ -19,9 +19,10 @@ public static class SampleMessage
         var shopId = new ShopId(Guid.Empty);
         var booking = new NotifiableBooking(
             Guid.Empty, shopId, null, arabic ? "سارة العتيبي" : "Sara Alotaibi", "TRM4K7QZ", new ProfessionalId(Guid.Empty),
-            "ماجد الحربي", "Majed Alharbi", "قص شعر وتصفيف", "Haircut and styling", 85m, "SAR", 45, start, start.AddMinutes(45), "Confirmed", "Online");
+            "ماجد الحربي", "Majed Alharbi", "قص شعر وتصفيف", "Haircut and styling", 85m, "SAR", 45, start, start.AddMinutes(45), "Confirmed", "Online",
+            CancellationReasonCode: "Emergency");
         var shop = new ShopSummary(
-            shopId, "sample-shop", "صالون الأصالة", "Al Asala Salon", ShopStatus.Active, "Asia/Riyadh", null, false,
+            shopId, "sample-shop", "صالون الأصالة", "Al Asala Salon", ShopStatus.Active, "Asia/Riyadh", null,
             arabic ? "طريق الأمير محمد بن عبدالعزيز، حي العليا، الرياض" : "Prince Mohammed bin Abdulaziz Rd, Al Olaya, Riyadh");
         return (booking, shop);
     }

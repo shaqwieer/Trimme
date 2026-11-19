@@ -434,6 +434,15 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("summary");
 
+                    b.Property<string>("SummaryArgs")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("summary_args");
+
+                    b.Property<string>("SummaryCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("summary_code");
+
                     b.HasKey("Id")
                         .HasName("pk_audit_entries");
 
@@ -544,10 +553,6 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("expiring_soon_threshold_days");
 
-                    b.Property<bool>("HidePausedShopsFromDiscovery")
-                        .HasColumnType("boolean")
-                        .HasColumnName("hide_paused_shops_from_discovery");
-
                     b.Property<double>("MapDefaultLatitude")
                         .HasColumnType("double precision")
                         .HasColumnName("map_default_latitude");
@@ -621,6 +626,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
                     b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ends_at");
@@ -660,6 +669,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_professional_time_off");
+
+                    b.HasIndex("ShopId", "Kind", "StartsAt")
+                        .HasDatabaseName("ix_professional_time_off_shop_id_kind_starts_at");
 
                     b.HasIndex("ShopId", "ProfessionalId", "EndsAt")
                         .HasDatabaseName("ix_professional_time_off_shop_id_professional_id_ends_at");
@@ -1121,94 +1133,6 @@ namespace Trimme.Migrations.Migrations
                         .HasDatabaseName("ix_booking_notes_shop_id_booking_id");
 
                     b.ToTable("booking_notes", "bookings");
-                });
-
-            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.PostponementOffer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("AnsweredAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("answered_at");
-
-                    b.Property<DateTimeOffset>("BlockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("blocked_until");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("booking_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CustomerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("customer_id");
-
-                    b.Property<DateTimeOffset>("EndsAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ends_at");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<Guid?>("OfferedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("offered_by");
-
-                    b.Property<string>("OfferedByName")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("offered_by_name");
-
-                    b.Property<DateTimeOffset>("OriginalStartsAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("original_starts_at");
-
-                    b.Property<Guid>("ProfessionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("professional_id");
-
-                    b.Property<Guid>("ShopId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("shop_id");
-
-                    b.Property<DateTimeOffset>("StartsAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("starts_at");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("character varying(12)")
-                        .HasColumnName("status");
-
-                    b.HasKey("Id")
-                        .HasName("pk_postponement_offers");
-
-                    b.HasIndex("BookingId", "CreatedAt")
-                        .HasDatabaseName("ix_postponement_offers_booking_id_created_at");
-
-                    b.HasIndex("CustomerId", "CreatedAt")
-                        .HasDatabaseName("ix_postponement_offers_customer_id_created_at");
-
-                    b.HasIndex("ProfessionalId", "StartsAt")
-                        .HasDatabaseName("ix_postponement_offers_professional_id_starts_at")
-                        .HasFilter("status = 'Open'");
-
-                    b.HasIndex("ShopId", "BookingId")
-                        .HasDatabaseName("ix_postponement_offers_shop_id_booking_id");
-
-                    b.ToTable("postponement_offers", "bookings", t =>
-                        {
-                            t.HasCheckConstraint("ck_postponement_offers_range", "ends_at > starts_at");
-                        });
                 });
 
             modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>
@@ -1756,6 +1680,10 @@ namespace Trimme.Migrations.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("user_type");
+
+                    b.Property<bool>("WinBackMessages")
+                        .HasColumnType("boolean")
+                        .HasColumnName("win_back_messages");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
@@ -3713,6 +3641,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("shop_id");
 
+                    b.Property<bool>("ByAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("by_admin");
+
                     b.Property<DateTimeOffset>("PausedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("paused_at");
@@ -3722,8 +3654,16 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("reason");
 
+                    b.Property<DateTimeOffset?>("ResumesAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resumes_at");
+
                     b.HasKey("ShopId")
                         .HasName("pk_online_booking_pauses");
+
+                    b.HasIndex("ResumesAt")
+                        .HasDatabaseName("ix_online_booking_pauses_resumes_at")
+                        .HasFilter("resumes_at IS NOT NULL");
 
                     b.ToTable("online_booking_pauses", "shops");
                 });
@@ -3746,6 +3686,15 @@ namespace Trimme.Migrations.Migrations
                     b.Property<int>("BufferMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("buffer_minutes");
+
+                    b.Property<bool>("CallButtonEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("call_button_enabled");
+
+                    b.Property<string>("CallButtonPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("call_button_phone");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -3814,10 +3763,6 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("public_phone");
 
-                    b.Property<bool>("RequireManualConfirmation")
-                        .HasColumnType("boolean")
-                        .HasColumnName("require_manual_confirmation");
-
                     b.Property<string>("ShortNameAr")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
@@ -3877,133 +3822,6 @@ namespace Trimme.Migrations.Migrations
                         .HasDatabaseName("ix_shops_status");
 
                     b.ToTable("shops", "shops");
-                });
-
-            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPeriod", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)")
-                        .HasColumnName("amount");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character(3)")
-                        .HasColumnName("currency")
-                        .IsFixedLength();
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date")
-                        .HasColumnName("end_date");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("notes");
-
-                    b.Property<Guid>("PriceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("price_id");
-
-                    b.Property<int>("PriceVersionNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("price_version_number");
-
-                    b.Property<DateTimeOffset>("RecordedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("recorded_at");
-
-                    b.Property<Guid?>("RecordedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recorded_by");
-
-                    b.Property<Guid>("ShopId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("shop_id");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date")
-                        .HasColumnName("start_date");
-
-                    b.Property<Guid?>("StoppedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("stopped_by");
-
-                    b.Property<DateOnly?>("StoppedOn")
-                        .HasColumnType("date")
-                        .HasColumnName("stopped_on");
-
-                    b.HasKey("Id")
-                        .HasName("pk_loyalty_add_on_periods");
-
-                    b.HasIndex("PriceId")
-                        .HasDatabaseName("ix_loyalty_add_on_periods_price_id");
-
-                    b.HasIndex("ShopId", "StartDate")
-                        .HasDatabaseName("ix_loyalty_add_on_periods_shop_id_start_date");
-
-                    b.ToTable("loyalty_add_on_periods", "subscriptions", t =>
-                        {
-                            t.HasCheckConstraint("ck_loyalty_add_on_periods_amount", "amount >= 0");
-
-                            t.HasCheckConstraint("ck_loyalty_add_on_periods_dates", "end_date >= start_date");
-                        });
-                });
-
-            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPrice", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)")
-                        .HasColumnName("amount");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character(3)")
-                        .HasColumnName("currency")
-                        .IsFixedLength();
-
-                    b.Property<DateOnly>("EffectiveFrom")
-                        .HasColumnType("date")
-                        .HasColumnName("effective_from");
-
-                    b.Property<int>("VersionNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("version_number");
-
-                    b.HasKey("Id")
-                        .HasName("pk_loyalty_add_on_prices");
-
-                    b.HasIndex("EffectiveFrom")
-                        .IsUnique()
-                        .HasDatabaseName("ix_loyalty_add_on_prices_effective_from");
-
-                    b.HasIndex("VersionNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ix_loyalty_add_on_prices_version_number");
-
-                    b.ToTable("loyalty_add_on_prices", "subscriptions", t =>
-                        {
-                            t.HasCheckConstraint("ck_loyalty_add_on_prices_amount", "amount >= 0");
-                        });
                 });
 
             modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>
@@ -4141,14 +3959,6 @@ namespace Trimme.Migrations.Migrations
                     b.Property<bool>("IsSuspended")
                         .HasColumnType("boolean")
                         .HasColumnName("is_suspended");
-
-                    b.Property<DateOnly?>("LoyaltyAddOnEnd")
-                        .HasColumnType("date")
-                        .HasColumnName("loyalty_add_on_end");
-
-                    b.Property<DateOnly?>("LoyaltyAddOnStart")
-                        .HasColumnType("date")
-                        .HasColumnName("loyalty_add_on_start");
 
                     b.HasKey("ShopId")
                         .HasName("pk_subscription_coverage");
@@ -4366,6 +4176,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("grace_days");
 
+                    b.Property<bool>("IncludesLoyalty")
+                        .HasColumnType("boolean")
+                        .HasColumnName("includes_loyalty");
+
                     b.Property<int>("IntervalCount")
                         .HasColumnType("integer")
                         .HasColumnName("interval_count");
@@ -4384,9 +4198,9 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("max_services");
 
-                    b.Property<int?>("MonthlyWhatsAppMessages")
+                    b.Property<int?>("MonthlyMarketingMessages")
                         .HasColumnType("integer")
-                        .HasColumnName("monthly_whats_app_messages");
+                        .HasColumnName("monthly_marketing_messages");
 
                     b.Property<string>("NameAr")
                         .IsRequired()
@@ -4419,6 +4233,14 @@ namespace Trimme.Migrations.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.Property<int>("WinBackAfterDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("win_back_after_days");
+
+                    b.Property<bool>("WinBackEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("win_back_enabled");
 
                     b.HasKey("Id")
                         .HasName("pk_subscription_plans");
@@ -4783,24 +4605,6 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_booking_notes_bookings_shop_id_booking_id");
-                });
-
-            modelBuilder.Entity("Trimme.Modules.Bookings.Domain.PostponementOffer", b =>
-                {
-                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
-                        .WithMany()
-                        .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_postponement_offers_shops_shop_id");
-
-                    b.HasOne("Trimme.Modules.Bookings.Domain.Booking", null)
-                        .WithMany()
-                        .HasForeignKey("ShopId", "BookingId")
-                        .HasPrincipalKey("ShopId", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_postponement_offers_bookings_shop_id_booking_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Bookings.Domain.WalkInContact", b =>
@@ -5349,23 +5153,6 @@ namespace Trimme.Migrations.Migrations
                     b.Navigation("Location");
                 });
 
-            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPeriod", b =>
-                {
-                    b.HasOne("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPrice", null)
-                        .WithMany()
-                        .HasForeignKey("PriceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_loyalty_add_on_periods_loyalty_add_on_price_price_id");
-
-                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
-                        .WithMany()
-                        .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_loyalty_add_on_periods_shops_shop_id");
-                });
-
             modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>
                 {
                     b.HasOne("Trimme.Modules.Subscriptions.Domain.SubscriptionPlan", null)
@@ -5401,6 +5188,34 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_subscription_coverage_shops_shop_id");
+
+                    b.OwnsMany("Trimme.Modules.Subscriptions.Domain.CoveredPeriod", "Periods", b1 =>
+                        {
+                            b1.Property<Guid>("SubscriptionCoverageShopId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAdd();
+
+                            b1.Property<DateOnly>("End");
+
+                            b1.Property<Guid>("PlanId");
+
+                            b1.Property<DateOnly>("Start");
+
+                            b1.HasKey("SubscriptionCoverageShopId", "__synthesizedOrdinal");
+
+                            b1.ToTable("subscription_coverage", "subscriptions");
+
+                            b1
+                                .ToJson("periods")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SubscriptionCoverageShopId")
+                                .HasConstraintName("fk_subscription_coverage_subscription_coverage_subscription_cov");
+                        });
+
+                    b.Navigation("Periods");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.SubscriptionOverride", b =>

@@ -110,10 +110,10 @@ export function PlanStateActions({ plan }: { plan: Plan }) {
 
 /**
  * Adds a price version (append-only, R-SUB-02): amount in the platform currency and the first day it applies, today
- * or later. Existing periods keep the version they were recorded with. Without a plan, it prices the loyalty add-on
- * (D-149), versioned the same way.
+ * or later. Existing periods keep the version they were recorded with. (The loyalty add-on's own price went with the
+ * add-on in D-155: loyalty comes with the higher plan.)
  */
-export function PlanPriceForm({ plan, today }: { plan?: Plan; today: LocalDate }) {
+export function PlanPriceForm({ plan, today }: { plan: Plan; today: LocalDate }) {
   const t = useTranslations('subscriptionPlans.detail');
   const tv = useTranslations('validation');
   const router = useRouter();
@@ -135,19 +135,12 @@ export function PlanPriceForm({ plan, today }: { plan?: Plan; today: LocalDate }
     if (next.amount || next.effectiveFrom || price === null) return;
     setPending(true);
     try {
-      if (plan)
-        ensureOk(
-          await browserApi.POST('/api/v1/admin/subscription-plans/{planId}/prices', {
-            params: { path: { planId: plan.id } },
-            body: { amount: price, effectiveFrom, version: plan.version },
-          }),
-        );
-      else
-        ensureOk(
-          await browserApi.POST('/api/v1/admin/loyalty-add-on/prices', {
-            body: { amount: price, effectiveFrom },
-          }),
-        );
+      ensureOk(
+        await browserApi.POST('/api/v1/admin/subscription-plans/{planId}/prices', {
+          params: { path: { planId: plan.id } },
+          body: { amount: price, effectiveFrom, version: plan.version },
+        }),
+      );
       setAmount('');
       ok(t('priceAdded'));
       router.refresh();
@@ -170,7 +163,7 @@ export function PlanPriceForm({ plan, today }: { plan?: Plan; today: LocalDate }
       noValidate
       onSubmit={(e) => void submit(e)}
       className="flex flex-col gap-3"
-      data-testid={plan ? 'plan-price-form' : 'add-on-price-form'}
+      data-testid="plan-price-form"
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField

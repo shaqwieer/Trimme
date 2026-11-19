@@ -16,6 +16,7 @@ import { EmptyState, ErrorState, PermissionDenied } from '@/components/ui/states
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { localizedName } from '@/lib/i18n/localized';
+import { SaveGroup } from '@/components/ui/SaveGroup';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
@@ -82,34 +83,37 @@ export default async function ShopBarberPage({
               </Card>
             )}
 
-            {services && (
-              <Card title={tServices('title')}>
-                <ProfessionalServicesForm scope="shop" data={services} canAssign />
+            {/* One save for the services and the profile (D-155, the client's 3-8). */}
+            <SaveGroup testId="barber-save">
+              {services && (
+                <Card title={tServices('title')}>
+                  <ProfessionalServicesForm scope="shop" data={services} canAssign />
+                </Card>
+              )}
+
+              <Card title={tAdmin('whatsapp.title')}>
+                <WhatsAppSettings
+                  id={barber.id}
+                  whatsApp={barber.whatsApp}
+                  canManage
+                  canReveal={false}
+                  scope="shop"
+                />
               </Card>
-            )}
 
-            <Card title={tAdmin('whatsapp.title')}>
-              <WhatsAppSettings
-                id={barber.id}
-                whatsApp={barber.whatsApp}
-                canManage
-                canReveal={false}
-                scope="shop"
-              />
-            </Card>
+              <Card title={tAdmin('detail.photo')}>
+                <ProfessionalAvatarEditor
+                  id={barber.id}
+                  avatarUrl={barber.avatarUrl}
+                  name={name}
+                  scope="shop"
+                />
+              </Card>
 
-            <Card title={tAdmin('detail.photo')}>
-              <ProfessionalAvatarEditor
-                id={barber.id}
-                avatarUrl={barber.avatarUrl}
-                name={name}
-                scope="shop"
-              />
-            </Card>
-
-            <Card title={tAdmin('detail.profileTitle')}>
-              <EditProfessionalForm professional={barber} scope="shop" />
-            </Card>
+              <Card title={tAdmin('detail.profileTitle')}>
+                <EditProfessionalForm professional={barber} scope="shop" />
+              </Card>
+            </SaveGroup>
           </div>
         );
       }}

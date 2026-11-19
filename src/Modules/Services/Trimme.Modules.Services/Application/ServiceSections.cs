@@ -89,7 +89,8 @@ internal sealed class ServiceSectionStore(TrimmeDbContext db, IAuditLog audit, T
         var section = ServiceSection.Create(
             EntityId.New<ServiceSectionId>(), shopId, fields.NameAr, fields.NameEn, existing.Count == 0 ? 1 : existing.Max() + 1, clock.GetUtcNow());
         db.Add(section);
-        audit.Record(new AuditRecord("service_section.created", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr));
+        audit.Record(new AuditRecord("service_section.created", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr,
+            SummaryArgs: AuditArgs.Of(("nameAr", section.NameAr), ("nameEn", section.NameEn))));
         await db.SaveChangesAsync(cancellationToken);
         return new ServiceSectionResponse(section.Id.Value, section.NameAr, section.NameEn, section.DisplayOrder, 0);
     }
@@ -103,7 +104,8 @@ internal sealed class ServiceSectionStore(TrimmeDbContext db, IAuditLog audit, T
         }
 
         section.Rename(fields.NameAr, fields.NameEn, clock.GetUtcNow());
-        audit.Record(new AuditRecord("service_section.renamed", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr));
+        audit.Record(new AuditRecord("service_section.renamed", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr,
+            SummaryArgs: AuditArgs.Of(("nameAr", section.NameAr), ("nameEn", section.NameEn))));
         await db.SaveChangesAsync(cancellationToken);
         var count = await db.Set<ShopService>().CountAsync(s => s.ShopId == shopId && s.SectionId == id && !s.IsArchived, cancellationToken);
         return new ServiceSectionResponse(section.Id.Value, section.NameAr, section.NameEn, section.DisplayOrder, count);
@@ -125,7 +127,8 @@ internal sealed class ServiceSectionStore(TrimmeDbContext db, IAuditLog audit, T
         }
 
         db.Remove(section);
-        audit.Record(new AuditRecord("service_section.deleted", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr));
+        audit.Record(new AuditRecord("service_section.deleted", nameof(ServiceSection), section.Id.ToString(), shopId, section.NameAr,
+            SummaryArgs: AuditArgs.Of(("nameAr", section.NameAr), ("nameEn", section.NameEn))));
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -145,7 +148,8 @@ internal sealed class ServiceSectionStore(TrimmeDbContext db, IAuditLog audit, T
             sections.Single(s => s.Id.Value == orderedIds[i]).MoveTo(i + 1);
         }
 
-        audit.Record(new AuditRecord("service_section.ordered", nameof(ServiceSection), shopId.ToString(), shopId, $"{sections.Count} sections"));
+        audit.Record(new AuditRecord("service_section.ordered", nameof(ServiceSection), shopId.ToString(), shopId, $"{sections.Count} sections",
+            SummaryArgs: AuditArgs.Of(("count", sections.Count))));
         await db.SaveChangesAsync(cancellationToken);
         return Result<IReadOnlyList<ServiceSectionResponse>>.Success(await ListAsync(shopId, cancellationToken));
     }

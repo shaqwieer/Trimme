@@ -40,3 +40,17 @@ public interface IQrBookingReader
     Task<IReadOnlyList<QrAttributedBooking>> ListAsync(
         DateTimeOffset from, DateTimeOffset to, IReadOnlyCollection<Guid>? linkIds, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// A barber's own QR code, made automatically (D-155, the client's 7-2-3: «QR للحلاق ينسوى تلقائي»), implemented by the
+/// QrAnalytics module. Called when a barber is added (by the owner or the admin) or turned on again, and by the
+/// <c>migrate</c> backfill for active barbers without one.
+/// </summary>
+public interface IProfessionalQrCodes
+{
+    /// <summary>
+    /// Adds a code for the professional to the caller's unit of work when they have none yet (one an admin turned off is
+    /// kept, not replaced); true when one was added. The caller saves.
+    /// </summary>
+    Task<bool> EnsureAsync(ShopId shopId, ProfessionalId professionalId, CancellationToken cancellationToken);
+}

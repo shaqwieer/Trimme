@@ -213,6 +213,11 @@
     "numberStepper": {
       "decrease": "{label} azalt",
       "increase": "{label} artır"
+    },
+    "saveGroup": {
+      "unsaved": "Kaydedilmemiş değişiklikleriniz var",
+      "save": "Değişiklikleri kaydet",
+      "saved": "Değişiklikler kaydedildi."
     }
   },
   "status": {
@@ -444,6 +449,13 @@
       "confirm": "Evet, hesabımı sil",
       "cancel": "Vazgeç",
       "upcomingLink": "Randevularımı gör"
+    },
+    "winBack": {
+      "title": "«Sizi özledik» mesajları",
+      "body": "Bir süre gelmezseniz işletme sizi geri davet eden bir mesaj gönderebilir. Randevularınızla ilgili mesajlar (onay, değişiklik, iptal, hatırlatma) her zaman ulaşır.",
+      "label": "İşletmelerden davet mesajı almak istiyorum",
+      "on": "Davet mesajları size ulaşacak.",
+      "off": "Size davet mesajı gönderilmeyecek."
     }
   },
   "shopHome": {
@@ -454,7 +466,9 @@
     "draftTitle": "Salonunuz kuruluyor",
     "draftBody": "Platform ekibi etkinleştirene kadar müşteriler salonunuzu görmeyecek.",
     "suspendedTitle": "Salonunuz askıya alındı",
-    "suspendedBody": "Salon verilerine şu anda erişilemiyor. Yeniden etkinleştirmek için platform ekibiyle iletişime geçin."
+    "suspendedBody": "Salon verilerine şu anda erişilemiyor. Yeniden etkinleştirmek için platform ekibiyle iletişime geçin.",
+    "unavailableTitle": "Bugün müsait değil",
+    "unavailableLine": "{name}: {time} itibarıyla. Kalan randevuları gün ekranında."
   },
   "apiErrors": {
     "barber_number_required": "Girişini açmadan önce berberin WhatsApp numarasını ekleyin.",
@@ -513,6 +527,8 @@
     "availability_professional_not_eligible": "Bu uzman bu hizmeti sunmuyor.",
     "booking_slot_unavailable": "Bu saat az önce alındı. Başka bir saat seçin.",
     "booking_slot_too_soon": "Bu saat artık çok yakın. En yakın boş saatlerden birini seçin.",
+    "booking_active_booking_exists": "Zaten yaklaşan bir randevunuz var. Yeniden randevu almadan önce iptal edin ya da bitmesini bekleyin.",
+    "booking_changed_today": "Bu müşterinin saatini bugün zaten değiştirdiniz. Başka bir durum olursa: randevuyu bir meslektaşa verin ya da nedenini yazarak iptal edin.",
     "booking_not_found": "Randevu bulunamadı.",
     "booking_cancellation_cutoff_passed": "Çevrimiçi değişiklik süresi doldu. Groom Here ekibiyle iletişime geçin.",
     "booking_not_reschedulable": "Bu randevu şu anda değiştirilemez.",
@@ -575,11 +591,6 @@
     "booking_last_service": "Randevuda en az bir hizmet kalır.",
     "booking_service_fixed": "Bu hizmet randevunun parçasıdır ve çıkarılamaz.",
     "booking_services_closed": "Randevu kapandı; hizmetleri değişmez.",
-    "booking_postpone_online_only": "Dükkânda veya telefonla alınan randevunun saati, müşteri onaylayınca doğrudan değişir.",
-    "booking_consent_required": "Müşterinin uygulamadan aldığı randevu, kabul ettiği bir teklifle ertelenir.",
-    "booking_postpone_too_late": "Randevuya bir saatten az kaldı: bir meslektaşa aktarın veya iptal edin.",
-    "booking_postponement_gone": "Erteleme teklifi artık geçerli değil.",
-    "booking_postpone_same_time": "Bu, randevunun kendi saati.",
     "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler.",
     "booking_service_in_package": "Bu hizmet seçilen pakette zaten var.",
     "service_section_not_found": "Bu bölüm artık yok. Sayfayı yenileyin.",
@@ -674,7 +685,8 @@
       "images": "Salon görselleri",
       "policy": "Salon düzenleme yetkileri",
       "location": "Salonun haritadaki konumu",
-      "booking": "Randevu ayarları"
+      "booking": "Randevu ayarları",
+      "callButton": "İşletme sayfasındaki «Ara» düğmesi"
     },
     "policy": {
       "title": "Salonun kendisinin düzenlediği alanlar",
@@ -718,6 +730,15 @@
     "demo": {
       "label": "Deneme dükkânı",
       "hint": "Müşteriler dükkânın kartında ve sayfasında “Deneme” görür; verileri gerçekmiş gibi görünmez. Yayına geçerken kapatın veya dükkânı arşivleyin."
+    },
+    "callButton": {
+      "body": "Müşteriler işletme sayfasında bu numarayla bir «Ara» düğmesi görür. Yalnızca platformun seçeneği: işletme sahibi görmez ve değiştiremez.",
+      "enabled": "«Ara» düğmesini göster",
+      "phone": "Aranacak numara",
+      "phoneHelper": "Suudi numarası, örneğin 0501234567. Düğmeyi açmak için gerekli.",
+      "save": "Kaydet",
+      "savedOn": "«Ara» düğmesi işletme sayfasında görünüyor.",
+      "savedOff": "«Ara» düğmesi gizli."
     }
   },
   "shopCategory": {
@@ -1169,9 +1190,9 @@
       "interval": "Faturalama dönemi",
       "status": "Durum",
       "newShops": "Yeni salonlar",
+      "features": "İçerik",
       "subscriptions": "Salonlar",
-      "order": "Sıra",
-      "messages": "WhatsApp / ay"
+      "order": "Sıra"
     },
     "upcoming": "{date} tarihinden itibaren {price}",
     "noPrice": "Fiyat yok",
@@ -1219,8 +1240,15 @@
       "create": "Plan oluştur",
       "save": "Değişiklikleri kaydet",
       "saved": "Değişiklikler kaydedildi.",
-      "monthlyWhatsAppMessages": "Aylık müşteri WhatsApp mesajı",
-      "monthlyWhatsAppMessagesHelper": "Sınırsız için boş bırakın, müşterilere WhatsApp mesajı gönderilmemesi için 0 yazın. Berber mesajları ve giriş kodları sayılmaz."
+      "options": "Paketin içerdikleri",
+      "includesLoyalty": "Sadakat programını içerir",
+      "includesLoyaltyHelper": "Bu paketteki işletmeler müşterileri için sadakat puanı kullanabilir.",
+      "winBackEnabled": "«Sizi özledik» mesajları",
+      "winBackEnabledHelper": "Geri gelmeyen müşteriye otomatik WhatsApp; aylık sınırdan sayılır.",
+      "winBackAfterDays": "Son ziyaretten kaç gün sonra gönderilir",
+      "winBackAfterDaysHelper": "1 ile 90 gün arası.",
+      "monthlyMarketingMessages": "Aylık davet mesajı sınırı",
+      "monthlyMarketingMessagesHelper": "Sınırsız için boş bırakın, hiç göndermemek için 0. Ay, işletmenin abonelik gününden başlar; randevu mesajları sayılmaz."
     },
     "detail": {
       "back": "Abonelik planları",
@@ -1246,13 +1274,12 @@
       "effectiveFrom": "Geçerlilik başlangıcı",
       "priceAdded": "Fiyat sürümü eklendi."
     },
-    "messagesUnlimited": "Sınırsız",
-    "messagesNone": "Yok",
-    "messagesCount": "{count, number}",
-    "addOn": {
-      "title": "Sadakat eklentisi fiyatı",
-      "body": "Geçerli fiyat, bir yöneticinin bir dükkân için açtığı her dönemle kaydedilir. Sürümler düzenlenmez veya silinmez; her biri kendi tarihinde veya sonrasında başlayan dönemlere uygulanır."
-    }
+    "loyaltyOn": "Sadakat programı",
+    "loyaltyOff": "Sadakat programı yok",
+    "winBackOn": "{days} gün sonra «Sizi özledik»",
+    "winBackOff": "Davet mesajı yok",
+    "marketingUnlimited": "Sınırsız davet mesajı",
+    "marketingCount": "Ayda {count} davet mesajı"
   },
   "adminSubscriptions": {
     "title": "Abonelikler",
@@ -1346,30 +1373,7 @@
       "customPlanPrice": "Bir standart dönem için plan fiyatı: {price}",
       "customEntry": "Süper Yönetici özel fiyatı ({reason}; plan fiyatı {standard})"
     },
-    "manageLabel": "{name} için aboneliği yönet",
-    "addOn": {
-      "title": "Sadakat eklentisi",
-      "intro": "Ücretli bir eklenti: açık olduğu sürece dükkânın müşterileri puan toplar ve ödül kullanır. Sona erdiğinde toplama ve kullanma durur, puanlar saklanır.",
-      "active": "{date} tarihine kadar açık",
-      "inactive": "Kapalı",
-      "price": "Güncel fiyat: {price}",
-      "noPrice": "Henüz eklenti fiyatı yok. Süper yönetici abonelik paketleri sayfasında belirler.",
-      "endDate": "Bitiş tarihi",
-      "endDateHelper": "Bugün başlar; açıksa mevcut dönem bittikten sonra başlar.",
-      "notes": "İç notlar (isteğe bağlı)",
-      "switchOn": "Eklentiyi aç",
-      "extend": "Uzat",
-      "switched": "Eklenti dönemi kaydedildi.",
-      "stop": "Eklentiyi kapat",
-      "stopTitle": "Sadakat eklentisi kapatılsın mı?",
-      "stopBody": "Puan toplama ve ödül kullanma bugün durur; müşterilerin puanları saklanır ve yeniden açıldığında geri gelir.",
-      "stopped": "Eklenti kapatıldı.",
-      "periods": "Eklenti dönemleri",
-      "period": "{start} – {end}",
-      "periodPrice": "{price} — sürüm {version}",
-      "stoppedOn": "{date} tarihinde kapatıldı",
-      "noPeriods": "Eklenti bu dükkân için hiç açılmadı."
-    }
+    "manageLabel": "{name} için aboneliği yönet"
   },
   "barberLogins": {
     "title": "Berberler",
@@ -1444,15 +1448,7 @@
     "historyEmpty": "Henüz dönem yok.",
     "historyItem": "{start} – {end}",
     "historyPlan": "{plan} · {price}",
-    "addOn": {
-      "title": "Sadakat programı",
-      "active": "{date} tarihine kadar açık",
-      "inactive": "Kapalı. Sadakat, platform ekibinin sizinle anlaşarak açtığı ücretli bir eklentidir.",
-      "ended": "{date} tarihinde sona erdi. Müşterilerinizin puanları saklanır ve yenilendiğinde geri gelir.",
-      "rules": "Puan kuralları",
-      "history": "Eklenti dönemleri",
-      "period": "{start} – {end}"
-    }
+    "loyaltyRules": "Sadakat puanı kuralları"
   },
   "platformSettings": {
     "title": "Platform ayarları",
@@ -1461,7 +1457,6 @@
       "booking": "Randevu politikası (varsayılan)",
       "notifications": "Hatırlatmalar",
       "subscriptions": "Abonelikler",
-      "discovery": "Keşif",
       "map": "Harita varsayılanları",
       "regional": "Bölge (v1’de sabit)"
     },
@@ -1474,7 +1469,6 @@
       "reminderOffsetMinutes": "Randevudan önce hatırlatma (dakika)",
       "expiringSoonThresholdDays": "Yakında sona erme eşiği (gün)",
       "expiredSubscriptionEnforcement": "Abonelik geçerli olmadığında",
-      "hidePausedShopsFromDiscovery": "Çevrimiçi randevuyu duraklatan salonları gizle",
       "mapDefaultLatitude": "Harita merkezi enlemi",
       "mapDefaultLongitude": "Harita merkezi boylamı",
       "mapDefaultZoom": "Harita yakınlaştırma düzeyi",
@@ -1495,7 +1489,6 @@
       "booking": "Her dükkânın başladığı değerler: en az önceden bildirim, en uzak randevu günü ve başlangıç aralığı. Sahip bunları kendi dükkânı için “Randevu ayarları”ndan değiştirir; iptal ve değerlendirme süreleri herkes için buradadır.",
       "notifications": "Müşteriye ve berbere giden WhatsApp hatırlatmalarının randevudan ne kadar önce gönderileceği.",
       "subscriptions": "Bir salonun aboneliğinin ne zaman yakında sona erecek sayılacağı ve geçerli abonelik yokken ne olacağı. Mevcut randevular hiçbir zaman değişmez.",
-      "discovery": "Çevrimiçi randevuyu duraklatan salonların aramada ve haritada görünmeye devam edip etmeyeceği. Sayfalarına bağlantıyla erişilmeye devam edilir.",
       "map": "Henüz konum yokken haritaların nerede açılacağı (salon konum seçici ve arama).",
       "regional": "Dil, para birimi, saat dilimi ve ülke. Bunları değiştirmek bir taşıma planı gerektirdiğinden v1’de sabittir."
     },
@@ -1596,7 +1589,6 @@
         "partBreak": "Mola {duration}",
         "partFree": "Kısmen boş"
       },
-      "wholeDay": "Tüm gün mola",
       "clear": "Tüm molaları kaldır",
       "minutesHint": "Mola yapmak için boş dakikaları seçin veya iptal etmek için bir molaya dokunun.",
       "slot": "{time}: {state}",
@@ -1618,26 +1610,36 @@
           "body": "Bu zaman yeniden randevuya açılır.",
           "action": "Molayı iptal et"
         },
-        "wholeDay": {
-          "title": "{barber} için tüm gün mola olsun mu?",
-          "body": "Bu gündeki tüm boş zamanlar mola olur. Alınmış randevular olduğu gibi kalır.",
-          "action": "Molayı onayla"
-        },
         "clear": {
           "title": "{barber} için tüm molalar iptal edilsin mi?",
           "body": "Bu gündeki molalar şu andan itibaren iptal edilir ve zaman yeniden randevuya açılır.",
           "action": "Molaları iptal et"
+        },
+        "unavailable": {
+          "title": "{barber} bugün müsait değil mi?",
+          "body": "Bugün kalan saatleri rezervasyondan kalkar. Randevuları kalır; işletme sahibi ve meslektaşlar ilgilenmeleri için bilgilendirilir. Bugün geri alabilirsiniz.",
+          "action": "Evet, bugün müsait değil"
+        },
+        "available": {
+          "title": "{barber} bugün müsait mi?",
+          "body": "Bugün kalan saatleri yeniden rezerve edilebilir.",
+          "action": "Evet, müsait"
         }
       },
       "done": {
         "add": "{when}, {barber} için mola olarak ayrıldı.",
         "remove": "{when} molası iptal edildi; zaman randevuya açık.",
-        "wholeDay": "Tüm gün {barber} için mola oldu.",
-        "clear": "{barber} için bu günün molaları şu andan itibaren iptal edildi."
+        "clear": "{barber} için bu günün molaları şu andan itibaren iptal edildi.",
+        "unavailable": "{barber} bugün müsait değil. İşletme sahibi ve meslektaşlar bilgilendirildi.",
+        "available": "{barber} bugün yeniden müsait."
       },
       "tooMany": "Bir günde en fazla 48 ayrı mola olabilir. Yan yana dakikaları seçin.",
       "titleOwn": "Molalarım",
-      "midnight": "Gece yarısı"
+      "midnight": "Gece yarısı",
+      "unavailableToday": "Bugün müsait değil",
+      "availableAgain": "Geri al: bugün müsait",
+      "unavailableNow": "{barber} bugün {time} itibarıyla müsait değil",
+      "unavailableBody": "Bugün kalan saatleri rezerve edilemez. Randevuları kalır; meslektaşları ilgilenir: bir meslektaşa verin, saati değiştirin ya da nedenini yazarak iptal edin."
     },
     "timeOff": {
       "title": "İzinler ve kapalı günler",
@@ -1653,7 +1655,8 @@
       "kind": {
         "Vacation": "Tatil",
         "Sick": "Hastalık izni",
-        "Other": "Diğer"
+        "Other": "Diğer",
+        "Unavailable": "Bugün müsait değil"
       },
       "startDate": "Başlangıç tarihi",
       "endDate": "Bitiş tarihi",
@@ -1683,15 +1686,23 @@
     },
     "pause": {
       "liveTitle": "Çevrimiçi randevuyu duraklat",
-      "liveBody": "Aşırı yoğunlukta veya acil bir durumda kullanın. Onaylanmış randevular asla iptal edilmez ve salon, siz sürdürene kadar arama sonuçlarında görünmez.",
+      "liveBody": "Yoğunlukta veya acil durumlarda kullanın. İşletmeniz «Geçici olarak durduruldu» ve sebebiyle görünür kalır; onaylı randevular iptal edilmez.",
       "pausedTitle": "Çevrimiçi randevu duraklatıldı",
-      "pausedBody": "Yeni çevrimiçi randevu alınmaz ve salon keşifte gizlenir. Onaylanmış randevular geçerliliğini korur.",
+      "pausedBody": "Yeni online randevu alınmaz. Müşteriler işletmenizi sebebiyle birlikte «Geçici olarak durduruldu» görür; onaylı randevular geçerlidir, onları gün ekranından yönetin.",
       "since": "{date}, {time} itibarıyla",
+      "reasonShown": "Sebep: {reason}",
+      "resumesAt": "Randevu {date}, {time} tarihinde kendiliğinden açılır",
+      "noReturnTime": "Dönüş zamanı yok: siz açınca açılır.",
+      "byAdmin": "Groom Here ekibi tarafından durduruldu.",
       "pause": "Duraklat",
       "resume": "Çevrimiçi randevuyu sürdür",
       "confirmTitle": "Çevrimiçi randevu duraklatılsın mı?",
-      "confirmBody": "Salon, siz sürdürene kadar yeni çevrimiçi randevu almaz. Onaylanmış randevular etkilenmez.",
-      "reason": "Neden (yalnızca salon için)",
+      "confirmBody": "İşletme yeniden açılana kadar yeni online randevu almaz. Onaylı randevular iptal edilmez; ilgilenebilmeniz için sayıları size bildirilir.",
+      "reason": "Sebep",
+      "reasonHelper": "Müşteriler bunu işletme sayfasında görür.",
+      "resumesAtLabel": "Randevu kendiliğinden şu tarihte açılır",
+      "resumesAtHelper": "Kendiniz açmak için boş bırakın.",
+      "resumesInPast": "Şu andan sonraki bir zaman seçin.",
       "confirm": "Şimdi duraklat",
       "cancel": "Geri dön",
       "pausedToast": "Çevrimiçi randevu duraklatıldı",
@@ -1822,7 +1833,12 @@
       "cta": "Konum belirle"
     },
     "topRatedSalons": "En yüksek puanlı salonlar",
-    "allSalons": "Tüm salonlar"
+    "allSalons": "Tüm salonlar",
+    "lastVisit": {
+      "title": "Geçen seferki gibi rezervasyon yap",
+      "where": "{shop}, {barber} ile",
+      "book": "Aynısını ayırt"
+    }
   },
   "search": {
     "meta": {
@@ -1930,6 +1946,7 @@
     "distance": "{km} uzaklıkta",
     "address": "Adres",
     "directions": "Yol tarifi",
+    "call": "Ara",
     "mapLabel": "Haritada {name}",
     "tabs": {
       "label": "Salon bölümleri",
@@ -1953,7 +1970,8 @@
       "today": "Bugün {time}",
       "tomorrow": "Yarın {time}",
       "none": "Yakında müsait saat yok",
-      "profile": "Profil: {name}"
+      "profile": "Profil: {name}",
+      "unavailableToday": "Bugün müsait değil"
     },
     "about": {
       "description": "Salon hakkında",
@@ -1972,8 +1990,10 @@
       "unavailable": "Online randevu şu anda durduruldu"
     },
     "paused": {
-      "title": "Online randevu durduruldu",
-      "body": "Salon online randevuyu şimdilik durdurdu. Onaylanmış randevular geçerliliğini korur."
+      "title": "Geçici olarak durduruldu",
+      "body": "İşletme online randevuyu geçici olarak durdurdu. Favorilerinize ekleyip daha sonra dönebilirsiniz.",
+      "reason": "Sebep: {reason}.",
+      "until": "Randevu {date}, {time} tarihinde yeniden açılır."
     },
     "notListed": {
       "title": "Online randevu şu anda kullanılamıyor",
@@ -2246,6 +2266,14 @@
       },
       "loading": "Saatler yenileniyor…",
       "otherDay": "Başka bir gün seçin"
+    },
+    "activeBooking": {
+      "title": "Zaten yaklaşan bir randevunuz var",
+      "body": "{shop}, {date} saat {time}. Aynı anda tek yaklaşan randevu: sayfasından iptal edin ya da saatini değiştirin veya ziyaretinizden sonra yeniden randevu alın.",
+      "view": "Randevuyu gör"
+    },
+    "professionalDay": {
+      "unavailableToday": "Bugün müsait değil"
     }
   },
   "bookings": {
@@ -2301,18 +2329,18 @@
         "minutes": "{count, plural, one {1 dakika} other {# dakika}}"
       },
       "created": {
-        "confirmed": {
-          "title": "Randevunuz onaylandı",
-          "body": "Ayrıntıları size WhatsApp üzerinden göndeririz. Randevunuzu istediğiniz zaman “Randevularım” bölümünden yönetebilirsiniz."
-        },
-        "pending": {
-          "title": "Randevu talebiniz gönderildi",
-          "body": "Salon kısa süre içinde onaylayacak ve size bir WhatsApp mesajı gelecek."
-        }
+        "title": "Randevunuz onaylandı",
+        "body": "Ayrıntıları size WhatsApp üzerinden göndeririz. Randevunuzu istediğiniz zaman “Randevularım” bölümünden yönetebilirsiniz."
       },
       "rescheduled": "Randevunuzun saati değiştirildi.",
       "cancelled": "Randevu iptal edildi ve salona bildirildi.",
-      "reviewed": "Değerlendirmeniz yayınlandı — teşekkürler."
+      "reviewed": "Değerlendirmeniz yayınlandı — teşekkürler.",
+      "reasons": {
+        "StaffUnwell": "Berber rahatsız",
+        "Emergency": "İşletmede acil bir durum",
+        "ShopClosed": "Dükkân kapalı (elektrik vb.)",
+        "Other": "Başka bir sebep"
+      }
     },
     "cancel": {
       "open": "Randevuyu iptal et",
@@ -2348,14 +2376,6 @@
         "from": "Mevcut randevu",
         "to": "Yeni randevu"
       }
-    },
-    "postponement": {
-      "title": "Berberiniz yeni bir saat öneriyor",
-      "body": "Berberiniz randevunuza yetişemiyor ve yerine {when} öneriyor. Bu saat {until} saatine kadar sizin için ayrıldı.",
-      "accept": "Yeni saati kabul et",
-      "decline": "Reddet",
-      "accepted": "Randevunuz yeni saate taşındı.",
-      "declined": "Yeni saati reddettiniz; randevunuz saatinde kaldı."
     }
   },
   "review": {
@@ -2408,7 +2428,8 @@
     "remove": "Favorilerden çıkar: {name}",
     "signInToSave": "Favorilere kaydetmek için giriş yapın: {name}",
     "book": "Randevu al",
-    "bookWith": "{name} ile randevu al"
+    "bookWith": "{name} ile randevu al",
+    "bookAt": "{name} için randevu al"
   },
   "shopBoard": {
     "live": {
@@ -2480,6 +2501,7 @@
       "notFound": "Randevu bulunamadı.",
       "when": "Zaman",
       "outsideSchedule": "Bu randevu artık berberin çalışma programına uymuyor (izin, mola veya kapanış). Hiçbir şey iptal edilmedi — gerekirse müşteriyle iletişime geçin.",
+      "unavailableBarber": "{name} bugün müsait değil: randevularıyla meslektaşları ilgilenir",
       "rows": {
         "customer": "Müşteri",
         "service": "Hizmet",
@@ -2494,7 +2516,7 @@
       },
       "amount": "{price} — salonda ödenir",
       "channel": {
-        "Online": "Müşteri uygulaması",
+        "Online": "Online",
         "WalkIn": "Randevusuz müşteri",
         "Qr": "QR kod",
         "Phone": "Telefonla"
@@ -2507,8 +2529,7 @@
         "Completed": "Hizmet bitti",
         "NoShow": "Müşteri gelmedi (çeyrek saatten fazla gecikti)",
         "CancelledByShop": "Randevuyu iptal et",
-        "CancelledByCustomer": "Müşteri iptal etti",
-        "reject": "Randevuyu reddet"
+        "CancelledByCustomer": "Müşteri iptal etti"
       },
       "stale": "Randevu az önce değişti — yeniledik; kontrol edip tekrar deneyin.",
       "notes": {
@@ -2538,9 +2559,11 @@
       "change": {
         "title": "Acil durum",
         "reschedule": "Ertele",
+        "changedToday": "Bu müşterinin saatini bugün zaten değiştirdiniz. Başka bir durum olursa: randevuyu bir meslektaşa verin ya da nedenini yazarak iptal edin.",
         "move": "Başka bir berbere ver",
         "rescheduleTitle": "{name} için yeni saat",
-        "rescheduleBody": "Aynı berber, aynı hizmet. Müşteriye yeni saat bildirilir.",
+        "rescheduleBody": "Aynı berber ve hizmetle. Müşteriye yeni saat bildirilir.",
+        "rescheduleBodyOnline": "Aynı berber ve hizmetle. Saat hemen değişir; müşteriye eski ve yeni saatle «Randevunuz değişti» gider, ücretsiz iptal edebilir veya değiştirebilir. Müşteri başına günde bir kez.",
         "current": "Mevcut saat: {when}",
         "pickDay": "Günü seçin",
         "pickTime": "Saati seçin",
@@ -2557,10 +2580,7 @@
         "confirmMove": "Randevuyu ver",
         "keep": "Vazgeç",
         "loading": "Yükleniyor…",
-        "order": "Sırayla: randevuyu boştaki bir meslektaşa aktar, ya da müşterinin onayıyla ertele; olmazsa sebebini yazarak iptal et.",
-        "offerTitle": "{name} randevusunu ertele",
-        "offerBody": "Aynı berberle yeni bir saat seçin. Müşteri için ayrılır; müşteriye bildirilir ve mevcut saatten bir saat öncesine kadar kabul veya reddeder. Reddederse ya da cevap vermezse randevu saatinde kalır.",
-        "confirmOffer": "Teklifi gönder"
+        "order": "Sırasıyla: randevuyu boştaki bir meslektaşa verin, ya da saatini değiştirin, olmazsa nedenini yazarak iptal edin."
       },
       "cancel": {
         "title": "Randevu iptal edilsin mi?",
@@ -2586,11 +2606,6 @@
         "title": "Müşterinin cep telefonu",
         "body": "Dükkân randevuyla birlikte kaydetti; «Hizmet bitti»den sonra kaybolur."
       },
-      "reject": {
-        "title": "Randevu reddedilsin mi?",
-        "body": "Müşteriye dükkânın randevuyu kabul etmediği bildirilir ve saat açılır.",
-        "confirm": "Evet, reddet"
-      },
       "noShow": {
         "title": "{name} gelmedi mi?",
         "body": "Müşteri gelmedi (çeyrek saatten fazla gecikti). Randevu «gelmedi» olarak kaydedilir ve zamanı açılır. Geri alınamaz.",
@@ -2611,11 +2626,6 @@
         "room": "Sonraki randevunuza kalan süre: {duration}",
         "doesNotFit": "{duration} — sonraki randevunuzdan önce yetişmez",
         "none": "Eklenebilecek başka hizmetiniz yok."
-      },
-      "postponement": {
-        "waiting": "{when} için erteleme teklif edildi; müşterinin cevabı {until} saatine kadar bekleniyor. Saat müşteri için ayrıldı.",
-        "declined": "Müşteri yeni saati reddetti. Randevuyu boştaki bir meslektaşa aktarın ya da sebebini yazarak iptal edin.",
-        "lapsed": "Erteleme teklifi cevapsız kaldı; randevu saatinde kaldı."
       },
       "overdue": {
         "title": "Randevu geçti; ne «Geldi» ne de «Gelmedi» kaydedildi",
@@ -2657,6 +2667,9 @@
       "finishKeep": "Vazgeç",
       "overdue": "Kapatılması gereken randevular",
       "overdueHint": "Süresi bitti ve kapatılmadı. Dükkândaki her berber kapatabilir.",
+      "unavailable": "Müsait olmayan berberin randevuları",
+      "unavailableHint": "Sırasıyla: randevuyu boştaki bir meslektaşa verin, ya da saatini değiştirin, olmazsa nedenini yazarak iptal edin. İlgilenmek için randevuyu açın.",
+      "unavailableBarber": "{name} bugün müsait değil",
       "overdueBadge": "Gecikti",
       "responsible": "Sorumlu: {name}",
       "pending": "Onay bekleyen randevular",
@@ -2692,7 +2705,7 @@
         "walkIn": "Kapıdan müşteri",
         "phone": "Telefonla randevu",
         "break": "Mola",
-        "pause": "Randevuyu durdur"
+        "unavailable": "Bugün müsait değilim"
       }
     },
     "visit": {
@@ -2944,6 +2957,8 @@
       "name": "Müşteri",
       "bookings": "Randevular",
       "upcoming": "Yaklaşan",
+      "noShows": "Gelmedi",
+      "cancelled": "İptal etti",
       "last": "Son randevu",
       "registered": "Kayıt tarihi"
     },
@@ -3220,7 +3235,14 @@
       "QrCodeLink": "QR kod",
       "WhatsAppTemplate": "WhatsApp şablonu",
       "WhatsAppDispatch": "WhatsApp mesajı",
-      "LegalDocument": "Yasal sayfa"
+      "LegalDocument": "Yasal sayfa",
+      "ServiceSection": "Hizmet bölümü",
+      "SubscriptionCoverage": "Abonelik kapsamı",
+      "LoyaltySettings": "Sadakat programı",
+      "LoyaltyProgram": "Sadakat programı",
+      "LoyaltyAddOnPrice": "Sadakat eklentisi fiyatı",
+      "LoyaltyAddOnPeriod": "Sadakat eklentisi dönemi",
+      "ProfessionalTimeOff": "Berber izni"
     },
     "actions": {
       "shop_created": "Salon oluşturuldu",
@@ -3293,8 +3315,156 @@
       "customer_account_deleted": "Müşteri hesabını sildi",
       "customer_contact_changed": "Müşteri e-postasını veya numarasını değiştirdi",
       "legal_document_saved": "Yasal sayfa metni kaydedildi",
-      "legal_document_reset": "Yasal sayfa yerleşik metne döndürüldü"
-    }
+      "legal_document_reset": "Yasal sayfa yerleşik metne döndürüldü",
+      "barber_login_enabled": "Berber girişi açıldı",
+      "barber_login_disabled": "Berber girişi kapatıldı",
+      "barber_login_deleted": "Berber hesabı silindi",
+      "booking_walk_in_contact_revealed": "Kapıdan gelen müşterinin numarası gösterildi",
+      "loyalty_rules_saved": "Sadakat programı kaydedildi",
+      "loyalty_program_saved": "Sadakat programı kaydedildi",
+      "loyalty_add_on_price_added": "Sadakat eklentisi fiyatı eklendi",
+      "loyalty_add_on_switched_on": "Sadakat eklentisi açıldı",
+      "loyalty_add_on_stopped": "Sadakat eklentisi durduruldu",
+      "service_section_created": "Hizmet bölümü eklendi",
+      "service_section_renamed": "Hizmet bölümü yeniden adlandırıldı",
+      "service_section_ordered": "Hizmet bölümleri sıralandı",
+      "service_section_deleted": "Hizmet bölümü silindi",
+      "shop_booking_settings_changed": "Rezervasyon ayarları değişti",
+      "shop_demo_changed": "Deneme işletme ayarı değişti",
+      "shop_user_created": "İşletme hesabı oluşturuldu",
+      "whatsapp_shop_messages_saved": "İşletmenin WhatsApp mesajları kaydedildi",
+      "shop_call_button_set": "İşletme «Ara» düğmesi ayarlandı",
+      "schedule_unavailable_today": "Berber bugün müsait değil",
+      "schedule_unavailable_today_undone": "«Bugün müsait değil» geri alındı"
+    },
+    "summaries": {
+      "legal_document_saved": "{kind, select, Privacy {Gizlilik belgesi} other {Koşullar belgesi}} kaydedildi ({locale})",
+      "legal_document_reset": "{kind, select, Privacy {Gizlilik belgesi} other {Koşullar belgesi}} ({locale}) varsayılana döndü",
+      "platform_settings_updated": "Değişti: {fields}",
+      "booking_cancelled_by_admin": "Randevu {reference}: {from} → {to}",
+      "booking_status_changed_by_admin": "Randevu {reference}: {from} → {to}",
+      "booking_rescheduled_by_admin": "Randevu {reference}: {from} → {to}",
+      "role_created": "Rol: {name}",
+      "role_deleted": "Rol: {name}",
+      "role_renamed": "{from} → {to}",
+      "role_permissions_changed": "{role}: eklendi {added}; kaldırıldı {removed}",
+      "staff_roles_changed": "Roller: {from} → {to}",
+      "customer_contact_changed": "Değişti: {fields}",
+      "shop_user_invited": "Rol: {role}",
+      "staff_invited": "Rol: {role}",
+      "shop_user_created": "Rol: {role}",
+      "barber_login_created_with_barber": "Berber eklenirken girişi açıldı",
+      "loyalty_rules_saved": "{by, select, admin {Platform tarafından} other {İşletme tarafından}}: ilk ziyaret {firstVisit} — her ziyaret {visit} — {pointsForReward} puanda ödül ({rewardType, select, FreeService {ücretsiz hizmet} other {{rewardAmount} indirim}}) — ziyaret olmazsa: {inactivityRule, select, Wipe {{inactivityDays} gün sonra kart sıfırlanır} DecayPerPeriod {her {inactivityDays} günde bir puan düşer} other {bir şey olmaz}}",
+      "whatsapp_dispatch_retried": "{event} → {audience} — deneme {attempt}",
+      "whatsapp_shop_messages_saved": "{changes}",
+      "whatsapp_template_activated": "{event} → {audience} ({locale}): sürüm {to}{from, select, none {} other { ({from} yerine)}}",
+      "whatsapp_template_test_sent": "Sürüm {version}: {event} → {audience} ({locale})",
+      "professional_created": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — WhatsApp: {whatsApp, select, true {numara eklendi} other {numara yok}} — bildirimler: {notifications, select, true {açık} other {kapalı}}",
+      "professional_updated": "{by, select, admin {Platform tarafından} other {İşletme tarafından}}",
+      "professional_enabled": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — durum: {status}",
+      "professional_disabled": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — durum: {status}",
+      "professional_whatsapp_changed": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — numara: {number, select, unchanged {aynı} removed {numara silindi} added {numara eklendi} other {numara değişti}} — bildirimler: {notifications, select, true {açık} other {kapalı}}",
+      "professional_avatar_changed": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — fotoğraf {change, select, removed {silindi.} other {değişti}}",
+      "professional_services_assigned": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — {count} hizmet",
+      "qr_created": "{kind, select, shop {İşletme kodu} other {Berber kodu}}: {code}{automatic, select, true { (berber eklenince otomatik)} other {}}",
+      "qr_activated": "Kod: {code}",
+      "qr_deactivated": "Kod: {code}",
+      "review_flagged": "{rating} yıldızlı yorum",
+      "review_hidden": "{rating} yıldızlı yorum",
+      "review_published": "{rating} yıldızlı yorum",
+      "review_report_cleared": "{rating} yıldızlı yorum",
+      "review_shop_contacted": "{rating} yıldızlı yorum — {length} karakterlik mesaj",
+      "service_category_created": "Simge: {icon}",
+      "service_support_override": "{priceFrom, select, none {} other {Fiyat: {priceFrom} → {priceTo}. }}{durationFrom, select, none {} other {Süre: {durationFrom} → {durationTo}. }}{name, select, none {} other {Ad değişti. }}{category, select, none {} other {Bölüm değişti. }}{online, select, none {} true {Online randevu: açık. } other {Online randevu: kapalı. }}{barbers, select, none {} other {Berberler: {barbers}.}}",
+      "service_admin_created": "{price} — {duration} — berberler: {barbers}",
+      "package_admin_created": "{price} — {duration} — hizmetler: {services}",
+      "package_admin_updated": "Fiyat: {priceFrom} → {priceTo} — süre: {durationFrom} → {durationTo} — hizmetler: {services}",
+      "service_section_created": "Bölüm: {name}",
+      "service_section_renamed": "Bölüm: {name}",
+      "service_section_deleted": "Bölüm: {name}",
+      "service_section_ordered": "{count} bölüm yeni sırada",
+      "shop_created": "Durum: {status}",
+      "shop_activated": "{from} → {to}",
+      "shop_suspended": "{from} → {to}",
+      "shop_profile_updated": "{by, select, admin {Platform tarafından} other {İşletme tarafından}}: {fields}",
+      "shop_location_set": "{by, select, admin {Platform tarafından} other {İşletme tarafından}} — {source}",
+      "shop_demo_changed": "{demo, select, true {Deneme işletmesi oldu} other {Artık deneme işletmesi değil}}",
+      "shop_editable_policy_set": "İşletme düzenleyebilir: {fields}",
+      "shop_image_changed": "{image, select, Logo {Logo değişikliği} Cover {Kapak değişikliği} other {Galeri değişikliği}}: {change, select, removed {silindi.} added {eklendi.} other {değişti}}",
+      "shop_call_button_set": "«Ara» düğmesi: {enabled, select, true {görünür} other {gizli.}}{numberChanged, select, true {; numara değişti} other {}}",
+      "shop_booking_settings_changed": "{by, select, admin {Platform tarafından} other {İşletme tarafından}}: her {slotStep} — en az {minLeadTime} önce — {horizonDays} gün ileriye kadar — ara {buffer}",
+      "shop_online_booking_paused": "{by, select, admin {Platform tarafından} other {İşletme tarafından}}{resumesAt, select, none { — dönüş zamanı yok} other { — {resumesAt} açılır}}",
+      "shop_online_booking_resumed": "{by, select, admin {Platform tarafından} system {Dönüş zamanında otomatik} other {İşletme tarafından}}",
+      "schedule_unavailable_today": "{by, select, barber {Berberin kendisi} other {İşletme sahibi}} — {until} tarihine kadar",
+      "schedule_unavailable_today_undone": "{by, select, barber {Berberin kendisi} other {İşletme sahibi}}",
+      "plan_created": "{price, select, none {Henüz fiyat yok} other {İlk fiyat: {price}}}",
+      "plan_published": "Durum: {status}",
+      "plan_deactivated": "Durum: {status}",
+      "plan_archived": "Durum: {status}",
+      "plan_reordered": "{count} paket yeni sırada",
+      "plan_price_added": "Sürüm {version}: {from} itibarıyla {amount}",
+      "subscription_assigned": "{plan}: {start} – {end} — {amount}{custom, select, true { (özel fiyat, standart {standardAmount})} other {}}",
+      "subscription_renewed": "{plan}: {start} – {end} — {amount}{custom, select, true { (özel fiyat, standart {standardAmount})} other {}}",
+      "subscription_overridden": "{amountFrom, select, none {} other {Tutar: {amountFrom} → {amountTo}. }}{endFrom, select, none {} other {Bitiş: {endFrom} → {endTo}.}}"
+    },
+    "values": {
+      "nothing": "hiçbir şey",
+      "on": "açık",
+      "off": "kapalı",
+      "ar": "Arapça",
+      "en": "İngilizce",
+      "tr": "Türkçe",
+      "Terms": "Koşullar",
+      "Privacy": "Gizlilik",
+      "Customer": "müşteri",
+      "Professional": "berber",
+      "BookingConfirmed": "randevu onayı",
+      "BookingPending": "onay bekleyen talep",
+      "BookingRescheduled": "saat değişikliği",
+      "BookingCancelled": "randevu iptali",
+      "BookingCancelledByShop": "işletme iptali",
+      "BookingReminder": "hatırlatma",
+      "BookingProfessionalChanged": "başka berbere verildi",
+      "WinBack": "sizi özledik",
+      "Pending": "onay bekliyor",
+      "Confirmed": "onaylandı",
+      "Arrived": "geldi",
+      "Completed": "tamamlandı",
+      "CancelledByCustomer": "müşteri iptal etti",
+      "CancelledByShop": "işletme iptal etti",
+      "NoShow": "gelmedi",
+      "Active": "aktif",
+      "Disabled": "kapalı",
+      "Draft": "taslak",
+      "Suspended": "askıda",
+      "Published": "yayında",
+      "Inactive": "pasif",
+      "Archived": "arşivlendi",
+      "SuperAdmin": "süper yönetici",
+      "OperationsManager": "operasyon yöneticisi",
+      "Support": "destek",
+      "ShopOwner": "işletme sahibi",
+      "ShopBarber": "berber",
+      "Name": "ad",
+      "Description": "açıklama",
+      "Category": "tür",
+      "PublicPhone": "işletme numarası",
+      "Amenities": "olanaklar",
+      "Logo": "logo",
+      "Cover": "kapak",
+      "Gallery": "galeri",
+      "Location": "konum",
+      "ShortName": "kısa ad",
+      "Verified": "doğrulandı",
+      "Unverified": "doğrulanmadı",
+      "phone": "cep numarası",
+      "email": "e-posta",
+      "displayName": "ad",
+      "Manual": "haritada elle belirlendi",
+      "Geocoded": "adresten",
+      "Device": "cihaz konumundan"
+    },
+    "legacy": "Eski kayıt, İngilizce"
   },
   "notifications": {
     "title": "Bildirimler",
@@ -3330,7 +3500,10 @@
         "booking_postponement_offered": "Bir berber {customer} için yeni saat önerdi: {offeredDate} {offeredTime}",
         "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı",
         "whatsapp_allowance_reached": "{allowance, plural, =0 {Paketinizde müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.} other {Bu ayın WhatsApp sınırına ulaştınız ({allowance}). Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.}}",
-        "barber_account_deleted": "{name} Groom Here hesabını sildi. Randevularıyla birlikte işletmede kalır; «Berberler» bölümünden yeni bir giriş açabilirsiniz."
+        "marketing_limit_reached": "Sınıra ulaşıldı: bu ayın davet mesajları bitti ({allowance}). {windowEnd} tarihine kadar yenisi gönderilmez",
+        "barber_account_deleted": "{name} Groom Here hesabını sildi. Randevularıyla birlikte işletmede kalır; «Berberler» bölümünden yeni bir giriş açabilirsiniz.",
+        "shop_online_booking_paused": "{by, select, admin {Groom Here ekibi işletmenizin online randevusunu durdurdu} other {Online randevu durduruldu}}{resumesAt, select, none {} other { ({resumesAt} tarihine kadar)}}. {bookings, plural, =0 {Bu sürede onaylı randevu yok.} other {Bu sürede {bookings} onaylı randevu var: gün ekranından ilgilenin.}}",
+        "professional_unavailable_today": "{professional} bugün {since} itibarıyla müsait değil{bookings, plural, =0 {.} other {; bugün meslektaşlarının ilgileneceği {bookings} randevusu kaldı.}}"
       },
       "customer": {
         "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
@@ -3339,7 +3512,14 @@
         "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz",
         "booking_postponement_offered": "{shop} randevunuz için yeni bir saat öneriyor: {date} {time} yerine {offeredDate} {offeredTime}. Randevu sayfasından kabul edin veya reddedin",
         "loyalty_visit_completed": "{shop} ziyaretiniz tamamlandı{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}",
-        "booking_completed": "{shop} ziyaretiniz için teşekkürler{loyalty, select, on {{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}} other {.}} Ziyaretinizi değerlendirin, başkalarına yol gösterin."
+        "booking_completed": "{shop} ziyaretiniz için teşekkürler{loyalty, select, on {{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}} other {.}} Ziyaretinizi değerlendirin, başkalarına yol gösterin.",
+        "customer_booking_confirmed": "{shop} randevunuz onaylandı: {item}, {professional} ile {date} saat {time}",
+        "customer_booking_rescheduled": "{actor, select, Customer {{shop} randevunuzu {previousDate} {previousTime} saatinden {date} {time} saatine aldınız} other {{shop} randevunuz değişti: {previousDate} {previousTime} yerine {date} {time}. Ücretsiz iptal edebilir veya değiştirebilirsiniz}}",
+        "customer_booking_cancelled": "{shop} randevunuzu ({date} {time}) iptal ettiniz",
+        "customer_booking_cancelled_by_shop": "Özür dileriz: {shop} {date} {time} randevunuzu iptal etti. Sebep: {reasonCode, select, StaffUnwell {berber rahatsız} Emergency {işletmede acil bir durum} ShopClosed {dükkân kapalı (elektrik vb.)} Other {{reason}} other {işletmede bir durum}}. Size uygun bir saatte yeniden randevu alın",
+        "customer_booking_professional_changed": "{shop} randevunuz aynı saatte ({date} {time}) {professional} adlı berbere verildi. Başlayana kadar değiştirebilir veya iptal edebilirsiniz",
+        "customer_booking_reminder": "Hatırlatma: {shop} randevunuz {professional} ile {date} saat {time}",
+        "customer_win_back": "{shop} sizi özledi! Bir sonraki randevunuzu kolayca alın"
       },
       "barber": {
         "booking_created": "{customer} için yeni randevu: {item}, {date} saat {time}",
@@ -3348,7 +3528,9 @@
         "booking_rescheduled": "{customer} adlı müşterinin randevusu artık {date} saat {time} ({item})",
         "booking_cancelled": "{customer} adlı müşterinin {date} saat {time} tarihli randevusu iptal edildi ({item})",
         "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}",
-        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı. Bir meslektaşa aktarın veya iptal edin"
+        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı. Bir meslektaşa aktarın veya iptal edin",
+        "professional_unavailable_today": "İşletme sahibi sizi bugün {since} itibarıyla müsait değil olarak işaretledi. Bugün kalan randevularınızla meslektaşlarınız ilgilenecek.",
+        "professional_unavailable_bookings": "Müsait olmayan berberin randevuları: {professional} bugün müsait değil ve {bookings} randevusu kaldı. Bir meslektaşa verin, saati değiştirin ya da nedenini yazarak iptal edin."
       },
       "admin": {
         "whatsapp_dispatch_failed": "Bir WhatsApp mesajı gönderilemedi ({event})",
@@ -3370,8 +3552,10 @@
       "BookingPending": "Onay bekleyen talep",
       "BookingRescheduled": "Randevu taşındı",
       "BookingCancelled": "Randevu iptal edildi",
+      "BookingCancelledByShop": "İşletme tarafından iptal",
       "BookingReminder": "Randevu öncesi hatırlatma",
-      "BookingProfessionalChanged": "Randevu başka bir berbere verildi"
+      "BookingProfessionalChanged": "Randevu başka bir berbere verildi",
+      "WinBack": "Sizi özledik"
     },
     "audience": {
       "Customer": "Müşteri",
@@ -3456,7 +3640,8 @@
       "amount": "Tutar",
       "address": "Adres",
       "booking_reference": "Randevu referansı",
-      "manage_url": "Randevu yönetim bağlantısı"
+      "manage_url": "Randevu yönetim bağlantısı",
+      "reason": "İptal sebebi"
     },
     "testSend": {
       "open": "Test gönderimi",
@@ -3478,7 +3663,8 @@
         "Sent": "Gönderildi",
         "Delivered": "Teslim edildi",
         "Read": "Okundu",
-        "Failed": "Başarısız"
+        "Failed": "Başarısız",
+        "LimitReached": "Sınıra ulaşıldı"
       },
       "anyAudience": "Tüm hedef kitleler",
       "anyEvent": "Tüm olaylar",
@@ -3496,7 +3682,8 @@
       "kind": {
         "Lifecycle": "Randevu olayı",
         "Reminder": "Hatırlatma",
-        "Test": "Test"
+        "Test": "Test",
+        "WinBack": "Geri kazanma"
       },
       "versionShort": "v{number}",
       "empty": {
@@ -3762,9 +3949,6 @@
     "rulesForm": {
       "title": "Sadakat programı",
       "intro": "Puanlar yalnızca ziyaret “Hizmet bitti” olarak kapatıldığında, kapatan berberin adıyla eklenir. Puanlar müşterinin cep numarasına işlenir; çevrimiçi, kapıdan ve telefonla ziyaretler tek kartta toplanır.",
-      "addOnOff": "Sadakat, dükkânınız için kapalı olan ücretli bir eklentidir. Kuralları şimdi ayarlayabilirsiniz; platform ekibi açtığında müşterileriniz puan toplamaya başlar.",
-      "addOnOffAdmin": "Eklenti bu dükkân için kapalı; müşterileri şu an puan toplamıyor. Abonelik sekmesinden açın.",
-      "addOnOn": "Eklenti açık: müşteriler puan topluyor ve ödüllerini kullanıyor.",
       "notSet": "Henüz puan kuralı ayarlanmadı.",
       "firstVisitPoints": "İlk ziyaret puanı",
       "visitPoints": "Sonraki her ziyaretin puanı",
@@ -3793,7 +3977,6 @@
         "rewardsHeld": "Randevular için ayrılan ödüller",
         "rewardsRedeemed": "Kullanılan ödüller"
       },
-      "paidAdmin": "Ücretli özellik: işletme bunu kendisi açamaz. Platform ekibi Abonelik sekmesinden bir süreliğine açar.",
       "toSubscription": "Aboneliğe git",
       "expiry": {
         "legend": "Müşteri şu süre içinde gelmezse puanlar sona erer",
@@ -3806,7 +3989,11 @@
         "Wipe": "Kart silinir",
         "DecayPerPeriod": "Ziyaretsiz geçen her süre için bir puan düşülür"
       },
-      "outOfRange": "{min} ile {max} arasında olmalı"
+      "outOfRange": "{min} ile {max} arasında olmalı",
+      "includedOn": "İşletmenin paketi sadakat programını içeriyor: müşteriler puan toplar ve ödüllerini kullanır.",
+      "includedOff": "Mevcut paketiniz sadakat programını içermiyor. Kuralları şimdi ayarlayabilirsiniz; onu içeren bir pakete geçtiğinizde müşterileriniz puan toplamaya başlar.",
+      "includedOffAdmin": "Bu işletmenin paketi sadakat programını içermiyor; müşterileri şu an puan toplamıyor.",
+      "planAdmin": "Sadakat programı paketle gelir: işletme kendisi açamaz. Abonelik sekmesinden onu içeren bir pakete geçirin."
     }
   },
   "legalAdmin": {
@@ -3892,6 +4079,7 @@
       "movedOut": "Aktarılan",
       "movedIn": "Aktarılan (gelen)",
       "postponed": "Ertelenen",
+      "unavailableDays": "Müsait olmadığı günler",
       "lateCancellations": "Geç iptal",
       "noShows": "Gelmedi",
       "closedLate": "Geç kapatıldı",
@@ -3934,11 +4122,7 @@
     }
   },
   "bookingSettings": {
-    "confirmation": "Randevu onayı",
     "times": "Saatler",
-    "manual": "Randevuları kendim onaylarım",
-    "manualOn": "Yeni çevrim içi randevular dükkân onaylayana kadar “onay bekliyor” olarak gelir.",
-    "manualOff": "Çevrim içi randevular alındığı anda otomatik onaylanır.",
     "fields": {
       "slotStepMinutes": "Başlangıç saatleri",
       "minLeadTimeMinutes": "En az önceden bildirim",
@@ -3967,17 +4151,6 @@
     "bn": "Bengalce",
     "tl": "Filipince",
     "tr": "Türkçe"
-  },
-  "messageUsage": {
-    "title": "Müşterilere WhatsApp mesajları",
-    "month": "{month}",
-    "of": "{used} / {allowance}",
-    "sent": "{used, plural, =0 {Bu ay henüz mesaj gönderilmedi} one {Bu ay # mesaj gönderildi} other {Bu ay # mesaj gönderildi}}",
-    "unlimited": "Mevcut pakette mesajlar sınırsızdır.",
-    "none": "Mevcut pakette müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.",
-    "reached": "Bu ayın sınırına ulaştınız. Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.",
-    "note": "Yalnızca müşterilere giden mesajlar sayılır; berber mesajları ve giriş kodları sayılmaz.",
-    "progress": "Bu ayın mesajlarının %{percent} kadarı kullanıldı"
   },
   "shopAccount": {
     "title": "Hesabım",
@@ -4022,5 +4195,22 @@
       "confirm": "Evet, hesabımı sil",
       "cancel": "Vazgeç"
     }
+  },
+  "planUsage": {
+    "title": "Paketin içerdikleri",
+    "loyaltyActive": "Sadakat programı: dahil ve açık",
+    "loyaltyIncluded": "Sadakat programı: dahil; abonelik geçerliyken çalışır",
+    "loyaltyNotIncluded": "Sadakat programı: bu pakete dahil değil",
+    "winBackOn": "«Sizi özledik» mesajı: müşterinin son ziyaretinden {days} gün sonra gönderilir",
+    "winBackOff": "«Sizi özledik» mesajları: bu pakete dahil değil",
+    "of": "Bu ayki davet mesajları: {used} / {allowance}",
+    "sent": "Bu ayki davet mesajları: {used}",
+    "window": "Ay {start} – {end}",
+    "unlimited": "Bu pakette sınır yok.",
+    "none": "Paket davet mesajı içermiyor.",
+    "reached": "Sınıra ulaşıldı",
+    "reachedBody": "Ay {date} tarihinde bitene kadar başka davet mesajı gönderilmez.",
+    "progress": "Bu ayın mesajlarının %{percent} kadarı kullanıldı",
+    "note": "Yalnızca davet mesajları sayılır. Randevu onayı, değişikliği ve iptali her zaman gönderilir ve sayılmaz."
   }
 }

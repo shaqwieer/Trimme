@@ -134,7 +134,8 @@ internal sealed class CreateRoleHandler(TrimmeDbContext db, IAdminAccounts accou
         }
 
         var id = accounts.AddRole(command.Name, UserType.PlatformAdmin);
-        audit.Record(new AuditRecord("role.created", "Role", id.ToString(), null, $"Role \"{command.Name.Trim()}\" created (no permissions)", null));
+        audit.Record(new AuditRecord("role.created", "Role", id.ToString(), null, $"Role \"{command.Name.Trim()}\" created (no permissions)", null,
+            SummaryArgs: AuditArgs.Of(("name", command.Name.Trim()))));
         await db.SaveChangesAsync(cancellationToken);
         return await RoleRules.ResponseAsync(db, new RoleRow(id, command.Name.Trim(), UserType.PlatformAdmin), cancellationToken);
     }
@@ -166,7 +167,8 @@ internal sealed class RenameRoleHandler(TrimmeDbContext db, IAdminAccounts accou
         }
 
         await accounts.RenameRoleAsync(role.Id, command.Name, cancellationToken);
-        audit.Record(new AuditRecord("role.renamed", "Role", role.Id.ToString(), null, $"\"{role.Name}\" → \"{command.Name.Trim()}\"", null));
+        audit.Record(new AuditRecord("role.renamed", "Role", role.Id.ToString(), null, $"\"{role.Name}\" → \"{command.Name.Trim()}\"", null,
+            SummaryArgs: AuditArgs.Of(("from", role.Name), ("to", command.Name.Trim()))));
         await db.SaveChangesAsync(cancellationToken);
         return await RoleRules.ResponseAsync(db, role with { Name = command.Name.Trim() }, cancellationToken);
     }
@@ -192,7 +194,8 @@ internal sealed class DeleteRoleHandler(TrimmeDbContext db, IAdminAccounts accou
         }
 
         await accounts.RemoveRoleAsync(role.Id, cancellationToken);
-        audit.Record(new AuditRecord("role.deleted", "Role", role.Id.ToString(), null, $"Role \"{role.Name}\" deleted", null));
+        audit.Record(new AuditRecord("role.deleted", "Role", role.Id.ToString(), null, $"Role \"{role.Name}\" deleted", null,
+            SummaryArgs: AuditArgs.Of(("name", role.Name))));
         await db.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -239,7 +242,8 @@ internal sealed class SetRolePermissionsHandler(TrimmeDbContext db, IAdminAccoun
             db.AddRange(added.Select(code => new RolePermission(role.Id, code)));
             audit.Record(new AuditRecord(
                 "role.permissions_changed", "Role", role.Id.ToString(), null,
-                Truncate($"{role.Name}: added {Join(added)}; removed {Join(removed)}"), null));
+                Truncate($"{role.Name}: added {Join(added)}; removed {Join(removed)}"), null,
+                SummaryArgs: AuditArgs.Of(("role", role.Name), ("added", AuditArgs.List(added)), ("removed", AuditArgs.List(removed)))));
             await db.SaveChangesAsync(cancellationToken);
         }
 
@@ -318,7 +322,10 @@ internal sealed class SetStaffRolesHandler(TrimmeDbContext db, IAdminAccounts ac
         await accounts.SetRolesAsync(staff.Id, after, cancellationToken);
         audit.Record(new AuditRecord(
             "staff.roles_changed", "User", staff.Id.ToString(), null,
-            $"{string.Join(", ", staff.Roles.Select(r => r.Name))} → {string.Join(", ", roles.Select(r => r.Name).Order(StringComparer.Ordinal))}", null));
+            $"{string.Join(", ", staff.Roles.Select(r => r.Name))} → {string.Join(", ", roles.Select(r => r.Name).Order(StringComparer.Ordinal))}", null,
+            SummaryArgs: AuditArgs.Of(
+                ("from", AuditArgs.List(staff.Roles.Select(r => r.Name))),
+                ("to", AuditArgs.List(roles.Select(r => r.Name).Order(StringComparer.Ordinal))))));
         await db.SaveChangesAsync(cancellationToken);
         return StaffMapping.ToResponse((await accounts.FindStaffAsync(staff.Id, cancellationToken))!);
     }

@@ -4,6 +4,7 @@ using Trimme.BuildingBlocks.Application.Auditing;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Qr;
 using Trimme.BuildingBlocks.Application.Paging;
 using Trimme.BuildingBlocks.Application.Privacy;
 using Trimme.BuildingBlocks.Application.Tenancy;
@@ -143,6 +144,7 @@ internal sealed class CreateProfessionalHandler(
     IAdminDataScope scope,
     ProfessionalSupport support,
     IShopDirectory shops,
+    IProfessionalQrCodes qrCodes,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<CreateProfessionalCommand, Result<AdminProfessionalResponse>>
 {
@@ -187,7 +189,11 @@ internal sealed class CreateProfessionalHandler(
         db.Add(contact);
         audit.Record(new AuditRecord(
             "professional.created", nameof(Professional), id.ToString(), shopId,
-            $"Created in shop {shopId}; WhatsApp {(contact.HasNumber ? "set" : "not set")}, notifications {(contact.NotificationsEnabled ? "on" : "off")}"));
+            $"Created in shop {shopId}; WhatsApp {(contact.HasNumber ? "set" : "not set")}, notifications {(contact.NotificationsEnabled ? "on" : "off")}",
+            SummaryArgs: AuditArgs.Of(("by", "admin"), ("whatsApp", contact.HasNumber), ("notifications", contact.NotificationsEnabled))));
+
+        // Their own QR code at once (D-155, the client's 7-2-3).
+        await qrCodes.EnsureAsync(shopId, id, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);
     }
@@ -229,7 +235,8 @@ internal sealed class UpdateProfessionalHandler(
         // The barber's login shows their Arabic name (D-151).
         await logins.NameChangedAsync(professional.Id, professional.NameAr, cancellationToken);
 
-        audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited"));
+        audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited",
+            SummaryArgs: AuditArgs.Of(("by", "admin"))));
         await db.SaveChangesAsync(cancellationToken);
         var contact = await db.Set<ProfessionalContact>().AsNoTracking().SingleOrDefaultAsync(c => c.ProfessionalId == professional.Id, cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);
@@ -242,6 +249,7 @@ internal sealed class ChangeProfessionalStatusHandler(
     ProfessionalSupport support,
     IAuditLog audit,
     IBarberLoginSync logins,
+    IProfessionalQrCodes qrCodes,
     TimeProvider clock) : ICommandHandler<ChangeProfessionalStatusCommand, Result<AdminProfessionalResponse>>
 {
     public async Task<Result<AdminProfessionalResponse>> Handle(ChangeProfessionalStatusCommand command, CancellationToken cancellationToken)
@@ -268,7 +276,14 @@ internal sealed class ChangeProfessionalStatusHandler(
 
         audit.Record(new AuditRecord(
             command.Enable ? "professional.enabled" : "professional.disabled",
-            nameof(Professional), professional.Id.ToString(), professional.ShopId, $"Now {professional.Status}", command.Reason?.Trim()));
+            nameof(Professional), professional.Id.ToString(), professional.ShopId, $"Now {professional.Status}", command.Reason?.Trim(),
+            SummaryArgs: AuditArgs.Of(("by", "admin"), ("status", professional.Status))));
+        if (command.Enable)
+        {
+            // Turned on again without a code: one now (D-155).
+            await qrCodes.EnsureAsync(professional.ShopId, professional.Id, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         var contact = await db.Set<ProfessionalContact>().AsNoTracking().SingleOrDefaultAsync(c => c.ProfessionalId == professional.Id, cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);
@@ -303,7 +318,8 @@ internal sealed class SetProfessionalWhatsAppHandler(
 
             audit.Record(new AuditRecord(
                 "professional.whatsapp_changed", nameof(Professional), professional.Id.ToString(), professional.ShopId,
-                $"WhatsApp number unchanged; notifications {(contact.NotificationsEnabled ? "on" : "off")}"));
+                $"WhatsApp number unchanged; notifications {(contact.NotificationsEnabled ? "on" : "off")}",
+                SummaryArgs: AuditArgs.Of(("by", "admin"), ("number", "unchanged"), ("notifications", contact.NotificationsEnabled))));
             await db.SaveChangesAsync(cancellationToken);
             return await support.ToResponseAsync(professional, contact, cancellationToken);
         }
@@ -332,7 +348,8 @@ internal sealed class SetProfessionalWhatsAppHandler(
         var what = !numberChanged ? "number unchanged" : !contact.HasNumber ? "number removed" : hadNumber ? "number changed" : "number added";
         audit.Record(new AuditRecord(
             "professional.whatsapp_changed", nameof(Professional), professional.Id.ToString(), professional.ShopId,
-            $"WhatsApp {what}; notifications {(contact.NotificationsEnabled ? "on" : "off")}"));
+            $"WhatsApp {what}; notifications {(contact.NotificationsEnabled ? "on" : "off")}",
+            SummaryArgs: AuditArgs.Of(("by", "admin"), ("number", what.Replace("number ", string.Empty, StringComparison.Ordinal)), ("notifications", contact.NotificationsEnabled))));
         await db.SaveChangesAsync(cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);
     }
@@ -404,7 +421,8 @@ internal sealed class ReplaceProfessionalAvatarHandler(
 
         audit.Record(new AuditRecord(
             "professional.avatar_changed", nameof(Professional), professional.Id.ToString(), professional.ShopId,
-            command.Content is null ? "Avatar removed" : "Avatar replaced"));
+            command.Content is null ? "Avatar removed" : "Avatar replaced",
+            SummaryArgs: AuditArgs.Of(("by", "admin"), ("change", command.Content is null ? "removed" : "replaced"))));
         await db.SaveChangesAsync(cancellationToken);
         var contact = await db.Set<ProfessionalContact>().AsNoTracking().SingleOrDefaultAsync(c => c.ProfessionalId == professional.Id, cancellationToken);
         return await support.ToResponseAsync(professional, contact, cancellationToken);

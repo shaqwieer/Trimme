@@ -27,15 +27,17 @@ public sealed class ShopMessageOptOut
 
     /// <summary>
     /// The slots a shop's switches cover, customer first, in the order of a booking's life: every event × audience that is
-    /// sent at all (<see cref="WhatsAppTemplate.IsSent"/>), so 6 for the customer and 4 for the professional.
+    /// sent at all (<see cref="WhatsAppTemplate.IsSent"/>), so 6 for the customer and 4 for the professional. D-155: the
+    /// pending request is gone (never sent) and the shop's cancellation is in; the win-back message follows the shop's
+    /// plan, not a switch.
     /// </summary>
     public static IReadOnlyList<(MessageAudience Audience, MessageEvent Event)> Slots { get; } =
     [
         .. from audience in new[] { MessageAudience.Customer, MessageAudience.Professional }
            from @event in new[]
            {
-               MessageEvent.BookingConfirmed, MessageEvent.BookingPending, MessageEvent.BookingRescheduled,
-               MessageEvent.BookingProfessionalChanged, MessageEvent.BookingCancelled, MessageEvent.BookingReminder,
+               MessageEvent.BookingConfirmed, MessageEvent.BookingRescheduled, MessageEvent.BookingProfessionalChanged,
+               MessageEvent.BookingCancelled, MessageEvent.BookingCancelledByShop, MessageEvent.BookingReminder,
            }
            where WhatsAppTemplate.IsSent(@event, audience)
            select (audience, @event),

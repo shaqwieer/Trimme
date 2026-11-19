@@ -30,6 +30,7 @@ public sealed class QrAnalyticsModule : ModuleBase
         services.AddScoped<QrCodeResolver>();
         services.AddScoped<QrReadModel>();
         services.AddScoped<IQrAttributionResolver, QrAttributionResolver>();
+        services.AddScoped<IProfessionalQrCodes, ProfessionalQrCodes>();
         services.AddSingleton<IDevSeeder, DemoQrSeeder>();
     }
 

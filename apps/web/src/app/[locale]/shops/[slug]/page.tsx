@@ -31,7 +31,7 @@ import { mayBeSignedIn } from '@/lib/auth/session.server';
 import { optional } from '@/lib/api/safe';
 import { openingLabel } from '@/lib/discovery/opening';
 import { bookHref, directionsUrl, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
-import { type AppLocale, formatTime } from '@/lib/i18n/format';
+import { type AppLocale, formatDate, formatTime } from '@/lib/i18n/format';
 import { contentLanguage, localizedName } from '@/lib/i18n/localized';
 import { aggregateRatingLd, breadcrumbLd, openingHoursLd } from '@/lib/seo/jsonld';
 import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
@@ -99,14 +99,31 @@ async function LiveStatus({ slug, locale, timeZone }: { slug: string; locale: Ap
               : null}
         </span>
       </p>
-      {!status.acceptsOnlineBookings && (
-        <InlineAlert
-          tone="warning"
-          title={status.blockedReason === 'shop.paused' ? tPage('paused.title') : tPage('notListed.title')}
-        >
-          {status.blockedReason === 'shop.paused' ? tPage('paused.body') : tPage('notListed.body')}
-        </InlineAlert>
-      )}
+      {!status.acceptsOnlineBookings &&
+        (status.blockedReason === 'shop.paused' ? (
+          // «متوقف مؤقتاً» with the shop's reason and when booking opens again (D-155, the client's 1-1): the shop
+          // stays listed and can be saved to favourites; it takes no bookings.
+          <InlineAlert tone="warning" title={tPage('paused.title')}>
+            <span data-testid="shop-paused">
+              {status.pauseReason
+                ? tPage('paused.reason', { reason: status.pauseReason })
+                : tPage('paused.body')}
+              {status.pausedUntil && (
+                <>
+                  {' '}
+                  {tPage('paused.until', {
+                    date: formatDate(status.pausedUntil, locale, { timeZone }),
+                    time: formatTime(status.pausedUntil, locale, timeZone),
+                  })}
+                </>
+              )}
+            </span>
+          </InlineAlert>
+        ) : (
+          <InlineAlert tone="warning" title={tPage('notListed.title')}>
+            {tPage('notListed.body')}
+          </InlineAlert>
+        ))}
     </div>
   );
 }
@@ -327,6 +344,18 @@ ${url}`)}`}
                 {t('directions')}
               </a>
             </div>
+          )}
+
+          {/* «اتصال» (D-155, the client's 5-1-7): only when the platform switched it on, with the platform's number. */}
+          {shop.callPhone && (
+            <a
+              href={`tel:${shop.callPhone}`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-button border-[1.5px] border-border-input bg-surface px-4 text-label font-bold text-text-strong hover:border-brand-500"
+              data-testid="shop-call"
+            >
+              <Icon name="phone" className="size-5 text-brand-600" />
+              {t('call')}
+            </a>
           )}
 
           {gallery.length > 0 && (

@@ -34,7 +34,7 @@ internal sealed class SendDispatchJob(
     IJobScheduler jobs,
     INotificationCenter center,
     IProfessionalContactReader professionals,
-    WhatsAppAllowanceGate allowance,
+    MarketingLimitGate allowance,
     ISystemDataScope scope,
     TimeProvider clock)
 {
@@ -51,7 +51,8 @@ internal sealed class SendDispatchJob(
             return;
         }
 
-        // A customer message needs a slot of the shop's monthly WhatsApp allowance (D-149); without one it is not sent.
+        // A win-back message needs a slot of the plan's monthly marketing limit (D-155); without one it is not sent. No
+        // other message is counted or stopped.
         bool passed;
         using (scope.Begin())
         {
@@ -64,7 +65,8 @@ internal sealed class SendDispatchJob(
                 job => job.RunAsync(dispatchId, CancellationToken.None), clock.GetUtcNow() + DispatchSender.Backoff(dispatch.Attempts)));
         }
 
-        // Refused by the allowlist (D-140) or the allowance (D-149): kept in the log as failed, but not a delivery failure.
+        // Refused by the allowlist (D-140): kept in the log as failed, but not a delivery failure. A message over the
+        // marketing limit (D-155) is «وصل الحد», not failed.
         var notAllowed = dispatch.Status == DispatchStatus.Failed && WhatsAppErrors.IsNotADeliveryFailure(dispatch.LastError);
         using (scope.Begin())
         {
@@ -101,7 +103,8 @@ internal sealed class SendDispatchJob(
 /// <summary>
 /// The reminder job of one booking and audience, scheduled at start − offset (spec §16, R-NTF-06, D-111). It re-reads the
 /// booking and sends only if it is still confirmed, still at the start it was scheduled for, and not started; otherwise
-/// it records that it skipped. At most one dispatch per reminder (dedupe key from the reminder id).
+/// it records that it skipped. At most one dispatch per reminder (dedupe key from the reminder id). A customer with an
+/// account also gets the reminder in their bell (D-155, «كل رسالة تنحفظ»).
 /// </summary>
 internal sealed class BookingReminderJob(
     TrimmeDbContext db,
@@ -109,6 +112,7 @@ internal sealed class BookingReminderJob(
     IShopDirectory shops,
     IPlatformSettings settings,
     DispatchFactory factory,
+    INotificationCenter center,
     IJobScheduler jobs,
     ISystemDataScope scope,
     TimeProvider clock)
@@ -140,6 +144,15 @@ internal sealed class BookingReminderJob(
             dispatch = await factory.CreateForBookingAsync(
                 DispatchKind.Reminder, $"reminder:{reminderId:N}", MessageEvent.BookingReminder, reminder.Audience, booking, shop,
                 await settings.GetAsync(cancellationToken), cancellationToken);
+            if (reminder.Audience == MessageAudience.Customer && booking.CustomerId is { } customerId)
+            {
+                await center.NotifyUserAsync(customerId, new InAppNotice(
+                    NoticeKinds.CustomerBookingReminder,
+                    $"reminder:{reminderId:N}",
+                    CustomerNotices.About(booking, shop),
+                    booking.Id), cancellationToken);
+            }
+
             reminder.Complete(sent: dispatch is not null, now);
             await db.SaveChangesAsync(cancellationToken);
         }
@@ -149,6 +162,8 @@ internal sealed class BookingReminderJob(
             dispatch.AssignJob(SendDispatchJob.Enqueue(jobs, dispatch.Id.Value));
             await db.SaveChangesAsync(cancellationToken);
         }
+
+        await center.PushPendingAsync(cancellationToken);
     }
 }
 

@@ -30,7 +30,9 @@ public sealed partial class MetaTemplateCatalogTests
     public void Catalog_HasEveryUtilitySlot_AndTheAuthenticationTemplateInBothLanguages()
     {
         var templates = Templates();
-        templates.Count(t => Category(t) == "UTILITY").ShouldBe(20);
+        templates.Count(t => Category(t) == "UTILITY").ShouldBe(22);
+        templates.Where(t => Category(t) == "MARKETING").Select(Name).Distinct().ShouldBe(["trimme_customer_win_back"], "D-155: the win-back message only");
+        templates.Count(t => Category(t) == "MARKETING").ShouldBe(2);
         templates.Where(t => Category(t) == "AUTHENTICATION").Select(t => (Name(t), t["language"]!.GetValue<string>()))
             .ShouldBe([(MetaTemplateCatalog.AuthenticationTemplateName, "ar"), (MetaTemplateCatalog.AuthenticationTemplateName, "en")]);
         templates.ShouldAllBe(t => MetaName().IsMatch(Name(t)));
@@ -41,7 +43,7 @@ public sealed partial class MetaTemplateCatalogTests
     [Fact]
     public void UtilityBodies_FollowMetasRules_AndNumberParametersInTheSendersOrder()
     {
-        foreach (var template in Templates().Where(t => Category(t) == "UTILITY"))
+        foreach (var template in Templates().Where(t => Category(t) is "UTILITY" or "MARKETING"))
         {
             var body = Component(template, "BODY")!;
             var text = body["text"]!.GetValue<string>().Trim();

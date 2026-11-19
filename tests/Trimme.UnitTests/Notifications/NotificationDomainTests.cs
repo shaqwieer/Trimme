@@ -88,12 +88,20 @@ public sealed class NotificationDomainTests
     [Fact]
     public void DefaultTemplates_CoverEverySlotOnce_AndAreValid()
     {
-        DefaultTemplates.All.Count.ShouldBe(20, "customers six events and professionals four, in Arabic and English");
-        DefaultTemplates.All.Select(t => t.Key).Distinct().Count().ShouldBe(20);
+        DefaultTemplates.All.Count.ShouldBe(24, "customers eight events and professionals four, in Arabic and English (D-155)");
+        DefaultTemplates.All.Select(t => t.Key).Distinct().Count().ShouldBe(24);
         DefaultTemplates.All.ShouldNotContain(t => !WhatsAppTemplate.IsSent(t.Key.Event, t.Key.Audience));
+
+        // Every switch has its wording in both languages; besides them, the pending request (kept, never sent since D-155)
+        // and the win-back message (it follows the plan, not a switch).
+        (MessageAudience Audience, MessageEvent Event)[] beyondTheSwitches =
+            [(MessageAudience.Customer, MessageEvent.BookingPending), (MessageAudience.Customer, MessageEvent.WinBack)];
         DefaultTemplates.All.Select(t => t.Key).ShouldBe(
-            ShopMessageOptOut.Slots.SelectMany(s => new[] { new TemplateKey(s.Event, s.Audience, "ar"), new TemplateKey(s.Event, s.Audience, "en") }),
-            ignoreOrder: true, "every switch has its wording in both languages");
+            ShopMessageOptOut.Slots.Concat(beyondTheSwitches)
+                .SelectMany(s => new[] { new TemplateKey(s.Event, s.Audience, "ar"), new TemplateKey(s.Event, s.Audience, "en") }),
+            ignoreOrder: true);
+        ShopMessageOptOut.IsSlot(MessageAudience.Customer, MessageEvent.BookingPending).ShouldBeFalse();
+        ShopMessageOptOut.IsSlot(MessageAudience.Customer, MessageEvent.BookingCancelledByShop).ShouldBeTrue();
         foreach (var (key, content) in DefaultTemplates.All)
         {
             TemplateValidator.Validate(key.Audience, content).ShouldBeEmpty($"{key}");
@@ -180,16 +188,23 @@ public sealed class NotificationDomainTests
         WhatsAppTemplate.IsSent(MessageEvent.BookingPending, MessageAudience.Customer).ShouldBeTrue();
         WhatsAppTemplate.IsSent(MessageEvent.BookingProfessionalChanged, MessageAudience.Professional).ShouldBeFalse();
         WhatsAppTemplate.IsSent(MessageEvent.BookingProfessionalChanged, MessageAudience.Customer).ShouldBeTrue();
+        WhatsAppTemplate.IsSent(MessageEvent.BookingCancelledByShop, MessageAudience.Professional).ShouldBeFalse();
+        WhatsAppTemplate.IsSent(MessageEvent.WinBack, MessageAudience.Professional).ShouldBeFalse();
+        WhatsAppTemplate.IsSent(MessageEvent.WinBack, MessageAudience.Customer).ShouldBeTrue();
+        WhatsAppTemplate.IsMarketing(MessageEvent.WinBack).ShouldBeTrue();
+        WhatsAppTemplate.IsMarketing(MessageEvent.BookingConfirmed).ShouldBeFalse();
 
         Plan("booking.created", "Confirmed", "Confirmed").ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"]);
         Plan("booking.created", "Arrived", "Arrived").ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"], "a walk-in starting now");
-        Plan("booking.created", "Pending", "Pending").ShouldBe(["BookingPending:Customer"], "the professional hears only once the shop confirms");
+        Plan("booking.created", "Pending", "Pending").ShouldBeEmpty("D-155: nothing is created pending any more");
         Plan("booking.status_changed", "Confirmed", "Confirmed").ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"]);
         Plan("booking.status_changed", "Arrived", "Arrived").ShouldBeEmpty();
         Plan("booking.status_changed", "Completed", "Completed").ShouldBeEmpty();
         Plan("booking.rescheduled", "Pending", "Pending").ShouldBe(["BookingRescheduled:Customer"]);
         Plan("booking.rescheduled", "Confirmed", "Confirmed").ShouldBe(["BookingRescheduled:Customer", "BookingRescheduled:Professional"]);
-        Plan("booking.cancelled", "CancelledByShop", "CancelledByShop").ShouldBe(["BookingCancelled:Customer", "BookingCancelled:Professional"]);
+        Plan("booking.cancelled", "CancelledByShop", "CancelledByShop").ShouldBe(
+            ["BookingCancelledByShop:Customer", "BookingCancelled:Professional"], "D-155: the shop's cancellation apologises with its reason");
+        Plan("booking.cancelled", "CancelledByCustomer", "CancelledByCustomer").ShouldBe(["BookingCancelled:Customer", "BookingCancelled:Professional"]);
 
         // D-145: a change of barber. The barber it left: cancelled; the barber it went to: confirmed (once it is).
         Plan("booking.professional_changed", "Confirmed", "Confirmed", movedFrom: true)

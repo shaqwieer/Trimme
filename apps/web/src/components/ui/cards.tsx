@@ -241,8 +241,12 @@ type ProfessionalOptionProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type
   photoUrl?: string | null;
   rating?: number | null;
   reviewCount?: number;
+  /** «يتحدث: العربية، التركية» under the name (D-155, the client's 3-9). */
+  languages?: string | null;
   /** On leave / not bookable: the option is disabled and shows the design's "في إجازة" chip. */
   unavailable?: boolean;
+  /** The chip's words when not the design's «في إجازة» (D-155: «غير متوفر اليوم»). */
+  unavailableLabel?: string;
 };
 
 /** Selectable professional card (design 538–549), centred avatar + name + rating, on a native radio. */
@@ -252,7 +256,9 @@ export function ProfessionalOption({
   photoUrl,
   rating,
   reviewCount,
+  languages,
   unavailable = false,
+  unavailableLabel,
   disabled,
   ...input
 }: ProfessionalOptionProps) {
@@ -269,9 +275,10 @@ export function ProfessionalOption({
       <Avatar name={displayName} src={photoUrl} size="lg" className="mb-1.5" />
       <span className="text-[0.875rem] font-bold text-text-primary">{displayName}</span>
       {specialty && <span className="text-badge text-text-secondary">{specialty}</span>}
+      {languages && <span className="text-badge text-text-tertiary">{languages}</span>}
       {unavailable ? (
         <Badge tone="warning" dot={false} className="mt-1">
-          {t('unavailable')}
+          {unavailableLabel ?? t('unavailable')}
         </Badge>
       ) : (
         rating != null && (

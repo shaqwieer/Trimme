@@ -67,8 +67,17 @@ public sealed record EditablePolicyRequest(IReadOnlyList<ShopProfileField> Edita
 /// <summary>Whether the shop is a demo (D-148): its card and page say «تجريبي».</summary>
 public sealed record ShopDemoRequest(bool IsDemo);
 
-/// <summary>Pausing online booking; the optional reason is the shop's own note (≤ 300 characters).</summary>
-public sealed record PauseOnlineBookingRequest(string? Reason);
+/// <summary>
+/// The public page's «اتصال» button (D-155, the client's 5-1-7): on or off, and the number it dials (any format; saved in
+/// E.164). Turning it on needs a number, or the one saved before; turning it off keeps the number.
+/// </summary>
+public sealed record ShopCallButtonRequest(bool Enabled, string? Phone);
+
+/// <summary>
+/// Pausing online booking (D-155): the reason (≤ 300 characters) is shown to customers; <c>ResumesAt</c>, optional and at
+/// most 90 days ahead, is when online booking opens again by itself.
+/// </summary>
+public sealed record PauseOnlineBookingRequest(string? Reason, DateTimeOffset? ResumesAt = null);
 
 internal static class ShopEndpoints
 {
@@ -147,10 +156,32 @@ internal static class ShopEndpoints
         admin.MapPut("/{shopId:guid}/location", SetLocation).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopLocation").WithSummary("Sets the confirmed map point and address (audited).")
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapGet("/{shopId:guid}/online-booking", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new AdminGetOnlineBookingStateQuery(shopId), ct) is { } state ? TypedResults.Ok(state) : ShopErrors.NotFound().ToProblem())
+            .RequirePermission(ShopsView)
+            .WithName("AdminGetOnlineBookingState").WithSummary("Whether the shop's online booking is paused, why and until when (D-155).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapPost("/{shopId:guid}/online-booking/pause", async (Guid shopId, PauseOnlineBookingRequest? r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminPauseOnlineBookingCommand(shopId, r?.Reason, r?.ResumesAt), ct)).ToHttpResult())
+            .RequirePermission(ShopsEdit)
+            .WithName("AdminPauseOnlineBooking")
+            .WithSummary("The platform pauses a shop's online booking (D-155), with a reason customers see and an optional return time; the shop is told (audited).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+        admin.MapPost("/{shopId:guid}/online-booking/resume", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AdminResumeOnlineBookingCommand(shopId), ct)).ToHttpResult())
+            .RequirePermission(ShopsEdit)
+            .WithName("AdminResumeOnlineBooking").WithSummary("The platform opens a shop's online booking again (D-155, audited).")
+            .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         admin.MapPut("/{shopId:guid}/demo", (Guid shopId, ShopDemoRequest request, IDispatcher dispatcher, CancellationToken ct) =>
                 SendAdmin(new SetShopDemoCommand(shopId, request.IsDemo), dispatcher, ct)).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopDemo").WithSummary("Marks the shop as a demo, so its card and page say «تجريبي» (D-148; audited).")
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapPut("/{shopId:guid}/call-button", (Guid shopId, ShopCallButtonRequest request, IDispatcher dispatcher, CancellationToken ct) =>
+                SendAdmin(new SetShopCallButtonCommand(shopId, request.Enabled, request.Phone), dispatcher, ct)).RequirePermission(ShopsEdit)
+            .WithName("AdminSetShopCallButton")
+            .WithSummary("Shows or hides the «اتصال» button on the shop's public page and sets its number (D-155: the admin's only, off by default; audited without the number).")
+            .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         admin.MapGet("/{shopId:guid}/booking-settings", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopBookingSettingsQuery(shopId), ct) is { } settings ? TypedResults.Ok(settings) : ShopErrors.NotFound().ToProblem())
             .RequirePermission(ShopsView)
@@ -255,9 +286,10 @@ internal static class ShopEndpoints
             .WithName("GetOnlineBookingState").WithSummary("Whether the shop's online booking is paused (D-013).")
             .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         shop.MapPost("/online-booking/pause", async (PauseOnlineBookingRequest? r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new PauseOnlineBookingCommand(r?.Reason), ct)).ToHttpResult())
+                (await d.Send(new PauseOnlineBookingCommand(r?.Reason, r?.ResumesAt), ct)).ToHttpResult())
             .RequirePermission(OnlineBookingPause)
-            .WithName("PauseOnlineBooking").WithSummary("Stops new online bookings and availability; confirmed appointments stay (audited).")
+            .WithName("PauseOnlineBooking")
+            .WithSummary("The owner stops new online bookings and availability (D-155: the owner only, no longer the barbers), with a reason customers see and an optional return time; confirmed appointments stay, and the shop is told how many fall inside the pause (audited).")
             .Produces<OnlineBookingStateResponse>().ProducesProblem(StatusCodes.Status409Conflict);
         shop.MapPost("/online-booking/resume", async (IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new ResumeOnlineBookingCommand(), ct)).ToHttpResult())

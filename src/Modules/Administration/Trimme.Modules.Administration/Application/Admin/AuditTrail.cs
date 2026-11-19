@@ -15,6 +15,9 @@ namespace Trimme.Modules.Administration.Application.Admin;
 /// <summary>
 /// <c>ActorName</c>: The acting account's display name (never an email or phone); null for the system.
 /// <c>ShopNameAr</c>: The shop the action concerns, when it concerns one.
+/// <c>SummaryCode</c> and <c>SummaryArgs</c> (D-155, «سجل النشاط كله بالعربي»): the summary as a stable code (usually the
+/// action) and its values, which the web words in the reader's language. Both are null on entries written before D-155;
+/// those keep only their English <c>Summary</c>.
 /// </summary>
 public sealed record AuditEntryResponse(
     Guid Id,
@@ -30,7 +33,9 @@ public sealed record AuditEntryResponse(
     string? ShopNameEn,
     string? Summary,
     string? Reason,
-    string? CorrelationId);
+    string? CorrelationId,
+    string? SummaryCode = null,
+    IReadOnlyDictionary<string, string>? SummaryArgs = null);
 
 /// <summary>
 /// <c>NextCursor</c>: Pass it back as <c>cursor</c> for the next (older) page; null on the last page.
@@ -108,7 +113,8 @@ internal sealed class ListAuditHandler(TrimmeDbContext db, IUserNameLookup users
             var shopName = e.ShopId is { } id ? shopNames.GetValueOrDefault(new ShopId(id)) : null;
             return new AuditEntryResponse(
                 e.Id.Value, e.OccurredAt, e.ActorUserId, e.ActorUserId is { } a ? names.GetValueOrDefault(a)?.DisplayName : null, e.ActorType, e.Action,
-                e.EntityType, e.EntityId, e.ShopId, shopName?.NameAr, shopName?.NameEn, e.Summary, e.Reason, e.CorrelationId);
+                e.EntityType, e.EntityId, e.ShopId, shopName?.NameAr, shopName?.NameEn, e.Summary, e.Reason, e.CorrelationId,
+                e.SummaryCode, e.SummaryArgs);
         }).ToList();
         return new AuditPageResponse(items, more ? AuditCursor.Format(page[^1].Sequence) : null);
     }

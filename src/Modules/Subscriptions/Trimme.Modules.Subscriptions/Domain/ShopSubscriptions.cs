@@ -445,9 +445,10 @@ public static class SubscriptionErrors
 }
 
 /// <summary>
-/// The platform read model of a shop's coverage: its last covered day and whether it is suspended, nothing commercial.
-/// Deliberately not shop-owned, so discovery and booking gates can read any shop's status without a tenant scope
-/// (D-078); it is written only together with the shop's <see cref="ShopSubscription"/>, in the same unit of work.
+/// The platform read model of a shop's coverage: its last covered day, whether it is suspended, and which plan each
+/// period is on (D-155, for the plan's features), nothing commercial. Deliberately not shop-owned, so discovery, booking
+/// and loyalty gates can read any shop's status without a tenant scope (D-078); it is written only together with the
+/// shop's <see cref="ShopSubscription"/>, in the same unit of work.
 /// </summary>
 public sealed class SubscriptionCoverage : IPublicContent
 {
@@ -466,25 +467,35 @@ public sealed class SubscriptionCoverage : IPublicContent
 
     public bool IsSuspended { get; private set; }
 
-    /// <summary>
-    /// The loyalty add-on in force (D-149): its first and last day (null when it never ran). Read for any shop without a
-    /// tenant scope, like the end date: whether customers earn and redeem points, and which shops can hold loyalty cards.
-    /// </summary>
-    public DateOnly? LoyaltyAddOnStart { get; private set; }
-
-    public DateOnly? LoyaltyAddOnEnd { get; private set; }
+    /// <summary>Each period's days and plan (D-155): which plan is in force on a day, for its features (loyalty).</summary>
+    public List<CoveredPeriod> Periods { get; private set; } = [];
 
     public void CopyFrom(ShopSubscription subscription)
     {
         ArgumentNullException.ThrowIfNull(subscription);
         EndDate = subscription.EndDate;
         IsSuspended = subscription.IsSuspended;
+        Periods = [.. subscription.Periods.OrderBy(p => p.PeriodStart).Select(p => CoveredPeriod.Of(p.PeriodStart, p.PeriodEnd, p.PlanId.Value))];
     }
 
-    /// <summary>Written only with the shop's add-on periods, in the same unit of work.</summary>
-    public void SetLoyaltyAddOn(DateOnly start, DateOnly end)
-    {
-        LoyaltyAddOnStart = start;
-        LoyaltyAddOnEnd = end;
-    }
+    /// <summary>
+    /// The plan in force on <paramref name="today"/>: the period covering it, while the subscription is in force (not
+    /// suspended, not past its last day). Null otherwise: no plan, no features.
+    /// </summary>
+    public Guid? PlanInForce(DateOnly today) =>
+        IsSuspended || today > EndDate
+            ? null
+            : Periods.Where(p => p.Start <= today && today <= p.End).OrderByDescending(p => p.Start).FirstOrDefault()?.PlanId;
+}
+
+/// <summary>One subscription period in the coverage read model (D-155): its first and last day and its plan.</summary>
+public sealed class CoveredPeriod
+{
+    public DateOnly Start { get; set; }
+
+    public DateOnly End { get; set; }
+
+    public Guid PlanId { get; set; }
+
+    public static CoveredPeriod Of(DateOnly start, DateOnly end, Guid planId) => new() { Start = start, End = end, PlanId = planId };
 }

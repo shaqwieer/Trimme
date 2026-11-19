@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Controller, useFieldArray } from 'react-hook-form';
 import * as z from 'zod';
 import { Button, IconButton } from '@/components/ui/Button';
-import { SelectField, Switch, TextField } from '@/components/ui/inputs';
+import { Checkbox, SelectField, Switch, TextField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
@@ -51,8 +51,12 @@ export const planSchema = z
     intervalCount: z.string(),
     maxProfessionals: optionalWhole(1, 10_000),
     maxServices: optionalWhole(1, 10_000),
-    // WhatsApp messages to customers per calendar month (D-149): empty = unlimited, 0 = none.
-    monthlyWhatsAppMessages: optionalWhole(0, 1_000_000),
+    // D-155 (the client's 2-2): what the plan gives. Loyalty; the win-back message after so many days without a visit;
+    // and the win-back messages a month (empty = unlimited, 0 = none). Booking messages are never counted (the client's 12-1).
+    includesLoyalty: z.boolean(),
+    winBackEnabled: z.boolean(),
+    winBackAfterDays: z.string(),
+    monthlyMarketingMessages: optionalWhole(0, 1_000_000),
     trialDays: optionalWhole(0, 365),
     graceDays: optionalWhole(0, 365),
     availableToNewShops: z.boolean(),
@@ -65,6 +69,9 @@ export const planSchema = z
     const max = values.intervalUnit === 'Month' ? 36 : 1095;
     if (!Number.isInteger(count) || count < 1 || count > max)
       ctx.addIssue({ code: 'custom', path: ['intervalCount'], message: 'outOfRange' });
+    const days = Number(values.winBackAfterDays);
+    if (values.winBackEnabled && (!Number.isInteger(days) || days < 1 || days > 90))
+      ctx.addIssue({ code: 'custom', path: ['winBackAfterDays'], message: 'outOfRange' });
   });
 
 const FIELDS = [
@@ -76,7 +83,8 @@ const FIELDS = [
   'intervalCount',
   'maxProfessionals',
   'maxServices',
-  'monthlyWhatsAppMessages',
+  'monthlyMarketingMessages',
+  'winBackAfterDays',
   'trialDays',
   'graceDays',
   'initialPrice',
@@ -110,8 +118,15 @@ export function PlanForm({ plan }: { plan?: Plan }) {
       intervalCount: String(plan?.intervalCount ?? 1),
       maxProfessionals: plan?.maxProfessionals != null ? String(plan.maxProfessionals) : '',
       maxServices: plan?.maxServices != null ? String(plan.maxServices) : '',
-      monthlyWhatsAppMessages:
-        plan?.monthlyWhatsAppMessages != null ? String(plan.monthlyWhatsAppMessages) : '',
+      includesLoyalty: plan?.includesLoyalty ?? false,
+      winBackEnabled: plan?.winBackEnabled ?? false,
+      winBackAfterDays: String(plan?.winBackAfterDays ?? 10),
+      // A new plan starts at the client's 500 a month; an existing one keeps its own (empty = unlimited).
+      monthlyMarketingMessages: plan
+        ? plan.monthlyMarketingMessages != null
+          ? String(plan.monthlyMarketingMessages)
+          : ''
+        : '500',
       trialDays: plan?.trialDays != null ? String(plan.trialDays) : '',
       graceDays: plan?.graceDays != null ? String(plan.graceDays) : '',
       availableToNewShops: plan?.availableToNewShops ?? true,
@@ -120,6 +135,7 @@ export function PlanForm({ plan }: { plan?: Plan }) {
   });
   const features = useFieldArray({ control: form.control, name: 'features' });
   const archived = plan?.status === 'Archived';
+  const winBack = form.watch('winBackEnabled');
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFailure(undefined);
@@ -132,7 +148,12 @@ export function PlanForm({ plan }: { plan?: Plan }) {
       features: values.features.map((f) => ({ ar: f.ar.trim(), en: f.en.trim() })),
       maxProfessionals: wholeOrNull(values.maxProfessionals),
       maxServices: wholeOrNull(values.maxServices),
-      monthlyWhatsAppMessages: wholeOrNull(values.monthlyWhatsAppMessages),
+      includesLoyalty: values.includesLoyalty,
+      winBackEnabled: values.winBackEnabled,
+      winBackAfterDays: values.winBackEnabled
+        ? Number(values.winBackAfterDays)
+        : (plan?.winBackAfterDays ?? 10),
+      monthlyMarketingMessages: wholeOrNull(values.monthlyMarketingMessages),
       intervalUnit: values.intervalUnit,
       intervalCount: Number(values.intervalCount),
       trialDays: wholeOrNull(values.trialDays),
@@ -237,15 +258,6 @@ export function PlanForm({ plan }: { plan?: Plan }) {
         />
         <FormTextField
           control={form.control}
-          name="monthlyWhatsAppMessages"
-          label={t('monthlyWhatsAppMessages')}
-          helper={t('monthlyWhatsAppMessagesHelper')}
-          dir="ltr"
-          inputMode="numeric"
-          optional
-        />
-        <FormTextField
-          control={form.control}
           name="trialDays"
           label={t('trialDays')}
           helper={t('trialGraceHelper')}
@@ -287,6 +299,59 @@ export function PlanForm({ plan }: { plan?: Plan }) {
             </div>
           )}
         />
+      </fieldset>
+
+      <fieldset disabled={archived} className="flex flex-col gap-3" data-testid="plan-options">
+        <legend className="text-label font-bold text-text-primary">{t('options')}</legend>
+        <Controller
+          control={form.control}
+          name="includesLoyalty"
+          render={({ field }) => (
+            <Checkbox
+              name={field.name}
+              checked={field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
+              label={t('includesLoyalty')}
+              description={t('includesLoyaltyHelper')}
+            />
+          )}
+        />
+        <Controller
+          control={form.control}
+          name="winBackEnabled"
+          render={({ field }) => (
+            <Checkbox
+              name={field.name}
+              checked={field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
+              label={t('winBackEnabled')}
+              description={t('winBackEnabledHelper')}
+            />
+          )}
+        />
+        {winBack && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormTextField
+              control={form.control}
+              name="winBackAfterDays"
+              label={t('winBackAfterDays')}
+              helper={t('winBackAfterDaysHelper')}
+              dir="ltr"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <FormTextField
+              control={form.control}
+              name="monthlyMarketingMessages"
+              label={t('monthlyMarketingMessages')}
+              helper={t('monthlyMarketingMessagesHelper')}
+              dir="ltr"
+              inputMode="numeric"
+              autoComplete="off"
+              optional
+            />
+          </div>
+        )}
       </fieldset>
 
       <fieldset disabled={archived} className="flex flex-col gap-3">

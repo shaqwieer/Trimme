@@ -65,12 +65,16 @@ public sealed class NotificationsModule : ModuleBase
         services.AddScoped<INotificationCenter, NotificationCenter>();
         services.AddScoped<IOutboxConsumer, BookingNotificationsConsumer>();
         services.AddScoped<SendDispatchJob>();
-        services.AddScoped<WhatsAppAllowanceGate>();
-        services.AddScoped<BuildingBlocks.Application.Notifications.IWhatsAppUsage, WhatsAppUsageReader>();
+        services.AddScoped<MarketingLimitGate>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IMarketingUsage, MarketingUsageReader>();
         services.AddScoped<BookingReminderJob>();
+        services.AddScoped<WinBackJob>();
         services.AddScoped<ProfessionalDeliveryJob>();
         services.AddRecurringJob<NotificationSweepJob>("notifications-sweep", "*/5 * * * *");
         services.AddRecurringJob<DispatchRetentionJob>("notifications-retention", "15 4 * * *");
+
+        // «رسالة الدعوة للعودة» (D-155), once a day in the late morning, platform time.
+        services.AddRecurringJob<WinBackJob>("notifications-win-back", "0 11 * * *");
 
         services.AddSingleton<IReferenceDataSynchronizer, DefaultTemplatesSynchronizer>();
         services.AddSingleton<IDevSeeder, DemoNotificationsSeeder>();

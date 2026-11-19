@@ -46,7 +46,7 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task TheBarber_GivesAPhoneBookingANewTime_AnOnlineOneNeedsConsent_TheOwnerOnlyWatches_AndAColleaguesBookingIsOutOfReach()
+    public async Task TheBarber_GivesABookingANewTime_AnOnlineOneAtOnce_TheOwnerOnlyWatches_AndAColleaguesBookingIsOutOfReach()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "shop_reschedule", ct);
@@ -54,11 +54,10 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
         var day = TodayAt(DateTimeOffset.UtcNow).AddDays(3);
 
-        // A customer's online booking gets a new time only with their consent: an offer, not a change (D-147).
+        // A customer's online booking gets its new time at once (D-155, no consent and no offer); the customer is told.
         var online = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 9), ct), ct, HttpStatusCode.Created);
-        await FailsAsync(RescheduleAsync(faisal, online.GetProperty("id").GetGuid(), At(day, 14), online.GetProperty("version").GetUInt32(), ct),
-            HttpStatusCode.UnprocessableEntity, "booking.consent_required", ct);
-        (await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{online.GetProperty("id").GetGuid()}", ct), ct)).GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 9));
+        await OkAsync(RescheduleAsync(faisal, online.GetProperty("id").GetGuid(), At(day, 14), online.GetProperty("version").GetUInt32(), ct), ct);
+        (await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{online.GetProperty("id").GetGuid()}", ct), ct)).GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 14));
 
         // A phone booking is changed directly, once the customer has agreed on the phone.
         var booking = await OkAsync(
@@ -106,14 +105,16 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
         (await ScalarAsync(w.Factory, "SELECT count(*) FROM infra.outbox_messages WHERE type = 'booking.rescheduled' AND payload::text LIKE '%' || @p || '%'", ct, id.ToString()))
             .ShouldBe(1L);
 
-        // A taken time is refused.
-        await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 15), ct), ct, HttpStatusCode.Created);
+        // A taken time is refused (another customer's: one active booking each, D-155).
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(day, 15), ct), ct, HttpStatusCode.Created);
         var current = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
         await FailsAsync(RescheduleAsync(faisal, id, At(day, 15), current, ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
 
         // A barber moves their own booking, never a colleague's.
         await OkAsync(RescheduleAsync(faisal, id, At(day, 17), current, ct), ct);
-        var omars = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Omar, At(day, 11), ct), ct, HttpStatusCode.Created);
+        using var khalid = await CustomerAsync(w.Factory, "خالد", ct);
+        var omars = await OkAsync(BookAsync(khalid, w.SlugA, w.Haircut, w.Omar, At(day, 11), ct), ct, HttpStatusCode.Created);
         var omarsId = omars.GetProperty("id").GetGuid();
         await FailsAsync(RescheduleAsync(faisal, omarsId, At(day, 18), omars.GetProperty("version").GetUInt32(), ct), HttpStatusCode.NotFound, null, ct);
         await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{omarsId}/reschedule/dates", ct), HttpStatusCode.NotFound, null, ct);

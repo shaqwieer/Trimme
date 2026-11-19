@@ -64,7 +64,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         kpis.GetProperty("cancelled").GetInt32().ShouldBe(1);
         kpis.GetProperty("completed").GetInt32().ShouldBe(0);
         kpis.GetProperty("noShow").GetInt32().ShouldBe(0);
-        kpis.GetProperty("pendingUpcoming").GetInt32().ShouldBe(0, "auto-confirm (D-006)");
+        kpis.TryGetProperty("pendingUpcoming", out _).ShouldBeFalse("every online booking is confirmed at once (D-155)");
 
         // Minutes-based load: 12 open hours minus the one-hour break = 660 bookable minutes each.
         var faisal = Lane(overview.GetProperty("professionals"), w.Faisal);
@@ -159,7 +159,7 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         counts.GetProperty("confirmed").GetInt32().ShouldBe(2);
         counts.GetProperty("arrived").GetInt32().ShouldBe(1);
         counts.GetProperty("cancelled").GetInt32().ShouldBe(1);
-        counts.GetProperty("pending").GetInt32().ShouldBe(0);
+        counts.TryGetProperty("pending", out _).ShouldBeFalse("D-155: nothing waits for the shop");
 
         // The chips follow the professional filter too.
         var faisal = await OkAsync(owner.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}&professionalId={w.Faisal}&status=CancelledByShop&status=CancelledByCustomer", ct), ct);

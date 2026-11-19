@@ -83,7 +83,6 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
         var (noura, nouraPhone) = await NamedCustomerAsync(w.Factory, "نورة السبيعي", ct);
         var (khalid, _) = await NamedCustomerAsync(w.Factory, "خالد", ct);
         var visit = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var later = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
 
         // An upcoming visit cannot be reviewed.
         await FailsAsync(ReviewAsync(noura, visit, 5, ct), HttpStatusCode.Conflict, "review.booking_not_completed", ct);
@@ -100,6 +99,9 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
 
         using var nouraAgain = await IdentityTestData.SignInCustomerAsync(w.Factory, nouraPhone, ct);
         using var khalidAgain = await BookingTestData.CustomerAsync(w.Factory, "خالد", ct);
+
+        // The visit is done, so Noura books her next one (D-155: one active booking at a time).
+        var later = (await OkAsync(BookAsync(nouraAgain, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var mine = await OkAsync(nouraAgain.GetAsync($"/api/v1/me/bookings/{visit}", ct), ct);
         mine.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).ShouldBe(["Review"]);
         mine.GetProperty("reviewDeadline").GetDateTimeOffset().ShouldBe(At(Target, 10, 40).AddDays(7), TimeSpan.FromMinutes(1));

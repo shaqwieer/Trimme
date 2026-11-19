@@ -496,7 +496,6 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         reminderOffsetMinutes = s.GetProperty("reminderOffsetMinutes").GetInt32(),
         expiringSoonThresholdDays = threshold ?? s.GetProperty("expiringSoonThresholdDays").GetInt32(),
         expiredSubscriptionEnforcement = enforcement ?? s.GetProperty("expiredSubscriptionEnforcement").GetString(),
-        hidePausedShopsFromDiscovery = s.GetProperty("hidePausedShopsFromDiscovery").GetBoolean(),
         mapDefaultLatitude = s.GetProperty("mapDefaultLatitude").GetDouble(),
         mapDefaultLongitude = s.GetProperty("mapDefaultLongitude").GetDouble(),
         mapDefaultZoom = s.GetProperty("mapDefaultZoom").GetInt32(),
@@ -520,7 +519,7 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
         defaults.GetProperty("reminderOffsetMinutes").GetInt32().ShouldBe(30);
         defaults.GetProperty("expiringSoonThresholdDays").GetInt32().ShouldBe(14);
         defaults.GetProperty("expiredSubscriptionEnforcement").GetString().ShouldBe("HideAndBlockNewOnlineBookings");
-        defaults.GetProperty("hidePausedShopsFromDiscovery").GetBoolean().ShouldBeTrue();
+        defaults.TryGetProperty("hidePausedShopsFromDiscovery", out _).ShouldBeFalse("a paused shop stays listed (D-155)");
         defaults.GetProperty("defaultLocale").GetString().ShouldBe("ar");
         defaults.GetProperty("currency").GetString().ShouldBe("SAR");
         defaults.GetProperty("timeZone").GetString().ShouldBe("Asia/Riyadh");

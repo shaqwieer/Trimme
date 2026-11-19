@@ -82,10 +82,6 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
       // D-151: the usual buttons on a red booking, for any barber of the shop.
       allowedTransitions: ['Arrived', 'Completed', 'NoShow', 'CancelledByShop'],
     };
-    const pending = {
-      ...booking('3', 'فهد الدوسري', '2026-10-22T09:00:00Z', 'Pending'),
-      allowedTransitions: ['Confirmed', 'CancelledByShop'],
-    };
     const closed = {
       ...booking('8', 'مشعل', '2026-10-19T07:00:00Z', 'Completed'),
       closedLate: true,
@@ -95,7 +91,7 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
     api.GET.mockImplementation((path: string, init: { params: { query: { from: string } } }) =>
       Promise.resolve(
         path === '/api/v1/shop/bookings/attention'
-          ? ok({ pending: [pending], overdue: [red], closedLate: [closed] })
+          ? ok({ overdue: [red], closedLate: [closed] })
           : path === '/api/v1/shop/bookings'
             ? dayList(init.params.query.from)
             : ok(null),
@@ -113,16 +109,16 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
     expect(screen.getByTestId('attention-closed-late')).toHaveTextContent(
       'المسؤول: سلطان الحربي — قفله: سلطان',
     );
+    // Bookings are confirmed at once (D-155): nothing waits for the shop to accept.
+    expect(screen.queryByTestId('attention-pending')).not.toBeInTheDocument();
 
-    // A pending booking is shown once, in its own section, where any barber accepts it.
-    const waiting = screen.getByTestId('attention-pending');
-    expect(screen.getAllByText('فهد الدوسري')).toHaveLength(1);
-    await user.click(within(waiting).getByRole('button', { name: 'قبول: فهد الدوسري' }));
+    // A red booking is closed from its row, by any barber of the shop.
+    await user.click(within(overdue).getByRole('button', { name: 'وصل: بندر السبيعي' }));
     await waitFor(() =>
-      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
-        params: { path: { bookingId: '3' } },
-        body: { to: 'Confirmed', reason: null, version: 3 },
-      }),
+      expect(api.POST).toHaveBeenCalledWith(
+        '/api/v1/shop/bookings/{bookingId}/transitions',
+        expect.objectContaining({ params: { path: { bookingId: '9' } } }),
+      ),
     );
   });
 
@@ -179,9 +175,10 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
       'href',
       expect.stringMatching(/\/shop\/schedule#breaks$/),
     );
-    expect(within(quick).getByRole('link', { name: 'إيقاف الحجز' })).toHaveAttribute(
+    // The shop's pause is the owner's now (D-155); a barber marks themselves «غير متوفر اليوم».
+    expect(within(quick).getByRole('link', { name: 'غير متوفر اليوم' })).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/shop\/schedule#pause$/),
+      expect.stringMatching(/\/shop\/schedule#unavailable$/),
     );
     await expectNoAxeViolations(container);
 

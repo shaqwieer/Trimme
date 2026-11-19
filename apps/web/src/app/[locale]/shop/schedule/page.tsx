@@ -14,9 +14,10 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * Hours, breaks and time off (s-hours, DV-A03/A04). The owner (`Shop.Schedule.Manage`) edits the shop's weekly hours,
- * each professional's hours, the shop's weekly breaks, time off and closures, and sees whether online booking is paused.
- * A barber (`Shop.Breaks.Manage`) sees nothing of that: their own day by the hour, where they set breaks with no reason
- * (D-134, D-145), and the shop's temporary pause, which any barber turns on and off (D-147: the owner only watches).
+ * each professional's hours, the shop's weekly breaks, time off and closures, and pauses online booking with a reason
+ * and an optional return time (D-155: the owner's and the admin's, no longer the barbers'). A barber
+ * (`Shop.Breaks.Manage`) sees nothing of that: their own day by the hour, where they set breaks with no reason and
+ * mark themselves «غير متوفر اليوم» (D-134, D-145, D-155).
  */
 export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/shop/schedule'>) {
   const { locale } = await params;
@@ -36,10 +37,8 @@ export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/
 
         if (!canManage) {
           if (!canBreaks) return <EmptyState icon="shield" title={t('title')} />;
-          const [{ data: professionals }, { data: pause }] = await Promise.all([
-            api.GET('/api/v1/shop/professionals'),
-            api.GET('/api/v1/shop/online-booking'),
-          ]);
+          // A barber never pauses the shop's booking (D-155, the client's 1-1): the owner and the admin do.
+          const { data: professionals } = await api.GET('/api/v1/shop/professionals');
           return (
             <div className="flex max-w-[760px] flex-col gap-5">
               <BarberDayCard
@@ -50,18 +49,14 @@ export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/
                 today={today}
                 own={Boolean(me.professionalId)}
               />
-              {pause && (
-                <PauseCard
-                  paused={pause.paused}
-                  pausedAt={pause.pausedAt ?? null}
-                  canPause={me.permissions.includes('Shop.OnlineBooking.Pause')}
-                />
-              )}
             </div>
           );
         }
 
-        const { data } = await api.GET('/api/v1/shop/schedule');
+        const [{ data }, { data: pause }] = await Promise.all([
+          api.GET('/api/v1/shop/schedule'),
+          api.GET('/api/v1/shop/online-booking'),
+        ]);
         if (!data) return <EmptyState icon="shield" title={t('title')} />;
         const canPause = me.permissions.includes('Shop.OnlineBooking.Pause');
         return (
@@ -93,11 +88,7 @@ export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/
                   today={data.today}
                 />
               )}
-              <PauseCard
-                paused={data.onlineBookingPaused}
-                pausedAt={data.onlineBookingPausedAt}
-                canPause={canPause}
-              />
+              {pause && <PauseCard state={pause} timeZone={shop.timeZone} canPause={canPause} />}
               <TimeOffCard
                 timeOff={data.timeOff}
                 closures={data.closures}

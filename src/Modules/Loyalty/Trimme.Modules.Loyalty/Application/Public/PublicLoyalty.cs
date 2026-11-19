@@ -14,7 +14,7 @@ public sealed record PublicLoyaltyResponse(bool Active, LoyaltyRulesResponse? Ru
 internal sealed record GetPublicLoyaltyQuery(string ShopSlug) : IQuery<PublicLoyaltyResponse?>;
 
 /// <summary>Reads inside the public scope of that one shop (D-066); <see langword="null"/> when the shop is not published.</summary>
-internal sealed class GetPublicLoyaltyHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops, ILoyaltyAddOnStatus addOn)
+internal sealed class GetPublicLoyaltyHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops, ILoyaltyPlanStatus addOn)
     : IQueryHandler<GetPublicLoyaltyQuery, PublicLoyaltyResponse?>
 {
     public async Task<PublicLoyaltyResponse?> Handle(GetPublicLoyaltyQuery query, CancellationToken cancellationToken)

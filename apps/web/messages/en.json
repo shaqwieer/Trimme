@@ -213,6 +213,11 @@
     "numberStepper": {
       "decrease": "Decrease {label}",
       "increase": "Increase {label}"
+    },
+    "saveGroup": {
+      "unsaved": "You have unsaved changes",
+      "save": "Save changes",
+      "saved": "Changes saved."
     }
   },
   "status": {
@@ -444,6 +449,13 @@
       "confirm": "Yes, delete my account",
       "cancel": "Cancel",
       "upcomingLink": "See my appointments"
+    },
+    "winBack": {
+      "title": "«We miss you» messages",
+      "body": "If you have not been back for a while, a shop may send you a message inviting you back. Messages about your bookings (confirmation, change, cancellation, reminder) always reach you.",
+      "label": "Send me invitations from the shops",
+      "on": "You will get invitation messages.",
+      "off": "You will get no invitation messages."
     }
   },
   "shopHome": {
@@ -454,7 +466,9 @@
     "draftTitle": "Your shop is being set up",
     "draftBody": "Customers will not see your shop until the platform team activates it.",
     "suspendedTitle": "Your shop is suspended",
-    "suspendedBody": "Shop data is unavailable for now. Contact the platform team to reactivate it."
+    "suspendedBody": "Shop data is unavailable for now. Contact the platform team to reactivate it.",
+    "unavailableTitle": "Unavailable today",
+    "unavailableLine": "{name}: from {time}. Their remaining bookings are on the day screen."
   },
   "apiErrors": {
     "barber_number_required": "Add the barber's WhatsApp number before turning on their sign-in.",
@@ -513,6 +527,8 @@
     "availability_professional_not_eligible": "This professional does not provide this service.",
     "booking_slot_unavailable": "That time was just booked. Pick another one.",
     "booking_slot_too_soon": "That time is now too close. Pick one of the nearest free times.",
+    "booking_active_booking_exists": "You already have an upcoming booking. Cancel it, or wait until it is over, before booking again.",
+    "booking_changed_today": "You already changed this customer's time today. If something else comes up: give the booking to a colleague, or cancel it with a reason.",
     "booking_not_found": "The appointment was not found.",
     "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the Groom Here team.",
     "booking_not_reschedulable": "This appointment can't be changed now.",
@@ -575,11 +591,6 @@
     "booking_last_service": "A booking keeps at least one service.",
     "booking_service_fixed": "This service is part of the booking and stays.",
     "booking_services_closed": "The booking is closed; its services cannot change.",
-    "booking_postpone_online_only": "A walk-in or phone booking gets its new time directly once the customer agrees.",
-    "booking_consent_required": "A customer’s online booking is postponed by an offer they accept.",
-    "booking_postpone_too_late": "Less than an hour to go: move the booking to a colleague or cancel it.",
-    "booking_postponement_gone": "The postponement offer is no longer open.",
-    "booking_postpone_same_time": "That is the booking’s own time.",
     "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only.",
     "booking_service_in_package": "This service is already in the chosen package.",
     "service_section_not_found": "This section no longer exists. Reload the page.",
@@ -674,7 +685,8 @@
       "images": "Shop images",
       "policy": "Shop edit permissions",
       "location": "Shop location on the map",
-      "booking": "Booking settings"
+      "booking": "Booking settings",
+      "callButton": "The «Call» button on the shop's page"
     },
     "policy": {
       "title": "Fields the shop edits itself",
@@ -718,6 +730,15 @@
     "demo": {
       "label": "Demo shop",
       "hint": "Customers see “Demo” on the shop’s card and page, so its data never passes for real. Turn it off or archive the shop at launch."
+    },
+    "callButton": {
+      "body": "Customers see a «Call» button with this number on the shop's page. The platform's option only: the owner neither sees nor edits it.",
+      "enabled": "Show the «Call» button",
+      "phone": "Number to call",
+      "phoneHelper": "A Saudi number, such as 0501234567. Needed to switch the button on.",
+      "save": "Save",
+      "savedOn": "The «Call» button shows on the shop's page.",
+      "savedOff": "The «Call» button is hidden."
     }
   },
   "shopCategory": {
@@ -1169,9 +1190,9 @@
       "interval": "Billing period",
       "status": "Status",
       "newShops": "New shops",
+      "features": "Includes",
       "subscriptions": "Shops",
-      "order": "Order",
-      "messages": "WhatsApp / month"
+      "order": "Order"
     },
     "upcoming": "{price} from {date}",
     "noPrice": "No price",
@@ -1219,8 +1240,15 @@
       "create": "Create plan",
       "save": "Save changes",
       "saved": "Changes saved.",
-      "monthlyWhatsAppMessages": "WhatsApp messages to customers per month",
-      "monthlyWhatsAppMessagesHelper": "Leave empty for unlimited, or 0 for no WhatsApp messages to customers. Barbers’ messages and sign-in codes don’t count."
+      "options": "What the plan includes",
+      "includesLoyalty": "Includes the loyalty programme",
+      "includesLoyaltyHelper": "Shops on this plan can run loyalty points for their customers.",
+      "winBackEnabled": "«We miss you» messages",
+      "winBackEnabledHelper": "An automatic WhatsApp to a customer who has not been back, counted against the monthly limit.",
+      "winBackAfterDays": "Sent after how many days without a visit",
+      "winBackAfterDaysHelper": "From 1 to 90 days.",
+      "monthlyMarketingMessages": "Invitation messages a month",
+      "monthlyMarketingMessagesHelper": "Leave empty for no limit, or 0 for none. The month starts on the shop's subscription day; booking messages never count."
     },
     "detail": {
       "back": "Subscription plans",
@@ -1246,13 +1274,12 @@
       "effectiveFrom": "Effective from",
       "priceAdded": "Price version added."
     },
-    "messagesUnlimited": "Unlimited",
-    "messagesNone": "None",
-    "messagesCount": "{count, number}",
-    "addOn": {
-      "title": "Loyalty add-on price",
-      "body": "The price in force is recorded with each period an admin switches on for a shop. Versions are never edited or deleted; each applies to periods starting on or after its date."
-    }
+    "loyaltyOn": "Loyalty programme",
+    "loyaltyOff": "No loyalty programme",
+    "winBackOn": "«We miss you» after {days, plural, one {a day} other {# days}}",
+    "winBackOff": "No invitation messages",
+    "marketingUnlimited": "Unlimited invitation messages",
+    "marketingCount": "{count} invitation messages a month"
   },
   "adminSubscriptions": {
     "title": "Subscriptions",
@@ -1346,30 +1373,7 @@
       "customPlanPrice": "Plan price for one standard period: {price}",
       "customEntry": "SuperAdmin custom price ({reason}; plan price {standard})"
     },
-    "manageLabel": "Manage the subscription of {name}",
-    "addOn": {
-      "title": "Loyalty add-on",
-      "intro": "A paid add-on: the shop’s customers collect points and use rewards while it is on. When it ends, collecting and using stop and the points are kept.",
-      "active": "On until {date}",
-      "inactive": "Off",
-      "price": "Current price: {price}",
-      "noPrice": "No add-on price is set yet. The super admin sets it on the subscription plans page.",
-      "endDate": "Ends on",
-      "endDateHelper": "Starts today, or after the current period ends if it is on.",
-      "notes": "Internal notes (optional)",
-      "switchOn": "Switch on",
-      "extend": "Extend",
-      "switched": "The add-on period is saved.",
-      "stop": "Switch off",
-      "stopTitle": "Switch off the loyalty add-on?",
-      "stopBody": "Collecting points and using rewards stop today; customers’ points are kept and come back when it is switched on again.",
-      "stopped": "The add-on is switched off.",
-      "periods": "Add-on periods",
-      "period": "{start} – {end}",
-      "periodPrice": "{price} — version {version}",
-      "stoppedOn": "Switched off on {date}",
-      "noPeriods": "The add-on has never been on for this shop."
-    }
+    "manageLabel": "Manage the subscription of {name}"
   },
   "barberLogins": {
     "title": "Barbers",
@@ -1444,15 +1448,7 @@
     "historyEmpty": "No periods yet.",
     "historyItem": "{start} – {end}",
     "historyPlan": "{plan} · {price}",
-    "addOn": {
-      "title": "Loyalty programme",
-      "active": "On until {date}",
-      "inactive": "Off. Loyalty is a paid add-on the platform team switches on by agreement with you.",
-      "ended": "Ended on {date}. Your customers’ points are kept and come back when it is renewed.",
-      "rules": "Points rules",
-      "history": "Add-on periods",
-      "period": "{start} – {end}"
-    }
+    "loyaltyRules": "Loyalty points rules"
   },
   "platformSettings": {
     "title": "Platform settings",
@@ -1461,7 +1457,6 @@
       "booking": "Booking policy (defaults)",
       "notifications": "Reminders",
       "subscriptions": "Subscriptions",
-      "discovery": "Discovery",
       "map": "Map defaults",
       "regional": "Region (fixed in v1)"
     },
@@ -1474,7 +1469,6 @@
       "reminderOffsetMinutes": "Reminder before the appointment (minutes)",
       "expiringSoonThresholdDays": "Expiring-soon threshold (days)",
       "expiredSubscriptionEnforcement": "When a subscription is not in force",
-      "hidePausedShopsFromDiscovery": "Hide shops that paused online booking",
       "mapDefaultLatitude": "Map centre latitude",
       "mapDefaultLongitude": "Map centre longitude",
       "mapDefaultZoom": "Map zoom",
@@ -1495,7 +1489,6 @@
       "booking": "What every shop starts with: the minimum notice, the furthest bookable day and the start-time interval. Each owner changes them for their shop in “Booking settings”; the cancellation and review windows here apply to everyone.",
       "notifications": "When the customer's and the barber's WhatsApp reminders go out before an appointment.",
       "subscriptions": "When a shop's subscription counts as ending soon, and what happens while none is in force. Existing bookings are never changed.",
-      "discovery": "Whether shops that paused online booking still appear in search and on the map. Their page stays reachable by link.",
       "map": "Where maps open when there is no location yet (the shop location picker and search).",
       "regional": "Language, currency, time zone and country. Changing them needs a migration plan, so they are fixed in v1."
     },
@@ -1596,7 +1589,6 @@
         "partBreak": "Break {duration}",
         "partFree": "Partly free"
       },
-      "wholeDay": "Break all day",
       "clear": "Clear all breaks",
       "minutesHint": "Pick free minutes to make them a break, or tap a break to cancel it.",
       "slot": "{time}: {state}",
@@ -1618,26 +1610,36 @@
           "body": "This time can be booked again.",
           "action": "Cancel break"
         },
-        "wholeDay": {
-          "title": "Break all day for {barber}?",
-          "body": "Every free time this day becomes a break. Booked appointments stay as they are.",
-          "action": "Confirm break"
-        },
         "clear": {
           "title": "Cancel all of {barber}’s breaks?",
           "body": "The breaks this day are cancelled from now on, and the time can be booked again.",
           "action": "Cancel breaks"
+        },
+        "unavailable": {
+          "title": "{barber} unavailable today?",
+          "body": "Their remaining times today leave the booking. Their bookings stay, and the owner and colleagues are told so they can handle them. You can undo it today.",
+          "action": "Yes, unavailable today"
+        },
+        "available": {
+          "title": "{barber} available today?",
+          "body": "Their remaining times today can be booked again.",
+          "action": "Yes, available"
         }
       },
       "done": {
         "add": "{when} is booked as a break for {barber}.",
         "remove": "The break {when} is cancelled; the time can be booked.",
-        "wholeDay": "The whole day is now a break for {barber}.",
-        "clear": "{barber}’s breaks this day are cancelled from now on."
+        "clear": "{barber}’s breaks this day are cancelled from now on.",
+        "unavailable": "{barber} is unavailable today. The owner and the colleagues have been told.",
+        "available": "{barber} is available today again."
       },
       "tooMany": "A day can have at most 48 separate breaks. Pick minutes next to each other.",
       "titleOwn": "My breaks",
-      "midnight": "Midnight"
+      "midnight": "Midnight",
+      "unavailableToday": "Unavailable today",
+      "availableAgain": "Undo: available today",
+      "unavailableNow": "{barber} is unavailable today from {time}",
+      "unavailableBody": "No more of their times today can be booked. Their bookings stay, for their colleagues to handle: give to a colleague, change the time, or cancel with a reason."
     },
     "timeOff": {
       "title": "Time off and closures",
@@ -1653,7 +1655,8 @@
       "kind": {
         "Vacation": "Vacation",
         "Sick": "Sick leave",
-        "Other": "Other"
+        "Other": "Other",
+        "Unavailable": "Unavailable today"
       },
       "startDate": "From date",
       "endDate": "To date",
@@ -1683,15 +1686,23 @@
     },
     "pause": {
       "liveTitle": "Pause online booking",
-      "liveBody": "Use it when you are overbooked or in an emergency. Confirmed appointments are never cancelled, and the shop leaves search results until you resume.",
+      "liveBody": "Use it when you are overloaded or something comes up. Your shop stays visible with «Paused» and the reason; no confirmed appointment is cancelled.",
       "pausedTitle": "Online booking is paused",
-      "pausedBody": "No new online bookings are taken and the shop is hidden from discovery. Confirmed appointments stay valid.",
+      "pausedBody": "No new online bookings. Customers see your shop as «Paused» with the reason; confirmed appointments stand — handle them from the day screen.",
       "since": "Since {date}, {time}",
+      "reasonShown": "Reason: {reason}",
+      "resumesAt": "Booking reopens by itself on {date}, {time}",
+      "noReturnTime": "No return time: it reopens when you switch it back on.",
+      "byAdmin": "Paused by the Groom Here team.",
       "pause": "Pause",
       "resume": "Resume online booking",
       "confirmTitle": "Pause online booking?",
-      "confirmBody": "The shop takes no new online bookings until you resume. Confirmed appointments are not affected.",
-      "reason": "Reason (for the shop only)",
+      "confirmBody": "The shop takes no new online bookings until it reopens. Confirmed appointments are not cancelled; you are told how many there are so you can handle them.",
+      "reason": "Reason",
+      "reasonHelper": "Customers see it on the shop's page.",
+      "resumesAtLabel": "Booking reopens by itself at",
+      "resumesAtHelper": "Leave it empty to reopen it yourself.",
+      "resumesInPast": "Choose a time after now.",
       "confirm": "Pause now",
       "cancel": "Go back",
       "pausedToast": "Online booking paused",
@@ -1822,7 +1833,12 @@
       "cta": "Set location"
     },
     "topRatedSalons": "Top-rated salons",
-    "allSalons": "All salons"
+    "allSalons": "All salons",
+    "lastVisit": {
+      "title": "Book like last time",
+      "where": "{shop} with {barber}",
+      "book": "Book the same"
+    }
   },
   "search": {
     "meta": {
@@ -1930,6 +1946,7 @@
     "distance": "{km} away",
     "address": "Address",
     "directions": "Directions",
+    "call": "Call",
     "mapLabel": "{name} on the map",
     "tabs": {
       "label": "Salon sections",
@@ -1953,7 +1970,8 @@
       "today": "Today {time}",
       "tomorrow": "Tomorrow {time}",
       "none": "No times soon",
-      "profile": "{name}'s profile"
+      "profile": "{name}'s profile",
+      "unavailableToday": "Unavailable today"
     },
     "about": {
       "description": "About the salon",
@@ -1972,8 +1990,10 @@
       "unavailable": "Online booking is paused right now"
     },
     "paused": {
-      "title": "Online booking is paused",
-      "body": "The salon has paused online booking for now. Confirmed appointments still stand."
+      "title": "Paused",
+      "body": "The shop has paused online booking for now. You can save it to your favourites and come back.",
+      "reason": "Reason: {reason}.",
+      "until": "Booking reopens on {date}, {time}."
     },
     "notListed": {
       "title": "Online booking isn't available right now",
@@ -2246,6 +2266,14 @@
       },
       "loading": "Refreshing the times…",
       "otherDay": "Pick another day"
+    },
+    "activeBooking": {
+      "title": "You already have an upcoming booking",
+      "body": "At {shop} on {date} at {time}. One upcoming booking at a time: cancel it or change its time from its page, or book again after your visit.",
+      "view": "View the booking"
+    },
+    "professionalDay": {
+      "unavailableToday": "Unavailable today"
     }
   },
   "bookings": {
@@ -2301,18 +2329,18 @@
         "minutes": "{count, plural, one {1 minute} other {# minutes}}"
       },
       "created": {
-        "confirmed": {
-          "title": "Your booking is confirmed",
-          "body": "We send the details to you on WhatsApp. You can manage it from \"My appointments\" at any time."
-        },
-        "pending": {
-          "title": "Your booking request was sent",
-          "body": "The salon will confirm it soon, and you will get a WhatsApp message."
-        }
+        "title": "Your booking is confirmed",
+        "body": "We send the details to you on WhatsApp. You can manage it from \"My appointments\" at any time."
       },
       "rescheduled": "Your appointment was moved.",
       "cancelled": "The appointment was cancelled and the salon was notified.",
-      "reviewed": "Your review is published — thank you."
+      "reviewed": "Your review is published — thank you.",
+      "reasons": {
+        "StaffUnwell": "The barber is unwell",
+        "Emergency": "An emergency at the shop",
+        "ShopClosed": "The shop is closed (power or similar)",
+        "Other": "Another reason"
+      }
     },
     "cancel": {
       "open": "Cancel appointment",
@@ -2348,14 +2376,6 @@
         "from": "Current time",
         "to": "New time"
       }
-    },
-    "postponement": {
-      "title": "Your barber suggests a new time",
-      "body": "Your barber can’t make your appointment and suggests {when} instead. It is held for you until {until}.",
-      "accept": "Accept the new time",
-      "decline": "Decline",
-      "accepted": "Your booking moved to the new time.",
-      "declined": "You declined the new time; your booking keeps its time."
     }
   },
   "review": {
@@ -2408,7 +2428,8 @@
     "remove": "Remove {name} from favourites",
     "signInToSave": "Sign in to save {name} to favourites",
     "book": "Book",
-    "bookWith": "Book with {name}"
+    "bookWith": "Book with {name}",
+    "bookAt": "Book at {name}"
   },
   "shopBoard": {
     "live": {
@@ -2480,6 +2501,7 @@
       "notFound": "The appointment was not found.",
       "when": "Time",
       "outsideSchedule": "This appointment no longer fits the barber's schedule (time off, a break or a closure). Nothing was cancelled — follow up with the customer if needed.",
+      "unavailableBarber": "{name} is unavailable today: colleagues handle their bookings",
       "rows": {
         "customer": "Customer",
         "service": "Service",
@@ -2494,7 +2516,7 @@
       },
       "amount": "{price} — paid at the shop",
       "channel": {
-        "Online": "Customer app",
+        "Online": "Online",
         "WalkIn": "Walk-in",
         "Qr": "QR code",
         "Phone": "By phone"
@@ -2507,8 +2529,7 @@
         "Completed": "Service finished",
         "NoShow": "Customer didn't come (over a quarter hour late)",
         "CancelledByShop": "Cancel appointment",
-        "CancelledByCustomer": "Cancelled by customer",
-        "reject": "Reject booking"
+        "CancelledByCustomer": "Cancelled by customer"
       },
       "stale": "The appointment changed a moment ago — we refreshed it; check and try again.",
       "notes": {
@@ -2538,9 +2559,11 @@
       "change": {
         "title": "Emergencies",
         "reschedule": "Postpone",
+        "changedToday": "You already changed this customer's time today. If something else comes up: give the booking to a colleague, or cancel it with a reason.",
         "move": "Give to another barber",
         "rescheduleTitle": "A new time for {name}",
-        "rescheduleBody": "Same barber, same service. The customer is told the new time.",
+        "rescheduleBody": "With the same barber and service. The customer is told the new time.",
+        "rescheduleBodyOnline": "With the same barber and service. The time changes at once; the customer gets «Your time changed» with the old and new times and may cancel or change it free. Once a day per customer.",
         "current": "Current time: {when}",
         "pickDay": "Choose the day",
         "pickTime": "Choose the time",
@@ -2557,10 +2580,7 @@
         "confirmMove": "Give the booking",
         "keep": "Keep as is",
         "loading": "Loading…",
-        "order": "In order: move the booking to a free colleague, or postpone it with the customer’s consent, otherwise cancel it with a reason.",
-        "offerTitle": "Postpone {name}’s booking",
-        "offerBody": "Choose a new time with the same barber. It is held for the customer, who is told and accepts or declines it until an hour before the current time. If they decline or do not answer, the booking keeps its time.",
-        "confirmOffer": "Send the offer"
+        "order": "In this order: give the booking to a free colleague, or change its time, or else cancel it with a reason."
       },
       "cancel": {
         "title": "Cancel the appointment?",
@@ -2586,11 +2606,6 @@
         "title": "Customer's mobile",
         "body": "The shop recorded it with the booking; it disappears after «Service finished»."
       },
-      "reject": {
-        "title": "Reject the booking?",
-        "body": "The customer is told the shop did not accept the booking, and the time becomes free.",
-        "confirm": "Yes, reject it"
-      },
       "noShow": {
         "title": "Did {name} not come?",
         "body": "The customer didn't come (more than a quarter hour late). The booking is recorded as a no-show and its time is free. This can't be undone.",
@@ -2611,11 +2626,6 @@
         "room": "Time left before your next booking: {duration}",
         "doesNotFit": "{duration} — doesn't fit before your next booking",
         "none": "No other service you do can be added."
-      },
-      "postponement": {
-        "waiting": "Postponement to {when} offered; waiting for the customer until {until}. The time is held for them.",
-        "declined": "The customer declined the new time. Move the booking to a free colleague or cancel it with a reason.",
-        "lapsed": "The postponement offer lapsed without an answer; the booking kept its time."
       },
       "overdue": {
         "title": "The appointment passed with neither «Arrived» nor «No-show» recorded",
@@ -2657,6 +2667,9 @@
       "finishKeep": "Go back",
       "overdue": "Bookings to close",
       "overdueHint": "Their time is over and they weren't closed. Any barber of the shop can close them.",
+      "unavailable": "Bookings of an unavailable barber",
+      "unavailableHint": "In this order: give the booking to a free colleague, or change its time, or else cancel it with a reason. Open the booking to handle it.",
+      "unavailableBarber": "{name} is unavailable today",
       "overdueBadge": "Overdue",
       "responsible": "Responsible: {name}",
       "pending": "Waiting to be accepted",
@@ -2692,7 +2705,7 @@
         "walkIn": "Walk-in",
         "phone": "Phone booking",
         "break": "Break",
-        "pause": "Pause booking"
+        "unavailable": "Unavailable today"
       }
     },
     "visit": {
@@ -2944,6 +2957,8 @@
       "name": "Customer",
       "bookings": "Bookings",
       "upcoming": "Upcoming",
+      "noShows": "No-shows",
+      "cancelled": "Cancelled",
       "last": "Last booking",
       "registered": "Registered"
     },
@@ -3220,7 +3235,14 @@
       "QrCodeLink": "QR code",
       "WhatsAppTemplate": "WhatsApp template",
       "WhatsAppDispatch": "WhatsApp message",
-      "LegalDocument": "Legal page"
+      "LegalDocument": "Legal page",
+      "ServiceSection": "Service section",
+      "SubscriptionCoverage": "Subscription coverage",
+      "LoyaltySettings": "Loyalty programme",
+      "LoyaltyProgram": "Loyalty programme",
+      "LoyaltyAddOnPrice": "Loyalty add-on price",
+      "LoyaltyAddOnPeriod": "Loyalty add-on period",
+      "ProfessionalTimeOff": "Barber time off"
     },
     "actions": {
       "shop_created": "Shop created",
@@ -3293,8 +3315,156 @@
       "customer_account_deleted": "Customer deleted their account",
       "customer_contact_changed": "Customer changed their email or number",
       "legal_document_saved": "Legal page text saved",
-      "legal_document_reset": "Legal page restored to built-in text"
-    }
+      "legal_document_reset": "Legal page restored to built-in text",
+      "barber_login_enabled": "Barber login turned on",
+      "barber_login_disabled": "Barber login turned off",
+      "barber_login_deleted": "Barber account deleted",
+      "booking_walk_in_contact_revealed": "Walk-in mobile revealed",
+      "loyalty_rules_saved": "Loyalty programme saved",
+      "loyalty_program_saved": "Loyalty programme saved",
+      "loyalty_add_on_price_added": "Loyalty add-on price added",
+      "loyalty_add_on_switched_on": "Loyalty add-on switched on",
+      "loyalty_add_on_stopped": "Loyalty add-on stopped",
+      "service_section_created": "Service section added",
+      "service_section_renamed": "Service section renamed",
+      "service_section_ordered": "Service sections reordered",
+      "service_section_deleted": "Service section deleted",
+      "shop_booking_settings_changed": "Booking settings changed",
+      "shop_demo_changed": "Demo shop switched",
+      "shop_user_created": "Shop account created",
+      "whatsapp_shop_messages_saved": "Shop WhatsApp messages saved",
+      "shop_call_button_set": "Shop «Call» button set",
+      "schedule_unavailable_today": "Barber marked unavailable today",
+      "schedule_unavailable_today_undone": "«Unavailable today» undone"
+    },
+    "summaries": {
+      "legal_document_saved": "Saved the {kind, select, Privacy {privacy document} other {terms document}} ({locale})",
+      "legal_document_reset": "Reset the {kind, select, Privacy {privacy document} other {terms document}} ({locale}) to the default text",
+      "platform_settings_updated": "Changed: {fields}",
+      "booking_cancelled_by_admin": "Booking {reference}: from {from} to {to}",
+      "booking_status_changed_by_admin": "Booking {reference}: from {from} to {to}",
+      "booking_rescheduled_by_admin": "Booking {reference}: from {from} to {to}",
+      "role_created": "Role: {name}",
+      "role_deleted": "Role: {name}",
+      "role_renamed": "From {from} to {to}",
+      "role_permissions_changed": "{role}: added {added}; removed {removed}",
+      "staff_roles_changed": "Roles: from {from} to {to}",
+      "customer_contact_changed": "Changed: {fields}",
+      "shop_user_invited": "As {role}",
+      "staff_invited": "As {role}",
+      "shop_user_created": "As {role}",
+      "barber_login_created_with_barber": "Barber login switched on as the barber was added",
+      "loyalty_rules_saved": "{by, select, admin {By the platform} other {By the shop}}: first visit {firstVisit} — each visit {visit} — reward after {pointsForReward} points ({rewardType, select, FreeService {a free service} other {{rewardAmount} off}}) — without visits: {inactivityRule, select, Wipe {the card is wiped after {inactivityDays} days} DecayPerPeriod {one point off every {inactivityDays} days} other {nothing happens}}",
+      "whatsapp_dispatch_retried": "{event} to the {audience} — attempt {attempt}",
+      "whatsapp_shop_messages_saved": "{changes}",
+      "whatsapp_template_activated": "{event} to the {audience} ({locale}): version {to}{from, select, none {} other { instead of {from}}}",
+      "whatsapp_template_test_sent": "Version {version}: {event} to the {audience} ({locale})",
+      "professional_created": "{by, select, admin {By the platform} other {By the shop}} — WhatsApp: {whatsApp, select, true {a number added} other {no number}} — notifications: {notifications, select, true {switched on} other {switched off}}",
+      "professional_updated": "{by, select, admin {By the platform} other {By the shop}}",
+      "professional_enabled": "{by, select, admin {By the platform} other {By the shop}} — status: {status}",
+      "professional_disabled": "{by, select, admin {By the platform} other {By the shop}} — status: {status}",
+      "professional_whatsapp_changed": "{by, select, admin {By the platform} other {By the shop}} — the number {number, select, unchanged {is unchanged} removed {was removed} added {was added} other {was changed}} — notifications: {notifications, select, true {switched on} other {switched off}}",
+      "professional_avatar_changed": "{by, select, admin {By the platform} other {By the shop}} — the photo {change, select, removed {was removed} other {was replaced}}",
+      "professional_services_assigned": "{by, select, admin {By the platform} other {By the shop}} — {count, plural, one {one service} other {# services}}",
+      "qr_created": "{kind, select, shop {The shop's code} other {The barber's code}}: {code}{automatic, select, true { (made when the barber was added)} other {}}",
+      "qr_activated": "Code: {code}",
+      "qr_deactivated": "Code: {code}",
+      "review_flagged": "A {rating}-star review",
+      "review_hidden": "A {rating}-star review",
+      "review_published": "A {rating}-star review",
+      "review_report_cleared": "A {rating}-star review",
+      "review_shop_contacted": "A {rating}-star review — a {length}-character message",
+      "service_category_created": "Icon: {icon}",
+      "service_support_override": "{priceFrom, select, none {} other {Price: from {priceFrom} to {priceTo}. }}{durationFrom, select, none {} other {Length: from {durationFrom} to {durationTo}. }}{name, select, none {} other {Name changed. }}{category, select, none {} other {Section changed. }}{online, select, none {} true {Online booking: on. } other {Online booking: off. }}{barbers, select, none {} other {Barbers: {barbers}.}}",
+      "service_admin_created": "{price} — {duration} — barbers: {barbers}",
+      "package_admin_created": "{price} — {duration} — services: {services}",
+      "package_admin_updated": "Price: from {priceFrom} to {priceTo} — length: from {durationFrom} to {durationTo} — services: {services}",
+      "service_section_created": "Section: {name}",
+      "service_section_renamed": "Section: {name}",
+      "service_section_deleted": "Section: {name}",
+      "service_section_ordered": "{count, plural, one {One section} other {# sections}} in a new order",
+      "shop_created": "Status: {status}",
+      "shop_activated": "From {from} to {to}",
+      "shop_suspended": "From {from} to {to}",
+      "shop_profile_updated": "{by, select, admin {By the platform} other {By the shop}}: {fields}",
+      "shop_location_set": "{by, select, admin {By the platform} other {By the shop}} — {source}",
+      "shop_demo_changed": "{demo, select, true {Marked as a demo shop} other {No longer a demo shop}}",
+      "shop_editable_policy_set": "The shop may edit: {fields}",
+      "shop_image_changed": "{image, select, Logo {The logo} Cover {The cover} other {The gallery}}: {change, select, removed {was removed} added {was added} other {was replaced}}",
+      "shop_call_button_set": "The «Call» button {enabled, select, true {is shown} other {is hidden}}{numberChanged, select, true {; the number changed} other {}}",
+      "shop_booking_settings_changed": "{by, select, admin {By the platform} other {By the shop}}: times every {slotStep} — minimum notice {minLeadTime} — booking up to {horizonDays, plural, one {a day} other {# days}} ahead — gap {buffer}",
+      "shop_online_booking_paused": "{by, select, admin {By the platform} other {By the shop}}{resumesAt, select, none { — no return time} other { — reopens {resumesAt}}}",
+      "shop_online_booking_resumed": "{by, select, admin {By the platform} system {By itself at the return time} other {By the shop}}",
+      "schedule_unavailable_today": "{by, select, barber {The barber themselves} other {The owner}} — until {until}",
+      "schedule_unavailable_today_undone": "{by, select, barber {The barber themselves} other {The owner}}",
+      "plan_created": "{price, select, none {No price yet} other {First price: {price}}}",
+      "plan_published": "Status: {status}",
+      "plan_deactivated": "Status: {status}",
+      "plan_archived": "Status: {status}",
+      "plan_reordered": "{count, plural, one {One plan} other {# plans}} in a new order",
+      "plan_price_added": "Version {version}: {amount} from {from}",
+      "subscription_assigned": "{plan}: {start} to {end} — {amount}{custom, select, true { (a custom price instead of {standardAmount})} other {}}",
+      "subscription_renewed": "{plan}: {start} to {end} — {amount}{custom, select, true { (a custom price instead of {standardAmount})} other {}}",
+      "subscription_overridden": "{amountFrom, select, none {} other {Amount: from {amountFrom} to {amountTo}. }}{endFrom, select, none {} other {End: from {endFrom} to {endTo}.}}"
+    },
+    "values": {
+      "nothing": "nothing",
+      "on": "on",
+      "off": "off",
+      "ar": "Arabic",
+      "en": "English",
+      "tr": "Turkish",
+      "Terms": "Terms",
+      "Privacy": "Privacy",
+      "Customer": "customer",
+      "Professional": "barber",
+      "BookingConfirmed": "booking confirmed",
+      "BookingPending": "request awaiting confirmation",
+      "BookingRescheduled": "time changed",
+      "BookingCancelled": "booking cancelled",
+      "BookingCancelledByShop": "cancelled by the shop",
+      "BookingReminder": "reminder",
+      "BookingProfessionalChanged": "given to another barber",
+      "WinBack": "we miss you",
+      "Pending": "pending",
+      "Confirmed": "confirmed",
+      "Arrived": "arrived",
+      "Completed": "completed",
+      "CancelledByCustomer": "cancelled by the customer",
+      "CancelledByShop": "cancelled by the shop",
+      "NoShow": "no-show",
+      "Active": "active",
+      "Disabled": "off",
+      "Draft": "draft",
+      "Suspended": "suspended",
+      "Published": "published",
+      "Inactive": "inactive",
+      "Archived": "archived",
+      "SuperAdmin": "super admin",
+      "OperationsManager": "operations manager",
+      "Support": "support",
+      "ShopOwner": "shop owner",
+      "ShopBarber": "barber",
+      "Name": "name",
+      "Description": "description",
+      "Category": "type",
+      "PublicPhone": "shop number",
+      "Amenities": "amenities",
+      "Logo": "logo",
+      "Cover": "cover",
+      "Gallery": "gallery",
+      "Location": "location",
+      "ShortName": "short name",
+      "Verified": "verified",
+      "Unverified": "not verified",
+      "phone": "mobile number",
+      "email": "email",
+      "displayName": "name",
+      "Manual": "set by hand on the map",
+      "Geocoded": "from the address",
+      "Device": "from the device's location"
+    },
+    "legacy": "Older record, in English"
   },
   "notifications": {
     "title": "Notifications",
@@ -3330,7 +3500,10 @@
         "booking_postponement_offered": "A barber offered {customer} a new time: {offeredDate} at {offeredTime}",
         "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}",
         "whatsapp_allowance_reached": "{allowance, plural, =0 {Your plan has no WhatsApp messages to customers. They get their notices in the app.} other {You’ve reached this month’s WhatsApp limit ({allowance}). Notices continue in the app, and WhatsApp messages resume at the start of next month.}}",
-        "barber_account_deleted": "{name} deleted their Groom Here account. They stay in the shop with their bookings; you can give them a new login from «Barbers»."
+        "marketing_limit_reached": "Limit reached: this month's invitation messages are used up ({allowance}). No new ones go out until {windowEnd}",
+        "barber_account_deleted": "{name} deleted their Groom Here account. They stay in the shop with their bookings; you can give them a new login from «Barbers».",
+        "shop_online_booking_paused": "{by, select, admin {The Groom Here team paused your shop's online booking} other {Online booking is paused}}{resumesAt, select, none {} other { until {resumesAt}}}. {bookings, plural, =0 {No confirmed bookings fall in the pause.} one {One confirmed booking falls in the pause: handle it from the day screen.} other {# confirmed bookings fall in the pause: handle them from the day screen.}}",
+        "professional_unavailable_today": "{professional} is unavailable today from {since}{bookings, plural, =0 {.} one {, with one booking left today for colleagues to handle.} other {, with # bookings left today for colleagues to handle.}}"
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
@@ -3339,7 +3512,14 @@
         "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts",
         "booking_postponement_offered": "{shop} suggests a new time for your booking: {offeredDate} at {offeredTime} instead of {date} at {time}. Accept or decline it on the booking page",
         "loyalty_visit_completed": "Your visit at {shop} is done{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}",
-        "booking_completed": "Thanks for visiting {shop}{loyalty, select, on {{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}} other {.}} Rate your visit to help others choose."
+        "booking_completed": "Thanks for visiting {shop}{loyalty, select, on {{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}} other {.}} Rate your visit to help others choose.",
+        "customer_booking_confirmed": "Your booking at {shop} is confirmed: {item} with {professional} on {date} at {time}",
+        "customer_booking_rescheduled": "{actor, select, Customer {You moved your booking at {shop} from {previousDate} at {previousTime} to {date} at {time}} other {Your time at {shop} changed: from {previousDate} at {previousTime} to {date} at {time}. You may cancel or change it free}}",
+        "customer_booking_cancelled": "You cancelled your booking at {shop} on {date} at {time}",
+        "customer_booking_cancelled_by_shop": "We are sorry: {shop} cancelled your booking on {date} at {time}. Reason: {reasonCode, select, StaffUnwell {the barber is unwell} Emergency {an emergency at the shop} ShopClosed {the shop is closed (power or similar)} Other {{reason}} other {a matter at the shop}}. Book again at a time that suits you",
+        "customer_booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You may change or cancel it until it starts",
+        "customer_booking_reminder": "Reminder: your booking at {shop} with {professional} on {date} at {time}",
+        "customer_win_back": "We miss you at {shop}! Book your next visit in a few taps"
       },
       "barber": {
         "booking_created": "New booking for {customer}: {item} on {date} at {time}",
@@ -3348,7 +3528,9 @@
         "booking_rescheduled": "{customer}'s booking is now on {date} at {time} ({item})",
         "booking_cancelled": "{customer}'s booking on {date} at {time} was cancelled ({item})",
         "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}",
-        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}. Move it to a colleague or cancel it"
+        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}. Move it to a colleague or cancel it",
+        "professional_unavailable_today": "The owner marked you unavailable today from {since}. Your colleagues handle your bookings left today.",
+        "professional_unavailable_bookings": "Bookings of an unavailable barber: {professional} is unavailable today with {bookings, plural, one {one booking} other {# bookings}} left. Give them to a colleague, change the time, or cancel with a reason."
       },
       "admin": {
         "whatsapp_dispatch_failed": "A WhatsApp message could not be sent ({event})",
@@ -3370,8 +3552,10 @@
       "BookingPending": "Request awaiting confirmation",
       "BookingRescheduled": "Booking moved",
       "BookingCancelled": "Booking cancelled",
+      "BookingCancelledByShop": "Cancelled by the shop",
       "BookingReminder": "Reminder before the appointment",
-      "BookingProfessionalChanged": "Booking given to another barber"
+      "BookingProfessionalChanged": "Booking given to another barber",
+      "WinBack": "We miss you"
     },
     "audience": {
       "Customer": "Customer",
@@ -3456,7 +3640,8 @@
       "amount": "Amount",
       "address": "Address",
       "booking_reference": "Booking reference",
-      "manage_url": "Manage-booking link"
+      "manage_url": "Manage-booking link",
+      "reason": "Cancellation reason"
     },
     "testSend": {
       "open": "Test send",
@@ -3478,7 +3663,8 @@
         "Sent": "Sent",
         "Delivered": "Delivered",
         "Read": "Read",
-        "Failed": "Failed"
+        "Failed": "Failed",
+        "LimitReached": "Limit reached"
       },
       "anyAudience": "Any audience",
       "anyEvent": "Any event",
@@ -3496,7 +3682,8 @@
       "kind": {
         "Lifecycle": "Booking event",
         "Reminder": "Reminder",
-        "Test": "Test"
+        "Test": "Test",
+        "WinBack": "Win-back"
       },
       "versionShort": "v{number}",
       "empty": {
@@ -3762,9 +3949,6 @@
     "rulesForm": {
       "title": "Loyalty programme",
       "intro": "Points are added only when a visit is closed as “Service finished”, with the name of the barber who closed it. Points follow the customer’s mobile number, so online, walk-in and phone visits fill one card.",
-      "addOnOff": "Loyalty is a paid add-on that is off for your shop. You can set the rules now; customers start collecting points once the platform team switches it on.",
-      "addOnOffAdmin": "The add-on is off for this shop, so its customers don’t collect points now. Switch it on from the Subscription tab.",
-      "addOnOn": "The add-on is on: customers collect points and use their rewards.",
       "notSet": "No points rules are set yet.",
       "firstVisitPoints": "First-visit points",
       "visitPoints": "Points for each later visit",
@@ -3793,7 +3977,6 @@
         "rewardsHeld": "Rewards held for appointments",
         "rewardsRedeemed": "Rewards used"
       },
-      "paidAdmin": "A paid feature: the shop can't switch it on itself. The platform team switches it on for a period from the Subscription tab.",
       "toSubscription": "Go to Subscription",
       "expiry": {
         "legend": "Points expire if the customer doesn't visit within",
@@ -3806,7 +3989,11 @@
         "Wipe": "The card is wiped",
         "DecayPerPeriod": "One point is taken off for each period without a visit"
       },
-      "outOfRange": "Must be from {min} to {max}"
+      "outOfRange": "Must be from {min} to {max}",
+      "includedOn": "The shop's plan includes loyalty: customers collect points and use their rewards.",
+      "includedOff": "Your current plan does not include loyalty. You can set the rules now; customers start collecting points once you move to a plan that includes it.",
+      "includedOffAdmin": "This shop's plan does not include loyalty, so its customers collect no points now.",
+      "planAdmin": "Loyalty comes with the plan: the shop cannot switch it on itself. Move it to a plan that includes it on the subscription tab."
     }
   },
   "legalAdmin": {
@@ -3892,6 +4079,7 @@
       "movedOut": "Moved away",
       "movedIn": "Moved to",
       "postponed": "Postponed",
+      "unavailableDays": "Days unavailable",
       "lateCancellations": "Late cancellations",
       "noShows": "No-shows",
       "closedLate": "Closed late",
@@ -3934,11 +4122,7 @@
     }
   },
   "bookingSettings": {
-    "confirmation": "Booking confirmation",
     "times": "Times",
-    "manual": "I confirm bookings myself",
-    "manualOn": "New online bookings arrive “awaiting confirmation” until the shop confirms them.",
-    "manualOff": "Online bookings are confirmed automatically when made.",
     "fields": {
       "slotStepMinutes": "Start times",
       "minLeadTimeMinutes": "Minimum notice",
@@ -3967,17 +4151,6 @@
     "bn": "Bengali",
     "tl": "Filipino",
     "tr": "Turkish"
-  },
-  "messageUsage": {
-    "title": "WhatsApp messages to customers",
-    "month": "{month}",
-    "of": "{used} of {allowance}",
-    "sent": "{used, plural, =0 {No messages sent yet this month} one {# message sent this month} other {# messages sent this month}}",
-    "unlimited": "Messages are unlimited on the current plan.",
-    "none": "The current plan has no WhatsApp messages to customers. They get their notices in the app.",
-    "reached": "You’ve reached this month’s limit. Notices continue in the app, and WhatsApp messages resume at the start of next month.",
-    "note": "Only messages to customers count; barbers’ messages and sign-in codes don’t.",
-    "progress": "{percent}% of this month’s messages used"
   },
   "shopAccount": {
     "title": "My account",
@@ -4022,5 +4195,22 @@
       "confirm": "Yes, delete my account",
       "cancel": "Cancel"
     }
+  },
+  "planUsage": {
+    "title": "What the plan includes",
+    "loyaltyActive": "Loyalty programme: included and on",
+    "loyaltyIncluded": "Loyalty programme: included; it runs while the subscription is in force",
+    "loyaltyNotIncluded": "Loyalty programme: not included in this plan",
+    "winBackOn": "«We miss you» message: sent {days, plural, one {a day} other {# days}} after a customer's last visit",
+    "winBackOff": "«We miss you» messages: not included in this plan",
+    "of": "Invitation messages this month: {used} of {allowance}",
+    "sent": "Invitation messages this month: {used}",
+    "window": "The month runs from {start} to {end}",
+    "unlimited": "No limit on this plan.",
+    "none": "The plan includes no invitation messages.",
+    "reached": "Limit reached",
+    "reachedBody": "No more invitation messages go out until the month ends on {date}.",
+    "progress": "{percent}% of this month's messages used",
+    "note": "Only invitation messages count. Booking confirmations, changes and cancellations always go out and are never counted."
   }
 }

@@ -98,6 +98,17 @@ export default async function AdminCustomersPage({
                   header: t('columns.upcoming'),
                   cell: (c) => <span className="font-latin">{formatNumber(c.upcoming, lang)}</span>,
                 },
+                // D-155 (the client's 8-3-5): how often the customer did not come or cancelled.
+                {
+                  key: 'noShows',
+                  header: t('columns.noShows'),
+                  cell: (c) => <span className="font-latin">{formatNumber(c.noShows, lang)}</span>,
+                },
+                {
+                  key: 'cancelled',
+                  header: t('columns.cancelled'),
+                  cell: (c) => <span className="font-latin">{formatNumber(c.cancelled, lang)}</span>,
+                },
                 { key: 'last', header: t('columns.last'), cell: (c) => date(c.lastBookingAt) },
                 { key: 'registered', header: t('columns.registered'), cell: (c) => date(c.registeredAt) },
               ]}

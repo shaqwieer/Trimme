@@ -248,30 +248,72 @@ describe('BreaksCard (DV-A04 conflict preview, DV-S22)', () => {
   });
 });
 
-describe('PauseCard (D-013)', () => {
-  it('asks for confirmation, sends the optional reason, and shows the paused state', async () => {
-    api.POST.mockResolvedValue(ok({ paused: true, pausedAt: '2026-10-04T07:00:00Z', reason: 'ازدحام' }));
-    const live = renderWithIntl(<PauseCard paused={false} pausedAt={null} canPause />);
+describe('PauseCard (D-013, D-155)', () => {
+  const live = { paused: false, pausedAt: null, reason: null, resumesAt: null, byAdmin: false };
+
+  it('asks for the reason customers see and an optional return time on the shop’s clock, then shows both', async () => {
+    api.POST.mockResolvedValue(ok({ ...live, paused: true }));
+    const first = renderWithIntl(<PauseCard state={live} timeZone="Asia/Riyadh" canPause />);
     expect(screen.getByText('إيقاف الحجز الإلكتروني مؤقتاً')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'إيقاف مؤقت' }));
-    await userEvent.type(screen.getByLabelText(/السبب/), 'ازدحام');
+    await userEvent.type(screen.getByLabelText(/^السبب/), 'ازدحام');
+    expect(screen.getByLabelText(/^السبب/)).toHaveAccessibleDescription('يظهر للعملاء على صفحة المحل.');
+    // 20:30 in Riyadh is 17:30 UTC.
+    await userEvent.type(screen.getByLabelText(/يرجع الحجز تلقائياً في/), '2099-10-04T20:30');
     await userEvent.click(screen.getByRole('button', { name: 'إيقاف الآن' }));
     await waitFor(() =>
       expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/online-booking/pause', {
-        body: { reason: 'ازدحام' },
+        body: { reason: 'ازدحام', resumesAt: '2099-10-04T17:30:00.000Z' },
       }),
     );
     expect(await screen.findByText('أُوقف الحجز الإلكتروني مؤقتاً')).toBeInTheDocument();
 
-    live.unmount();
-    renderWithIntl(<PauseCard paused pausedAt="2026-10-04T07:00:00Z" canPause />);
+    first.unmount();
+    renderWithIntl(
+      <PauseCard
+        state={{
+          paused: true,
+          pausedAt: '2026-10-04T07:00:00Z',
+          reason: 'ازدحام',
+          resumesAt: '2026-10-04T17:30:00Z',
+          byAdmin: true,
+        }}
+        timeZone="Asia/Riyadh"
+        canPause
+      />,
+    );
     expect(screen.getByTestId('pause-card')).toHaveAttribute('data-paused', 'true');
     expect(screen.getByText('الحجز الإلكتروني موقوف مؤقتاً')).toBeInTheDocument();
+    expect(screen.getByText('السبب: ازدحام')).toBeInTheDocument();
+    expect(screen.getByTestId('pause-resumes')).toHaveTextContent('يرجع الحجز تلقائياً');
+    expect(screen.getByTestId('pause-resumes')).toHaveTextContent('٨:٣٠');
+    expect(screen.getByText('أوقفه فريق Groom Here.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'إعادة تفعيل الحجز' })).toBeInTheDocument();
   });
 
+  it('refuses a return time already gone, and pauses a shop from the admin’s page', async () => {
+    api.POST.mockResolvedValue(ok({ ...live, paused: true }));
+    renderWithIntl(
+      <PauseCard state={live} timeZone="Asia/Riyadh" canPause scope={{ kind: 'admin', shopId: 's1' }} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'إيقاف مؤقت' }));
+    await userEvent.type(screen.getByLabelText(/يرجع الحجز تلقائياً في/), '2020-01-01T10:00');
+    await userEvent.click(screen.getByRole('button', { name: 'إيقاف الآن' }));
+    expect(await screen.findByText('اختر وقتاً بعد الآن.')).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+
+    await userEvent.clear(screen.getByLabelText(/يرجع الحجز تلقائياً في/));
+    await userEvent.click(screen.getByRole('button', { name: 'إيقاف الآن' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/admin/shops/{shopId}/online-booking/pause', {
+        params: { path: { shopId: 's1' } },
+        body: { reason: null, resumesAt: null },
+      }),
+    );
+  });
+
   it('shows no actions without the pause permission', () => {
-    renderWithIntl(<PauseCard paused={false} pausedAt={null} canPause={false} />);
+    renderWithIntl(<PauseCard state={live} timeZone="Asia/Riyadh" canPause={false} />);
     expect(screen.queryByRole('button', { name: 'إيقاف مؤقت' })).not.toBeInTheDocument();
   });
 });

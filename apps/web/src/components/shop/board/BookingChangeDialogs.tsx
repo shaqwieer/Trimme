@@ -39,6 +39,9 @@ function useFailureMessage() {
   const t = useTranslations('shopBoard.drawer');
   const apiMessage = useApiErrorMessage();
   return (failure: unknown, conflict: string) => {
+    // Once a day per online customer (D-155): the message names the next steps.
+    if (failure instanceof ApiError && failure.errorCode === 'booking.changed_today')
+      return apiMessage(failure);
     if (failure instanceof ApiError && failure.status === 409) {
       return failure.errorCode === 'booking.slot_unavailable' ||
         failure.errorCode === 'booking.professional_busy'
@@ -52,17 +55,17 @@ function useFailureMessage() {
 /**
  * A new time for a customer's booking, with the same barber and service (D-145): the free starts the server offers
  * (the booking's own time does not block it), by day and then hour and minute, as the booking screens show them. A
- * walk-in or phone booking moves at once (the customer agreed in the shop or on the phone). A customer's online booking
- * gets an offer instead (`offer`, D-147): the time is held for them until an hour before the appointment, and they
- * accept or decline it. A time taken meanwhile refreshes the times.
+ * booking moves at once, an online customer's too (D-155, the client's 4-4: no offer to accept): they get «تغيير موعدك»
+ * with the old and new times and may cancel or change it free. Once a day per online customer at the shop (409
+ * booking.changed_today names the next steps). A time taken meanwhile refreshes the times.
  */
 export function RescheduleDialog({
   booking,
   timeZone,
   onClose,
   onChanged,
-  offer = false,
-}: DialogProps & { offer?: boolean }) {
+  online = false,
+}: DialogProps & { online?: boolean }) {
   const t = useTranslations('shopBoard.drawer.change');
   const tb = useTranslations('booking');
   const locale = useLocale() as AppLocale;
@@ -113,15 +116,10 @@ export function RescheduleDialog({
     setPending(true);
     try {
       ensureOk(
-        offer
-          ? await browserApi.POST('/api/v1/shop/bookings/{bookingId}/postpone', {
-              params: { path: { bookingId: booking.id } },
-              body: { startsAt: start, version: booking.version },
-            })
-          : await browserApi.POST('/api/v1/shop/bookings/{bookingId}/reschedule', {
-              params: { path: { bookingId: booking.id }, header: { 'Idempotency-Key': keyed.current.key } },
-              body: { startsAt: start, version: booking.version },
-            }),
+        await browserApi.POST('/api/v1/shop/bookings/{bookingId}/reschedule', {
+          params: { path: { bookingId: booking.id }, header: { 'Idempotency-Key': keyed.current.key } },
+          body: { startsAt: start, version: booking.version },
+        }),
       );
       await onChanged();
       onClose();
@@ -141,12 +139,8 @@ export function RescheduleDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       size="lg"
-      title={
-        offer
-          ? t('offerTitle', { name: booking.customerName })
-          : t('rescheduleTitle', { name: booking.customerName })
-      }
-      description={offer ? t('offerBody') : t('rescheduleBody')}
+      title={t('rescheduleTitle', { name: booking.customerName })}
+      description={online ? t('rescheduleBodyOnline') : t('rescheduleBody')}
       footer={
         <>
           <Button
@@ -155,7 +149,7 @@ export function RescheduleDialog({
             disabled={!chosen || blocked}
             onClick={() => void save()}
           >
-            {offer ? t('confirmOffer') : t('confirmReschedule')}
+            {t('confirmReschedule')}
           </Button>
           <Button variant="outline" className="flex-1" onClick={onClose}>
             {t('keep')}

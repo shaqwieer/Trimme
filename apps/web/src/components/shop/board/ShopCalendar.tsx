@@ -191,7 +191,7 @@ export function ShopCalendar({
           className="ms-auto flex flex-wrap items-center gap-3 text-helper text-text-secondary"
           aria-label={t('legend')}
         >
-          {(['Confirmed', 'Pending', 'Arrived', 'Completed'] as const).map((s) => (
+          {(['Confirmed', 'Arrived', 'Completed'] as const).map((s) => (
             <li key={s} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-xs border-s-[3px]', blockTone[s])} />
               {t(`legendItems.${s}`)}

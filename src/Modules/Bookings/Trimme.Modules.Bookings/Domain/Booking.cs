@@ -84,13 +84,13 @@ public enum BookingEventKind
     /// <summary>A service taken off before «انتهت الخدمة» (D-147); the reason holds its name.</summary>
     ServiceRemoved,
 
-    /// <summary>The barber offered the customer a new time (D-147); the offer holds it until an hour before the start.</summary>
+    /// <summary>The barber offered the customer a new time (D-147). Kept for old rows: offers are gone since D-155.</summary>
     PostponementOffered,
 
-    /// <summary>The customer took the offered time: the booking moved (the previous start is kept).</summary>
+    /// <summary>The customer took the offered time: the booking moved (the previous start is kept). Kept for old rows.</summary>
     PostponementAccepted,
 
-    /// <summary>The customer declined the offered time: the booking stays.</summary>
+    /// <summary>The customer declined the offered time: the booking stays. Kept for old rows.</summary>
     PostponementDeclined,
 }
 
@@ -367,8 +367,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public int BufferMinutes { get; private set; }
 
     /// <summary>
-    /// When the barber is free again: the end plus <see cref="BufferMinutes"/>. The exclusion constraint and the
-    /// postponement holds compare <c>[StartsAt, BlockedUntil)</c>, so the cleaning time cannot be double-booked.
+    /// When the barber is free again: the end plus <see cref="BufferMinutes"/>. The exclusion constraint compares
+    /// <c>[StartsAt, BlockedUntil)</c>, so the cleaning time cannot be double-booked.
     /// </summary>
     public DateTimeOffset BlockedUntil { get; private set; }
 
@@ -439,10 +439,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public static Booking CreateOnline(
         BookingId id, ShopId shopId, Guid customerId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null,
+        DateTimeOffset startsAt, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null,
         int bufferMinutes = 0)
     {
-        var status = requireManualConfirmation ? BookingStatus.Pending : BookingStatus.Confirmed;
+        // Every online booking is confirmed at once (D-155, the client's «التأكيد التلقائي دايم»): no shop confirms it.
+        const BookingStatus status = BookingStatus.Confirmed;
         var booking = new Booking(id, shopId, customerId, customerName.Trim(), professional, item, startsAt, status, BookingChannel.Online, Clean(customerNote), now, bufferMinutes);
         booking.QrLinkId = qrScan?.LinkId;
         booking.QrVisitId = qrScan?.VisitId;
@@ -855,80 +856,27 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         return Result.Success();
     }
 
-    /// <summary>
-    /// The barber offers a customer's online booking a new time with them (D-147). Only a Pending or Confirmed online
-    /// booking more than an hour before its start; the offer itself is a <see cref="PostponementOffer"/> the caller saves.
-    /// </summary>
-    public Result OfferPostponement(DateTimeOffset newStart, BookingActor actor, DateTimeOffset now)
-    {
-        if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
-        {
-            return BookingErrors.NotReschedulable(Status);
-        }
-
-        if (Channel != BookingChannel.Online || CustomerId is null)
-        {
-            return PostponementErrors.OnlineOnly();
-        }
-
-        if (now >= StartsAt - PostponementOffer.AnswerBefore)
-        {
-            return PostponementErrors.TooLate();
-        }
-
-        if (newStart.ToUniversalTime() == StartsAt)
-        {
-            return PostponementErrors.SameTime();
-        }
-
-        UpdatedAt = now;
-        _history.Add(new BookingHistoryEntry(BookingEventKind.PostponementOffered, Status, Status, null, actor, null, now));
-        return Result.Success();
-    }
-
-    /// <summary>The customer takes the offered time (D-147): the booking moves there, whatever their own change window.</summary>
-    public Result AcceptPostponement(PostponementOffer offer, Guid customerId, DateTimeOffset now)
-    {
-        if (CustomerId != customerId || !offer.IsLive(this, now))
-        {
-            return PostponementErrors.Gone();
-        }
-
-        var previous = StartsAt;
-        StartsAt = offer.StartsAt;
-        BufferMinutes = offer.BufferMinutes;
-        SetEnd(offer.EndsAt);
-        UpdatedAt = now;
-        offer.Close(PostponementStatus.Accepted, now);
-        _history.Add(new BookingHistoryEntry(
-            BookingEventKind.PostponementAccepted, Status, Status, previous, new BookingActor(customerId, ActorType.Customer, CustomerName), null, now));
-        return Result.Success();
-    }
-
-    /// <summary>The customer declines the offered time (D-147): the booking stays as it was, and the time is free again.</summary>
-    public Result DeclinePostponement(PostponementOffer offer, Guid customerId, DateTimeOffset now)
-    {
-        if (CustomerId != customerId || !offer.IsLive(this, now))
-        {
-            return PostponementErrors.Gone();
-        }
-
-        UpdatedAt = now;
-        offer.Close(PostponementStatus.Declined, now);
-        _history.Add(new BookingHistoryEntry(
-            BookingEventKind.PostponementDeclined, Status, Status, null, new BookingActor(customerId, ActorType.Customer, CustomerName), null, now));
-        return Result.Success();
-    }
-
     /// <summary>The barber as the booking names them now.</summary>
     public BookedProfessional CurrentProfessional => new(ProfessionalId, ProfessionalNameAr, ProfessionalNameEn);
 
     /// <summary>
-    /// The customer's cancellation window (D-015) is closed, unless the shop gave the booking to another barber since
-    /// the customer last chose it (D-145): then the customer may cancel or change it until it starts.
+    /// When the shop (or the platform) last gave the booking a new time, if the customer has not chosen one since (D-155,
+    /// «الحلاق يغيّر الموعد مباشرة … والزبون يقدر يلغي أو يغيّر مجاناً»). Read from the history: the latest new time is
+    /// the shop's.
+    /// </summary>
+    public DateTimeOffset? TimeChangedByShopAt =>
+        _history.Where(h => h.Kind is BookingEventKind.Rescheduled or BookingEventKind.PostponementAccepted)
+            .OrderBy(h => h.OccurredAt).ThenBy(h => h.Id).LastOrDefault() is { ActorType: ActorType.ShopUser or ActorType.PlatformAdmin } last
+            ? last.OccurredAt
+            : null;
+
+    /// <summary>
+    /// The customer's cancellation window (D-015) is closed, unless the shop changed the booking since the customer last
+    /// chose it: gave it to another barber (D-145) or a new time (D-155). Then the customer may cancel or change it, for
+    /// free, until it starts.
     /// </summary>
     public bool CutoffApplies(DateTimeOffset now, int cutoffMinutes) =>
-        now > StartsAt.AddMinutes(-cutoffMinutes) && !(ProfessionalChangedAt is not null && now < StartsAt);
+        now > StartsAt.AddMinutes(-cutoffMinutes) && !((ProfessionalChangedAt is not null || TimeChangedByShopAt is not null) && now < StartsAt);
 
     /// <summary>What the shop may do next (the UI renders only these, DV-S08), by the time rules of <see cref="ApplyShopTransition"/>.</summary>
     public IReadOnlyList<BookingStatus> AllowedShopTransitions(DateTimeOffset now) =>

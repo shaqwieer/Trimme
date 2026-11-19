@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ProfileForm } from '@/components/account/ProfileForm';
+import { WinBackSetting } from '@/components/account/WinBackSetting';
 import { Breadcrumb } from '@/components/ui/data';
 import { PermissionDenied } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
@@ -15,7 +16,10 @@ export async function generateMetadata({
   return { title: t('title') };
 }
 
-/** Edit the customer's name, email, mobile number and language (c-profile, personal info, D-144). */
+/**
+ * Edit the customer's name, email, mobile number and language (c-profile, personal info, D-144), and whether shops may
+ * send them «ندعوك للعودة» (D-155).
+ */
 export default async function ProfilePage({ params }: PageProps<'/[locale]/account/profile'>) {
   const { locale: raw } = await params;
   const locale = asLocale(raw);
@@ -41,6 +45,7 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/accou
           preferredLocale: asLocale(profile.preferredLocale),
         }}
       />
+      <WinBackSetting enabled={profile.winBackMessages} />
     </div>
   );
 }

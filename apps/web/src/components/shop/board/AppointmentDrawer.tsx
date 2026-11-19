@@ -10,7 +10,7 @@ import { Timeline, type TimelineItem } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
 import { TextareaField } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
-import { ConfirmDialog, Dialog, Sheet } from '@/components/ui/overlays';
+import { ConfirmDialog, Dialog, Sheet, Tooltip } from '@/components/ui/overlays';
 import { InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
@@ -56,8 +56,10 @@ const actionVariant: Partial<Record<Status, 'primary' | 'secondary' | 'outline' 
  * «الزبون ما حضر» a quarter hour late; emergencies come in the client's order — another barber, a new time, then a
  * cancellation with a reason (in the last quarter hour it is «إلغاء متأخر»; once arrived, never). The customer's mobile
  * shows for a walk-in or phone booking while it is open, to barbers only (the API decides); otherwise «رقم العميل غير
- * متاح». The log names who did each thing. On a colleague's booking a barber may only accept or reject it while pending,
- * or close it once red.
+ * متاح». The log names who did each thing. On a colleague's booking a barber may only close it once red. Bookings are
+ * confirmed at once (D-155), so there is nothing to accept or reject. «تأجيل الموعد» changes the time at once, an
+ * online customer's too, who is told and may cancel or change it (D-155, the client's 4-4); once a day per customer:
+ * after that the button says why and the next steps are a colleague or a cancellation.
  */
 export function AppointmentDrawer({
   bookingId,
@@ -209,17 +211,21 @@ export function AppointmentDrawer({
 
   // A barber's own booking (the owner, with no professional, has no actions at all).
   const mine = booking !== undefined && (!ownProfessionalId || booking.professional.id === ownProfessionalId);
+  // A colleague's booking today while they are «غير متوفر اليوم» (D-155, the client's 1-2): any barber of the shop gives
+  // it to another barber, moves it or cancels it with a reason (the API's fifth reviewed exception has the last word).
+  const covers = booking !== undefined && !mine && booking.unavailableBarber;
   const allowed = canUpdate && booking ? booking.allowedTransitions : [];
-  // «رفض» for a pending booking sits with the status actions; any other cancellation is the last emergency step.
-  const rejects = booking?.status === 'Pending';
-  const statusActions = allowed.filter((to) => to !== 'CancelledByShop' || rejects);
-  const canCancel = allowed.includes('CancelledByShop') && !rejects;
+  // A cancellation is the last emergency step, never a status button.
+  const statusActions = allowed.filter((to) => to !== 'CancelledByShop');
+  const canCancel = allowed.includes('CancelledByShop');
   // Pending or Confirmed, and not started when it was read: the API's rule for both changes (it has the last word).
   const changeable =
     booking !== undefined &&
-    mine &&
+    (mine || covers) &&
     (booking.status === 'Pending' || booking.status === 'Confirmed') &&
     Date.parse(booking.startsAt) > detail.dataUpdatedAt;
+  // The shop already gave this online customer a new time today (409 booking.changed_today otherwise).
+  const changedToday = booking?.channel === 'Online' && booking.changedToday;
   const showEmergencies = (changeable && (canReschedule || canMove)) || canCancel;
   const target = booking
     ? {
@@ -299,20 +305,16 @@ export function AppointmentDrawer({
                 })}
               </p>
             )}
-            {booking.postponement &&
-              (booking.postponement.live ? (
-                <InlineAlert
-                  tone="info"
-                  title={t('postponement.waiting', {
-                    when: `${formatDate(booking.postponement.startsAt, locale, { timeZone, calendar })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`,
-                    until: formatTime(booking.postponement.expiresAt, locale, timeZone),
-                  })}
-                />
-              ) : booking.postponement.status === 'Declined' ? (
-                <InlineAlert tone="warning" title={t('postponement.declined')} />
-              ) : booking.postponement.status === 'Open' ? (
-                <InlineAlert tone="warning" title={t('postponement.lapsed')} />
-              ) : null)}
+            {booking.unavailableBarber && (
+              <InlineAlert
+                tone="warning"
+                title={t('unavailableBarber', {
+                  name: localizedName(locale, booking.professional.nameAr, booking.professional.nameEn),
+                })}
+              >
+                {t('change.order')}
+              </InlineAlert>
+            )}
             {booking.outsideSchedule && <InlineAlert tone="warning" title={t('outsideSchedule')} />}
             {booking.loyaltyReward && (
               <InlineAlert
@@ -429,14 +431,10 @@ export function AppointmentDrawer({
                       loading={pending === to}
                       disabled={pending !== null}
                       onClick={() =>
-                        to === 'CancelledByShop'
-                          ? setCancelOpen(true)
-                          : to === 'Completed' || to === 'NoShow'
-                            ? setConfirmOpen(to)
-                            : void transition(to)
+                        to === 'Completed' || to === 'NoShow' ? setConfirmOpen(to) : void transition(to)
                       }
                     >
-                      {to === 'CancelledByShop' ? t('actions.reject') : t(`actions.${to}`)}
+                      {t(`actions.${to}`)}
                     </Button>
                   ))}
                 </div>
@@ -456,16 +454,38 @@ export function AppointmentDrawer({
                   {t('change.title')}
                 </h3>
                 <p className="text-helper text-text-secondary">{t('change.order')}</p>
+                {changeable && canReschedule && changedToday && (
+                  <p
+                    id="changed-today-hint"
+                    className="flex items-start gap-1.5 text-helper text-warning-700"
+                  >
+                    <Icon name="info" className="mt-0.5 size-4 shrink-0" />
+                    {t('change.changedToday')}
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {changeable && canMove && (
                     <Button size="sm" variant="outline" onClick={() => setChanging('move')}>
                       {t('change.move')}
                     </Button>
                   )}
-                  {changeable && canReschedule && (
+                  {changeable && canReschedule && !changedToday && (
                     <Button size="sm" variant="outline" onClick={() => setChanging('reschedule')}>
                       {t('change.reschedule')}
                     </Button>
+                  )}
+                  {changeable && canReschedule && changedToday && (
+                    <Tooltip content={t('change.changedToday')}>
+                      <span
+                        tabIndex={0}
+                        className="inline-flex rounded-button"
+                        data-testid="reschedule-changed-today"
+                      >
+                        <Button size="sm" variant="outline" disabled aria-describedby="changed-today-hint">
+                          {t('change.reschedule')}
+                        </Button>
+                      </span>
+                    </Tooltip>
                   )}
                   {canCancel && (
                     <Button size="sm" variant="danger" onClick={() => setCancelOpen(true)}>
@@ -533,7 +553,7 @@ export function AppointmentDrawer({
         <RescheduleDialog
           booking={target}
           timeZone={timeZone}
-          offer={booking?.channel === 'Online'}
+          online={booking?.channel === 'Online'}
           onClose={() => setChanging(null)}
           onChanged={changed}
         />
@@ -569,25 +589,25 @@ export function AppointmentDrawer({
         open={cancelOpen}
         onOpenChange={setCancelOpen}
         size="sm"
-        title={rejects ? t('reject.title') : t('cancel.title')}
-        description={rejects ? t('reject.body') : t('cancel.body')}
+        title={t('cancel.title')}
+        description={t('cancel.body')}
         footer={
           <>
             <Button
               variant="dangerSolid"
               className="flex-1"
-              disabled={rejects || reasonCode === 'Other' ? reason.trim().length < 3 : reasonCode === null}
+              disabled={reasonCode === 'Other' ? reason.trim().length < 3 : reasonCode === null}
               loading={pending === 'CancelledByShop'}
               onClick={() =>
                 void transition(
                   'CancelledByShop',
-                  // The text goes with a rejection or «سبب ثاني» only; a ready reason is its code.
-                  rejects || reasonCode === 'Other' ? reason.trim() : undefined,
-                  rejects ? null : reasonCode,
+                  // The text goes with «سبب ثاني» only; a ready reason is its code.
+                  reasonCode === 'Other' ? reason.trim() : undefined,
+                  reasonCode,
                 )
               }
             >
-              {rejects ? t('reject.confirm') : t('cancel.confirm')}
+              {t('cancel.confirm')}
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => setCancelOpen(false)}>
               {t('cancel.keep')}
@@ -595,44 +615,34 @@ export function AppointmentDrawer({
           </>
         }
       >
-        {rejects ? (
-          <TextareaField
-            label={t('cancel.reason')}
-            maxLength={NOTE_MAX}
-            rows={2}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            <fieldset className="flex min-w-0 flex-col gap-2" data-testid="cancel-reasons">
-              <legend className="mb-1 text-label font-bold text-text-strong">{t('cancel.reason')}</legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {REASONS.map((code) => (
-                  <RadioCard
-                    key={code}
-                    name="cancellationReason"
-                    value={code}
-                    checked={reasonCode === code}
-                    onChange={() => setReasonCode(code)}
-                  >
-                    {tReasons(code)}
-                  </RadioCard>
-                ))}
-              </div>
-            </fieldset>
-            {reasonCode === 'Other' && (
-              <TextareaField
-                label={t('cancel.otherReason')}
-                maxLength={NOTE_MAX}
-                rows={2}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-            )}
-            <p className="text-helper text-text-secondary">{t('cancel.late')}</p>
-          </div>
-        )}
+        <div className="flex flex-col gap-3">
+          <fieldset className="flex min-w-0 flex-col gap-2" data-testid="cancel-reasons">
+            <legend className="mb-1 text-label font-bold text-text-strong">{t('cancel.reason')}</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {REASONS.map((code) => (
+                <RadioCard
+                  key={code}
+                  name="cancellationReason"
+                  value={code}
+                  checked={reasonCode === code}
+                  onChange={() => setReasonCode(code)}
+                >
+                  {tReasons(code)}
+                </RadioCard>
+              ))}
+            </div>
+          </fieldset>
+          {reasonCode === 'Other' && (
+            <TextareaField
+              label={t('cancel.otherReason')}
+              maxLength={NOTE_MAX}
+              rows={2}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          )}
+          <p className="text-helper text-text-secondary">{t('cancel.late')}</p>
+        </div>
       </Dialog>
     </Sheet>
   );

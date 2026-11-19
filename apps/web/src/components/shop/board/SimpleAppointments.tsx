@@ -162,17 +162,19 @@ export function SimpleAppointments({
 
   const dayOf = (b: Booking) => todayLocal(timeZone, new Date(b.startsAt));
   const barberName = (b: Booking) => localizedName(locale, b.professional.nameAr, b.professional.nameEn);
-  const pending = attention.data?.pending ?? [];
   const overdue = attention.data?.overdue ?? [];
   const closedLate = attention.data?.closedLate ?? [];
+  // «حجوزات حلاق غير متوفر» (D-155, the client's 1-2): today's open bookings of a barber marked «غير متوفر اليوم», for
+  // any colleague to give to another barber, move or cancel with a reason (in the drawer).
+  const uncovered = attention.data?.unavailable ?? [];
   // Shown once: a booking in the shop-wide sections leaves the day.
-  const shown = new Set([...pending, ...overdue].map((b) => b.id));
+  const shown = new Set([...overdue, ...uncovered].map((b) => b.id));
   const items = (list.data ?? []).filter((b) => !shown.has(b.id) && (day !== today || dayOf(b) <= today));
   const showsBarber = scope.kind === 'all';
   const colleagues = barbers.filter((b) => b.id !== ownProfessionalId);
 
-  // A red booking is closed, not started late: «وصل», «انتهت الخدمة» or «ما حضر» (a pending one is rejected from its
-  // details); the API's list says which of them this user may press.
+  // A red booking is closed, not started late: «وصل», «انتهت الخدمة» or «ما حضر»; the API's list says which of them
+  // this user may press. Bookings are confirmed at once (D-155), so there is nothing waiting for the shop to accept.
   const quick = (b: Booking) =>
     canUpdate
       ? b.overdue
@@ -313,8 +315,10 @@ export function SimpleAppointments({
           <ButtonLink href="/shop/schedule#breaks" variant="outline" size="md" icon="coffee">
             {t('quick.break')}
           </ButtonLink>
-          <ButtonLink href="/shop/schedule#pause" variant="outline" size="md" icon="pause">
-            {t('quick.pause')}
+          {/* The barber's own «غير متوفر اليوم» (D-155, the client's 1-2), where the shop's pause used to be: the shop's
+              pause is the owner's and the admin's now. */}
+          <ButtonLink href="/shop/schedule#unavailable" variant="outline" size="md" icon="ban">
+            {t('quick.unavailable')}
           </ButtonLink>
         </nav>
       )}
@@ -349,26 +353,19 @@ export function SimpleAppointments({
           </>,
           'danger',
         )}
-      {pending.length > 0 &&
+      {uncovered.length > 0 &&
         section(
-          'attention-pending',
-          `${t('pending')} (${formatNumber(pending.length, locale)})`,
+          'attention-unavailable',
+          `${t('unavailable')} (${formatNumber(uncovered.length, locale)})`,
           <>
-            <p className="text-helper text-text-secondary">{t('pendingHint')}</p>
-            {rows(pending, (b) => (
-              <span className="text-helper text-text-secondary">
-                {formatLocalDate(
-                  dayOf(b),
-                  locale,
-                  { weekday: 'long', day: 'numeric', month: 'long' },
-                  calendar,
-                )}{' '}
-                — {barberName(b)}
+            <p className="text-helper text-text-secondary">{t('unavailableHint')}</p>
+            {rows(uncovered, (b) => (
+              <span className="text-helper font-bold text-warning-700">
+                {t('unavailableBarber', { name: barberName(b) })}
               </span>
             ))}
           </>,
         )}
-
       <section
         className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-e1"
         aria-labelledby="coming-day-title"

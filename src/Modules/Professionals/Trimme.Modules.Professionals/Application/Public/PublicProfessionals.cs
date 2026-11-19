@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -11,7 +12,8 @@ namespace Trimme.Modules.Professionals.Application.Public;
 
 /// <summary>
 /// A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone
-/// or WhatsApp number (R-PRO-02).
+/// or WhatsApp number (R-PRO-02). <c>UnavailableToday</c> (D-155, the client's 1-2): marked «غير متوفر اليوم», so the card is
+/// disabled and «أي مختص» never picks them (their times are gone).
 /// </summary>
 public sealed record PublicProfessionalResponse(
     Guid Id,
@@ -25,7 +27,8 @@ public sealed record PublicProfessionalResponse(
     string? AvatarUrl,
     decimal Rating,
     int ReviewCount,
-    IReadOnlyList<string> Languages);
+    IReadOnlyList<string> Languages,
+    bool UnavailableToday = false);
 
 internal sealed record ListPublicProfessionalsQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicProfessionalResponse>?>;
 
@@ -33,7 +36,8 @@ internal sealed record ListPublicProfessionalsQuery(string ShopSlug) : IQuery<IR
 /// Active professionals of an active shop, read inside <see cref="IPublicDataScope"/> bound to that one shop.
 /// Returns <see langword="null"/> when the shop is not published.
 /// </summary>
-internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops, IRatingReader ratings)
+internal sealed class ListPublicProfessionalsHandler(
+    TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops, IRatingReader ratings, IUnavailableBarbers unavailable)
     : IQueryHandler<ListPublicProfessionalsQuery, IReadOnlyList<PublicProfessionalResponse>?>
 {
     private const int MaxProfessionals = 200;
@@ -52,6 +56,7 @@ internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublic
         }
 
         List<Professional> professionals;
+        HashSet<ProfessionalId> off;
         using (scope.Begin(shop.Id))
         {
             professionals = await db.Set<Professional>().AsNoTracking()
@@ -59,6 +64,7 @@ internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublic
                 .OrderBy(p => p.NameAr)
                 .Take(MaxProfessionals)
                 .ToListAsync(cancellationToken);
+            off = [.. (await unavailable.TodayAsync(shop.Id, cancellationToken)).Select(m => m.ProfessionalId)];
         }
 
         var rated = await ratings.GetAsync(RatingSubject.Professional, [.. professionals.Select(p => p.Id.Value)], cancellationToken);
@@ -66,7 +72,8 @@ internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublic
         [
             .. professionals.Select(p => new PublicProfessionalResponse(
                 p.Id.Value, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, p.BioAr, p.BioEn, MediaRules.Url(p.AvatarMediaId),
-                rated.GetValueOrDefault(p.Id.Value)?.Average ?? 0, rated.GetValueOrDefault(p.Id.Value)?.Count ?? 0, p.Languages)),
+                rated.GetValueOrDefault(p.Id.Value)?.Average ?? 0, rated.GetValueOrDefault(p.Id.Value)?.Count ?? 0, p.Languages,
+                off.Contains(p.Id))),
         ];
     }
 }

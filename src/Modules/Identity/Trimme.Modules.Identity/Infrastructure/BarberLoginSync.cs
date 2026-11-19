@@ -68,7 +68,8 @@ internal sealed class BarberLoginSync(TrimmeDbContext db, IAccountStore accounts
 
         // Staged: the caller saves it with its own change, before its transaction commits. Never the password.
         audit.Record(new AuditRecord(
-            "barber_login.enabled", "Professional", account.ProfessionalId.ToString(), account.ShopId, "Login made with the barber, temporary password generated"));
+            "barber_login.enabled", "Professional", account.ProfessionalId.ToString(), account.ShopId, "Login made with the barber, temporary password generated",
+            SummaryCode: "barber_login.created_with_barber"));
         return password;
     }
 

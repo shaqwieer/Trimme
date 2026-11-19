@@ -21,16 +21,18 @@ public enum MessageAudience
 }
 
 /// <summary>
-/// The booking lifecycle events that send a WhatsApp message (spec §16, D-109, D-145). Customers get all six;
-/// professionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending
-/// request nor the change of barber (the barbers concerned get «cancelled» and «confirmed» instead).
+/// The booking lifecycle events that send a WhatsApp message (spec §16, D-109, D-145, D-155). Customers get confirmed,
+/// rescheduled, cancelled, cancelled by the shop, the reminder, the change of barber and the win-back message;
+/// professionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the change of
+/// barber (the barbers concerned get «cancelled» and «confirmed» instead). The pending request is kept for old rows and
+/// admin edits, but is no longer sent: every online booking is confirmed at once (D-155).
 /// </summary>
 public enum MessageEvent
 {
     /// <summary>A booking is confirmed: created Confirmed (or a walk-in), or a Pending request confirmed by the shop.</summary>
     BookingConfirmed,
 
-    /// <summary>A request is waiting for the shop's confirmation (D-006). Customers only.</summary>
+    /// <summary>A request is waiting for the shop's confirmation (D-006). Customers only. Never sent since D-155.</summary>
     BookingPending,
 
     BookingRescheduled,
@@ -45,6 +47,18 @@ public enum MessageEvent
     /// or change it until it starts.
     /// </summary>
     BookingProfessionalChanged,
+
+    /// <summary>
+    /// The shop (or the platform) cancelled the booking (D-155, the client's «أنا ما ألغيت!»): it apologises and gives the
+    /// reason, with «احجز من جديد». Customers only; the customer's own cancellation keeps <see cref="BookingCancelled"/>.
+    /// </summary>
+    BookingCancelledByShop,
+
+    /// <summary>
+    /// «رسالة الدعوة للعودة» (D-155): a customer whose last visit was some days ago is invited back, when the shop's plan
+    /// includes it. The only marketing message, and the only one the plan's monthly limit counts. Customers only.
+    /// </summary>
+    WinBack,
 }
 
 public enum TemplateVersionStatus
@@ -112,9 +126,16 @@ public sealed class WhatsAppTemplate : AggregateRoot<WhatsAppTemplateId>, IConcu
 
     public static readonly IReadOnlyList<string> Locales = ["ar", "en"];
 
-    /// <summary>Whether this event is sent to this audience at all (professionals never get the pending request nor the change of barber).</summary>
+    /// <summary>
+    /// Whether this event is sent to this audience at all: professionals never get the pending request, the change of
+    /// barber, the shop's cancellation (they get «cancelled») nor the win-back message.
+    /// </summary>
     public static bool IsSent(MessageEvent @event, MessageAudience audience) =>
-        !(audience == MessageAudience.Professional && @event is MessageEvent.BookingPending or MessageEvent.BookingProfessionalChanged);
+        !(audience == MessageAudience.Professional
+          && @event is MessageEvent.BookingPending or MessageEvent.BookingProfessionalChanged or MessageEvent.BookingCancelledByShop or MessageEvent.WinBack);
+
+    /// <summary>Marketing (D-155): the win-back message. Meta files it as MARKETING; the plan's monthly limit counts it.</summary>
+    public static bool IsMarketing(MessageEvent @event) => @event == MessageEvent.WinBack;
 
     /// <summary>A new slot whose first version is active at once (the <c>migrate</c> defaults, D-109).</summary>
     public static WhatsAppTemplate CreateWithActiveVersion(

@@ -19,7 +19,6 @@ public sealed record UpdatePlatformSettingsRequest(
     int ReminderOffsetMinutes,
     int ExpiringSoonThresholdDays,
     SubscriptionEnforcement ExpiredSubscriptionEnforcement,
-    bool HidePausedShopsFromDiscovery,
     double MapDefaultLatitude,
     double MapDefaultLongitude,
     int MapDefaultZoom,
@@ -41,7 +40,7 @@ internal static class SettingsEndpoints
         group.MapPut("/", async (UpdatePlatformSettingsRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new UpdatePlatformSettingsCommand(
                     r.MinLeadTimeMinutes, r.BookingHorizonDays, r.SlotStepMinutes, r.CancellationCutoffMinutes, r.ReviewWindowDays, r.ReminderOffsetMinutes,
-                    r.ExpiringSoonThresholdDays, r.ExpiredSubscriptionEnforcement, r.HidePausedShopsFromDiscovery, r.MapDefaultLatitude, r.MapDefaultLongitude,
+                    r.ExpiringSoonThresholdDays, r.ExpiredSubscriptionEnforcement, r.MapDefaultLatitude, r.MapDefaultLongitude,
                     r.MapDefaultZoom, r.Version), ct)).ToHttpResult())
             .RequirePermission(SettingsEdit)
             .WithName("UpdatePlatformSettings").WithSummary("Edits the platform settings (audited, optimistic concurrency).")

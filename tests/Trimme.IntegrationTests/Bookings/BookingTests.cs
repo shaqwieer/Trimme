@@ -75,8 +75,13 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, ten.AddMinutes(30), ct, key: "k-1"), HttpStatusCode.UnprocessableEntity, "idempotency.key_reused", ct);
 
         // The next "any professional" booking at the same time goes to the other professional; the slot then has none.
+        // Noura herself books nothing else while this one is ahead (D-155, one active booking per customer).
         (await CandidatesAsync(anonymous, w.SlugA, w.Haircut, ten, ct)).ShouldBe([(chosen == w.Faisal ? w.Omar : w.Faisal).ToString()]);
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, chosen, ten.AddMinutes(15), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, chosen, ten.AddHours(3), ct), HttpStatusCode.Conflict, "booking.active_booking_exists", ct);
+        using (var sara = await CustomerAsync(w.Factory, "سارة", ct))
+        {
+            await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, chosen, ten.AddMinutes(15), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        }
 
         // The shop sees the customer's name, never a phone (R-NEG-04), and the history.
         var list = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}", ct), ct);
@@ -195,7 +200,10 @@ public sealed class BookingTests(PostgresFixture postgres)
         item.GetProperty("durationMinutes").GetInt32().ShouldBe(50);
         item.GetProperty("packageItems").EnumerateArray().Select(i => i.GetProperty("serviceId").GetGuid()).ShouldBe([w.Haircut, w.Beard]);
         booking.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 50));
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 30), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        using (var sara = await CustomerAsync(w.Factory, "سارة", ct))
+        {
+            await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 30), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        }
 
         // A reschedule keeps the whole duration.
         var moved = await OkAsync(noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{booking.GetProperty("id").GetGuid()}/reschedule",
@@ -389,10 +397,11 @@ public sealed class BookingTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "bkg_finish", ct, clock);
-        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        var nouraPhone = IdentityTestData.NewPhone();
+        using var noura = await IdentityTestData.SignInCustomerAsync(w.Factory, nouraPhone, ct);
+        await OkAsync(noura.PostAsync("/api/v1/auth/profile/complete", new { displayName = "نورة", preferredLocale = "ar", termsAccepted = true }, ct), ct);
         using var sara = await CustomerAsync(w.Factory, "سارة", ct);
         var first = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
-        var again = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target.AddDays(1), 12), ct), ct, HttpStatusCode.Created);
         var other = await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Omar, At(Target.AddDays(1), 13), ct), ct, HttpStatusCode.Created);
         const string FaisalNumber = "+966512397001";
         (await Identity.BarberLoginTests.BarberAsync(w, w.Faisal, FaisalNumber, ct)).Dispose();
@@ -420,6 +429,13 @@ public sealed class BookingTests(PostgresFixture postgres)
         FreeNow(await OkAsync(staff.GetAsync(walkInOptions, ct), ct)).ShouldBeTrue();
         await OkAsync(staff.PostAsync("/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, customerName = "زائر" }, ct),
             ct, HttpStatusCode.Created);
+
+        // Once the visit is done, Noura books her next one (D-155: a finished visit does not count as active).
+        JsonElement again;
+        using (var nouraNow = await IdentityTestData.SignInCustomerAsync(w.Factory, nouraPhone, ct))
+        {
+            again = await OkAsync(BookAsync(nouraNow, w.SlugA, w.Haircut, w.Faisal, At(Target.AddDays(1), 12), ct), ct, HttpStatusCode.Created);
+        }
 
         // A booking can't be finished without «وصل» (D-147).
         await FailsAsync(staff.PostAsync($"/api/v1/shop/bookings/{again.GetProperty("id").GetGuid()}/transitions",
@@ -452,25 +468,20 @@ public sealed class BookingTests(PostgresFixture postgres)
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 13), ct), ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
 
-        // Any barber pauses the shop's online booking for a while (D-147); the owner no longer does.
-        using (var omar = await w.BarberAsync(w.Omar, ct))
-        {
-            await OkAsync(omar.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), ct);
-        }
+        // The owner pauses the shop's online booking for a while (D-155: the owner's again, no longer the barbers').
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), ct);
 
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 14), ct), HttpStatusCode.UnprocessableEntity, "shop.paused", ct);
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, null, At(Target, 14), ct), HttpStatusCode.UnprocessableEntity, "shop.paused", ct);
         await FailsAsync(noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{id}/reschedule", new { startsAt = At(Target, 14), version = booking.GetProperty("version").GetUInt32() }, ct, headers: Key()),
             HttpStatusCode.UnprocessableEntity, "booking.shop_not_accepting", ct);
         (await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct)).GetProperty("status").GetString().ShouldBe("Confirmed");
-        using (var faisal = await w.BarberAsync(w.Faisal, ct))
-        {
-            await OkAsync(faisal.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
-        }
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
 
         // R-SUB-05: a suspended subscription blocks new online bookings only; walk-ins still work (D-014).
         var subscription = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription", ct), ct);
         await OkAsync(w.Admin.PostAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription/suspend", new { reason = "Payment overdue", version = subscription.GetProperty("version").GetUInt32() }, ct), ct);
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 15), ct), HttpStatusCode.UnprocessableEntity, "subscription.suspended", ct);
+        await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, null, At(Target, 15), ct), HttpStatusCode.UnprocessableEntity, "subscription.suspended", ct);
         var kept = await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct);
         kept.GetProperty("status").GetString().ShouldBe("Confirmed");
         kept.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 13));

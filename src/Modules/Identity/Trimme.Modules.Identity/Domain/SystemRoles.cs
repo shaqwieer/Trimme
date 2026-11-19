@@ -29,7 +29,6 @@ public static class SystemRoles
         Permissions.Shop.BookingsReschedule,
         Permissions.Shop.BookingsChangeProfessional,
         Permissions.Shop.BreaksManage,
-        Permissions.Shop.OnlineBookingPause,
     ];
 
     public static IReadOnlyList<RoleDefinition> All { get; } =
@@ -59,7 +58,8 @@ public static class SystemRoles
             Permissions.Admin.WhatsAppView,
         ]),
         // The owner watches and manages the shop; the barbers operate the bookings (D-146, D-147): no walk-ins, no status
-        // changes or notes, no change of time or barber, no barber's breaks and no pause for the owner.
+        // changes or notes, no change of time or barber, no barber's breaks. D-155 (the client's 1-1): pausing online booking
+        // is the owner's (and the admin's), no longer the barbers'.
         new(ShopOwner, UserType.ShopUser, Managed: true,
             Permissions.All
                 .Where(p => p.UserType == UserType.ShopUser)
@@ -76,7 +76,6 @@ public static class SystemRoles
             Permissions.Shop.BookingsReschedule,
             Permissions.Shop.BookingsChangeProfessional,
             Permissions.Shop.BreaksManage,
-            Permissions.Shop.OnlineBookingPause,
         ]),
         new(Customer, UserType.Customer, Managed: true, []),
     ];

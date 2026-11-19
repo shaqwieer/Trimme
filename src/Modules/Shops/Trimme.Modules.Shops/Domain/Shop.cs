@@ -86,6 +86,15 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     /// </summary>
     public bool IsDemo { get; private set; }
 
+    /// <summary>
+    /// D-155 (the client's 5-1-7): the «اتصال بالمحل» button on the public page, the admin's choice only (off by default).
+    /// The owner never sees or edits it; it is not <see cref="PublicPhone"/>, which the owner edits.
+    /// </summary>
+    public bool CallButtonEnabled { get; private set; }
+
+    /// <summary>The number the call button dials, in E.164, set by the admin (D-155).</summary>
+    public string? CallButtonPhone { get; private set; }
+
     public MediaId? LogoMediaId { get; private set; }
 
     public MediaId? CoverMediaId { get; private set; }
@@ -103,9 +112,6 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
 
     /// <summary>IANA time zone used for opening hours and availability (D-030).</summary>
     public string TimeZone { get; private set; }
-
-    /// <summary>D-006: when true, online bookings start as Pending and the shop confirms them. Default off.</summary>
-    public bool RequireManualConfirmation { get; private set; }
 
     /// <summary>The shop's own start-time interval (D-149); <see langword="null"/> follows the platform's.</summary>
     public int? SlotStepMinutes { get; private set; }
@@ -229,18 +235,17 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     }
 
     /// <summary>
-    /// The shop's own booking settings (D-149, the client's «إعدادات الحجز خاصة بكل محل»): confirmation, the start-time
+    /// The shop's own booking settings (D-149, the client's «إعدادات الحجز خاصة بكل محل»): the start-time
     /// interval, the minimum notice, the furthest bookable day and the cleaning time after each booking. The values are
     /// validated by <see cref="ShopBookingRules"/>.
     /// </summary>
-    public Result SetBookingSettings(bool requireManualConfirmation, int slotStepMinutes, int minLeadTimeMinutes, int bookingHorizonDays, int bufferMinutes, DateTimeOffset now)
+    public Result SetBookingSettings(int slotStepMinutes, int minLeadTimeMinutes, int bookingHorizonDays, int bufferMinutes, DateTimeOffset now)
     {
         if (ShopBookingRules.Validate(slotStepMinutes, minLeadTimeMinutes, bookingHorizonDays, bufferMinutes) is { } invalid)
         {
             return invalid;
         }
 
-        RequireManualConfirmation = requireManualConfirmation;
         SlotStepMinutes = slotStepMinutes;
         MinLeadTimeMinutes = minLeadTimeMinutes;
         BookingHorizonDays = bookingHorizonDays;
@@ -252,6 +257,14 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     public void SetDemo(bool demo, DateTimeOffset now)
     {
         IsDemo = demo;
+        UpdatedAt = now;
+    }
+
+    /// <summary>The admin's call button (D-155): on needs a number; off keeps the number for next time.</summary>
+    public void SetCallButton(bool enabled, string? phoneE164, DateTimeOffset now)
+    {
+        CallButtonEnabled = enabled;
+        CallButtonPhone = phoneE164 ?? CallButtonPhone;
         UpdatedAt = now;
     }
 

@@ -16,12 +16,11 @@ namespace Trimme.Modules.Bookings.Application;
 
 /// <param name="Total">The day's bookings, cancellations left out.</param>
 /// <param name="PreviousDayTotal">The same for the day before (the design's "vs yesterday").</param>
-/// <param name="PendingUpcoming">Bookings still waiting for the shop's confirmation, from now on (any day).</param>
 /// <param name="Completed">The day's completed visits.</param>
 /// <param name="NoShow">The day's no-shows.</param>
 /// <param name="Cancelled">The day's cancellations (by the customer or the shop).</param>
 /// <param name="FreeMinutes">Bookable minutes left that day: each professional's available time minus their booked time.</param>
-public sealed record ShopOverviewKpis(int Total, int PreviousDayTotal, int PendingUpcoming, int Completed, int NoShow, int Cancelled, int FreeMinutes);
+public sealed record ShopOverviewKpis(int Total, int PreviousDayTotal, int Completed, int NoShow, int Cancelled, int FreeMinutes);
 
 /// <param name="Id">The professional.</param>
 /// <param name="NameAr">Arabic name.</param>
@@ -40,7 +39,8 @@ public sealed record HourCountResponse(int Hour, int Count);
 /// The operational overview of one business day (s-overview): KPIs, what comes next, each professional's load and the
 /// last seven days by starting hour (local time; cancellations left out). <c>Customers</c>, for the owner only, counts
 /// the last 30 days' new customers and returning visits (D-135). A barber sees what comes next only: no figures, so
-/// <c>Kpis</c> is null and the load and hours are empty (D-147: «ما يشوف إحصائيات ولا دخل»).
+/// <c>Kpis</c> is null and the load and hours are empty (D-147: «ما يشوف إحصائيات ولا دخل»). <c>UnavailableToday</c>
+/// (D-155): the shop's barbers marked «غير متوفر اليوم» and since when, for the owner's dashboard line and the barbers'.
 /// </summary>
 public sealed record ShopOverviewResponse(
     DateOnly Date,
@@ -51,7 +51,11 @@ public sealed record ShopOverviewResponse(
     IReadOnlyList<ProfessionalLoadResponse> Professionals,
     IReadOnlyList<HourCountResponse> Hourly,
     bool OnlineBookingPaused,
-    ShopCustomerMix? Customers);
+    ShopCustomerMix? Customers,
+    IReadOnlyList<UnavailableTodayResponse>? UnavailableToday = null);
+
+/// <summary>A barber marked «غير متوفر اليوم» (D-155), and since when.</summary>
+public sealed record UnavailableTodayResponse(Guid ProfessionalId, string NameAr, string NameEn, DateTimeOffset Since);
 
 public sealed record TimeWindowResponse(DateTimeOffset Start, DateTimeOffset End);
 
@@ -146,7 +150,8 @@ internal sealed record ShopBoard(ShopSummary Shop, TimeZoneInfo Zone, IReadOnlyL
 /// (working time outside breaks and time off); free capacity is what remains, never below zero per professional.
 /// </summary>
 internal sealed class GetShopOverviewHandler(
-    TrimmeDbContext db, ICurrentUser user, ShopBoardLoader loader, ShopBookingReader reader, CustomerVisits visits, TimeProvider clock)
+    ICurrentUser user, ShopBoardLoader loader, ShopBookingReader reader, CustomerVisits visits, IUnavailableBarbers unavailable,
+    IProfessionalDirectory professionals, TimeProvider clock)
     : IQueryHandler<GetShopOverviewQuery, Result<ShopOverviewResponse>>
 {
     public const int UpcomingLimit = 8;
@@ -177,12 +182,9 @@ internal sealed class GetShopOverviewHandler(
                 working, working && lane!.TimeOff.Count > 0 && lane.AvailableMinutes <= 0);
         }).ToList();
 
-        var pending = await db.Set<Booking>().AsNoTracking().OwnOnly(user)
-            .CountAsync(b => b.Status == BookingStatus.Pending && b.StartsAt >= now, cancellationToken);
         var kpis = new ShopOverviewKpis(
             today.Count,
             kept.Count(b => board.Days.Of(b.StartsAt) == date.AddDays(-1)),
-            pending,
             today.Count(b => b.Status == BookingStatus.Completed),
             today.Count(b => b.Status == BookingStatus.NoShow),
             todayAll.Count(b => BookingRules.IsCancelled(b.Status)),
@@ -196,9 +198,18 @@ internal sealed class GetShopOverviewHandler(
         var customers = await visits.MixAsync(
             BusinessDays.StartOf(date.AddDays(-(CustomerVisits.MixDays - 1)), zone), BusinessDays.StartOf(date.AddDays(1), zone), cancellationToken);
         var upcomingMapped = await reader.MapAsync(board.Shop.Id, upcoming, cancellationToken);
+        var away = new List<UnavailableTodayResponse>();
+        foreach (var mark in await unavailable.TodayAsync(board.Shop.Id, cancellationToken))
+        {
+            if (await professionals.FindAsync(mark.ProfessionalId, cancellationToken) is { } professional)
+            {
+                away.Add(new UnavailableTodayResponse(mark.ProfessionalId.Value, professional.NameAr, professional.NameEn, mark.Since));
+            }
+        }
+
         return user.Own() is null
-            ? new ShopOverviewResponse(date, board.Shop.TimeZone, now, kpis, upcomingMapped, load, hourly, board.Shop.OnlineBookingPaused, customers)
-            : new ShopOverviewResponse(date, board.Shop.TimeZone, now, null, upcomingMapped, [], [], board.Shop.OnlineBookingPaused, null);
+            ? new ShopOverviewResponse(date, board.Shop.TimeZone, now, kpis, upcomingMapped, load, hourly, board.Shop.OnlineBookingPaused, customers, away)
+            : new ShopOverviewResponse(date, board.Shop.TimeZone, now, null, upcomingMapped, [], [], board.Shop.OnlineBookingPaused, null, away);
     }
 }
 

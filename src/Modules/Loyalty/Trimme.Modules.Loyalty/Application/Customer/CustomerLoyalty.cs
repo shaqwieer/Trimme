@@ -23,7 +23,7 @@ internal sealed record GetMyShopLoyaltyQuery(string ShopSlug) : IQuery<MyShopLoy
 /// </para>
 /// </summary>
 internal sealed class CustomerLoyaltyReader(
-    TrimmeDbContext db, ICurrentCustomer customer, IPublicDataScope scope, IShopDirectory shops, ILoyaltyAddOnStatus addOn, ILoyaltyMemberKeys keys,
+    TrimmeDbContext db, ICurrentCustomer customer, IPublicDataScope scope, IShopDirectory shops, ILoyaltyPlanStatus addOn, ILoyaltyMemberKeys keys,
     TimeProvider clock)
 {
     /// <summary>History lines per card.</summary>
@@ -39,7 +39,7 @@ internal sealed class CustomerLoyaltyReader(
         var memberKey = await keys.ForCustomerAsync(customerId, cancellationToken);
         var coupons = await CouponsAsync(customerId, null, cancellationToken);
         var used = await UsedCouponsAsync(customerId, null, cancellationToken);
-        var candidates = (await addOn.ShopsWithAddOnAsync(IPublicDataScope.MaxShops, cancellationToken))
+        var candidates = (await addOn.ShopsWithLoyaltyAsync(IPublicDataScope.MaxShops, cancellationToken))
             .Concat(coupons.Select(c => c.ShopId)).Concat(used.Select(c => c.ShopId)).Distinct().Take(IPublicDataScope.MaxShops).ToList();
         if (candidates.Count == 0)
         {

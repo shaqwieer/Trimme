@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Web.Hosting;
+using Trimme.BuildingBlocks.Web.Jobs;
 using Trimme.BuildingBlocks.Web.Modules;
 using Trimme.Modules.Shops.Api;
 using Trimme.Modules.Shops.Application;
@@ -25,6 +26,8 @@ public sealed class ShopsModule : ModuleBase
         base.AddServices(services, configuration);
         services.AddScoped<IShopDirectory, ShopDirectory>();
         services.AddScoped<Application.ShopBookingSettingsStore>();
+        services.AddScoped<Application.OnlineBookingPauses>();
+        services.AddRecurringJob<Jobs.OnlineBookingResumeJob>("shops-online-booking-resume", "*/5 * * * *");
         services.AddScoped<BuildingBlocks.Application.Reporting.IShopStatistics, ShopStatistics>();
         services.AddScoped<Application.Public.DiscoveryCatalog>();
         services.AddScoped<BuildingBlocks.Application.Discovery.IShopCards, Application.Public.ShopCards>();

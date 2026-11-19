@@ -74,5 +74,6 @@ internal sealed class ProfessionalTimeOffConfiguration : IEntityTypeConfiguratio
         builder.Property(t => t.Note).HasMaxLength(ScheduleRules.MaxNoteLength);
         builder.HasShopScopedReference(ScheduleModel.ProfessionalEntityType, nameof(ProfessionalTimeOff.ProfessionalId), DeleteBehavior.Cascade);
         builder.HasIndex(t => new { t.ShopId, t.ProfessionalId, t.EndsAt });
+        builder.HasIndex(t => new { t.ShopId, t.Kind, t.StartsAt });
     }
 }

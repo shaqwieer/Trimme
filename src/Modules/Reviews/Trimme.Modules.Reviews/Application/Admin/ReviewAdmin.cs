@@ -195,7 +195,8 @@ internal sealed class ModerateReviewHandler(
                     _ => sign == +1 ? "review.published" : "review.report_cleared",
                 },
                 nameof(Review), review.Id.ToString(), review.ShopId, $"{review.Rating}★ review of booking {review.BookingId}",
-                command.Action == ModerationAction.Publish ? null : command.Reason?.Trim()));
+                command.Action == ModerationAction.Publish ? null : command.Reason?.Trim(),
+                SummaryArgs: AuditArgs.Of(("rating", review.Rating))));
 
             await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
             {
@@ -256,7 +257,8 @@ internal sealed class ContactShopAboutReviewHandler(
                 cancellationToken);
             audit.Record(new AuditRecord(
                 "review.shop_contacted", nameof(Review), review.Id.ToString(), review.ShopId,
-                $"Message to the shop about the {review.Rating}★ review of booking {review.BookingId} ({message.Length} characters)"));
+                $"Message to the shop about the {review.Rating}★ review of booking {review.BookingId} ({message.Length} characters)",
+                SummaryArgs: AuditArgs.Of(("rating", review.Rating), ("length", message.Length))));
             await db.SaveChangesAsync(cancellationToken);
         }
 

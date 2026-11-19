@@ -31,6 +31,11 @@ public sealed record BreakRequest(Guid? ProfessionalId, string? Label, IReadOnly
 public sealed record BarberDayBreaksRequest(Guid ProfessionalId, DateOnly Date, IReadOnlyList<MinuteWindowDto>? Breaks);
 
 /// <summary>
+/// «غير متوفر اليوم» (D-155): a barber's login marks only themselves (the id is ignored); the owner names the barber.
+/// </summary>
+public sealed record UnavailableTodayRequest(Guid? ProfessionalId);
+
+/// <summary>
 /// Time off from <c>StartDate</c> to <c>EndDate</c> (inclusive, shop-local). Without minutes it covers whole days;
 /// otherwise it starts at <c>StartMinute</c> of the first day and ends at <c>EndMinute</c> of the last.
 /// </summary>
@@ -128,6 +133,28 @@ internal static class AvailabilityEndpoints
             .WithName("SetBarberDayBreaks")
             .WithSummary("Replaces the barber's own one-off breaks on the date (no reason needed); bookings are never cancelled.")
             .Produces<BarberDayResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+
+        // «غير متوفر اليوم» (D-155): the barber for themselves or the owner for any barber (checked by the handler).
+        schedule.MapGet("/unavailable-today", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new ListUnavailableTodayQuery(), ct) is { } list ? TypedResults.Ok(list) : ScheduleErrors.ShopNotFound().ToProblem())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("ListUnavailableToday")
+            .WithSummary("The shop's barbers marked «غير متوفر اليوم» (D-155): since when, until the end of the day, and their open bookings left today.")
+            .Produces<IReadOnlyList<UnavailableBarberResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+        schedule.MapPost("/unavailable-today", async (UnavailableTodayRequest? r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new MarkUnavailableTodayCommand(r?.ProfessionalId), ct)).ToHttpResult())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("MarkUnavailableToday")
+            .WithSummary("Marks a barber «غير متوفر اليوم» until the end of the shop's day (D-155): the barber themselves, or the owner (Shop.Schedule.Manage) for any barber. Their remaining times vanish; their bookings stay and the colleagues are told. 409 schedule.already_unavailable. Audited.")
+            .Produces<UnavailableBarberResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        schedule.MapDelete("/unavailable-today", async (Guid? professionalId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new UndoUnavailableTodayCommand(professionalId), ct)).ToHttpResult())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("UndoUnavailableToday")
+            .WithSummary("Takes «غير متوفر اليوم» back the same day (D-155): the barber themselves, or the owner. 409 schedule.not_unavailable. Audited.")
+            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         var timeOff = schedule.MapGroup("/time-off");
         timeOff.MapPost("/", async (TimeOffRequest r, IDispatcher d, CancellationToken ct) =>

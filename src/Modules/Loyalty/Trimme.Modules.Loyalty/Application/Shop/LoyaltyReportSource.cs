@@ -11,7 +11,7 @@ namespace Trimme.Modules.Loyalty.Application.Shop;
 /// out): one stamp entry per point earned, the rewards used at visits (points rewards and D-132 coupons), and the terms of
 /// D-132 coupons (a points reward is already taken off the booking's amount due).
 /// </summary>
-internal sealed class LoyaltyReportSource(TrimmeDbContext db, ILoyaltyAddOnStatus addOn) : ILoyaltyReportSource
+internal sealed class LoyaltyReportSource(TrimmeDbContext db, ILoyaltyPlanStatus addOn) : ILoyaltyReportSource
 {
     public async Task<LoyaltyActivity> ActivityAsync(ShopId shopId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
     {

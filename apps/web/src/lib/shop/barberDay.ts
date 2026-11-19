@@ -155,11 +155,6 @@ export function freeStarts(day: BarberDay): number[] {
     .map((c) => c.start);
 }
 
-/** Every 5 minutes still free become a break ("the whole day"); booked time stays as it is. */
-export function wholeDay(day: BarberDay): MinuteWindow[] {
-  return addBreaks(day, slotsToWindows(freeStarts(day)));
-}
-
 /** Clears the breaks from the current 5 minutes on. */
 export function clearDay(day: BarberDay): MinuteWindow[] {
   return withoutRange(day.breaks, changeableFrom(day), HOURS_PER_DAY * 60);

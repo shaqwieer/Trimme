@@ -9,7 +9,7 @@ import { addDays, formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { BookingListItem, type CustomerBooking } from './BookingCards';
-import { CancelBookingButton, PostponementOfferCard } from './BookingDetailClient';
+import { CancelBookingButton } from './BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from './BookingDetailParts';
 import { HourMinutePicker } from '@/components/ui/booking';
 import { BookingWizard, type WizardPro } from './BookingWizard';
@@ -59,6 +59,7 @@ const PROS: WizardPro[] = [
     avatarUrl: null,
     rating: 4.7,
     reviewCount: 3,
+    languages: ['ar', 'tr'],
   },
   {
     id: 'majed',
@@ -69,6 +70,7 @@ const PROS: WizardPro[] = [
     avatarUrl: null,
     rating: 0,
     reviewCount: 0,
+    languages: [],
   },
 ];
 const SHOP = {
@@ -474,6 +476,57 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(panel).not.toHaveTextContent('سبقك عميل آخر');
   });
 
+  it('warns of an upcoming booking at any shop with a link to it, and on a 409 at the confirm (D-155, the client’s 3-2)', async () => {
+    const user = userEvent.setup();
+    const active = {
+      id: 'b-old',
+      reference: 'TRMOLD01',
+      shop: { id: 's2', slug: 'al-asala', nameAr: 'صالون الأصالة', nameEn: 'Al Asala' },
+      startsAt: '2026-10-02T09:00:00Z',
+      endsAt: '2026-10-02T09:30:00Z',
+    };
+    const { unmount } = renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+        activeBooking={active}
+      />,
+    );
+    const warning = screen.getByTestId('active-booking');
+    expect(warning).toHaveTextContent('عندك حجز قادم');
+    expect(warning).toHaveTextContent('في صالون الأصالة');
+    expect(within(warning).getByRole('link', { name: 'عرض الحجز' })).toHaveAttribute(
+      'href',
+      '/account/bookings/b-old',
+    );
+    unmount();
+
+    // Booked elsewhere meanwhile: the server refuses, and the wizard names the booking.
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    api.POST.mockResolvedValueOnce(fail(409, 'booking.active_booking_exists'));
+    renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
+    expect(screen.queryByTestId('active-booking')).not.toBeInTheDocument();
+    api.GET.mockImplementation(async (path: string) =>
+      path === '/api/v1/me/bookings/active'
+        ? ok(active)
+        : path.endsWith('/dates')
+          ? ok(DATES)
+          : ok(slotsOf([['10:00', '2026-10-01T07:00:00Z']])),
+    );
+    const confirm = await screen.findByRole('button', { name: 'تأكيد الحجز' });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
+    expect(await screen.findByTestId('active-booking')).toHaveTextContent('صالون الأصالة');
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it('opens with the points reward ticked from the loyalty card, its service free on its own line (D-152, 3-5 and 1-3)', async () => {
     availability();
     window.history.replaceState(
@@ -869,6 +922,41 @@ describe('CancelBookingButton (c-rate cancel sheet, D-015)', () => {
     expect(cancel).toHaveAttribute('href', '/account/bookings/b2?cancel=1');
   });
 
+  it('offers «إعادة الحجز» on a completed visit before it is rated, at the barber with the same service (D-155, 5-4)', () => {
+    const before = new Date(Date.now() - 3 * 86_400_000).toISOString();
+    renderWithIntl(
+      <ul>
+        <BookingListItem
+          booking={
+            {
+              id: 'b3',
+              reference: 'GH-QWERT',
+              shop: { id: 's1', slug: 'barber-house', nameAr: 'باربر هاوس', nameEn: 'Barber House' },
+              professional: { id: 'omar', nameAr: 'عمر', nameEn: 'Omar' },
+              item: {
+                nameAr: 'قص وتصفيف',
+                nameEn: 'Cut and style',
+                serviceId: 'svc-1',
+                packageId: null,
+                packageItems: [],
+              },
+              startsAt: before,
+              endsAt: before,
+              status: 'Completed',
+              allowedActions: ['Review'],
+              reviewRating: null,
+              version: 4,
+            } as unknown as CustomerBooking
+          }
+        />
+      </ul>,
+    );
+    expect(screen.getByRole('link', { name: 'إعادة الحجز' })).toHaveAttribute(
+      'href',
+      '/shops/barber-house/book?service=svc-1&pro=omar',
+    );
+  });
+
   it('opens the cancel dialog at once from the card’s link, and closing it forgets the link (D-152)', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/ar/account/bookings/b1?cancel=1');
@@ -886,35 +974,6 @@ describe('CancelBookingButton (c-rate cancel sheet, D-015)', () => {
     await user.click(screen.getByRole('button', { name: 'إلغاء الموعد' }));
     await user.click(screen.getByRole('button', { name: 'نعم، ألغِ الموعد' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('انتهت مهلة الإلغاء');
-  });
-});
-
-describe('PostponementOfferCard (D-147)', () => {
-  it('accepts the held time with the version read, and says when the offer lapsed meanwhile', async () => {
-    const user = userEvent.setup();
-    api.POST.mockResolvedValueOnce(ok({ id: 'b1' }));
-    renderWithIntl(
-      <PostponementOfferCard
-        bookingId="b1"
-        version={9}
-        when="الجمعة ٩ أكتوبر ٦:٠٠ م"
-        until="الخميس ٨ أكتوبر ٤:٠٠ م"
-      />,
-    );
-    expect(screen.getByTestId('postponement-offer')).toHaveTextContent('الجمعة ٩ أكتوبر ٦:٠٠ م');
-    await user.click(screen.getByRole('button', { name: 'قبول الموعد الجديد' }));
-    await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith('/account/bookings/b1?postponement=accepted'),
-    );
-    expect(api.POST).toHaveBeenCalledWith('/api/v1/me/bookings/{bookingId}/postponement/accept', {
-      params: { path: { bookingId: 'b1' } },
-      body: { version: 9 },
-    });
-
-    api.POST.mockResolvedValueOnce(fail(409, 'booking.postponement_gone'));
-    await user.click(screen.getByRole('button', { name: 'رفض' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('لم يعد عرض التأجيل متاحاً');
-    expect(router.refresh).toHaveBeenCalled();
   });
 });
 
@@ -965,16 +1024,15 @@ describe('FavoriteButton (R-CUS-10, D-098)', () => {
 });
 
 describe('booking page parts (DV-S13, DV-S10)', () => {
-  it('says "confirmed" only for a confirmed booking, and "request sent" for one the shop must confirm', () => {
-    const { unmount } = renderWithIntl(<CreatedBanner status="Confirmed" />);
+  it('says the booking is confirmed: every booking is, at once (D-155, the client’s 3-1)', () => {
+    renderWithIntl(<CreatedBanner />);
     expect(screen.getByText('تم تأكيد حجزك')).toBeInTheDocument();
-    unmount();
-    renderWithIntl(<CreatedBanner status="Pending" />);
-    expect(screen.getByText('تم إرسال طلب الحجز')).toBeInTheDocument();
-    expect(screen.queryByText('تم تأكيد حجزك')).not.toBeInTheDocument();
+    expect(screen.queryByText('تم إرسال طلب الحجز')).not.toBeInTheDocument();
   });
 
   it('before the cutoff says until when; after it says the window closed, with no salon phone (D-129)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-01T09:00:00Z'));
     const { unmount } = renderWithIntl(
       <BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange />,
     );
@@ -986,6 +1044,16 @@ describe('booking page parts (DV-S13, DV-S10)', () => {
     expect(screen.getByTestId('cutoff-passed')).toHaveTextContent('ساعتين قبل الموعد');
     expect(screen.queryByRole('link', { name: /اتصل/ })).not.toBeInTheDocument();
     expect(document.querySelector('a[href^="tel:"]')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('past the cutoff but still allowed (the shop gave it a new time), says until it starts (D-155, the client’s 4-4)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-04T13:00:00Z'));
+    renderWithIntl(<BookingPolicy startsAt="2026-10-04T14:00:00Z" cutoffMinutes={120} canChange />);
+    expect(screen.getByText(/مجاني عبر Groom Here حتى يبدأ الموعد/)).toHaveTextContent('٥:٠٠');
+    expect(screen.queryByTestId('cutoff-passed')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('after the shop gave the booking to another barber, says it can change until it starts (D-145)', () => {
@@ -1201,6 +1269,11 @@ describe("a barber's own length (D-149)", () => {
     expect(majed.closest('label')).toHaveTextContent('٣٥');
     // Omar takes the standard 20 minutes: his card says nothing about the length.
     expect(screen.getByRole('radio', { name: /عمر السالم/ }).closest('label')).not.toHaveTextContent('٢٠');
+    // The languages under the name (D-155, the client's 3-9); none listed, no line.
+    expect(screen.getByRole('radio', { name: /عمر السالم/ }).closest('label')).toHaveTextContent(
+      'يتحدث: العربية، التركية',
+    );
+    expect(majed.closest('label')).not.toHaveTextContent('يتحدث');
   });
 
   it('times the review with the chosen barber’s own length', async () => {

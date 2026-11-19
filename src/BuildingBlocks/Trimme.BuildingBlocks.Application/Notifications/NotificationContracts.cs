@@ -18,6 +18,9 @@ public interface IBookingNotificationSource
 /// status name (<c>Pending</c>, <c>Confirmed</c>, <c>Arrived</c>, <c>Completed</c>, <c>CancelledByCustomer</c>,
 /// <c>CancelledByShop</c>, <c>NoShow</c>); <c>Channel</c> is <c>Online</c> or <c>WalkIn</c>. <c>AmountDue</c> is what the
 /// customer pays at the shop, net of a loyalty reward (D-152: the message's amount, not the booked price).
+/// <c>CancellationReason</c> and <c>CancellationReasonCode</c> (D-155): what the shop gave when it cancelled, the typed
+/// text and the ready reason (<c>StaffUnwell</c>, <c>Emergency</c>, <c>ShopClosed</c>, <c>Other</c>), for the shop's
+/// cancellation message.
 /// </summary>
 public sealed record NotifiableBooking(
     Guid Id,
@@ -36,7 +39,9 @@ public sealed record NotifiableBooking(
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
     string Status,
-    string Channel)
+    string Channel,
+    string? CancellationReason = null,
+    string? CancellationReasonCode = null)
 {
     /// <summary>Pending, Confirmed or Arrived: the booking still holds its time.</summary>
     public bool IsActive => Status is "Pending" or "Confirmed" or "Arrived";
@@ -68,9 +73,10 @@ public interface ICustomerNumberCheck
 
 /// <summary>
 /// A customer's recipient data: the verified mobile in E.164 (never logged, never returned by an endpoint) and the
-/// preferred locale (<c>ar</c> or <c>en</c>).
+/// preferred locale (<c>ar</c> or <c>en</c>). <c>WinBackMessages</c> (D-155): whether they still want the shops'
+/// «ندعوك للعودة» messages (on by default; the customer turns it off on «حسابي»).
 /// </summary>
-public sealed record CustomerContact(Guid Id, string? DisplayName, string? MobileE164, string PreferredLocale, bool IsActive);
+public sealed record CustomerContact(Guid Id, string? DisplayName, string? MobileE164, string PreferredLocale, bool IsActive, bool WinBackMessages = true);
 
 /// <summary>
 /// A professional's WhatsApp recipient (implemented by the Professionals module). Reads through the caller's scope
@@ -160,30 +166,70 @@ public interface IWhatsAppAuthenticationSender
 }
 
 /// <summary>
-/// The monthly WhatsApp allowance for a shop's customer messages (implemented by the Subscriptions module, D-149): the
-/// allowance of the plan in force, read through the caller's data scope (the dispatch job's system scope). Null is
-/// unlimited (plans without an allowance, and shops without a subscription, keep today's behaviour); 0 is none.
+/// A shop's marketing terms (implemented by the Subscriptions module, D-155), from the plan of the subscription period in
+/// force, read through the caller's data scope (the jobs' system scope, or the shop's own):
+/// <list type="bullet">
+/// <item><c>WindowStart</c>..<c>WindowEnd</c> (inclusive): the month the limit counts, running from the day of the period's
+/// start (the client's «العدّاد يرجع صفر كل شهر، من تاريخ اشتراك المحل»); the calendar month without a subscription.</item>
+/// <item><c>Allowance</c>: the plan's monthly marketing messages; null is unlimited, 0 none.</item>
+/// <item><c>WinBackEnabled</c> and <c>WinBackAfterDays</c>: whether the plan includes «رسالة الدعوة للعودة» and after how
+/// many days without a visit. Off without a subscription in force (expired or suspended).</item>
+/// </list>
 /// </summary>
-public interface IWhatsAppAllowance
+public sealed record MarketingTerms(DateOnly WindowStart, DateOnly WindowEnd, int? Allowance, bool WinBackEnabled, int WinBackAfterDays);
+
+public interface IMarketingPlans
 {
-    Task<int?> MonthlyCustomerMessagesAsync(ShopId shopId, CancellationToken cancellationToken);
+    Task<MarketingTerms> ForShopAsync(ShopId shopId, CancellationToken cancellationToken);
+
+    /// <summary>The shops whose plan in force today includes the win-back message, each with its number of days.</summary>
+    Task<IReadOnlyList<WinBackShop>> WinBackShopsAsync(CancellationToken cancellationToken);
+}
+
+public sealed record WinBackShop(ShopId ShopId, int AfterDays);
+
+/// <summary>
+/// How many marketing messages (D-155: the win-back message only) a shop handed to the provider in a window (implemented
+/// by the Notifications module), through the caller's data scope (the shop's own, or an admin's).
+/// </summary>
+public interface IMarketingUsage
+{
+    Task<int> UsedAsync(ShopId shopId, DateOnly windowStart, CancellationToken cancellationToken);
+}
+
+/// <summary>The monthly window a marketing limit counts (D-155): from the anchor day, month after month.</summary>
+public static class MarketingWindows
+{
+    /// <summary>The window containing <paramref name="today"/>, counted in whole months from <paramref name="anchor"/>.</summary>
+    public static (DateOnly Start, DateOnly End) Of(DateOnly anchor, DateOnly today)
+    {
+        var months = ((today.Year - anchor.Year) * 12) + today.Month - anchor.Month;
+        if (anchor.AddMonths(months) > today)
+        {
+            months--;
+        }
+
+        months = Math.Max(0, months);
+        return (anchor.AddMonths(months), anchor.AddMonths(months + 1).AddDays(-1));
+    }
+
+    /// <summary>The calendar month of <paramref name="today"/> (a shop without a subscription).</summary>
+    public static (DateOnly Start, DateOnly End) Calendar(DateOnly today)
+    {
+        var start = new DateOnly(today.Year, today.Month, 1);
+        return (start, start.AddMonths(1).AddDays(-1));
+    }
 }
 
 /// <summary>
-/// How many WhatsApp messages to a shop's customers were handed to the provider in a calendar month (implemented by the
-/// Notifications module, D-149), through the caller's data scope (the shop's own, or an admin's).
+/// The customers a shop may invite back (implemented by the Bookings module, D-155), read through the caller's scope (the
+/// job's system scope): account customers whose latest completed online visit at the shop started between
+/// <c>from</c> and <c>to</c>, and who have no open booking at any shop. Ids only.
 /// </summary>
-public interface IWhatsAppUsage
+public interface IWinBackCandidates
 {
-    Task<int> UsedAsync(ShopId shopId, DateOnly month, CancellationToken cancellationToken);
+    Task<IReadOnlyList<WinBackCandidate>> ListAsync(ShopId shopId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }
 
-/// <summary>The calendar month of an instant in the shop's time zone, as its first day (D-149: the allowance resets on the 1st).</summary>
-public static class WhatsAppMonths
-{
-    public static DateOnly Of(DateTimeOffset instant, string timeZone)
-    {
-        var local = TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById(timeZone));
-        return new DateOnly(local.Year, local.Month, 1);
-    }
-}
+/// <summary>A customer to invite back, and their last completed booking at the shop (the message is about it).</summary>
+public sealed record WinBackCandidate(Guid CustomerId, Guid LastBookingId);

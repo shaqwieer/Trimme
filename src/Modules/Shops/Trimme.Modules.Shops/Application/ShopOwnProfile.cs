@@ -119,7 +119,8 @@ internal abstract class OwnShopEditHandler<TCommand>(TrimmeDbContext db, ICurren
             return applied.Error;
         }
 
-        audit.Record(new AuditRecord(applied.Value.Action, nameof(Shop), shop.Id.ToString(), shop.Id, applied.Value.Summary));
+        audit.Record(new AuditRecord(
+            applied.Value.Action, nameof(Shop), shop.Id.ToString(), shop.Id, applied.Value.Summary, SummaryArgs: applied.Value.Args));
         await db.SaveChangesAsync(cancellationToken);
         return OwnProfileMapping.ToResponse(shop);
     }
@@ -147,7 +148,9 @@ internal sealed class UpdateOwnShopProfileHandler(TrimmeDbContext db, ICurrentTe
 
         Db.Entry(shop).Property(s => s.Version).OriginalValue = command.Version;
         var changed = shop.UpdateProfile(profile, clock.GetUtcNow());
-        return new Admin.AuditNote("shop.profile_updated", changed.Count == 0 ? "No changes" : $"Changed by shop: {string.Join(", ", changed)}");
+        return new Admin.AuditNote(
+            "shop.profile_updated", changed.Count == 0 ? "No changes" : $"Changed by shop: {string.Join(", ", changed)}",
+            AuditArgs.Of(("by", "shop"), ("fields", AuditArgs.List(changed))));
     }
 }
 
@@ -168,7 +171,7 @@ internal sealed class SetOwnShopLocationHandler(TrimmeDbContext db, ICurrentTena
         }
 
         shop.SetLocation(location.Value, clock.GetUtcNow());
-        return new Admin.AuditNote("shop.location_set", $"Location confirmed by shop ({command.Source})");
+        return new Admin.AuditNote("shop.location_set", $"Location confirmed by shop ({command.Source})", AuditArgs.Of(("by", "shop"), ("source", command.Source)));
     }
 }
 

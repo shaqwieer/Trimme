@@ -11,21 +11,19 @@ namespace Trimme.Modules.Bookings.Infrastructure;
 
 /// <summary>
 /// The real <see cref="IBookedTimeReader"/> (replaces the Phase 09 stand-in): active bookings (Pending, Confirmed,
-/// Arrived) hold the professional's time, and so does a live postponement offer (D-147), under its booking's id so that
-/// booking's own changes do not trip over it. It reads through the caller's scope; the availability paths open the right
-/// one (public scope for a customer, the tenant for a shop).
+/// Arrived) hold the professional's time, through their cleaning time. It reads through the caller's scope; the
+/// availability paths open the right one (public scope for a customer, the tenant for a shop).
 /// </summary>
-internal sealed class BookedTimeReader(TrimmeDbContext db, TimeProvider clock) : IBookedTimeReader
+internal sealed class BookedTimeReader(TrimmeDbContext db) : IBookedTimeReader
 {
     public async Task<IReadOnlyList<BusyTime>> GetBusyAsync(
         ShopId shopId, IReadOnlyCollection<ProfessionalId> professionalIds, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
     {
         var ids = professionalIds.ToArray();
-        var booked = await Active(shopId)
+        return await Active(shopId)
             .Where(b => ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.BlockedUntil > from)
             .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt, b.BlockedUntil))
             .ToListAsync(cancellationToken);
-        return [.. booked, .. await HeldAsync([shopId], ids, from, to, cancellationToken)];
     }
 
     public async Task<IReadOnlyList<BusyTime>> GetBusyAsync(
@@ -34,25 +32,9 @@ internal sealed class BookedTimeReader(TrimmeDbContext db, TimeProvider clock) :
         var shops = shopIds.ToArray();
         var ids = professionalIds.ToArray();
         var active = BookingRules.Active.ToArray();
-        var booked = await db.Set<Booking>().AsNoTracking()
+        return await db.Set<Booking>().AsNoTracking()
             .Where(b => shops.Contains(b.ShopId) && active.Contains(b.Status) && ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.BlockedUntil > from)
             .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt, b.BlockedUntil))
-            .ToListAsync(cancellationToken);
-        return [.. booked, .. await HeldAsync(shops, ids, from, to, cancellationToken)];
-    }
-
-    /// <summary>Times held by live postponement offers (the same rule as the database triggers and <see cref="PostponementOffer.IsLive"/>).</summary>
-    private async Task<IReadOnlyList<BusyTime>> HeldAsync(
-        ShopId[] shops, ProfessionalId[] ids, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
-    {
-        var now = clock.GetUtcNow();
-        return await db.Set<PostponementOffer>().AsNoTracking()
-            .Where(o => shops.Contains(o.ShopId) && ids.Contains(o.ProfessionalId) && o.Status == PostponementStatus.Open && o.ExpiresAt > now
-                        && o.StartsAt < to && o.BlockedUntil > from)
-            .Join(db.Set<Booking>().AsNoTracking(), o => o.BookingId, b => b.Id, (o, b) => new { o, b })
-            .Where(x => (x.b.Status == BookingStatus.Pending || x.b.Status == BookingStatus.Confirmed)
-                        && x.b.StartsAt == x.o.OriginalStartsAt && x.b.ProfessionalId == x.o.ProfessionalId)
-            .Select(x => new BusyTime(x.o.BookingId.Value, x.o.ProfessionalId, x.o.StartsAt, x.o.EndsAt, x.o.BlockedUntil))
             .ToListAsync(cancellationToken);
     }
 
@@ -128,7 +110,8 @@ internal sealed class BookingNotificationSource(TrimmeDbContext db) : IBookingNo
             ? null
             : new NotifiableBooking(
                 b.Id.Value, b.ShopId, b.CustomerId, b.CustomerName, b.Reference, b.ProfessionalId, b.ProfessionalNameAr, b.ProfessionalNameEn,
-                b.ItemNameAr, b.ItemNameEn, b.AmountDue, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString());
+                b.ItemNameAr, b.ItemNameEn, b.AmountDue, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString(),
+                b.CancellationReason, b.CancellationReasonCode?.ToString());
     }
 }
 
@@ -168,5 +151,48 @@ internal sealed class QrBookingReader(TrimmeDbContext db) : BuildingBlocks.Appli
         return await bookings
             .Select(b => new BuildingBlocks.Application.Qr.QrAttributedBooking(b.Id.Value, b.ShopId, b.QrLinkId!.Value.Value, b.QrVisitId, b.CreatedAt))
             .ToListAsync(cancellationToken);
+    }
+}
+
+/// <summary>
+/// <see cref="IWinBackCandidates"/> (D-155), read through the caller's scope (the win-back job's system scope): account
+/// customers whose latest completed visit at the shop started in the window, and who have no open booking that has not
+/// ended at any shop (they are coming back already).
+/// </summary>
+internal sealed class WinBackCandidateReader(TrimmeDbContext db, TimeProvider clock) : IWinBackCandidates
+{
+    public async Task<IReadOnlyList<WinBackCandidate>> ListAsync(ShopId shopId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    {
+        var inWindow = await db.Set<Booking>().AsNoTracking()
+            .Where(b => b.ShopId == shopId && b.CustomerId != null && b.Status == BookingStatus.Completed && b.StartsAt >= from && b.StartsAt < to)
+            .Select(b => b.CustomerId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        if (inWindow.Count == 0)
+        {
+            return [];
+        }
+
+        // Each one's latest completed visit at the shop: a later one (after the window) means they came back already.
+        var visits = await db.Set<Booking>().AsNoTracking()
+            .Where(b => b.ShopId == shopId && b.CustomerId != null && inWindow.Contains(b.CustomerId.Value) && b.Status == BookingStatus.Completed && b.StartsAt >= from)
+            .Select(b => new { CustomerId = b.CustomerId!.Value, b.Id, b.StartsAt })
+            .ToListAsync(cancellationToken);
+        var now = clock.GetUtcNow();
+        var active = BookingRules.Active.ToArray();
+        var booked = (await db.Set<Booking>().AsNoTracking()
+                .Where(b => b.CustomerId != null && inWindow.Contains(b.CustomerId.Value) && active.Contains(b.Status) && b.EndsAt > now)
+                .Select(b => b.CustomerId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+        return
+        [
+            .. visits.GroupBy(v => v.CustomerId)
+                .Select(g => g.OrderByDescending(v => v.StartsAt).ThenByDescending(v => v.Id.Value).First())
+                .Where(v => v.StartsAt < to && !booked.Contains(v.CustomerId))
+                .OrderBy(v => v.CustomerId)
+                .Select(v => new WinBackCandidate(v.CustomerId, v.Id.Value)),
+        ];
     }
 }

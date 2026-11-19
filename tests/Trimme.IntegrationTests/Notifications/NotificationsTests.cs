@@ -103,12 +103,18 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         await ProcessOutboxAsync(w.Factory, ct);
         (await DispatchesAsync(w.Factory, second, ct)).Select(d => d.Audience).ShouldBe([MessageAudience.Customer]);
 
-        // The shop (the booking's barber, D-147) cancels: cancellations for both, reminders cancelled and their jobs deleted.
+        // The shop (the booking's barber, D-147) cancels: the customer gets the shop's apology with its reason (D-155), the
+        // barber the usual cancellation; reminders cancelled and their jobs deleted.
         version = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{bookingId}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
         await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{bookingId}/transitions", new { to = "CancelledByShop", reason = "إغلاق طارئ", version }, ct), ct);
         await ProcessOutboxAsync(w.Factory, ct);
-        (await DispatchesAsync(w.Factory, bookingId, ct)).Where(d => d.Event == MessageEvent.BookingCancelled).Select(d => d.Audience)
-            .ShouldBe([MessageAudience.Customer, MessageAudience.Professional], ignoreOrder: true);
+        var cancellations = (await DispatchesAsync(w.Factory, bookingId, ct))
+            .Where(d => d.Event is MessageEvent.BookingCancelled or MessageEvent.BookingCancelledByShop).ToList();
+        cancellations.Select(d => $"{d.Event}:{d.Audience}").ShouldBe(["BookingCancelledByShop:Customer", "BookingCancelled:Professional"], ignoreOrder: true);
+        var apology = cancellations.Single(d => d.Audience == MessageAudience.Customer);
+        apology.Body.ShouldNotBeNull().ShouldStartWith("نعتذر منك");
+        apology.Body.ShouldContain("السبب: إغلاق طارئ");
+        apology.Body.ShouldContain(booking.GetProperty("reference").GetString()!);
         (await RemindersAsync(w.Factory, bookingId, ct)).ShouldAllBe(r => r.Status == ReminderStatus.Cancelled && JobState(w.Factory, r.JobId!) == "Deleted");
 
         // In-app: the shop hears what the customer and the barber did (D-145), the customer hears what the shop did;
@@ -118,8 +124,12 @@ public sealed class NotificationsTests(PostgresFixture postgres)
             .ShouldBe(["booking.created", "booking.rescheduled", "booking.created", "booking.cancelled"], ignoreOrder: true);
         shopInbox.GetRawText().ShouldNotContain(customerPhone[4..]);
         shopInbox.GetRawText().ShouldNotContain("+966");
+        // The customer's bell keeps every message about the booking, their own change included (D-155).
         var customerInbox = await OkAsync(noura.GetAsync("/api/v1/me/notifications", ct), ct);
-        customerInbox.GetProperty("items").EnumerateArray().Select(n => n.GetProperty("kind").GetString()).ShouldBe(["booking.cancelled"]);
+        customerInbox.GetProperty("items").EnumerateArray().Select(n => n.GetProperty("kind").GetString())
+            .ShouldBe(["customer.booking_confirmed", "customer.booking_rescheduled", "customer.booking_cancelled_by_shop"], ignoreOrder: true);
+        customerInbox.GetProperty("items").EnumerateArray().Single(n => n.GetProperty("kind").GetString() == "customer.booking_cancelled_by_shop")
+            .GetProperty("parameters").GetProperty("reason").GetString().ShouldBe("إغلاق طارئ");
         var shopBInbox = await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/notifications", ct), ct);
         shopBInbox.GetProperty("total").GetInt32().ShouldBe(0);
 
@@ -156,11 +166,12 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         var url = $"/api/v1/admin/shops/{w.Shops.A.ShopId}/whatsapp-messages";
         static string Slot(JsonElement item) => $"{item.GetProperty("audience").GetString()}.{item.GetProperty("event").GetString()}";
 
-        // Ten switches (6 customer, 4 barber: a barber never gets the pending request nor the change of barber), all on by default.
+        // Ten switches (6 customer, 4 barber: a barber never gets the change of barber nor the shop's apology), all on by
+        // default. D-155: the pending request is gone; the shop's cancellation has its own.
         var initial = (await OkAsync(w.Admin.GetAsync(url, ct), ct)).GetProperty("items").EnumerateArray().ToList();
         initial.Select(Slot).ShouldBe([
-            "Customer.BookingConfirmed", "Customer.BookingPending", "Customer.BookingRescheduled", "Customer.BookingProfessionalChanged",
-            "Customer.BookingCancelled", "Customer.BookingReminder",
+            "Customer.BookingConfirmed", "Customer.BookingRescheduled", "Customer.BookingProfessionalChanged",
+            "Customer.BookingCancelled", "Customer.BookingCancelledByShop", "Customer.BookingReminder",
             "Professional.BookingConfirmed", "Professional.BookingRescheduled", "Professional.BookingCancelled", "Professional.BookingReminder",
         ]);
         initial.ShouldAllBe(i => i.GetProperty("enabled").GetBoolean());
@@ -198,7 +209,8 @@ public sealed class NotificationsTests(PostgresFixture postgres)
 
         // Shop B keeps everything: both are told.
         var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
-        var atB = (await OkAsync(BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 11), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        using var sara = await CustomerWithPhoneAsync(w.Factory, "سارة", IdentityTestData.NewPhone(), ct);
+        var atB = (await OkAsync(BookAsync(sara, slugB, w.ServiceB, w.ProB, At(Target, 11), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         await ProcessOutboxAsync(w.Factory, ct);
         (await DispatchesAsync(w.Factory, atB, ct)).Select(d => $"{d.Event}:{d.Audience}")
             .ShouldBe(["BookingConfirmed:Customer", "BookingConfirmed:Professional"], ignoreOrder: true);
@@ -336,9 +348,10 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         await SetWhatsAppAsync(w.Admin, w.Faisal, FaisalNumber, ct);
         await SetWhatsAppAsync(w.Admin, w.Omar, "+966512300002", ct);
         using var noura = await CustomerWithPhoneAsync(w.Factory, "نورة", IdentityTestData.NewPhone(), ct);
+        using var sara = await CustomerWithPhoneAsync(w.Factory, "سارة", IdentityTestData.NewPhone(), ct);
 
         var withFaisal = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var withOmar = (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        var withOmar = (await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Omar, At(Target, 12), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         await ProcessOutboxAsync(w.Factory, ct);
         await RunSendsAsync(w.Factory, [.. await DispatchesAsync(w.Factory, withFaisal, ct), .. await DispatchesAsync(w.Factory, withOmar, ct)], ct);
 
@@ -346,7 +359,7 @@ public sealed class NotificationsTests(PostgresFixture postgres)
         faisal.Single(d => d.Audience == MessageAudience.Professional).Status.ShouldBe(DispatchStatus.Delivered, "a listed number is sent as usual");
         var refused = faisal.Where(d => d.Audience == MessageAudience.Customer)
             .Concat(await DispatchesAsync(w.Factory, withOmar, ct)).ToList();
-        refused.Count.ShouldBe(3, "the customer twice and Omar once");
+        refused.Count.ShouldBe(3, "the two customers and Omar");
         refused.ShouldAllBe(d => d.Status == DispatchStatus.Failed && d.Attempts == 1 && d.LastError!.StartsWith("whatsapp.recipient_not_allowed"));
 
         (await ContactAsync(w.Factory, w.Omar, ct)).Verification.ShouldNotBe(WhatsAppVerification.Failed, "a skipped message is not a delivery failure");

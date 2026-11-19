@@ -15,7 +15,7 @@ namespace Trimme.Modules.Loyalty.Application;
 /// Reads and saves one shop's loyalty rules (D-149) through the caller's scope: the owner's tenant, or the admin's scope.
 /// A free-service reward must name one of the shop's own published services. Versioned (a stale save is 409) and audited.
 /// </summary>
-internal sealed class LoyaltyRulesStore(TrimmeDbContext db, IBookableOfferCatalog catalog, ILoyaltyAddOnStatus addOn, IAuditLog audit, TimeProvider clock)
+internal sealed class LoyaltyRulesStore(TrimmeDbContext db, IBookableOfferCatalog catalog, ILoyaltyPlanStatus addOn, IAuditLog audit, TimeProvider clock)
 {
     public async Task<LoyaltyRulesEditor> GetAsync(ShopId shopId, CancellationToken cancellationToken)
     {
@@ -71,7 +71,11 @@ internal sealed class LoyaltyRulesStore(TrimmeDbContext db, IBookableOfferCatalo
         audit.Record(new AuditRecord(
             "loyalty.rules_saved", nameof(LoyaltySettings), settings.Id.ToString(), shopId,
             string.Create(CultureInfo.InvariantCulture,
-                $"By {by}: first visit {settings.FirstVisitPoints}, then {settings.VisitPoints}; reward every {settings.PointsForReward} → {settings.RewardType}{(settings.RewardAmount is { } a ? $" {a:0.##}" : string.Empty)}; without visits {settings.InactivityRule}{(settings.InactivityDays is { } d ? $" {d} days" : string.Empty)}")));
+                $"By {by}: first visit {settings.FirstVisitPoints}, then {settings.VisitPoints}; reward every {settings.PointsForReward} → {settings.RewardType}{(settings.RewardAmount is { } a ? $" {a:0.##}" : string.Empty)}; without visits {settings.InactivityRule}{(settings.InactivityDays is { } d ? $" {d} days" : string.Empty)}"),
+            SummaryArgs: AuditArgs.Of(
+                ("by", by), ("firstVisit", settings.FirstVisitPoints), ("visit", settings.VisitPoints), ("pointsForReward", settings.PointsForReward),
+                ("rewardType", settings.RewardType), ("rewardAmount", settings.RewardAmount), ("inactivityRule", settings.InactivityRule),
+                ("inactivityDays", settings.InactivityDays))));
         await db.SaveChangesAsync(cancellationToken);
         return new LoyaltyRulesEditor(await addOn.IsActiveAsync(shopId, cancellationToken), LoyaltyMapping.Rules(settings), settings.Version);
     }

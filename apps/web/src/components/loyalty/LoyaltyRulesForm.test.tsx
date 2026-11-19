@@ -25,14 +25,14 @@ describe('LoyaltyRulesForm (D-149)', () => {
         scope={{ kind: 'shop' }}
         rules={null}
         version={null}
-        addOnActive={false}
+        included={false}
         services={services}
         canEdit
       />,
     );
 
-    // The add-on is off: the owner can still set the rules.
-    expect(screen.getByText(/إضافة مدفوعة غير مفعّلة لمحلك/)).toBeInTheDocument();
+    // The plan has no loyalty: the owner can still set the rules (D-155: it comes with the plan).
+    expect(screen.getByText(/باقتك الحالية لا تشمل برنامج الولاء/)).toBeInTheDocument();
     // − and + as in the app (D-151): 1 → 3 first-visit points, 6 → 10 for a reward.
     const firstUp = screen.getByRole('button', { name: 'زيادة نقاط أول زيارة' });
     await user.click(firstUp);
@@ -89,7 +89,7 @@ describe('LoyaltyRulesForm (D-149)', () => {
           inactivityDays: 30,
         }}
         version={4}
-        addOnActive
+        included
         services={services}
         canEdit
       />,
@@ -98,7 +98,7 @@ describe('LoyaltyRulesForm (D-149)', () => {
     // A saved 30 days is the ready «شهر», with a point taken off per period.
     expect(screen.getByRole('radio', { name: 'شهر' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'تنقص نقطة واحدة عن كل مدة بلا زيارة' })).toBeChecked();
-    expect(screen.getByText(/ميزة مدفوعة: المحل ما يقدر يفعّلها بنفسه/)).toBeInTheDocument();
+    expect(screen.getByText(/يأتي مع الباقة: المحل ما يقدر يفعّله بنفسه/)).toBeInTheDocument();
     const amount = screen.getByLabelText('مبلغ الخصم (⃁)');
     await user.clear(amount);
     await user.type(amount, '4');
@@ -128,7 +128,7 @@ describe('LoyaltyRulesForm (D-149)', () => {
         scope={{ kind: 'shop' }}
         rules={null}
         version={null}
-        addOnActive
+        included
         services={services}
         canEdit={false}
       />,

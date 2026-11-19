@@ -87,12 +87,20 @@ public sealed class BookingConcurrencyTests(PostgresFixture postgres)
             (await ActiveBookingsAsync(w.Factory, w.Faisal, ct)).ShouldBe(1);
             (await OutboxCountAsync(w.Factory, ct)).ShouldBe(1, "losers roll back their outbox rows (R-BKG-08)");
 
-            // Partial overlaps: a 60-minute package at 11:00 against 30-minute haircuts at 11:15 and 11:30.
+            // Partial overlaps: a 60-minute package at 11:00 against 30-minute haircuts at 11:15 and 11:30, by three customers
+            // with nothing booked yet (one active booking each, D-155).
+            var fresh = new List<ApiSession>();
+            for (var i = 0; i < 3; i++)
+            {
+                fresh.Add(await CustomerAsync(w.Factory, $"عميل جديد {i}", ct));
+            }
+
+            customers.AddRange(fresh);
             var partial = new List<Func<Task<HttpResponseMessage>>>
             {
-                () => BookAsync(customers[0], w.SlugA, w.Haircut, w.Omar, At(Target, 11), ct, packageId: w.Package),
-                () => BookAsync(customers[1], w.SlugA, w.Haircut, w.Omar, At(Target, 11, 15), ct),
-                () => BookAsync(customers[2], w.SlugA, w.Haircut, w.Omar, At(Target, 11, 30), ct),
+                () => BookAsync(fresh[0], w.SlugA, w.Haircut, w.Omar, At(Target, 11), ct, packageId: w.Package),
+                () => BookAsync(fresh[1], w.SlugA, w.Haircut, w.Omar, At(Target, 11, 15), ct),
+                () => BookAsync(fresh[2], w.SlugA, w.Haircut, w.Omar, At(Target, 11, 30), ct),
             };
             var overlap = await RaceAsync(partial, ct);
             overlap.Other.ShouldBeEmpty();

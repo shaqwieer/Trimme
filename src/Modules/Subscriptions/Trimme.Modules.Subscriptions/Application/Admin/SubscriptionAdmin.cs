@@ -90,11 +90,11 @@ internal static class SubscriptionAdminReader
     {
         var response = await BaseResponseAsync(db, settings, today, shop, subscription, cancellationToken);
 
-        // The loyalty add-on and this month's WhatsApp usage against the plan's allowance (D-149).
+        // What the plan gives the shop and this window's win-back messages against its limit (D-155).
         return response with
         {
-            LoyaltyAddOn = await extras.AddOnAsync(shop.Id, today, cancellationToken),
-            MessageUsage = await extras.WhatsAppAsync(shop, subscription, today, cancellationToken),
+            Features = await extras.FeaturesAsync(subscription, SubscriptionView.Status(subscription, today, settings), today, cancellationToken),
+            MarketingUsage = await extras.MarketingAsync(shop, subscription, today, cancellationToken),
         };
     }
 
@@ -195,6 +195,13 @@ internal static class SubscriptionAdminReader
             ? string.Empty
             : $"; SuperAdmin custom period, total {PlanReader.Money(period.Amount, period.Currency)}" +
               (period.StandardAmount is { } standard ? $" instead of {PlanReader.Money(standard, period.Currency)}" : " (no plan price on the start date)");
+
+    /// <summary>The period as audit arguments (D-155): plan names, dates, amount, price version and a custom total.</summary>
+    public static IReadOnlyDictionary<string, string> PeriodArgs(SubscriptionPeriod p, int? priceVersion) =>
+        AuditArgs.Of(
+            ("planAr", p.PlanNameAr), ("planEn", p.PlanNameEn), ("start", p.PeriodStart), ("end", p.PeriodEnd), ("amount", p.Amount),
+            ("currency", p.Currency), ("priceVersion", priceVersion), ("custom", p.PricingReason is null ? null : true),
+            ("standardAmount", p.PricingReason is null ? null : p.StandardAmount));
 
     public static string PeriodSummary(SubscriptionPeriod p, int? priceVersion) =>
         $"{p.PlanNameEn}: {PlanReader.Day(p.PeriodStart)} to {PlanReader.Day(p.PeriodEnd)}, {PlanReader.Money(p.Amount, p.Currency)}" +
@@ -323,7 +330,8 @@ internal sealed class AssignSubscriptionHandler(
         var period = subscription.LatestPeriod;
         audit.Record(new AuditRecord(
             "subscription.assigned", "ShopSubscription", subscription.Id.ToString(), shopId,
-            SubscriptionAdminReader.PeriodSummary(period, VersionOf(plan, period)) + SubscriptionAdminReader.PricingSummary(period), custom?.Reason));
+            SubscriptionAdminReader.PeriodSummary(period, VersionOf(plan, period)) + SubscriptionAdminReader.PricingSummary(period), custom?.Reason,
+            SummaryArgs: SubscriptionAdminReader.PeriodArgs(period, VersionOf(plan, period))));
         await db.SaveChangesAsync(cancellationToken);
         return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }
@@ -388,7 +396,8 @@ internal sealed class RenewSubscriptionHandler(
         audit.Record(new AuditRecord(
             "subscription.renewed", "ShopSubscription", subscription.Id.ToString(), shopId,
             SubscriptionAdminReader.PeriodSummary(renewed.Value, AssignSubscriptionHandler.VersionOf(plan, renewed.Value)) +
-            SubscriptionAdminReader.PricingSummary(renewed.Value), custom?.Reason));
+            SubscriptionAdminReader.PricingSummary(renewed.Value), custom?.Reason,
+            SummaryArgs: SubscriptionAdminReader.PeriodArgs(renewed.Value, AssignSubscriptionHandler.VersionOf(plan, renewed.Value))));
         await db.SaveChangesAsync(cancellationToken);
         return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }
@@ -438,7 +447,10 @@ internal sealed class OverrideSubscriptionHandler(
             changes.Add($"end {PlanReader.Day(record.PreviousEnd)} to {PlanReader.Day(newEnd)}");
         }
 
-        audit.Record(new AuditRecord("subscription.overridden", "ShopSubscription", subscription.Id.ToString(), shopId, $"Override: {string.Join("; ", changes)}", reason));
+        audit.Record(new AuditRecord("subscription.overridden", "ShopSubscription", subscription.Id.ToString(), shopId, $"Override: {string.Join("; ", changes)}", reason,
+            SummaryArgs: AuditArgs.Of(
+                ("amountFrom", record.NewAmount is null ? null : record.PreviousAmount), ("amountTo", record.NewAmount), ("currency", currency),
+                ("endFrom", record.NewEnd is null ? null : record.PreviousEnd), ("endTo", record.NewEnd))));
         await db.SaveChangesAsync(cancellationToken);
         return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }

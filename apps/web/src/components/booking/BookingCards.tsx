@@ -143,7 +143,8 @@ export function BookingListItem({ booking }: { booking: CustomerBooking }) {
               {t('actions.rated', { rating: formatRating(booking.reviewRating, locale) })}
             </span>
           )}
-          {!upcoming && (booking.status !== 'Completed' || booking.reviewRating != null) && (
+          {/* On every past visit, rated or not (D-155, the client's 5-4: it used to wait for a rating). */}
+          {!upcoming && (
             <Link href={rebookHref(booking)} className={actionClass}>
               <Icon name="refresh" className="size-4" />
               {t('actions.rebook')}

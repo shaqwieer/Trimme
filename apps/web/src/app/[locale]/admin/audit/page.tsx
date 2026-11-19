@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { auditEntityHref, auditTone, localDateParam, startOfLocalDay } from '@/lib/admin/admin';
+import { summaryKey, summaryValues } from '@/lib/admin/auditSummary';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
 import { formatDate, formatTime } from '@/lib/i18n/format';
@@ -48,6 +49,26 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
     return `/admin/audit${text ? `?${text}` : ''}`;
   };
   const tEntities = await getTranslations({ locale: lang, namespace: 'adminAudit.entities' });
+  const [tSummaries, tValues, tSettings] = await Promise.all([
+    getTranslations({ locale: lang, namespace: 'adminAudit.summaries' }),
+    getTranslations({ locale: lang, namespace: 'adminAudit.values' }),
+    getTranslations({ locale: lang, namespace: 'platformSettings.fields' }),
+  ]);
+  // A recorded word (a status, a field, an event…) in the reader's language; a platform setting by its form label.
+  const word = (value: string) =>
+    tValues.has(value as 'nothing')
+      ? tValues(value as 'nothing')
+      : tSettings.has(value as 'currency')
+        ? tSettings(value as 'currency')
+        : value;
+  // D-155 (the client's 8-3-6): the summary from its code and arguments, in the reader's language; an older row has
+  // only its English record, shown as such.
+  const summaryOf = (entry: { summaryCode?: string | null; summaryArgs?: Record<string, string> | null }) => {
+    if (!entry.summaryCode) return null;
+    const key = summaryKey(entry.summaryCode) as 'shop_created';
+    if (!tSummaries.has(key)) return '';
+    return tSummaries(key, summaryValues(entry.summaryArgs ?? {}, lang, word) as Record<string, string>);
+  };
   const entityLabel = (type: string) => (tEntities.has(type as 'Shop') ? tEntities(type as 'Shop') : type);
   const actionLabel = (code: string) => {
     const key = code.replace(/\./g, '_');
@@ -80,6 +101,7 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
 
         const items: TimelineItem[] = data.items.map((entry) => {
           const href = auditEntityHref(entry.entityType, entry.entityId);
+          const summary = summaryOf(entry);
           const shop = entry.shopId
             ? localizedName(lang, entry.shopNameAr ?? '', entry.shopNameEn)
             : undefined;
@@ -89,11 +111,19 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
             title: (
               <>
                 {actionLabel(entry.action)}
-                {/* The summary is an English technical record written when the action happened (D-122). */}
-                {entry.summary && (
-                  <span className="block font-normal text-text-strong">
-                    <bdi lang="en">{entry.summary}</bdi>
+                {summary ? (
+                  <span className="block font-normal text-text-strong" data-testid="audit-summary">
+                    {summary}
                   </span>
+                ) : (
+                  summary === null &&
+                  entry.summary && (
+                    // An older row: the English technical record written when the action happened (D-122).
+                    <span className="block font-normal text-text-strong">
+                      <bdi lang="en">{entry.summary}</bdi>{' '}
+                      <span className="text-helper text-text-tertiary">({t('legacy')})</span>
+                    </span>
+                  )
                 )}
               </>
             ),

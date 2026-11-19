@@ -47,6 +47,12 @@ internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
     public string? ContactEmail { get; set; }
 
     /// <summary>
+    /// The customer wants the shops' «ندعوك للعودة» messages (D-155, the plan's win-back message): on by default, turned
+    /// off on «حسابي». The win-back job reads it through <c>ICustomerContactReader</c>.
+    /// </summary>
+    public bool WinBackMessages { get; set; } = true;
+
+    /// <summary>
     /// The customer deleted their account (D-144), or a barber their login (D-151): name, number and email are erased,
     /// sign-in is closed for good and the number can register again as a new account. Bookings and reviews keep their own
     /// records.

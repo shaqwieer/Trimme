@@ -7,7 +7,7 @@ import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { BarberDayCard } from './BarberDayCard';
 
-const api = vi.hoisted(() => ({ GET: vi.fn(), PUT: vi.fn() }));
+const api = vi.hoisted(() => ({ GET: vi.fn(), PUT: vi.fn(), POST: vi.fn(), DELETE: vi.fn() }));
 vi.mock('@/lib/api/client', () => ({ browserApi: api, refreshSession: vi.fn() }));
 
 const ok = <T,>(data: T) => ({ data, response: new Response(null, { status: 200 }) });
@@ -44,11 +44,26 @@ const saveWith = () =>
     Promise.resolve(ok({ ...day(init.body.date), breaks: init.body.breaks })),
   );
 
+/** Who is «غير متوفر اليوم» (D-155): nobody unless a test says so. */
+let unavailable: Array<{
+  professionalId: string;
+  nameAr: string;
+  nameEn: string;
+  since: string;
+  until: string;
+  bookings: number;
+}> = [];
+
 beforeEach(() => {
-  api.GET.mockReset();
-  api.PUT.mockReset();
-  api.GET.mockImplementation((_path: string, init: { params: { query: { date: string } } }) =>
-    Promise.resolve(ok(day(init.params.query.date))),
+  unavailable = [];
+  for (const fn of [api.GET, api.PUT, api.POST, api.DELETE]) fn.mockReset();
+  api.GET.mockImplementation(
+    (path: string, init?: { params: { query: { date: string; professionalId: string } } }) =>
+      Promise.resolve(
+        path === '/api/v1/shop/schedule/unavailable-today'
+          ? ok(unavailable)
+          : ok({ ...day(init!.params.query.date), professionalId: init!.params.query.professionalId }),
+      ),
   );
 });
 
@@ -151,7 +166,7 @@ describe('BarberDayCard (D-134, D-137)', () => {
     await waitFor(() => expect(api.PUT.mock.calls[0]![1].body.breaks).toEqual([w(690, 780)]));
   });
 
-  it('moves day by day and takes the whole day off, and clears it, after a confirmation', async () => {
+  it('moves day by day and clears the breaks after a confirmation; no whole-day break any more (D-155)', async () => {
     const user = userEvent.setup();
     saveWith();
     renderCard(<BarberDayCard barbers={barbers} today="2026-10-21" />);
@@ -165,26 +180,59 @@ describe('BarberDayCard (D-134, D-137)', () => {
     );
     expect(screen.getByRole('button', { name: 'اليوم السابق' })).toBeEnabled();
 
-    await user.click(await screen.findByRole('button', { name: 'استراحة طوال اليوم' }));
-    expect(dialog()).toHaveTextContent('سلطان الحربي');
-    await user.click(within(dialog()).getByRole('button', { name: 'تأكيد الاستراحة' }));
-    await waitFor(() =>
-      expect(api.PUT.mock.calls[0]![1].body).toEqual({
-        professionalId: 'p1',
-        date: '2026-10-22',
-        breaks: [w(540, 660), w(690, 780)],
-      }),
-    );
-    expect(await screen.findByText('أصبح اليوم كله استراحة لـ سلطان الحربي.')).toBeInTheDocument();
+    // «غير متوفر اليوم» is for today only, and the whole-day break is gone.
+    await screen.findByRole('button', { name: 'إلغاء كل الاستراحات' });
+    expect(screen.queryByRole('button', { name: 'استراحة طوال اليوم' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unavailable-today')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'إلغاء كل الاستراحات' }));
     await user.click(within(dialog()).getByRole('button', { name: 'إلغاء الاستراحات' }));
-    await waitFor(() => expect(api.PUT.mock.calls[1]![1].body.breaks).toEqual([]));
+    await waitFor(() => expect(api.PUT.mock.calls[0]![1].body.breaks).toEqual([]));
 
     await user.selectOptions(screen.getByLabelText('الحلاق'), 'p2');
     await waitFor(() =>
       expect(api.GET).toHaveBeenLastCalledWith('/api/v1/shop/schedule/barber-day', {
         params: { query: { professionalId: 'p2', date: '2026-10-22' } },
+      }),
+    );
+  });
+
+  it('marks a barber «غير متوفر اليوم» after a confirmation, then offers to take it back (D-155, the client’s 1-2)', async () => {
+    const user = userEvent.setup();
+    api.POST.mockImplementation(() => {
+      unavailable = [
+        {
+          professionalId: 'p2',
+          nameAr: 'راكان المطيري',
+          nameEn: 'Rakan',
+          since: '2026-10-21T08:15:00Z',
+          until: '2026-10-21T21:00:00Z',
+          bookings: 2,
+        },
+      ];
+      return Promise.resolve(ok(unavailable[0]));
+    });
+    api.DELETE.mockResolvedValue(ok(null));
+    renderCard(<BarberDayCard barbers={barbers} today="2026-10-21" />);
+    await screen.findByTestId('barber-day-hours');
+    await user.selectOptions(screen.getByLabelText('الحلاق'), 'p2');
+
+    await user.click(await screen.findByTestId('unavailable-today'));
+    expect(dialog()).toHaveTextContent('راكان المطيري غير متوفر اليوم؟');
+    await user.click(within(dialog()).getByRole('button', { name: 'نعم، غير متوفر اليوم' }));
+    // The owner names the barber; a barber's own login would send none.
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/schedule/unavailable-today', {
+        body: { professionalId: 'p2' },
+      }),
+    );
+    expect(await screen.findByText('راكان المطيري غير متوفر اليوم من ١١:١٥ ص')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('available-again'));
+    await user.click(within(dialog()).getByRole('button', { name: 'نعم، متوفر' }));
+    await waitFor(() =>
+      expect(api.DELETE).toHaveBeenCalledWith('/api/v1/shop/schedule/unavailable-today', {
+        params: { query: { professionalId: 'p2' } },
       }),
     );
   });

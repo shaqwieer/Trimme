@@ -11,7 +11,6 @@ import {
   minuteCells,
   removeBreak,
   slotsToWindows,
-  wholeDay,
   withoutRange,
 } from './barberDay';
 
@@ -84,7 +83,6 @@ describe("a barber's day by the hour, then every 5 minutes (D-134, D-137)", () =
     const today = day({ passedMinutes: 600, breaks: [w(540, 600), w(720, 780)] });
     const cells = hourCells(today);
     expect(cells[9]).toMatchObject({ state: 'break', past: true, opens: false });
-    expect(wholeDay(day({ breaks: [] }))).toEqual([w(540, 600), w(660, 690), w(720, 780)]);
     expect(freeStarts(day({ booked: [], shopBreaks: [], breaks: [w(540, 780)] }))).toEqual([]);
     expect(clearDay(today)).toEqual([w(540, 600)]);
     expect(clearDay(day())).toEqual([]);

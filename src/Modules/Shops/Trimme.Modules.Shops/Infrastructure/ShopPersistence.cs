@@ -24,6 +24,7 @@ internal sealed class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.Property(s => s.DescriptionEn).HasMaxLength(Shop.MaxDescriptionLength);
         builder.Property(s => s.Category).HasConversion<string>().HasMaxLength(20);
         builder.Property(s => s.PublicPhone).HasMaxLength(20);
+        builder.Property(s => s.CallButtonPhone).HasMaxLength(20);
         builder.PrimitiveCollection(s => s.Amenities).ElementType(e => e.HasConversion<string>());
         builder.PrimitiveCollection(s => s.EditableFields).ElementType(e => e.HasConversion<string>());
         builder.PrimitiveCollection(s => s.GalleryMediaIds);
@@ -60,12 +61,13 @@ internal sealed class OnlineBookingPauseConfiguration : IEntityTypeConfiguration
         builder.ToTable("online_booking_pauses");
         builder.HasKey(p => p.ShopId);
         builder.Property(p => p.Reason).HasMaxLength(OnlineBookingPause.MaxReasonLength);
+        builder.HasIndex(p => p.ResumesAt).HasFilter("resumes_at IS NOT NULL");
         builder.HasOne<Shop>().WithOne().HasForeignKey<OnlineBookingPause>(p => p.ShopId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
 /// <summary><see cref="IShopDirectory"/> for other modules: a shop's identity, status, time zone and pause state.</summary>
-internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
+internal sealed class ShopDirectory(TrimmeDbContext db, TimeProvider clock) : IShopDirectory
 {
     public async Task<ShopSummary?> FindAsync(ShopId shopId, CancellationToken cancellationToken) =>
         await Summaries(Shops().Where(s => s.Id == shopId)).SingleOrDefaultAsync(cancellationToken);
@@ -103,11 +105,16 @@ internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
 
     private IQueryable<Shop> Shops() => db.Set<Shop>().AsNoTracking();
 
-    private IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops) =>
-        shops.Select(s => new ShopSummary(
+    /// <summary>A pause past its return time is over at once (D-155); the resume job removes its row later.</summary>
+    private IQueryable<ShopSummary> Summaries(IQueryable<Shop> shops)
+    {
+        var now = clock.GetUtcNow();
+        return shops.Select(s => new ShopSummary(
             s.Id, s.Slug, s.NameAr, s.NameEn, s.Status, s.TimeZone,
-            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault(),
-            s.RequireManualConfirmation,
+            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id && (p.ResumesAt == null || p.ResumesAt > now)).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault(),
             s.Location == null ? null : s.Location.FormattedAddress ?? s.Location.AddressLine,
-            new ShopBookingOverrides(s.SlotStepMinutes, s.MinLeadTimeMinutes, s.BookingHorizonDays, s.BufferMinutes)));
+            new ShopBookingOverrides(s.SlotStepMinutes, s.MinLeadTimeMinutes, s.BookingHorizonDays, s.BufferMinutes),
+            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id && p.ResumesAt > now).Select(p => p.ResumesAt).FirstOrDefault(),
+            db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id && (p.ResumesAt == null || p.ResumesAt > now)).Select(p => p.Reason).FirstOrDefault()));
+    }
 }

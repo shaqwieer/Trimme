@@ -21,7 +21,6 @@ public sealed record AdminShopResponse(
     string NameEn,
     string Status,
     string TimeZone,
-    bool RequireManualConfirmation,
     string? District,
     bool IsVerified,
     string? LogoUrl,
@@ -48,13 +47,14 @@ public sealed record AdminShopDetailResponse(
     IReadOnlyList<ShopProfileField> EditableFields,
     string Status,
     string TimeZone,
-    bool RequireManualConfirmation,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     uint Version,
     bool IsDemo = false,
     string? ShortNameAr = null,
-    string? ShortNameEn = null);
+    string? ShortNameEn = null,
+    bool CallButtonEnabled = false,
+    string? CallButtonPhone = null);
 
 internal sealed record CreateShopCommand(string Slug, string NameAr, string NameEn, string? TimeZone) : ICommand<Result<AdminShopResponse>>;
 
@@ -98,6 +98,19 @@ internal sealed record SetEditablePolicyCommand(Guid ShopId, IReadOnlyList<ShopP
 
 /// <summary>Marks a shop as a demo or not (D-148: «تجريبي» on its card and page).</summary>
 internal sealed record SetShopDemoCommand(Guid ShopId, bool IsDemo) : ICommand<Result<AdminShopDetailResponse>>;
+
+/// <summary>The public page's «اتصال» button and its number (D-155): the admin's only, never the owner's.</summary>
+internal sealed record SetShopCallButtonCommand(Guid ShopId, bool Enabled, string? Phone) : ICommand<Result<AdminShopDetailResponse>>;
+
+internal sealed class SetShopCallButtonValidator : AbstractValidator<SetShopCallButtonCommand>
+{
+    public SetShopCallButtonValidator()
+    {
+        RuleFor(c => c.Phone)
+            .Must(phone => string.IsNullOrWhiteSpace(phone) || Trimme.BuildingBlocks.Domain.Privacy.PhoneNumber.TryParse(phone, out _))
+            .WithErrorCode("validation.phone_invalid");
+    }
+}
 
 /// <summary>Replaces the logo or cover; a null <paramref name="Content"/> removes it.</summary>
 internal sealed record ReplaceShopImageCommand(Guid ShopId, ShopImageSlot Slot, byte[]? Content) : ICommand<Result<AdminShopDetailResponse>>;
@@ -166,7 +179,8 @@ internal sealed class CreateShopHandler(TrimmeDbContext db, TimeProvider clock, 
         }
 
         db.Add(shop);
-        audit.Record(new AuditRecord("shop.created", nameof(Shop), shop.Id.ToString(), shop.Id, $"Created as {shop.Status}"));
+        audit.Record(new AuditRecord("shop.created", nameof(Shop), shop.Id.ToString(), shop.Id, $"Created as {shop.Status}",
+            SummaryArgs: AuditArgs.Of(("status", shop.Status))));
         await db.SaveChangesAsync(cancellationToken);
         return ShopMapping.ToAdmin(shop);
     }
@@ -229,7 +243,8 @@ internal sealed class ChangeShopStatusHandler(TrimmeDbContext db, TimeProvider c
         }
 
         var action = command.Change == ShopStatusChange.Activate ? "shop.activated" : "shop.suspended";
-        audit.Record(new AuditRecord(action, nameof(Shop), shop.Id.ToString(), shop.Id, $"{before} → {shop.Status}", command.Reason?.Trim()));
+        audit.Record(new AuditRecord(action, nameof(Shop), shop.Id.ToString(), shop.Id, $"{before} → {shop.Status}", command.Reason?.Trim(),
+            SummaryArgs: AuditArgs.Of(("from", before), ("to", shop.Status))));
         await db.SaveChangesAsync(cancellationToken);
         return ShopMapping.ToAdmin(shop);
     }
@@ -256,7 +271,8 @@ internal abstract class AdminShopEditHandler<TCommand>(TrimmeDbContext db, IAudi
             return applied.Error;
         }
 
-        audit.Record(new AuditRecord(applied.Value.Action, nameof(Shop), shop.Id.ToString(), shop.Id, applied.Value.Summary));
+        audit.Record(new AuditRecord(
+            applied.Value.Action, nameof(Shop), shop.Id.ToString(), shop.Id, applied.Value.Summary, SummaryArgs: applied.Value.Args));
         await db.SaveChangesAsync(cancellationToken);
         return ShopMapping.ToAdminDetail(shop);
     }
@@ -266,7 +282,8 @@ internal abstract class AdminShopEditHandler<TCommand>(TrimmeDbContext db, IAudi
     protected abstract Result<AuditNote> Apply(Shop shop, TCommand command);
 }
 
-internal sealed record AuditNote(string Action, string Summary);
+/// <summary>What an edit writes to the audit trail: the action, the English summary and (D-155) its arguments.</summary>
+internal sealed record AuditNote(string Action, string Summary, IReadOnlyDictionary<string, string>? Args = null);
 
 internal sealed class UpdateShopProfileHandler(TrimmeDbContext db, IAuditLog audit, TimeProvider clock)
     : AdminShopEditHandler<UpdateShopProfileCommand>(db, audit)
@@ -285,7 +302,9 @@ internal sealed class UpdateShopProfileHandler(TrimmeDbContext db, IAuditLog aud
             changed.Add(command.IsVerified ? "Verified" : "Unverified");
         }
 
-        return new AuditNote("shop.profile_updated", changed.Count == 0 ? "No changes" : $"Changed: {string.Join(", ", changed)}");
+        return new AuditNote(
+            "shop.profile_updated", changed.Count == 0 ? "No changes" : $"Changed: {string.Join(", ", changed)}",
+            AuditArgs.Of(("by", "admin"), ("fields", AuditArgs.List(changed))));
     }
 }
 
@@ -303,7 +322,7 @@ internal sealed class SetShopLocationHandler(TrimmeDbContext db, IAuditLog audit
         }
 
         shop.SetLocation(location.Value, clock.GetUtcNow());
-        return new AuditNote("shop.location_set", $"Location confirmed ({command.Source})");
+        return new AuditNote("shop.location_set", $"Location confirmed ({command.Source})", AuditArgs.Of(("by", "admin"), ("source", command.Source)));
     }
 }
 
@@ -315,7 +334,32 @@ internal sealed class SetShopDemoHandler(TrimmeDbContext db, IAuditLog audit, Ti
     protected override Result<AuditNote> Apply(Shop shop, SetShopDemoCommand command)
     {
         shop.SetDemo(command.IsDemo, clock.GetUtcNow());
-        return new AuditNote("shop.demo_changed", command.IsDemo ? "Marked as a demo shop" : "No longer a demo shop");
+        return new AuditNote("shop.demo_changed", command.IsDemo ? "Marked as a demo shop" : "No longer a demo shop", AuditArgs.Of(("demo", command.IsDemo)));
+    }
+}
+
+/// <summary>
+/// Turns the call button on (with a number, or the one saved before) or off (D-155). The number is never written to the
+/// audit trail.
+/// </summary>
+internal sealed class SetShopCallButtonHandler(TrimmeDbContext db, IAuditLog audit, TimeProvider clock)
+    : AdminShopEditHandler<SetShopCallButtonCommand>(db, audit)
+{
+    protected override Guid ShopIdOf(SetShopCallButtonCommand command) => command.ShopId;
+
+    protected override Result<AuditNote> Apply(Shop shop, SetShopCallButtonCommand command)
+    {
+        var phone = Trimme.BuildingBlocks.Domain.Privacy.PhoneNumber.TryParse(command.Phone, out var parsed) ? parsed.E164 : null;
+        if (command.Enabled && phone is null && shop.CallButtonPhone is null)
+        {
+            return Error.Validation("validation.failed", "A number is needed to show the call button.",
+                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["phone"] = ["validation.required"] });
+        }
+
+        shop.SetCallButton(command.Enabled, phone, clock.GetUtcNow());
+        return new AuditNote(
+            "shop.call_button_set", command.Enabled ? "Call button shown" : "Call button hidden",
+            AuditArgs.Of(("enabled", command.Enabled), ("numberChanged", phone is not null)));
     }
 }
 
@@ -328,7 +372,7 @@ internal sealed class SetEditablePolicyHandler(TrimmeDbContext db, IAuditLog aud
     {
         shop.SetEditablePolicy(command.EditableFields, clock.GetUtcNow());
         var fields = shop.EditableFields.Length == 0 ? "none" : string.Join(", ", shop.EditableFields);
-        return new AuditNote("shop.editable_policy_set", $"Shop may edit: {fields}");
+        return new AuditNote("shop.editable_policy_set", $"Shop may edit: {fields}", AuditArgs.Of(("fields", AuditArgs.List(shop.EditableFields))));
     }
 }
 
@@ -342,7 +386,9 @@ internal sealed class ReplaceShopImageHandler(TrimmeDbContext db, IAuditLog audi
         var replaced = ShopImages.Replace(shop, command.Slot, command.Content, media, clock.GetUtcNow());
         return replaced.IsFailure
             ? replaced.Error
-            : new AuditNote("shop.image_changed", $"{command.Slot} {(command.Content is null ? "removed" : "replaced")}");
+            : new AuditNote(
+                "shop.image_changed", $"{command.Slot} {(command.Content is null ? "removed" : "replaced")}",
+                AuditArgs.Of(("image", command.Slot), ("change", command.Content is null ? "removed" : "replaced")));
     }
 }
 
@@ -354,7 +400,7 @@ internal sealed class AddShopGalleryImageHandler(TrimmeDbContext db, IAuditLog a
     protected override Result<AuditNote> Apply(Shop shop, AddShopGalleryImageCommand command)
     {
         var added = ShopImages.AddToGallery(shop, command.Content, media, clock.GetUtcNow());
-        return added.IsFailure ? added.Error : new AuditNote("shop.image_changed", "Gallery image added");
+        return added.IsFailure ? added.Error : new AuditNote("shop.image_changed", "Gallery image added", AuditArgs.Of(("image", "Gallery"), ("change", "added")));
     }
 }
 
@@ -366,7 +412,9 @@ internal sealed class RemoveShopGalleryImageHandler(TrimmeDbContext db, IAuditLo
     protected override Result<AuditNote> Apply(Shop shop, RemoveShopGalleryImageCommand command)
     {
         var removed = ShopImages.RemoveFromGallery(shop, command.MediaId, media, clock.GetUtcNow());
-        return removed.IsFailure ? removed.Error : new AuditNote("shop.image_changed", $"Gallery image {command.MediaId} removed");
+        return removed.IsFailure
+            ? removed.Error
+            : new AuditNote("shop.image_changed", $"Gallery image {command.MediaId} removed", AuditArgs.Of(("image", "Gallery"), ("change", "removed")));
     }
 }
 
@@ -379,7 +427,6 @@ internal static class ShopMapping
         shop.NameEn,
         shop.Status.ToString(),
         shop.TimeZone,
-        shop.RequireManualConfirmation,
         shop.Location?.District,
         shop.IsVerified,
         MediaRules.Url(shop.LogoMediaId),
@@ -405,11 +452,12 @@ internal static class ShopMapping
         shop.EditableFields,
         shop.Status.ToString(),
         shop.TimeZone,
-        shop.RequireManualConfirmation,
         shop.CreatedAt,
         shop.UpdatedAt,
         shop.Version,
         shop.IsDemo,
         shop.ShortNameAr,
-        shop.ShortNameEn);
+        shop.ShortNameEn,
+        shop.CallButtonEnabled,
+        shop.CallButtonPhone);
 }

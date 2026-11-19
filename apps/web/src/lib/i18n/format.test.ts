@@ -3,6 +3,7 @@ import {
   formatDate,
   formatDayNumber,
   formatDistanceKm,
+  formatDurationLong,
   formatDurationMinutes,
   formatHour,
   formatNumber,
@@ -55,6 +56,25 @@ describe('formatters_ar_en (R-WEB-06, D-040)', () => {
   it('formats durations with the clock-time digit rule', () => {
     expect(formatDurationMinutes(30, 'ar')).toBe('٣٠ دقيقة');
     expect(formatDurationMinutes(30, 'en')).toBe('30 min');
+  });
+
+  it('writes Arabic lengths with their counted nouns, and whole hours as hours for settings (D-155)', () => {
+    expect(formatDurationMinutes(1, 'ar')).toBe('دقيقة واحدة');
+    expect(formatDurationMinutes(2, 'ar')).toBe('دقيقتان');
+    expect(formatDurationMinutes(5, 'ar')).toBe('٥ دقائق');
+    expect(formatDurationMinutes(10, 'ar')).toBe('١٠ دقائق');
+    expect(formatDurationMinutes(15, 'ar')).toBe('١٥ دقيقة');
+    expect(formatDurationMinutes(100, 'ar')).toBe('١٠٠ دقيقة');
+    expect(formatDurationLong(45, 'ar')).toBe('٤٥ دقيقة');
+    expect(formatDurationLong(60, 'ar')).toBe('ساعة واحدة');
+    expect(formatDurationLong(120, 'ar')).toBe('ساعتان');
+    expect(formatDurationLong(360, 'ar')).toBe('٦ ساعات');
+    expect(formatDurationLong(720, 'ar')).toBe('١٢ ساعة');
+    expect(formatDurationLong(1440, 'ar')).toBe('٢٤ ساعة');
+    expect(formatDurationLong(90, 'ar')).toBe('٩٠ دقيقة');
+    expect(formatDurationLong(60, 'en')).toBe('1 hour');
+    expect(formatDurationLong(1440, 'en')).toBe('24 hours');
+    expect(formatDurationLong(360, 'tr')).toBe('6 saat');
   });
 
   it('groups Saudi E.164 mobiles for display and leaves other numbers unchanged', () => {

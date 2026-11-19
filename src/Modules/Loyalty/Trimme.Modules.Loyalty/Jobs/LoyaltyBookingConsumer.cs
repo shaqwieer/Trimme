@@ -40,7 +40,7 @@ internal sealed record LoyaltyBookingEvent(
 internal sealed class LoyaltyBookingConsumer(
     TrimmeDbContext db,
     LoyaltyLedger ledger,
-    ILoyaltyAddOnStatus addOn,
+    ILoyaltyPlanStatus addOn,
     ILoyaltyMemberKeys keys,
     IWalkInContactReader walkIns,
     IPersonalDataProtector protector,

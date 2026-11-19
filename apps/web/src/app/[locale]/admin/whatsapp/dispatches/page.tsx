@@ -82,6 +82,7 @@ export default async function WhatsAppDispatchesPage({
                 Delivered: data.counts.delivered,
                 Read: data.counts.read,
                 Failed: data.counts.failed,
+                LimitReached: data.counts.limitReached,
               }[value];
 
         return (

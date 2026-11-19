@@ -17,8 +17,6 @@ const BARBER_HOUSE = 'barber-house';
 const CUT_AND_STYLE = '0199a0de-5a10-7000-8000-000000000411';
 const OMAR = '0199a0de-5a10-7000-8000-000000000201';
 const SARA_UPCOMING = '0199a0de-5a10-7000-8000-000000000b11';
-const NOURA = '500100301';
-const KHALID = '500100302';
 const SARA = '500100303';
 
 const newPhone = () => `5${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
@@ -55,7 +53,8 @@ async function signIn(page: Page, national: string, returnTo: string) {
   await expect(page).not.toHaveURL(/\/auth\//);
 }
 
-async function signUp(page: Page, name: string) {
+/** A new customer account, signed in on `page`; returns its national number. */
+async function signUp(page: Page, name: string): Promise<string> {
   const national = newPhone();
   await page.goto('/ar/auth/sign-up');
   await page.getByLabel('رقم الجوال').fill(national);
@@ -69,6 +68,7 @@ async function signUp(page: Page, name: string) {
   await page.getByLabel(/أوافق على/).check();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
   await expect(page).toHaveURL(/\/ar\/discover$/);
+  return national;
 }
 
 /** YYYY-MM-DD in Riyadh, `days` from today. */
@@ -135,6 +135,13 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
   test('E1: a guest books through the wizard, signs in at confirmation, then adds it to the calendar, reschedules and cancels', async ({
     page,
   }) => {
+    // A customer of their own: one upcoming booking per customer at any shop (D-155), so a seeded one with a booking
+    // ahead would be refused. They sign out and come back as a guest.
+    const national = await signUp(page, 'نورة الحربي');
+    // Its code went out during the sign-up, so the next one can be asked for 30 seconds after this at the latest.
+    const codeSentAt = Date.now();
+    await page.context().clearCookies();
+
     // Shop page → the service's "book" link opens the wizard on the services step with it chosen, so more can be
     // added (D-144); then the professional step ("any" preselected).
     await page.goto(`/ar/shops/${BARBER_HOUSE}`);
@@ -170,7 +177,9 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     // A guest signs in at confirmation and comes back to the same review (D-096).
     await page.getByRole('button', { name: 'تأكيد الحجز' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/sign-in\?returnTo=%2Fshops%2Fbarber-house%2Fbook/);
-    await signInHere(page, NOURA);
+    // The server sends one code per number every 30 seconds (D-054): the sign-up's code was the last one.
+    await page.waitForTimeout(Math.max(0, codeSentAt + 31_000 - Date.now()));
+    await signInHere(page, national);
     await expect(page).toHaveURL(/\/ar\/shops\/barber-house\/book\?.*step=review/);
     expect(new URL(page.url()).searchParams.get('time')).toBe(new URL(reviewUrl).searchParams.get('time'));
     await page.getByRole('button', { name: 'تأكيد الحجز' }).click();
@@ -189,8 +198,16 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     expect(ics.headers()['content-type']).toContain('text/calendar');
     expect(await ics.text()).toContain('BEGIN:VEVENT');
 
-    // It is listed under upcoming appointments.
+    // One upcoming booking at a time, at any shop (D-155, the client's 3-2): another shop's wizard says so and links it.
     const bookingPath = new URL(page.url()).pathname;
+    await page.goto('/ar/shops/al-asala/book');
+    const active = page.getByTestId('active-booking');
+    await expect(active).toContainText('عندك حجز قادم');
+    await expect(active).toContainText('باربر هاوس');
+    await expect(active.getByRole('link', { name: 'عرض الحجز' })).toHaveAttribute('href', bookingPath);
+    await expectNoSeriousAxe(page, 'active booking warning');
+
+    // It is listed under upcoming appointments.
     await page.goto('/ar/account/bookings');
     const card = page.getByTestId('booking-card').filter({ has: page.locator(`a[href="${bookingPath}"]`) });
     await expect(card).toContainText('باربر هاوس');
@@ -221,7 +238,8 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
   }) => {
     const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
     const [first, second] = (await Promise.all(contexts.map((c) => c.newPage()))) as [Page, Page];
-    await signIn(first, KHALID, '/account');
+    // Two customers of their own (D-155: a seeded one may already have a booking ahead).
+    await signUp(first, 'خالد العتيبي');
     await signUp(second, 'ريان المطيري');
 
     // Find the first free time with Omar a week or so ahead, then bring both customers to its review step.
@@ -355,7 +373,12 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
 
     await page.goto('/ar/account/favorites');
     const favorites = page.getByTestId('favorites');
-    await expect(favorites.getByRole('link', { name: 'باربر هاوس' })).toBeVisible();
+    await expect(favorites.getByRole('link', { name: 'باربر هاوس', exact: true })).toBeVisible();
+    // «احجز» beside each favourite shop (D-155, the client's 5-4).
+    await expect(favorites.getByRole('link', { name: 'احجز في باربر هاوس' })).toHaveAttribute(
+      'href',
+      /\/ar\/shops\/barber-house\/book$/,
+    );
     await expect(favorites.getByRole('link', { name: 'احجز مع عمر السالم' })).toHaveAttribute(
       'href',
       new RegExp(`/ar/shops/barber-house/book\\?pro=${OMAR}`),

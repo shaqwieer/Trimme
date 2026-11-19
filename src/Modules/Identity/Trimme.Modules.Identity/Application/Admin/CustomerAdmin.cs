@@ -14,8 +14,18 @@ namespace Trimme.Modules.Identity.Application.Admin;
 // figures, never the mobile; the detail shows it masked; the full number is revealed only through an explicit,
 // permission-gated command with a reason, audited without the number.
 
+/// <summary>A customer in the admin list. D-155 (the client's 8-3-5): «ما حضر» (<c>NoShows</c>) and the cancellations (<c>Cancelled</c>, by the customer or the shop).</summary>
 public sealed record AdminCustomerListItem(
-    Guid Id, string? DisplayName, DateTimeOffset RegisteredAt, bool IsDisabled, int Bookings, int Upcoming, DateTimeOffset? LastBookingAt, DateTimeOffset? NextBookingAt);
+    Guid Id,
+    string? DisplayName,
+    DateTimeOffset RegisteredAt,
+    bool IsDisabled,
+    int Bookings,
+    int Upcoming,
+    DateTimeOffset? LastBookingAt,
+    DateTimeOffset? NextBookingAt,
+    int NoShows = 0,
+    int Cancelled = 0);
 
 /// <summary>A customer's profile for support: <c>PhoneMasked</c> only (for example <c>+966 5•• ••• •12</c>) and their booking figures.</summary>
 public sealed record AdminCustomerResponse(
@@ -59,7 +69,8 @@ internal sealed class ListAdminCustomersHandler(IAdminAccounts accounts, IAdminD
                 .. rows.Select(r =>
                 {
                     var s = stats.GetValueOrDefault(r.Id) ?? CustomerBookingStats.Empty;
-                    return new AdminCustomerListItem(r.Id, r.DisplayName, r.CreatedAt, r.IsDisabled, s.Bookings, s.Upcoming, s.LastBookingAt, s.NextBookingAt);
+                    return new AdminCustomerListItem(
+                        r.Id, r.DisplayName, r.CreatedAt, r.IsDisabled, s.Bookings, s.Upcoming, s.LastBookingAt, s.NextBookingAt, s.NoShows, s.Cancelled);
                 }),
             ],
             query.Page.Page,

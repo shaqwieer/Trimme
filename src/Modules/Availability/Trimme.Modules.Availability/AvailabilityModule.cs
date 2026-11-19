@@ -31,6 +31,8 @@ public sealed class AvailabilityModule : ModuleBase
         services.AddScoped<ShopScheduleContext>();
         services.AddScoped<ConflictFinder>();
         services.AddScoped<BarberDayReader>();
+        services.AddScoped<UnavailableTodayAccess>();
+        services.AddScoped<IUnavailableBarbers, UnavailableBarbers>();
         services.AddScoped<PublicAvailabilityService>();
         services.AddScoped<IAvailabilityChecker, AvailabilityChecker>();
         services.AddScoped<IShopDayPlanReader, ShopDayPlanReader>();

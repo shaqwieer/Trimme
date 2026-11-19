@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { LastVisitCard } from '@/components/booking/LastVisitCard';
 import { Logo } from '@/components/brand/Logo';
 import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { LocationSheetButton } from '@/components/discovery/LocationSheetButton';
@@ -11,6 +12,8 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getPublicApi } from '@/lib/api/public';
 import { optional } from '@/lib/api/safe';
+import { getServerApi } from '@/lib/api/server';
+import { getMe } from '@/lib/auth/server';
 import { readLocation } from '@/lib/discovery/location.server';
 import { DEFAULT_RADIUS_KM, WIDE_RADIUS_KM } from '@/lib/discovery/search';
 import { NO_INDEX } from '@/lib/seo/site';
@@ -33,7 +36,7 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
   const api = await getPublicApi();
   const near = location ? { lat: location.lat, lng: location.lng, radiusKm: DEFAULT_RADIUS_KM } : {};
 
-  const [areas, shops] = await Promise.all([
+  const [areas, shops, lastVisit] = await Promise.all([
     optional(() => api.GET('/api/v1/public/areas'), 'areas'),
     optional(
       () =>
@@ -42,6 +45,7 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
         }),
       'salons',
     ),
+    lastCompletedVisit(),
   ]);
   const label = location ? location.label || t('currentLocation') : null;
 
@@ -68,6 +72,7 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
             </div>
           )}
         </header>
+        {lastVisit && <LastVisitCard booking={lastVisit} locale={locale} />}
 
         <section aria-labelledby="salons-heading" className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
@@ -109,4 +114,19 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
       </div>
     </CustomerShell>
   );
+}
+
+/**
+ * A signed-in customer's last completed visit, for «احجز مثل آخر مرة» (D-155, the client's 5-4); null for a guest, a
+ * staff account, no completed visit yet, or when the list cannot be read (the home page never fails on it).
+ */
+async function lastCompletedVisit() {
+  const me = await getMe();
+  if (me?.userType !== 'Customer') return null;
+  const api = await getServerApi();
+  const past = await optional(
+    () => api.GET('/api/v1/me/bookings', { params: { query: { tab: 'Past', page: 1, pageSize: 10 } } }),
+    'last visit',
+  );
+  return past?.items.find((b) => b.status === 'Completed') ?? null;
 }

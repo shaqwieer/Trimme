@@ -67,6 +67,11 @@ test.describe('subscriptions (R-SUB-01..05, E5, E3 subscription part)', () => {
     await form.getByLabel('Feature 1 in Arabic').fill('ظهور في البحث');
     await form.getByLabel('Feature 1 in English').fill('Listed in search');
     await form.getByLabel(/^Price \(SAR\)/).fill('300');
+    // What the plan gives (D-155, the client's 2-2): loyalty, and «We miss you» after 14 days, 500 a month.
+    await form.getByLabel('Includes the loyalty programme').check();
+    await form.getByLabel('«We miss you» messages').check();
+    await form.getByLabel('Sent after how many days without a visit').fill('14');
+    await expect(form.getByLabel(/^Invitation messages a month/)).toHaveValue('500');
     await form.getByRole('button', { name: 'Create plan' }).click();
     await expect(page).toHaveURL(/\/en\/admin\/subscription-plans\/[0-9a-f-]{36}$/);
     const planId = page.url().split('/').pop()!;
@@ -96,6 +101,13 @@ test.describe('subscriptions (R-SUB-01..05, E5, E3 subscription part)', () => {
     await record.getByRole('button', { name: 'Record activation' }).click();
     await expect(page.getByText(/Subscription active until/)).toBeVisible();
     await expect(page.getByTestId('shop-subscription')).toContainText('Active');
+    // The plan's features and this month's invitation messages against its limit (D-155).
+    const usage = page.getByTestId('shop-plan-usage');
+    await expect(usage).toContainText('Loyalty programme: included and on');
+    await expect(usage).toContainText('sent 14 days after');
+    await expect(usage.getByTestId('marketing-usage')).toContainText(
+      'Invitation messages this month: 0 of 500',
+    );
     await expectNoSeriousAxeViolations(page);
 
     // SuperAdmin schedules a new price version after the current period ends.

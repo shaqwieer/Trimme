@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { SelectField, Switch } from '@/components/ui/inputs';
+import { SelectField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
@@ -11,7 +11,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import type { components } from '@/lib/api/schema';
-import { formatDurationMinutes } from '@/lib/i18n/format';
+import { formatDurationLong, formatDurationMinutes } from '@/lib/i18n/format';
 
 type Settings = components['schemas']['ShopBookingSettingsResponse'];
 type Field = Exclude<keyof Settings, 'requireManualConfirmation'>;
@@ -33,10 +33,10 @@ const choicesWith = (field: Field, current: number) =>
   CHOICES[field].includes(current) ? CHOICES[field] : [...CHOICES[field], current].sort((a, b) => a - b);
 
 /**
- * A shop's own booking settings (D-149, the owner's item 5): whether online bookings wait for the shop's confirmation,
- * the start-time interval, the minimum notice, the furthest bookable day and the cleaning time after each booking. The
+ * A shop's own booking settings (D-149, the owner's item 5): the start-time interval, the minimum notice, the furthest bookable day and the cleaning time after each booking. The
  * start interval is not a service's length: starts every 15 minutes, a service of 45. Set by the owner
- * (`Shop.Profile.Edit`) or by the admin on the shop's page; the values shown are the ones in force.
+ * (`Shop.Profile.Edit`) or by the admin on the shop's page; the values shown are the ones in force. Online bookings are
+ * always confirmed at once (D-155: «أؤكد الحجوزات بنفسي» is gone), and whole hours are written as hours.
  */
 export function BookingSettingsForm({
   scope,
@@ -52,7 +52,6 @@ export function BookingSettingsForm({
   const locale = asLocale(useLocale());
   const router = useRouter();
   const apiMessage = useApiErrorMessage();
-  const [manual, setManual] = useState(settings.requireManualConfirmation);
   const [values, setValues] = useState<Record<Field, number>>(
     () => Object.fromEntries(FIELDS.map((f) => [f, settings[f]])) as Record<Field, number>,
   );
@@ -66,7 +65,8 @@ export function BookingSettingsForm({
       return t('everyMinutes', { duration: formatDurationMinutes(value, locale) });
     if (field === 'bookingHorizonDays') return t('days', { count: value });
     if (value === 0) return t(field === 'bufferMinutes' ? 'noCleaning' : 'noNotice');
-    return formatDurationMinutes(value, locale);
+    // Whole hours as hours: «٦ ساعات», not «٣٦٠ دقيقة» (D-155, the client's 2-2).
+    return formatDurationLong(value, locale);
   };
 
   const submit = async (event: FormEvent) => {
@@ -75,7 +75,7 @@ export function BookingSettingsForm({
     setFailure(undefined);
     setErrors({});
     setSaved(false);
-    const body = { requireManualConfirmation: manual, ...values };
+    const body = { ...values };
     try {
       ensureOk(
         scope.kind === 'shop'
@@ -111,11 +111,6 @@ export function BookingSettingsForm({
       className="flex flex-col gap-5"
       data-testid="booking-settings"
     >
-      <fieldset className="flex min-w-0 flex-col gap-1" disabled={!canEdit}>
-        <legend className="sr-only">{t('confirmation')}</legend>
-        <Switch checked={manual} onCheckedChange={setManual} label={t('manual')} disabled={!canEdit} />
-        <span className="text-helper text-text-tertiary">{t(manual ? 'manualOn' : 'manualOff')}</span>
-      </fieldset>
       <fieldset className="grid min-w-0 gap-4 md:grid-cols-2" disabled={!canEdit}>
         <legend className="sr-only">{t('times')}</legend>
         {FIELDS.map((field) => (

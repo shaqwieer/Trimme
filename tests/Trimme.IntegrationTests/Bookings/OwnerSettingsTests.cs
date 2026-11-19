@@ -30,8 +30,8 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
 {
     private static DateOnly Target => TodayAt(DateTimeOffset.UtcNow).AddDays(2);
 
-    private static object Settings(bool manual, int step, int lead, int horizon, int buffer) =>
-        new { requireManualConfirmation = manual, slotStepMinutes = step, minLeadTimeMinutes = lead, bookingHorizonDays = horizon, bufferMinutes = buffer };
+    private static object Settings(int step, int lead, int horizon, int buffer) =>
+        new { slotStepMinutes = step, minLeadTimeMinutes = lead, bookingHorizonDays = horizon, bufferMinutes = buffer };
 
     private static async Task<object?> ScalarAsync(TrimmeApiFactory factory, string sql, CancellationToken ct, object? parameter = null)
     {
@@ -65,7 +65,7 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
 
         // Until the shop sets its own, the platform's are in force: 14 days ahead (D-149, 6-1), 5-minute starts, an hour's notice.
         var defaults = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/booking-settings", ct), ct);
-        defaults.GetProperty("requireManualConfirmation").GetBoolean().ShouldBeFalse();
+        defaults.TryGetProperty("requireManualConfirmation", out _).ShouldBeFalse("D-155: every online booking is confirmed at once");
         defaults.GetProperty("slotStepMinutes").GetInt32().ShouldBe(5);
         defaults.GetProperty("minLeadTimeMinutes").GetInt32().ShouldBe(60);
         defaults.GetProperty("bookingHorizonDays").GetInt32().ShouldBe(14);
@@ -76,18 +76,22 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
 
         // Barbers operate, they do not set the shop's rules; out-of-range values are refused field by field.
         using var faisal = await w.BarberAsync(w.Faisal, ct);
-        await FailsAsync(faisal.PutAsync("/api/v1/shop/booking-settings", Settings(false, 15, 0, 3, 10), ct), HttpStatusCode.Forbidden, null, ct);
-        var invalid = await FailsAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 7, 2000, 91, 7), ct), HttpStatusCode.BadRequest, null, ct);
+        await FailsAsync(faisal.PutAsync("/api/v1/shop/booking-settings", Settings(15, 0, 3, 10), ct), HttpStatusCode.Forbidden, null, ct);
+        var invalid = await FailsAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(7, 2000, 91, 7), ct), HttpStatusCode.BadRequest, null, ct);
         foreach (var field in new[] { "slotStepMinutes", "minLeadTimeMinutes", "bookingHorizonDays", "bufferMinutes" })
         {
             invalid.ShouldContain(field);
         }
 
-        var set = await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(true, 15, 0, 3, 0), ct), ct);
+        var set = await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(15, 0, 3, 0), ct), ct);
         set.GetProperty("slotStepMinutes").GetInt32().ShouldBe(15);
         set.GetProperty("bookingHorizonDays").GetInt32().ShouldBe(3);
         (await ScalarAsync(w.Factory, "SELECT count(*) FROM administration.audit_entries WHERE action = 'shop.booking_settings_changed' AND entity_id = @p", ct,
             w.Shops.A.ShopId.ToString())).ShouldBe(1L);
+        // D-155: the settings are the summary's code and arguments (worded by the web in the reader's language), not the reason.
+        (await ScalarAsync(w.Factory,
+            "SELECT summary_args->>'slotStep' FROM administration.audit_entries WHERE action = 'shop.booking_settings_changed' AND entity_id = @p AND reason IS NULL AND summary_code = action",
+            ct, w.Shops.A.ShopId.ToString())).ShouldBe("15");
 
         // Starts every 15 minutes, three days (today included) on the strip, nothing past them; shop B keeps the platform's.
         var times = await TimesAsync(anonymous, $"/api/v1/public/shops/{w.SlugA}/availability/slots?serviceId={w.Haircut}&date={Iso(Target)}", ct);
@@ -101,17 +105,18 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
         var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
         (await TimesAsync(anonymous, $"/api/v1/public/shops/{slugB}/availability/slots?serviceId={w.ServiceB}&date={Iso(Target)}", ct)).ShouldContain("09:05");
 
-        // Manual confirmation: an online booking waits for the shop.
+        // An online booking is confirmed at once (D-155), on the shop's 15-minute grid only.
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
         (await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 15), ct), ct, HttpStatusCode.Created))
-            .GetProperty("status").GetString().ShouldBe("Pending");
-        await FailsAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(Target, 11, 5), ct), HttpStatusCode.Conflict, null, ct);
+            .GetProperty("status").GetString().ShouldBe("Confirmed");
+        using var other = await CustomerAsync(w.Factory, "سارة", ct);
+        await FailsAsync(BookAsync(other, w.SlugA, w.Haircut, w.Faisal, At(Target, 11, 5), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
 
         // The admin reads and sets the same settings from the shop's admin page; the owner cannot use the admin's.
         await FailsAsync(w.OwnerA.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/booking-settings", ct), HttpStatusCode.Forbidden, null, ct);
         (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/booking-settings", ct), ct)).GetProperty("slotStepMinutes").GetInt32().ShouldBe(15);
-        (await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/booking-settings", Settings(false, 30, 0, 14, 0), ct), ct))
-            .GetProperty("requireManualConfirmation").GetBoolean().ShouldBeFalse();
+        (await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/booking-settings", Settings(30, 0, 14, 0), ct), ct))
+            .GetProperty("slotStepMinutes").GetInt32().ShouldBe(30);
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/booking-settings", ct), ct)).GetProperty("slotStepMinutes").GetInt32().ShouldBe(30);
     }
 
@@ -127,18 +132,19 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
         // It is 09:40 on the day, with a 30-minute notice.
         var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(At(Target, 9, 40).ToUniversalTime());
         await using var w = await ArrangeAsync(postgres, "d152_too_soon", ct, clock);
-        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 30, 14, 0), ct), ct);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(5, 30, 14, 0), ct), ct);
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
         using var khalid = await CustomerAsync(w.Factory, "خالد", ct);
         var later = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
         await OkAsync(BookAsync(khalid, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct), ct, HttpStatusCode.Created);
 
-        // 10:00 is now too close; 11:00 is Khalid's.
-        (await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct))
+        // 10:00 is now too close; 11:00 is Khalid's (Sara tries: Noura has her 12:00, one active booking each, D-155).
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        (await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct))
             .ShouldContain("\"minutes\":30");
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 9, 45), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct);
-        await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 10), ct), ct, HttpStatusCode.Created);
+        await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, null, At(Target, 9, 45), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct);
+        await OkAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 10), ct), ct, HttpStatusCode.Created);
 
         // Moving her 12:00 to 10:05 is too soon now; to 11:00 it is taken.
         var id = later.GetProperty("id").GetGuid();
@@ -156,7 +162,7 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "d149_buffer", ct);
-        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 0, 14, 10), ct), ct);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(5, 0, 14, 10), ct), ct);
 
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
         var booking = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
@@ -197,24 +203,24 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task AnOfferedNewTime_HoldsItsCleaningTimeToo_AndABookingPlacedAgain_TakesTheShopsCleaningTimeNow()
+    public async Task ANewTimeFromTheShop_HoldsItsCleaningTime_AndABookingPlacedAgain_TakesTheShopsCleaningTimeNow()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "d149_hold", ct);
-        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 0, 14, 10), ct), ct);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(5, 0, 14, 10), ct), ct);
         using var faisal = await w.BarberAsync(w.Faisal, ct);
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
         using var sara = await CustomerAsync(w.Factory, "سارة", ct);
 
-        // Faisal offers Noura 15:00 instead of 12:00: the offer holds 15:00–15:30 and its cleaning time, until 15:40.
+        // Faisal moves Noura from 12:00 to 15:00 at once (D-155): the booking holds 15:00–15:30 and its cleaning time, until 15:40.
         var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
-        await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{id}/postpone", new { startsAt = At(Target, 15), version = booking.GetProperty("version").GetUInt32() }, ct), ct);
-        ((DateTime)(await ScalarAsync(w.Factory, "SELECT blocked_until FROM bookings.postponement_offers WHERE booking_id = @p", ct, id))!)
-            .ShouldBe(At(Target, 15, 40).UtcDateTime);
+        await OkAsync(faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/reschedule",
+            new { startsAt = At(Target, 15), version = booking.GetProperty("version").GetUInt32() }, ct, headers: Key()), ct);
+        ((DateTime)(await ScalarAsync(w.Factory, "SELECT blocked_until FROM bookings.bookings WHERE id = @p", ct, id))!).ShouldBe(At(Target, 15, 40).UtcDateTime);
         await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 15, 35), ct), HttpStatusCode.Conflict, null, ct);
 
-        // The database's hold refuses it too, past the application's checks.
+        // The database refuses it too, past the application's checks (the exclusion constraint covers the cleaning time).
         await using (var scope = w.Factory.Services.CreateAsyncScope())
         {
             var services = scope.ServiceProvider;
@@ -230,17 +236,12 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
             DatabaseErrors.IsLostRace(refused).ShouldBeTrue();
         }
 
-        // 15:40 is free; Noura accepts, and the booking holds what the offer held.
-        var mine = await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct);
-        await OkAsync(noura.PostAsync($"/api/v1/me/bookings/{id}/postponement/accept", new { version = mine.GetProperty("version").GetUInt32() }, ct), ct);
-        ((DateTime)(await ScalarAsync(w.Factory, "SELECT blocked_until FROM bookings.bookings WHERE id = @p", ct, id))!).ShouldBe(At(Target, 15, 40).UtcDateTime);
-
         // The owner then drops the cleaning time: a booking made before keeps its 10 minutes until it is placed again,
         // and then takes the shop's 0, the value its new place was checked with.
         var walkIn = await OkAsync(faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
             new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 17), customerName = "زائر", channel = "Phone" }, ct, headers: Key()), ct, HttpStatusCode.Created);
         var walkInId = walkIn.GetProperty("id").GetGuid();
-        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 0, 14, 0), ct), ct);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(5, 0, 14, 0), ct), ct);
         await OkAsync(faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
             new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 18, 30), customerName = "ضيف", channel = "Phone" }, ct, headers: Key()), ct, HttpStatusCode.Created);
         var version = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{walkInId}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
@@ -255,7 +256,7 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
     {
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "d149_lengths", ct);
-        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 0, 14, 0), ct), ct);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(5, 0, 14, 0), ct), ct);
 
         // A haircut is 30 minutes; Omar takes 45. An invalid length is refused; the price stays the shop's.
         await FailsAsync(w.OwnerA.PutAsync($"/api/v1/shop/professionals/{w.Omar}/services",
@@ -294,9 +295,11 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
         withOmar.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 45));
         withOmar.GetProperty("item").GetProperty("durationMinutes").GetInt32().ShouldBe(45);
         withOmar.GetProperty("item").GetProperty("price").GetDecimal().ShouldBe(60m);
-        (await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, null, At(Target, 20, 30), ct), ct, HttpStatusCode.Created))
+        using var second = await CustomerAsync(w.Factory, "سارة", ct);
+        (await OkAsync(BookAsync(second, w.SlugA, w.Haircut, null, At(Target, 20, 30), ct), ct, HttpStatusCode.Created))
             .GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Faisal);
-        var both = await OkAsync(customer.SendAsync(HttpMethod.Post, "/api/v1/bookings",
+        using var third = await CustomerAsync(w.Factory, "خالد", ct);
+        var both = await OkAsync(third.SendAsync(HttpMethod.Post, "/api/v1/bookings",
             new { shopSlug = w.SlugA, serviceIds = new[] { w.Haircut, w.Beard }, professionalId = w.Omar, startsAt = At(Target, 15), note = (string?)null }, ct,
             headers: Key()), ct, HttpStatusCode.Created);
         both.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 16, 5));
@@ -308,8 +311,14 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
             .ShouldBe(new Dictionary<Guid, int> { [w.Faisal] = 30, [w.Omar] = 45 }, ignoreOrder: true);
 
         // Moving Faisal's 12:00 booking to Omar: his 45 minutes run into his 12:40 booking, so it is refused (his 30 would fit).
-        var at12 = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
-        await OkAsync(BookAsync(customer, w.SlugA, w.Beard, w.Omar, At(Target, 12, 40), ct), ct, HttpStatusCode.Created);
+        async Task<JsonElement> ByANewCustomerAsync(Guid serviceId, Guid professionalId, DateTimeOffset start)
+        {
+            using var someone = await CustomerAsync(w.Factory, "نورة", ct);
+            return await OkAsync(BookAsync(someone, w.SlugA, serviceId, professionalId, start, ct), ct, HttpStatusCode.Created);
+        }
+
+        var at12 = await ByANewCustomerAsync(w.Haircut, w.Faisal, At(Target, 12));
+        await ByANewCustomerAsync(w.Beard, w.Omar, At(Target, 12, 40));
         var id12 = at12.GetProperty("id").GetGuid();
         var version = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id12}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
         (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id12}/professional-options", ct), ct)).GetProperty("professionals").EnumerateArray()
@@ -318,7 +327,7 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
             HttpStatusCode.Conflict, "booking.professional_busy", ct);
 
         // Where it fits, the booking moves with his length.
-        var at17 = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(Target, 17), ct), ct, HttpStatusCode.Created);
+        var at17 = await ByANewCustomerAsync(w.Haircut, w.Faisal, At(Target, 17));
         var id17 = at17.GetProperty("id").GetGuid();
         var version17 = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id17}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
         var moved = await OkAsync(faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id17}/professional", new { professionalId = w.Omar, version = version17 }, ct,

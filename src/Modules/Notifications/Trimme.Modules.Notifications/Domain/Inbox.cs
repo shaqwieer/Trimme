@@ -111,11 +111,36 @@ public static class NoticeKinds
     /// <summary>The booking was given to another barber (D-145); carries the previous barber's names.</summary>
     public const string BookingProfessionalChanged = "booking.professional_changed";
 
-    /// <summary>The barber offered a new time (D-147); carries <c>offeredStartsAt</c>. In-app only: no WhatsApp template yet.</summary>
-    public const string BookingPostponementOffered = "booking.postponement_offered";
+    // The customer's bell copy of every WhatsApp they get (D-155, «كل رسالة تنحفظ في الجرس»), their own changes included.
+    // Each carries reference, itemNameAr/En, professionalNameAr/En, startsAt (ISO 8601), shopNameAr/En and shopSlug; the
+    // booking ones also status and actor. Customers' notices before D-155 used the booking.* kinds.
 
-    /// <summary>The customer declined the offered time (D-147): the booking stays, the barber decides what next.</summary>
-    public const string BookingPostponementDeclined = "booking.postponement_declined";
+    /// <summary>The booking is confirmed (made online, or a walk-in's account).</summary>
+    public const string CustomerBookingConfirmed = "customer.booking_confirmed";
+
+    /// <summary>A new time, by the customer or the shop; carries <c>previousStartsAt</c>.</summary>
+    public const string CustomerBookingRescheduled = "customer.booking_rescheduled";
+
+    /// <summary>The customer cancelled it themselves.</summary>
+    public const string CustomerBookingCancelled = "customer.booking_cancelled";
+
+    /// <summary>The shop (or the platform) cancelled it; carries <c>reasonCode</c> (a ready reason) and/or <c>reason</c> (typed).</summary>
+    public const string CustomerBookingCancelledByShop = "customer.booking_cancelled_by_shop";
+
+    /// <summary>Given to another barber (D-145); carries <c>previousProfessionalNameAr/En</c>.</summary>
+    public const string CustomerBookingProfessionalChanged = "customer.booking_professional_changed";
+
+    /// <summary>The reminder before the start.</summary>
+    public const string CustomerBookingReminder = "customer.booking_reminder";
+
+    /// <summary>The shop invites the customer back (the plan's win-back message); about their last visit.</summary>
+    public const string CustomerWinBack = "customer.win_back";
+
+    /// <summary>
+    /// The plan's monthly marketing messages are used up (D-155): no more win-back messages until the window resets.
+    /// The owner is told once per window; carries <c>allowance</c> and <c>windowEnd</c>.
+    /// </summary>
+    public const string MarketingLimitReached = "marketing.limit_reached";
     public const string SubscriptionExpiring = "subscription.expiring";
     public const string SubscriptionExpired = "subscription.expired";
     public const string DispatchFailed = "whatsapp.dispatch_failed";

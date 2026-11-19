@@ -2068,3 +2068,94 @@ This refines D-126.
 - **3-9** The pager hides itself when everything fits on one page, on every list, unless the link points past the last page.
 - **Dependencies:** none added.
 - **Shared tree:** D-151 is in progress in another session's checkout, and a third session committed D-153 and D-154. This was built and verified in its own git worktree, on top of D-154.
+
+## D-155 — Always confirmed, one booking per customer, the barber's direct change, the shop's cancellation message, plans with loyalty and win-back, the marketing counter, the bell's copies, the owner's pause, «غير متوفر اليوم», barber QR, the call button, the customers' counts, the activity log in Arabic, and smaller items — Accepted (Session 30, after Phase 17, at the user's request)
+- **The request:** the client's 12 cards (Arabic). They are recorded with stable IDs `I<card>-<item>` in `phases/after-17-d155-auto-confirm-plans-absence.md`, with the user's three answers:
+  1. finish and commit D-151 first;
+  2. the shop changes the time directly everywhere, once per customer a day;
+  3. the pause's return time is optional, and booking reopens by itself when it is set.
+- **How it was built:**
+  - two forked backend slices, each with one migration, reviewed here;
+  - then the web, then the gates;
+  - the phase file lists every decided default.
+- **Always confirmed (I3-1-1):**
+  - `RequireManualConfirmation` is gone, and every online booking is Confirmed at once.
+  - The migration confirms open Pending bookings, with a System history line and no message, and drops the `BookingPending` opt-out rows.
+  - `Pending` stays in the enum for history, and the `BookingPending` template stays registered but is never sent.
+  - Removed from the web: «أؤكد الحجوزات بنفسي», the pending block, KPI, chip and legend, «قبول»/«رفض», and «تم إرسال طلب الحجز».
+- **One upcoming booking per customer, at any shop (I3-2-1):**
+  - A Confirmed or Arrived online booking whose end has not passed refuses a new one with 409 `booking.active_booking_exists` (detail `bookingId`).
+  - It is checked in the create transaction, outside the shop scope, under a per-customer advisory lock.
+  - A red booking past its end, walk-ins and phone bookings never count. Changing the time is allowed.
+  - `GET /me/bookings/active` (200 or 204) feeds the wizard's «عندك حجز قادم» with «عرض الحجز», shown on load and after a 409.
+- **The shop's direct change (I4-4-1):**
+  - `POST /shop/bookings/{id}/reschedule` moves an online booking at once.
+  - The postponement offer is removed: endpoints, table, triggers, functions and UI.
+  - Once per customer per shop per local day for the shop's users: 409 `booking.changed_today`, and `ShopBookingResponse.changedToday` makes the drawer's «تأجيل الموعد» disabled with «غيّرت موعد هالزبون اليوم…» (a tooltip and the same words on screen).
+  - Walk-ins, phone bookings and the admin are not limited.
+  - After the shop's change the customer may cancel or change free until the start (derived from the history; `allowedActions` carries it). Their page then says «حتى يبدأ الموعد» rather than a deadline already gone.
+  - Not locked: two simultaneous changes for one customer could both pass. Accepted.
+- **The shop's cancellation (I5-1-6):**
+  - new event `BookingCancelledByShop`, sent when the shop or the admin cancels;
+  - Meta UTILITY template `trimme_customer_booking_cancelled_by_shop` (ar and en) with `{{reason}}`, which is the ready reason's words, the typed text, or «ظرف عند المحل»;
+  - an apology and «احجز من جديد»;
+  - the customer's booking page shows the same reason words.
+- **Plans (I2-2-2, I4-3-1):**
+  - each plan has `includesLoyalty`, `winBackEnabled`, `winBackAfterDays` (1–90, default 10) and `monthlyMarketingMessages` (renamed from D-150's WhatsApp allowance; empty means unlimited, 0 none; a new plan starts at 500);
+  - loyalty runs while the subscription is in force on a plan that includes it;
+  - the paid add-on is removed (tables, columns, endpoints, panels, price form). `ShopLoyaltyResponse.addOnActive` becomes `included`.
+- **Win-back and the marketing counter (I2-2-2, I12-2-1):**
+  - A daily job (`0 11 * * *`) picks a shop's account customers whose last completed visit there was N days ago, who have no open booking anywhere and have not opted out.
+  - It sends one WhatsApp (MARKETING `trimme_customer_win_back`) per visit, plus a bell copy.
+  - Only these count against the plan's monthly limit, in windows from the subscription's start day; the slot is taken atomically at send time.
+  - At the limit the dispatch is `LimitReached` («وصل الحد»), not a failure, and the owner gets `marketing.limit_reached` once per window.
+  - Confirmations, changes, cancellations and reminders always go out, uncounted.
+  - The owner and the admin see «رسائل الدعوة هالشهر: ١٢٣ من ٥٠٠» on the subscription pages (`PlanUsage`). The admin sees each shop's counter on that shop's subscription tab; there is no list of all shops.
+  - Customers turn it off on «حسابي ← بياناتي» (`PUT /me/win-back`, on by default).
+- **The bell keeps every customer WhatsApp (I10-5-1):** `customer.booking_confirmed|rescheduled|cancelled|cancelled_by_shop|professional_changed|reminder` and `customer.win_back`, the customer's own actions included. A change reads «تغيير موعدك… من … إلى …» when the shop made it.
+- **Pausing (I1-1-1):**
+  - The owner's (`Shop.OnlineBooking.Pause` left the barbers) and the admin's (`/admin/shops/{id}/online-booking` with `pause` and `resume`; `Admin.Shops.Edit`, since `Admin.Shops.Manage` does not exist).
+  - A reason customers see and an optional return time (at most 90 days ahead); the job `shops-online-booking-resume` (every 5 minutes) lifts expired pauses.
+  - `HidePausedShopsFromDiscovery` is gone, so a paused shop stays listed with «متوقف مؤقتاً», the reason and the return time, can be saved to favourites, and books nothing.
+  - Confirmed bookings are never cancelled. The shop gets `shop.online_booking_paused` with the count inside the pause, which leads to the day screen.
+  - The barber's pause card and quick button are gone.
+- **«غير متوفر اليوم» (I1-1-2):**
+  - `TimeOffKind.Unavailable` from now to the shop's day end, with who marked it (`created_by_user_id`), audited, and undoable the same day.
+  - Set by the barber for themselves (the quick button where «إيقاف الحجز» was, and «بريكاتي», where it replaces the whole-day break) or by the owner for any barber.
+  - Customers see the card disabled with «غير متوفر اليوم» on the booking step and the specialists tab, and their times today are gone; «أي مختص» never picks them.
+  - Notices: the owner gets `professional.unavailable_today` and a dashboard line; colleagues get `professional.unavailable_bookings` («حجوزات حلاق غير متوفر»). The day screen has a block of those bookings.
+  - A fifth reviewed `BarberScope` exception lets any barber give such a booking to another barber, change its time, or cancel it with a reason, today only.
+  - The reports count each barber's «غير متوفر» days. Planned leave stays the owner's.
+- **Barber QR (I7-2-3):** the `IProfessionalQrCodes` port gives a barber a code when added or turned on again. The `ProfessionalQrBackfill` synchronizer gives every active barber without one a code at `migrate`.
+- **Call button (I5-1-7):**
+  - admin-only `callButtonEnabled` and `callButtonPhone` (`PUT /admin/shops/{id}/call-button`, audited without the number), set on the admin's booking tab;
+  - the public page shows «اتصال» (`tel:`) only when it is on;
+  - never in any shop-facing payload, and the owner has no setting.
+- **The admin's customers (I8-3-5):** «ما حضر» and «ألغى» columns.
+- **The activity log in Arabic (I8-3-6):**
+  - audit rows carry `summary_code` and `summary_args` (PII-free, ISO dates);
+  - the web words them in the reader's language (`lib/admin/auditSummary.ts`, `adminAudit.summaries` and `adminAudit.values` in ar, en and tr), with dates, amounts and lengths formatted and lists joined;
+  - older rows keep their English record, marked «سجل قديم بالإنجليزية»;
+  - the booking settings' sentence moved from the reason to the summary;
+  - every action and entity has ar, en and tr words.
+- **Smaller items:**
+  - «٥ دقائق», «٦ ساعات», «١٢ ساعة», «٢٤ ساعة» (Arabic plural rules in `formatDurationMinutes` and `formatDurationLong`, I6-2-2);
+  - the source «أونلاين» (I9-3-7);
+  - one «حفظ التغييرات» for the owner's barber page with «عندك تعديلات ما انحفظت» and a leave warning (`SaveGroup`, I9-3-8);
+  - the barber's languages on the specialists tab and the booking step (I9-3-9);
+  - «احجز مثل آخر مرة»: the last completed visit on `/discover`, «إعادة الحجز» on every past visit, and «احجز» beside each favourite shop (I11-5-4).
+- **Bundle budget:** map pages 335 → 337 KB. The admin's shop page carries the pause and call-button forms (335.6 KB). Loading them on demand moved shared chunks and put three other pages over their budgets.
+- **Migrations:** `AlwaysConfirmedPlanFeaturesWinBack` (20261119171144) and `PauseUnavailableCallAuditCodes` (20261119185117), 32 in all.
+- **Deploy notes (when asked):**
+  - Back up first.
+  - Check that production has no loyalty add-on period. Every plan starts with loyalty and win-back off, so SuperAdmin must tick the plans that include them.
+  - Open Pending bookings become Confirmed silently (no message, no reminder); open postponement offers disappear; `whatsapp_usage` is emptied.
+  - Barbers lose the pause when `migrate` resets the roles, and a barber's pause stays until the owner or the admin lifts it.
+  - Paused shops become listed.
+  - The backfill gives active barbers QR codes (audited as automatic).
+  - Two new Meta templates to submit: `trimme_customer_booking_cancelled_by_shop` (UTILITY) and `trimme_customer_win_back` (MARKETING, billed as marketing and needing opt-in). The shop-cancellation slot starts on.
+- **Evidence:**
+  - .NET: Release 0 warnings; unit 527/527; architecture 69/69; full integration 280/280; no pending model changes.
+  - Web: 595 unit tests; build and bundle budget pass.
+  - Fresh stack with 32 migrations; E2E with every project at one worker: 108 passed, then the 5 that failed passed after one missing label was added.
+  - Details in the phase file.

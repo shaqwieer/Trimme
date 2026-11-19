@@ -324,6 +324,144 @@
     ]
   },
   {
+    "name": "trimme_customer_booking_cancelled_by_shop",
+    "language": "ar",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "نعتذر منك، {{1}} اضطر يلغي موعدك يوم {{2}} الساعة {{3}}.\nالسبب: {{4}}. رقم الحجز: {{5}}.\nتقدر تحجز موعد ثاني من الزر تحت.",
+        "example": {
+          "body_text": [
+            [
+              "صالون الأصالة",
+              "الجمعة، ٦ نوفمبر",
+              "٥:٣٠ م",
+              "ظرف طارئ عند الحلاق",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "احجز من جديد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_booking_cancelled_by_shop",
+    "language": "en",
+    "category": "UTILITY",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "We are sorry: {{1}} had to cancel your appointment on {{2}} at {{3}}.\nThe reason: {{4}}. Booking reference: {{5}}.\nYou can book another time with the button below.",
+        "example": {
+          "body_text": [
+            [
+              "Al Asala Salon",
+              "Friday 6 November",
+              "5:30 pm",
+              "an emergency at the shop",
+              "TRM4K7QZ"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Book again",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_win_back",
+    "language": "ar",
+    "category": "MARKETING",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "مرحباً {{1}}، اشتقنا لك في {{2}}! صار لك فترة من آخر زيارة.\nموعدك الجاي بضغطة وحدة: اختر الوقت اللي يناسبك من الزر تحت.",
+        "example": {
+          "body_text": [
+            [
+              "سارة العتيبي",
+              "صالون الأصالة"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "احجز من جديد",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/ar/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trimme_customer_win_back",
+    "language": "en",
+    "category": "MARKETING",
+    "parameter_format": "positional",
+    "components": [
+      {
+        "type": "BODY",
+        "text": "Hi {{1}}, we miss you at {{2}}! It has been a while since your last visit.\nYour next appointment is one tap away: pick a time that suits you with the button below.",
+        "example": {
+          "body_text": [
+            [
+              "Sara Alotaibi",
+              "Al Asala Salon"
+            ]
+          ]
+        }
+      },
+      {
+        "type": "BUTTONS",
+        "buttons": [
+          {
+            "type": "URL",
+            "text": "Book again",
+            "url": "https://groomhere.sa/{{1}}",
+            "example": [
+              "https://groomhere.sa/en/shops/sample-shop"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "name": "trimme_customer_booking_reminder",
     "language": "ar",
     "category": "UTILITY",

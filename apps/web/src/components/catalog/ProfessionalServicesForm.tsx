@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, SelectField } from '@/components/ui/inputs';
+import { useSaveGroup } from '@/components/ui/SaveGroup';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
@@ -19,7 +20,8 @@ import { localizedName } from '@/lib/i18n/localized';
  * The services a barber does: only their own shop's services, with that shop's prices (DV-S04), and how long each takes
  * this barber (D-149: a haircut takes Ahmed 30 minutes and Mohamed 45; left at the standard length unless set). The
  * platform admin (`Admin.Professionals.AssignServices`) or, from the barber's page, the shop's owner
- * (`Shop.Barbers.Manage`, D-146), who also picks the barbers on each service's page (D-137).
+ * (`Shop.Barbers.Manage`, D-146), who also picks the barbers on each service's page (D-137). Inside a {@link SaveGroup}
+ * (the owner's barber page, D-155) it has no button of its own: the page saves it together with the profile.
  */
 export function ProfessionalServicesForm({
   scope,
@@ -46,13 +48,11 @@ export function ProfessionalServicesForm({
     ),
   );
   const [pending, setPending] = useState(false);
+  // What was saved last, to tell whether anything changed since (D-155).
+  const [saved, setSaved] = useState(() => snapshot(selected, own));
+  const dirty = snapshot(selected, own) !== saved;
 
-  if (data.services.length === 0)
-    return (
-      <p className="text-caption text-text-secondary">{scope === 'shop' ? t('emptyShop') : t('empty')}</p>
-    );
-
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     setNotice(undefined);
     setPending(true);
     try {
@@ -71,17 +71,26 @@ export function ProfessionalServicesForm({
           ? await browserApi.PUT('/api/v1/shop/professionals/{professionalId}/services', request)
           : await browserApi.PUT('/api/v1/admin/professionals/{professionalId}/services', request),
       );
+      setSaved(snapshot(selected, own));
       setNotice({ tone: 'success', text: t('saved') });
       router.refresh();
+      return true;
     } catch (e) {
       setNotice({
         tone: 'danger',
         text: apiMessage(e instanceof ApiError ? e : 'server.unexpected') ?? '',
       });
+      return false;
     } finally {
       setPending(false);
     }
   };
+  const grouped = useSaveGroup('services', dirty && canAssign, save);
+
+  if (data.services.length === 0)
+    return (
+      <p className="text-caption text-text-secondary">{scope === 'shop' ? t('emptyShop') : t('empty')}</p>
+    );
 
   return (
     <div className="flex flex-col gap-4" data-testid="professional-services">
@@ -133,11 +142,19 @@ export function ProfessionalServicesForm({
         })}
       </fieldset>
       {notice && <InlineAlert tone={notice.tone} title={notice.text} />}
-      {canAssign && (
+      {canAssign && !grouped && (
         <Button size="md" icon="check" loading={pending} onClick={() => void save()} className="self-start">
           {t('save')}
         </Button>
       )}
     </div>
   );
+}
+
+/** The assignment as one comparable string: the services ticked and each one's own length. */
+function snapshot(selected: string[], own: Record<string, string>): string {
+  return [...selected]
+    .sort()
+    .map((id) => `${id}:${own[id] ?? ''}`)
+    .join(',');
 }

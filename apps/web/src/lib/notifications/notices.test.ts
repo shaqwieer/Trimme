@@ -198,6 +198,68 @@ describe('notices', () => {
     expect(noticeHref('shop', reached('500'))).toBe('/shop/subscription');
   });
 
+  it('copies every customer WhatsApp to the bell: the shop’s change, its cancellation with the reason, win-back (D-155)', () => {
+    const t = createTranslator({
+      locale: 'ar',
+      messages: ar,
+      formats: MESSAGE_FORMATS,
+      namespace: 'notifications.kinds',
+    });
+    const notice = (kind: string, extra: Record<string, string>): Notice => ({
+      id: 'n20',
+      kind,
+      parameters: {
+        ...booking.parameters,
+        shopNameAr: 'صالون الأصالة',
+        shopNameEn: 'Al Asala',
+        shopSlug: 'al-asala',
+        ...extra,
+      },
+      bookingId: 'b9',
+      createdAt: '2026-09-17T09:00:00Z',
+      readAt: null,
+    });
+    const say = (n: Notice) => t(noticeKey('customer', n.kind) as 'generic', noticeValues(n, 'ar'));
+    const moved = notice('customer.booking_rescheduled', {
+      previousStartsAt: '2026-09-18T13:00:00Z',
+      actor: 'ShopUser',
+    });
+    expect(say(moved)).toMatch(/^تغيير موعدك في صالون الأصالة: من .+ إلى .+. تقدر تلغي أو تغيّر مجاناً$/);
+    expect(
+      say(
+        notice('customer.booking_rescheduled', {
+          previousStartsAt: '2026-09-18T13:00:00Z',
+          actor: 'Customer',
+        }),
+      ),
+    ).toMatch(/^غيّرت موعدك في صالون الأصالة/);
+    expect(say(notice('customer.booking_cancelled_by_shop', { reasonCode: 'StaffUnwell' }))).toMatch(
+      /^نعتذر منك، ألغى صالون الأصالة حجزك .+. السبب: الحلاق تعبان. احجز من جديد/,
+    );
+    expect(say(notice('customer.booking_cancelled_by_shop', { reason: 'انقطاع الماء' }))).toContain(
+      'السبب: انقطاع الماء',
+    );
+    // The WhatsApp's words (`MessageFormat.CancellationReason`): nothing typed is «ظرف عند المحل».
+    expect(say(notice('customer.booking_cancelled_by_shop', {}))).toContain('السبب: ظرف عند المحل.');
+    const winBack = notice('customer.win_back', {});
+    expect(say(winBack)).toBe('اشتقنا لك في صالون الأصالة! احجز موعدك القادم بسهولة');
+    expect(noticeHref('customer', winBack)).toBe('/shops/al-asala');
+    expect(noticeHref('customer', moved)).toBe('/account/bookings/b9');
+
+    const limit: Notice = {
+      id: 'n21',
+      kind: 'marketing.limit_reached',
+      parameters: { allowance: '500', windowEnd: '2026-12-04' },
+      bookingId: null,
+      createdAt: '2026-11-19T09:00:00Z',
+      readAt: null,
+    };
+    expect(t(noticeKey('shop', limit.kind) as 'generic', noticeValues(limit, 'ar'))).toBe(
+      'وصل الحد: استُخدمت رسائل الدعوة لهالشهر (٥٠٠). ما تُرسل رسائل دعوة جديدة حتى ٤ ديسمبر ٢٠٢٦',
+    );
+    expect(noticeHref('shop', limit)).toBe('/shop/subscription');
+  });
+
   it('formats names in the reader language and times with the clock digit rule', () => {
     const arabic = noticeValues(booking, 'ar');
     expect(arabic.item).toBe('قص شعر');

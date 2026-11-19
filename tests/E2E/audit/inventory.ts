@@ -140,7 +140,7 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         // The shop's sections and booking settings, kept by the admin too (D-149).
         { path: `/admin/shops/${SEED.alAsala.id}?tab=services` },
         { path: `/admin/shops/${SEED.alAsala.id}?tab=booking` },
-        // The loyalty add-on and the month's WhatsApp messages (D-149, slices 4–5).
+        // What the plan gives and the month's invitation messages (D-155).
         { path: `/admin/shops/${SEED.alAsala.id}?tab=subscription` },
         { path: '/admin/professionals' },
         { path: '/admin/professionals/new' },

@@ -74,6 +74,8 @@ export default async function ShopReportsPage({ params, searchParams }: PageProp
           [t('cols.movedOut'), (c) => formatNumber(c.movedOut, locale)],
           [t('cols.movedIn'), (c) => formatNumber(c.movedIn, locale)],
           [t('cols.postponed'), (c) => formatNumber(c.postponed, locale)],
+          // «غير متوفر» days (D-155, the client's 1-2).
+          [t('cols.unavailableDays'), (c) => formatNumber(c.unavailableDays, locale)],
           [t('cols.lateCancellations'), (c) => formatNumber(c.lateCancellations, locale)],
           [t('cols.noShows'), (c) => formatNumber(c.noShows, locale)],
           [t('cols.closedLate'), (c) => formatNumber(c.closedLate, locale)],

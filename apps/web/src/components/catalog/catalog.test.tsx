@@ -8,6 +8,8 @@ import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 // After the render helper, which mocks Next's router before anything imports it.
 import { AdminServiceEditor } from '@/components/admin/AdminCatalog';
+import { EditProfessionalForm } from '@/components/admin/ProfessionalForms';
+import { SaveGroup } from '@/components/ui/SaveGroup';
 import { ServiceForm } from './ServiceForm';
 import { ShopServiceEditor, ShopServiceList } from './ShopServices';
 import { ProfessionalServicesForm } from './ProfessionalServicesForm';
@@ -472,5 +474,73 @@ describe('a barber’s own length per service (D-149, the owner’s item 2)', ()
         { serviceId: 'wash', durationMinutes: null },
       ],
     });
+  });
+});
+
+describe('the owner’s barber page: one save (D-155, the client’s 3-8)', () => {
+  it('saves the services and the profile together, and says while changes are unsaved', async () => {
+    const user = userEvent.setup();
+    api.PUT.mockResolvedValue({ data: {}, response: new Response(null, { status: 200 }) });
+    const option = (serviceId: string, nameAr: string, assigned: boolean) => ({
+      serviceId,
+      nameAr,
+      nameEn: null,
+      price: 60,
+      currency: 'SAR',
+      durationMinutes: 30,
+      isActive: true,
+      assigned,
+      ownDurationMinutes: null,
+    });
+    renderWithIntl(
+      <main>
+        <SaveGroup testId="barber-save">
+          <ProfessionalServicesForm
+            scope="shop"
+            canAssign
+            data={{ professionalId: 'pro-1', shopId: 'shop-1', services: [option('cut', 'حلاقة', true)] }}
+          />
+          <EditProfessionalForm
+            scope="shop"
+            professional={{
+              id: 'pro-1',
+              slug: 'saad',
+              nameAr: 'سعد',
+              nameEn: 'Saad',
+              specialtyAr: null,
+              specialtyEn: null,
+              bioAr: null,
+              bioEn: null,
+              version: 7,
+              languages: ['ar'],
+            }}
+          />
+        </SaveGroup>
+      </main>,
+    );
+
+    // No button per form: «حفظ الإسناد» and «حفظ الملف» are gone, and nothing is unsaved yet.
+    expect(screen.queryByRole('button', { name: 'حفظ الإسناد' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'حفظ الملف' })).not.toBeInTheDocument();
+    const save = screen.getByRole('button', { name: 'حفظ التغييرات' });
+    expect(save).toBeDisabled();
+
+    // The client’s test: tick Turkish, change a length, then save once.
+    await user.click(screen.getByRole('checkbox', { name: 'التركية' }));
+    await user.selectOptions(screen.getByLabelText('مدة «حلاقة» عند هذا الحلاق'), '45');
+    expect(screen.getByText('عندك تعديلات ما انحفظت')).toBeInTheDocument();
+    await expectNoAxeViolations();
+    await user.click(save);
+
+    await waitFor(() => expect(api.PUT).toHaveBeenCalledTimes(2));
+    const calls = api.PUT.mock.calls.map(([path, init]) => [path, init.body]);
+    expect(calls[0]).toEqual([
+      '/api/v1/shop/professionals/{professionalId}/services',
+      { serviceIds: null, services: [{ serviceId: 'cut', durationMinutes: 45 }] },
+    ]);
+    expect(calls[1]![0]).toBe('/api/v1/shop/professionals/{professionalId}');
+    expect(calls[1]![1]).toMatchObject({ languages: ['ar', 'tr'], version: 7 });
+    expect(await screen.findByText('حُفظت التغييرات.')).toBeInTheDocument();
+    expect(screen.queryByText('عندك تعديلات ما انحفظت')).not.toBeInTheDocument();
   });
 });

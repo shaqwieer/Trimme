@@ -56,13 +56,13 @@ internal sealed class CustomerContactReader(TrimmeDbContext db, IPersonalDataPro
     {
         var row = await db.Set<ApplicationUser>().AsNoTracking()
             .Where(u => u.Id == customerId && u.UserType == UserType.Customer)
-            .Select(u => new { u.Id, u.DisplayName, u.ProtectedPhone, u.PreferredLocale, u.DisabledAt })
+            .Select(u => new { u.Id, u.DisplayName, u.ProtectedPhone, u.PreferredLocale, u.DisabledAt, u.WinBackMessages })
             .SingleOrDefaultAsync(cancellationToken);
         return row is null
             ? null
             : new CustomerContact(
                 row.Id, row.DisplayName, row.ProtectedPhone is null ? null : protector.Unprotect(row.ProtectedPhone, PersonalDataPurposes.MobileNumber),
-                row.PreferredLocale, row.DisabledAt == null);
+                row.PreferredLocale, row.DisabledAt == null, row.WinBackMessages);
     }
 }
 

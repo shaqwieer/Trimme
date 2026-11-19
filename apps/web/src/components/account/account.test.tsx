@@ -7,6 +7,7 @@ import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { DeleteAccount } from './DeleteAccount';
 import { ProfileForm } from './ProfileForm';
+import { WinBackSetting } from './WinBackSetting';
 
 const api = vi.hoisted(() => ({ GET: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }));
@@ -131,6 +132,27 @@ describe('DeleteAccount (D-144)', () => {
 
     expect(await screen.findByText(/لديك مواعيد قادمة/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'عرض مواعيدي' })).toHaveAttribute('href', '/account/bookings');
+  });
+});
+
+describe('WinBackSetting (D-155)', () => {
+  it('turns the shops’ «ندعوك للعودة» messages off at once, and back on after a failure', async () => {
+    const user = userEvent.setup();
+    api.PUT.mockResolvedValueOnce(ok({}));
+    renderWithIntl(<WinBackSetting enabled />);
+    const toggle = screen.getByRole('switch', { name: 'أبغى رسائل الدعوة من المحلات' });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(api.PUT).toHaveBeenCalledWith('/api/v1/me/win-back', { body: { enabled: false } }),
+    );
+    expect(await screen.findByText('ما بتصلك رسائل دعوة.')).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+    api.PUT.mockResolvedValueOnce(fail(500, 'server.unexpected'));
+    await user.click(toggle);
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
+    expect(api.PUT).toHaveBeenCalledTimes(2);
   });
 });
 

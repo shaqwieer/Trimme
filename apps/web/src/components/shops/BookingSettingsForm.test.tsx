@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { expectNoAxeViolations } from '@/test/axe';
@@ -10,7 +10,6 @@ const api = vi.hoisted(() => ({ PUT: vi.fn() }));
 vi.mock('@/lib/api/client', () => ({ browserApi: api }));
 
 const SETTINGS = {
-  requireManualConfirmation: false,
   slotStepMinutes: 15,
   minLeadTimeMinutes: 60,
   bookingHorizonDays: 14,
@@ -34,11 +33,15 @@ describe('a shop’s own booking settings (D-149, the owner’s item 5)', () => 
     expect(screen.getByLabelText(/تبدأ المواعيد/)).toHaveAccessibleDescription(/وليس مدة الخدمة/);
     expect(screen.getByLabelText(/أبعد يوم يُحجز/)).toHaveValue('14');
     expect(screen.getByRole('option', { name: '١٤ يوماً' })).toBeInTheDocument();
-    expect(screen.getByText(/تُؤكَّد الحجوزات من الإنترنت تلقائياً/)).toBeInTheDocument();
+    // Always confirmed (D-155): no switch; whole hours as hours.
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    const notice = within(screen.getByLabelText(/أقل مهلة قبل الموعد/));
+    expect(notice.getByRole('option', { name: 'ساعة واحدة' })).toBeInTheDocument();
+    expect(notice.getByRole('option', { name: '٦ ساعات' })).toBeInTheDocument();
+    expect(notice.getByRole('option', { name: '٢٤ ساعة' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'كل ٥ دقائق' })).toBeInTheDocument();
     await expectNoAxeViolations();
 
-    await user.click(screen.getByRole('switch', { name: 'أؤكد الحجوزات بنفسي' }));
-    expect(screen.getByText(/«بانتظار التأكيد»/)).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText(/تبدأ المواعيد/), '30');
     await user.selectOptions(screen.getByLabelText(/وقت التنظيف/), '10');
     await user.click(screen.getByRole('button', { name: 'حفظ إعدادات الحجز' }));
@@ -46,7 +49,6 @@ describe('a shop’s own booking settings (D-149, the owner’s item 5)', () => 
     await waitFor(() => expect(api.PUT).toHaveBeenCalled());
     expect(api.PUT).toHaveBeenCalledWith('/api/v1/shop/booking-settings', {
       body: {
-        requireManualConfirmation: true,
         slotStepMinutes: 30,
         minLeadTimeMinutes: 60,
         bookingHorizonDays: 14,

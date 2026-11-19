@@ -33,12 +33,6 @@ public sealed record RescheduleBookingRequest(DateTimeOffset StartsAt, Guid? Pro
 
 public sealed record CancelBookingRequest(string? Reason, uint Version);
 
-/// <summary>The booking's version, to answer a postponement offer (D-147).</summary>
-public sealed record AnswerPostponementRequest(uint Version);
-
-/// <summary>The new time the barber offers the customer, with the booking's version (D-147).</summary>
-public sealed record PostponeBookingRequest(DateTimeOffset StartsAt, uint Version);
-
 /// <summary>
 /// A booking the shop records (D-035, D-147). <c>Channel</c> <c>WalkIn</c> (the default): without <c>StartsAt</c> it
 /// starts now and is marked Arrived; otherwise it is Confirmed. <c>Phone</c>: an appointment at <c>StartsAt</c>, Confirmed.
@@ -119,7 +113,7 @@ internal static class BookingEndpoints
                     : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds, r.LoyaltyRewardId, r.UseLoyaltyReward), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking).WithTags("Customer: bookings")
             .WithName("CreateBooking")
-            .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop's minimum notice (D-152).")
+            .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). Confirmed at once (D-155). 409 booking.active_booking_exists when the customer already has an upcoming booking at any shop (D-155: cancel it first); 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop's minimum notice (D-152).")
             .Produces<CustomerBookingResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
@@ -129,23 +123,17 @@ internal static class BookingEndpoints
             .RequireUserType(UserTypes.Customer)
             .WithName("ListMyBookings").WithSummary("The customer's own bookings: upcoming (soonest first) or past (latest first).")
             .Produces<PagedResponse<CustomerBookingResponse>>();
+        mine.MapGet("/active", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetMyActiveBookingQuery(), ct) is { } active ? Results.Ok(active) : Results.NoContent())
+            .RequireUserType(UserTypes.Customer)
+            .WithName("GetMyActiveBooking")
+            .WithSummary("The customer's upcoming booking at any shop, which stops a new one (D-155): cancel it first. 204 when there is none; a booking past its end does not count.")
+            .Produces<CustomerActiveBookingResponse>().Produces(StatusCodes.Status204NoContent);
         mine.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetMyBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequireUserType(UserTypes.Customer)
             .WithName("GetMyBooking").WithSummary("One of the customer's own bookings with the actions still allowed; another customer's id is 404.")
             .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound);
-        foreach (var (action, accept) in new[] { ("accept", true), ("decline", false) })
-        {
-            mine.MapPost($"/{{bookingId:guid}}/postponement/{action}", async (Guid bookingId, AnswerPostponementRequest r, IDispatcher d, CancellationToken ct) =>
-                    (await d.Send(new AnswerPostponementCommand(bookingId, accept, r.Version), ct)).ToHttpResult())
-                .RequireUserType(UserTypes.Customer)
-                .WithName(accept ? "AcceptPostponement" : "DeclinePostponement")
-                .WithSummary(accept
-                    ? "Takes the new time the barber offered (D-147): the booking moves there. 409 booking.postponement_gone once it lapsed."
-                    : "Declines the new time the barber offered (D-147): the booking stays and the held time is free.")
-                .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
-        }
-
         mine.MapPost("/{bookingId:guid}/cancel", async (Guid bookingId, CancelBookingRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CancelMyBookingCommand(bookingId, r.Reason, r.Version), ct)).ToHttpResult())
             .RequireUserType(UserTypes.Customer)
@@ -262,14 +250,7 @@ internal static class BookingEndpoints
                     : Changed(http, await d.Send(new ShopRescheduleBookingCommand(bookingId, r.StartsAt, r.Version, key!), ct)))
             .RequirePermission(ShopReschedule)
             .WithName("ShopRescheduleBooking")
-            .WithSummary("Gives the booking a new time with the same barber; the customer is told. Idempotency-Key required; 409 booking.slot_unavailable when taken.")
-            .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
-        group.MapPost("/{bookingId:guid}/postpone", async (Guid bookingId, PostponeBookingRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new PostponeBookingCommand(bookingId, r.StartsAt, r.Version), ct)).ToHttpResult())
-            .RequirePermission(ShopReschedule)
-            .WithName("PostponeBooking")
-            .WithSummary("Offers a customer's online booking a new time with the same barber (D-147); it is held for the customer until an hour before the start. 409 booking.slot_unavailable when the time is taken.")
+            .WithSummary("Gives the booking a new time with the same barber at once, an online customer's too (D-155): the customer is told and may cancel or change it. Once a day per customer at a shop for an online booking: 409 booking.changed_today. Idempotency-Key required; 409 booking.slot_unavailable when taken.")
             .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapGet("/{bookingId:guid}/professional-options", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
@@ -310,7 +291,7 @@ internal static class BookingEndpoints
                 (await d.Send(new GetShopReportQuery(from, to), ct)).ToHttpResult())
             .RequirePermission(ShopInsights).WithTags("Shop: bookings")
             .WithName("GetShopReport")
-            .WithSummary("The owner's report for shop-local dates from..to (at most 31): per barber and shop, moves, postponements, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).")
+            .WithSummary("The owner's report for shop-local dates from..to (at most 31): per barber and shop, moves, new times from the shop, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).")
             .Produces<ShopReportResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         api.MapGet("/shop/dashboard/overview", async (DateOnly? date, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new GetShopOverviewQuery(date), ct)).ToHttpResult())

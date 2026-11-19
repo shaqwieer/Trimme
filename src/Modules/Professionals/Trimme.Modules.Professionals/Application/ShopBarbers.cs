@@ -4,6 +4,7 @@ using Trimme.BuildingBlocks.Application.Auditing;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
+using Trimme.BuildingBlocks.Application.Qr;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Media;
 using Trimme.BuildingBlocks.Domain.Primitives;
@@ -162,6 +163,7 @@ internal sealed class CreateShopBarberHandler(
     ICurrentTenant tenant,
     ProfessionalSupport support,
     IBarberLoginSync logins,
+    IProfessionalQrCodes qrCodes,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<CreateShopBarberCommand, Result<ShopBarberCreatedResponse>>
 {
@@ -213,7 +215,11 @@ internal sealed class CreateShopBarberHandler(
         db.Add(contact);
         audit.Record(new AuditRecord(
             "professional.created", nameof(Professional), id.ToString(), shopId,
-            $"Added by the shop; WhatsApp set, notifications {(contact.NotificationsEnabled ? "on" : "off")}"));
+            $"Added by the shop; WhatsApp set, notifications {(contact.NotificationsEnabled ? "on" : "off")}",
+            SummaryArgs: AuditArgs.Of(("by", "shop"), ("whatsApp", true), ("notifications", contact.NotificationsEnabled))));
+
+        // Their own QR code at once (D-155, the client's 7-2-3).
+        await qrCodes.EnsureAsync(shopId, id, cancellationToken);
         if (await support.SaveAsync(cancellationToken) is { IsFailure: true } saved)
         {
             return saved.Error;
@@ -274,7 +280,8 @@ internal sealed class UpdateShopBarberHandler(TrimmeDbContext db, ProfessionalSu
         db.Entry(professional).Property(p => p.Version).OriginalValue = command.Version;
         professional.UpdateProfile(ProfessionalMapping.Profile(command), clock.GetUtcNow());
         await logins.NameChangedAsync(professional.Id, professional.NameAr, cancellationToken);
-        audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited by the shop"));
+        audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited by the shop",
+            SummaryArgs: AuditArgs.Of(("by", "shop"))));
         await db.SaveChangesAsync(cancellationToken);
         return await ShopBarberMapping.ResponseAsync(db, professional, cancellationToken);
     }
@@ -335,7 +342,8 @@ internal sealed class SetShopBarberWhatsAppHandler(
         // The audit trail never holds the number, only what happened to it.
         audit.Record(new AuditRecord(
             "professional.whatsapp_changed", nameof(Professional), professional.Id.ToString(), professional.ShopId,
-            $"By the shop: WhatsApp {what}; notifications {(contact.NotificationsEnabled ? "on" : "off")}"));
+            $"By the shop: WhatsApp {what}; notifications {(contact.NotificationsEnabled ? "on" : "off")}",
+            SummaryArgs: AuditArgs.Of(("by", "shop"), ("number", what.Replace("number ", string.Empty, StringComparison.Ordinal)), ("notifications", contact.NotificationsEnabled))));
         if (await support.SaveAsync(cancellationToken) is { IsFailure: true } saved)
         {
             return saved.Error;
@@ -349,6 +357,7 @@ internal sealed class ChangeShopBarberStatusHandler(
     TrimmeDbContext db,
     ProfessionalSupport support,
     IBarberLoginSync logins,
+    IProfessionalQrCodes qrCodes,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<ChangeShopBarberStatusCommand, Result<ShopBarberResponse>>
 {
@@ -375,7 +384,14 @@ internal sealed class ChangeShopBarberStatusHandler(
 
         audit.Record(new AuditRecord(
             command.Enable ? "professional.enabled" : "professional.disabled",
-            nameof(Professional), professional.Id.ToString(), professional.ShopId, $"By the shop; now {professional.Status}"));
+            nameof(Professional), professional.Id.ToString(), professional.ShopId, $"By the shop; now {professional.Status}",
+            SummaryArgs: AuditArgs.Of(("by", "shop"), ("status", professional.Status))));
+        if (command.Enable)
+        {
+            // Turned on again without a code: one now (D-155).
+            await qrCodes.EnsureAsync(professional.ShopId, professional.Id, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return await ShopBarberMapping.ResponseAsync(db, professional, cancellationToken);
     }
@@ -415,7 +431,8 @@ internal sealed class ReplaceShopBarberAvatarHandler(
 
         audit.Record(new AuditRecord(
             "professional.avatar_changed", nameof(Professional), professional.Id.ToString(), professional.ShopId,
-            command.Content is null ? "Avatar removed by the shop" : "Avatar replaced by the shop"));
+            command.Content is null ? "Avatar removed by the shop" : "Avatar replaced by the shop",
+            SummaryArgs: AuditArgs.Of(("by", "shop"), ("change", command.Content is null ? "removed" : "replaced"))));
         await db.SaveChangesAsync(cancellationToken);
         return await ShopBarberMapping.ResponseAsync(db, professional, cancellationToken);
     }

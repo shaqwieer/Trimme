@@ -10,22 +10,40 @@ import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk } from '@/lib/api/errors';
+import type { components } from '@/lib/api/schema';
 import { cn } from '@/lib/cn';
 import { type AppLocale, formatDate, formatTime } from '@/lib/i18n/format';
+import { zonedMidnight } from '@/lib/shop/board';
 import { useScheduleErrors } from './errors';
 
+export type OnlineBookingState = components['schemas']['OnlineBookingStateResponse'];
+
+/** Whose pause this is: the owner's own shop, or a shop on the admin's page (D-155). */
+export type PauseScope = { kind: 'shop' } | { kind: 'admin'; shopId: string };
+
+/** A `datetime-local` value (YYYY-MM-DDTHH:mm) read on the shop's clock, as an instant. */
+function shopInstant(value: string, timeZone: string): string {
+  const [date, time] = value.split('T') as [string, string];
+  const [hours, minutes] = time.split(':').map(Number) as [number, number];
+  return new Date(zonedMidnight(date, timeZone) + (hours * 60 + minutes) * 60_000).toISOString();
+}
+
 /**
- * s-hours pause card (2506–2529): live (white) or paused (amber). Pausing asks for confirmation with an optional note
- * (the design has none; a mistaken tap would hide the shop). Confirmed appointments are never cancelled (D-013).
+ * s-hours pause card (2506–2529): live (white) or paused (amber). D-155 (the client's 1-1): the owner's and the admin's,
+ * never a barber's. Pausing asks for a reason customers see and an optional return time, when booking opens again by
+ * itself. The shop stays listed with «متوقف مؤقتاً»; confirmed appointments are never cancelled — the shop is told how
+ * many fall in the pause and handles them from its day screen.
  */
 export function PauseCard({
-  paused,
-  pausedAt,
+  state,
+  timeZone,
   canPause,
+  scope = { kind: 'shop' },
 }: {
-  paused: boolean;
-  pausedAt: string | null;
+  state: OnlineBookingState;
+  timeZone: string;
   canPause: boolean;
+  scope?: PauseScope;
 }) {
   const t = useTranslations('shopSchedule.pause');
   const locale = useLocale() as AppLocale;
@@ -33,22 +51,42 @@ export function PauseCard({
   const [done, setDone] = useState<string>();
   const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState('');
+  const [resumesAt, setResumesAt] = useState('');
   const [pending, setPending] = useState(false);
   const { failure, fail, clear } = useScheduleErrors();
+  const { paused, pausedAt } = state;
+  const when = (instant: string) => ({
+    date: formatDate(instant, locale, { timeZone }),
+    time: formatTime(instant, locale, timeZone),
+  });
 
   const change = async (pause: boolean) => {
     clear();
+    const until = resumesAt ? shopInstant(resumesAt, timeZone) : null;
+    if (pause && until && Date.parse(until) <= Date.now()) {
+      fail(t('resumesInPast'));
+      return;
+    }
     setPending(true);
     try {
-      if (pause)
+      const body = { reason: reason.trim() || null, resumesAt: until };
+      if (scope.kind === 'admin') {
+        const path = { params: { path: { shopId: scope.shopId } } };
         ensureOk(
-          await browserApi.POST('/api/v1/shop/online-booking/pause', {
-            body: { reason: reason.trim() || null },
-          }),
+          pause
+            ? await browserApi.POST('/api/v1/admin/shops/{shopId}/online-booking/pause', { ...path, body })
+            : await browserApi.POST('/api/v1/admin/shops/{shopId}/online-booking/resume', path),
         );
-      else ensureOk(await browserApi.POST('/api/v1/shop/online-booking/resume'));
+      } else {
+        ensureOk(
+          pause
+            ? await browserApi.POST('/api/v1/shop/online-booking/pause', { body })
+            : await browserApi.POST('/api/v1/shop/online-booking/resume'),
+        );
+      }
       setConfirming(false);
       setReason('');
+      setResumesAt('');
       setDone(pause ? t('pausedToast') : t('resumedToast'));
       router.refresh();
     } catch (error) {
@@ -85,14 +123,25 @@ export function PauseCard({
           <p className="text-caption leading-[1.8] text-text-secondary">
             {paused ? t('pausedBody') : t('liveBody')}
           </p>
-          {paused && pausedAt && (
-            <p className="text-helper text-text-secondary">
-              {t('since', { date: formatDate(pausedAt, locale), time: formatTime(pausedAt, locale) })}
+          {paused && state.reason && (
+            <p className="text-caption font-bold text-text-strong">
+              {t('reasonShown', { reason: state.reason })}
             </p>
+          )}
+          {paused && pausedAt && (
+            <p className="text-helper text-text-secondary">{t('since', when(pausedAt))}</p>
+          )}
+          {paused && (
+            <p className="text-helper text-text-secondary" data-testid="pause-resumes">
+              {state.resumesAt ? t('resumesAt', when(state.resumesAt)) : t('noReturnTime')}
+            </p>
+          )}
+          {paused && state.byAdmin && scope.kind === 'shop' && (
+            <p className="text-helper font-bold text-text-secondary">{t('byAdmin')}</p>
           )}
         </div>
       </div>
-      {failure && <InlineAlert tone="danger" title={failure} />}
+      {failure && !confirming && <InlineAlert tone="danger" title={failure} />}
       {done && <InlineAlert tone={paused ? 'info' : 'success'} title={done} />}
       {canPause &&
         (paused ? (
@@ -115,10 +164,20 @@ export function PauseCard({
       >
         <TextField
           label={t('reason')}
+          helper={t('reasonHelper')}
           optional
           maxLength={300}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
+        />
+        <TextField
+          label={t('resumesAtLabel')}
+          helper={t('resumesAtHelper')}
+          type="datetime-local"
+          optional
+          dir="ltr"
+          value={resumesAt}
+          onChange={(e) => setResumesAt(e.target.value)}
         />
         {failure && <InlineAlert tone="danger" title={failure} />}
         <div className="flex flex-wrap gap-2.5">

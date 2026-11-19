@@ -194,23 +194,23 @@ public sealed class DiscoveryTests(PostgresFixture postgres)
         top.EnumerateArray().Select(p => p.GetProperty("slug").GetString()).ShouldBe(["faisal"], "only professionals with stored ratings");
         top[0].GetProperty("shopSlug").GetString().ShouldBe(d.SlugA);
 
-        // Paused (D-013) by one of its barbers (D-147): the page stays, discovery hides it, the status says why.
-        using (var salem = await BarberLoginTests.BarberAsync(d.W.Factory, d.Admin, d.OwnerB, d.W.ProB, "+966512386002", ct))
-        {
-            await OkAsync(salem.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "صيانة" }, ct), ct);
-        }
+        // Paused (D-013) by its owner (D-155, no longer a barber): the page stays and stays listed (D-155, «متوقف مؤقتاً»);
+        // the status says why, with the shop's reason, and it books nothing.
+        await OkAsync(d.OwnerB.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "صيانة" }, ct), ct);
 
         var paused = await OkAsync(visitor.GetAsync($"/api/v1/public/shops/{d.SlugB}/status", ct), ct);
         paused.GetProperty("acceptsOnlineBookings").GetBoolean().ShouldBeFalse();
         paused.GetProperty("blockedReason").GetString().ShouldBe("shop.paused");
-        (await OkAsync(visitor.GetAsync($"/api/v1/public/shops/{d.SlugB}", ct), ct)).GetProperty("listedInDiscovery").GetBoolean().ShouldBeFalse();
-        Slugs(await SearchAsync(visitor, Origin, ct)).ShouldNotContain(d.SlugB);
+        paused.GetProperty("pauseReason").GetString().ShouldBe("صيانة");
+        paused.GetProperty("pausedUntil").ValueKind.ShouldBe(JsonValueKind.Null);
+        (await OkAsync(visitor.GetAsync($"/api/v1/public/shops/{d.SlugB}", ct), ct)).GetProperty("listedInDiscovery").GetBoolean().ShouldBeTrue();
+        Slugs(await SearchAsync(visitor, Origin, ct)).ShouldContain(d.SlugB);
         (await OkAsync(visitor.GetAsync($"/api/v1/public/sitemap", ct), ct)).GetProperty("shops").EnumerateArray()
-            .Select(s => s.GetProperty("slug").GetString()).ShouldBe([d.SlugA, d.SlugC, d.SlugFar], ignoreOrder: true);
+            .Select(s => s.GetProperty("slug").GetString()).ShouldBe([d.SlugA, d.SlugB, d.SlugC, d.SlugFar], ignoreOrder: true);
 
         // Stats and areas count listed shops only.
         var stats = await OkAsync(visitor.GetAsync("/api/v1/public/stats", ct), ct);
-        stats.GetProperty("shopCount").GetInt32().ShouldBe(3, "A and C in Riyadh and the far shop");
+        stats.GetProperty("shopCount").GetInt32().ShouldBe(4, "A, the paused B and C in Riyadh, and the far shop");
         stats.GetProperty("reviewCount").GetInt32().ShouldBe(1);
         var areas = await OkAsync(visitor.GetAsync("/api/v1/public/areas", ct), ct);
         areas.GetProperty("areas").EnumerateArray().Select(x => x.GetProperty("district").GetString()).ShouldContain("الملقا");

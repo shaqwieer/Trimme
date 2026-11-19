@@ -201,7 +201,9 @@ internal sealed class ActivateTemplateVersionHandler(TrimmeDbContext db, ICurren
 
         audit.Record(new AuditRecord(
             "whatsapp_template.activated", "WhatsAppTemplate", template.Id.Value.ToString(),
-            Summary: $"{template.Event} · {template.Audience} · {template.Locale}: v{previous?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-"} → v{activated.Value.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)}"));
+            Summary: $"{template.Event} · {template.Audience} · {template.Locale}: v{previous?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-"} → v{activated.Value.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+            SummaryArgs: AuditArgs.Of(
+                ("event", template.Event), ("audience", template.Audience), ("locale", template.Locale), ("from", previous), ("to", activated.Value.Number))));
         await db.SaveChangesAsync(cancellationToken);
         return await mapper.MapAsync(template, cancellationToken);
     }
@@ -292,7 +294,8 @@ internal sealed class TestSendTemplateHandler(
         db.Add(dispatch);
         audit.Record(new AuditRecord(
             "whatsapp_template.test_sent", "WhatsAppTemplate", template.Id.Value.ToString(),
-            Summary: $"Test send of v{version.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)} ({template.Event} · {template.Audience} · {template.Locale})"));
+            Summary: $"Test send of v{version.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)} ({template.Event} · {template.Audience} · {template.Locale})",
+            SummaryArgs: AuditArgs.Of(("version", version.Number), ("event", template.Event), ("audience", template.Audience), ("locale", template.Locale))));
         await db.SaveChangesAsync(cancellationToken);
 
         // One attempt now; a test send is not retried automatically.

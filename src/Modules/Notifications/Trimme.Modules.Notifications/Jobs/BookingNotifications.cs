@@ -34,8 +34,7 @@ internal sealed record BookingOutboxEvent(
     DateTimeOffset? PreviousStartsAt,
     string ActorType,
     Guid? PreviousProfessionalId = null,
-    Guid? ActorId = null,
-    DateTimeOffset? OfferedStartsAt = null)
+    Guid? ActorId = null)
 {
     /// <summary>The barber the booking left, when this change gave it to another one (D-145).</summary>
     public Guid? LeftProfessionalId => PreviousProfessionalId is { } previous && previous != ProfessionalId ? previous : null;
@@ -138,6 +137,7 @@ internal sealed partial class DispatchFactory(
 
             return IsShopRecorded(booking.Channel)
                    && @event is MessageEvent.BookingConfirmed or MessageEvent.BookingRescheduled or MessageEvent.BookingCancelled
+                       or MessageEvent.BookingCancelledByShop
                    && await walkIns.FindMobileAsync(booking.Id, cancellationToken) is { } walkIn
                 ? new Recipient(walkIn, platform.DefaultLocale, null, null)
                 : null;
@@ -168,7 +168,8 @@ internal sealed partial class DispatchFactory(
 /// Turns booking outbox events into WhatsApp dispatches, in-app notices and reminder jobs (spec §16, §17; R-NTF-03/04/06/09;
 /// D-109…D-112). Runs once per event (the processor's processed-message record) and writes idempotently.
 /// <list type="bullet">
-/// <item>Customers: confirmed, pending request, rescheduled, cancelled, given to another barber (D-145). Professionals:
+/// <item>Customers: confirmed, rescheduled, cancelled (by themselves, or by the shop with its reason, D-155), given to
+/// another barber (D-145). Professionals:
 /// confirmed (their new-booking alert), rescheduled while confirmed, and cancelled only if they had been told about the
 /// booking. When a change gives the booking to another barber, the barber it left is told it is cancelled (if they had been
 /// told about it) and the barber it went to that it is confirmed (if it is).</item>
@@ -177,9 +178,10 @@ internal sealed partial class DispatchFactory(
 /// <item>Reminders follow the booking's current state: a confirmed booking has one per audience at start − offset, a
 /// moved one gets new jobs and the old ones are deleted, a cancelled one has none. A reminder whose time already passed is
 /// not scheduled.</item>
-/// <item>In-app: the shop (the owner's inbox) hears about what customers, admins and barbers did; the customer about what
-/// the shop or admins did; a barber with a login (D-145) about their own bookings, the one it left included, unless they
-/// made the change.</item>
+/// <item>In-app: the shop (the owner's inbox) hears about what customers, admins and barbers did; a customer with an
+/// account gets a copy of every message about their booking in their bell (D-155, «كل رسالة تنحفظ»), their own changes
+/// included; a barber with a login (D-145) about their own bookings, the one it left included, unless they made the
+/// change.</item>
 /// </list>
 /// Nothing exists for a rolled-back change or seed data: both write no outbox message.
 /// </summary>
@@ -204,8 +206,7 @@ internal sealed class BookingNotificationsConsumer(
     public string Name => ConsumerName;
 
     public bool Handles(string messageType) =>
-        messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed" or "booking.professional_changed"
-            or "booking.postponement_offered" or "booking.postponement_declined";
+        messageType is "booking.created" or "booking.rescheduled" or "booking.cancelled" or "booking.status_changed" or "booking.professional_changed";
 
     public async Task HandleAsync(OutboxEnvelope message, OutboxConsumerContext context, CancellationToken cancellationToken)
     {
@@ -272,9 +273,6 @@ internal sealed class BookingNotificationsConsumer(
     {
         switch (type)
         {
-            case "booking.created" when change.Status == "Pending":
-                yield return (MessageEvent.BookingPending, MessageAudience.Customer, false);
-                break;
             case "booking.created" when change.Status is "Confirmed" or "Arrived":
             case "booking.status_changed" when change.Status == "Confirmed":
                 yield return (MessageEvent.BookingConfirmed, MessageAudience.Customer, false);
@@ -299,7 +297,9 @@ internal sealed class BookingNotificationsConsumer(
 
                 break;
             case "booking.cancelled":
-                yield return (MessageEvent.BookingCancelled, MessageAudience.Customer, false);
+                // The shop's (or the platform's) cancellation apologises and gives its reason (D-155); the customer's own
+                // keeps the plain «cancelled». The barber's message is the same either way.
+                yield return (change.Status == "CancelledByShop" ? MessageEvent.BookingCancelledByShop : MessageEvent.BookingCancelled, MessageAudience.Customer, false);
                 yield return (MessageEvent.BookingCancelled, MessageAudience.Professional, false);
                 break;
         }
@@ -328,13 +328,11 @@ internal sealed class BookingNotificationsConsumer(
     {
         var kind = message.Type switch
         {
-            "booking.created" => change.Status == "Pending" ? NoticeKinds.BookingPending : NoticeKinds.BookingCreated,
+            "booking.created" => NoticeKinds.BookingCreated,
             "booking.status_changed" when change.Status == "Confirmed" => NoticeKinds.BookingConfirmed,
             "booking.rescheduled" => NoticeKinds.BookingRescheduled,
             "booking.cancelled" => NoticeKinds.BookingCancelled,
             "booking.professional_changed" => NoticeKinds.BookingProfessionalChanged,
-            "booking.postponement_offered" => NoticeKinds.BookingPostponementOffered,
-            "booking.postponement_declined" => NoticeKinds.BookingPostponementDeclined,
             _ => null,
         };
         if (kind is null)
@@ -356,11 +354,6 @@ internal sealed class BookingNotificationsConsumer(
         if (change.PreviousStartsAt is { } previous)
         {
             parameters["previousStartsAt"] = previous.ToString("O", CultureInfo.InvariantCulture);
-        }
-
-        if (change.OfferedStartsAt is { } offered)
-        {
-            parameters["offeredStartsAt"] = offered.ToString("O", CultureInfo.InvariantCulture);
         }
 
         var left = change.LeftProfessionalId is { } leftId ? new ProfessionalId(leftId) : (ProfessionalId?)null;
@@ -385,7 +378,7 @@ internal sealed class BookingNotificationsConsumer(
 
         // The shop's own actions are not echoed back to its inbox (the owner's), but a barber's are (D-145): the owner hears
         // when a barber confirms, changes, moves or cancels a customer's booking. Walk-ins are the shop's own.
-        // Any barber of the shop counts, including one acting on a colleague's pending or red booking (D-147).
+        // Any barber of the shop counts, including one acting on a colleague's red booking (D-147).
         var byBarber = change.ActorType == ShopActor && change.ActorId is { } actor
             && (barbers.Contains(actor) || await staff.IsBarberAsync(actor, cancellationToken));
         if ((change.ActorType != ShopActor || byBarber) && !DispatchFactory.IsShopRecorded(change.Channel))
@@ -394,15 +387,32 @@ internal sealed class BookingNotificationsConsumer(
             await center.NotifyShopAsync(booking.ShopId, new InAppNotice(kind, dedupe, forShop, booking.Id), cancellationToken);
         }
 
-        // The customer is told what the shop or the platform did (not what they did themselves).
-        if (booking.CustomerId is { } customerId && change.ActorType != "Customer" && kind != NoticeKinds.BookingCreated && kind != NoticeKinds.BookingPending)
+        // The customer's bell keeps a copy of every message about their booking (D-155, the client's «كل رسالة واتساب
+        // توصل الزبون تنحفظ نسخة منها في الجرس»), their own changes included, so the record is whole even if a WhatsApp is
+        // lost. Their own kinds (customer.*): a booking made confirmed reads «تم تأكيد حجزك»; the shop's cancellation
+        // carries its reason.
+        if (booking.CustomerId is { } customerId && CustomerKind(message.Type, change) is { } customerKind)
         {
             var forCustomer = new Dictionary<string, string>(parameters, StringComparer.Ordinal)
             {
                 ["shopNameAr"] = shop.NameAr,
                 ["shopNameEn"] = string.IsNullOrWhiteSpace(shop.NameEn) ? shop.NameAr : shop.NameEn,
+                ["shopSlug"] = shop.Slug,
             };
-            await center.NotifyUserAsync(customerId, new InAppNotice(kind, dedupe, forCustomer, booking.Id), cancellationToken);
+            if (customerKind == NoticeKinds.CustomerBookingCancelledByShop)
+            {
+                if (booking.CancellationReasonCode is { } code)
+                {
+                    forCustomer["reasonCode"] = code;
+                }
+
+                if (!string.IsNullOrWhiteSpace(booking.CancellationReason))
+                {
+                    forCustomer["reason"] = booking.CancellationReason;
+                }
+            }
+
+            await center.NotifyUserAsync(customerId, new InAppNotice(customerKind, dedupe, forCustomer, booking.Id), cancellationToken);
         }
 
         // A barber with a login hears about their own bookings, and the one it left about the move (D-145), unless they
@@ -414,6 +424,17 @@ internal sealed class BookingNotificationsConsumer(
             await center.NotifyUserAsync(barber, new InAppNotice(barberKind, dedupe, forBarber, booking.Id), cancellationToken);
         }
     }
+
+    /// <summary>The customer's copy of a booking message (D-155), or null when the event sends them none.</summary>
+    internal static string? CustomerKind(string type, BookingOutboxEvent change) => type switch
+    {
+        "booking.created" when change.Status is "Confirmed" or "Arrived" => NoticeKinds.CustomerBookingConfirmed,
+        "booking.status_changed" when change.Status == "Confirmed" => NoticeKinds.CustomerBookingConfirmed,
+        "booking.rescheduled" => NoticeKinds.CustomerBookingRescheduled,
+        "booking.cancelled" => change.Status == "CancelledByShop" ? NoticeKinds.CustomerBookingCancelledByShop : NoticeKinds.CustomerBookingCancelled,
+        "booking.professional_changed" => NoticeKinds.CustomerBookingProfessionalChanged,
+        _ => null,
+    };
 
     private async Task<(List<string> Cancelled, List<ReminderSchedule> Scheduled)> ReconcileRemindersAsync(
         NotifiableBooking booking, int offsetMinutes, DateTimeOffset now, CancellationToken cancellationToken)

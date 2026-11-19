@@ -22,7 +22,7 @@ namespace Trimme.Modules.Bookings.Application;
 /// <param name="LateCancellations">Cancelled in the last quarter hour before the start, or after it.</param>
 /// <param name="MovedIn">Bookings given to this barber by a colleague («نقل الحجز»).</param>
 /// <param name="MovedOut">Bookings this barber gave to a colleague.</param>
-/// <param name="Postponed">Times a booking got a new time from the shop: a walk-in or phone booking changed, or an offer the customer accepted.</param>
+/// <param name="Postponed">Times a booking got a new time from the shop (D-155: directly, an online booking's too; before, an offer the customer accepted).</param>
 /// <param name="ClosedLate">Closed more than a quarter hour after their booked end («انقفل متأخر»).</param>
 /// <param name="Unclosed">Still open past their booked end (red, D-151).</param>
 /// <param name="Breaks">The barber's own breaks on those days.</param>
@@ -30,6 +30,7 @@ namespace Trimme.Modules.Bookings.Application;
 /// <param name="AverageMinutes">Average actual length («وصل» to «انتهت الخدمة») of completed visits not closed late; null without any.</param>
 /// <param name="ShortVisits">Completed visits shorter than five minutes (perhaps finished without a service).</param>
 /// <param name="ExpectedIncome">Expected income of completed visits.</param>
+/// <param name="UnavailableDays">Days marked «غير متوفر اليوم» in the period (D-155, the client's 1-2).</param>
 public sealed record ReportCountsResponse(
     int Bookings,
     int Completed,
@@ -45,7 +46,8 @@ public sealed record ReportCountsResponse(
     int BreakMinutes,
     int? AverageMinutes,
     int ShortVisits,
-    decimal ExpectedIncome);
+    decimal ExpectedIncome,
+    int UnavailableDays = 0);
 
 public sealed record BarberReportResponse(Guid ProfessionalId, string NameAr, string NameEn, ReportCountsResponse Counts);
 
@@ -115,6 +117,7 @@ internal sealed class GetShopReportHandler(
     IShopDirectory shops,
     IProfessionalDirectory professionals,
     IBarberBreakReport breaks,
+    IUnavailableBarbers unavailable,
     ILoyaltyReportSource loyalty,
     TimeProvider clock) : IQueryHandler<GetShopReportQuery, Result<ShopReportResponse>>
 {
@@ -152,6 +155,7 @@ internal sealed class GetShopReportHandler(
         var terms = await loyalty.TermsAsync([.. bookings.Where(b => b.LoyaltyRewardId is not null).Select(b => b.LoyaltyRewardId!.Value)], cancellationToken);
         var visits = bookings.Select(b => Visit(b, now, terms)).ToList();
         var breakTotals = await breaks.TotalsAsync(shopId, query.From, query.To, cancellationToken);
+        var unavailableDays = await unavailable.DaysAsync(shopId, start, end, cancellationToken);
         var moves = Moves(bookings);
 
         var team = await professionals.ListByShopAsync(shopId, cancellationToken);
@@ -159,12 +163,12 @@ internal sealed class GetShopReportHandler(
             .Select(p => new BarberReportResponse(
                 p.Id.Value, p.NameAr, p.NameEn,
                 Counts(bookings.Where(b => b.ProfessionalId == p.Id), visits, now, moves.In.GetValueOrDefault(p.Id), moves.Out.GetValueOrDefault(p.Id),
-                    breakTotals.GetValueOrDefault(p.Id))))
+                    breakTotals.GetValueOrDefault(p.Id)) with { UnavailableDays = unavailableDays.GetValueOrDefault(p.Id) }))
             // A barber who is off now still shows when the period has something of theirs.
-            .Where(r => team.First(p => p.Id.Value == r.ProfessionalId).IsActive || r.Counts.Bookings > 0 || r.Counts.Breaks > 0)
+            .Where(r => team.First(p => p.Id.Value == r.ProfessionalId).IsActive || r.Counts.Bookings > 0 || r.Counts.Breaks > 0 || r.Counts.UnavailableDays > 0)
             .ToList();
         var shopCounts = Counts(bookings, visits, now, moves.In.Values.Sum(), moves.Out.Values.Sum(),
-            new BreakTotals(breakTotals.Values.Sum(t => t.Count), breakTotals.Values.Sum(t => t.Minutes)));
+            new BreakTotals(breakTotals.Values.Sum(t => t.Count), breakTotals.Values.Sum(t => t.Minutes))) with { UnavailableDays = unavailableDays.Values.Sum() };
 
         var activity = await loyalty.ActivityAsync(shopId, start, end, cancellationToken);
         LoyaltyReportResponse? loyaltyReport = null;

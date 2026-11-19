@@ -24,10 +24,13 @@ public static partial class Placeholders
     public const string BookingReference = "booking_reference";
     public const string ManageUrl = "manage_url";
 
+    /// <summary>Why the shop cancelled (D-155): the ready reason in the reader's language, or the text the shop typed.</summary>
+    public const string Reason = "reason";
+
     public static IReadOnlyList<string> All { get; } =
     [
         CustomerName, ProfessionalName, ShopName, ServiceName, BookingDate, BookingTime, TimeRemaining, Duration, Amount, Address,
-        BookingReference, ManageUrl,
+        BookingReference, ManageUrl, Reason,
     ];
 
     public static IReadOnlyList<string> For(MessageAudience audience) =>
@@ -190,6 +193,24 @@ public static class MessageFormat
 
         var arabic = ArabicDigits(number.Replace(',', '٬').Replace('.', '٫'));
         return $"{arabic} {(currency == "SAR" ? "ريال" : currency)}";
+    }
+
+    /// <summary>
+    /// The shop's cancellation reason as the customer reads it (D-155): a ready reason (D-151) in words, «سبب ثاني» or no
+    /// code as the text the shop typed, and a neutral phrase when there is neither.
+    /// </summary>
+    public static string CancellationReason(string? code, string? text, string locale)
+    {
+        var arabic = IsArabic(locale);
+        var typed = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        return code switch
+        {
+            "StaffUnwell" => arabic ? "الحلاق تعبان" : "the barber is unwell",
+            "Emergency" => arabic ? "ظرف طارئ عند الحلاق" : "an emergency at the shop",
+            "ShopClosed" => arabic ? "المحل مسكّر (كهرباء أو غيره)" : "the shop is closed (power or similar)",
+            _ when typed is not null => typed,
+            _ => arabic ? "ظرف عند المحل" : "a matter at the shop",
+        };
     }
 
     public static string ArabicDigits(string latin)

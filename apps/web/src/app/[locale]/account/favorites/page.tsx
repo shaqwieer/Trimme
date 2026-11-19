@@ -119,6 +119,15 @@ export default async function FavoritesPage({ params }: PageProps<'/[locale]/acc
                           )}
                         </p>
                       </div>
+                      {/* «احجز» beside each shop (D-155, the client's 5-4), as beside each barber. */}
+                      <ButtonLink
+                        href={bookHref(shop.slug, {})}
+                        variant="primary"
+                        size="sm"
+                        aria-label={t('bookAt', { name })}
+                      >
+                        {t('book')}
+                      </ButtonLink>
                       <FavoriteButton target={{ kind: 'shop', id: shop.id }} name={name} initiallySaved />
                     </li>
                   );

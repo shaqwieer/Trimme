@@ -100,7 +100,8 @@ internal sealed class SetShopBarberServicesHandler(TrimmeDbContext db, IProfessi
         }
 
         audit.Record(new AuditRecord(
-            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"By the shop: {replaced.Value} services assigned"));
+            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"By the shop: {replaced.Value} services assigned",
+            SummaryArgs: AuditArgs.Of(("by", "shop"), ("count", replaced.Value))));
         await db.SaveChangesAsync(cancellationToken);
         return await ProfessionalServicesReader.ReadAsync(db, professional, cancellationToken);
     }

@@ -60,7 +60,7 @@ internal static class LoyaltyEndpoints
                     : LoyaltyErrors.ShopNotFound().ToProblem())
             .AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("GetPublicShopLoyalty")
-            .WithSummary("Whether a published shop runs loyalty now (its paid add-on is in force) and its rules (D-149). No customer data.")
+            .WithSummary("Whether a published shop runs loyalty now (its plan includes it and its subscription is in force, D-155) and its rules (D-149). No customer data.")
             .Produces<PublicLoyaltyResponse>().ProducesProblem(StatusCodes.Status404NotFound);
 
         api.MapGet("/me/loyalty", async (IDispatcher d, CancellationToken ct) => TypedResults.Ok(await d.Send(new ListMyLoyaltyQuery(), ct)))
@@ -83,7 +83,7 @@ internal static class LoyaltyEndpoints
                     : Error.NotFound("shop.not_found", "The shop was not found.").ToProblem())
             .RequirePermission(ShopRead).WithTags("Shop: loyalty")
             .WithName("GetShopLoyalty")
-            .WithSummary("The shop's loyalty: whether the add-on is in force, the rules and (for the owner) how they are used.")
+            .WithSummary("The shop's loyalty: whether its plan includes it now (D-155), the rules and (for the owner) how they are used.")
             .Produces<ShopLoyaltyResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         api.MapPut("/shop/loyalty", async (SaveLoyaltyRulesRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new SaveShopLoyaltyRulesCommand(r.Rules, r.Version), ct)).ToHttpResult())
@@ -103,7 +103,7 @@ internal static class LoyaltyEndpoints
                 (await d.Send(new GetAdminShopLoyaltyQuery(shopId), ct)).ToHttpResult())
             .RequirePermission(AdminView)
             .WithName("AdminGetShopLoyalty")
-            .WithSummary("A shop's loyalty: whether the add-on is in force, the rules (null before they are set) and their use.")
+            .WithSummary("A shop's loyalty: whether its plan includes it now (D-155), the rules (null before they are set) and their use.")
             .Produces<AdminShopLoyaltyResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         admin.MapPut("/", async (Guid shopId, SaveLoyaltyRulesRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new SaveAdminShopLoyaltyCommand(shopId, r.Rules, r.Version), ct)).ToHttpResult())

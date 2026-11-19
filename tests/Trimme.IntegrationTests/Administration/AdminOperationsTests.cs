@@ -81,18 +81,21 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
 
         var (noura, _) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var (sara, _) = await NamedCustomerAsync(w.Factory, "سارة", ct);
-        async Task<Guid> Book(ApiSession who, Guid service, Guid professional, DateTimeOffset start, string? slug = null, Guid? package = null) =>
-            (await OkAsync(BookAsync(who, slug ?? w.SlugA, service, professional, start, ct, packageId: package), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var completed = await Book(noura, cut, w.Faisal, At(day1, 10));
-        var noShow = await Book(noura, w.Haircut, w.Faisal, At(day1, 11));
-        var cancelled = await Book(sara, w.Haircut, w.Omar, At(day1, 12), package: w.Package);
-        var lateNight = await Book(sara, w.Haircut, w.Omar, At(day1, 23, 30));
-        var afterMidnight = await Book(noura, w.Beard, w.Faisal, At(day2, 0, 30));
-        var tomorrowAfternoon = await Book(sara, cut, w.Omar, At(day2, 15));
-        var shopB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
-        await Book(noura, w.ServiceB, w.ProB, At(day1, 14), shopB);
+        var nouraId = (await OkAsync(noura.GetAsync("/api/v1/me", ct), ct)).GetProperty("id").GetGuid();
+        var saraId = (await OkAsync(sara.GetAsync("/api/v1/me", ct), ct)).GetProperty("id").GetGuid();
         noura.Dispose();
         sara.Dispose();
+
+        // Each customer holds several bookings at once here, which the API refuses since D-155: they are test data.
+        Task<Guid> Book(Guid customerId, string name, Guid service, Guid professional, DateTimeOffset start, Guid? shopId = null, Guid? package = null) =>
+            SeedOnlineBookingAsync(w, shopId ?? w.Shops.A.ShopId, customerId, name, service, professional, start, ct, package);
+        var completed = await Book(nouraId, "نورة", cut, w.Faisal, At(day1, 10));
+        var noShow = await Book(nouraId, "نورة", w.Haircut, w.Faisal, At(day1, 11));
+        var cancelled = await Book(saraId, "سارة", w.Haircut, w.Omar, At(day1, 12), package: w.Package);
+        var lateNight = await Book(saraId, "سارة", w.Haircut, w.Omar, At(day1, 23, 30));
+        var afterMidnight = await Book(nouraId, "نورة", w.Beard, w.Faisal, At(day2, 0, 30));
+        var tomorrowAfternoon = await Book(saraId, "سارة", cut, w.Omar, At(day2, 15));
+        await Book(nouraId, "نورة", w.ServiceB, w.ProB, At(day1, 14), w.Shops.B.ShopId);
 
         // 01:00 on day 2 in Riyadh: day 1's visits are over.
         clock.SetUtcNow(At(day2, 1).ToUniversalTime());
@@ -176,8 +179,14 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         nouraRow.GetProperty("lastBookingAt").GetDateTimeOffset().ShouldBe(At(day2, 0, 30));
         customers.ToString().ShouldNotContain("+966");
 
-        var saraId = (await OkAsync(support.GetAsync("/api/v1/admin/customers?search=سارة", ct), ct)).GetProperty("items")[0].GetProperty("id").GetGuid();
+        var saraRow = (await OkAsync(support.GetAsync("/api/v1/admin/customers?search=سارة", ct), ct)).GetProperty("items")[0];
+        saraRow.GetProperty("id").GetGuid().ShouldBe(saraId);
         var saraDetail = await OkAsync(support.GetAsync($"/api/v1/admin/customers/{saraId}", ct), ct);
+        // D-155 (the client's 8-3-5): the list shows «ما حضر» and the cancellations too, as the detail counts them.
+        saraRow.GetProperty("cancelled").GetInt32().ShouldBe(1);
+        saraRow.GetProperty("noShows").GetInt32().ShouldBe(saraDetail.GetProperty("noShows").GetInt32());
+        nouraRow.GetProperty("noShows").GetInt32().ShouldBe(
+            (await OkAsync(support.GetAsync($"/api/v1/admin/customers/{nouraRow.GetProperty("id").GetGuid()}", ct), ct)).GetProperty("noShows").GetInt32());
         saraDetail.GetProperty("bookings").GetInt32().ShouldBe(3);
         saraDetail.GetProperty("completed").GetInt32().ShouldBe(1);
         saraDetail.GetProperty("cancelled").GetInt32().ShouldBe(1);
@@ -513,6 +522,9 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         page1.GetProperty("items").EnumerateArray().Select(e => e.GetProperty("entityId").GetString()).ShouldBe([ids[2].ToString(), ids[1].ToString()]);
         page1.GetProperty("items")[0].GetProperty("actorName").GetString().ShouldBe("موظف اختبار");
         page1.GetProperty("items")[0].GetProperty("actorType").GetString().ShouldBe("PlatformAdmin");
+        // D-155 (the client's 8-6): the summary as a code and its arguments, which the web words in the reader's language.
+        page1.GetProperty("items")[0].GetProperty("summaryCode").GetString().ShouldBe("role.created");
+        page1.GetProperty("items")[0].GetProperty("summaryArgs").GetProperty("name").GetString().ShouldBe("Role three");
         var cursor = page1.GetProperty("nextCursor").GetString();
         cursor.ShouldNotBeNull();
         var page2 = await OkAsync(ops.GetAsync($"/api/v1/admin/audit?action=role.created&pageSize=2&cursor={cursor}", ct), ct);

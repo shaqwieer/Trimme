@@ -98,7 +98,7 @@ internal static class MetaTemplateCatalog
         {
             ["name"] = content.ProviderTemplateName,
             ["language"] = key.Locale,
-            ["category"] = "UTILITY",
+            ["category"] = WhatsAppTemplate.IsMarketing(key.Event) ? "MARKETING" : "UTILITY",
             ["parameter_format"] = "positional",
             ["components"] = components,
         };

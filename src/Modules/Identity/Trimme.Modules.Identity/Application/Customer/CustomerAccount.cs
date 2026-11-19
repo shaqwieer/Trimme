@@ -15,8 +15,10 @@ namespace Trimme.Modules.Identity.Application.Customer;
 /// <summary>
 /// "Personal info": the name shops see, the language, an optional email (for the customer's records only), and the
 /// number masked. <c>PhoneChangeAllowed</c> is false while sign-in codes are on (a new number would need a code).
+/// <c>WinBackMessages</c> (D-155): whether the shops may send «ندعوك للعودة» messages (on by default).
 /// </summary>
-public sealed record CustomerProfileResponse(string? DisplayName, string PreferredLocale, string? Email, string? PhoneMasked, bool PhoneChangeAllowed);
+public sealed record CustomerProfileResponse(
+    string? DisplayName, string PreferredLocale, string? Email, string? PhoneMasked, bool PhoneChangeAllowed, bool WinBackMessages = true);
 
 internal sealed record GetCustomerProfileQuery(Guid UserId) : IQuery<CustomerProfileResponse?>;
 
@@ -25,6 +27,19 @@ internal sealed record UpdateCustomerProfileCommand(Guid UserId, string DisplayN
     : ICommand<Result<CustomerProfileResponse>>;
 
 internal sealed record DeleteCustomerAccountCommand(Guid UserId) : ICommand<Result>;
+
+/// <summary>Turns the shops' win-back messages on or off for the customer (D-155).</summary>
+internal sealed record SetWinBackMessagesCommand(Guid UserId, bool Enabled) : ICommand<Result<CustomerProfileResponse>>;
+
+internal sealed class SetWinBackMessagesHandler(IAccountStore accounts, IPersonalDataProtector protector, IOptions<CustomerSignInOptions> signIn)
+    : ICommandHandler<SetWinBackMessagesCommand, Result<CustomerProfileResponse>>
+{
+    public async Task<Result<CustomerProfileResponse>> Handle(SetWinBackMessagesCommand command, CancellationToken cancellationToken) =>
+        await accounts.SetWinBackMessagesAsync(command.UserId, command.Enabled, cancellationToken)
+        && await accounts.FindCustomerProfileAsync(command.UserId, cancellationToken) is { } profile
+            ? CustomerProfiles.ToResponse(profile, protector, signIn.Value)
+            : IdentityErrors.UserNotFound();
+}
 
 internal sealed class UpdateCustomerProfileValidator : AbstractValidator<UpdateCustomerProfileCommand>
 {
@@ -102,7 +117,8 @@ internal sealed class UpdateCustomerProfileHandler(
         if (changed.Count > 0)
         {
             // Which fields changed, never their values (no personal data in the audit trail).
-            audit.Record(new AuditRecord("customer.contact_changed", "Customer", command.UserId.ToString(), Summary: $"Changed: {string.Join(", ", changed)}"));
+            audit.Record(new AuditRecord("customer.contact_changed", "Customer", command.UserId.ToString(), Summary: $"Changed: {string.Join(", ", changed)}",
+                SummaryArgs: AuditArgs.Of(("fields", AuditArgs.List(changed)))));
         }
 
         var saved = await accounts.UpdateCustomerProfileAsync(
@@ -167,5 +183,6 @@ internal static class CustomerProfiles
             profile.PreferredLocale,
             profile.ContactEmail,
             profile.ProtectedPhone is null ? null : MobileNumber.Mask(protector.Unprotect(profile.ProtectedPhone, PersonalDataPurposes.MobileNumber)),
-            PhoneChangeAllowed: !signIn.Enabled);
+            PhoneChangeAllowed: !signIn.Enabled,
+            WinBackMessages: profile.WinBackMessages);
 }

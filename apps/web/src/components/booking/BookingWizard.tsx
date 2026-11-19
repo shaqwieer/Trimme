@@ -18,6 +18,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { browserApi, refreshSession } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
+import type { components } from '@/lib/api/schema';
 import { withReturnTo } from '@/lib/auth/paths';
 import {
   ANY_PROFESSIONAL,
@@ -51,8 +52,15 @@ import {
   withItems,
 } from '@/lib/booking/wizard';
 import { cutoffParts, endOf } from '@/lib/booking/format';
-import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
+import {
+  type AppLocale,
+  formatDate,
+  formatDurationMinutes,
+  formatPrice,
+  formatTime,
+} from '@/lib/i18n/format';
 import { formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
+import { languagesLine } from '@/lib/i18n/languages';
 import { localizedName } from '@/lib/i18n/localized';
 
 export type WizardShop = {
@@ -74,6 +82,10 @@ export type WizardPro = {
   avatarUrl: string | null;
   rating: number;
   reviewCount: number;
+  /** The languages the barber speaks (D-149), shown on their card (D-155). */
+  languages: string[];
+  /** Marked «غير متوفر اليوم» (D-155): the card is disabled today, and «أي مختص» never picks them. */
+  unavailableToday?: boolean;
 };
 
 /** Who is looking: a guest confirms after signing in (D-096); staff accounts cannot book. */
@@ -95,6 +107,41 @@ export type WizardReward = {
 const POINTS_REWARD = 'points';
 
 const NOTE_MAX = 500;
+
+/** The customer's upcoming booking that stops a new one (D-155, «حجز واحد فعّال بس للزبون، في كل المحلات»). */
+export type WizardActiveBooking = components['schemas']['CustomerActiveBookingResponse'];
+
+/**
+ * «عندك حجز قادم» with a link to it (D-155, the client's 3-2): one upcoming booking per customer across the shops, so a
+ * new one waits until it is cancelled, done («انتهت الخدمة») or marked «ما حضر». Its time can still be changed from its
+ * page. The server has the last word (409 booking.active_booking_exists).
+ */
+function ActiveBookingWarning({ booking }: { booking: WizardActiveBooking }) {
+  const t = useTranslations('booking.activeBooking');
+  const locale = useLocale() as AppLocale;
+  return (
+    <div data-testid="active-booking">
+      <InlineAlert
+        tone="warning"
+        title={t('title')}
+        action={
+          <Link
+            href={`/account/bookings/${booking.id}`}
+            className="inline-flex min-h-11 items-center text-label font-bold text-text-link underline"
+          >
+            {t('view')}
+          </Link>
+        }
+      >
+        {t('body', {
+          shop: localizedName(locale, booking.shop.nameAr, booking.shop.nameEn),
+          date: formatDate(booking.startsAt, locale),
+          time: formatTime(booking.startsAt, locale),
+        })}
+      </InlineAlert>
+    </div>
+  );
+}
 
 /** The customer's view of the steps (D-125): the shop is already chosen; service and professional, then date and time. */
 const PHASES = ['shop', 'service', 'time', 'confirm'] as const;
@@ -163,6 +210,7 @@ export function BookingWizard({
   rewards = [],
   pointsReward = null,
   sections = [],
+  activeBooking = null,
 }: {
   shop: WizardShop;
   offers: WizardOffer[];
@@ -173,9 +221,13 @@ export function BookingWizard({
   pointsReward?: WizardPointsReward | null;
   /** The shop's own sections, in the owner's order: the service step's tabs (D-148, D-149). */
   sections?: CatalogSection[];
+  /** The customer's upcoming booking at any shop, which stops a new one (D-155), or null. */
+  activeBooking?: WizardActiveBooking | null;
 }) {
   const t = useTranslations('booking');
   const tl = useTranslations('loyalty.wizard');
+  const tSpoken = useTranslations('spokenLanguages');
+  const tDay = useTranslations('booking.professionalDay');
   const rewardName = useLoyaltyRewardName();
   const locale = useLocale() as AppLocale;
   const router = useRouter();
@@ -222,6 +274,8 @@ export function BookingWizard({
   // A time refused at confirmation (D-152, the client's 1-2): it fell inside the shop's lead time meanwhile, or another
   // customer took it. The review stays where it is and offers the nearest times again.
   const [conflict, setConflict] = useState<'tooSoon' | 'taken'>();
+  // One upcoming booking per customer (D-155): known when the page loaded, or learnt from a 409 at the confirm.
+  const [active, setActive] = useState(activeBooking);
   const keyed = useRef<KeyedIntent | undefined>(undefined);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const latest = useRef<WizardSelection | null>(null);
@@ -468,6 +522,10 @@ export function BookingWizard({
         setConflict(failure.errorCode === 'booking.slot_too_soon' ? 'tooSoon' : 'taken');
         await queryClient.invalidateQueries({ queryKey: ['booking-slots'] });
         await queryClient.invalidateQueries({ queryKey: ['booking-dates'] });
+      } else if (failure.errorCode === 'booking.active_booking_exists') {
+        const found = await browserApi.GET('/api/v1/me/bookings/active').catch(() => undefined);
+        if (found?.data) setActive(found.data);
+        else setError(apiMessage(failure));
       } else if (failure.status === 403) {
         setError(t('customersOnly'));
       } else {
@@ -525,6 +583,7 @@ export function BookingWizard({
             title={t(blockedReason === 'shop.paused' ? 'blocked.paused' : 'blocked.other')}
           />
         )}
+        {active && <ActiveBookingWarning booking={active} />}
         {notice && (
           <InlineAlert
             tone={notice === 'conflict' ? 'danger' : 'warning'}
@@ -637,6 +696,9 @@ export function BookingWizard({
                       photoUrl={p.avatarUrl}
                       rating={p.reviewCount > 0 ? p.rating : null}
                       reviewCount={p.reviewCount}
+                      languages={languagesLine(p.languages, tSpoken, locale)}
+                      unavailable={p.unavailableToday === true && pro !== p.id}
+                      unavailableLabel={tDay('unavailableToday')}
                     />
                   );
                 })}

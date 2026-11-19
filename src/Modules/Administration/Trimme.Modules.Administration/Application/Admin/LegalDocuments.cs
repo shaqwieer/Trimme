@@ -104,7 +104,8 @@ internal sealed class SaveLegalDocumentHandler(TrimmeDbContext db, ICurrentUser 
             document.Replace(content, now, user.UserId);
         }
 
-        audit.Record(new AuditRecord("legal_document.saved", "LegalDocument", $"{command.Kind}:{command.Locale}", Summary: $"{command.Kind} ({command.Locale})"));
+        audit.Record(new AuditRecord("legal_document.saved", "LegalDocument", $"{command.Kind}:{command.Locale}", Summary: $"{command.Kind} ({command.Locale})",
+            SummaryArgs: AuditArgs.Of(("kind", command.Kind), ("locale", command.Locale))));
         await db.SaveChangesAsync(cancellationToken);
         return LegalDocuments.ToResponse(document);
     }
@@ -124,7 +125,8 @@ internal sealed class ResetLegalDocumentHandler(TrimmeDbContext db, IAuditLog au
         if (document is not null)
         {
             db.Remove(document);
-            audit.Record(new AuditRecord("legal_document.reset", "LegalDocument", $"{command.Kind}:{command.Locale}", Summary: $"{command.Kind} ({command.Locale})"));
+            audit.Record(new AuditRecord("legal_document.reset", "LegalDocument", $"{command.Kind}:{command.Locale}", Summary: $"{command.Kind} ({command.Locale})",
+                SummaryArgs: AuditArgs.Of(("kind", command.Kind), ("locale", command.Locale))));
             await db.SaveChangesAsync(cancellationToken);
         }
 

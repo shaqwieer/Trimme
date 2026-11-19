@@ -56,7 +56,8 @@ An interval is expressed in minutes from the weekday's local midnight, on 5-minu
 | `PUT /api/v1/shop/schedule/opening-hours` | Owner (`Shop.Schedule.Manage`) | Replace the week. Version-checked after the first save |
 | `PUT /api/v1/shop/professionals/{id}/working-hours` | Owner | Follow the shop's hours, or set the professional's own week |
 | `POST\|PUT\|DELETE /api/v1/shop/schedule/closures\|breaks\|time-off`, plus `POST …/preview` | Owner | Manage entries. The preview lists upcoming appointments the change would overlap |
-| `GET /api/v1/shop/online-booking`, `POST …/pause`, `POST …/resume` | Owner (`Shop.OnlineBooking.Pause`) | Pause or resume online booking (audited) |
+| `GET /api/v1/shop/online-booking`, `POST …/pause`, `POST …/resume` | Owner (`Shop.OnlineBooking.Pause`) | Pause (reason customers see, optional return time) or resume online booking (audited; D-155: the owner's again, and the admin's at `/admin/shops/{id}/online-booking`) |
+| `GET`/`POST`/`DELETE /api/v1/shop/schedule/unavailable-today` | The barber for themselves; the owner (`Shop.Schedule.Manage`) for any barber | «غير متوفر اليوم» until the shop's day ends, undone the same day (D-155, audited) |
 
 The public responses never contain professional contact data or booking details. The conflict preview shows the shop the customer's name and the booked item, never a phone number.
 

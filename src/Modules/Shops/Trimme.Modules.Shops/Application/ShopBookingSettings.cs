@@ -11,18 +11,19 @@ using Trimme.Modules.Shops.Domain;
 namespace Trimme.Modules.Shops.Application;
 
 // Booking settings per shop (D-149, the client's «إعدادات الحجز تكون خاصة بكل محل»): instead of one set for every shop
-// from the admin, each shop sets whether online bookings wait for its confirmation, the start-time interval (10:00, 10:15,
+// from the admin, each shop sets the start-time interval (10:00, 10:15,
 // 10:30…), the minimum notice, the furthest bookable day and the cleaning time after each booking. The start interval is
 // not a service's length: starts every 15 minutes, a service of 45. The platform's values are the defaults of a shop that
 // has not set its own; the cancellation window, the review window and the reminder stay platform-wide. The owner edits
-// them (Shop.Profile.Edit: barbers cannot), and so does the admin on the shop's page; both are audited.
+// them (Shop.Profile.Edit: barbers cannot), and so does the admin on the shop's page; both are audited. Every online
+// booking is confirmed at once (D-155): there is no confirmation setting any more.
 
 /// <summary>The shop's booking settings in force (its own, or the platform's where it has none).</summary>
 public sealed record ShopBookingSettingsResponse(
-    bool RequireManualConfirmation, int SlotStepMinutes, int MinLeadTimeMinutes, int BookingHorizonDays, int BufferMinutes);
+    int SlotStepMinutes, int MinLeadTimeMinutes, int BookingHorizonDays, int BufferMinutes);
 
 public sealed record ShopBookingSettingsRequest(
-    bool RequireManualConfirmation, int SlotStepMinutes, int MinLeadTimeMinutes, int BookingHorizonDays, int BufferMinutes);
+    int SlotStepMinutes, int MinLeadTimeMinutes, int BookingHorizonDays, int BufferMinutes);
 
 internal sealed record GetOwnBookingSettingsQuery : IQuery<ShopBookingSettingsResponse?>;
 
@@ -40,11 +41,11 @@ internal static class ShopBookingSettingsMapping
     public static ShopBookingSettingsResponse ToResponse(Shop shop, PlatformSettingsSnapshot platform)
     {
         var rules = EffectiveBookingRules.Of(platform, Overrides(shop));
-        return new(shop.RequireManualConfirmation, rules.SlotStepMinutes, rules.MinLeadTimeMinutes, rules.BookingHorizonDays, rules.BufferMinutes);
+        return new(rules.SlotStepMinutes, rules.MinLeadTimeMinutes, rules.BookingHorizonDays, rules.BufferMinutes);
     }
 
     public static string Describe(Shop shop) =>
-        $"Confirmation {(shop.RequireManualConfirmation ? "manual" : "automatic")}; starts every {shop.SlotStepMinutes} min; "
+        $"Starts every {shop.SlotStepMinutes} min; "
         + $"notice {shop.MinLeadTimeMinutes} min; up to {shop.BookingHorizonDays} days ahead; cleaning {shop.BufferMinutes} min";
 }
 
@@ -64,15 +65,19 @@ internal sealed class ShopBookingSettingsStore(TrimmeDbContext db, IPlatformSett
         }
 
         var set = shop.SetBookingSettings(
-            request.RequireManualConfirmation, request.SlotStepMinutes, request.MinLeadTimeMinutes, request.BookingHorizonDays, request.BufferMinutes,
+            request.SlotStepMinutes, request.MinLeadTimeMinutes, request.BookingHorizonDays, request.BufferMinutes,
             clock.GetUtcNow());
         if (set.IsFailure)
         {
             return set.Error;
         }
 
-        audit.Record(new AuditRecord("shop.booking_settings_changed", nameof(Shop), shop.Id.ToString(), shop.Id, $"Booking settings set by {by}",
-            ShopBookingSettingsMapping.Describe(shop)));
+        // D-155: the settings are the summary's arguments, not the reason (the reason is an operator's own words).
+        audit.Record(new AuditRecord(
+            "shop.booking_settings_changed", nameof(Shop), shop.Id.ToString(), shop.Id, $"Booking settings set by {by}: {ShopBookingSettingsMapping.Describe(shop)}",
+            SummaryArgs: AuditArgs.Of(
+                ("by", by), ("slotStep", shop.SlotStepMinutes), ("minLeadTime", shop.MinLeadTimeMinutes), ("horizonDays", shop.BookingHorizonDays),
+                ("buffer", shop.BufferMinutes))));
         await db.SaveChangesAsync(cancellationToken);
         return ShopBookingSettingsMapping.ToResponse(shop, await settings.GetAsync(cancellationToken));
     }

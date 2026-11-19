@@ -3,6 +3,8 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
+import { ShopCallButtonForm } from '@/components/admin/ShopCallButtonForm';
+import { PauseCard } from '@/components/schedule/PauseCard';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
 import { DemoShopSwitch } from '@/components/admin/DemoShopSwitch';
@@ -131,13 +133,34 @@ export default async function AdminShopPage({
             <EmptyState icon="shield" title={t('detail.invite.title')} />
           );
         } else if (tab === 'booking') {
-          const { data: settings } = await api.GET('/api/v1/admin/shops/{shopId}/booking-settings', {
-            params: { path: { shopId: shop.id } },
-          });
+          const path = { params: { path: { shopId: shop.id } } };
+          const [{ data: settings }, { data: pause }] = await Promise.all([
+            api.GET('/api/v1/admin/shops/{shopId}/booking-settings', path),
+            api.GET('/api/v1/admin/shops/{shopId}/online-booking', path),
+          ]);
           content = settings ? (
-            <Card title={t('sections.booking')} testId="shop-booking-settings">
-              <BookingSettingsForm scope={mode} settings={settings} canEdit={canEdit} />
-            </Card>
+            <>
+              {/* The admin pauses a shop's online booking too (D-155, the client's 1-1), with a reason and a return time. */}
+              {pause && (
+                <PauseCard
+                  state={pause}
+                  timeZone={shop.timeZone}
+                  canPause={canEdit}
+                  scope={{ kind: 'admin', shopId: shop.id }}
+                />
+              )}
+              <Card title={t('sections.booking')} testId="shop-booking-settings">
+                <BookingSettingsForm scope={mode} settings={settings} canEdit={canEdit} />
+              </Card>
+              <Card title={t('sections.callButton')} testId="shop-call-button">
+                <ShopCallButtonForm
+                  shopId={shop.id}
+                  enabled={shop.callButtonEnabled}
+                  phone={shop.callButtonPhone ?? null}
+                  canEdit={canEdit}
+                />
+              </Card>
+            </>
           ) : (
             <ErrorState />
           );
@@ -176,7 +199,7 @@ export default async function AdminShopPage({
                   scope={{ kind: 'admin', shopId: shop.id }}
                   rules={loyalty.rules}
                   version={loyalty.version}
-                  addOnActive={loyalty.addOnActive}
+                  included={loyalty.included}
                   services={(services?.items ?? [])
                     .filter((s) => !s.isArchived)
                     .map((s) => ({ id: s.id, nameAr: s.nameAr, nameEn: s.nameEn }))}

@@ -91,6 +91,12 @@ internal sealed class ShopScheduleContext(
     /// <summary>The time off span: all day from local midnight when no minutes are given, otherwise the exact local times.</summary>
     public static Result<(InstantRange Span, bool AllDay)> TimeOffSpan(ShopClock clock, TimeOffInput input)
     {
+        // «غير متوفر اليوم» has its own action (D-155), never the time-off form.
+        if (input.Kind == TimeOffKind.Unavailable)
+        {
+            return ScheduleRules.Field("kind", "validation.invalid");
+        }
+
         if (input.StartMinute is { } s && (s is < 0 or >= ScheduleRules.MinutesPerDay || s % ScheduleRules.MinuteStep != 0))
         {
             return ScheduleRules.Field("startMinute", "validation.hours_invalid");

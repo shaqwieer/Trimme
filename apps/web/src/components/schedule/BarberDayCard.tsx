@@ -13,7 +13,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { cn } from '@/lib/cn';
-import { type AppLocale, formatDurationMinutes } from '@/lib/i18n/format';
+import { type AppLocale, formatDurationMinutes, formatTime } from '@/lib/i18n/format';
 import { addDays, formatLocalDate, type LocalDate } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 import {
@@ -21,7 +21,6 @@ import {
   type BarberDay,
   cancellableBreak,
   clearDay,
-  freeStarts,
   hasBreaksAhead,
   type HourState,
   hourCells,
@@ -30,7 +29,6 @@ import {
   removeBreak,
   type SlotState,
   slotsToWindows,
-  wholeDay,
 } from '@/lib/shop/barberDay';
 import { formatMinutes } from './time';
 
@@ -51,11 +49,15 @@ const CELL: Record<HourState, string> = {
 
 const SELECTED = 'border-brand-700 bg-brand-100 text-brand-700';
 
-/** What a confirmation is about; each one saves the barber's breaks for the day once confirmed. */
+/**
+ * What a confirmation is about: the breaks saved for the day, or «غير متوفر اليوم» marked or taken back (D-155: it
+ * replaced the whole-day break).
+ */
 type Pending =
   | { kind: 'add'; windows: MinuteWindow[] }
   | { kind: 'remove'; window: MinuteWindow }
-  | { kind: 'wholeDay' }
+  | { kind: 'unavailable' }
+  | { kind: 'available' }
   | { kind: 'clear' };
 
 /**
@@ -63,7 +65,9 @@ type Pending =
  * only (D-151: the grid used to start at midnight), midnight written in words; tapping an hour opens its twelve 5-minute
  * slots, as the booking's hour and minutes do. A barber's own login reads «بريكاتي». Free slots are picked and then confirmed
  * as a break; tapping a break offers to cancel it. Every change asks first and then says what was saved. No reason is
- * asked and nothing repeats. Booked time, the owner's breaks and time off cannot be changed here.
+ * asked and nothing repeats. Booked time, the owner's breaks and time off cannot be changed here. Today, «غير متوفر اليوم»
+ * (D-155, the client's 1-2) takes the barber off for the rest of the day — a barber for themselves, the owner for any
+ * barber — and can be taken back the same day; their bookings stay, for their colleagues to handle.
  */
 export function BarberDayCard({
   barbers,
@@ -91,6 +95,12 @@ export function BarberDayCard({
   const [error, setError] = useState<string>();
   const [done, setDone] = useState<string>();
 
+  // Who is «غير متوفر اليوم» right now (D-155): today only.
+  const unavailable = useQuery({
+    queryKey: [KEY, 'unavailable'],
+    enabled: date === today,
+    queryFn: async () => ensureOk(await browserApi.GET('/api/v1/shop/schedule/unavailable-today')),
+  });
   const day = useQuery({
     queryKey: [KEY, barberId, date],
     enabled: Boolean(barberId),
@@ -133,10 +143,10 @@ export function BarberDayCard({
         return addBreaks(on, change.windows);
       case 'remove':
         return removeBreak(on, change.window);
-      case 'wholeDay':
-        return wholeDay(on);
       case 'clear':
         return clearDay(on);
+      default:
+        return on.breaks;
     }
   };
 
@@ -146,8 +156,10 @@ export function BarberDayCard({
         return t('done.add', { when: ranges(change.windows), barber: barberName });
       case 'remove':
         return t('done.remove', { when: range(change.window) });
-      case 'wholeDay':
-        return t('done.wholeDay', { barber: barberName });
+      case 'unavailable':
+        return t('done.unavailable', { barber: barberName });
+      case 'available':
+        return t('done.available', { barber: barberName });
       case 'clear':
         return t('done.clear', { barber: barberName });
     }
@@ -159,6 +171,22 @@ export function BarberDayCard({
     setDone(undefined);
     setSaving(true);
     try {
+      if (change.kind === 'unavailable' || change.kind === 'available') {
+        // A barber's own login marks themselves (the API takes no id from them); the owner names the barber.
+        const professionalId = own ? undefined : barberId;
+        ensureOk(
+          change.kind === 'unavailable'
+            ? await browserApi.POST('/api/v1/shop/schedule/unavailable-today', {
+                body: { professionalId: professionalId ?? null },
+              })
+            : await browserApi.DELETE('/api/v1/shop/schedule/unavailable-today', {
+                params: { query: professionalId ? { professionalId } : {} },
+              }),
+        );
+        await queryClient.invalidateQueries({ queryKey: [KEY] });
+        setDone(doneText(change));
+        return;
+      }
       const next = ensureOk(
         await browserApi.PUT('/api/v1/shop/schedule/barber-day', {
           body: { professionalId: barberId, date, breaks: breaksFor(current, change) },
@@ -188,11 +216,14 @@ export function BarberDayCard({
         }
       : pending.kind === 'remove'
         ? { title: t('confirm.remove.title', { when: range(pending.window) }), key: 'remove' as const }
-        : pending.kind === 'wholeDay'
-          ? { title: t('confirm.wholeDay.title', { barber: barberName }), key: 'wholeDay' as const }
-          : { title: t('confirm.clear.title', { barber: barberName }), key: 'clear' as const }
+        : pending.kind === 'unavailable'
+          ? { title: t('confirm.unavailable.title', { barber: barberName }), key: 'unavailable' as const }
+          : pending.kind === 'available'
+            ? { title: t('confirm.available.title', { barber: barberName }), key: 'available' as const }
+            : { title: t('confirm.clear.title', { barber: barberName }), key: 'clear' as const }
     : undefined;
 
+  const marked = date === today ? unavailable.data?.find((u) => u.professionalId === barberId) : undefined;
   const hour = openHour !== null && current ? cells.find((c) => c.hour === openHour) : undefined;
   // Working hours only (D-151); an hour holding one of the barber's breaks stays, so it can still be cancelled.
   const shown = cells.filter((c) => c.state !== 'outside');
@@ -396,15 +427,38 @@ export function BarberDayCard({
           {done && <InlineAlert tone="success" title={done} />}
           {error && <InlineAlert tone="danger" title={error} />}
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              disabled={saving || freeStarts(current).length === 0}
-              onClick={() => setPending({ kind: 'wholeDay' })}
+          {marked && (
+            <InlineAlert
+              tone="warning"
+              title={t('unavailableNow', { barber: barberName, time: formatTime(marked.since, locale) })}
             >
-              {t('wholeDay')}
-            </Button>
+              {t('unavailableBody')}
+            </InlineAlert>
+          )}
+          <div className="flex flex-wrap gap-2" id="unavailable">
+            {date === today &&
+              (marked ? (
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={saving}
+                  onClick={() => setPending({ kind: 'available' })}
+                  data-testid="available-again"
+                >
+                  {t('availableAgain')}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="md"
+                  icon="ban"
+                  disabled={saving || unavailable.isPending}
+                  onClick={() => setPending({ kind: 'unavailable' })}
+                  data-testid="unavailable-today"
+                >
+                  {t('unavailableToday')}
+                </Button>
+              ))}
             <Button
               variant="ghost"
               size="md"
@@ -420,7 +474,7 @@ export function BarberDayCard({
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => !open && !saving && setPending(null)}
-        tone={pending?.kind === 'add' || pending?.kind === 'wholeDay' ? 'default' : 'danger'}
+        tone={pending?.kind === 'add' || pending?.kind === 'available' ? 'default' : 'danger'}
         title={confirmText?.title ?? ''}
         body={confirmText ? t(`confirm.${confirmText.key}.body`) : ''}
         confirmLabel={confirmText ? t(`confirm.${confirmText.key}.action`) : ''}

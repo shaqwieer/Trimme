@@ -25,7 +25,9 @@ const BUDGETS = [
     name: 'map pages',
     match: /\/(search|onboarding\/location|shop\/settings\/location|admin\/shops\/(new|\[shopId\]))$/,
     // 335 since D-149: the admin's shop page also carries the shop's sections and booking settings (330.7 KB).
-    kb: 335,
+    // 337 since D-155: its booking tab also pauses the shop and sets the «اتصال» button (335.6 KB). Loading those two
+    // on demand moved shared chunks and put three other pages over their budgets, so the page keeps them.
+    kb: 337,
   },
   {
     name: "the owner's barber page",

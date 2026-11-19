@@ -55,8 +55,7 @@ public enum CustomerBookingAction
 
 /// <summary>What a customer response needs besides the booking: the clock, the policy and the customer's own ratings.</summary>
 internal sealed record CustomerBookingView(
-    DateTimeOffset Now, int CutoffMinutes, int ReviewWindowDays, IReadOnlyDictionary<Guid, int> Ratings,
-    IReadOnlyDictionary<Guid, PostponementOfferResponse>? Offers = null);
+    DateTimeOffset Now, int CutoffMinutes, int ReviewWindowDays, IReadOnlyDictionary<Guid, int> Ratings);
 
 /// <summary>
 /// A booking as its customer sees it, with what they may still do: cancel or reschedule until the cutoff (D-015), review a
@@ -85,7 +84,6 @@ public sealed record CustomerBookingResponse(
     BookingLoyaltyRewardResponse? LoyaltyReward,
     uint Version,
     DateTimeOffset? ProfessionalChangedAt = null,
-    PostponementOfferResponse? Postponement = null,
     ShopCancellationReason? CancellationReasonCode = null);
 
 /// <summary>
@@ -99,6 +97,10 @@ public sealed record CustomerBookingResponse(
 /// «انتهت الخدمة» was pressed); <c>Overdue</c> (red: open past its booked end, D-151); <c>CancelledLate</c> («إلغاء متأخر»);
 /// <c>ClosedLate</c> («انقفل متأخر»: closed more than a quarter hour after its end) and <c>ClosedBy</c> (the name of who
 /// closed it). D-151: <c>CancellationReasonCode</c>, the ready reason the shop chose, beside the typed one.
+/// </para>
+/// <para>
+/// D-155: <c>ChangedToday</c>, on a booking's detail only: the shop already gave this online customer a new time today
+/// at this shop, so another change is refused (409 <c>booking.changed_today</c>) until tomorrow.
 /// </para>
 /// </summary>
 public sealed record ShopBookingResponse(
@@ -126,9 +128,10 @@ public sealed record ShopBookingResponse(
     bool ClosedLate = false,
     string? ClosedBy = null,
     string? CustomerPhone = null,
-    PostponementOfferResponse? Postponement = null,
     decimal? AmountDue = null,
-    ShopCancellationReason? CancellationReasonCode = null)
+    ShopCancellationReason? CancellationReasonCode = null,
+    bool ChangedToday = false,
+    bool UnavailableBarber = false)
 {
     /// <summary>Never print the number (records list every member by default).</summary>
     public override string ToString() => $"{nameof(ShopBookingResponse)} {{ Id = {Id}, Status = {Status} }}";
@@ -136,15 +139,8 @@ public sealed record ShopBookingResponse(
 
 public sealed record BookingNoteResponse(Guid Id, string Text, DateTimeOffset CreatedAt);
 
-/// <summary>
-/// The latest postponement offer of a booking (D-147): the new time held for the customer, until when they may answer,
-/// its state and who offered it. <c>Live</c>: still open and holding the time.
-/// </summary>
-public sealed record PostponementOfferResponse(
-    Guid Id, DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTimeOffset ExpiresAt, PostponementStatus Status, string? OfferedBy, bool Live);
-
 /// <summary>How many bookings each status chip would list (every filter but the status applied).</summary>
-public sealed record ShopBookingCounts(int All, int Pending, int Confirmed, int Arrived, int Completed, int Cancelled, int NoShow);
+public sealed record ShopBookingCounts(int All, int Confirmed, int Arrived, int Completed, int Cancelled, int NoShow);
 
 /// <summary>A page of the shop's bookings, with the status chips' counts.</summary>
 public sealed record ShopBookingListResponse(IReadOnlyList<ShopBookingResponse> Items, int Page, int PageSize, int Total, ShopBookingCounts Counts);
@@ -171,7 +167,6 @@ internal sealed record BookingEvent(
     string ActorType,
     Guid? PreviousProfessionalId = null,
     Guid? ActorId = null,
-    DateTimeOffset? OfferedStartsAt = null,
     string? ActorName = null);
 
 internal static class BookingEvents
@@ -190,23 +185,14 @@ internal static class BookingEvents
     /// </summary>
     public const string ServicesChanged = "booking.services_changed";
 
-    /// <summary>The barber offered the customer a new time (D-147); the payload carries it. The customer gets an in-app notice.</summary>
-    public const string PostponementOffered = "booking.postponement_offered";
-
-    /// <summary>The customer declined the offered time (D-147); the barber and the owner get an in-app notice.</summary>
-    public const string PostponementDeclined = "booking.postponement_declined";
-
-    public static void Add(TrimmeDbContext db, string type, Booking booking, DateTimeOffset now, DateTimeOffset? offeredStartsAt = null)
+    public static void Add(TrimmeDbContext db, string type, Booking booking, DateTimeOffset now)
     {
         var last = booking.History[^1];
         db.Add(OutboxMessage.Create(type, new BookingEvent(
             booking.Id.Value, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, booking.StartsAt, booking.EndsAt,
             booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId, last.ActorId,
-            offeredStartsAt, last.ActorType == ActorType.Customer ? null : last.ActorName), now));
+            last.ActorType == ActorType.Customer ? null : last.ActorName), now));
     }
-
-    public static PostponementOfferResponse Offer(PostponementOffer offer, Booking booking, DateTimeOffset now) =>
-        new(offer.Id, offer.StartsAt, offer.EndsAt, offer.ExpiresAt, offer.Status, offer.OfferedByName, offer.IsLive(booking, now));
 
     public static string ForStatus(BookingStatus status) => BookingRules.IsCancelled(status) ? Cancelled : StatusChanged;
 }
@@ -255,7 +241,7 @@ internal static class BookingMapping
 
         return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
             b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version,
-            b.ProfessionalChangedAt, view.Offers?.GetValueOrDefault(b.Id.Value), b.CancellationReasonCode);
+            b.ProfessionalChangedAt, b.CancellationReasonCode);
     }
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>

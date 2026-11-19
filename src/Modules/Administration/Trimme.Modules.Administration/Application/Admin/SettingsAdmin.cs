@@ -22,7 +22,6 @@ public sealed record PlatformSettingsResponse(
     int ReminderOffsetMinutes,
     int ExpiringSoonThresholdDays,
     SubscriptionEnforcement ExpiredSubscriptionEnforcement,
-    bool HidePausedShopsFromDiscovery,
     string DefaultLocale,
     string Currency,
     string TimeZone,
@@ -44,7 +43,6 @@ internal sealed record UpdatePlatformSettingsCommand(
     int ReminderOffsetMinutes,
     int ExpiringSoonThresholdDays,
     SubscriptionEnforcement ExpiredSubscriptionEnforcement,
-    bool HidePausedShopsFromDiscovery,
     double MapDefaultLatitude,
     double MapDefaultLongitude,
     int MapDefaultZoom,
@@ -86,7 +84,7 @@ internal static class SettingsReader
 
     public static PlatformSettingsResponse Response(PlatformSettings s) => new(
         s.MinLeadTimeMinutes, s.BookingHorizonDays, s.SlotStepMinutes, s.CancellationCutoffMinutes, s.ReviewWindowDays, s.ReminderOffsetMinutes,
-        s.ExpiringSoonThresholdDays, s.ExpiredSubscriptionEnforcement, s.HidePausedShopsFromDiscovery, s.DefaultLocale, s.Currency, s.TimeZone,
+        s.ExpiringSoonThresholdDays, s.ExpiredSubscriptionEnforcement, s.DefaultLocale, s.Currency, s.TimeZone,
         s.CountryCode, s.MapDefaultLatitude, s.MapDefaultLongitude, s.MapDefaultZoom, s.UpdatedAt, s.Version);
 }
 
@@ -108,13 +106,14 @@ internal sealed class UpdatePlatformSettingsHandler(TrimmeDbContext db, ICurrent
             new EditablePlatformSettings(
                 command.MinLeadTimeMinutes, command.BookingHorizonDays, command.SlotStepMinutes, command.CancellationCutoffMinutes,
                 command.ReviewWindowDays, command.ReminderOffsetMinutes, command.ExpiringSoonThresholdDays, command.ExpiredSubscriptionEnforcement,
-                command.HidePausedShopsFromDiscovery, command.MapDefaultLatitude, command.MapDefaultLongitude, command.MapDefaultZoom),
+                command.MapDefaultLatitude, command.MapDefaultLongitude, command.MapDefaultZoom),
             user.UserId,
             clock.GetUtcNow());
 
         if (changed.Count > 0)
         {
-            audit.Record(new AuditRecord("platform_settings.updated", "PlatformSettings", settings.Id.Value.ToString(), null, $"Changed: {string.Join(", ", changed)}", null));
+            audit.Record(new AuditRecord("platform_settings.updated", "PlatformSettings", settings.Id.Value.ToString(), null, $"Changed: {string.Join(", ", changed)}", null,
+                SummaryArgs: AuditArgs.Of(("fields", AuditArgs.List(changed)))));
         }
 
         await db.SaveChangesAsync(cancellationToken);

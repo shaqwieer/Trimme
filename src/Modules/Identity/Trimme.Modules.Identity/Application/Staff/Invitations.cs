@@ -191,7 +191,8 @@ internal sealed class InvitationIssuer(
             nameof(Invitation),
             invitation.Id.Value.ToString(),
             shopId is { } auditedShop ? new ShopId(auditedShop) : null,
-            $"Invited as {roleName}"));
+            $"Invited as {roleName}",
+            SummaryArgs: AuditArgs.Of(("role", roleName))));
         await db.SaveChangesAsync(cancellationToken);
         await mailer.SendInvitationAsync(trimmed, locale, roleName, token, invitation.ExpiresAt, cancellationToken);
 
@@ -260,7 +261,8 @@ internal sealed class CreateShopUserHandler(
             "User",
             created.Value.UserId.ToString(),
             new ShopId(command.ShopId),
-            $"Created as {command.Role} with a temporary password"));
+            $"Created as {command.Role} with a temporary password",
+            SummaryArgs: AuditArgs.Of(("role", command.Role))));
         await db.SaveChangesAsync(cancellationToken);
 
         return new ShopUserResponse(created.Value.UserId, email, created.Value.DisplayName ?? string.Empty, command.Role);

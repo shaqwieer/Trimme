@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Trimme.BuildingBlocks.Application.Auditing;
 using Trimme.BuildingBlocks.Application.Security;
@@ -30,7 +32,9 @@ internal sealed class AuditLog(TrimmeDbContext db, ICurrentUser user, TimeProvid
             record.ShopId?.Value,
             record.Summary,
             record.Reason,
-            http.HttpContext is { } context ? CorrelationId.Get(context) : null));
+            http.HttpContext is { } context ? CorrelationId.Get(context) : null,
+            record.SummaryCode ?? record.Action,
+            record.SummaryArgs ?? new Dictionary<string, string>(StringComparer.Ordinal)));
     }
 }
 
@@ -47,6 +51,16 @@ internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEn
         builder.Property(e => e.Summary).HasMaxLength(500);
         builder.Property(e => e.Reason).HasMaxLength(500);
         builder.Property(e => e.CorrelationId).HasMaxLength(64);
+        builder.Property(e => e.SummaryCode).HasMaxLength(80);
+        builder.Property(e => e.SummaryArgs)
+            .HasConversion(
+                d => d == null ? null : JsonSerializer.Serialize(d, JsonSerializerOptions.Web),
+                json => json == null ? null : JsonSerializer.Deserialize<Dictionary<string, string>>(json, JsonSerializerOptions.Web),
+                new ValueComparer<Dictionary<string, string>?>(
+                    (a, b) => a == null ? b == null : b != null && a.Count == b.Count && a.All(p => b.ContainsKey(p.Key) && b[p.Key] == p.Value),
+                    d => d == null ? 0 : d.Aggregate(0, (hash, pair) => HashCode.Combine(hash, pair.Key, pair.Value)),
+                    d => d == null ? null : new Dictionary<string, string>(d, StringComparer.Ordinal)))
+            .HasColumnType("jsonb");
         builder.Property(e => e.Sequence).UseIdentityAlwaysColumn();
         builder.HasIndex(e => e.Sequence).IsUnique();
         builder.HasIndex(e => e.OccurredAt);

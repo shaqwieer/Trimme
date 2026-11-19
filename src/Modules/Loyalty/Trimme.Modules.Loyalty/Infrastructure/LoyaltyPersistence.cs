@@ -144,7 +144,7 @@ internal sealed class LoyaltyRedemptionConfiguration : IEntityTypeConfiguration<
 /// typed number. Both are added to the shared unit of work, so they are saved with the booking or not at all.
 /// </summary>
 internal sealed class LoyaltyRewardHolder(
-    TrimmeDbContext db, ICurrentCustomer customer, LoyaltyLedger ledger, ILoyaltyAddOnStatus addOn, ILoyaltyMemberKeys keys, IPersonalDataProtector protector)
+    TrimmeDbContext db, ICurrentCustomer customer, LoyaltyLedger ledger, ILoyaltyPlanStatus addOn, ILoyaltyMemberKeys keys, IPersonalDataProtector protector)
     : ILoyaltyRewardHolder
 {
     public async Task<Result<HeldLoyaltyReward>> HoldAsync(Guid rewardId, ShopId shopId, Guid bookingId, decimal price, DateTimeOffset now, CancellationToken cancellationToken)

@@ -28,7 +28,6 @@ public sealed record PlatformSettingsSnapshot(
     int ReminderOffsetMinutes,
     int ExpiringSoonThresholdDays,
     SubscriptionEnforcement ExpiredSubscriptionEnforcement,
-    bool HidePausedShopsFromDiscovery,
     string DefaultLocale,
     string Currency,
     string TimeZone,
@@ -65,6 +64,6 @@ public interface IShopBookability
 /// <param name="BlockedReason">
 /// Why it is blocked, as a stable code: <c>shop.not_active</c>, <c>subscription.none</c>, <c>subscription.expired</c>,
 /// <c>subscription.suspended</c> or <c>shop.paused</c> (the shop paused online booking, D-013; it stays in discovery
-/// unless <c>HidePausedShopsFromDiscovery</c>); <see langword="null"/> when nothing blocks it.
+/// listed, D-155); <see langword="null"/> when nothing blocks it.
 /// </param>
 public sealed record ShopBookability(bool AcceptsOnlineBookings, bool VisibleInDiscovery, string? BlockedReason);

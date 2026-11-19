@@ -10,6 +10,7 @@ import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/components/shops/ShopImagesEdito
 import { Button } from '@/components/ui/Button';
 import { Checkbox, PhoneField, SelectField, Switch, TextareaField } from '@/components/ui/inputs';
 import { ConfirmDialog, Dialog } from '@/components/ui/overlays';
+import { useSaveGroup } from '@/components/ui/SaveGroup';
 import { InlineAlert } from '@/components/ui/states';
 import { UploadDropZone } from '@/components/ui/UploadDropZone';
 import { isValidSaudiMobile, normalizeSaudiMobile, toE164 } from '@/components/ui/digits';
@@ -445,7 +446,10 @@ export function CreateBarberForm() {
 const editSchema = z.object(profileFields);
 const ownerEditSchema = editSchema.extend(ownerNameEn);
 
-/** Profile edit. Deliberately no shop field: the shop is shown read-only on the page (R-NEG-01). */
+/**
+ * Profile edit. Deliberately no shop field: the shop is shown read-only on the page (R-NEG-01). Inside a
+ * {@link SaveGroup} (the owner's barber page, D-155) it has no button of its own: the page saves it with the services.
+ */
 export function EditProfessionalForm({
   professional,
   scope = 'admin',
@@ -471,7 +475,7 @@ export function EditProfessionalForm({
     },
   });
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const submitValues = async (values: z.infer<typeof ownerEditSchema>): Promise<boolean> => {
     clear();
     setSaved(false);
     try {
@@ -498,13 +502,29 @@ export function EditProfessionalForm({
             }),
       );
       setSaved(true);
+      // What was saved becomes the form's baseline, so it no longer counts as unsaved (D-155).
+      form.reset(values);
       router.refresh();
+      return true;
     } catch (error) {
       if (error instanceof ApiError && error.isValidation)
         applyProblemToForm(error, form.setError, [...PROFILE_KEYS]);
       else fail(error);
+      return false;
     }
-  });
+  };
+  const onSubmit = form.handleSubmit(submitValues);
+  const grouped = useSaveGroup(
+    'profile',
+    form.formState.isDirty,
+    () =>
+      new Promise<boolean>((resolve) => {
+        void form.handleSubmit(
+          async (values) => resolve(await submitValues(values)),
+          () => resolve(false),
+        )();
+      }),
+  );
 
   return (
     <form
@@ -521,9 +541,11 @@ export function EditProfessionalForm({
       />
       {saved && <InlineAlert tone="success" title={t('saved')} />}
       {failure && <InlineAlert tone="danger" title={failure} />}
-      <Button type="submit" icon="check" loading={form.formState.isSubmitting} className="self-start">
-        {t('save')}
-      </Button>
+      {!grouped && (
+        <Button type="submit" icon="check" loading={form.formState.isSubmitting} className="self-start">
+          {t('save')}
+        </Button>
+      )}
     </form>
   );
 }

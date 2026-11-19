@@ -14,7 +14,7 @@ public readonly record struct DispatchId(Guid Value) : IEntityId<DispatchId>
 
 public enum DispatchKind
 {
-    /// <summary>Confirmation, pending request, reschedule or cancellation, from a booking outbox event.</summary>
+    /// <summary>Confirmation, reschedule or cancellation, from a booking outbox event.</summary>
     Lifecycle,
 
     /// <summary>The reminder before the start.</summary>
@@ -22,6 +22,12 @@ public enum DispatchKind
 
     /// <summary>An admin's test send to an explicitly typed recipient (R-NTF-08); never linked to a booking.</summary>
     Test,
+
+    /// <summary>
+    /// «رسالة الدعوة للعودة» (D-155): the plan's marketing message, about the customer's last visit. The only kind the
+    /// plan's monthly marketing limit counts.
+    /// </summary>
+    WinBack,
 }
 
 public enum DispatchStatus
@@ -40,6 +46,12 @@ public enum DispatchStatus
 
     /// <summary>Gave up: a permanent provider error, or the automatic retries ran out. An admin can retry it.</summary>
     Failed,
+
+    /// <summary>
+    /// Not sent: the shop's plan has no marketing messages left this month (D-155, «وصل الحد»). Not a delivery failure;
+    /// it cannot be retried (the next window brings new messages, and new win-back messages).
+    /// </summary>
+    LimitReached,
 }
 
 /// <summary>A button as rendered into a dispatch: its label and the URL the platform built.</summary>
@@ -136,13 +148,17 @@ public sealed class WhatsAppDispatch : Entity<DispatchId>
     public DateTimeOffset? FailedAt { get; private set; }
 
     /// <summary>
-    /// The month whose WhatsApp allowance this message took a slot of (D-149), set before the first attempt so retries do
-    /// not take another; given back if the message ends without ever reaching the provider.
+    /// The first day of the marketing window whose limit this message took a slot of (D-155; D-149 counted every customer
+    /// message), set before the first attempt so retries do not take another; given back if the message ends without
+    /// ever reaching the provider.
     /// </summary>
     public DateOnly? AllowanceMonth { get; private set; }
 
-    /// <summary>A message to a shop's customer counts against the shop's monthly allowance (D-149); staff messages and tests do not.</summary>
-    public bool CountsAgainstAllowance => Audience == MessageAudience.Customer && Kind != DispatchKind.Test && ShopId is not null;
+    /// <summary>
+    /// Only the win-back message counts against the plan's monthly marketing limit (D-155, the client's «الحد لرسالة
+    /// الدعوة للعودة بس»): confirmations, changes, cancellations and reminders are never counted and never stopped.
+    /// </summary>
+    public bool CountsAgainstAllowance => Kind == DispatchKind.WinBack && ShopId is not null;
 
     public void ReserveAllowance(DateOnly month) => AllowanceMonth ??= month;
 
@@ -219,6 +235,14 @@ public sealed class WhatsAppDispatch : Entity<DispatchId>
         return true;
     }
 
+    /// <summary>The plan's marketing messages are used up (D-155): the dispatch is not sent, and is kept as «وصل الحد».</summary>
+    public void RecordLimitReached(string error, DateTimeOffset now)
+    {
+        LastAttemptAt = now;
+        LastError = error.Length > MaxErrorLength ? error[..MaxErrorLength] : error;
+        Status = DispatchStatus.LimitReached;
+    }
+
     /// <summary>An admin retry: a Failed dispatch goes back to Queued for one more attempt (audited by the caller).</summary>
     public Result Retry()
     {
@@ -246,7 +270,7 @@ public sealed class WhatsAppDispatch : Entity<DispatchId>
                 Status = DispatchStatus.Delivered;
                 DeliveredAt = now;
                 break;
-            case DispatchStatus.Read when Status is not DispatchStatus.Failed:
+            case DispatchStatus.Read when Status is not (DispatchStatus.Failed or DispatchStatus.LimitReached):
                 Status = DispatchStatus.Read;
                 DeliveredAt ??= now;
                 break;

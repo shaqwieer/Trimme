@@ -41,9 +41,10 @@ internal sealed class ShopBookabilityService(TrimmeDbContext db, IShopDirectory 
                 return subscription;
             }
 
-            // D-013: a paused shop takes no online bookings; whether it stays listed is a platform setting.
+            // D-013: a paused shop takes no online bookings. D-155 (the client's 1-1): it stays listed, its page and favourites
+            // work, and it shows «متوقف مؤقتاً» with its reason and return time.
             return shop.OnlineBookingPaused
-                ? new ShopBookability(false, !platform.HidePausedShopsFromDiscovery, "shop.paused")
+                ? new ShopBookability(false, true, "shop.paused")
                 : new ShopBookability(true, true, null);
         });
     }

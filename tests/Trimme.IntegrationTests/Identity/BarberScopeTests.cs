@@ -13,17 +13,21 @@ namespace Trimme.IntegrationTests.Identity;
 /// <summary>
 /// D-145: a barber's login reaches only their own professional's bookings, breaks and figures. Every endpoint a barber can
 /// reach is reviewed here, as scoped to the barber (checked below with a colleague's booking and day) or shop-wide by
-/// design; a new endpoint a barber can reach fails until it is classified. D-147 adds three reviewed exceptions: the
-/// shop's pending bookings (any barber accepts or rejects them), the shop's red bookings (any barber closes them), and a
-/// walk-in or phone booking made for a free colleague. A barber's overview carries no figures. D-151 adds a fourth,
-/// read-only: a barber lists a colleague's or the whole shop's bookings and opens any of them, without acting on them
-/// beyond the first two exceptions and never with a colleague's customer's mobile.
+/// design; a new endpoint a barber can reach fails until it is classified. D-147 adds reviewed exceptions: the shop's red
+/// bookings (any barber closes them) and a walk-in or phone booking made for a free colleague; its pending-booking
+/// exception went with the Pending status (D-155). A barber's overview carries no figures. D-151 adds a read-only one: a
+/// barber lists a colleague's or the whole shop's bookings and opens any of them, without acting on them beyond the red
+/// exception and never with a colleague's customer's mobile. D-155 adds a fifth: today's open bookings of a barber marked
+/// «غير متوفر اليوم» may be given to a colleague, given a new time or cancelled by any barber of the shop, and nothing else.
+/// The pause is the owner's again (D-155).
 /// </summary>
 public sealed class BarberScopeTests(PostgresFixture postgres)
 {
     private const string Scoped = "scoped to the barber";
 
-    private const string PendingAndRed = "scoped to the barber, plus the shop's pending and red bookings (D-147 exceptions 1 and 2)";
+    private const string Red = "scoped to the barber, plus the shop's red bookings (D-147's exception 2)";
+
+    private const string Covered = "scoped to the barber, plus today's open bookings of a barber marked «غير متوفر اليوم» (D-155's exception 5)";
 
     private const string ReadOnlyShop =
         "any of the shop's bookings, read-only beyond the barber's own and D-147's exceptions; a colleague's customer's mobile never (D-151 exception 4)";
@@ -35,26 +39,28 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         ["GET /api/v1/shop/bookings/"] = "the barber's own by default; a colleague's or the whole shop's when asked. " + ReadOnlyShop,
         ["GET /api/v1/shop/bookings/{bookingId:guid}"] = ReadOnlyShop,
         ["GET /api/v1/shop/bookings/{bookingId:guid}/services/candidates"] = Scoped,
-        ["POST /api/v1/shop/bookings/{bookingId:guid}/transitions"] = PendingAndRed + ": on a colleague's, only accept or reject while pending, close once red",
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/transitions"] =
+            Red + ": on a colleague's, only close it once red; or cancel it while its barber is «غير متوفر اليوم» (D-155's exception 5)",
         ["POST /api/v1/shop/bookings/{bookingId:guid}/notes"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/services"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/services/{serviceId:guid}/delete"] = Scoped,
         ["POST /api/v1/shop/bookings/walk-in"] = "the barber, or a free colleague of the same shop (D-147 exception 3)",
-        ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/dates"] = Scoped,
-        ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/slots"] = Scoped,
-        ["POST /api/v1/shop/bookings/{bookingId:guid}/reschedule"] = Scoped,
-        ["POST /api/v1/shop/bookings/{bookingId:guid}/postpone"] = Scoped,
-        ["GET /api/v1/shop/bookings/{bookingId:guid}/professional-options"] = Scoped,
-        ["POST /api/v1/shop/bookings/{bookingId:guid}/professional"] = Scoped,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/dates"] = Covered,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}/reschedule/slots"] = Covered,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/reschedule"] = Covered,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}/professional-options"] = Covered,
+        ["POST /api/v1/shop/bookings/{bookingId:guid}/professional"] = Covered,
         ["GET /api/v1/shop/dashboard/overview"] = Scoped + ", with no figures (D-147)",
         ["GET /api/v1/shop/calendar"] = Scoped,
         ["GET /api/v1/shop/availability/walk-in"] = "the shop's barbers who do it, to book a free colleague (D-147 exception 3); no customer data",
         ["POST /api/v1/shop/loyalty/lookup"] = "whether the number typed for a walk-in or phone booking has a loyalty reward ready, and what it is; nothing else (D-149)",
 
-        // Shop-wide by design (D-147): what any barber of the shop may act on, and the shop's temporary online pause.
-        ["GET /api/v1/shop/bookings/attention"] = "the shop's pending and red bookings, any barber's (D-147 exceptions 1 and 2)",
-        ["POST /api/v1/shop/online-booking/pause"] = "the shop's temporary online pause, any barber (D-147)",
-        ["POST /api/v1/shop/online-booking/resume"] = "the shop's temporary online pause, any barber (D-147)",
+        // Shop-wide by design (D-147): what any barber of the shop may act on. The pause is the owner's (D-155).
+        ["GET /api/v1/shop/bookings/attention"] =
+            "the shop's red bookings, any barber's (D-147's exception 2), and today's of a barber marked «غير متوفر اليوم» (D-155's exception 5)",
+        ["GET /api/v1/shop/schedule/unavailable-today"] = "who is «غير متوفر اليوم», since when, and how many bookings they have left today; no customer (D-155)",
+        ["POST /api/v1/shop/schedule/unavailable-today"] = "the barber marks only themselves «غير متوفر اليوم» (D-155); a colleague's id is ignored",
+        ["DELETE /api/v1/shop/schedule/unavailable-today"] = "the barber takes back only their own «غير متوفر اليوم» (D-155)",
         ["GET /api/v1/shop/schedule/barber-day/"] = Scoped,
         ["PUT /api/v1/shop/schedule/barber-day/"] = Scoped,
 
@@ -120,7 +126,8 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
         var day = TodayAt(DateTimeOffset.UtcNow).AddDays(2);
         var mine = (await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Faisal, At(day, 10), ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var omars = await OkAsync(BookAsync(customer, w.SlugA, w.Haircut, w.Omar, At(day, 11), ct), ct, HttpStatusCode.Created);
+        using var other = await CustomerAsync(w.Factory, "سارة", ct);
+        var omars = await OkAsync(BookAsync(other, w.SlugA, w.Haircut, w.Omar, At(day, 11), ct), ct, HttpStatusCode.Created);
         var theirs = omars.GetProperty("id").GetGuid();
         var iso = Iso(day);
 
@@ -201,5 +208,68 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         await FailsAsync(faisal.GetAsync("/api/v1/shop/notifications", ct), HttpStatusCode.Forbidden, null, ct);
         await OkAsync(faisal.GetAsync("/api/v1/me/notifications", ct), ct);
         await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct);
+    }
+
+    [Fact]
+    public async Task ABarberMarkedUnavailableToday_HasTheirBookingsCoveredByColleagues_AndNothingElse()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var w = await ArrangeAsync(postgres, "barber_unavailable", ct);
+        using var faisal = await BarberLoginTests.BarberAsync(w, w.Faisal, "+966512340021", ct);
+        using var omar = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512340022", ct);
+        using var anonymous = ApiSession.Create(w.Factory);
+
+        // Omar has a booking later today and one tomorrow (test data: seeded at any time of day).
+        var start = DateTimeOffset.UtcNow.AddMinutes(2);
+        var today = await SeedOnlineBookingAsync(w, w.Shops.A.ShopId, Guid.NewGuid(), "نورة", w.Haircut, w.Omar, start, ct);
+        var tomorrow = await SeedOnlineBookingAsync(w, w.Shops.A.ShopId, Guid.NewGuid(), "سارة", w.Haircut, w.Omar, start.AddDays(1), ct);
+
+        // Before: a colleague's booking is the colleague's (D-145).
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{today}/professional-options", ct), HttpStatusCode.NotFound, null, ct);
+
+        // Omar marks himself «غير متوفر اليوم»: once; the owner and the colleagues are told.
+        var marked = await OkAsync(omar.PostAsync("/api/v1/shop/schedule/unavailable-today", new { }, ct), ct);
+        marked.GetProperty("professionalId").GetGuid().ShouldBe(w.Omar);
+        marked.GetProperty("bookings").GetInt32().ShouldBe(1);
+        await FailsAsync(omar.PostAsync("/api/v1/shop/schedule/unavailable-today", new { }, ct), HttpStatusCode.Conflict, "schedule.already_unavailable", ct);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Select(n => n.GetProperty("kind").GetString()).ShouldContain("professional.unavailable_today");
+        (await OkAsync(faisal.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Select(n => n.GetProperty("kind").GetString()).ShouldContain("professional.unavailable_bookings");
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/dashboard/overview", ct), ct)).GetProperty("unavailableToday").EnumerateArray()
+            .Select(u => u.GetProperty("professionalId").GetGuid()).ShouldBe([w.Omar]);
+        (await OkAsync(faisal.GetAsync("/api/v1/shop/schedule/unavailable-today", ct), ct)).EnumerateArray()
+            .Select(u => u.GetProperty("professionalId").GetGuid()).ShouldBe([w.Omar]);
+
+        // Customers: Omar is unavailable today on the public lists.
+        (await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/professionals", ct), ct)).EnumerateArray()
+            .Single(p => p.GetProperty("id").GetGuid() == w.Omar).GetProperty("unavailableToday").GetBoolean().ShouldBeTrue();
+        (await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/status", ct), ct)).GetProperty("professionals").EnumerateArray()
+            .Single(p => p.GetProperty("professionalId").GetGuid() == w.Omar).GetProperty("unavailableToday").GetBoolean().ShouldBeTrue();
+
+        // Faisal covers today's: the attention list, another barber, a new time or a cancellation; nothing else.
+        (await OkAsync(faisal.GetAsync("/api/v1/shop/bookings/attention", ct), ct)).GetProperty("unavailable").EnumerateArray()
+            .Select(b => b.GetProperty("id").GetGuid()).ShouldBe([today]);
+        var opened = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{today}", ct), ct)).GetProperty("booking");
+        opened.GetProperty("unavailableBarber").GetBoolean().ShouldBeTrue();
+        opened.GetProperty("allowedTransitions").EnumerateArray().Select(t => t.GetString()).ShouldBe(["CancelledByShop"]);
+        await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{today}/professional-options", ct), ct);
+        await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{today}/reschedule/dates", ct), ct);
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{today}/notes", new { text = "x" }, ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{tomorrow}/professional-options", ct), HttpStatusCode.NotFound, null, ct);
+        var version = opened.GetProperty("version").GetUInt32();
+        await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{today}/transitions", new { to = "Arrived", version }, ct), HttpStatusCode.Conflict, "booking.invalid_transition", ct);
+        var cancelled = await OkAsync(
+            faisal.PostAsync($"/api/v1/shop/bookings/{today}/transitions", new { to = "CancelledByShop", reasonCode = "StaffUnwell", version }, ct), ct);
+        cancelled.GetProperty("status").GetString().ShouldBe("CancelledByShop");
+
+        // Undone the same day, by the barber or the owner (who names the barber); then again by the owner.
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/unavailable-today", new { }, ct), HttpStatusCode.BadRequest, null, ct);
+        await OkAsync(w.OwnerA.DeleteAsync($"/api/v1/shop/schedule/unavailable-today?professionalId={w.Omar}", ct), ct, HttpStatusCode.NoContent);
+        await FailsAsync(omar.DeleteAsync("/api/v1/shop/schedule/unavailable-today", ct), HttpStatusCode.Conflict, "schedule.not_unavailable", ct);
+        await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/schedule/unavailable-today", new { professionalId = w.Omar }, ct), ct);
+        (await OkAsync(omar.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Select(n => n.GetProperty("kind").GetString()).ShouldContain("professional.unavailable_today");
+        await OkAsync(omar.DeleteAsync("/api/v1/shop/schedule/unavailable-today", ct), ct, HttpStatusCode.NoContent);
     }
 }

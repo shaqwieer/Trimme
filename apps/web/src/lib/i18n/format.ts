@@ -156,9 +156,40 @@ export function formatRating(value: number, locale: AppLocale): string {
   }).format(value);
 }
 
-/** Service duration follows the clock-time digit rule: "٣٠ دقيقة" (ar) — "30 min" (en) — "30 dk" (tr). */
+/**
+ * Arabic counted nouns (D-155, the client's 2-2): «دقيقة واحدة», «دقيقتان», «٥ دقائق» (3–10), «١٥ دقيقة» (11 and up).
+ * The singular and dual carry no number, as written Arabic does.
+ */
+const ARABIC_COUNTED = {
+  minutes: { one: 'دقيقة واحدة', two: 'دقيقتان', few: 'دقائق', other: 'دقيقة' },
+  hours: { one: 'ساعة واحدة', two: 'ساعتان', few: 'ساعات', other: 'ساعة' },
+} as const;
+const arabicPlural = new Intl.PluralRules('ar');
+
+function arabicCount(value: number, unit: keyof typeof ARABIC_COUNTED): string {
+  const words = ARABIC_COUNTED[unit];
+  const rule = arabicPlural.select(value);
+  if (rule === 'one') return words.one;
+  if (rule === 'two') return words.two;
+  return `${new Intl.NumberFormat(TIME_LOCALE.ar).format(value)} ${rule === 'few' ? words.few : words.other}`;
+}
+
+/** Service duration follows the clock-time digit rule: "٣٠ دقيقة", "٥ دقائق" (ar) — "30 min" (en) — "30 dk" (tr). */
 export function formatDurationMinutes(minutes: number, locale: AppLocale): string {
+  if (locale === 'ar') return arabicCount(minutes, 'minutes');
   return `${new Intl.NumberFormat(TIME_LOCALE[locale]).format(minutes)} ${UNITS[locale].minutes}`;
+}
+
+/**
+ * A setting's length (D-155, the client's 2-2): whole hours as hours, "٦ ساعات" rather than "٣٦٠ دقيقة" (ar) — "6 hours"
+ * (en) — "6 saat" (tr); anything else in minutes.
+ */
+export function formatDurationLong(minutes: number, locale: AppLocale): string {
+  if (minutes < 60 || minutes % 60 !== 0) return formatDurationMinutes(minutes, locale);
+  const hours = minutes / 60;
+  if (locale === 'ar') return arabicCount(hours, 'hours');
+  const number = new Intl.NumberFormat(TIME_LOCALE[locale]).format(hours);
+  return locale === 'en' ? `${number} ${hours === 1 ? 'hour' : 'hours'}` : `${number} saat`;
 }
 
 /**

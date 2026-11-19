@@ -27,15 +27,13 @@ internal sealed class GetMySubscriptionHandler(
             .SingleOrDefaultAsync(s => s.ShopId == shopId, cancellationToken);
         var status = SubscriptionView.Status(subscription, today, platform);
 
-        // The loyalty add-on and this month's WhatsApp usage against the plan's allowance (D-149). The admin's notes on a
-        // period stay on the platform side, as for the renewals below.
-        var recorded = await extras.AddOnAsync(shopId, today, cancellationToken);
-        var addOn = recorded with { Periods = [.. recorded.Periods.Select(p => p with { Notes = null })] };
-        var whatsApp = await shops.FindAsync(shopId, cancellationToken) is { } shop ? await extras.WhatsAppAsync(shop, subscription, today, cancellationToken) : null;
+        // What the plan gives the shop and this window's win-back messages against its limit (D-155).
+        var features = await extras.FeaturesAsync(subscription, status, today, cancellationToken);
+        var marketing = await shops.FindAsync(shopId, cancellationToken) is { } shop ? await extras.MarketingAsync(shop, subscription, today, cancellationToken) : null;
         if (subscription is null)
         {
             return new ShopSubscriptionResponse(
-                status, null, null, null, null, 0, 0, platform.ExpiringSoonThresholdDays, SubscriptionView.HiddenBySubscription(status, platform), [], addOn, whatsApp);
+                status, null, null, null, null, 0, 0, platform.ExpiringSoonThresholdDays, SubscriptionView.HiddenBySubscription(status, platform), [], features, marketing);
         }
 
         var inForce = subscription.PeriodInForce(today);
@@ -53,7 +51,7 @@ internal sealed class GetMySubscriptionHandler(
             SubscriptionView.HiddenBySubscription(status, platform),
             [.. subscription.Periods.OrderByDescending(p => p.PeriodStart)
                 .Select(p => new ShopRenewalResponse(p.PeriodStart, p.PeriodEnd, p.PlanNameAr, p.PlanNameEn, p.Amount, p.Currency))],
-            addOn,
-            whatsApp);
+            features,
+            marketing);
     }
 }

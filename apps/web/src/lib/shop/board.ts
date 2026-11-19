@@ -160,16 +160,8 @@ export function shortName(full: string): string {
 
 /* ---------------------------------------------------------------- appointments */
 
-/** Status chips (DV-S08): every status, cancellations grouped. */
-export const STATUS_CHIPS = [
-  'all',
-  'pending',
-  'confirmed',
-  'arrived',
-  'completed',
-  'cancelled',
-  'noShow',
-] as const;
+/** Status chips (DV-S08): every status, cancellations grouped. No «بانتظار التأكيد»: bookings are confirmed at once (D-155). */
+export const STATUS_CHIPS = ['all', 'confirmed', 'arrived', 'completed', 'cancelled', 'noShow'] as const;
 export type StatusChip = (typeof STATUS_CHIPS)[number];
 
 export type BookingStatusValue =
@@ -177,8 +169,6 @@ export type BookingStatusValue =
 
 export function statusesOf(chip: StatusChip): BookingStatusValue[] {
   switch (chip) {
-    case 'pending':
-      return ['Pending'];
     case 'confirmed':
       return ['Confirmed'];
     case 'arrived':

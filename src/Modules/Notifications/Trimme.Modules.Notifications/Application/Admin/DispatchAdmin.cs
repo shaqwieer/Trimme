@@ -44,7 +44,8 @@ public sealed record DispatchDetailResponse(
     Guid TemplateVersionId,
     string? ProviderMessageId);
 
-public sealed record DispatchCounts(int All, int Queued, int Sent, int Delivered, int Read, int Failed);
+/// <summary>Per status; <c>LimitReached</c> (D-155, «وصل الحد») is a win-back message the plan's monthly limit kept back.</summary>
+public sealed record DispatchCounts(int All, int Queued, int Sent, int Delivered, int Read, int Failed, int LimitReached = 0);
 
 /// <summary>Messages recorded in the last 24 hours and the share delivered or read, in percent (one decimal).</summary>
 public sealed record DispatchStats(int Last24Hours, double DeliveryRate);
@@ -107,10 +108,12 @@ internal sealed class ListDispatchesHandler(TrimmeDbContext db, TimeProvider clo
         int Count(DispatchStatus status) => byStatus.FirstOrDefault(s => s.Key == status)?.Count ?? 0;
         var counts = new DispatchCounts(
             byStatus.Sum(s => s.Count), Count(DispatchStatus.Queued), Count(DispatchStatus.Sent), Count(DispatchStatus.Delivered), Count(DispatchStatus.Read),
-            Count(DispatchStatus.Failed));
+            Count(DispatchStatus.Failed), Count(DispatchStatus.LimitReached));
 
         var since = clock.GetUtcNow().AddHours(-24);
-        var recent = await db.Set<WhatsAppDispatch>().AsNoTracking().Where(d => d.CreatedAt >= since && d.Kind != DispatchKind.Test)
+        // A message the marketing limit kept back (D-155) was never sent: it does not count against the delivery rate.
+        var recent = await db.Set<WhatsAppDispatch>().AsNoTracking()
+            .Where(d => d.CreatedAt >= since && d.Kind != DispatchKind.Test && d.Status != DispatchStatus.LimitReached)
             .GroupBy(d => d.Status == DispatchStatus.Delivered || d.Status == DispatchStatus.Read)
             .Select(g => new { Delivered = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
@@ -157,7 +160,8 @@ internal sealed class RetryDispatchHandler(TrimmeDbContext db, IAuditLog audit, 
 
         audit.Record(new AuditRecord(
             "whatsapp_dispatch.retried", "WhatsAppDispatch", dispatch.Id.Value.ToString(), dispatch.ShopId,
-            Summary: $"{dispatch.Event} · {dispatch.Audience}; attempt {(dispatch.Attempts + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}"));
+            Summary: $"{dispatch.Event} · {dispatch.Audience}; attempt {(dispatch.Attempts + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+            SummaryArgs: AuditArgs.Of(("event", dispatch.Event), ("audience", dispatch.Audience), ("attempt", dispatch.Attempts + 1))));
         await db.SaveChangesAsync(cancellationToken);
 
         dispatch.AssignJob(Jobs.SendDispatchJob.Enqueue(jobs, dispatch.Id.Value));

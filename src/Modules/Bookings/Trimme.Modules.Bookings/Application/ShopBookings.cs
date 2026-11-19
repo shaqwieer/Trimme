@@ -30,17 +30,19 @@ internal sealed record ListShopBookingsQuery(
 
 internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingDetailResponse?>;
 
-/// <summary>The shop's bookings that need any barber (D-147): pending ones to accept or reject, and red ones to close.</summary>
+/// <summary>The shop's bookings that need any barber (D-147): red ones to close.</summary>
 internal sealed record GetShopAttentionQuery : IQuery<ShopAttentionResponse?>;
 
 /// <summary>
-/// Pending bookings (oldest start first), red bookings («متأخر»: open past their booked end, D-151) and those closed late
+/// Red bookings («متأخر»: open past their booked end, D-151; oldest start first) and those closed late
 /// («انقفل متأخر»: more than a quarter hour after their end, with who closed them), all started within the last 3 days,
 /// whoever's barber they are (D-147).
-/// Every barber of the shop sees them and may act on the open ones; the owner sees them read-only.
+/// Every barber of the shop sees them and may act on the open ones; the owner sees them read-only. D-155 (the client's
+/// 1-2): <c>Unavailable</c>, today's open bookings of the barbers marked «غير متوفر اليوم» (soonest first), which any
+/// barber may give to a colleague, give a new time or cancel with a reason.
 /// </summary>
 public sealed record ShopAttentionResponse(
-    IReadOnlyList<ShopBookingResponse> Pending, IReadOnlyList<ShopBookingResponse> Overdue, IReadOnlyList<ShopBookingResponse> ClosedLate);
+    IReadOnlyList<ShopBookingResponse> Overdue, IReadOnlyList<ShopBookingResponse> ClosedLate, IReadOnlyList<ShopBookingResponse>? Unavailable = null);
 
 internal sealed record CreateWalkInCommand(
     Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note, string? IdempotencyKey,
@@ -58,7 +60,8 @@ internal sealed record AddBookingNoteCommand(Guid BookingId, string Text) : ICom
 
 /// <summary>Shared queries of the shop's booking views.</summary>
 internal sealed class ShopBookingReader(
-    TrimmeDbContext db, IAvailabilityChecker availability, CustomerVisits visits, ICurrentUser user, IPersonalDataProtector protector, TimeProvider clock)
+    TrimmeDbContext db, IAvailabilityChecker availability, CustomerVisits visits, ICurrentUser user, IPersonalDataProtector protector, ShopChangeLimit limit,
+    CoverReader covers, TimeProvider clock)
 {
     /// <summary>
     /// Maps bookings, flagging the active ones that no longer fit the schedule (DV-S22); for the owner, new or returning
@@ -71,27 +74,14 @@ internal sealed class ShopBookingReader(
         var outside = await availability.OutsideScheduleAsync(shopId, active, cancellationToken);
         var labels = await visits.LabelsAsync(bookings, cancellationToken);
         var phones = await PhonesForBarberAsync(bookings, cancellationToken);
-        var offers = await LatestOffersAsync(bookings, cancellationToken);
+        var cover = bookings.Count == 0 ? Cover.None : await covers.TodayAsync(shopId, cancellationToken);
         return [.. bookings.Select(b => BookingMapping.ToShop(
-                b, now, outside.Contains(b.Id.Value), labels.TryGetValue(b.Id, out var visit) ? visit : null, b.AllowedFor(user, now))
+                b, now, outside.Contains(b.Id.Value), labels.TryGetValue(b.Id, out var visit) ? visit : null, b.AllowedFor(user, now, cover))
             with
             {
                 CustomerPhone = phones.GetValueOrDefault(b.Id),
-                Postponement = offers.TryGetValue(b.Id, out var offer) ? BookingEvents.Offer(offer, b, now) : null,
+                UnavailableBarber = cover.Covers(b),
             })];
-    }
-
-    /// <summary>Each online booking's latest postponement offer (D-147), in one query.</summary>
-    private async Task<IReadOnlyDictionary<BookingId, PostponementOffer>> LatestOffersAsync(IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
-    {
-        var ids = bookings.Where(b => b.Channel == BookingChannel.Online).Select(b => b.Id).ToList();
-        if (ids.Count == 0)
-        {
-            return new Dictionary<BookingId, PostponementOffer>();
-        }
-
-        var offers = await db.Set<PostponementOffer>().AsNoTracking().Where(o => ids.Contains(o.BookingId)).ToListAsync(cancellationToken);
-        return offers.GroupBy(o => o.BookingId).ToDictionary(g => g.Key, g => g.OrderByDescending(o => o.CreatedAt).First());
     }
 
     /// <summary>
@@ -124,8 +114,14 @@ internal sealed class ShopBookingReader(
     {
         var notes = await db.Set<BookingNote>().AsNoTracking().Where(n => n.BookingId == booking.Id).OrderBy(n => n.CreatedAt)
             .Select(n => new BookingNoteResponse(n.Id, n.Text, n.CreatedAt)).ToListAsync(cancellationToken);
+        return new ShopBookingDetailResponse(await OneAsync(booking, cancellationToken), BookingMapping.History(booking), notes);
+    }
+
+    /// <summary>One booking for its detail or a change's answer, with whether the shop already changed its time today (D-155).</summary>
+    public async Task<ShopBookingResponse> OneAsync(Booking booking, CancellationToken cancellationToken)
+    {
         var mapped = (await MapAsync(booking.ShopId, [booking], cancellationToken))[0];
-        return new ShopBookingDetailResponse(mapped, BookingMapping.History(booking), notes);
+        return booking.IsActive && await limit.ReachedAsync(booking, cancellationToken) ? mapped with { ChangedToday = true } : mapped;
     }
 
     /// <summary>Filters shared by the shop and admin lists: local-date range, statuses (any of), professional, name or reference.</summary>
@@ -193,7 +189,6 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
         int Count(params BookingStatus[] statuses) => statuses.Sum(s => byStatus.GetValueOrDefault(s));
         var counts = new ShopBookingCounts(
             byStatus.Values.Sum(),
-            Count(BookingStatus.Pending),
             Count(BookingStatus.Confirmed),
             Count(BookingStatus.Arrived),
             Count(BookingStatus.Completed),
@@ -224,7 +219,7 @@ internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant t
     }
 }
 
-internal sealed class GetShopAttentionHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopBookingReader reader, TimeProvider clock)
+internal sealed class GetShopAttentionHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopBookingReader reader, CoverReader covers, TimeProvider clock)
     : IQueryHandler<GetShopAttentionQuery, ShopAttentionResponse?>
 {
     /// <summary>Enough for any shop's three days; a list this long is a shop that stopped closing its bookings.</summary>
@@ -249,11 +244,23 @@ internal sealed class GetShopAttentionHandler(TrimmeDbContext db, ICurrentTenant
         var closed = await db.Set<Booking>().AsNoTracking()
             .Where(b => b.StartsAt >= visibleFrom && !open.Contains(b.Status) && b.UpdatedAt > b.EndsAt.AddMinutes(grace))
             .OrderByDescending(b => b.UpdatedAt).Take(Limit).ToListAsync(cancellationToken);
-        var mapped = await reader.MapAsync(shopId, [.. bookings, .. closed.Where(b => b.ClosedLate)], cancellationToken);
+
+        // D-155: today's open bookings of the barbers marked «غير متوفر اليوم», not yet red (red ones are above).
+        var cover = await covers.TodayAsync(shopId, cancellationToken);
+        List<Booking> away = [];
+        if (!cover.IsEmpty)
+        {
+            var barbers = cover.Barbers.ToArray();
+            away = await db.Set<Booking>().AsNoTracking()
+                .Where(b => barbers.Contains(b.ProfessionalId) && open.Contains(b.Status) && b.StartsAt >= cover.DayStart && b.StartsAt < cover.DayEnd && b.EndsAt >= now)
+                .OrderBy(b => b.StartsAt).ThenBy(b => b.Id).Take(Limit).ToListAsync(cancellationToken);
+        }
+
+        var mapped = await reader.MapAsync(shopId, [.. bookings, .. closed.Where(b => b.ClosedLate), .. away], cancellationToken);
         return new ShopAttentionResponse(
-            [.. mapped.Where(b => b.Status == BookingStatus.Pending && !b.Overdue)],
             [.. mapped.Where(b => b.Overdue)],
-            [.. mapped.Where(b => b.ClosedLate)]);
+            [.. mapped.Where(b => b.ClosedLate)],
+            [.. mapped.Where(b => b.UnavailableBarber && !b.Overdue)]);
     }
 }
 
@@ -465,19 +472,25 @@ internal sealed class CreateWalkInHandler(
 /// it once red (<see cref="BarberScope.AllowedFor"/>); the actor's name goes into the history.
 /// </summary>
 internal sealed class TransitionShopBookingHandler(
-    TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, BookingActors actors, TimeProvider clock)
+    TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, BookingActors actors, CoverReader covers, TimeProvider clock)
     : ICommandHandler<TransitionShopBookingCommand, Result<ShopBookingResponse>>
 {
     public async Task<Result<ShopBookingResponse>> Handle(TransitionShopBookingCommand command, CancellationToken cancellationToken)
     {
         var id = new BookingId(command.BookingId);
         var now = clock.GetUtcNow();
-        if (tenant.ShopId is not { } shopId || await db.Set<Booking>().Reachable(user, now).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        if (tenant.ShopId is not { } shopId)
         {
             return BookingErrors.NotFound();
         }
 
-        if (user.Own() is { } own && booking.ProfessionalId != own && !booking.AllowedFor(user, now).Contains(command.To))
+        var cover = user.Own() is null ? Cover.None : await covers.TodayAsync(shopId, cancellationToken);
+        if (await db.Set<Booking>().Reachable(user, now, cover).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        {
+            return BookingErrors.NotFound();
+        }
+
+        if (user.Own() is { } own && booking.ProfessionalId != own && !booking.AllowedFor(user, now, cover).Contains(command.To))
         {
             return BookingErrors.InvalidTransition(booking.Status, command.To);
         }

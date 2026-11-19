@@ -11,10 +11,10 @@ using Trimme.Modules.Loyalty.Domain;
 namespace Trimme.Modules.Loyalty.Application.Shop;
 
 /// <summary>
-/// The shop's own loyalty (D-149): whether the paid add-on is in force, the rules and their version, and how they are used.
+/// The shop's own loyalty (D-149): whether its plan includes loyalty now (D-155), the rules and their version, and how they are used.
 /// A barber reads the rules but not the figures (D-147: «ما يشوف إحصائيات»): <c>Stats</c> is null for them.
 /// </summary>
-public sealed record ShopLoyaltyResponse(bool AddOnActive, LoyaltyRulesResponse? Rules, uint? Version, LoyaltyStatsResponse? Stats);
+public sealed record ShopLoyaltyResponse(bool Included, LoyaltyRulesResponse? Rules, uint? Version, LoyaltyStatsResponse? Stats);
 
 /// <summary>
 /// Whether the number typed for a walk-in or phone booking has a reward ready at the shop, and what it is (D-149). Nothing
@@ -44,7 +44,7 @@ internal sealed class GetShopLoyaltyHandler(TrimmeDbContext db, ICurrentTenant t
 
         var editor = await rules.GetAsync(shopId, cancellationToken);
         return new ShopLoyaltyResponse(
-            editor.AddOnActive, editor.Rules, editor.Version,
+            editor.Included, editor.Rules, editor.Version,
             user.ProfessionalId is null ? await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken) : null);
     }
 }
@@ -63,7 +63,7 @@ internal sealed class SaveShopLoyaltyRulesHandler(TrimmeDbContext db, ICurrentTe
         var saved = await rules.SaveAsync(shopId, command.Rules, command.Version, "shop", cancellationToken);
         return saved.IsFailure
             ? saved.Error
-            : new ShopLoyaltyResponse(saved.Value.AddOnActive, saved.Value.Rules, saved.Value.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
+            : new ShopLoyaltyResponse(saved.Value.Included, saved.Value.Rules, saved.Value.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
     }
 }
 
@@ -71,7 +71,7 @@ internal sealed class SaveShopLoyaltyRulesHandler(TrimmeDbContext db, ICurrentTe
 /// A barber checks the typed number before a walk-in or phone booking (D-149): only whether a reward is ready and what it
 /// is. The number is hashed and never stored, logged or answered.
 /// </summary>
-internal sealed class LookupLoyaltyRewardHandler(ICurrentTenant tenant, LoyaltyLedger ledger, ILoyaltyAddOnStatus addOn, IPersonalDataProtector protector, TimeProvider clock)
+internal sealed class LookupLoyaltyRewardHandler(ICurrentTenant tenant, LoyaltyLedger ledger, ILoyaltyPlanStatus addOn, IPersonalDataProtector protector, TimeProvider clock)
     : IQueryHandler<LookupLoyaltyRewardQuery, Result<LoyaltyLookupResponse>>
 {
     private static readonly LoyaltyLookupResponse None = new(false, null, null, null, null, null);

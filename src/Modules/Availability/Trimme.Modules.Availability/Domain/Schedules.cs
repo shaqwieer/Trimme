@@ -60,6 +60,12 @@ public enum TimeOffKind
     Vacation,
     Sick,
     Other,
+
+    /// <summary>
+    /// «غير متوفر اليوم» (D-155, the client's 1-2): from the moment it is marked to the end of the shop's day, by the barber
+    /// for themselves or the owner. Made and undone only through its own action, never through the time-off form.
+    /// </summary>
+    Unavailable,
 }
 
 /// <summary>Limits shared by the schedule entities and validators (D-082).</summary>
@@ -407,9 +413,10 @@ public sealed class ScheduleBreak : AggregateRoot<ScheduleBreakId>, IShopOwned, 
 
 /// <summary>
 /// A professional's time off (vacation, sick leave…): the exact span in UTC instants. An all-day entry runs from the
-/// local start of its first day to the local start of the day after its last (D-082).
+/// local start of its first day to the local start of the day after its last (D-082). Public content since D-155: the
+/// public lists say who is «غير متوفر اليوم», so a save evicts the public cache.
 /// </summary>
-public sealed class ProfessionalTimeOff : AggregateRoot<TimeOffId>, IShopOwned, IConcurrencyVersioned
+public sealed class ProfessionalTimeOff : AggregateRoot<TimeOffId>, IShopOwned, IConcurrencyVersioned, IPublicContent
 {
     private ProfessionalTimeOff(TimeOffId id, ShopId shopId, ProfessionalId professionalId, DateTimeOffset now)
         : base(id)
@@ -438,11 +445,26 @@ public sealed class ProfessionalTimeOff : AggregateRoot<TimeOffId>, IShopOwned, 
 
     public string? Note { get; private set; }
 
+    /// <summary>The account that recorded it: kept for «غير متوفر اليوم» (who marked it, D-155); null before D-155.</summary>
+    public Guid? CreatedByUserId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public uint Version { get; private set; }
+
+    /// <summary>
+    /// «غير متوفر اليوم» (D-155): the rest of the shop's day from now, marked by <paramref name="by"/>. The barber's
+    /// bookings stay; their colleagues handle them.
+    /// </summary>
+    public static Result<ProfessionalTimeOff> MarkUnavailable(
+        TimeOffId id, ShopId shopId, ProfessionalId professionalId, DateTimeOffset now, DateTimeOffset dayEnd, Guid? by)
+    {
+        var entry = new ProfessionalTimeOff(id, shopId, professionalId, now) { CreatedByUserId = by };
+        var set = entry.Apply(TimeOffKind.Unavailable, new InstantRange(now, dayEnd), allDay: false, note: null, now);
+        return set.IsFailure ? set.Error : entry;
+    }
 
     public static Result<ProfessionalTimeOff> Create(
         TimeOffId id, ShopId shopId, ProfessionalId professionalId, TimeOffKind kind, InstantRange span, bool allDay, string? note, DateTimeOffset now)

@@ -11,17 +11,30 @@ export type MessageEvent = TemplateSummary['event'];
 export type MessageAudience = TemplateSummary['audience'];
 export type DispatchStatus = Dispatch['status'];
 
-/** Lifecycle order of the events, as the template list shows them. */
+/**
+ * Lifecycle order of the events, as the template list shows them. `BookingPending` is no longer sent (D-155: bookings
+ * are confirmed at once), so it is not listed. The shop's cancellation has its own message, and the plans' win-back
+ * message is the one marketing message (D-155).
+ */
 export const MESSAGE_EVENTS: readonly MessageEvent[] = [
   'BookingConfirmed',
-  'BookingPending',
   'BookingRescheduled',
   'BookingProfessionalChanged',
   'BookingCancelled',
+  'BookingCancelledByShop',
   'BookingReminder',
+  'WinBack',
 ];
 
-export const DISPATCH_STATUSES: readonly DispatchStatus[] = ['Queued', 'Sent', 'Delivered', 'Read', 'Failed'];
+/** `LimitReached`: a win-back message the plan's monthly limit kept back («وصل الحد», D-155). */
+export const DISPATCH_STATUSES: readonly DispatchStatus[] = [
+  'Queued',
+  'Sent',
+  'Delivered',
+  'Read',
+  'Failed',
+  'LimitReached',
+];
 
 export const MAX_BODY_LENGTH = 1024;
 export const MAX_BUTTONS = 2;
@@ -40,6 +53,7 @@ export function dispatchTone(status: DispatchStatus): BadgeTone {
     case 'Failed':
       return 'danger';
     case 'Queued':
+    case 'LimitReached':
       return 'warning';
     default:
       return 'info';

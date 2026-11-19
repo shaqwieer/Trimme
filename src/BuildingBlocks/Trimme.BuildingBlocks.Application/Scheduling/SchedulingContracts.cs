@@ -296,3 +296,23 @@ public interface IBarberBreakReport
 }
 
 public sealed record BreakTotals(int Count, int Minutes);
+
+/// <summary>
+/// The barbers marked «غير متوفر اليوم» (D-155, the client's 1-2), implemented by the Availability module, which stores the
+/// mark as time off from the moment it was made to the end of the shop's day. Reads through the caller's scope (the shop's
+/// tenant, an admin's, the public scope for one shop, or the system's).
+/// </summary>
+public interface IUnavailableBarbers
+{
+    /// <summary>The shop's barbers marked unavailable for the rest of today, with since when and the shop's day.</summary>
+    Task<IReadOnlyList<UnavailableBarber>> TodayAsync(ShopId shopId, CancellationToken cancellationToken);
+
+    /// <summary>How many days each barber was marked unavailable, by the marks made within [<paramref name="from"/>, <paramref name="to"/>).</summary>
+    Task<IReadOnlyDictionary<ProfessionalId, int>> DaysAsync(ShopId shopId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// A barber marked «غير متوفر اليوم» (D-155): when it was marked (<paramref name="Since"/>), the shop's local day it covers
+/// ([<paramref name="DayStart"/>, <paramref name="DayEnd"/>)), and the account that marked it (the barber or the owner).
+/// </summary>
+public sealed record UnavailableBarber(ProfessionalId ProfessionalId, DateTimeOffset Since, DateTimeOffset DayStart, DateTimeOffset DayEnd, Guid? MarkedBy);

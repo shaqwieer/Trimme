@@ -5,11 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
+using Trimme.BuildingBlocks.Application.Directories;
+using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
+using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
 using Trimme.IntegrationTests.Tenancy;
+using Trimme.Modules.Bookings.Application;
 using Trimme.Modules.Bookings.Domain;
 using Trimme.Modules.Identity.Domain;
 
@@ -171,6 +175,30 @@ internal static class BookingTestData
         var session = await IdentityTestData.SignInCustomerAsync(factory, IdentityTestData.NewPhone(), ct);
         await OkAsync(session.PostAsync("/api/v1/auth/profile/complete", new { displayName = name, preferredLocale = "ar", termsAccepted = true }, ct), ct);
         return session;
+    }
+
+    /// <summary>
+    /// An online booking written straight to the database, as test data (the seed's way, with no outbox message): for a
+    /// test that needs one customer to hold several bookings, which the API refuses since D-155 (one active booking per
+    /// customer). Confirmed, with the professional's own length.
+    /// </summary>
+    public static async Task<Guid> SeedOnlineBookingAsync(
+        BookingWorld w, Guid shopId, Guid customerId, string customerName, Guid? serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct,
+        Guid? packageId = null)
+    {
+        await using var scope = w.Factory.Services.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        using var system = services.GetRequiredService<ISystemDataScope>().Begin();
+        var db = services.GetRequiredService<TrimmeDbContext>();
+        var shop = new ShopId(shopId);
+        var offer = (await services.GetRequiredService<IBookableOfferCatalog>().FindAsync(shop, packageId is null ? serviceId : null, packageId, ct)).ShouldNotBeNull();
+        var pro = (await services.GetRequiredService<IProfessionalDirectory>().FindAsync(new ProfessionalId(professionalId), ct)).ShouldNotBeNull();
+        var booking = Booking.CreateOnline(
+            new BookingId(Guid.CreateVersion7()), shop, customerId, customerName, new BookedProfessional(pro.Id, pro.NameAr, pro.NameEn),
+            BookingMapping.Snapshot(offer, pro.Id), start, null, w.Clock?.GetUtcNow() ?? DateTimeOffset.UtcNow);
+        db.Add(booking);
+        await db.SaveChangesAsync(ct);
+        return booking.Id.Value;
     }
 
     public static Task<HttpResponseMessage> BookAsync(

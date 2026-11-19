@@ -9,7 +9,8 @@ public sealed record PlanPriceResponse(Guid Id, int VersionNumber, decimal Amoun
 
 /// <summary>
 /// A plan as SuperAdmin manages it. <c>CurrentPrice</c> is the version in force today (platform calendar) and
-/// <c>UpcomingPrice</c> the next scheduled one; <c>Prices</c> is the full history, newest first.
+/// <c>UpcomingPrice</c> the next scheduled one; <c>Prices</c> is the full history, newest first. The features (D-155):
+/// <c>IncludesLoyalty</c>, <c>WinBackEnabled</c>, <c>WinBackAfterDays</c> and <c>MonthlyMarketingMessages</c>.
 /// </summary>
 public sealed record PlanResponse(
     Guid Id,
@@ -32,7 +33,10 @@ public sealed record PlanResponse(
     IReadOnlyList<PlanPriceResponse> Prices,
     int SubscriptionCount,
     uint Version,
-    int? MonthlyWhatsAppMessages = null);
+    int? MonthlyMarketingMessages = null,
+    bool IncludesLoyalty = false,
+    bool WinBackEnabled = false,
+    int WinBackAfterDays = PlanLimits.DefaultWinBackAfterDays);
 
 /// <summary>One recorded period with the plan name and price as they were charged (never recomputed).</summary>
 public sealed record SubscriptionPeriodResponse(
@@ -89,8 +93,8 @@ public sealed record AdminShopSubscriptionResponse(
     IReadOnlyList<SubscriptionPeriodResponse> Periods,
     IReadOnlyList<SubscriptionOverrideResponse> Overrides,
     uint? Version,
-    LoyaltyAddOnResponse? LoyaltyAddOn = null,
-    WhatsAppUsageResponse? MessageUsage = null);
+    ShopPlanFeaturesResponse? Features = null,
+    MarketingUsageResponse? MarketingUsage = null);
 
 public sealed record AdminSubscriptionListItem(
     Guid ShopId,
@@ -134,8 +138,8 @@ public sealed record ShopSubscriptionResponse(
     int ExpiringSoonThresholdDays,
     bool HiddenFromDiscovery,
     IReadOnlyList<ShopRenewalResponse> Renewals,
-    LoyaltyAddOnResponse? LoyaltyAddOn = null,
-    WhatsAppUsageResponse? MessageUsage = null);
+    ShopPlanFeaturesResponse? Features = null,
+    MarketingUsageResponse? MarketingUsage = null);
 
 internal static class SubscriptionView
 {
@@ -162,7 +166,10 @@ internal static class SubscriptionView
         [.. plan.Prices.OrderByDescending(p => p.EffectiveFrom).Select(Price)],
         subscriptionCount,
         plan.Version,
-        plan.MonthlyWhatsAppMessages);
+        plan.MonthlyMarketingMessages,
+        plan.IncludesLoyalty,
+        plan.WinBackEnabled,
+        plan.WinBackAfterDays);
 
     public static SubscriptionStatus Status(ShopSubscription? subscription, DateOnly today, PlatformSettingsSnapshot settings) =>
         subscription is null

@@ -300,7 +300,8 @@ internal sealed class CreateCategoryHandler(TrimmeDbContext db, IAdminDataScope 
         using var _ = scope.Begin();
         var category = ServiceCategory.Create(EntityId.New<ServiceCategoryId>(), command.NameAr, command.NameEn, command.Icon, command.DisplayOrder, clock.GetUtcNow());
         db.Add(category);
-        audit.Record(new AuditRecord("service_category.created", nameof(ServiceCategory), category.Id.ToString(), Summary: $"Created ({category.Icon})"));
+        audit.Record(new AuditRecord("service_category.created", nameof(ServiceCategory), category.Id.ToString(), Summary: $"Created ({category.Icon})",
+            SummaryArgs: AuditArgs.Of(("icon", category.Icon))));
         await db.SaveChangesAsync(cancellationToken);
         return (await AdminCatalogReader.CategoriesAsync(db, category.Id, cancellationToken)).Single();
     }
@@ -521,7 +522,8 @@ internal sealed class OverrideServiceHandler(TrimmeDbContext db, IAdminDataScope
         var changes = ServiceChanges.Describe(before, service);
         audit.Record(new AuditRecord(
             "service.support_override", nameof(ShopService), service.Id.ToString(), service.ShopId,
-            changes.Count == 0 ? "No changes" : string.Join("; ", changes), command.Reason.Trim()));
+            changes.Count == 0 ? "No changes" : string.Join("; ", changes), command.Reason.Trim(),
+            SummaryArgs: ServiceChanges.Args(before, service)));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
     }
@@ -564,6 +566,22 @@ internal static class ServiceChanges
 
         return changes;
     }
+
+    /// <summary>The same changes as audit arguments (D-155): before and after values, flags for the rest.</summary>
+    public static IReadOnlyDictionary<string, string> Args(
+        (string NameAr, string? NameEn, decimal Price, int DurationMinutes, ServiceCategoryId? CategoryId, bool OnlineBookable) before,
+        ShopService service,
+        int? barbers = null) =>
+        AuditArgs.Of(
+            ("priceFrom", before.Price != service.Price ? before.Price : null),
+            ("priceTo", before.Price != service.Price ? service.Price : null),
+            ("currency", service.Currency),
+            ("durationFrom", before.DurationMinutes != service.DurationMinutes ? before.DurationMinutes : null),
+            ("durationTo", before.DurationMinutes != service.DurationMinutes ? service.DurationMinutes : null),
+            ("name", before.NameAr != service.NameAr || before.NameEn != service.NameEn ? true : null),
+            ("category", before.CategoryId != service.CategoryId ? true : null),
+            ("online", before.OnlineBookable != service.OnlineBookable ? service.OnlineBookable : null),
+            ("barbers", barbers));
 
     /// <summary>
     /// Makes exactly <paramref name="professionalIds"/> do the service: barbers of the service's own shop only (any other id
@@ -641,7 +659,8 @@ internal sealed class AdminCreateServiceHandler(
 
         audit.Record(new AuditRecord(
             "service.admin_created", nameof(ShopService), service.Id.ToString(), shopId,
-            string.Create(CultureInfo.InvariantCulture, $"{service.Price:0.00} {service.Currency}, {service.DurationMinutes} min, {assigned.Value} barbers")));
+            string.Create(CultureInfo.InvariantCulture, $"{service.Price:0.00} {service.Currency}, {service.DurationMinutes} min, {assigned.Value} barbers"),
+            SummaryArgs: AuditArgs.Of(("price", service.Price), ("currency", service.Currency), ("duration", service.DurationMinutes), ("barbers", assigned.Value))));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
     }
@@ -685,6 +704,7 @@ internal sealed class AdminUpdateServiceHandler(
         service.PlaceIn(section.Value, now);
 
         var changes = ServiceChanges.Describe(before, service);
+        int? professionalCount = null;
         if (command.ProfessionalIds is { } professionalIds)
         {
             var assigned = await ServiceChanges.AssignAsync(db, professionals, service, professionalIds, now, cancellationToken);
@@ -695,13 +715,15 @@ internal sealed class AdminUpdateServiceHandler(
 
             if (assigned.Value > 0)
             {
-                changes.Add(string.Create(CultureInfo.InvariantCulture, $"Barbers: {professionalIds.Distinct().Count()}"));
+                professionalCount = professionalIds.Distinct().Count();
+                changes.Add(string.Create(CultureInfo.InvariantCulture, $"Barbers: {professionalCount}"));
             }
         }
 
         audit.Record(new AuditRecord(
             "service.admin_updated", nameof(ShopService), service.Id.ToString(), service.ShopId,
-            changes.Count == 0 ? "No changes" : string.Join("; ", changes)));
+            changes.Count == 0 ? "No changes" : string.Join("; ", changes),
+            SummaryArgs: ServiceChanges.Args(before, service, professionalCount)));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminCatalogReader.ServiceAsync(db, shops, service, cancellationToken);
     }
@@ -764,7 +786,9 @@ internal sealed class AdminCreatePackageHandler(TrimmeDbContext db, IAdminDataSc
         db.Add(created.Value);
         audit.Record(new AuditRecord(
             "package.admin_created", nameof(ServicePackage), created.Value.Id.ToString(), shopId,
-            string.Create(CultureInfo.InvariantCulture, $"{created.Value.Price:0.00} {created.Value.Currency}, {created.Value.DurationMinutes} min, {items.Value.Count} services")));
+            string.Create(CultureInfo.InvariantCulture, $"{created.Value.Price:0.00} {created.Value.Currency}, {created.Value.DurationMinutes} min, {items.Value.Count} services"),
+            SummaryArgs: AuditArgs.Of(
+                ("price", created.Value.Price), ("currency", created.Value.Currency), ("duration", created.Value.DurationMinutes), ("services", items.Value.Count))));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminPackages.ReadAsync(db, created.Value, cancellationToken);
     }
@@ -799,7 +823,10 @@ internal sealed class AdminUpdatePackageHandler(TrimmeDbContext db, IAdminDataSc
 
         audit.Record(new AuditRecord(
             "package.admin_updated", nameof(ServicePackage), package.Id.ToString(), package.ShopId,
-            string.Create(CultureInfo.InvariantCulture, $"Price {before.Price:0.00} → {package.Price:0.00}; duration {before.DurationMinutes} → {package.DurationMinutes} min; {items.Value.Count} services")));
+            string.Create(CultureInfo.InvariantCulture, $"Price {before.Price:0.00} → {package.Price:0.00}; duration {before.DurationMinutes} → {package.DurationMinutes} min; {items.Value.Count} services"),
+            SummaryArgs: AuditArgs.Of(
+                ("priceFrom", before.Price), ("priceTo", package.Price), ("currency", package.Currency), ("durationFrom", before.DurationMinutes),
+                ("durationTo", package.DurationMinutes), ("services", items.Value.Count))));
         await db.SaveChangesAsync(cancellationToken);
         return await AdminPackages.ReadAsync(db, package, cancellationToken);
     }
@@ -898,7 +925,8 @@ internal sealed class SetProfessionalServicesHandler(TrimmeDbContext db, IAdminD
         }
 
         audit.Record(new AuditRecord(
-            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"{replaced.Value} services assigned"));
+            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"{replaced.Value} services assigned",
+            SummaryArgs: AuditArgs.Of(("by", "admin"), ("count", replaced.Value))));
         await db.SaveChangesAsync(cancellationToken);
         return await ProfessionalServicesReader.ReadAsync(db, professional, cancellationToken);
     }

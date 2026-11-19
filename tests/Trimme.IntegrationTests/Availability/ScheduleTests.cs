@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using Shouldly;
 using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Scheduling;
@@ -78,8 +79,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         schedule.GetProperty("timeZone").GetString().ShouldBe("Asia/Riyadh");
         schedule.GetProperty("professionals")[0].GetProperty("followsShopHours").GetBoolean().ShouldBeTrue();
         await FailsAsync(s.BarberA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = EveryDay(540, 720) }, ct), HttpStatusCode.Forbidden, null, ct);
-        // The temporary pause is the barbers' now; the owner only watches (D-147).
-        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
+        // The temporary pause is the owner's (and the admin's), no longer the barbers' (D-155, the client's 1-1).
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Forbidden, null, ct);
 
         // Opening hours 09:00–12:00 every day: a 30-minute service on the 5-minute grid, 09:00 … 11:30.
         await FailsAsync(s.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours", new { intervals = new[] { new { day = "Sunday", startMinute = 540, endMinute = 530 } } }, ct),
@@ -116,29 +117,60 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         schedule.GetProperty("timeOff").GetArrayLength().ShouldBe(1);
         schedule.GetProperty("closures")[0].GetProperty("reason").GetString().ShouldBe("اليوم الوطني");
 
-        // Pause, by a barber (D-147): no slots and a reason; the shop page itself stays reachable (D-013). Resume restores them.
+        // Pause, by the owner (D-155): no slots; the reason and the return time reach the shop page, which stays listed
+        // (D-013, D-155: «متوقف مؤقتاً»). A return time must be ahead, within 90 days. Resume restores them.
         var profileVersion = (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/profile", ct), ct)).GetProperty("version").GetUInt32();
-        var paused = await OkAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "ازدحام" }, ct), ct);
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { resumesAt = DateTimeOffset.UtcNow.AddHours(-1) }, ct),
+            HttpStatusCode.BadRequest, "validation.date_in_past", ct);
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { resumesAt = DateTimeOffset.UtcNow.AddDays(91) }, ct),
+            HttpStatusCode.BadRequest, "validation.out_of_range", ct);
+        var until = DateTimeOffset.UtcNow.AddDays(3);
+        var paused = await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { reason = "ازدحام", resumesAt = until }, ct), ct);
         paused.GetProperty("paused").GetBoolean().ShouldBeTrue();
         paused.GetProperty("reason").GetString().ShouldBe("ازدحام");
+        paused.GetProperty("resumesAt").GetDateTimeOffset().ShouldBe(until, TimeSpan.FromSeconds(1));
+        paused.GetProperty("byAdmin").GetBoolean().ShouldBeFalse();
         (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/profile", ct), ct)).GetProperty("version").GetUInt32()
             .ShouldBe(profileVersion, "pausing never makes an open profile form stale (D-083)");
-        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Conflict, "shop.online_booking_already_paused", ct);
+        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct), HttpStatusCode.Conflict, "shop.online_booking_already_paused", ct);
         var blocked = await SlotsAsync(anonymous, s.SlugA, $"serviceId={s.ServiceA}", Target.AddDays(2), ct);
         blocked.GetProperty("bookable").GetBoolean().ShouldBeFalse();
         blocked.GetProperty("blockedReason").GetString().ShouldBe("shop.paused");
         blocked.GetProperty("slots").GetArrayLength().ShouldBe(0);
         (await anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}", ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var status = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/status", ct), ct);
+        status.GetProperty("acceptsOnlineBookings").GetBoolean().ShouldBeFalse();
+        status.GetProperty("pauseReason").GetString().ShouldBe("ازدحام");
+        status.GetProperty("pausedUntil").GetDateTimeOffset().ShouldBe(until, TimeSpan.FromSeconds(1));
 
-        // D-013/D-083: a paused shop leaves discovery by default; with HidePausedShopsFromDiscovery off it stays listed
-        // but still takes no online bookings.
-        (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, false, "shop.paused"));
-        var settings = await OkAsync(s.Admin.GetAsync("/api/v1/admin/settings", ct), ct);
-        await OkAsync(s.Admin.PutAsync("/api/v1/admin/settings", SettingsBody(settings, hidePaused: false), ct), ct);
+        // D-155: a paused shop stays listed (the platform setting that hid it is gone) and takes no online bookings. The
+        // shop is told how many confirmed bookings fall inside the pause; they stay.
         (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(false, true, "shop.paused"));
+        (await OkAsync(s.Admin.GetAsync("/api/v1/admin/settings", ct), ct)).TryGetProperty("hidePausedShopsFromDiscovery", out _).ShouldBeFalse();
         (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/schedule", ct), ct)).GetProperty("onlineBookingPaused").GetBoolean().ShouldBeTrue();
-        await FailsAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), HttpStatusCode.Forbidden, null, ct);
-        await OkAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
+        var notice = (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Single(n => n.GetProperty("kind").GetString() == "shop.online_booking_paused");
+        notice.GetProperty("parameters").GetProperty("bookings").GetString().ShouldBe("0");
+        notice.GetProperty("parameters").GetProperty("by").GetString().ShouldBe("shop");
+        await FailsAsync(s.BarberA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), HttpStatusCode.Forbidden, null, ct);
+        await OkAsync(s.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct), ct);
+
+        // The admin pauses and resumes any shop (D-155); a pause past its return time is over at once, and the job tidies it.
+        var byAdmin = await OkAsync(s.Admin.PostAsync($"/api/v1/admin/shops/{s.Shops.A.ShopId}/online-booking/pause", new { reason = "صيانة", resumesAt = until }, ct), ct);
+        byAdmin.GetProperty("byAdmin").GetBoolean().ShouldBeTrue();
+        (await OkAsync(s.Admin.GetAsync($"/api/v1/admin/shops/{s.Shops.A.ShopId}/online-booking", ct), ct)).GetProperty("paused").GetBoolean().ShouldBeTrue();
+        await FailsAsync(s.OwnerA.PostAsync($"/api/v1/admin/shops/{s.Shops.A.ShopId}/online-booking/resume", null, ct), HttpStatusCode.Forbidden, null, ct);
+        await ExecuteAsync(s.Factory, "UPDATE shops.online_booking_pauses SET resumes_at = now() - interval '1 minute'", ct);
+        (await GateAsync(s.Factory, s.Shops.A.ShopId, ct)).ShouldBe(new ShopBookability(true, true, null));
+        (await OkAsync(s.OwnerA.GetAsync("/api/v1/shop/online-booking", ct), ct)).GetProperty("paused").GetBoolean().ShouldBeFalse();
+        await using (var jobScope = s.Factory.Services.CreateAsyncScope())
+        {
+            await jobScope.ServiceProvider.GetRequiredService<Trimme.Modules.Shops.Jobs.OnlineBookingResumeJob>().RunAsync(ct);
+        }
+
+        (await ScalarAsync(s.Factory, "SELECT count(*) FROM shops.online_booking_pauses", ct)).ShouldBe(0L);
+        (await ScalarAsync(s.Factory, "SELECT count(*) FROM administration.audit_entries WHERE action = 'shop.online_booking_resumed' AND summary_args->>'by' = 'system'", ct))
+            .ShouldBe(1L);
 
         // Removing the time off and the closure brings the slots back.
         await OkAsync(s.OwnerA.DeleteAsync($"/api/v1/shop/schedule/time-off/{timeOff.GetProperty("id").GetGuid()}", ct), ct, HttpStatusCode.NoContent);
@@ -434,22 +466,21 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         return await scope.ServiceProvider.GetRequiredService<IShopBookability>().GetAsync(new ShopId(shopId), ct);
     }
 
-    private static object SettingsBody(JsonElement s, bool hidePaused) => new
+    private static async Task ExecuteAsync(TrimmeApiFactory factory, string sql, CancellationToken ct)
     {
-        minLeadTimeMinutes = s.GetProperty("minLeadTimeMinutes").GetInt32(),
-        bookingHorizonDays = s.GetProperty("bookingHorizonDays").GetInt32(),
-        slotStepMinutes = s.GetProperty("slotStepMinutes").GetInt32(),
-        cancellationCutoffMinutes = s.GetProperty("cancellationCutoffMinutes").GetInt32(),
-        reviewWindowDays = s.GetProperty("reviewWindowDays").GetInt32(),
-        reminderOffsetMinutes = s.GetProperty("reminderOffsetMinutes").GetInt32(),
-        expiringSoonThresholdDays = s.GetProperty("expiringSoonThresholdDays").GetInt32(),
-        expiredSubscriptionEnforcement = s.GetProperty("expiredSubscriptionEnforcement").GetString(),
-        hidePausedShopsFromDiscovery = hidePaused,
-        mapDefaultLatitude = s.GetProperty("mapDefaultLatitude").GetDouble(),
-        mapDefaultLongitude = s.GetProperty("mapDefaultLongitude").GetDouble(),
-        mapDefaultZoom = s.GetProperty("mapDefaultZoom").GetInt32(),
-        version = s.GetProperty("version").GetUInt32(),
-    };
+        await using var connection = new NpgsqlConnection(factory.ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = new NpgsqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task<object?> ScalarAsync(TrimmeApiFactory factory, string sql, CancellationToken ct)
+    {
+        await using var connection = new NpgsqlConnection(factory.ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = new NpgsqlCommand(sql, connection);
+        return await command.ExecuteScalarAsync(ct);
+    }
 
     private static async Task<Guid> CreateProfessionalAsync(ApiSession admin, Guid shopId, string nameAr, string nameEn, CancellationToken ct) =>
         (await OkAsync(admin.PostAsync("/api/v1/admin/professionals", new { shopId, nameAr, nameEn }, ct), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();

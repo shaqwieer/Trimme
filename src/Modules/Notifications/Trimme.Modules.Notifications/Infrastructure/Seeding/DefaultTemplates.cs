@@ -9,7 +9,7 @@ using Trimme.Modules.Notifications.Domain;
 namespace Trimme.Modules.Notifications.Infrastructure.Seeding;
 
 /// <summary>
-/// The starting wording of every template slot (spec §16, D-109, D-145): customers get six events and professionals four, in
+/// The starting wording of every template slot (spec §16, D-109, D-145, D-155): customers get eight events and professionals four, in
 /// Arabic and English. <c>migrate</c> creates a missing slot with this text as its active version 1 and never touches an
 /// existing slot, so admin edits always win. This is the only place with message text; jobs and handlers render templates
 /// from the database (R-NEG-09). Production must register matching approved templates with Meta.
@@ -96,6 +96,28 @@ internal static class DefaultTemplates
         Customer(MessageEvent.BookingCancelled, "en",
             "Hi {{customer_name}}, your booking at {{shop_name}} on {{booking_date}} at {{booking_time}} ({{service_name}}) has been cancelled.\n"
             + "Booking reference: {{booking_reference}}. You are welcome to book again any time.",
+            new TemplateButton("Book again", TemplateButtonTarget.ShopPage)),
+
+        // D-155: the shop's own cancellation apologises and gives its reason (the client's «أنا ما ألغيت!»).
+        Customer(MessageEvent.BookingCancelledByShop, "ar",
+            "نعتذر منك، {{shop_name}} اضطر يلغي موعدك يوم {{booking_date}} الساعة {{booking_time}}.\n"
+            + "السبب: {{reason}}. رقم الحجز: {{booking_reference}}.\n"
+            + "تقدر تحجز موعد ثاني من الزر تحت.",
+            new TemplateButton("احجز من جديد", TemplateButtonTarget.ShopPage)),
+        Customer(MessageEvent.BookingCancelledByShop, "en",
+            "We are sorry: {{shop_name}} had to cancel your appointment on {{booking_date}} at {{booking_time}}.\n"
+            + "The reason: {{reason}}. Booking reference: {{booking_reference}}.\n"
+            + "You can book another time with the button below.",
+            new TemplateButton("Book again", TemplateButtonTarget.ShopPage)),
+
+        // D-155: «رسالة الدعوة للعودة», the plan's marketing message (Meta files it as MARKETING).
+        Customer(MessageEvent.WinBack, "ar",
+            "مرحباً {{customer_name}}، اشتقنا لك في {{shop_name}}! صار لك فترة من آخر زيارة.\n"
+            + "موعدك الجاي بضغطة وحدة: اختر الوقت اللي يناسبك من الزر تحت.",
+            new TemplateButton("احجز من جديد", TemplateButtonTarget.ShopPage)),
+        Customer(MessageEvent.WinBack, "en",
+            "Hi {{customer_name}}, we miss you at {{shop_name}}! It has been a while since your last visit.\n"
+            + "Your next appointment is one tap away: pick a time that suits you with the button below.",
             new TemplateButton("Book again", TemplateButtonTarget.ShopPage)),
         Customer(MessageEvent.BookingReminder, "ar",
             "تذكير: موعدك في {{shop_name}} بعد {{time_remaining}}، الساعة {{booking_time}}.\n"

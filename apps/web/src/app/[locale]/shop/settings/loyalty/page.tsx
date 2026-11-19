@@ -12,8 +12,8 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * Shop settings — loyalty (D-149, the client's 6-2): the owner's points rules (first visit, each later visit, the points
- * a reward needs, the reward, and what happens without visits) and how the programme is used. Loyalty is a paid add-on
- * the platform switches on; the rules can be set before. Barbers read them; only `Shop.Profile.Edit` saves (the API
+ * a reward needs, the reward, and what happens without visits) and how the programme is used. Loyalty comes with a
+ * plan that includes it (D-155); the rules can be set before. Barbers read them; only `Shop.Profile.Edit` saves (the API
  * enforces the same).
  */
 export default async function ShopLoyaltySettingsPage({
@@ -53,7 +53,7 @@ export default async function ShopLoyaltySettingsPage({
                 scope={{ kind: 'shop' }}
                 rules={loyalty.rules}
                 version={loyalty.version}
-                addOnActive={loyalty.addOnActive}
+                included={loyalty.included}
                 services={(services ?? [])
                   .filter((s) => !s.isArchived)
                   .map((s) => ({ id: s.id, nameAr: s.nameAr, nameEn: s.nameEn }))}

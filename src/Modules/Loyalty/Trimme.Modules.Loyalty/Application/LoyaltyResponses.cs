@@ -71,7 +71,7 @@ public sealed record MyShopLoyaltyResponse(
 public sealed record MyLoyaltyResponse(IReadOnlyList<MyShopLoyaltyResponse> Items);
 
 /// <summary>A shop's loyalty rules as the owner or the admin edits them: the add-on in force, the rules (null before the first save) and their version.</summary>
-public sealed record LoyaltyRulesEditor(bool AddOnActive, LoyaltyRulesResponse? Rules, uint? Version);
+public sealed record LoyaltyRulesEditor(bool Included, LoyaltyRulesResponse? Rules, uint? Version);
 
 internal static class LoyaltyMapping
 {

@@ -96,8 +96,21 @@ internal sealed class AccountStore(
     public Task<CustomerProfileRow?> FindCustomerProfileAsync(Guid userId, CancellationToken cancellationToken) =>
         db.Set<ApplicationUser>().AsNoTracking()
             .Where(u => u.Id == userId && u.UserType == UserType.Customer && u.DisabledAt == null && u.DeletedAt == null)
-            .Select(u => new CustomerProfileRow(u.Id, u.DisplayName, u.PreferredLocale, u.ContactEmail, u.ProtectedPhone, u.PhoneLookupHash))
+            .Select(u => new CustomerProfileRow(u.Id, u.DisplayName, u.PreferredLocale, u.ContactEmail, u.ProtectedPhone, u.PhoneLookupHash, u.WinBackMessages))
             .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<bool> SetWinBackMessagesAsync(Guid userId, bool enabled, CancellationToken cancellationToken)
+    {
+        if (await db.Set<ApplicationUser>().SingleOrDefaultAsync(
+                u => u.Id == userId && u.UserType == UserType.Customer && u.DisabledAt == null && u.DeletedAt == null, cancellationToken) is not { } user)
+        {
+            return false;
+        }
+
+        user.WinBackMessages = enabled;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> UpdateCustomerProfileAsync(Guid userId, CustomerProfileUpdate update, CancellationToken cancellationToken)
     {

@@ -90,6 +90,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         });
         builder.Navigation(b => b.History).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Ignore(b => b.IsActive);
+        builder.Ignore(b => b.TimeChangedByShopAt);
         builder.Ignore(b => b.PackageExtras);
     }
 }
@@ -105,27 +106,6 @@ internal sealed class WalkInContactConfiguration : IEntityTypeConfiguration<Walk
         builder.Property(c => c.PhoneMasked).HasMaxLength(32);
         builder.HasShopScopedReference<WalkInContact, Booking>(nameof(WalkInContact.BookingId), DeleteBehavior.Cascade);
         builder.HasIndex(c => c.PhoneLookupHash);
-    }
-}
-
-/// <summary>
-/// Postponement offers (D-147). Their hold on the barber's time is checked by two triggers added by SQL in the
-/// <c>BarberOperations</c> migration: one on bookings (a new or moved active booking may not overlap a live offer) and one
-/// on offers (a new offer may not overlap an active booking or another live offer). Both take the same per-barber
-/// transaction lock first, so the two checks cannot race; a refusal is SQLSTATE 23P01, like the exclusion constraint.
-/// </summary>
-internal sealed class PostponementOfferConfiguration : IEntityTypeConfiguration<PostponementOffer>
-{
-    public void Configure(EntityTypeBuilder<PostponementOffer> builder)
-    {
-        builder.ToTable("postponement_offers", t => t.HasCheckConstraint("ck_postponement_offers_range", "ends_at > starts_at"));
-        builder.HasKey(o => o.Id);
-        builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(12);
-        builder.Property(o => o.OfferedByName).HasMaxLength(BookingRules.MaxNameLength);
-        builder.HasShopScopedReference<PostponementOffer, Booking>(nameof(PostponementOffer.BookingId), DeleteBehavior.Cascade);
-        builder.HasIndex(o => new { o.ProfessionalId, o.StartsAt }).HasFilter("status = 'Open'");
-        builder.HasIndex(o => new { o.BookingId, o.CreatedAt });
-        builder.HasIndex(o => new { o.CustomerId, o.CreatedAt });
     }
 }
 

@@ -35,12 +35,15 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<CustomerBookingSupport>();
         services.AddScoped<ShopRescheduleAvailability>();
         services.AddScoped<ShopBookingChanger>();
-        services.AddScoped<BuildingBlocks.Application.Privacy.ICustomerUpcomingBookings, CustomerUpcomingBookings>();
+        services.AddScoped<CustomerUpcomingBookings>();
+        services.AddScoped<BuildingBlocks.Application.Privacy.ICustomerUpcomingBookings>(sp => sp.GetRequiredService<CustomerUpcomingBookings>());
         services.AddScoped<RescheduleAvailability>();
         services.AddScoped<ProfessionalPicker>();
         services.AddScoped<ShopRulesReader>();
         services.AddScoped<CustomerVisits>();
         services.AddScoped<ShopBookingReader>();
+        services.AddScoped<CoverReader>();
+        services.AddScoped<ShopChangeLimit>();
         services.AddScoped<BookingActors>();
         services.AddScoped<ShopBoardLoader>();
         services.AddScoped<AdminBookingMapper>();
@@ -52,6 +55,7 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<IBookingReviewSource, BookingReviewSource>();
         services.AddScoped<BuildingBlocks.Application.Notifications.IBookingNotificationSource, BookingNotificationSource>();
         services.AddScoped<BuildingBlocks.Application.Notifications.IWalkInContactReader, WalkInContactReader>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IWinBackCandidates, WinBackCandidateReader>();
         services.AddScoped<IBookingStatistics, BookingStatistics>();
         services.AddScoped<BuildingBlocks.Application.Qr.IQrBookingReader, QrBookingReader>();
         services.AddSingleton<IDevSeeder, DemoBookingsSeeder>();

@@ -50,7 +50,13 @@ internal interface IPlanFields
 
     bool AvailableToNewShops { get; }
 
-    int? MonthlyWhatsAppMessages { get; }
+    int? MonthlyMarketingMessages { get; }
+
+    bool IncludesLoyalty { get; }
+
+    bool WinBackEnabled { get; }
+
+    int WinBackAfterDays { get; }
 }
 
 internal sealed record ListPlansQuery : IQuery<IReadOnlyList<PlanResponse>>;
@@ -71,7 +77,10 @@ internal sealed record CreatePlanCommand(
     int? GraceDays,
     bool AvailableToNewShops,
     decimal? InitialPrice,
-    int? MonthlyWhatsAppMessages = null) : ICommand<Result<PlanResponse>>, IPlanFields;
+    int? MonthlyMarketingMessages = null,
+    bool IncludesLoyalty = false,
+    bool WinBackEnabled = false,
+    int WinBackAfterDays = PlanLimits.DefaultWinBackAfterDays) : ICommand<Result<PlanResponse>>, IPlanFields;
 
 internal sealed record UpdatePlanCommand(
     Guid PlanId,
@@ -88,7 +97,10 @@ internal sealed record UpdatePlanCommand(
     int? GraceDays,
     bool AvailableToNewShops,
     uint Version,
-    int? MonthlyWhatsAppMessages = null) : ICommand<Result<PlanResponse>>, IPlanFields;
+    int? MonthlyMarketingMessages = null,
+    bool IncludesLoyalty = false,
+    bool WinBackEnabled = false,
+    int WinBackAfterDays = PlanLimits.DefaultWinBackAfterDays) : ICommand<Result<PlanResponse>>, IPlanFields;
 
 internal sealed record ChangePlanStateCommand(Guid PlanId, PlanStateChange Change) : ICommand<Result<PlanResponse>>;
 
@@ -117,7 +129,9 @@ internal sealed class PlanRules<T> : AbstractValidator<T>
         RuleFor(c => c.MaxServices).InclusiveBetween(1, 10_000).When(c => c.MaxServices is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.TrialDays).InclusiveBetween(0, 365).When(c => c.TrialDays is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.GraceDays).InclusiveBetween(0, 365).When(c => c.GraceDays is not null).WithErrorCode("validation.out_of_range");
-        RuleFor(c => c.MonthlyWhatsAppMessages).InclusiveBetween(0, PlanLimits.MaxMonthlyWhatsAppMessages).When(c => c.MonthlyWhatsAppMessages is not null)
+        RuleFor(c => c.MonthlyMarketingMessages).InclusiveBetween(0, PlanLimits.MaxMonthlyMarketingMessages).When(c => c.MonthlyMarketingMessages is not null)
+            .WithErrorCode("validation.out_of_range");
+        RuleFor(c => c.WinBackAfterDays).InclusiveBetween(PlanLimits.MinWinBackAfterDays, PlanLimits.MaxWinBackAfterDays)
             .WithErrorCode("validation.out_of_range");
     }
 }
@@ -146,7 +160,8 @@ internal static class PlanReader
     public static PlanDetails Details(IPlanFields f) => new(
         f.NameAr, f.NameEn, f.DescriptionAr, f.DescriptionEn,
         [.. (f.Features ?? []).Select(x => PlanFeature.Of(x.Ar, x.En))],
-        f.MaxProfessionals, f.MaxServices, f.IntervalUnit, f.IntervalCount, f.TrialDays, f.GraceDays, f.AvailableToNewShops, f.MonthlyWhatsAppMessages);
+        f.MaxProfessionals, f.MaxServices, f.IntervalUnit, f.IntervalCount, f.TrialDays, f.GraceDays, f.AvailableToNewShops, f.MonthlyMarketingMessages,
+        f.IncludesLoyalty, f.WinBackEnabled, f.WinBackAfterDays);
 
     public static Task<SubscriptionPlan?> FindAsync(TrimmeDbContext db, Guid planId, CancellationToken cancellationToken)
     {
@@ -223,7 +238,8 @@ internal sealed class CreatePlanHandler(TrimmeDbContext db, IAdminDataScope scop
         }
 
         db.Add(plan);
-        audit.Record(new AuditRecord("plan.created", "SubscriptionPlan", plan.Id.ToString(), null, $"Plan created (Draft){(command.InitialPrice is { } p ? $", price {PlanReader.Money(p, plan.Prices[0].Currency)}" : string.Empty)}", null));
+        audit.Record(new AuditRecord("plan.created", "SubscriptionPlan", plan.Id.ToString(), null, $"Plan created (Draft){(command.InitialPrice is { } p ? $", price {PlanReader.Money(p, plan.Prices[0].Currency)}" : string.Empty)}", null,
+            SummaryArgs: AuditArgs.Of(("price", command.InitialPrice), ("currency", command.InitialPrice is null ? null : plan.Prices[0].Currency))));
         await db.SaveChangesAsync(cancellationToken);
         return await PlanReader.ResponseAsync(db, scope, settings, clock, plan, cancellationToken);
     }
@@ -274,7 +290,8 @@ internal sealed class ChangePlanStateHandler(TrimmeDbContext db, IAdminDataScope
             return result.Error;
         }
 
-        audit.Record(new AuditRecord(action, "SubscriptionPlan", plan.Id.ToString(), null, $"Plan is now {plan.Status}", null));
+        audit.Record(new AuditRecord(action, "SubscriptionPlan", plan.Id.ToString(), null, $"Plan is now {plan.Status}", null,
+            SummaryArgs: AuditArgs.Of(("status", plan.Status))));
         await db.SaveChangesAsync(cancellationToken);
         return await PlanReader.ResponseAsync(db, scope, settings, clock, plan, cancellationToken);
     }
@@ -297,7 +314,8 @@ internal sealed class ReorderPlansHandler(TrimmeDbContext db, IAdminDataScope sc
             plans.Single(p => p.Id == ids[i]).MoveTo(i + 1);
         }
 
-        audit.Record(new AuditRecord("plan.reordered", "SubscriptionPlan", "*", null, $"{ids.Length} plans reordered", null));
+        audit.Record(new AuditRecord("plan.reordered", "SubscriptionPlan", "*", null, $"{ids.Length} plans reordered", null,
+            SummaryArgs: AuditArgs.Of(("count", ids.Length))));
         await db.SaveChangesAsync(cancellationToken);
         var today = (await settings.GetAsync(cancellationToken)).LocalDate(clock.GetUtcNow());
         var counts = await PlanReader.CountsAsync(db, scope, cancellationToken);
@@ -333,7 +351,8 @@ internal sealed class AddPlanPriceHandler(TrimmeDbContext db, IAdminDataScope sc
         db.Entry(plan).Property(p => p.UpdatedAt).IsModified = true;
         audit.Record(new AuditRecord(
             "plan.price_added", "SubscriptionPlan", plan.Id.ToString(), null,
-            $"Price version {price.VersionNumber}: {PlanReader.Money(price.Amount, price.Currency)} from {PlanReader.Day(price.EffectiveFrom)}", null));
+            $"Price version {price.VersionNumber}: {PlanReader.Money(price.Amount, price.Currency)} from {PlanReader.Day(price.EffectiveFrom)}", null,
+            SummaryArgs: AuditArgs.Of(("version", price.VersionNumber), ("amount", price.Amount), ("currency", price.Currency), ("from", price.EffectiveFrom))));
         await db.SaveChangesAsync(cancellationToken);
         return await PlanReader.ResponseAsync(db, scope, settings, clock, plan, cancellationToken);
     }

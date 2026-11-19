@@ -1,71 +1,48 @@
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Notifications;
 using Trimme.BuildingBlocks.Application.Tenancy;
-using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Subscriptions.Domain;
 
 namespace Trimme.Modules.Subscriptions.Application;
 
-/// <summary>One recorded loyalty add-on period (D-149), with the add-on price version it was recorded with.</summary>
-public sealed record LoyaltyAddOnPeriodResponse(
-    Guid Id,
-    DateOnly StartDate,
-    DateOnly EndDate,
-    DateOnly LastDay,
-    DateOnly? StoppedOn,
-    int PriceVersionNumber,
-    decimal Amount,
-    string Currency,
-    string? Notes,
-    DateTimeOffset RecordedAt);
+/// <summary>
+/// What the shop's plan in force gives it (D-155, the client's «كل محل مربوط بباقة»): loyalty (<c>LoyaltyActive</c>
+/// while the subscription is in force), the win-back message and after how many days, and the monthly marketing
+/// messages (null unlimited, 0 none). Null on the responses without a subscription.
+/// </summary>
+public sealed record ShopPlanFeaturesResponse(bool IncludesLoyalty, bool LoyaltyActive, bool WinBackEnabled, int WinBackAfterDays, int? MonthlyMarketingMessages);
 
 /// <summary>
-/// The shop's loyalty add-on (D-149): whether it is in force today, its first and last day, the days left, and every
-/// period recorded (newest first). Customers earn and redeem points only while it is in force; points are kept after.
+/// The shop's win-back messages in the current window (D-155: «رسايل الدعوة هالشهر: ١٢٣ من ٥٠٠»): the window's first and
+/// last day (a month from the day the subscription period started), how many went to the provider, and the plan's limit.
 /// </summary>
-public sealed record LoyaltyAddOnResponse(bool Active, DateOnly? StartDate, DateOnly? EndDate, int DaysRemaining, IReadOnlyList<LoyaltyAddOnPeriodResponse> Periods);
+public sealed record MarketingUsageResponse(DateOnly WindowStart, DateOnly WindowEnd, int Used, int? Allowance);
 
-/// <summary>
-/// WhatsApp messages to the shop's customers this calendar month (D-149, shop time zone): how many were handed to the
-/// provider, and the plan's allowance (null = unlimited, 0 = none).
-/// </summary>
-public sealed record WhatsAppUsageResponse(DateOnly Month, int Used, int? Allowance);
-
-public sealed record LoyaltyAddOnPriceResponse(Guid Id, int VersionNumber, decimal Amount, string Currency, DateOnly EffectiveFrom, DateTimeOffset CreatedAt);
-
-/// <summary>The add-on's price versions (newest first), the one in force today and the next scheduled one.</summary>
-public sealed record LoyaltyAddOnPricesResponse(LoyaltyAddOnPriceResponse? Current, LoyaltyAddOnPriceResponse? Upcoming, IReadOnlyList<LoyaltyAddOnPriceResponse> Prices);
-
-/// <summary>
-/// The loyalty add-on and the WhatsApp usage of one shop, for its subscription page (the owner's and the admin's), read
-/// through the caller's data scope.
-/// </summary>
-internal sealed class SubscriptionExtras(TrimmeDbContext db, IWhatsAppUsage usage, TimeProvider clock)
+/// <summary>The plan's features and the marketing usage of one shop, for its subscription page (the owner's and the admin's).</summary>
+internal sealed class SubscriptionExtras(TrimmeDbContext db, IMarketingUsage usage)
 {
-    public async Task<LoyaltyAddOnResponse> AddOnAsync(ShopId shopId, DateOnly today, CancellationToken cancellationToken)
+    public async Task<ShopPlanFeaturesResponse?> FeaturesAsync(ShopSubscription? subscription, SubscriptionStatus status, DateOnly today, CancellationToken cancellationToken)
     {
-        var coverage = await db.Set<SubscriptionCoverage>().AsNoTracking().SingleOrDefaultAsync(c => c.ShopId == shopId, cancellationToken);
-        var periods = await db.Set<LoyaltyAddOnPeriod>().AsNoTracking().Where(p => p.ShopId == shopId)
-            .OrderByDescending(p => p.StartDate).ThenByDescending(p => p.RecordedAt).ToListAsync(cancellationToken);
-        var active = LoyaltyAddOnRules.IsActive(coverage?.LoyaltyAddOnStart, coverage?.LoyaltyAddOnEnd, today);
-        return new LoyaltyAddOnResponse(
-            active,
-            coverage?.LoyaltyAddOnStart,
-            coverage?.LoyaltyAddOnEnd,
-            active && coverage?.LoyaltyAddOnEnd is { } end ? SubscriptionStatusCalculator.DaysRemaining(end, today) : 0,
-            [.. periods.Select(Period)]);
+        if (await PlanAsync(db, subscription, today, cancellationToken) is not { } plan)
+        {
+            return null;
+        }
+
+        var inForce = status is not (SubscriptionStatus.None or SubscriptionStatus.Expired or SubscriptionStatus.Suspended);
+        return new ShopPlanFeaturesResponse(
+            plan.IncludesLoyalty, inForce && plan.IncludesLoyalty, plan.WinBackEnabled, plan.WinBackAfterDays, plan.MonthlyMarketingMessages);
     }
 
-    public async Task<WhatsAppUsageResponse> WhatsAppAsync(ShopSummary shop, ShopSubscription? subscription, DateOnly today, CancellationToken cancellationToken)
+    public async Task<MarketingUsageResponse> MarketingAsync(ShopSummary shop, ShopSubscription? subscription, DateOnly today, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(shop);
-        var month = WhatsAppMonths.Of(clock.GetUtcNow(), shop.TimeZone);
-        return new WhatsAppUsageResponse(month, await usage.UsedAsync(shop.Id, month, cancellationToken), await AllowanceAsync(db, subscription, today, cancellationToken));
+        var terms = await TermsAsync(db, subscription, today, cancellationToken);
+        return new MarketingUsageResponse(terms.WindowStart, terms.WindowEnd, await usage.UsedAsync(shop.Id, terms.WindowStart, cancellationToken), terms.Allowance);
     }
 
-    /// <summary>The allowance of the plan in force (null without a subscription, or for a plan without one: unlimited).</summary>
-    public static async Task<int?> AllowanceAsync(TrimmeDbContext db, ShopSubscription? subscription, DateOnly today, CancellationToken cancellationToken)
+    /// <summary>The plan of the period in force (or the latest one once it lapsed); null without a subscription.</summary>
+    public static async Task<SubscriptionPlan?> PlanAsync(TrimmeDbContext db, ShopSubscription? subscription, DateOnly today, CancellationToken cancellationToken)
     {
         if (subscription is null || subscription.Periods.Count == 0)
         {
@@ -73,11 +50,23 @@ internal sealed class SubscriptionExtras(TrimmeDbContext db, IWhatsAppUsage usag
         }
 
         var planId = subscription.PeriodInForce(today).PlanId;
-        return await db.Set<SubscriptionPlan>().AsNoTracking().Where(p => p.Id == planId).Select(p => p.MonthlyWhatsAppMessages).SingleOrDefaultAsync(cancellationToken);
+        return await db.Set<SubscriptionPlan>().AsNoTracking().SingleOrDefaultAsync(p => p.Id == planId, cancellationToken);
     }
 
-    public static LoyaltyAddOnPeriodResponse Period(LoyaltyAddOnPeriod p) =>
-        new(p.Id.Value, p.StartDate, p.EndDate, p.LastDay, p.StoppedOn, p.PriceVersionNumber, p.Amount, p.Currency, p.Notes, p.RecordedAt);
+    /// <summary>
+    /// The shop's marketing terms (D-155): the window from the day its period in force started (the calendar month
+    /// without one), the plan's limit, and the win-back message while the subscription is in force.
+    /// </summary>
+    public static async Task<MarketingTerms> TermsAsync(TrimmeDbContext db, ShopSubscription? subscription, DateOnly today, CancellationToken cancellationToken)
+    {
+        if (subscription is null || subscription.Periods.Count == 0 || await PlanAsync(db, subscription, today, cancellationToken) is not { } plan)
+        {
+            var (start, end) = MarketingWindows.Calendar(today);
+            return new MarketingTerms(start, end, null, false, PlanLimits.DefaultWinBackAfterDays);
+        }
 
-    public static LoyaltyAddOnPriceResponse Price(LoyaltyAddOnPrice p) => new(p.Id.Value, p.VersionNumber, p.Amount, p.Currency, p.EffectiveFrom, p.CreatedAt);
+        var (windowStart, windowEnd) = MarketingWindows.Of(subscription.PeriodInForce(today).PeriodStart, today);
+        var inForce = !subscription.IsSuspended && today <= subscription.EndDate;
+        return new MarketingTerms(windowStart, windowEnd, plan.MonthlyMarketingMessages, inForce && plan.WinBackEnabled, plan.WinBackAfterDays);
+    }
 }

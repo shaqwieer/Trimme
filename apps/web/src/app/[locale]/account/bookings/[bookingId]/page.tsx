@@ -3,11 +3,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { CustomerStatusBadge, isActive, rebookHref } from '@/components/booking/BookingCards';
-import {
-  CancelBookingButton,
-  Countdown,
-  PostponementOfferCard,
-} from '@/components/booking/BookingDetailClient';
+import { CancelBookingButton, Countdown } from '@/components/booking/BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from '@/components/booking/BookingDetailParts';
 import { Ltr } from '@/components/text/Ltr';
 import { ButtonLink } from '@/components/ui/Button';
@@ -70,12 +66,20 @@ export default async function BookingDetailPage({
   if (response.status === 404 || response.status === 400) notFound();
   if (!booking) throw new Error(`GET /api/v1/me/bookings/{id} failed with status ${response.status}`);
 
-  const [t, tList, tLoyalty, shop] = await Promise.all([
+  const [t, tList, tLoyalty, tReasons, shop] = await Promise.all([
     getTranslations({ locale, namespace: 'bookings.detail' }),
     getTranslations({ locale, namespace: 'bookings' }),
     getTranslations({ locale, namespace: 'loyalty' }),
+    getTranslations({ locale, namespace: 'bookings.detail.reasons' }),
     getPublicShop(booking.shop.slug),
   ]);
+  // The shop's ready reason in the words its WhatsApp and bell use, with any text it typed (D-155: a ready reason used
+  // to show nothing here).
+  const reasonCode = booking.cancellationReasonCode;
+  const cancellationReason =
+    [reasonCode && reasonCode !== 'Other' ? tReasons(reasonCode) : null, booking.cancellationReason]
+      .filter(Boolean)
+      .join(' — ') || null;
   const timeZone = shop?.timeZone;
   const actions = new Set(booking.allowedActions);
   const active = isActive(booking);
@@ -90,24 +94,10 @@ export default async function BookingDetailPage({
     <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 md:px-6" data-testid="booking-detail">
       <Breadcrumb items={[{ label: tList('title'), href: '/account/bookings' }, { label: t('title') }]} />
 
-      {created && <CreatedBanner status={booking.status} />}
+      {created && <CreatedBanner />}
       {firstParam(query.rescheduled) === '1' && <InlineAlert tone="success" title={t('rescheduled')} />}
       {firstParam(query.cancelled) === '1' && <InlineAlert tone="success" title={t('cancelled')} />}
       {firstParam(query.reviewed) === '1' && <InlineAlert tone="success" title={t('reviewed')} />}
-      {firstParam(query.postponement) === 'accepted' && (
-        <InlineAlert tone="success" title={tList('postponement.accepted')} />
-      )}
-      {firstParam(query.postponement) === 'declined' && (
-        <InlineAlert tone="info" title={tList('postponement.declined')} />
-      )}
-      {booking.postponement?.live && (
-        <PostponementOfferCard
-          bookingId={booking.id}
-          version={booking.version}
-          when={`${formatDate(booking.postponement.startsAt, locale, { timeZone })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`}
-          until={`${formatDate(booking.postponement.expiresAt, locale, { timeZone })} ${formatTime(booking.postponement.expiresAt, locale, timeZone)}`}
-        />
-      )}
 
       <section
         aria-labelledby="booking-when"
@@ -176,9 +166,9 @@ export default async function BookingDetailPage({
             </span>
           </Row>
         )}
-        {booking.cancellationReason && (
+        {cancellationReason && (
           <Row icon="info" label={t('rows.cancellationReason')}>
-            {booking.cancellationReason}
+            {cancellationReason}
           </Row>
         )}
         <div className="flex items-center justify-between py-3.5">

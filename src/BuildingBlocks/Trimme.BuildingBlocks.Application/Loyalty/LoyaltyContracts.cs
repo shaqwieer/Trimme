@@ -89,17 +89,19 @@ public static class LoyaltyMembers
 }
 
 /// <summary>
-/// Whether a shop's paid loyalty add-on is in force (implemented by the Subscriptions module, D-149), from the platform's
-/// coverage read model, so it needs no data scope. The add-on is a period with an end date; it stops by itself.
+/// Whether a shop's loyalty is on (implemented by the Subscriptions module, D-155: «الولاء يتفعّل تلقائي مع الباقة
+/// الأعلى»): its subscription is in force today (not expired, not suspended) and the plan of the period covering today
+/// includes loyalty. Read from the platform's coverage read model, so it needs no data scope. Moving to a plan without
+/// loyalty, or the subscription ending, stops earning and using points; the points are kept.
 /// </summary>
-public interface ILoyaltyAddOnStatus
+public interface ILoyaltyPlanStatus
 {
     Task<bool> IsActiveAsync(ShopId shopId, CancellationToken cancellationToken);
 
     Task<IReadOnlyDictionary<ShopId, bool>> ActiveManyAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken);
 
-    /// <summary>The shops that have had the add-on at any time (where loyalty cards can exist), at most <paramref name="limit"/>.</summary>
-    Task<IReadOnlyList<ShopId>> ShopsWithAddOnAsync(int limit, CancellationToken cancellationToken);
+    /// <summary>The shops that have had loyalty at any time (where loyalty cards can exist), at most <paramref name="limit"/>.</summary>
+    Task<IReadOnlyList<ShopId>> ShopsWithLoyaltyAsync(int limit, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -114,7 +116,7 @@ public interface ILoyaltyReportSource
     Task<IReadOnlyDictionary<Guid, LoyaltyRewardTerms>> TermsAsync(IReadOnlyCollection<Guid> rewardIds, CancellationToken cancellationToken);
 }
 
-/// <param name="ProgrammeActive">The shop's loyalty add-on is in force (D-149).</param>
+/// <param name="ProgrammeActive">The shop's loyalty is on (D-155: its plan includes it and the subscription is in force).</param>
 /// <param name="Stamps">One entry per point earned in the period (a first visit may earn several).</param>
 /// <param name="Redemptions">Rewards redeemed at a visit in the period.</param>
 public sealed record LoyaltyActivity(bool ProgrammeActive, IReadOnlyList<LoyaltyStampEntry> Stamps, IReadOnlyList<LoyaltyRedemptionEntry> Redemptions);

@@ -65,7 +65,7 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
         afterMove.Single(d => d.Event == MessageEvent.BookingCancelled).Body.ShouldNotBeNull().ShouldContain("نورة");
 
         // In-app: the customer, Omar, and the owner (a barber did it, D-145); Faisal gets no notice of his own action.
-        var customerNotice = (await NoticesAsync(noura, ct)).Single(n => n.GetProperty("kind").GetString() == "booking.professional_changed");
+        var customerNotice = (await NoticesAsync(noura, ct)).Single(n => n.GetProperty("kind").GetString() == "customer.booking_professional_changed");
         customerNotice.GetProperty("parameters").GetProperty("professionalNameEn").GetString().ShouldBe("Omar");
         customerNotice.GetProperty("parameters").GetProperty("previousProfessionalNameAr").GetString().ShouldNotBeNullOrEmpty();
         (await KindsAsync(faisal, ct)).ShouldBe(["booking.created"]);
@@ -82,10 +82,10 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
             ct);
         await ProcessOutboxAsync(w.Factory, ct);
         (await DispatchesAsync(w.Factory, id, ct)).Skip(afterMove.Count).Select(Describe)
-            .ShouldBe(["BookingCancelled:Customer", $"BookingCancelled:Professional:{w.Omar}"], ignoreOrder: true);
+            .ShouldBe(["BookingCancelledByShop:Customer", $"BookingCancelled:Professional:{w.Omar}"], ignoreOrder: true);
         (await KindsAsync(omar, ct)).ShouldBe(["booking.professional_changed"]);
         (await KindsAsync(faisal, ct)).ShouldBe(["booking.created"]);
-        (await NoticesAsync(noura, ct)).Select(n => n.GetProperty("kind").GetString()).ShouldContain("booking.cancelled");
+        (await NoticesAsync(noura, ct)).Select(n => n.GetProperty("kind").GetString()).ShouldContain("customer.booking_cancelled_by_shop");
 
         // The owner hears what the barber did (not what the owner did): the cancellation, with the barber's name.
         var ownerInbox = (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
@@ -148,7 +148,7 @@ public sealed class BarberMessagesTests(PostgresFixture postgres)
             ct);
         await ProcessOutboxAsync(w.Factory, ct);
         var cancelled = (await DispatchesAsync(w.Factory, id, ct)).Skip(dispatches.Count).ToList();
-        cancelled.Select(Describe).ShouldBe(["BookingCancelled:Customer", $"BookingCancelled:Professional:{w.Faisal}"], ignoreOrder: true);
+        cancelled.Select(Describe).ShouldBe(["BookingCancelledByShop:Customer", $"BookingCancelled:Professional:{w.Faisal}"], ignoreOrder: true);
         var digits = walkInPhone[4..];
         cancelled.Single(d => d.Audience == MessageAudience.Professional).Body.ShouldNotBeNull().ShouldNotContain(digits);
         (await KindsAsync(faisal, ct)).ShouldBeEmpty();

@@ -18,6 +18,9 @@ const BOOKING_KINDS = [
   'booking.cancelled',
   'booking.professional_changed',
   'booking.postponement_declined',
+  // D-155 (the client's 1-2): the owner marked this barber «غير متوفر اليوم», or a colleague is and has bookings left.
+  'professional.unavailable_today',
+  'professional.unavailable_bookings',
 ] as const;
 
 /** Booking changes the owner's inbox words as a barber's when a shop user made them (D-145). */
@@ -37,8 +40,14 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'subscription.expiring',
     'subscription.expired',
     'admin.message',
-    // The plan's WhatsApp messages for the month are used up (D-149): notices continue in the app.
+    // The plan's WhatsApp messages for the month were used up (D-149). Kept for the notices already sent; D-155 counts
+    // only the win-back messages, and `marketing.limit_reached` says when they are used up («وصل الحد»).
     'whatsapp.allowance_reached',
+    'marketing.limit_reached',
+    // D-155: the shop's booking was paused (by the owner or the platform), with the confirmed bookings inside the pause;
+    // and a barber marked themselves «غير متوفر اليوم».
+    'shop.online_booking_paused',
+    'professional.unavailable_today',
     // A barber deleted their own login (D-151, «حذف الحساب»): the barber stays; the owner can give a new login.
     'barber.account_deleted',
   ],
@@ -55,6 +64,14 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     // D-152 (the client's 3-4): one free notice per completed online visit, instead of a WhatsApp: thanks, «قيّم زيارتك»
     // (it leads to the review), and while the shop's loyalty add-on is on, the points and what is left.
     'booking.completed',
+    // D-155 (the client's 10-1): a bell copy of every WhatsApp the customer gets, their own changes included.
+    'customer.booking_confirmed',
+    'customer.booking_rescheduled',
+    'customer.booking_cancelled',
+    'customer.booking_cancelled_by_shop',
+    'customer.booking_professional_changed',
+    'customer.booking_reminder',
+    'customer.win_back',
   ],
   barber: BOOKING_KINDS,
   admin: [
@@ -114,6 +131,19 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     ready: Number(p.rewardsReady ?? 0),
     allowance: Number(p.allowance ?? 0),
     name: p.name ?? '',
+    // D-155: the pause's confirmed bookings and its return time; who marked a barber «غير متوفر اليوم», and since when.
+    bookings: Number(p.bookings ?? 0),
+    by: p.by ?? '',
+    resumesAt: p.resumesAt ? `${formatDate(p.resumesAt, locale)} ${formatTime(p.resumesAt, locale)}` : 'none',
+    since: p.since ? formatTime(p.since, locale) : '',
+    // D-155: who made a change (the customer's own, or the shop's: «تغيير موعدك»), the shop's ready reason and its typed
+    // one, and when the plan's win-back messages come back.
+    actor: p.actor ?? '',
+    reasonCode: p.reasonCode ?? (p.reason ? 'Other' : 'none'),
+    reason: p.reason ?? '',
+    windowEnd: p.windowEnd
+      ? formatDate(`${p.windowEnd}T12:00:00+03:00`, locale, { withYear: true, withWeekday: false })
+      : '',
     // `booking.completed` carries the points only while the shop's loyalty add-on is on (D-152).
     loyalty: p.pointsForReward ? 'on' : 'off',
   };
@@ -124,17 +154,27 @@ export function noticeHref(audience: NoticeAudience, notice: Notice): string | u
   const p = notice.parameters as Record<string, string | undefined>;
   switch (audience) {
     case 'shop':
-      if (notice.kind.startsWith('subscription.') || notice.kind === 'whatsapp.allowance_reached')
+      if (
+        notice.kind.startsWith('subscription.') ||
+        notice.kind === 'whatsapp.allowance_reached' ||
+        notice.kind === 'marketing.limit_reached'
+      )
         return '/shop/subscription';
       if (notice.kind === 'barber.account_deleted' && p.professionalId)
         return `/shop/barbers/${p.professionalId}`;
+      // The confirmed bookings inside the pause, and an unavailable barber's, are handled from the day screen.
+      if (notice.kind === 'shop.online_booking_paused' || notice.kind === 'professional.unavailable_today')
+        return '/shop/appointments';
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'barber':
+      if (notice.kind.startsWith('professional.unavailable')) return '/shop/appointments';
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'customer':
       if (notice.kind === 'loyalty.visit_completed') return '/account/loyalty';
       if (notice.kind === 'booking.completed' && notice.bookingId)
         return `/account/bookings/${notice.bookingId}/review`;
+      // «ندعوك للعودة»: back to the shop's page to book.
+      if (notice.kind === 'customer.win_back' && p.shopSlug) return `/shops/${p.shopSlug}`;
       return notice.bookingId ? `/account/bookings/${notice.bookingId}` : undefined;
     case 'admin':
       if (notice.kind === 'whatsapp.dispatch_failed') return '/admin/whatsapp/dispatches?status=Failed';

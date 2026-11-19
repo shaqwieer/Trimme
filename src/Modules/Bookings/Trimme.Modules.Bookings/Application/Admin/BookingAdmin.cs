@@ -119,7 +119,7 @@ internal sealed class ListAdminBookingsHandler(TrimmeDbContext db, IAdminDataSco
             .ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         int Count(params BookingStatus[] statuses) => statuses.Sum(s => byStatus.GetValueOrDefault(s));
         var counts = new ShopBookingCounts(
-            byStatus.Values.Sum(), Count(BookingStatus.Pending), Count(BookingStatus.Confirmed), Count(BookingStatus.Arrived), Count(BookingStatus.Completed),
+            byStatus.Values.Sum(), Count(BookingStatus.Confirmed), Count(BookingStatus.Arrived), Count(BookingStatus.Completed),
             Count(BookingStatus.CancelledByCustomer, BookingStatus.CancelledByShop), Count(BookingStatus.NoShow));
 
         var filtered = ShopBookingReader.Filter(unfiltered, null, null, query.Statuses, null, null);
@@ -221,7 +221,8 @@ internal sealed class AdminTransitionBookingHandler(
         BookingEvents.Add(db, BookingEvents.ForStatus(booking.Status), booking, now);
         audit.Record(new AuditRecord(
             BookingRules.IsCancelled(booking.Status) ? "booking.cancelled_by_admin" : "booking.status_changed_by_admin",
-            nameof(Booking), booking.Id.ToString(), booking.ShopId, $"{booking.Reference}: {from} → {booking.Status}", command.Reason!.Trim()));
+            nameof(Booking), booking.Id.ToString(), booking.ShopId, $"{booking.Reference}: {from} → {booking.Status}", command.Reason!.Trim(),
+            SummaryArgs: AuditArgs.Of(("reference", booking.Reference), ("from", from), ("to", booking.Status))));
         await db.SaveChangesAsync(cancellationToken);
         return await mapper.MapOneAsync(booking, cancellationToken);
     }
@@ -319,7 +320,8 @@ internal sealed class AdminRescheduleBookingHandler(
         BookingEvents.Add(db, BookingEvents.Rescheduled, booking, now);
         audit.Record(new AuditRecord(
             "booking.rescheduled_by_admin", nameof(Booking), booking.Id.ToString(), booking.ShopId,
-            $"{booking.Reference}: {previous:yyyy-MM-dd'T'HH:mm'Z'} → {booking.StartsAt:yyyy-MM-dd'T'HH:mm'Z'}", command.Reason!.Trim()));
+            $"{booking.Reference}: {previous:yyyy-MM-dd'T'HH:mm'Z'} → {booking.StartsAt:yyyy-MM-dd'T'HH:mm'Z'}", command.Reason!.Trim(),
+            SummaryArgs: AuditArgs.Of(("reference", booking.Reference), ("from", previous), ("to", booking.StartsAt))));
         try
         {
             await db.SaveChangesAsync(cancellationToken);

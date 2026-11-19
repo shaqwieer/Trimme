@@ -91,11 +91,14 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
   const viewer: WizardViewer = !me ? 'guest' : me.userType === 'Customer' ? 'customer' : 'staff';
   // The customer's loyalty at this shop, offered on the review step: a full points card while the shop's add-on is on
   // (D-149, «استخدم مكافأتي») and any D-132 coupon still usable.
-  const card =
-    viewer === 'customer'
-      ? (await (await getServerApi()).GET('/api/v1/me/loyalty/shops/{slug}', { params: { path: { slug } } }))
-          .data
-      : undefined;
+  const mine = viewer === 'customer' ? await getServerApi() : undefined;
+  const [card, activeBooking] = mine
+    ? await Promise.all([
+        mine.GET('/api/v1/me/loyalty/shops/{slug}', { params: { path: { slug } } }).then((r) => r.data),
+        // One upcoming booking per customer, at any shop (D-155, the client's 3-2): shown before they choose; 204 none.
+        mine.GET('/api/v1/me/bookings/active').then((r) => r.data ?? null),
+      ])
+    : [undefined, null];
   const rewards: WizardReward[] =
     card?.coupons
       .filter((r) => r.status === 'Available')
@@ -144,10 +147,13 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
               avatarUrl: p.avatarUrl ?? null,
               rating: p.rating,
               reviewCount: p.reviewCount,
+              languages: p.languages ?? [],
+              unavailableToday: p.unavailableToday,
             }))}
             viewer={viewer}
             rewards={rewards}
             pointsReward={pointsReward}
+            activeBooking={activeBooking}
             sections={sections.map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn ?? null }))}
           />
         </Suspense>

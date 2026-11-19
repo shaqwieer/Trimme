@@ -143,7 +143,8 @@ internal sealed class CreateQrCodeHandler(
             db.Add(QrCodeRoute.For(link));
             audit.Record(new AuditRecord(
                 "qr.created", nameof(QrCodeLink), link.Id.ToString(), shopId,
-                professionalId is null ? $"Shop code {code}" : $"Professional code {code} ({professionalId})"));
+                professionalId is null ? $"Shop code {code}" : $"Professional code {code} ({professionalId})",
+                SummaryArgs: AuditArgs.Of(("kind", professionalId is null ? "shop" : "professional"), ("code", code))));
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
@@ -179,7 +180,8 @@ internal sealed class SetQrCodeActiveHandler(TrimmeDbContext db, IAdminDataScope
             return result.Error;
         }
 
-        audit.Record(new AuditRecord(command.Active ? "qr.activated" : "qr.deactivated", nameof(QrCodeLink), link.Id.ToString(), link.ShopId, $"Code {link.Code}"));
+        audit.Record(new AuditRecord(command.Active ? "qr.activated" : "qr.deactivated", nameof(QrCodeLink), link.Id.ToString(), link.ShopId, $"Code {link.Code}",
+            SummaryArgs: AuditArgs.Of(("code", link.Code))));
         await db.SaveChangesAsync(cancellationToken);
         return (await read.MapAsync([link], period, cancellationToken))[0];
     }

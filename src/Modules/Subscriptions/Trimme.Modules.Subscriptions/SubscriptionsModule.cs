@@ -28,8 +28,8 @@ public sealed class SubscriptionsModule : ModuleBase
         base.AddServices(services, configuration);
         services.AddScoped<SubscriptionSuspension>();
         services.AddScoped<Application.SubscriptionExtras>();
-        services.AddScoped<BuildingBlocks.Application.Loyalty.ILoyaltyAddOnStatus, LoyaltyAddOnStatus>();
-        services.AddScoped<BuildingBlocks.Application.Notifications.IWhatsAppAllowance, WhatsAppAllowance>();
+        services.AddScoped<BuildingBlocks.Application.Loyalty.ILoyaltyPlanStatus, LoyaltyPlanStatus>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IMarketingPlans, MarketingPlans>();
         services.AddScoped<IShopBookability, ShopBookabilityService>();
         services.AddSingleton<IDevSeeder, DemoSubscriptionsSeeder>();
 

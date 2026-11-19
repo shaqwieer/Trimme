@@ -20,8 +20,8 @@ public sealed class BookingDomainTests
 
     private static BookedItem Haircut(decimal price = 60m) => new(Guid.CreateVersion7(), null, "حلاقة", "Haircut", price, "SAR", 30, []);
 
-    private static Booking Online(bool manual = false, DateTimeOffset? start = null) =>
-        Booking.CreateOnline(new BookingId(Guid.CreateVersion7()), Shop, Customer, " نورة ", Faisal, Haircut(), start ?? Start, manual, " قريب ", Now);
+    private static Booking Online(DateTimeOffset? start = null) =>
+        Booking.CreateOnline(new BookingId(Guid.CreateVersion7()), Shop, Customer, " نورة ", Faisal, Haircut(), start ?? Start, " قريب ", Now);
 
     private static Booking InStatus(BookingStatus status)
     {
@@ -125,7 +125,7 @@ public sealed class BookingDomainTests
     }
 
     [Fact]
-    public void OnlineBookings_StartConfirmed_OrPendingUnderManualConfirmation()
+    public void OnlineBookings_AreAlwaysConfirmedAtOnce_D155()
     {
         var auto = Online();
         auto.Status.ShouldBe(BookingStatus.Confirmed);
@@ -135,9 +135,8 @@ public sealed class BookingDomainTests
         auto.EndsAt.ShouldBe(Start.AddMinutes(30));
         auto.PaymentStatus.ShouldBe(PaymentStatus.NotApplicable);
         auto.AmountDue.ShouldBe(60m);
-        auto.History.Single().ShouldSatisfyAllConditions(h => h.Kind.ShouldBe(BookingEventKind.Created), h => h.ActorType.ShouldBe(ActorType.Customer));
-
-        Online(manual: true).Status.ShouldBe(BookingStatus.Pending);
+        auto.History.Single().ShouldSatisfyAllConditions(
+            h => h.Kind.ShouldBe(BookingEventKind.Created), h => h.ActorType.ShouldBe(ActorType.Customer), h => h.ToStatus.ShouldBe(BookingStatus.Confirmed));
     }
 
     [Fact]
@@ -251,7 +250,7 @@ public sealed class BookingDomainTests
         typed.CancellationReasonCode.ShouldBeNull();
 
         // A code is only for a cancellation.
-        var confirming = Online(manual: true);
+        var confirming = InStatus(BookingStatus.Pending);
         var refused = confirming.ApplyShopTransition(BookingStatus.Confirmed, sultan, null, Now, ShopCancellationReason.Emergency);
         refused.Error!.Code.ShouldBe("validation.failed");
         refused.Error.FieldErrors!.Keys.ShouldContain("reasonCode");
@@ -295,7 +294,7 @@ public sealed class BookingDomainTests
     [Fact]
     public void Reschedule_KeepsTheSnapshotAndStatus_RecordsTheMove_AndRespectsTheCutoff()
     {
-        var booking = Online(manual: true);
+        var booking = Online();
         var omar = new BookedProfessional(new ProfessionalId(Guid.CreateVersion7()), "عمر", "Omar");
         var later = Start.AddHours(3);
 
@@ -306,7 +305,7 @@ public sealed class BookingDomainTests
             b => b.EndsAt.ShouldBe(later.AddMinutes(30)),
             b => b.ProfessionalId.ShouldBe(omar.Id),
             b => b.ProfessionalNameEn.ShouldBe("Omar"),
-            b => b.Status.ShouldBe(BookingStatus.Pending),
+            b => b.Status.ShouldBe(BookingStatus.Confirmed),
             b => b.Price.ShouldBe(60m),
             b => b.ItemNameAr.ShouldBe("حلاقة"));
         booking.History[^1].ShouldSatisfyAllConditions(
@@ -314,6 +313,27 @@ public sealed class BookingDomainTests
             h => h.PreviousStartsAt.ShouldBe(Start));
 
         InStatus(BookingStatus.Arrived).Reschedule(later, omar, ShopUser, Now, null).Error!.Code.ShouldBe("booking.not_reschedulable");
+    }
+
+    [Fact]
+    public void AfterTheShopsNewTime_TheCustomerCancelsOrChangesForFree_UntilTheirOwnNextChange_D155()
+    {
+        // Moved by the barber to a time inside the customer's window: the window does not apply until it starts.
+        var booking = Online();
+        booking.Reschedule(Start.AddHours(1), Faisal, ShopUser, Now, cutoffMinutes: null).IsSuccess.ShouldBeTrue();
+        booking.TimeChangedByShopAt.ShouldBe(Now);
+        var inside = Start.AddMinutes(30);
+        booking.CustomerCanChange(inside, 120).ShouldBeTrue();
+        booking.CustomerCanChange(Start.AddHours(1).AddMinutes(1), 120).ShouldBeFalse("not once it has started");
+
+        // The customer picks a new time themselves: the free change is used up, the window applies again.
+        var customer = new BookingActor(Customer, ActorType.Customer);
+        booking.Reschedule(Start.AddHours(2), Faisal, customer, inside, 120).IsSuccess.ShouldBeTrue();
+        booking.TimeChangedByShopAt.ShouldBeNull();
+        booking.CustomerCanChange(Start.AddHours(1), 120).ShouldBeFalse();
+
+        // A walk-in moved by the shop, or a booking nobody moved: nothing changes.
+        Online().TimeChangedByShopAt.ShouldBeNull();
     }
 
     [Fact]
@@ -403,7 +423,7 @@ public sealed class BookingDomainTests
     {
         // D-149: a booking holds its barber until its end plus the shop's cleaning time at booking time.
         var booking = Booking.CreateOnline(
-            new BookingId(Guid.CreateVersion7()), Shop, Customer, "نورة", Faisal, Haircut(), Start, false, null, Now, bufferMinutes: 10);
+            new BookingId(Guid.CreateVersion7()), Shop, Customer, "نورة", Faisal, Haircut(), Start, null, Now, bufferMinutes: 10);
         booking.BufferMinutes.ShouldBe(10);
         booking.EndsAt.ShouldBe(Start.AddMinutes(30));
         booking.BlockedUntil.ShouldBe(Start.AddMinutes(40));

@@ -44,6 +44,15 @@ internal sealed record GetMyBookingQuery(Guid BookingId) : IQuery<CustomerBookin
 
 internal sealed record GetMyBookingCalendarQuery(Guid BookingId) : IQuery<string?>;
 
+/// <summary>The customer's booking that stops a new one (D-155), for the warning before confirming.</summary>
+internal sealed record GetMyActiveBookingQuery : IQuery<CustomerActiveBookingResponse?>;
+
+/// <summary>
+/// The upcoming booking a customer must cancel before booking again (D-155, «حجز واحد فعّال بس للزبون، في كل المحلات»):
+/// the booking, its shop and its time.
+/// </summary>
+public sealed record CustomerActiveBookingResponse(Guid Id, string Reference, BookingShopResponse Shop, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+
 /// <summary>The booking and whether it replays an earlier request with the same idempotency key.</summary>
 internal sealed record CustomerBookingResult(CustomerBookingResponse Booking, bool Replayed);
 
@@ -107,19 +116,7 @@ internal sealed class CustomerBookingSupport(
         var platform = await settings.GetAsync(cancellationToken);
         var completed = bookings.Where(b => b.Status == BookingStatus.Completed).Select(b => b.Id.Value).ToList();
         var ratings = completed.Count == 0 ? new Dictionary<Guid, int>() : await reviews.RatingsByBookingAsync(completed, cancellationToken);
-
-        // The customer's live postponement offers on these bookings (D-147): the new time and until when to answer.
-        var now = Now;
-        var waiting = bookings.Where(b => b.Status is BookingStatus.Pending or BookingStatus.Confirmed).ToDictionary(b => b.Id);
-        var ids = waiting.Keys.ToList();
-        var offers = ids.Count == 0
-            ? []
-            : await db.Set<PostponementOffer>().AsNoTracking()
-                .Where(o => ids.Contains(o.BookingId) && o.Status == PostponementStatus.Open && o.ExpiresAt > now).ToListAsync(cancellationToken);
-        var live = offers.Where(o => o.IsLive(waiting[o.BookingId], now))
-            .GroupBy(o => o.BookingId)
-            .ToDictionary(g => g.Key.Value, g => BookingEvents.Offer(g.OrderByDescending(o => o.CreatedAt).First(), waiting[g.Key], now));
-        return new CustomerBookingView(now, platform.CancellationCutoffMinutes, platform.ReviewWindowDays, ratings, live);
+        return new CustomerBookingView(Now, platform.CancellationCutoffMinutes, platform.ReviewWindowDays, ratings);
     }
 
     public async Task<CustomerBookingResponse> ResponseAsync(Booking booking, CancellationToken cancellationToken) =>
@@ -162,7 +159,8 @@ internal sealed class CreateOnlineBookingHandler(
     IAvailabilityChecker availability,
     ProfessionalPicker picker,
     IQrAttributionResolver qr,
-    ILoyaltyRewardHolder loyalty)
+    ILoyaltyRewardHolder loyalty,
+    CustomerUpcomingBookings upcoming)
     : ICommandHandler<CreateOnlineBookingCommand, Result<CustomerBookingResult>>
 {
     private const string Scope = "bookings.create";
@@ -216,6 +214,15 @@ internal sealed class CreateOnlineBookingHandler(
         {
             await transaction.RollbackAsync(cancellationToken);
             return await ReplayAsync(customerId, command.IdempotencyKey, hash, cancellationToken) ?? BookingErrors.SlotUnavailable();
+        }
+
+        // One active booking per customer, at every shop (D-155): checked here on the server, under a per-customer lock so
+        // two requests at once (at one shop or two) cannot both pass. Read outside any shop scope, across the customer's
+        // own bookings.
+        await upcoming.LockAsync(customerId, cancellationToken);
+        if (await upcoming.NextAsync(customerId, cancellationToken) is { } existing)
+        {
+            return CustomerUpcomingBookings.ActiveBookingExists(existing);
         }
 
         // The recheck (R-BKG-03): the same rules as the slot list, read inside this transaction.
@@ -297,7 +304,7 @@ internal sealed class CreateOnlineBookingHandler(
         var rules = await support.RulesAsync(shop, cancellationToken);
         var booking = Booking.CreateOnline(
             bookingId, shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer, chosen.Id), command.StartsAt,
-            shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId), rules.BufferMinutes);
+            command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId), rules.BufferMinutes);
 
         // A loyalty reward the customer chose is held in the same transaction, so it is used by this booking or not at all
         // (D-132); its value comes off the amount due (D-152).
@@ -550,6 +557,21 @@ internal sealed class GetMyBookingHandler(CustomerBookingSupport support) : IQue
         support.CustomerId is not null && await support.MineAsync(query.BookingId, track: false, cancellationToken) is { } booking
             ? await support.ResponseAsync(booking, cancellationToken)
             : null;
+}
+
+internal sealed class GetMyActiveBookingHandler(CustomerBookingSupport support, CustomerUpcomingBookings upcoming)
+    : IQueryHandler<GetMyActiveBookingQuery, CustomerActiveBookingResponse?>
+{
+    public async Task<CustomerActiveBookingResponse?> Handle(GetMyActiveBookingQuery query, CancellationToken cancellationToken)
+    {
+        if (support.CustomerId is not { } customerId || await upcoming.NextAsync(customerId, cancellationToken) is not { } booking)
+        {
+            return null;
+        }
+
+        var shop = BookingMapping.Shop(await support.ShopAsync(booking.ShopId, cancellationToken), booking.ShopId);
+        return new CustomerActiveBookingResponse(booking.Id.Value, booking.Reference, shop, booking.StartsAt, booking.EndsAt);
+    }
 }
 
 /// <summary>An iCalendar file of the customer's booking (spec §12, "add to calendar"). No contact data.</summary>

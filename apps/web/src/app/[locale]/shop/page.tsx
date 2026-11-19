@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, InlineAlert, SkeletonList } from '@/components/
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
-import { type AppLocale, formatDate, formatNumber } from '@/lib/i18n/format';
+import { type AppLocale, formatDate, formatNumber, formatTime } from '@/lib/i18n/format';
 import { todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 import { hourLabel, loadPercent, trimHours } from '@/lib/shop/board';
@@ -124,10 +124,25 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
                 {tHome('draftBody')}
               </InlineAlert>
             )}
+            {/* «غير متوفر اليوم» (D-155, the client's 1-2): who, and since when; their bookings are on the day screen. */}
+            {(data.unavailableToday ?? []).length > 0 && (
+              <InlineAlert tone="warning" title={tHome('unavailableTitle')}>
+                <ul className="flex flex-col gap-0.5" data-testid="unavailable-today">
+                  {data.unavailableToday!.map((u) => (
+                    <li key={u.professionalId}>
+                      {tHome('unavailableLine', {
+                        name: localizedName(locale, u.nameAr, u.nameEn),
+                        time: formatTime(u.since, locale, data.timeZone),
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </InlineAlert>
+            )}
 
             {kpis && (
               <div
-                className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${data.customers ? 'xl:grid-cols-6' : 'xl:grid-cols-5'}`}
+                className={`grid grid-cols-2 gap-3 ${data.customers ? 'md:grid-cols-3 xl:grid-cols-5' : 'xl:grid-cols-4'}`}
                 data-testid="shop-kpis"
               >
                 <KpiTile
@@ -144,12 +159,6 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
                           tone: 'neutral',
                         }
                   }
-                />
-                <KpiTile
-                  label={t('kpis.pending')}
-                  value={formatNumber(kpis.pendingUpcoming, locale)}
-                  icon="clock"
-                  delta={kpis.pendingUpcoming > 0 ? { text: t('kpis.needsAction'), tone: 'bad' } : undefined}
                 />
                 <KpiTile
                   label={t('kpis.completed')}

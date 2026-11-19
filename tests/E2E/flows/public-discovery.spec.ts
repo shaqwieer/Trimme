@@ -6,7 +6,8 @@ import { captureViewports } from '../support/viewports';
 
 /**
  * Phase 11 public discovery against the compose stack (R-CUS-01…06, R-WEB-10/11, R-NEG-10; spec §19 E1 discovery part).
- * Assertions use Barber House: the schedule flow may pause Al Asala while it runs in parallel (D-013 hides paused shops).
+ * Assertions use Barber House: the schedule flow may pause Al Asala while it runs in parallel (a paused shop stays listed
+ * since D-155, but takes no bookings).
  */
 const BLANK_TILE = png(256, 256, [233, 238, 243]);
 const BARBER_HOUSE = 'barber-house';

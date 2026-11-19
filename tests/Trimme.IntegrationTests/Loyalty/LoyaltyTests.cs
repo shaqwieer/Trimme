@@ -13,7 +13,6 @@ using Trimme.BuildingBlocks.Web.Jobs;
 using Trimme.IntegrationTests.Bookings;
 using Trimme.IntegrationTests.Identity;
 using Trimme.IntegrationTests.Infrastructure;
-using Trimme.Modules.Identity.Domain;
 using Trimme.Modules.Loyalty.Domain;
 using static Trimme.IntegrationTests.Bookings.BookingTestData;
 
@@ -89,20 +88,22 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         }
     }
 
-    /// <summary>The add-on priced once by SuperAdmin and switched on for the shops until <paramref name="days"/> from today.</summary>
-    private static async Task AddOnAsync(BookingWorld w, FakeTimeProvider clock, CancellationToken ct, int days = 365, params Guid[] shopIds)
+    /// <summary>
+    /// D-155: loyalty comes with the shop's plan. SuperAdmin ticks «يشمل برنامج الولاء» on the plan each shop is on (or
+    /// unticks it, a move to a plan without loyalty). Written to the plan directly, as the plan form's tests cover the form.
+    /// </summary>
+    private static async Task PlanLoyaltyAsync(BookingWorld w, CancellationToken ct, bool included = true, params Guid[] shopIds)
     {
-        var today = TodayAt(clock.GetUtcNow());
-        using var admin = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.SuperAdmin, ct);
-        var prices = await OkAsync(admin.GetAsync("/api/v1/admin/loyalty-add-on/prices", ct), ct);
-        if (prices.GetProperty("current").ValueKind == JsonValueKind.Null)
-        {
-            await OkAsync(admin.PostAsync("/api/v1/admin/loyalty-add-on/prices", new { amount = 99m, effectiveFrom = Iso(today) }, ct), ct);
-        }
-
         foreach (var shopId in shopIds.Length == 0 ? [w.Shops.A.ShopId] : shopIds)
         {
-            await OkAsync(admin.PostAsync($"/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on", new { endDate = Iso(today.AddDays(days)), notes = "تجربة" }, ct), ct);
+            await using var connection = new NpgsqlConnection(w.Factory.ConnectionString);
+            await connection.OpenAsync(ct);
+            await using var command = new NpgsqlCommand(
+                "UPDATE subscriptions.subscription_plans SET includes_loyalty = @v WHERE id = (SELECT plan_id FROM subscriptions.shop_subscriptions WHERE shop_id = @s)",
+                connection);
+            command.Parameters.AddWithValue("v", included);
+            command.Parameters.AddWithValue("s", shopId);
+            (await command.ExecuteNonQueryAsync(ct)).ShouldBe(1);
         }
     }
 
@@ -157,16 +158,19 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_earn", ct, clock, SignInAgain);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct);
+        await PlanLoyaltyAsync(w, ct);
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 3, visit: 2, reward: 4), ct), ct);
         var target = TargetFrom(clock);
 
+        // One active booking per customer (D-155): each visit is booked once the one before it is closed.
         var (noura, phone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var first = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 10), ct, serviceId: w.Haircut, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var second = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 11), ct, serviceId: w.Haircut, professionalId: w.Omar), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var missed = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 12), ct, serviceId: w.Beard, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var third = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 13), ct, serviceId: w.Beard, professionalId: w.Omar), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         noura.Dispose();
+        async Task<Guid> NextAsync(DateTimeOffset start, Guid serviceId, Guid professionalId)
+        {
+            using var me = await MeAsync(w.Factory, phone, ct);
+            return (await OkAsync(BookAsync(me, w.SlugA, start, ct, serviceId: serviceId, professionalId: professionalId), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        }
 
         // Booking earns nothing; neither does «وصل».
         await ProcessOutboxAsync(w.Factory, ct);
@@ -200,7 +204,8 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         }
 
         // A later visit (another barber) gives 2: a full card of 4 and 1 on the next one; the outbox again changes nothing.
-        await CloseAsync(w, clock, second, At(target, 11), ct);
+        var second = await NextAsync(At(target, 12), w.Haircut, w.Omar);
+        await CloseAsync(w, clock, second, At(target, 12), ct);
         await ProcessOutboxAsync(w.Factory, ct);
         card = await CardAsync(w.Factory, phone, w.SlugA, ct);
         card.GetProperty("points").GetInt32().ShouldBe(5);
@@ -209,9 +214,11 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         card.GetProperty("pointsToNext").GetInt32().ShouldBe(3);
 
         // A no-show earns nothing; the next visit makes it 7: still one reward ready and 3 on the next card («+٣»).
-        await CloseAsync(w, clock, missed, At(target, 12), ct, noShow: true);
+        var missed = await NextAsync(At(target, 14), w.Beard, w.Faisal);
+        await CloseAsync(w, clock, missed, At(target, 14), ct, noShow: true);
         (await CardAsync(w.Factory, phone, w.SlugA, ct)).GetProperty("points").GetInt32().ShouldBe(5);
-        await CloseAsync(w, clock, third, At(target, 13), ct);
+        var third = await NextAsync(At(target, 16), w.Beard, w.Omar);
+        await CloseAsync(w, clock, third, At(target, 16), ct);
         card = await CardAsync(w.Factory, phone, w.SlugA, ct);
         card.GetProperty("points").GetInt32().ShouldBe(7);
         card.GetProperty("rewardsReady").GetInt32().ShouldBe(1);
@@ -235,7 +242,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_redeem", ct, clock, SignInAgain);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct);
+        await PlanLoyaltyAsync(w, ct);
 
         // A free haircut every 4 points; the first visit gives 4.
         await FailsAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 4, visit: 1, reward: 4, type: "FreeService", service: w.ServiceB, amount: null), ct),
@@ -266,7 +273,12 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         card.GetProperty("points").GetInt32().ShouldBe(0);
         card.GetProperty("rewardsHeld").GetInt32().ShouldBe(1);
         await FailsAsync(BookAsync(me, w.SlugA, At(target, 13), ct, serviceId: w.Haircut, professionalId: w.Omar, useReward: true),
-            HttpStatusCode.UnprocessableEntity, "loyalty.reward_unavailable", ct);
+            HttpStatusCode.Conflict, "booking.active_booking_exists", ct);
+        using (var omar = await w.BarberAsync(w.Omar, ct))
+        {
+            await FailsAsync(PhoneBookingAsync(omar, w.Haircut, w.Omar, At(target, 13), phone, ct, useReward: true),
+                HttpStatusCode.UnprocessableEntity, "loyalty.reward_unavailable", ct);
+        }
         using (var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
         {
             var forShop = (await OkAsync(owner.GetAsync($"/api/v1/shop/bookings/{held.GetProperty("id").GetGuid()}", ct), ct)).GetProperty("booking");
@@ -317,7 +329,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_number", ct, clock, CodesOff);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct);
+        await PlanLoyaltyAsync(w, ct);
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 2, visit: 1, reward: 3, amount: 10m), ct), ct);
         var target = TargetFrom(clock);
         var phone = IdentityTestData.NewPhone();
@@ -392,7 +404,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_decay", ct, clock, SignInAgain);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct, 365, w.Shops.A.ShopId, w.Shops.B.ShopId);
+        await PlanLoyaltyAsync(w, ct, true, w.Shops.A.ShopId, w.Shops.B.ShopId);
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 3, visit: 2, reward: 10, inactivity: "Wipe", days: 30), ct), ct);
         await OkAsync(w.OwnerB.PutAsync("/api/v1/shop/loyalty", Rules(first: 3, visit: 2, reward: 10, inactivity: "DecayPerPeriod", days: 30), ct), ct);
         await FailsAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(inactivity: "Wipe", days: 3), ct), HttpStatusCode.BadRequest, "inactivityDays", ct);
@@ -401,10 +413,15 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
 
         var (noura, phone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var atA = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 10), ct, serviceId: w.Haircut, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var atB = (await OkAsync(BookAsync(noura, slugB, At(target, 11), ct, serviceId: w.ServiceB, professionalId: w.ProB), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         noura.Dispose();
         await CloseAsync(w, clock, atA, At(target, 10), ct);
-        await CloseAsync(w, clock, atB, At(target, 11), ct);
+        Guid atB;
+        using (var me = await MeAsync(w.Factory, phone, ct))
+        {
+            atB = (await OkAsync(BookAsync(me, slugB, At(target, 12), ct, serviceId: w.ServiceB, professionalId: w.ProB), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        }
+
+        await CloseAsync(w, clock, atB, At(target, 12), ct);
 
         // A month without visits: the card at A is wiped, B's loses one point; two months: B's loses another.
         clock.Advance(TimeSpan.FromDays(31));
@@ -428,100 +445,130 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task TheAddOnsEnd_StopsEarningAndRedeeming_AndKeepsThePoints()
+    public async Task APlanWithoutLoyalty_OrAnEndedSubscription_StopsEarningAndRedeeming_AndKeepsThePoints()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_end", ct, clock, SignInAgain);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct);
+        await PlanLoyaltyAsync(w, ct);
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 3, visit: 1, reward: 3, amount: 15m), ct), ct);
         var target = TargetFrom(clock);
         var (noura, phone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
         var first = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 10), ct, serviceId: w.Haircut, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var afterStop = (await OkAsync(BookAsync(noura, w.SlugA, At(target, 11), ct, serviceId: w.Haircut, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         noura.Dispose();
         await CloseAsync(w, clock, first, At(target, 10), ct);
 
-        // The admin switches it off: nothing is earned or redeemed, and the points stay.
-        using (var admin = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.SuperAdmin, ct))
+        // The shop moves to a plan without loyalty: nothing is earned or redeemed, and the points stay.
+        await PlanLoyaltyAsync(w, ct, included: false);
+        Guid afterStop;
+        using (var me = await MeAsync(w.Factory, phone, ct))
         {
-            (await OkAsync(admin.PostAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription/loyalty-add-on/stop", null, ct), ct)).GetProperty("active").GetBoolean().ShouldBeFalse();
-            await FailsAsync(admin.PostAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription/loyalty-add-on/stop", null, ct), HttpStatusCode.Conflict, "loyalty_add_on.not_active", ct);
+            afterStop = (await OkAsync(BookAsync(me, w.SlugA, At(target, 12), ct, serviceId: w.Haircut, professionalId: w.Faisal), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         }
 
-        await CloseAsync(w, clock, afterStop, At(target, 11), ct);
+        await CloseAsync(w, clock, afterStop, At(target, 12), ct);
         var card = await CardAsync(w.Factory, phone, w.SlugA, ct);
         card.GetProperty("active").GetBoolean().ShouldBeFalse();
         card.GetProperty("points").GetInt32().ShouldBe(3);
         card.GetProperty("rewardsReady").GetInt32().ShouldBe(1);
         (await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{w.SlugA}/loyalty", ct), ct)).GetProperty("active").GetBoolean().ShouldBeFalse();
+        using (var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
+        {
+            (await OkAsync(owner.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("included").GetBoolean().ShouldBeFalse();
+        }
+
         using (var me = await MeAsync(w.Factory, phone, ct))
         {
             await FailsAsync(BookAsync(me, w.SlugA, At(target, 14), ct, serviceId: w.Haircut, professionalId: w.Faisal, useReward: true),
                 HttpStatusCode.UnprocessableEntity, "loyalty.not_active", ct);
         }
 
-        // Switched on again for two days: the points are there, and a reward can be used.
-        await AddOnAsync(w, clock, ct, days: 1);
+        // Back on a plan with loyalty: the points are there, and a reward can be used.
+        await PlanLoyaltyAsync(w, ct);
         (await CardAsync(w.Factory, phone, w.SlugA, ct)).GetProperty("active").GetBoolean().ShouldBeTrue();
         using (var me = await MeAsync(w.Factory, phone, ct))
         {
             await OkAsync(BookAsync(me, w.SlugA, At(target, 14), ct, serviceId: w.Haircut, professionalId: w.Faisal, useReward: true), ct, HttpStatusCode.Created);
         }
 
-        // After its last day it stops by itself.
-        clock.Advance(TimeSpan.FromDays(3));
+        // Once the subscription has ended, loyalty stops by itself.
+        clock.Advance(TimeSpan.FromDays(400));
         (await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{w.SlugA}/loyalty", ct), ct)).GetProperty("active").GetBoolean().ShouldBeFalse();
         (await CardAsync(w.Factory, phone, w.SlugA, ct)).GetProperty("active").GetBoolean().ShouldBeFalse();
     }
 
+    /// <summary>
+    /// The migration writes every existing shop's periods into the coverage read model (D-155). Its SQL must write the JSON
+    /// the model reads, or every shop would lose loyalty on deploy: the exact SQL, run on a real row, gives the same answer.
+    /// </summary>
     [Fact]
-    public async Task TheAddOn_IsPricedBySuperAdmin_SwitchedByTheAdmin_AndShownOnTheSubscriptionPage_AndTheRulesAreTheOwners()
+    public async Task TheMigrationsBackfill_WritesThePeriodsTheModelReads()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
-        await using var w = await ArrangeAsync(postgres, "loyalty_addon", ct, clock, SignInAgain);
-        var today = TodayAt(clock.GetUtcNow());
-        var on = $"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription/loyalty-add-on";
+        await using var w = await ArrangeAsync(postgres, "loyalty_backfill", ct, clock, SignInAgain);
+        await PlanLoyaltyAsync(w, ct);
+        var written = (string)(await ScalarAsync(w.Factory, "SELECT periods::text FROM subscriptions.subscription_coverage WHERE shop_id = @p", ct, w.Shops.A.ShopId))!;
+        written.ShouldContain("\"PlanId\"");
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("included").GetBoolean().ShouldBeTrue();
 
-        // No price yet; a shop without a subscription cannot have it.
-        await FailsAsync(w.Admin.PostAsync(on, new { endDate = Iso(today.AddDays(30)) }, ct), HttpStatusCode.UnprocessableEntity, "loyalty_add_on.no_price", ct);
-        using (var support = await IdentityTestData.SignInNewStaffAsync(w.Factory, SystemRoles.Support, ct))
+        await using (var connection = new NpgsqlConnection(w.Factory.ConnectionString))
         {
-            await FailsAsync(support.PostAsync("/api/v1/admin/loyalty-add-on/prices", new { amount = 99m, effectiveFrom = Iso(today) }, ct), HttpStatusCode.Forbidden, null, ct);
+            await connection.OpenAsync(ct);
+            await using var clear = new NpgsqlCommand("UPDATE subscriptions.subscription_coverage SET periods = NULL", connection);
+            await clear.ExecuteNonQueryAsync(ct);
         }
 
-        var prices = await OkAsync(w.Admin.PostAsync("/api/v1/admin/loyalty-add-on/prices", new { amount = 99m, effectiveFrom = Iso(today) }, ct), ct);
-        prices.GetProperty("current").GetProperty("versionNumber").GetInt32().ShouldBe(1);
-        await FailsAsync(w.Admin.PostAsync("/api/v1/admin/loyalty-add-on/prices", new { amount = 120m, effectiveFrom = Iso(today.AddDays(-1)) }, ct),
-            HttpStatusCode.BadRequest, "validation.date_in_past", ct);
-        var bare = await Trimme.IntegrationTests.Tenancy.ShopTestData.CreateShopAsync(w.Admin, $"bare-{Guid.NewGuid():N}"[..20], ct);
-        await FailsAsync(w.Admin.PostAsync($"/api/v1/admin/shops/{bare}/subscription/loyalty-add-on", new { endDate = Iso(today.AddDays(30)) }, ct),
-            HttpStatusCode.Conflict, "loyalty_add_on.no_subscription", ct);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("included").GetBoolean().ShouldBeFalse("no periods, no plan");
+        await using (var connection = new NpgsqlConnection(w.Factory.ConnectionString))
+        {
+            await connection.OpenAsync(ct);
+            await using var backfill = new NpgsqlCommand(Trimme.Migrations.Migrations.AlwaysConfirmedPlanFeaturesWinBack.CoveragePeriodsSql, connection);
+            await backfill.ExecuteNonQueryAsync(ct);
+        }
 
-        // The owner neither switches it nor prices it; the admin does, until an end date, at the price in force.
-        await FailsAsync(w.OwnerA.PostAsync(on, new { endDate = Iso(today.AddDays(30)) }, ct), HttpStatusCode.Forbidden, null, ct);
-        await FailsAsync(w.Admin.PostAsync(on, new { endDate = Iso(today.AddDays(-1)) }, ct), HttpStatusCode.BadRequest, "endDate", ct);
-        var addOn = await OkAsync(w.Admin.PostAsync(on, new { endDate = Iso(today.AddDays(30)), notes = "شهر" }, ct), ct);
-        addOn.GetProperty("active").GetBoolean().ShouldBeTrue();
-        addOn.GetProperty("daysRemaining").GetInt32().ShouldBe(31);
-        addOn.GetProperty("periods")[0].GetProperty("amount").GetDecimal().ShouldBe(99m);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("included").GetBoolean().ShouldBeTrue("the backfill's JSON is the model's");
+        (await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{w.SlugA}/loyalty", ct), ct)).GetProperty("active").GetBoolean()
+            .ShouldBeFalse("no rules yet: the programme shows once the owner sets them");
+        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}/subscription", ct), ct))
+            .GetProperty("features").GetProperty("includesLoyalty").GetBoolean().ShouldBeFalse("shop B's plan does not include it");
+    }
 
-        // Switched on again while in force: it continues after the current end.
-        var renewed = await OkAsync(w.Admin.PostAsync(on, new { endDate = Iso(today.AddDays(60)) }, ct), ct);
-        renewed.GetProperty("endDate").GetString().ShouldBe(Iso(today.AddDays(60)));
-        renewed.GetProperty("periods")[0].GetProperty("startDate").GetString().ShouldBe(Iso(today.AddDays(31)));
+    [Fact]
+    public async Task TheShopsPlan_DecidesLoyalty_TheSubscriptionPagesSayIt_AndTheRulesAreTheOwners()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var w = await ArrangeAsync(postgres, "loyalty_plan", ct, clock, SignInAgain);
 
-        // The owner's subscription page shows it, and this month's WhatsApp messages (no allowance: unlimited).
+        // A plan without loyalty (the basic one): the shop's pages say so, and nobody switches it on per shop any more.
         var mine = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/subscription", ct), ct);
-        mine.GetProperty("loyaltyAddOn").GetProperty("active").GetBoolean().ShouldBeTrue();
-        mine.GetProperty("loyaltyAddOn").GetProperty("endDate").GetString().ShouldBe(Iso(today.AddDays(60)));
-        mine.GetProperty("loyaltyAddOn").GetProperty("periods").EnumerateArray()
-            .ShouldAllBe(p => p.GetProperty("notes").ValueKind == JsonValueKind.Null); // the admin's «شهر» stays on the platform side
-        mine.GetProperty("messageUsage").GetProperty("used").GetInt32().ShouldBe(0);
-        mine.GetProperty("messageUsage").GetProperty("allowance").ValueKind.ShouldBe(JsonValueKind.Null);
-        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription", ct), ct)).GetProperty("loyaltyAddOn").GetProperty("periods").GetArrayLength().ShouldBe(2);
+        mine.GetProperty("features").GetProperty("includesLoyalty").GetBoolean().ShouldBeFalse();
+        mine.GetProperty("features").GetProperty("loyaltyActive").GetBoolean().ShouldBeFalse();
+        mine.TryGetProperty("loyaltyAddOn", out _).ShouldBeFalse();
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/loyalty", ct), ct)).GetProperty("included").GetBoolean().ShouldBeFalse();
+        (await w.Admin.PostAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription/loyalty-add-on", new { endDate = Iso(TodayAt(clock.GetUtcNow()).AddDays(30)) }, ct))
+            .StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await w.Admin.GetAsync("/api/v1/admin/loyalty-add-on/prices", ct)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        // SuperAdmin ticks «يشمل برنامج الولاء» on the plan: the shop has loyalty at once, the owner cannot do it.
+        var planId = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription", ct), ct)).GetProperty("planId").GetGuid();
+        var plan = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/subscription-plans/{planId}", ct), ct);
+        object Edit(bool loyalty) => new
+        {
+            nameAr = plan.GetProperty("nameAr").GetString(), nameEn = plan.GetProperty("nameEn").GetString(), descriptionAr = (string?)null, descriptionEn = (string?)null,
+            features = new[] { new { ar = "ظهور", en = "Listed" } }, maxProfessionals = (int?)null, maxServices = (int?)null, intervalUnit = "Month", intervalCount = 12,
+            trialDays = (int?)null, graceDays = (int?)null, availableToNewShops = true, version = plan.GetProperty("version").GetUInt32(), includesLoyalty = loyalty,
+        };
+        await FailsAsync(w.OwnerA.PutAsync($"/api/v1/admin/subscription-plans/{planId}", Edit(true), ct), HttpStatusCode.Forbidden, null, ct);
+        (await OkAsync(w.Admin.PutAsync($"/api/v1/admin/subscription-plans/{planId}", Edit(true), ct), ct)).GetProperty("includesLoyalty").GetBoolean().ShouldBeTrue();
+        mine = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/subscription", ct), ct);
+        mine.GetProperty("features").GetProperty("loyaltyActive").GetBoolean().ShouldBeTrue();
+        mine.GetProperty("marketingUsage").GetProperty("used").GetInt32().ShouldBe(0);
+        mine.GetProperty("marketingUsage").GetProperty("allowance").ValueKind.ShouldBe(JsonValueKind.Null);
+        (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/subscription", ct), ct))
+            .GetProperty("features").GetProperty("includesLoyalty").GetBoolean().ShouldBeTrue();
 
         // The rules are the owner's (barbers cannot change them); the admin can set them too. Out-of-range values are refused.
         using var faisal = await w.BarberAsync(w.Faisal, ct);
@@ -533,7 +580,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         }
 
         var saved = await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(), ct), ct);
-        saved.GetProperty("addOnActive").GetBoolean().ShouldBeTrue();
+        saved.GetProperty("included").GetBoolean().ShouldBeTrue();
         var byAdmin = await OkAsync(w.Admin.PutAsync($"/api/v1/admin/shops/{w.Shops.A.ShopId}/loyalty",
             Rules(reward: 6, amount: 1000m, version: saved.GetProperty("version").GetUInt32()), ct), ct);
         byAdmin.GetProperty("rules").GetProperty("pointsForReward").GetInt32().ShouldBe(6);
@@ -541,14 +588,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var offer = await OkAsync(ApiSession.Create(w.Factory).GetAsync($"/api/v1/public/shops/{w.SlugA}/loyalty", ct), ct);
         offer.GetProperty("active").GetBoolean().ShouldBeTrue();
         offer.GetProperty("rules").GetProperty("rewardAmount").GetDecimal().ShouldBe(1000m);
-
-        // Switched off; everything is audited.
-        (await OkAsync(w.Admin.PostAsync($"{on}/stop", null, ct), ct)).GetProperty("periods").EnumerateArray()
-            .ShouldAllBe(p => p.GetProperty("stoppedOn").GetString() == Iso(today) || p.GetProperty("stoppedOn").GetString() == Iso(today.AddDays(31)));
-        foreach (var action in new[] { "loyalty_add_on.price_added", "loyalty_add_on.switched_on", "loyalty_add_on.stopped", "loyalty.rules_saved" })
-        {
-            ((long)(await ScalarAsync(w.Factory, "SELECT count(*) FROM administration.audit_entries WHERE action = @p", ct, action))!).ShouldBeGreaterThan(0, action);
-        }
+        ((long)(await ScalarAsync(w.Factory, "SELECT count(*) FROM administration.audit_entries WHERE action = @p", ct, "loyalty.rules_saved"))!).ShouldBeGreaterThan(0);
     }
 
     [Fact]
@@ -558,7 +598,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         await using var w = await ArrangeAsync(postgres, "loyalty_coupon", ct, clock, SignInAgain);
         await EnsureBarbersAsync(w, ct);
-        await AddOnAsync(w, clock, ct);
+        await PlanLoyaltyAsync(w, ct);
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/loyalty", Rules(first: 2, visit: 1, reward: 5), ct), ct);
         var target = TargetFrom(clock);
         var (noura, phone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
@@ -641,15 +681,19 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
             seen.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(60m);
         }
 
-        // The percent coupon: 25% of 60 off, 45 due.
-        var quarterBooking = await OkAsync(BookAsync(noura, w.SlugA, At(target, 11), ct, serviceId: w.Haircut, professionalId: w.Faisal, couponId: quarter), ct, HttpStatusCode.Created);
-        quarterBooking.GetProperty("amountDue").GetDecimal().ShouldBe(45m);
-        quarterBooking.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(15m);
-        var quarterId = quarterBooking.GetProperty("id").GetGuid();
+        // The percent coupon, once that visit is closed (one active booking, D-155): 25% of 60 off, 45 due.
         noura.Dispose();
-
         await CloseAsync(w, clock, freeId, At(target, 10), ct);
-        await CloseAsync(w, clock, quarterId, At(target, 11), ct);
+        Guid quarterId;
+        using (var again = await MeAsync(w.Factory, phone, ct))
+        {
+            var quarterBooking = await OkAsync(BookAsync(again, w.SlugA, At(target, 12), ct, serviceId: w.Haircut, professionalId: w.Faisal, couponId: quarter), ct, HttpStatusCode.Created);
+            quarterBooking.GetProperty("amountDue").GetDecimal().ShouldBe(45m);
+            quarterBooking.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(15m);
+            quarterId = quarterBooking.GetProperty("id").GetGuid();
+        }
+
+        await CloseAsync(w, clock, quarterId, At(target, 12), ct);
 
         // The owner's report counts each discount once: 0 and 45, not 0 and 33.75.
         using (var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))

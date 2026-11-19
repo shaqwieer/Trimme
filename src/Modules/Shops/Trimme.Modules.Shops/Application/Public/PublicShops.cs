@@ -4,6 +4,7 @@ using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Media;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Platform;
+using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
@@ -31,6 +32,8 @@ public sealed record ShopRatingResponse(decimal Average, int Count);
 /// at all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a
 /// public contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from
 /// <c>/status</c>. <c>ListedInDiscovery</c> is false while the subscription hides the shop (the page is then not indexed).
+/// <c>CallPhone</c> (D-155, the client's 5-1-7): the number of the «اتصال» button, only while the platform's admin has it
+/// on (off by default); the shop's own <c>PublicPhone</c> is never published (D-129).
 /// </summary>
 public sealed record PublicShopResponse(
     Guid Id,
@@ -54,14 +57,20 @@ public sealed record PublicShopResponse(
     int CancellationCutoffMinutes,
     bool ListedInDiscovery,
     DateTimeOffset UpdatedAt,
-    bool IsDemo = false);
+    bool IsDemo = false,
+    string? CallPhone = null);
 
-/// <summary>When a professional can next be booked online (today or tomorrow, their shortest bookable service).</summary>
-public sealed record ProfessionalAvailabilityResponse(Guid ProfessionalId, DateTimeOffset? NextAvailableAt);
+/// <summary>
+/// When a professional can next be booked online (today or tomorrow, their shortest bookable service), and whether they
+/// are «غير متوفر اليوم» (D-155).
+/// </summary>
+public sealed record ProfessionalAvailabilityResponse(Guid ProfessionalId, DateTimeOffset? NextAvailableAt, bool UnavailableToday = false);
 
 /// <summary>
 /// The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is
 /// open (and why not: <c>shop.paused</c>, <c>subscription.expired</c>…), and each active professional's next free time.
+/// D-155 (the client's 1-1): while paused, <c>PauseReason</c> (the shop's words, may be null) and <c>PausedUntil</c> (when
+/// booking opens again by itself, null when no time was set), for «متوقف مؤقتاً».
 /// </summary>
 public sealed record PublicShopStatusResponse(
     bool IsOpenNow,
@@ -69,7 +78,9 @@ public sealed record PublicShopStatusResponse(
     DateTimeOffset? NextOpensAt,
     bool AcceptsOnlineBookings,
     string? BlockedReason,
-    IReadOnlyList<ProfessionalAvailabilityResponse> Professionals);
+    IReadOnlyList<ProfessionalAvailabilityResponse> Professionals,
+    string? PauseReason = null,
+    DateTimeOffset? PausedUntil = null);
 
 internal sealed record GetPublicShopQuery(string Slug) : IQuery<PublicShopResponse?>;
 
@@ -140,7 +151,8 @@ internal sealed class GetPublicShopHandler(
             platform.CancellationCutoffMinutes,
             gate.VisibleInDiscovery && shop.Location is not null && summary is not null,
             shop.UpdatedAt ?? shop.CreatedAt,
-            shop.IsDemo);
+            shop.IsDemo,
+            shop.CallButtonEnabled ? shop.CallButtonPhone : null);
     }
 }
 
@@ -157,6 +169,7 @@ internal sealed class GetPublicShopStatusHandler(
     IShopOpeningReader opening,
     ISlotProbe probe,
     IProfessionalDirectory professionals,
+    IUnavailableBarbers unavailable,
     TimeProvider clock) : IQueryHandler<GetPublicShopStatusQuery, PublicShopStatusResponse?>
 {
     /// <summary>Enough starts for every professional's first one over the probe window.</summary>
@@ -180,6 +193,7 @@ internal sealed class GetPublicShopStatusHandler(
         var gate = await bookability.GetAsync(shop.Id, cancellationToken);
         var status = (await opening.GetStatusesAsync(new Dictionary<ShopId, string> { [shop.Id] = shop.TimeZone }, now, cancellationToken))[shop.Id];
         var active = await professionals.ListActiveProfilesAsync([shop.Id], cancellationToken);
+        var off = (await unavailable.TodayAsync(shop.Id, cancellationToken)).Select(m => m.ProfessionalId).ToHashSet();
         var next = active.ToDictionary(p => p.Id, _ => (DateTimeOffset?)null);
         if (gate.AcceptsOnlineBookings && active.Count > 0)
         {
@@ -212,6 +226,8 @@ internal sealed class GetPublicShopStatusHandler(
             status.NextOpensAt,
             gate.AcceptsOnlineBookings,
             gate.BlockedReason,
-            [.. active.Select(p => new ProfessionalAvailabilityResponse(p.Id.Value, next[p.Id]))]);
+            [.. active.Select(p => new ProfessionalAvailabilityResponse(p.Id.Value, next[p.Id], off.Contains(p.Id)))],
+            shop.OnlineBookingPaused ? shop.OnlineBookingPauseReason : null,
+            shop.OnlineBookingPaused ? shop.OnlineBookingResumesAt : null);
     }
 }

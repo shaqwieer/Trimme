@@ -8,10 +8,10 @@ using Trimme.Modules.Loyalty.Domain;
 namespace Trimme.Modules.Loyalty.Application.Admin;
 
 /// <summary>
-/// A shop's loyalty as the admin sees it (D-149): whether the paid add-on is in force (switched on or off on the shop's
+/// A shop's loyalty as the admin sees it (D-149): whether its plan includes loyalty now (D-155; before, a paid add-on switched on or off on the shop's
 /// subscription tab), the owner's rules (null before the first save; send <c>Version</c> back) and their use.
 /// </summary>
-public sealed record AdminShopLoyaltyResponse(bool AddOnActive, LoyaltyRulesResponse? Rules, uint? Version, LoyaltyStatsResponse Stats);
+public sealed record AdminShopLoyaltyResponse(bool Included, LoyaltyRulesResponse? Rules, uint? Version, LoyaltyStatsResponse Stats);
 
 internal sealed record GetAdminShopLoyaltyQuery(Guid ShopId) : IQuery<Result<AdminShopLoyaltyResponse>>;
 
@@ -30,7 +30,7 @@ internal sealed class GetAdminShopLoyaltyHandler(TrimmeDbContext db, IAdminDataS
         }
 
         var editor = await rules.GetAsync(shopId, cancellationToken);
-        return new AdminShopLoyaltyResponse(editor.AddOnActive, editor.Rules, editor.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
+        return new AdminShopLoyaltyResponse(editor.Included, editor.Rules, editor.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
     }
 }
 
@@ -50,6 +50,6 @@ internal sealed class SaveAdminShopLoyaltyHandler(TrimmeDbContext db, IAdminData
         var saved = await rules.SaveAsync(shopId, command.Rules, command.Version, "admin", cancellationToken);
         return saved.IsFailure
             ? saved.Error
-            : new AdminShopLoyaltyResponse(saved.Value.AddOnActive, saved.Value.Rules, saved.Value.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
+            : new AdminShopLoyaltyResponse(saved.Value.Included, saved.Value.Rules, saved.Value.Version, await LoyaltyStats.ForShopAsync(db, shopId, clock.GetUtcNow(), cancellationToken));
     }
 }

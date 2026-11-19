@@ -42,7 +42,7 @@ internal sealed record ChangeBookingProfessionalCommand(Guid BookingId, Guid Pro
 /// <summary>The free starts for the booking's barber and duration (its own time does not block it), on the desk's rules.</summary>
 internal sealed class ShopRescheduleAvailability(
     TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IShopDirectory shops, ISlotProbe probe, IShopDayPlanReader plans, ShopRulesReader rules,
-    TimeProvider clock)
+    CoverReader covers, TimeProvider clock)
 {
     private const int MaxSlots = 10_000;
 
@@ -50,7 +50,8 @@ internal sealed class ShopRescheduleAvailability(
     {
         var id = new BookingId(bookingId);
         if (tenant.ShopId is not { } shopId
-            || await db.Set<Booking>().AsNoTracking().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking
+            || await db.Set<Booking>().AsNoTracking().OwnOrCovered(user, await covers.TodayAsync(shopId, cancellationToken))
+                .SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking
             || await shops.FindAsync(shopId, cancellationToken) is not { } shop)
         {
             return BookingErrors.NotFound();
@@ -121,13 +122,15 @@ internal sealed class GetBookingProfessionalOptionsHandler(
     ICurrentTenant tenant,
     IBookableOfferCatalog catalog,
     IProfessionalDirectory professionals,
-    IAvailabilityChecker availability) : IQueryHandler<GetBookingProfessionalOptionsQuery, Result<BookingProfessionalOptionsResponse>>
+    IAvailabilityChecker availability,
+    CoverReader covers) : IQueryHandler<GetBookingProfessionalOptionsQuery, Result<BookingProfessionalOptionsResponse>>
 {
     public async Task<Result<BookingProfessionalOptionsResponse>> Handle(GetBookingProfessionalOptionsQuery query, CancellationToken cancellationToken)
     {
         var id = new BookingId(query.BookingId);
-        if (tenant.ShopId is null
-            || await db.Set<Booking>().AsNoTracking().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        if (tenant.ShopId is not { } shopId
+            || await db.Set<Booking>().AsNoTracking().OwnOrCovered(user, await covers.TodayAsync(shopId, cancellationToken))
+                .SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
         {
             return BookingErrors.NotFound();
         }
@@ -160,7 +163,7 @@ internal sealed class GetBookingProfessionalOptionsHandler(
 
 /// <summary>The shared steps of a shop change: idempotency, the booking (the barber's own), the version, the save.</summary>
 internal sealed class ShopBookingChanger(
-    TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IdempotencyGate idempotency, ShopBookingReader reader, TimeProvider clock)
+    TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IdempotencyGate idempotency, ShopBookingReader reader, CoverReader covers, TimeProvider clock)
 {
     public async Task<Result<ShopBookingChangeResult>> ChangeAsync(
         string scope,
@@ -190,7 +193,8 @@ internal sealed class ShopBookingChanger(
         }
 
         var id = new BookingId(bookingId);
-        if (await db.Set<Booking>().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
+        var cover = user.Own() is null ? Cover.None : await covers.TodayAsync(shopId, cancellationToken);
+        if (await db.Set<Booking>().OwnOrCovered(user, cover).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is not { } booking)
         {
             return BookingErrors.NotFound();
         }
@@ -215,7 +219,7 @@ internal sealed class ShopBookingChanger(
         }
 
         await transaction.CommitAsync(cancellationToken);
-        return new ShopBookingChangeResult((await reader.MapAsync(shopId, [booking], cancellationToken))[0], Replayed: false);
+        return new ShopBookingChangeResult(await reader.OneAsync(booking, cancellationToken), Replayed: false);
     }
 
     private async Task<Result<ShopBookingChangeResult>?> ReplayAsync(
@@ -234,17 +238,18 @@ internal sealed class ShopBookingChanger(
 
         var id = new BookingId(replay.Value);
         return await db.Set<Booking>().AsNoTracking().OwnOnly(user).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
-            ? new ShopBookingChangeResult((await reader.MapAsync(shopId, [booking], cancellationToken))[0], Replayed: true)
+            ? new ShopBookingChangeResult(await reader.OneAsync(booking, cancellationToken), Replayed: true)
             : BookingErrors.NotFound();
     }
 }
 
 /// <summary>
-/// A new time with the same barber (D-145) for a walk-in or phone booking, once the customer agreed (D-147: an online
-/// booking gets a postponement offer instead). A walk-in with a mobile gets «تم تغيير موعد حجزك».
+/// A new time with the same barber (D-145). D-155 («الحلاق يغيّر الموعد مباشرة، بدون موافقة الزبون»): an online customer's
+/// booking moves at once too; they get «تم تغيير موعد حجزك» and may cancel or change it. At most once a day per online
+/// customer at the shop (<see cref="ShopChangeLimit"/>). A walk-in with a mobile gets the same message.
 /// </summary>
 internal sealed class ShopRescheduleBookingHandler(
-    ShopBookingChanger changer, BookingActors actors, IAvailabilityChecker availability, ShopRulesReader rules, TimeProvider clock)
+    ShopBookingChanger changer, BookingActors actors, IAvailabilityChecker availability, ShopRulesReader rules, ShopChangeLimit limit, TimeProvider clock)
     : ICommandHandler<ShopRescheduleBookingCommand, Result<ShopBookingChangeResult>>
 {
     private const string Scope = "bookings.shop_reschedule";
@@ -260,11 +265,9 @@ internal sealed class ShopRescheduleBookingHandler(
         var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty, Version = 0 });
         return changer.ChangeAsync(Scope, command.IdempotencyKey, hash, command.BookingId, command.Version, async booking =>
         {
-            // A customer's online booking gets a new time only with their consent: the barber offers it (D-147). A walk-in
-            // or phone booking is changed here, once the customer has agreed in the shop or on the phone.
-            if (booking.Channel == BookingChannel.Online)
+            if (await limit.ReachedAsync(booking, cancellationToken))
             {
-                return PostponementErrors.ConsentRequired();
+                return ShopChangeLimit.Reached();
             }
 
             var free = await availability.FreeProfessionalsAsync(

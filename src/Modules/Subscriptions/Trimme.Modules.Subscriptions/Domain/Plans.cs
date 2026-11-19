@@ -56,7 +56,10 @@ public sealed record PlanDetails(
     int? TrialDays,
     int? GraceDays,
     bool AvailableToNewShops,
-    int? MonthlyWhatsAppMessages = null);
+    int? MonthlyMarketingMessages = null,
+    bool IncludesLoyalty = false,
+    bool WinBackEnabled = false,
+    int WinBackAfterDays = PlanLimits.DefaultWinBackAfterDays);
 
 /// <summary>
 /// A subscription plan of the platform (spec §7, §15), managed by SuperAdmin only and entirely data-driven: nothing
@@ -113,10 +116,20 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
     public bool AvailableToNewShops { get; private set; }
 
     /// <summary>
-    /// WhatsApp messages to the shop's customers per calendar month (D-149): null is unlimited, 0 none (in-app notices
-    /// only). Staff messages and sign-in codes are not counted.
+    /// Marketing WhatsApp messages per month (D-155, the client's «حد الرسايل التسويقية بالشهر»): only the win-back
+    /// message counts; confirmations, changes, cancellations and reminders are never counted or stopped. Null is
+    /// unlimited, 0 none. The month runs from the day the shop's subscription period started.
     /// </summary>
-    public int? MonthlyWhatsAppMessages { get; private set; }
+    public int? MonthlyMarketingMessages { get; private set; }
+
+    /// <summary>Loyalty is on for the plan's shops while their subscription is in force (D-155, «الولاء: مفعّل أو لا»).</summary>
+    public bool IncludesLoyalty { get; private set; }
+
+    /// <summary>«رسالة الدعوة للعودة» (D-155): a customer is invited back <see cref="WinBackAfterDays"/> days after their last visit.</summary>
+    public bool WinBackEnabled { get; private set; }
+
+    /// <summary>Days after the last visit before the win-back message (1–90; the client's 10).</summary>
+    public int WinBackAfterDays { get; private set; } = PlanLimits.DefaultWinBackAfterDays;
 
     public PlanStatus Status { get; private set; }
 
@@ -254,7 +267,10 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
         TrialDays = details.TrialDays;
         GraceDays = details.GraceDays;
         AvailableToNewShops = details.AvailableToNewShops;
-        MonthlyWhatsAppMessages = details.MonthlyWhatsAppMessages;
+        MonthlyMarketingMessages = details.MonthlyMarketingMessages;
+        IncludesLoyalty = details.IncludesLoyalty;
+        WinBackEnabled = details.WinBackEnabled;
+        WinBackAfterDays = details.WinBackAfterDays;
     }
 
     private static Error? Validate(PlanDetails details)
@@ -270,9 +286,14 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
             return PlanErrors.Field("features", "validation.invalid");
         }
 
-        if (details.MonthlyWhatsAppMessages is < 0 or > PlanLimits.MaxMonthlyWhatsAppMessages)
+        if (details.MonthlyMarketingMessages is < 0 or > PlanLimits.MaxMonthlyMarketingMessages)
         {
-            return PlanErrors.Field("monthlyWhatsAppMessages", "validation.out_of_range");
+            return PlanErrors.Field("monthlyMarketingMessages", "validation.out_of_range");
+        }
+
+        if (details.WinBackAfterDays is < PlanLimits.MinWinBackAfterDays or > PlanLimits.MaxWinBackAfterDays)
+        {
+            return PlanErrors.Field("winBackAfterDays", "validation.out_of_range");
         }
 
         return details.MaxProfessionals is < 1 || details.MaxServices is < 1 || details.TrialDays is < 0 or > 365 || details.GraceDays is < 0 or > 365
@@ -322,7 +343,10 @@ public sealed class PlanPrice : Entity<PlanPriceId>
 
 public static class PlanLimits
 {
-    public const int MaxMonthlyWhatsAppMessages = 1_000_000;
+    public const int MaxMonthlyMarketingMessages = 1_000_000;
+    public const int MinWinBackAfterDays = 1;
+    public const int MaxWinBackAfterDays = 90;
+    public const int DefaultWinBackAfterDays = 10;
 }
 
 public static class PlanPricing

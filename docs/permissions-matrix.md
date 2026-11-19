@@ -68,15 +68,15 @@
 | Permission | ShopOwner | ShopBarber (D-145) |
 |---|---|---|
 | `Shop.Bookings.Read` | ✓ view only (D-147) | ✓ own bookings, plus the shop's pending and red ones (D-147); a colleague's or the whole shop's, read-only, without a colleague's customer's mobile (D-151) |
-| `Shop.Bookings.UpdateStatus` | — (D-147: the owner only watches) | ✓ own bookings; a colleague's: accept/reject while pending, «وصل» or close once red (D-147, D-151); notes and a booking's services: own only |
+| `Shop.Bookings.UpdateStatus` | — (D-147: the owner only watches) | ✓ own bookings; a colleague's: «وصل» or close once red (D-147, D-151), or cancel with a reason today while they are «غير متوفر اليوم» (D-155); notes and a booking's services: own only |
 | `Shop.Bookings.CreateWalkIn` | — (D-146: the barbers book walk-ins) | ✓ walk-in and phone bookings, for themselves or a free colleague (D-147) |
 | `Shop.Bookings.ResendNotification` | — (D-147) | — |
-| `Shop.Bookings.Reschedule` | — (D-147) | ✓ own bookings: walk-in/phone directly; online by a postponement offer (D-147) |
-| `Shop.Bookings.ChangeProfessional` | — (D-147) | ✓ own bookings, to a colleague |
+| `Shop.Bookings.Reschedule` | — (D-147) | ✓ own bookings directly, an online one too, once per customer a day (D-155); a colleague's today while they are «غير متوفر اليوم» |
+| `Shop.Bookings.ChangeProfessional` | — (D-147) | ✓ own bookings, to a colleague; a colleague's today while they are «غير متوفر اليوم» (D-155) |
 | `Shop.Schedule.Read` | ✓ | — |
 | `Shop.Schedule.Manage` | ✓ hours, weekly breaks, time off, closures (one-off breaks are the barbers', D-147) | — |
-| `Shop.Breaks.Manage` | — (D-147) | ✓ own breaks |
-| `Shop.OnlineBooking.Pause` | — (D-147) | ✓ the shop-wide pause (D-147) |
+| `Shop.Breaks.Manage` | — (D-147) | ✓ own breaks; «غير متوفر اليوم» for themselves (D-155; the owner marks any barber with `Shop.Schedule.Manage`) |
+| `Shop.OnlineBooking.Pause` | ✓ the shop-wide pause, with a reason and a return time (D-155; the admin too, with `Admin.Shops.Edit`) | — (D-155) |
 | `Shop.Services.Manage` | ✓ | — |
 | `Shop.Profile.Edit` | ✓ | — |
 | `Shop.Location.Edit` | ✓ | — |

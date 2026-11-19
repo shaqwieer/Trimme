@@ -29,7 +29,7 @@ public sealed class BarberDayAndAccountTests(PostgresFixture postgres)
         (await OkAsync(session.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("version").GetUInt32();
 
     [Fact]
-    public async Task AddServiceCandidates_ShowTheBarbersLength_AndFitBeforeTheNextBookingOrHeldOffer_ByTheAddsRule()
+    public async Task AddServiceCandidates_ShowTheBarbersLength_AndFitBeforeTheNextBooking_ByTheAddsRule()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
@@ -51,12 +51,16 @@ public sealed class BarberDayAndAccountTests(PostgresFixture postgres)
         await w.EnsureBarberLoginAsync(w.Faisal, ct);
         await w.EnsureBarberLoginAsync(w.Omar, ct);
 
-        // 10:00 a 30-minute haircut; at 14:00 another of Faisal's bookings, which he offers to move to 10:50 (held).
+        // 10:00 a 30-minute haircut; at 14:00 another customer's booking with Faisal, which he moves to 10:50 (D-155: at once).
         JsonElement visit, later;
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
             visit = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-            later = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 14), ct);
+        }
+
+        using (var other = await CustomerAsync(w.Factory, "سارة", ct))
+        {
+            later = await BookedAsync(other, w, w.Haircut, w.Faisal, At(Target, 14), ct);
         }
 
         var id = visit.GetProperty("id").GetGuid();
@@ -74,10 +78,9 @@ public sealed class BarberDayAndAccountTests(PostgresFixture postgres)
         Candidate(open, trim).GetProperty("price").GetDecimal().ShouldBe(15m);
         open.GetProperty("services").EnumerateArray().ShouldAllBe(s => s.GetProperty("fits").GetBoolean());
 
-        // The 14:00 offered at 10:50 holds that time: 20 minutes after the haircut. The beard (20) and the trim (10) fit,
-        // the wash (25) does not.
-        await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{later.GetProperty("id").GetGuid()}/postpone",
-            new { startsAt = At(Target, 10, 50), version = later.GetProperty("version").GetUInt32() }, ct), ct);
+        // The 14:00 moved to 10:50: 20 minutes after the haircut. The beard (20) and the trim (10) fit, the wash (25) does not.
+        await OkAsync(faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{later.GetProperty("id").GetGuid()}/reschedule",
+            new { startsAt = At(Target, 10, 50), version = later.GetProperty("version").GetUInt32() }, ct, headers: Key()), ct);
         var held = await OkAsync(faisal.GetAsync(url, ct), ct);
         held.GetProperty("roomMinutes").GetInt32().ShouldBe(20);
         Candidate(held, w.Beard).GetProperty("fits").GetBoolean().ShouldBeTrue();
@@ -111,13 +114,20 @@ public sealed class BarberDayAndAccountTests(PostgresFixture postgres)
         await using var w = await ArrangeAsync(postgres, "d151_reasons", ct, clock);
         await w.EnsureBarberLoginAsync(w.Faisal, ct);
         JsonElement served, servedNextDay, unwell, closed, other, typed;
+        // One active booking per customer (D-155): each booking is its own customer's.
+        async Task<JsonElement> ByANewCustomerAsync(DateTimeOffset start)
+        {
+            using var someone = await CustomerAsync(w.Factory, "نورة", ct);
+            return await BookedAsync(someone, w, w.Haircut, w.Faisal, start, ct);
+        }
+
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
-        served = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-        servedNextDay = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target.AddDays(1), 10), ct);
+        served = await ByANewCustomerAsync(At(Target, 10));
+        servedNextDay = await ByANewCustomerAsync(At(Target.AddDays(1), 10));
         unwell = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 12), ct);
-        closed = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 13), ct);
-        other = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 14), ct);
-        typed = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 15), ct);
+        closed = await ByANewCustomerAsync(At(Target, 13));
+        other = await ByANewCustomerAsync(At(Target, 14));
+        typed = await ByANewCustomerAsync(At(Target, 15));
 
         using (var faisal = await w.BarberAsync(w.Faisal, ct))
         {

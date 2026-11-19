@@ -67,14 +67,14 @@ const inRange = (value: number, [min, max]: readonly [number, number]) => value 
  * The shop's loyalty rules (D-149, the client's 6-2): points for the first visit and for each later one, the points a
  * reward needs, the reward (one of the shop's services free, or a fixed 5–1,000 SAR off) and what happens when a customer
  * stops visiting (nothing, the card wiped, or one point off per period). Set by the owner (`Shop.Profile.Edit`; barbers
- * read) or by the admin on the shop's page. Customers collect and use points only while the paid add-on is on; the rules
- * can be set before. A preview shows the rules as customers read them. A stale version answers 409.
+ * read) or by the admin on the shop's page. Customers collect and use points only while the shop's plan includes loyalty
+ * (D-155, the client's 4-3: it comes with the higher plan, not as an add-on); the rules can be set before. A preview shows the rules as customers read them. A stale version answers 409.
  */
 export function LoyaltyRulesForm({
   scope,
   rules,
   version,
-  addOnActive,
+  included,
   services,
   canEdit,
   subscriptionHref,
@@ -82,10 +82,11 @@ export function LoyaltyRulesForm({
   scope: LoyaltyRulesScope;
   rules: Rules | null;
   version: number | null;
-  addOnActive: boolean;
+  /** Whether the shop's plan includes loyalty now (D-155). */
+  included: boolean;
   services: LoyaltyRulesService[];
   canEdit: boolean;
-  /** The admin's subscription tab, where the paid add-on is switched on for a period (D-150). */
+  /** The admin's subscription tab, where the shop is moved to a plan that includes loyalty. */
   subscriptionHref?: string;
 }) {
   const t = useTranslations('loyalty.rulesForm');
@@ -275,13 +276,13 @@ export function LoyaltyRulesForm({
       data-testid="loyalty-rules-form"
     >
       <InlineAlert
-        tone={addOnActive ? 'success' : 'info'}
-        title={addOnActive ? t('addOnOn') : t(scope.kind === 'admin' ? 'addOnOffAdmin' : 'addOnOff')}
+        tone={included ? 'success' : 'info'}
+        title={included ? t('includedOn') : t(scope.kind === 'admin' ? 'includedOffAdmin' : 'includedOff')}
       >
-        {/* «ميزة مدفوعة»: the shop cannot switch it on itself (D-150, the client's 5-2). */}
+        {/* It comes with the plan: the shop cannot switch it on itself (D-150, D-155). */}
         {scope.kind === 'admin' && (
           <p>
-            {t('paidAdmin')}{' '}
+            {t('planAdmin')}{' '}
             {subscriptionHref && (
               <Link href={subscriptionHref} className="font-bold text-text-link underline">
                 {t('toSubscription')}

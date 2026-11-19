@@ -1282,7 +1282,7 @@
         "tags": [
           "Customer: bookings"
         ],
-        "summary": "Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop\u0027s minimum notice (D-152).",
+        "summary": "Books an offered slot (Idempotency-Key required; a replay returns the same booking). Confirmed at once (D-155). 409 booking.active_booking_exists when the customer already has an upcoming booking at any shop (D-155: cancel it first); 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop\u0027s minimum notice (D-152).",
         "operationId": "CreateBooking",
         "parameters": [
           {
@@ -1362,7 +1362,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "The owner\u0027s report for shop-local dates from..to (at most 31): per barber and shop, moves, postponements, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).",
+        "summary": "The owner\u0027s report for shop-local dates from..to (at most 31): per barber and shop, moves, new times from the shop, late cancellations, no-shows, breaks, actual times, average length and expected income; loyalty when on (D-147).",
         "operationId": "GetShopReport",
         "parameters": [
           {
@@ -1679,7 +1679,7 @@
         "tags": [
           "Public"
         ],
-        "summary": "Whether a published shop runs loyalty now (its paid add-on is in force) and its rules (D-149). No customer data.",
+        "summary": "Whether a published shop runs loyalty now (its plan includes it and its subscription is in force, D-155) and its rules (D-149). No customer data.",
         "operationId": "GetPublicShopLoyalty",
         "parameters": [
           {
@@ -1782,7 +1782,7 @@
         "tags": [
           "Shop: loyalty"
         ],
-        "summary": "The shop\u0027s loyalty: whether the add-on is in force, the rules and (for the owner) how they are used.",
+        "summary": "The shop\u0027s loyalty: whether its plan includes it now (D-155), the rules and (for the owner) how they are used.",
         "operationId": "GetShopLoyalty",
         "responses": {
           "200": {
@@ -3004,6 +3004,47 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/win-back": {
+      "put": {
+        "tags": [
+          "Customer account"
+        ],
+        "summary": "Turns the shops\u0027 \u00AB\u0646\u062F\u0639\u0648\u0643 \u0644\u0644\u0639\u0648\u062F\u0629\u00BB messages (the plans\u0027 win-back message, D-155) on or off for the customer; on by default.",
+        "operationId": "SetCustomerWinBackMessages",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WinBackMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerProfileResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4643,6 +4684,178 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/online-booking": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Whether the shop\u0027s online booking is paused, why and until when (D-155).",
+        "operationId": "AdminGetOnlineBookingState",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/online-booking/pause": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "The platform pauses a shop\u0027s online booking (D-155), with a reason customers see and an optional return time; the shop is told (audited).",
+        "operationId": "AdminPauseOnlineBooking",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PauseOnlineBookingRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/online-booking/resume": {
+      "post": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "The platform opens a shop\u0027s online booking again (D-155, audited).",
+        "operationId": "AdminResumeOnlineBooking",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineBookingStateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/shops/{shopId}/demo": {
       "put": {
         "tags": [
@@ -4678,6 +4891,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/call-button": {
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Shows or hides the \u00AB\u0627\u062A\u0635\u0627\u0644\u00BB button on the shop\u0027s public page and sets its number (D-155: the admin\u0027s only, off by default; audited without the number).",
+        "operationId": "AdminSetShopCallButton",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopCallButtonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminShopDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -5756,7 +6031,7 @@
         "tags": [
           "Shop"
         ],
-        "summary": "Stops new online bookings and availability; confirmed appointments stay (audited).",
+        "summary": "The owner stops new online bookings and availability (D-155: the owner only, no longer the barbers), with a reason customers see and an optional return time; confirmed appointments stay, and the shop is told how many fall inside the pause (audited).",
         "operationId": "PauseOnlineBooking",
         "requestBody": {
           "content": {
@@ -9444,6 +9719,167 @@
         }
       }
     },
+    "/api/v1/shop/schedule/unavailable-today": {
+      "get": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "The shop\u0027s barbers marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (D-155): since when, until the end of the day, and their open bookings left today.",
+        "operationId": "ListUnavailableToday",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UnavailableBarberResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Marks a barber \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB until the end of the shop\u0027s day (D-155): the barber themselves, or the owner (Shop.Schedule.Manage) for any barber. Their remaining times vanish; their bookings stay and the colleagues are told. 409 schedule.already_unavailable. Audited.",
+        "operationId": "MarkUnavailableToday",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnavailableTodayRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnavailableBarberResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: schedule"
+        ],
+        "summary": "Takes \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB back the same day (D-155): the barber themselves, or the owner. 409 schedule.not_unavailable. Audited.",
+        "operationId": "UndoUnavailableToday",
+        "parameters": [
+          {
+            "name": "professionalId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shop/schedule/closures": {
       "post": {
         "tags": [
@@ -11102,6 +11538,30 @@
         }
       }
     },
+    "/api/v1/me/bookings/active": {
+      "get": {
+        "tags": [
+          "Customer: bookings"
+        ],
+        "summary": "The customer\u0027s upcoming booking at any shop, which stops a new one (D-155): cancel it first. 204 when there is none; a booking past its end does not count.",
+        "operationId": "GetMyActiveBooking",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerActiveBookingResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/me/bookings/{bookingId}": {
       "get": {
         "tags": [
@@ -11133,130 +11593,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/bookings/{bookingId}/postponement/accept": {
-      "post": {
-        "tags": [
-          "Customer: bookings"
-        ],
-        "summary": "Takes the new time the barber offered (D-147): the booking moves there. 409 booking.postponement_gone once it lapsed.",
-        "operationId": "AcceptPostponement",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnswerPostponementRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomerBookingResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/bookings/{bookingId}/postponement/decline": {
-      "post": {
-        "tags": [
-          "Customer: bookings"
-        ],
-        "summary": "Declines the new time the barber offered (D-147): the booking stays and the held time is free.",
-        "operationId": "DeclinePostponement",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnswerPostponementRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomerBookingResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12333,7 +12669,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "Gives the booking a new time with the same barber; the customer is told. Idempotency-Key required; 409 booking.slot_unavailable when taken.",
+        "summary": "Gives the booking a new time with the same barber at once, an online customer\u0027s too (D-155): the customer is told and may cancel or change it. Once a day per customer at a shop for an online booking: 409 booking.changed_today. Idempotency-Key required; 409 booking.slot_unavailable when taken.",
         "operationId": "ShopRescheduleBooking",
         "parameters": [
           {
@@ -12358,88 +12694,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ShopRescheduleBookingRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ShopBookingResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/shop/bookings/{bookingId}/postpone": {
-      "post": {
-        "tags": [
-          "Shop: bookings"
-        ],
-        "summary": "Offers a customer\u0027s online booking a new time with the same barber (D-147); it is held for the customer until an hour before the start. 409 booking.slot_unavailable when the time is taken.",
-        "operationId": "PostponeBooking",
-        "parameters": [
-          {
-            "name": "bookingId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PostponeBookingRequest"
               }
             }
           },
@@ -13527,7 +13781,7 @@
         "tags": [
           "Admin: loyalty"
         ],
-        "summary": "A shop\u0027s loyalty: whether the add-on is in force, the rules (null before they are set) and their use.",
+        "summary": "A shop\u0027s loyalty: whether its plan includes it now (D-155), the rules (null before they are set) and their use.",
         "operationId": "AdminGetShopLoyalty",
         "parameters": [
           {
@@ -14591,140 +14845,6 @@
         }
       }
     },
-    "/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on": {
-      "post": {
-        "tags": [
-          "Admin: subscriptions"
-        ],
-        "summary": "Switches the shop\u0027s loyalty add-on on until an end date, at the add-on price in force on its start (D-149; audited).",
-        "operationId": "SwitchOnLoyaltyAddOn",
-        "parameters": [
-          {
-            "name": "shopId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SwitchOnLoyaltyAddOnRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoyaltyAddOnResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable Entity",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on/stop": {
-      "post": {
-        "tags": [
-          "Admin: subscriptions"
-        ],
-        "summary": "Switches the shop\u0027s loyalty add-on off from today; customers keep their points (D-149; audited).",
-        "operationId": "StopLoyaltyAddOn",
-        "parameters": [
-          {
-            "name": "shopId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoyaltyAddOnResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/shops/{shopId}/subscription/reinstate": {
       "post": {
         "tags": [
@@ -14776,66 +14896,6 @@
           },
           "409": {
             "description": "Conflict",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/loyalty-add-on/prices": {
-      "get": {
-        "tags": [
-          "Admin: subscriptions"
-        ],
-        "summary": "The loyalty add-on\u0027s price versions (D-149): the one in force, the next one and the history.",
-        "operationId": "ListLoyaltyAddOnPrices",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoyaltyAddOnPricesResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Admin: subscriptions"
-        ],
-        "summary": "SuperAdmin adds a loyalty add-on price version from a date (today or later); periods keep the version they started on.",
-        "operationId": "AddLoyaltyAddOnPrice",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddLoyaltyAddOnPriceRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoyaltyAddOnPricesResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -16078,24 +16138,6 @@
         },
         "description": "A service of the shop to add to the booking at the visit (D-147), with the booking\u0027s version."
       },
-      "AddLoyaltyAddOnPriceRequest": {
-        "required": [
-          "amount",
-          "effectiveFrom"
-        ],
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "effectiveFrom": {
-            "type": "string",
-            "format": "date"
-          }
-        },
-        "description": "A new add-on price version in the platform currency, effective from today or a later date (SuperAdmin, D-149)."
-      },
       "AddPlanPriceRequest": {
         "required": [
           "amount",
@@ -16315,8 +16357,19 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "noShows": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
-        }
+        },
+        "description": "A customer in the admin list. D-155 (the client\u0027s 8-3-5): \u00AB\u0645\u0627 \u062D\u0636\u0631\u00BB (\u0060NoShows\u0060) and the cancellations (\u0060Cancelled\u0060, by the customer or the shop)."
       },
       "AdminCustomerResponse": {
         "required": [
@@ -17391,7 +17444,6 @@
           "editableFields",
           "status",
           "timeZone",
-          "requireManualConfirmation",
           "createdAt",
           "updatedAt",
           "version"
@@ -17481,9 +17533,6 @@
           "timeZone": {
             "type": "string"
           },
-          "requireManualConfirmation": {
-            "type": "boolean"
-          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -17514,20 +17563,30 @@
               "null",
               "string"
             ]
+          },
+          "callButtonEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "callButtonPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "A shop with its full profile, location and shop-edit policy, as the platform admin edits it."
       },
       "AdminShopLoyaltyResponse": {
         "required": [
-          "addOnActive",
+          "included",
           "rules",
           "version",
           "stats"
         ],
         "type": "object",
         "properties": {
-          "addOnActive": {
+          "included": {
             "type": "boolean"
           },
           "rules": {
@@ -17551,7 +17610,7 @@
             "$ref": "#/components/schemas/LoyaltyStatsResponse"
           }
         },
-        "description": "A shop\u0027s loyalty as the admin sees it (D-149): whether the paid add-on is in force (switched on or off on the shop\u0027s\nsubscription tab), the owner\u0027s rules (null before the first save; send \u0060Version\u0060 back) and their use."
+        "description": "A shop\u0027s loyalty as the admin sees it (D-149): whether its plan includes loyalty now (D-155; before, a paid add-on switched on or off on the shop\u0027s\nsubscription tab), the owner\u0027s rules (null before the first save; send \u0060Version\u0060 back) and their use."
       },
       "AdminShopResponse": {
         "required": [
@@ -17561,7 +17620,6 @@
           "nameEn",
           "status",
           "timeZone",
-          "requireManualConfirmation",
           "district",
           "isVerified",
           "logoUrl",
@@ -17588,9 +17646,6 @@
           },
           "timeZone": {
             "type": "string"
-          },
-          "requireManualConfirmation": {
-            "type": "boolean"
           },
           "district": {
             "type": [
@@ -17757,23 +17812,23 @@
             ],
             "format": "uint32"
           },
-          "loyaltyAddOn": {
+          "features": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/LoyaltyAddOnResponse"
+                "$ref": "#/components/schemas/ShopPlanFeaturesResponse"
               }
             ]
           },
-          "messageUsage": {
+          "marketingUsage": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/WhatsAppUsageResponse"
+                "$ref": "#/components/schemas/MarketingUsageResponse"
               }
             ]
           }
@@ -17959,19 +18014,6 @@
         },
         "description": "An upcoming booking that a new break, time off or closure would overlap. Never carries a phone number."
       },
-      "AnswerPostponementRequest": {
-        "required": [
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "integer",
-            "format": "uint32"
-          }
-        },
-        "description": "The booking\u0027s version, to answer a postponement offer (D-147)."
-      },
       "ApiMetaResponse": {
         "required": [
           "name",
@@ -18129,9 +18171,24 @@
               "null",
               "string"
             ]
+          },
+          "summaryCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summaryArgs": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
-        "description": "\u0060ActorName\u0060: The acting account\u0027s display name (never an email or phone); null for the system.\n        \u0060ShopNameAr\u0060: The shop the action concerns, when it concerns one."
+        "description": "\u0060ActorName\u0060: The acting account\u0027s display name (never an email or phone); null for the system.\n        \u0060ShopNameAr\u0060: The shop the action concerns, when it concerns one.\n        \u0060SummaryCode\u0060 and \u0060SummaryArgs\u0060 (D-155, \u00AB\u0633\u062C\u0644 \u0627\u0644\u0646\u0634\u0627\u0637 \u0643\u0644\u0647 \u0628\u0627\u0644\u0639\u0631\u0628\u064A\u00BB): the summary as a stable code (usually the\n        action) and its values, which the web words in the reader\u0027s language. Both are null on entries written before D-155;\n        those keep only their English \u0060Summary\u0060."
       },
       "AuditFacetsResponse": {
         "required": [
@@ -18927,7 +18984,7 @@
             }
           }
         },
-        "description": "What may be added to the booking at the visit: \u0060RoomMinutes\u0060 is the time free after it (with its cleaning time)\nuntil the barber\u0027s next booking or held offer, null when nothing follows within a day."
+        "description": "What may be added to the booking at the visit: \u0060RoomMinutes\u0060 is the time free after it (with its cleaning time)\nuntil the barber\u0027s next booking, null when nothing follows within a day."
       },
       "BookingShopResponse": {
         "required": [
@@ -19675,15 +19732,28 @@
             ],
             "format": "double"
           },
-          "monthlyWhatsAppMessages": {
+          "monthlyMarketingMessages": {
             "type": [
               "null",
               "integer"
             ],
             "format": "int32"
+          },
+          "includesLoyalty": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackAfterDays": {
+            "type": "integer",
+            "format": "int32",
+            "default": 10
           }
         },
-        "description": "A new plan (Draft). \u0060InitialPrice\u0060, when given, becomes price version 1 from today. \u0060MonthlyWhatsAppMessages\u0060\n(D-149) is the customer WhatsApp messages per calendar month: null unlimited, 0 none."
+        "description": "A new plan (Draft). \u0060InitialPrice\u0060, when given, becomes price version 1 from today. The plan\u0027s features (D-155):\n\u0060IncludesLoyalty\u0060; \u0060WinBackEnabled\u0060 and \u0060WinBackAfterDays\u0060 (1\u201390, default 10); and\n\u0060MonthlyMarketingMessages\u0060, the win-back messages per month (null unlimited, 0 none)."
       },
       "CreateProfessionalRequest": {
         "required": [
@@ -20043,6 +20113,37 @@
           }
         }
       },
+      "CustomerActiveBookingResponse": {
+        "required": [
+          "id",
+          "reference",
+          "shop",
+          "startsAt",
+          "endsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "shop": {
+            "$ref": "#/components/schemas/BookingShopResponse"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The upcoming booking a customer must cancel before booking again (D-155, \u00AB\u062D\u062C\u0632 \u0648\u0627\u062D\u062F \u0641\u0639\u0651\u0627\u0644 \u0628\u0633 \u0644\u0644\u0632\u0628\u0648\u0646\u060C \u0641\u064A \u0643\u0644 \u0627\u0644\u0645\u062D\u0644\u0627\u062A\u00BB):\nthe booking, its shop and its time."
+      },
       "CustomerBookingAction": {
         "enum": [
           "Cancel",
@@ -20168,16 +20269,6 @@
             ],
             "format": "date-time"
           },
-          "postponement": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PostponementOfferResponse"
-              }
-            ]
-          },
           "cancellationReasonCode": {
             "oneOf": [
               {
@@ -20236,9 +20327,13 @@
           },
           "phoneChangeAllowed": {
             "type": "boolean"
+          },
+          "winBackMessages": {
+            "type": "boolean",
+            "default": true
           }
         },
-        "description": "\u0022Personal info\u0022: the name shops see, the language, an optional email (for the customer\u0027s records only), and the\nnumber masked. \u0060PhoneChangeAllowed\u0060 is false while sign-in codes are on (a new number would need a code)."
+        "description": "\u0022Personal info\u0022: the name shops see, the language, an optional email (for the customer\u0027s records only), and the\nnumber masked. \u0060PhoneChangeAllowed\u0060 is false while sign-in codes are on (a new number would need a code).\n\u0060WinBackMessages\u0060 (D-155): whether the shops may send \u00AB\u0646\u062F\u0639\u0648\u0643 \u0644\u0644\u0639\u0648\u062F\u0629\u00BB messages (on by default)."
       },
       "CustomerSignInOptionsResponse": {
         "required": [
@@ -20453,8 +20548,14 @@
           "failed": {
             "type": "integer",
             "format": "int32"
+          },
+          "limitReached": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
-        }
+        },
+        "description": "Per status; \u0060LimitReached\u0060 (D-155, \u00AB\u0648\u0635\u0644 \u0627\u0644\u062D\u062F\u00BB) is a win-back message the plan\u0027s monthly limit kept back."
       },
       "DispatchDetailResponse": {
         "required": [
@@ -20510,7 +20611,8 @@
         "enum": [
           "Lifecycle",
           "Reminder",
-          "Test"
+          "Test",
+          "WinBack"
         ]
       },
       "DispatchListResponse": {
@@ -20678,7 +20780,8 @@
           "Sent",
           "Delivered",
           "Read",
-          "Failed"
+          "Failed",
+          "LimitReached"
         ]
       },
       "EditablePolicyRequest": {
@@ -21122,181 +21225,6 @@
         ],
         "description": "How the location point was chosen in the picker."
       },
-      "LoyaltyAddOnPeriodResponse": {
-        "required": [
-          "id",
-          "startDate",
-          "endDate",
-          "lastDay",
-          "stoppedOn",
-          "priceVersionNumber",
-          "amount",
-          "currency",
-          "notes",
-          "recordedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "startDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "endDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "lastDay": {
-            "type": "string",
-            "format": "date"
-          },
-          "stoppedOn": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "priceVersionNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "notes": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "recordedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "description": "One recorded loyalty add-on period (D-149), with the add-on price version it was recorded with."
-      },
-      "LoyaltyAddOnPriceResponse": {
-        "required": [
-          "id",
-          "versionNumber",
-          "amount",
-          "currency",
-          "effectiveFrom",
-          "createdAt"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "versionNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "amount": {
-            "type": "number",
-            "format": "double"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "effectiveFrom": {
-            "type": "string",
-            "format": "date"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "LoyaltyAddOnPricesResponse": {
-        "required": [
-          "current",
-          "upcoming",
-          "prices"
-        ],
-        "type": "object",
-        "properties": {
-          "current": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/LoyaltyAddOnPriceResponse"
-              }
-            ]
-          },
-          "upcoming": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/LoyaltyAddOnPriceResponse"
-              }
-            ]
-          },
-          "prices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LoyaltyAddOnPriceResponse"
-            }
-          }
-        },
-        "description": "The add-on\u0027s price versions (newest first), the one in force today and the next scheduled one."
-      },
-      "LoyaltyAddOnResponse": {
-        "required": [
-          "active",
-          "startDate",
-          "endDate",
-          "daysRemaining",
-          "periods"
-        ],
-        "type": "object",
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "startDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "endDate": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "daysRemaining": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "periods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LoyaltyAddOnPeriodResponse"
-            }
-          }
-        },
-        "description": "The shop\u0027s loyalty add-on (D-149): whether it is in force today, its first and last day, the days left, and every\nperiod recorded (newest first). Customers earn and redeem points only while it is in force; points are kept after."
-      },
       "LoyaltyByActorResponse": {
         "required": [
           "name",
@@ -21673,6 +21601,37 @@
         },
         "description": "The point and address a pasted Google Maps link names (D-144): the coordinates come from the link itself; the\naddress fields from reverse geocoding them, else the place\u0027s name in the link. Any field the provider cannot fill is\nnull and stays editable in the picker."
       },
+      "MarketingUsageResponse": {
+        "required": [
+          "windowStart",
+          "windowEnd",
+          "used",
+          "allowance"
+        ],
+        "type": "object",
+        "properties": {
+          "windowStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "windowEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "used": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "allowance": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The shop\u0027s win-back messages in the current window (D-155: \u00AB\u0631\u0633\u0627\u064A\u0644 \u0627\u0644\u062F\u0639\u0648\u0629 \u0647\u0627\u0644\u0634\u0647\u0631: \u0661\u0662\u0663 \u0645\u0646 \u0665\u0660\u0660\u00BB): the window\u0027s first and\nlast day (a month from the day the subscription period started), how many went to the provider, and the plan\u0027s limit."
+      },
       "MeResponse": {
         "required": [
           "id",
@@ -21762,9 +21721,11 @@
           "BookingRescheduled",
           "BookingCancelled",
           "BookingReminder",
-          "BookingProfessionalChanged"
+          "BookingProfessionalChanged",
+          "BookingCancelledByShop",
+          "WinBack"
         ],
-        "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109, D-145). Customers get all six;\nprofessionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the pending\nrequest nor the change of barber (the barbers concerned get \u00ABcancelled\u00BB and \u00ABconfirmed\u00BB instead)."
+        "description": "The booking lifecycle events that send a WhatsApp message (spec \u00A716, D-109, D-145, D-155). Customers get confirmed,\nrescheduled, cancelled, cancelled by the shop, the reminder, the change of barber and the win-back message;\nprofessionals get confirmed (their new-booking alert), rescheduled, cancelled and the reminder, never the change of\nbarber (the barbers concerned get \u00ABcancelled\u00BB and \u00ABconfirmed\u00BB instead). The pending request is kept for old rows and\nadmin edits, but is no longer sent: every online booking is confirmed at once (D-155)."
       },
       "MinuteWindowDto": {
         "required": [
@@ -22142,9 +22103,20 @@
               "null",
               "string"
             ]
+          },
+          "resumesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "byAdmin": {
+            "type": "boolean",
+            "default": false
           }
         },
-        "description": "Whether the shop takes online bookings right now (s-hours pause card, D-013). While paused the shop gets no new\nonline bookings and no availability; confirmed appointments stay, and walk-ins still work."
+        "description": "Whether the shop takes online bookings right now (D-013). While paused the shop gets no new online bookings and no\navailability; confirmed appointments stay, and walk-ins still work. D-155 (the client\u0027s 1-1): \u0060Reason\u0060 is shown\nto customers, \u0060ResumesAt\u0060 is when booking opens again by itself (null until someone resumes it), and\n\u0060ByAdmin\u0060 says the platform paused it. A pause past its return time reads as not paused."
       },
       "OpeningHoursRequest": {
         "required": [
@@ -22793,9 +22765,16 @@
               "null",
               "string"
             ]
+          },
+          "resumesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "Pausing online booking; the optional reason is the shop\u0027s own note (\u2264 300 characters)."
+        "description": "Pausing online booking (D-155): the reason (\u2264 300 characters) is shown to customers; \u0060ResumesAt\u0060, optional and at\nmost 90 days ahead, is when online booking opens again by itself."
       },
       "PaymentStatus": {
         "enum": [
@@ -23049,15 +23028,28 @@
             "type": "integer",
             "format": "uint32"
           },
-          "monthlyWhatsAppMessages": {
+          "monthlyMarketingMessages": {
             "type": [
               "null",
               "integer"
             ],
             "format": "int32"
+          },
+          "includesLoyalty": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackAfterDays": {
+            "type": "integer",
+            "format": "int32",
+            "default": 10
           }
         },
-        "description": "A plan as SuperAdmin manages it. \u0060CurrentPrice\u0060 is the version in force today (platform calendar) and\n\u0060UpcomingPrice\u0060 the next scheduled one; \u0060Prices\u0060 is the full history, newest first."
+        "description": "A plan as SuperAdmin manages it. \u0060CurrentPrice\u0060 is the version in force today (platform calendar) and\n\u0060UpcomingPrice\u0060 the next scheduled one; \u0060Prices\u0060 is the full history, newest first. The features (D-155):\n\u0060IncludesLoyalty\u0060, \u0060WinBackEnabled\u0060, \u0060WinBackAfterDays\u0060 and \u0060MonthlyMarketingMessages\u0060."
       },
       "PlanStatus": {
         "enum": [
@@ -23078,7 +23070,6 @@
           "reminderOffsetMinutes",
           "expiringSoonThresholdDays",
           "expiredSubscriptionEnforcement",
-          "hidePausedShopsFromDiscovery",
           "defaultLocale",
           "currency",
           "timeZone",
@@ -23121,9 +23112,6 @@
           },
           "expiredSubscriptionEnforcement": {
             "$ref": "#/components/schemas/SubscriptionEnforcement"
-          },
-          "hidePausedShopsFromDiscovery": {
-            "type": "boolean"
           },
           "defaultLocale": {
             "type": "string"
@@ -23185,75 +23173,6 @@
           }
         },
         "description": "A platform category offered nearby, with the lowest price among those shops (DV-S11, D-025: never a global price)."
-      },
-      "PostponeBookingRequest": {
-        "required": [
-          "startsAt",
-          "version"
-        ],
-        "type": "object",
-        "properties": {
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "version": {
-            "type": "integer",
-            "format": "uint32"
-          }
-        },
-        "description": "The new time the barber offers the customer, with the booking\u0027s version (D-147)."
-      },
-      "PostponementOfferResponse": {
-        "required": [
-          "id",
-          "startsAt",
-          "endsAt",
-          "expiresAt",
-          "status",
-          "offeredBy",
-          "live"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "startsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "endsAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "$ref": "#/components/schemas/PostponementStatus"
-          },
-          "offeredBy": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "live": {
-            "type": "boolean"
-          }
-        },
-        "description": "The latest postponement offer of a booking (D-147): the new time held for the customer, until when they may answer,\nits state and who offered it. \u0060Live\u0060: still open and holding the time."
-      },
-      "PostponementStatus": {
-        "enum": [
-          "Open",
-          "Accepted",
-          "Declined",
-          "Withdrawn"
-        ]
       },
       "PreviewTemplateRequest": {
         "required": [
@@ -23351,9 +23270,13 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "unavailableToday": {
+            "type": "boolean",
+            "default": false
           }
         },
-        "description": "When a professional can next be booked online (today or tomorrow, their shortest bookable service)."
+        "description": "When a professional can next be booked online (today or tomorrow, their shortest bookable service), and whether they\nare \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (D-155)."
       },
       "ProfessionalCounts": {
         "required": [
@@ -23980,9 +23903,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "unavailableToday": {
+            "type": "boolean",
+            "default": false
           }
         },
-        "description": "A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone\nor WhatsApp number (R-PRO-02)."
+        "description": "A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone\nor WhatsApp number (R-PRO-02). \u0060UnavailableToday\u0060 (D-155, the client\u0027s 1-2): marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB, so the card is\ndisabled and \u00AB\u0623\u064A \u0645\u062E\u062A\u0635\u00BB never picks them (their times are gone)."
       },
       "PublicReviewResponse": {
         "required": [
@@ -24344,9 +24271,15 @@
           "isDemo": {
             "type": "boolean",
             "default": false
+          },
+          "callPhone": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. No phone number\nat all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a\npublic contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed)."
+        "description": "A published shop\u0027s public profile (\u0060GET /public/shops/{slug}\u0060). Only active shops are published. No phone number\nat all: customers reach a shop only through TRIMME (D-129), and professional and customer numbers are never part of a\npublic contract (R-PRO-02). The response is cached (D-093), so nothing in it depends on the time of day: open status and availability come from\n\u0060/status\u0060. \u0060ListedInDiscovery\u0060 is false while the subscription hides the shop (the page is then not indexed).\n\u0060CallPhone\u0060 (D-155, the client\u0027s 5-1-7): the number of the \u00AB\u0627\u062A\u0635\u0627\u0644\u00BB button, only while the platform\u0027s admin has it\non (off by default); the shop\u0027s own \u0060PublicPhone\u0060 is never published (D-129)."
       },
       "PublicShopStatusResponse": {
         "required": [
@@ -24390,9 +24323,22 @@
             "items": {
               "$ref": "#/components/schemas/ProfessionalAvailabilityResponse"
             }
+          },
+          "pauseReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "pausedUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is\nopen (and why not: \u0060shop.paused\u0060, \u0060subscription.expired\u0060\u2026), and each active professional\u0027s next free time."
+        "description": "The time-sensitive part of the shop page (not cached): open now, closes at or opens next, whether online booking is\nopen (and why not: \u0060shop.paused\u0060, \u0060subscription.expired\u0060\u2026), and each active professional\u0027s next free time.\nD-155 (the client\u0027s 1-1): while paused, \u0060PauseReason\u0060 (the shop\u0027s words, may be null) and \u0060PausedUntil\u0060 (when\nbooking opens again by itself, null when no time was set), for \u00AB\u0645\u062A\u0648\u0642\u0641 \u0645\u0624\u0642\u062A\u0627\u064B\u00BB."
       },
       "PublishReviewRequest": {
         "required": [
@@ -24986,7 +24932,7 @@
           },
           "postponed": {
             "type": "integer",
-            "description": "Times a booking got a new time from the shop: a walk-in or phone booking changed, or an offer the customer accepted.",
+            "description": "Times a booking got a new time from the shop (D-155: directly, an online booking\u0027s too; before, an offer the customer accepted).",
             "format": "int32"
           },
           "closedLate": {
@@ -25026,6 +24972,12 @@
             "type": "number",
             "description": "Expected income of completed visits.",
             "format": "double"
+          },
+          "unavailableDays": {
+            "type": "integer",
+            "description": "Days marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB in the period (D-155, the client\u0027s 1-2).",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -25920,18 +25872,11 @@
       },
       "ShopAttentionResponse": {
         "required": [
-          "pending",
           "overdue",
           "closedLate"
         ],
         "type": "object",
         "properties": {
-          "pending": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ShopBookingResponse"
-            }
-          },
           "overdue": {
             "type": "array",
             "items": {
@@ -25943,9 +25888,18 @@
             "items": {
               "$ref": "#/components/schemas/ShopBookingResponse"
             }
+          },
+          "unavailable": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ShopBookingResponse"
+            }
           }
         },
-        "description": "Pending bookings (oldest start first), red bookings (\u00AB\u0645\u062A\u0623\u062E\u0631\u00BB: open past their booked end, D-151) and those closed late\n(\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: more than a quarter hour after their end, with who closed them), all started within the last 3 days,\nwhoever\u0027s barber they are (D-147).\nEvery barber of the shop sees them and may act on the open ones; the owner sees them read-only."
+        "description": "Red bookings (\u00AB\u0645\u062A\u0623\u062E\u0631\u00BB: open past their booked end, D-151; oldest start first) and those closed late\n(\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: more than a quarter hour after their end, with who closed them), all started within the last 3 days,\nwhoever\u0027s barber they are (D-147).\nEvery barber of the shop sees them and may act on the open ones; the owner sees them read-only. D-155 (the client\u0027s\n1-2): \u0060Unavailable\u0060, today\u0027s open bookings of the barbers marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (soonest first), which any\nbarber may give to a colleague, give a new time or cancel with a reason."
       },
       "ShopBarberCreatedResponse": {
         "required": [
@@ -26074,7 +26028,6 @@
       "ShopBookingCounts": {
         "required": [
           "all",
-          "pending",
           "confirmed",
           "arrived",
           "completed",
@@ -26084,10 +26037,6 @@
         "type": "object",
         "properties": {
           "all": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pending": {
             "type": "integer",
             "format": "int32"
           },
@@ -26311,16 +26260,6 @@
               "string"
             ]
           },
-          "postponement": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PostponementOfferResponse"
-              }
-            ]
-          },
           "amountDue": {
             "type": [
               "null",
@@ -26337,13 +26276,20 @@
                 "$ref": "#/components/schemas/ShopCancellationReason"
               }
             ]
+          },
+          "changedToday": {
+            "type": "boolean",
+            "default": false
+          },
+          "unavailableBarber": {
+            "type": "boolean",
+            "default": false
           }
         },
-        "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open past its booked end, D-151); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: closed more than a quarter hour after its end) and ClosedBy (the name of who\nclosed it). D-151: CancellationReasonCode, the ready reason the shop chose, beside the typed one."
+        "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open past its booked end, D-151); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: closed more than a quarter hour after its end) and ClosedBy (the name of who\nclosed it). D-151: CancellationReasonCode, the ready reason the shop chose, beside the typed one.D-155: ChangedToday, on a booking\u0027s detail only: the shop already gave this online customer a new time today\nat this shop, so another change is refused (409 booking.changed_today) until tomorrow."
       },
       "ShopBookingSettingsRequest": {
         "required": [
-          "requireManualConfirmation",
           "slotStepMinutes",
           "minLeadTimeMinutes",
           "bookingHorizonDays",
@@ -26351,9 +26297,6 @@
         ],
         "type": "object",
         "properties": {
-          "requireManualConfirmation": {
-            "type": "boolean"
-          },
           "slotStepMinutes": {
             "type": "integer",
             "format": "int32"
@@ -26374,7 +26317,6 @@
       },
       "ShopBookingSettingsResponse": {
         "required": [
-          "requireManualConfirmation",
           "slotStepMinutes",
           "minLeadTimeMinutes",
           "bookingHorizonDays",
@@ -26382,9 +26324,6 @@
         ],
         "type": "object",
         "properties": {
-          "requireManualConfirmation": {
-            "type": "boolean"
-          },
           "slotStepMinutes": {
             "type": "integer",
             "format": "int32"
@@ -26439,6 +26378,25 @@
           }
         },
         "description": "Business days \u0060From\u0060\u2026\u0060To\u0060 (at most seven) with lanes per professional and their bookings (s-calendar)."
+      },
+      "ShopCallButtonRequest": {
+        "required": [
+          "enabled",
+          "phone"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The public page\u0027s \u00AB\u0627\u062A\u0635\u0627\u0644\u00BB button (D-155, the client\u0027s 5-1-7): on or off, and the number it dials (any format; saved in\nE.164). Turning it on needs a number, or the one saved before; turning it off keeps the number."
       },
       "ShopCancellationReason": {
         "enum": [
@@ -26641,14 +26599,14 @@
       },
       "ShopLoyaltyResponse": {
         "required": [
-          "addOnActive",
+          "included",
           "rules",
           "version",
           "stats"
         ],
         "type": "object",
         "properties": {
-          "addOnActive": {
+          "included": {
             "type": "boolean"
           },
           "rules": {
@@ -26679,7 +26637,7 @@
             ]
           }
         },
-        "description": "The shop\u0027s own loyalty (D-149): whether the paid add-on is in force, the rules and their version, and how they are used.\nA barber reads the rules but not the figures (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A\u00BB): \u0060Stats\u0060 is null for them."
+        "description": "The shop\u0027s own loyalty (D-149): whether its plan includes loyalty now (D-155), the rules and their version, and how they are used.\nA barber reads the rules but not the figures (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A\u00BB): \u0060Stats\u0060 is null for them."
       },
       "ShopMessageResponse": {
         "required": [
@@ -26759,7 +26717,6 @@
         "required": [
           "total",
           "previousDayTotal",
-          "pendingUpcoming",
           "completed",
           "noShow",
           "cancelled",
@@ -26775,11 +26732,6 @@
           "previousDayTotal": {
             "type": "integer",
             "description": "The same for the day before (the design\u0027s \u0022vs yesterday\u0022).",
-            "format": "int32"
-          },
-          "pendingUpcoming": {
-            "type": "integer",
-            "description": "Bookings still waiting for the shop\u0027s confirmation, from now on (any day).",
             "format": "int32"
           },
           "completed": {
@@ -26869,9 +26821,18 @@
                 "$ref": "#/components/schemas/ShopCustomerMix"
               }
             ]
+          },
+          "unavailableToday": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UnavailableTodayResponse"
+            }
           }
         },
-        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135). A barber sees what comes next only: no figures, so\n\u0060Kpis\u0060 is null and the load and hours are empty (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0644\u0627 \u062F\u062E\u0644\u00BB)."
+        "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135). A barber sees what comes next only: no figures, so\n\u0060Kpis\u0060 is null and the load and hours are empty (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0644\u0627 \u062F\u062E\u0644\u00BB). \u0060UnavailableToday\u0060\n(D-155): the shop\u0027s barbers marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB and since when, for the owner\u0027s dashboard line and the barbers\u0027."
       },
       "ShopOwnProfileResponse": {
         "required": [
@@ -27081,6 +27042,39 @@
           }
         },
         "description": "A shop\u0027s own package. \u0060IsBookable\u0060 is false while any item service is off, archived or hidden."
+      },
+      "ShopPlanFeaturesResponse": {
+        "required": [
+          "includesLoyalty",
+          "loyaltyActive",
+          "winBackEnabled",
+          "winBackAfterDays",
+          "monthlyMarketingMessages"
+        ],
+        "type": "object",
+        "properties": {
+          "includesLoyalty": {
+            "type": "boolean"
+          },
+          "loyaltyActive": {
+            "type": "boolean"
+          },
+          "winBackEnabled": {
+            "type": "boolean"
+          },
+          "winBackAfterDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyMarketingMessages": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "What the shop\u0027s plan in force gives it (D-155, the client\u0027s \u00AB\u0643\u0644 \u0645\u062D\u0644 \u0645\u0631\u0628\u0648\u0637 \u0628\u0628\u0627\u0642\u0629\u00BB): loyalty (\u0060LoyaltyActive\u0060\nwhile the subscription is in force), the win-back message and after how many days, and the monthly marketing\nmessages (null unlimited, 0 none). Null on the responses without a subscription."
       },
       "ShopProfessionalResponse": {
         "required": [
@@ -27822,23 +27816,23 @@
               "$ref": "#/components/schemas/ShopRenewalResponse"
             }
           },
-          "loyaltyAddOn": {
+          "features": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/LoyaltyAddOnResponse"
+                "$ref": "#/components/schemas/ShopPlanFeaturesResponse"
               }
             ]
           },
-          "messageUsage": {
+          "marketingUsage": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/WhatsAppUsageResponse"
+                "$ref": "#/components/schemas/MarketingUsageResponse"
               }
             ]
           }
@@ -28282,26 +28276,6 @@
           }
         }
       },
-      "SwitchOnLoyaltyAddOnRequest": {
-        "required": [
-          "endDate",
-          "notes"
-        ],
-        "type": "object",
-        "properties": {
-          "endDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "notes": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        },
-        "description": "Switches the shop\u0027s loyalty add-on on until \u0060EndDate\u0060 (from today, or after the period in force), D-149."
-      },
       "TemplateButton": {
         "required": [
           "label",
@@ -28617,7 +28591,8 @@
         "enum": [
           "Vacation",
           "Sick",
-          "Other"
+          "Other",
+          "Unavailable"
         ]
       },
       "TimeOffRequest": {
@@ -28866,6 +28841,84 @@
         },
         "description": "A highly rated professional of a listed shop (only stored ratings; no contact data)."
       },
+      "UnavailableBarberResponse": {
+        "required": [
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "since",
+          "until",
+          "bookings"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A barber marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (D-155): since when, until the end of the shop\u0027s day, and how many of their open\nbookings are still ahead today (the ones the colleagues handle)."
+      },
+      "UnavailableTodayRequest": {
+        "required": [
+          "professionalId"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "\u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (D-155): a barber\u0027s login marks only themselves (the id is ignored); the owner names the barber."
+      },
+      "UnavailableTodayResponse": {
+        "required": [
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "since"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A barber marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB (D-155), and since when."
+      },
       "UnreadCountResponse": {
         "required": [
           "unread"
@@ -29063,12 +29116,25 @@
             "type": "integer",
             "format": "uint32"
           },
-          "monthlyWhatsAppMessages": {
+          "monthlyMarketingMessages": {
             "type": [
               "null",
               "integer"
             ],
             "format": "int32"
+          },
+          "includesLoyalty": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "winBackAfterDays": {
+            "type": "integer",
+            "format": "int32",
+            "default": 10
           }
         },
         "description": "Edits a plan\u0027s details; prices change only through a new price version."
@@ -29083,7 +29149,6 @@
           "reminderOffsetMinutes",
           "expiringSoonThresholdDays",
           "expiredSubscriptionEnforcement",
-          "hidePausedShopsFromDiscovery",
           "mapDefaultLatitude",
           "mapDefaultLongitude",
           "mapDefaultZoom",
@@ -29121,9 +29186,6 @@
           },
           "expiredSubscriptionEnforcement": {
             "$ref": "#/components/schemas/SubscriptionEnforcement"
-          },
-          "hidePausedShopsFromDiscovery": {
-            "type": "boolean"
           },
           "mapDefaultLatitude": {
             "type": "number",
@@ -29659,32 +29721,6 @@
         },
         "description": "A booking the shop records (D-035, D-147). \u0060Channel\u0060\u0060WalkIn\u0060 (the default): without \u0060StartsAt\u0060 it\nstarts now and is marked Arrived; otherwise it is Confirmed. \u0060Phone\u0060: an appointment at \u0060StartsAt\u0060, Confirmed.\nA service, several services (\u0060ServiceIds\u0060, added up with one barber) or a package; for the barber or a free\ncolleague. The customer\u0027s name and, if given, mobile number (D-134): stored encrypted; barbers see it on the booking\nuntil it is closed, the owner never (D-147). An \u0060Idempotency-Key\u0060 header is honoured when sent."
       },
-      "WhatsAppUsageResponse": {
-        "required": [
-          "month",
-          "used",
-          "allowance"
-        ],
-        "type": "object",
-        "properties": {
-          "month": {
-            "type": "string",
-            "format": "date"
-          },
-          "used": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "allowance": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          }
-        },
-        "description": "WhatsApp messages to the shop\u0027s customers this calendar month (D-149, shop time zone): how many were handed to the\nprovider, and the plan\u0027s allowance (null = unlimited, 0 = none)."
-      },
       "WhatsAppVerification": {
         "enum": [
           "Unverified",
@@ -29692,6 +29728,18 @@
           "Failed"
         ],
         "description": "Delivery state of the WhatsApp number, set by the notification worker (Phase 15)."
+      },
+      "WinBackMessagesRequest": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether the shops may send the customer \u00AB\u0646\u062F\u0639\u0648\u0643 \u0644\u0644\u0639\u0648\u062F\u0629\u00BB messages (D-155)."
       },
       "WorkingHoursRequest": {
         "required": [

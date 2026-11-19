@@ -165,12 +165,12 @@ internal sealed class WhatsAppUsageMonthConfiguration : IEntityTypeConfiguration
     }
 }
 
-/// <summary><see cref="BuildingBlocks.Application.Notifications.IWhatsAppUsage"/> (D-149), through the caller's scope.</summary>
-internal sealed class WhatsAppUsageReader(TrimmeDbContext db) : BuildingBlocks.Application.Notifications.IWhatsAppUsage
+/// <summary><see cref="BuildingBlocks.Application.Notifications.IMarketingUsage"/> (D-155), through the caller's scope.</summary>
+internal sealed class MarketingUsageReader(TrimmeDbContext db) : BuildingBlocks.Application.Notifications.IMarketingUsage
 {
-    public async Task<int> UsedAsync(ShopId shopId, DateOnly month, CancellationToken cancellationToken) =>
+    public async Task<int> UsedAsync(ShopId shopId, DateOnly windowStart, CancellationToken cancellationToken) =>
         await db.Set<WhatsAppUsageMonth>().AsNoTracking()
-            .Where(u => u.ShopId == shopId && u.Month == month)
+            .Where(u => u.ShopId == shopId && u.Month == windowStart)
             .Select(u => u.Used)
             .SingleOrDefaultAsync(cancellationToken);
 }

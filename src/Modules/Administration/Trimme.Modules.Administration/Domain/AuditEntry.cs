@@ -25,7 +25,9 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         Guid? shopId,
         string? summary,
         string? reason,
-        string? correlationId)
+        string? correlationId,
+        string? summaryCode = null,
+        IReadOnlyDictionary<string, string>? summaryArgs = null)
         : base(id)
     {
         OccurredAt = occurredAt;
@@ -38,6 +40,8 @@ public sealed class AuditEntry : Entity<AuditEntryId>
         Summary = summary;
         Reason = reason;
         CorrelationId = correlationId;
+        SummaryCode = summaryCode;
+        SummaryArgs = summaryArgs is null ? null : new Dictionary<string, string>(summaryArgs, StringComparer.Ordinal);
     }
 
     private AuditEntry()
@@ -68,4 +72,12 @@ public sealed class AuditEntry : Entity<AuditEntryId>
     public string? Reason { get; private set; }
 
     public string? CorrelationId { get; private set; }
+
+    /// <summary>
+    /// D-155: the summary as a code the web words in the reader's language, with <see cref="SummaryArgs"/>. Null on entries
+    /// written before D-155, which keep their English <see cref="Summary"/>.
+    /// </summary>
+    public string? SummaryCode { get; private set; }
+
+    public Dictionary<string, string>? SummaryArgs { get; private set; }
 }

@@ -21,7 +21,6 @@ public sealed record EditablePlatformSettings(
     int ReminderOffsetMinutes,
     int ExpiringSoonThresholdDays,
     SubscriptionEnforcement ExpiredSubscriptionEnforcement,
-    bool HidePausedShopsFromDiscovery,
     double MapDefaultLatitude,
     double MapDefaultLongitude,
     int MapDefaultZoom);
@@ -66,8 +65,6 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
 
     public SubscriptionEnforcement ExpiredSubscriptionEnforcement { get; private set; }
 
-    public bool HidePausedShopsFromDiscovery { get; private set; }
-
     public string DefaultLocale { get; private set; }
 
     public string Currency { get; private set; }
@@ -103,7 +100,6 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
         ReminderOffsetMinutes: 30,
         ExpiringSoonThresholdDays: 14,
         ExpiredSubscriptionEnforcement: SubscriptionEnforcement.HideAndBlockNewOnlineBookings,
-        HidePausedShopsFromDiscovery: true,
         MapDefaultLatitude: 24.7136,
         MapDefaultLongitude: 46.6753,
         MapDefaultZoom: 11);
@@ -117,11 +113,11 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
 
     public EditablePlatformSettings Editable => new(
         MinLeadTimeMinutes, BookingHorizonDays, SlotStepMinutes, CancellationCutoffMinutes, ReviewWindowDays, ReminderOffsetMinutes,
-        ExpiringSoonThresholdDays, ExpiredSubscriptionEnforcement, HidePausedShopsFromDiscovery, MapDefaultLatitude, MapDefaultLongitude, MapDefaultZoom);
+        ExpiringSoonThresholdDays, ExpiredSubscriptionEnforcement, MapDefaultLatitude, MapDefaultLongitude, MapDefaultZoom);
 
     public PlatformSettingsSnapshot ToSnapshot() => new(
         MinLeadTimeMinutes, BookingHorizonDays, SlotStepMinutes, CancellationCutoffMinutes, ReviewWindowDays, ReminderOffsetMinutes,
-        ExpiringSoonThresholdDays, ExpiredSubscriptionEnforcement, HidePausedShopsFromDiscovery, DefaultLocale, Currency, TimeZone, CountryCode,
+        ExpiringSoonThresholdDays, ExpiredSubscriptionEnforcement, DefaultLocale, Currency, TimeZone, CountryCode,
         MapDefaultLatitude, MapDefaultLongitude, MapDefaultZoom);
 
     /// <summary>Applies an edit and returns the camelCase names of the fields that changed (for the audit entry).</summary>
@@ -152,7 +148,6 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
         ReminderOffsetMinutes = values.ReminderOffsetMinutes;
         ExpiringSoonThresholdDays = values.ExpiringSoonThresholdDays;
         ExpiredSubscriptionEnforcement = values.ExpiredSubscriptionEnforcement;
-        HidePausedShopsFromDiscovery = values.HidePausedShopsFromDiscovery;
         MapDefaultLatitude = values.MapDefaultLatitude;
         MapDefaultLongitude = values.MapDefaultLongitude;
         MapDefaultZoom = values.MapDefaultZoom;

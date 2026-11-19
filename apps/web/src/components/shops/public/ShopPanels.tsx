@@ -23,6 +23,7 @@ import { durationParts, minuteOfDay, relativeTime } from '@/lib/discovery/format
 import { isTomorrow } from '@/lib/discovery/opening';
 import { getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatRating, formatTime } from '@/lib/i18n/format';
+import { languagesLine } from '@/lib/i18n/languages';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 import { ShopServiceCatalog } from '@/components/shops/public/ShopServiceCatalog';
 import type { CatalogSection } from '@/lib/booking/catalog';
@@ -136,6 +137,7 @@ export function ProfessionalsPanel({
   nextTimes: Record<string, ReactNode>;
 }) {
   const t = useTranslations('shopPage.pros');
+  const tSpoken = useTranslations('spokenLanguages');
   const locale = useLocale() as AppLocale;
   if (professionals.length === 0) return <EmptyState icon="users" title={t('empty')} />;
 
@@ -145,7 +147,11 @@ export function ProfessionalsPanel({
         const name = localizedName(locale, p.nameAr, p.nameEn);
         const specialty = p.specialtyAr || p.specialtyEn ? localizedName(locale, p.specialtyAr ?? '', p.specialtyEn) : null;
         return (
-          <li key={p.id} className="relative flex items-center gap-3 rounded-card border border-border bg-surface p-4 shadow-e1 hover:shadow-e2">
+          <li
+            key={p.id}
+            className={`relative flex items-center gap-3 rounded-card border border-border bg-surface p-4 shadow-e1 hover:shadow-e2 ${p.unavailableToday ? 'opacity-70' : ''}`}
+            data-unavailable={p.unavailableToday || undefined}
+          >
             <Avatar name={name} src={p.avatarUrl} size="lg" />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <h3 className="text-label font-bold text-text-primary">
@@ -154,9 +160,24 @@ export function ProfessionalsPanel({
                 </Link>
               </h3>
               {specialty && <p className="text-helper text-text-secondary">{specialty}</p>}
+              {/* The languages under the name (D-155, the client's 3-9), as on the barber's own page. */}
+              {p.languages && p.languages.length > 0 && (
+                <p className="text-helper text-text-secondary" data-testid="pro-card-languages">
+                  {languagesLine(p.languages, tSpoken, locale)}
+                </p>
+              )}
               <RatingStars value={p.rating} count={p.reviewCount} />
             </div>
-            <div className="shrink-0">{nextTimes[p.id]}</div>
+            {/* «غير متوفر اليوم» (D-155, the client's 1-2): no times today; back tomorrow. */}
+            <div className="shrink-0">
+              {p.unavailableToday ? (
+                <Badge tone="warning" size="sm">
+                  {t('unavailableToday')}
+                </Badge>
+              ) : (
+                nextTimes[p.id]
+              )}
+            </div>
           </li>
         );
       })}

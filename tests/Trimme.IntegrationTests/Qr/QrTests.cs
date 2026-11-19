@@ -123,7 +123,9 @@ public sealed class QrTests(PostgresFixture postgres)
         (await support.GetAsync("/api/v1/admin/qr/codes", ct)).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await CreateCodeAsync(support, w.Shops.A.ShopId, null, ct)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         var list = await OkAsync(w.Admin.GetAsync($"/api/v1/admin/qr/codes?shopId={w.Shops.A.ShopId}", ct), ct);
-        list.GetProperty("total").GetInt32().ShouldBe(2);
+        // The two made here, plus Faisal's and Omar's own, made with them (D-155, the client's 7-2-3).
+        list.GetProperty("total").GetInt32().ShouldBe(4);
+        list.GetProperty("items").EnumerateArray().Count(c => c.GetProperty("targetType").GetString() == "Professional").ShouldBe(3);
     }
 
     [Fact]
@@ -172,8 +174,11 @@ public sealed class QrTests(PostgresFixture postgres)
         (await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 10), ct, key: "qr-1"), ct, HttpStatusCode.Created)).GetProperty("id").GetGuid().ShouldBe(bookingId);
         noura.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
 
-        // Same cookie, another shop: an ordinary booking.
-        var atB = await OkAsync(BookAsync(noura, (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!, w.ServiceB, null, At(Target, 11), ct),
+        // Same cookie, another shop: an ordinary booking (another customer's browser with the cookie: one active booking
+        // each, D-155).
+        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
+        sara.Cookies.Add(new Cookie(QrAttributionCookie.Name, visitId.ToString("N"), QrAttributionCookie.Path, "localhost") { Secure = true, HttpOnly = true });
+        var atB = await OkAsync(BookAsync(sara, (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!, w.ServiceB, null, At(Target, 11), ct),
             ct, HttpStatusCode.Created);
         var stored = await InDbAsync(w.Factory, db => db.Set<Booking>().AsNoTracking().ToDictionaryAsync(b => b.Id.Value, ct));
         stored[bookingId].QrLinkId.ShouldBe(new QrCodeLinkId(codeId));
@@ -193,11 +198,12 @@ public sealed class QrTests(PostgresFixture postgres)
 
         // The shop's own view: its code with one scan and one booking; another shop sees nothing of it; a barber has no access.
         var own = await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/qr/codes", ct), ct);
-        var ownCode = own.GetProperty("items").EnumerateArray().Single();
+        var ownCode = own.GetProperty("items").EnumerateArray().Single(c => c.GetProperty("id").GetGuid() == codeId);
         ownCode.GetProperty("visits").GetInt32().ShouldBe(1);
         ownCode.GetProperty("bookings").GetInt32().ShouldBe(1);
         own.GetProperty("totals").GetProperty("conversionRate").GetDouble().ShouldBe(100);
-        (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/qr/codes", ct), ct)).GetProperty("items").GetArrayLength().ShouldBe(0);
+        (await OkAsync(w.OwnerB.GetAsync("/api/v1/shop/qr/codes", ct), ct)).GetProperty("items").EnumerateArray()
+            .Select(c => c.GetProperty("id").GetGuid()).ShouldNotContain(codeId);
         await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/qr/codes/{codeId}", ct), HttpStatusCode.NotFound, "qr.not_found", ct);
         await FailsAsync(w.OwnerB.GetAsync($"/api/v1/shop/qr/codes/{codeId}/image", ct), HttpStatusCode.NotFound, "qr.not_found", ct);
         using (var omar = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512394001", ct))

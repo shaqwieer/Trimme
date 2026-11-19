@@ -41,7 +41,7 @@ public sealed record NewStaffAccount(
 
 /// <summary>A customer's own profile as stored (D-144); the number stays protected here and is masked on the way out.</summary>
 public sealed record CustomerProfileRow(
-    Guid UserId, string? DisplayName, string PreferredLocale, string? ContactEmail, string? ProtectedPhone, string? PhoneHash);
+    Guid UserId, string? DisplayName, string PreferredLocale, string? ContactEmail, string? ProtectedPhone, string? PhoneHash, bool WinBackMessages = true);
 
 /// <summary>
 /// What a customer saves on "personal info" (D-144). <c>NewPhoneHash</c> and <c>NewProtectedPhone</c> are set only
@@ -91,6 +91,9 @@ internal interface IAccountStore
 
     /// <summary>Saves a customer's profile. <see langword="false"/> when the new number belongs to another account.</summary>
     Task<bool> UpdateCustomerProfileAsync(Guid userId, CustomerProfileUpdate update, CancellationToken cancellationToken);
+
+    /// <summary>Whether an enabled customer gets the shops' win-back messages (D-155). <see langword="false"/> when not found.</summary>
+    Task<bool> SetWinBackMessagesAsync(Guid userId, bool enabled, CancellationToken cancellationToken);
 
     /// <summary>
     /// Erases a customer's name, number and email and closes the account for good (D-144). Staged on the context: the

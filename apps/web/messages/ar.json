@@ -213,6 +213,11 @@
     "numberStepper": {
       "decrease": "إنقاص {label}",
       "increase": "زيادة {label}"
+    },
+    "saveGroup": {
+      "unsaved": "عندك تعديلات ما انحفظت",
+      "save": "حفظ التغييرات",
+      "saved": "حُفظت التغييرات."
     }
   },
   "status": {
@@ -444,6 +449,13 @@
       "confirm": "نعم، احذف حسابي",
       "cancel": "تراجع",
       "upcomingLink": "عرض مواعيدي"
+    },
+    "winBack": {
+      "title": "رسائل «ندعوك للعودة»",
+      "body": "إذا غبت فترة، يقدر المحل يرسل لك رسالة يدعوك فيها للعودة. رسائل حجوزاتك (التأكيد والتغيير والإلغاء والتذكير) تصلك دائماً.",
+      "label": "أبغى رسائل الدعوة من المحلات",
+      "on": "بتصلك رسائل الدعوة.",
+      "off": "ما بتصلك رسائل دعوة."
     }
   },
   "shopHome": {
@@ -454,7 +466,9 @@
     "draftTitle": "المحل قيد الإعداد",
     "draftBody": "لن يظهر محلك للعملاء حتى تفعّله إدارة المنصة.",
     "suspendedTitle": "المحل موقوف مؤقتاً",
-    "suspendedBody": "لا يمكن الوصول إلى بيانات المحل حالياً. تواصل مع إدارة المنصة لإعادة التفعيل."
+    "suspendedBody": "لا يمكن الوصول إلى بيانات المحل حالياً. تواصل مع إدارة المنصة لإعادة التفعيل.",
+    "unavailableTitle": "غير متوفر اليوم",
+    "unavailableLine": "{name}: من {time}. حجوزاته الباقية في شاشة اليوم."
   },
   "apiErrors": {
     "barber_number_required": "أضف رقم واتساب للحلاق قبل تفعيل دخوله.",
@@ -513,6 +527,8 @@
     "availability_professional_not_eligible": "هذا المختص لا يقدم هذه الخدمة.",
     "booking_slot_unavailable": "حُجز هذا الوقت للتو. اختر وقتاً آخر.",
     "booking_slot_too_soon": "الوقت صار قريب مرة. اختر من أقرب الأوقات المتاحة الحين.",
+    "booking_active_booking_exists": "عندك حجز قادم. ألغه أو انتظر انتهاءه قبل حجز جديد.",
+    "booking_changed_today": "غيّرت موعد هالزبون اليوم. إذا صار ظرف ثاني: انقل الحجز لزميل أو ألغه مع ذكر السبب.",
     "booking_not_found": "الموعد غير موجود.",
     "booking_cancellation_cutoff_passed": "انتهت مهلة الإلغاء والتعديل عبر Groom Here. تواصل مع فريق Groom Here.",
     "booking_not_reschedulable": "لا يمكن تغيير هذا الموعد الآن.",
@@ -575,11 +591,6 @@
     "booking_last_service": "يبقى في الحجز خدمة واحدة على الأقل.",
     "booking_service_fixed": "هذه الخدمة جزء من الحجز ولا تُحذف منه.",
     "booking_services_closed": "انقفل الحجز ولا تتغير خدماته.",
-    "booking_postpone_online_only": "الحجز الحضوري أو بالتلفون يتغير موعده مباشرة بعد موافقة الزبون.",
-    "booking_consent_required": "حجز الزبون من التطبيق يتأجل بعرض يوافق عليه الزبون.",
-    "booking_postpone_too_late": "باقي على الموعد أقل من ساعة: انقل الحجز لزميل أو ألغِه.",
-    "booking_postponement_gone": "لم يعد عرض التأجيل متاحاً.",
-    "booking_postpone_same_time": "هذا هو موعد الحجز نفسه.",
     "schedule_one_off_break_is_barbers": "البريك ليوم واحد يحطه الحلاق بنفسه. صاحب المحل يضيف البريكات الأسبوعية فقط.",
     "booking_service_in_package": "هذه الخدمة موجودة في الباقة المختارة.",
     "service_section_not_found": "هذا القسم لم يعد موجوداً. حدّث الصفحة.",
@@ -674,7 +685,8 @@
       "images": "صور المحل",
       "policy": "صلاحيات تعديل المحل",
       "location": "موقع المحل على الخريطة",
-      "booking": "إعدادات الحجز"
+      "booking": "إعدادات الحجز",
+      "callButton": "زر «اتصال» في صفحة المحل"
     },
     "policy": {
       "title": "الحقول التي يعدّلها المحل بنفسه",
@@ -718,6 +730,15 @@
     "demo": {
       "label": "محل تجريبي",
       "hint": "يظهر للعملاء «تجريبي» على بطاقة المحل وصفحته، حتى لا تبدو بياناته حقيقية. أوقفه أو أرشف المحل عند الإطلاق."
+    },
+    "callButton": {
+      "body": "يظهر للعملاء زر «اتصال» في صفحة المحل بهذا الرقم. خيار للمنصة فقط: صاحب المحل ما يشوفه ولا يعدّله.",
+      "enabled": "إظهار زر «اتصال»",
+      "phone": "رقم الاتصال",
+      "phoneHelper": "رقم سعودي، مثل 0501234567. لازم مع تفعيل الزر.",
+      "save": "حفظ",
+      "savedOn": "زر «اتصال» ظاهر في صفحة المحل.",
+      "savedOff": "زر «اتصال» مخفي."
     }
   },
   "shopCategory": {
@@ -1169,9 +1190,9 @@
       "interval": "مدة الفوترة",
       "status": "الحالة",
       "newShops": "المحلات الجديدة",
+      "features": "المزايا",
       "subscriptions": "المحلات",
-      "order": "الترتيب",
-      "messages": "واتساب شهرياً"
+      "order": "الترتيب"
     },
     "upcoming": "{price} اعتباراً من {date}",
     "noPrice": "بلا سعر",
@@ -1219,8 +1240,15 @@
       "create": "إنشاء الباقة",
       "save": "حفظ التغييرات",
       "saved": "حُفظت التغييرات.",
-      "monthlyWhatsAppMessages": "رسائل واتساب للعملاء شهرياً",
-      "monthlyWhatsAppMessagesHelper": "اتركه فارغاً لرسائل غير محدودة، أو ٠ لعدم إرسال رسائل واتساب للعملاء. لا تُحسب رسائل الحلاقين ورموز الدخول."
+      "options": "مزايا الباقة",
+      "includesLoyalty": "يشمل برنامج الولاء",
+      "includesLoyaltyHelper": "المحلات على هذه الباقة تقدر تفعّل نقاط الولاء لعملائها.",
+      "winBackEnabled": "رسائل «ندعوك للعودة»",
+      "winBackEnabledHelper": "رسالة واتساب تلقائية للعميل اللي غاب عن المحل، تُحسب من حد الرسائل الشهري.",
+      "winBackAfterDays": "تُرسل بعد كم يوم من آخر زيارة",
+      "winBackAfterDaysHelper": "من ١ إلى ٩٠ يوم.",
+      "monthlyMarketingMessages": "حد رسائل الدعوة شهرياً",
+      "monthlyMarketingMessagesHelper": "اتركه فارغاً بلا حد، أو ٠ لعدم الإرسال. يبدأ الشهر من تاريخ اشتراك المحل، ورسائل الحجز لا تُحسب."
     },
     "detail": {
       "back": "باقات الاشتراك",
@@ -1246,13 +1274,12 @@
       "effectiveFrom": "يسري من",
       "priceAdded": "أُضيف إصدار السعر."
     },
-    "messagesUnlimited": "غير محدودة",
-    "messagesNone": "لا يوجد",
-    "messagesCount": "{count, number, arab}",
-    "addOn": {
-      "title": "سعر إضافة برنامج الولاء",
-      "body": "يُسجَّل السعر الساري مع كل مدة يفعّلها المسؤول لمحل. لا تُعدَّل الإصدارات ولا تُحذف، ويسري كل إصدار على المدد التي تبدأ في تاريخه أو بعده."
-    }
+    "loyaltyOn": "برنامج الولاء",
+    "loyaltyOff": "بدون برنامج ولاء",
+    "winBackOn": "«ندعوك للعودة» بعد {days, plural, one {يوم واحد} two {يومين} few {{days, number, arab} أيام} many {{days, number, arab} يوماً} other {{days, number, arab} يوم}}",
+    "winBackOff": "بدون رسائل دعوة",
+    "marketingUnlimited": "رسائل الدعوة بلا حد",
+    "marketingCount": "{count, number, arab} رسالة دعوة شهرياً"
   },
   "adminSubscriptions": {
     "title": "الاشتراكات والتجديد",
@@ -1346,29 +1373,6 @@
       "customReason": "سبب المدة المخصصة",
       "customPlanPrice": "سعر الباقة لمدة قياسية واحدة: {price}",
       "customEntry": "سعر مخصص من المدير العام ({reason}؛ سعر الباقة {standard})"
-    },
-    "addOn": {
-      "title": "إضافة برنامج الولاء",
-      "intro": "إضافة مدفوعة: يجمع عملاء المحل النقاط ويستخدمون مكافآتهم ما دامت مفعّلة. عند انتهائها يتوقف الجمع والاستخدام وتبقى النقاط محفوظة.",
-      "active": "مفعّلة حتى {date}",
-      "inactive": "غير مفعّلة",
-      "price": "السعر الحالي: {price}",
-      "noPrice": "لم يُحدَّد سعر للإضافة بعد. يحدده المشرف العام في صفحة باقات الاشتراك.",
-      "endDate": "تنتهي في",
-      "endDateHelper": "تبدأ من اليوم، أو بعد نهاية المدة الحالية إن كانت مفعّلة.",
-      "notes": "ملاحظات داخلية (اختياري)",
-      "switchOn": "تفعيل الإضافة",
-      "extend": "تمديد الإضافة",
-      "switched": "حُفظت مدة الإضافة.",
-      "stop": "إيقاف الإضافة",
-      "stopTitle": "إيقاف إضافة برنامج الولاء؟",
-      "stopBody": "يتوقف جمع النقاط واستخدام المكافآت من اليوم، وتبقى نقاط العملاء محفوظة وتعود عند التفعيل.",
-      "stopped": "أُوقفت الإضافة.",
-      "periods": "مدد الإضافة",
-      "period": "{start} – {end}",
-      "periodPrice": "{price} — الإصدار {version, number, arab}",
-      "stoppedOn": "أُوقفت في {date}",
-      "noPeriods": "لم تُفعَّل الإضافة لهذا المحل بعد."
     }
   },
   "barberLogins": {
@@ -1444,15 +1448,7 @@
     "historyEmpty": "لا توجد مدد بعد.",
     "historyItem": "{start} – {end}",
     "historyPlan": "{plan} — {price}",
-    "addOn": {
-      "title": "برنامج الولاء",
-      "active": "مفعّل حتى {date}",
-      "inactive": "غير مفعّل. برنامج الولاء إضافة مدفوعة يفعّلها فريق المنصة بالاتفاق معك.",
-      "ended": "انتهى في {date}. نقاط عملائك محفوظة وتعود عند التجديد.",
-      "rules": "قواعد النقاط",
-      "history": "مدد الإضافة",
-      "period": "{start} – {end}"
-    }
+    "loyaltyRules": "قواعد نقاط الولاء"
   },
   "platformSettings": {
     "title": "إعدادات المنصة",
@@ -1461,7 +1457,6 @@
       "booking": "سياسة الحجز (الافتراضية)",
       "notifications": "التذكيرات",
       "subscriptions": "الاشتراكات",
-      "discovery": "الاكتشاف",
       "map": "إعدادات الخريطة",
       "regional": "المنطقة (ثابتة في الإصدار الأول)"
     },
@@ -1474,7 +1469,6 @@
       "reminderOffsetMinutes": "التذكير قبل الموعد (دقائق)",
       "expiringSoonThresholdDays": "حدّ قرب انتهاء الاشتراك (أيام)",
       "expiredSubscriptionEnforcement": "عندما لا يكون الاشتراك سارياً",
-      "hidePausedShopsFromDiscovery": "إخفاء المحلات التي أوقفت الحجز الإلكتروني",
       "mapDefaultLatitude": "خط عرض مركز الخريطة",
       "mapDefaultLongitude": "خط طول مركز الخريطة",
       "mapDefaultZoom": "مستوى تكبير الخريطة",
@@ -1495,7 +1489,6 @@
       "booking": "القيم التي يبدأ بها كل محل: أقل مهلة قبل الموعد، وأبعد يوم للحجز، والفاصل بين المواعيد. يغيّرها صاحب المحل لمحله من «إعدادات الحجز»، وتبقى هنا مدة الإلغاء والتقييم للجميع.",
       "notifications": "متى تُرسل تذكيرات واتساب للعميل وللحلاق قبل الموعد.",
       "subscriptions": "متى يُعدّ اشتراك المحل قرب الانتهاء، وماذا يحدث حين لا يسري اشتراك. لا تتغير الحجوزات القائمة أبداً.",
-      "discovery": "هل تظهر المحلات التي أوقفت الحجز الإلكتروني في البحث والخريطة. تبقى صفحتها متاحة بالرابط.",
       "map": "أين تُفتح الخرائط حين لا يوجد موقع بعد (محدد موقع المحل والبحث).",
       "regional": "اللغة والعملة والمنطقة الزمنية والدولة. تغييرها يحتاج خطة ترحيل، لذا فهي ثابتة في الإصدار الأول."
     },
@@ -1596,7 +1589,6 @@
         "partBreak": "استراحة {duration}",
         "partFree": "متاح جزئياً"
       },
-      "wholeDay": "استراحة طوال اليوم",
       "clear": "إلغاء كل الاستراحات",
       "minutesHint": "اختر الدقائق المتاحة لتصبح استراحة، أو اضغط على استراحة لإلغائها.",
       "slot": "{time}: {state}",
@@ -1618,26 +1610,36 @@
           "body": "يعود هذا الوقت متاحاً للحجز.",
           "action": "إلغاء الاستراحة"
         },
-        "wholeDay": {
-          "title": "استراحة طوال اليوم لـ {barber}؟",
-          "body": "كل وقت متاح في هذا اليوم يصبح استراحة. المواعيد المحجوزة تبقى كما هي.",
-          "action": "تأكيد الاستراحة"
-        },
         "clear": {
           "title": "إلغاء كل استراحات {barber}؟",
           "body": "تُلغى الاستراحات في هذا اليوم من الآن، ويعود الوقت متاحاً للحجز.",
           "action": "إلغاء الاستراحات"
+        },
+        "unavailable": {
+          "title": "{barber} غير متوفر اليوم؟",
+          "body": "تختفي أوقاته الباقية اليوم من الحجز. حجوزاته تبقى، ويوصل الخبر لصاحب المحل والزملاء ليتعاملوا معها. تقدر تتراجع اليوم.",
+          "action": "نعم، غير متوفر اليوم"
+        },
+        "available": {
+          "title": "{barber} متوفر اليوم؟",
+          "body": "ترجع أوقاته الباقية اليوم متاحة للحجز.",
+          "action": "نعم، متوفر"
         }
       },
       "done": {
         "add": "تم حجز {when} استراحة لـ {barber}.",
         "remove": "أُلغيت استراحة {when}، والوقت متاح للحجز.",
-        "wholeDay": "أصبح اليوم كله استراحة لـ {barber}.",
-        "clear": "أُلغيت استراحات {barber} في هذا اليوم من الآن."
+        "clear": "أُلغيت استراحات {barber} في هذا اليوم من الآن.",
+        "unavailable": "{barber} غير متوفر اليوم. وصل الخبر لصاحب المحل والزملاء.",
+        "available": "{barber} متوفر اليوم من جديد."
       },
       "tooMany": "لا يمكن حفظ أكثر من ٤٨ استراحة منفصلة في اليوم. اختر دقائق متجاورة.",
       "titleOwn": "بريكاتي",
-      "midnight": "منتصف الليل"
+      "midnight": "منتصف الليل",
+      "unavailableToday": "غير متوفر اليوم",
+      "availableAgain": "تراجع: متوفر اليوم",
+      "unavailableNow": "{barber} غير متوفر اليوم من {time}",
+      "unavailableBody": "أوقاته الباقية اليوم ما تنحجز. حجوزاته باقية، ويتعامل معها زملاؤه: نقل الحجز لزميل، أو تغيير الموعد، أو إلغاء مع ذكر السبب."
     },
     "timeOff": {
       "title": "الإجازات والتعطيل",
@@ -1653,7 +1655,8 @@
       "kind": {
         "Vacation": "إجازة",
         "Sick": "إجازة مرضية",
-        "Other": "أخرى"
+        "Other": "أخرى",
+        "Unavailable": "غير متوفر اليوم"
       },
       "startDate": "من تاريخ",
       "endDate": "إلى تاريخ",
@@ -1683,15 +1686,23 @@
     },
     "pause": {
       "liveTitle": "إيقاف الحجز الإلكتروني مؤقتاً",
-      "liveBody": "استخدمه عند الازدحام أو الظروف الطارئة. لن يُلغي أي موعد مؤكد، وسيختفي المحل من نتائج البحث حتى تعيد التفعيل.",
+      "liveBody": "استخدمه عند الازدحام أو الظروف الطارئة. يبقى محلك ظاهراً للعملاء بعلامة «متوقف مؤقتاً» والسبب، ولا يُلغى أي موعد مؤكد.",
       "pausedTitle": "الحجز الإلكتروني موقوف مؤقتاً",
-      "pausedBody": "لا تُقبل حجوزات إلكترونية جديدة والمحل مخفي من الاكتشاف. المواعيد المؤكدة سارية ولم تُلغَ.",
+      "pausedBody": "لا تُقبل حجوزات إلكترونية جديدة. يظهر محلك للعملاء «متوقف مؤقتاً» مع السبب، والمواعيد المؤكدة سارية: تعامل معها من شاشة اليوم.",
       "since": "منذ {date}، {time}",
+      "reasonShown": "السبب: {reason}",
+      "resumesAt": "يرجع الحجز تلقائياً {date}، {time}",
+      "noReturnTime": "بدون وقت رجوع: يرجع لما تعيد التفعيل.",
+      "byAdmin": "أوقفه فريق Groom Here.",
       "pause": "إيقاف مؤقت",
       "resume": "إعادة تفعيل الحجز",
       "confirmTitle": "إيقاف الحجز الإلكتروني؟",
-      "confirmBody": "لن يستقبل المحل حجوزات إلكترونية جديدة حتى تعيد التفعيل. المواعيد المؤكدة لا تتأثر.",
-      "reason": "السبب (للمحل فقط)",
+      "confirmBody": "لن يستقبل المحل حجوزات إلكترونية جديدة حتى يرجع. المواعيد المؤكدة لا تُلغى، ويصلك عددها لتتعامل معها.",
+      "reason": "السبب",
+      "reasonHelper": "يظهر للعملاء على صفحة المحل.",
+      "resumesAtLabel": "يرجع الحجز تلقائياً في",
+      "resumesAtHelper": "اتركه فارغاً لتعيد التفعيل بنفسك.",
+      "resumesInPast": "اختر وقتاً بعد الآن.",
       "confirm": "إيقاف الآن",
       "cancel": "تراجع",
       "pausedToast": "أُوقف الحجز الإلكتروني مؤقتاً",
@@ -1822,7 +1833,12 @@
       "cta": "تحديد الموقع"
     },
     "topRatedSalons": "الصالونات الأعلى تقييماً",
-    "allSalons": "كل الصالونات"
+    "allSalons": "كل الصالونات",
+    "lastVisit": {
+      "title": "احجز مثل آخر مرة",
+      "where": "{shop} مع {barber}",
+      "book": "احجز نفسها"
+    }
   },
   "search": {
     "meta": {
@@ -1843,7 +1859,7 @@
     "setLocation": "استخدم موقعي",
     "earliest": "أقرب موعد {time}",
     "tomorrow": "غداً {time}",
-    "notBookable": "الحجز الإلكتروني متوقف",
+    "notBookable": "متوقف مؤقتاً",
     "matched": "{service} — {price} — {duration}",
     "showMap": "عرض الخريطة",
     "showList": "عرض القائمة",
@@ -1930,6 +1946,7 @@
     "distance": "{km} منك",
     "address": "العنوان",
     "directions": "الاتجاهات",
+    "call": "اتصال",
     "mapLabel": "موقع {name} على الخريطة",
     "tabs": {
       "label": "أقسام الصالون",
@@ -1953,7 +1970,8 @@
       "today": "اليوم {time}",
       "tomorrow": "غداً {time}",
       "none": "لا مواعيد قريبة",
-      "profile": "ملف {name}"
+      "profile": "ملف {name}",
+      "unavailableToday": "غير متوفر اليوم"
     },
     "about": {
       "description": "عن الصالون",
@@ -1972,8 +1990,10 @@
       "unavailable": "الحجز الإلكتروني متوقف حالياً"
     },
     "paused": {
-      "title": "الحجز متوقف مؤقتاً",
-      "body": "أوقف الصالون الحجز الإلكتروني مؤقتاً. المواعيد المؤكدة سارية."
+      "title": "متوقف مؤقتاً",
+      "body": "أوقف المحل الحجز الإلكتروني مؤقتاً. تقدر تحفظه في المفضلة وترجع له.",
+      "reason": "السبب: {reason}.",
+      "until": "يرجع الحجز {date}، {time}."
     },
     "notListed": {
       "title": "الحجز الإلكتروني غير متاح حالياً",
@@ -2246,6 +2266,14 @@
       },
       "loading": "نحدّث الأوقات…",
       "otherDay": "اختر يوماً آخر"
+    },
+    "activeBooking": {
+      "title": "عندك حجز قادم",
+      "body": "في {shop} يوم {date} الساعة {time}. حجز واحد قادم بس: ألغه أو غيّر موعده من صفحته، أو احجز بعد ما تخلص زيارتك.",
+      "view": "عرض الحجز"
+    },
+    "professionalDay": {
+      "unavailableToday": "غير متوفر اليوم"
     }
   },
   "bookings": {
@@ -2301,18 +2329,18 @@
         "minutes": "{count, plural, one {دقيقة} two {دقيقتين} few {{count, number, arab} دقائق} many {{count, number, arab} دقيقة} other {{count, number, arab} دقيقة}}"
       },
       "created": {
-        "confirmed": {
-          "title": "تم تأكيد حجزك",
-          "body": "نرسل لك تفاصيل الموعد على واتساب. يمكنك إدارة الموعد من «مواعيدي» في أي وقت."
-        },
-        "pending": {
-          "title": "تم إرسال طلب الحجز",
-          "body": "سيؤكد الصالون موعدك قريباً، ويصلك إشعار على واتساب."
-        }
+        "title": "تم تأكيد حجزك",
+        "body": "نرسل لك تفاصيل الموعد على واتساب. يمكنك إدارة الموعد من «مواعيدي» في أي وقت."
       },
       "rescheduled": "تم تحديث موعدك.",
       "cancelled": "تم إلغاء الموعد وأُخطر الصالون.",
-      "reviewed": "نُشر تقييمك — شكراً لك."
+      "reviewed": "نُشر تقييمك — شكراً لك.",
+      "reasons": {
+        "StaffUnwell": "الحلاق تعبان",
+        "Emergency": "ظرف طارئ عند الحلاق",
+        "ShopClosed": "المحل مسكّر (كهرباء أو غيره)",
+        "Other": "سبب ثاني"
+      }
     },
     "cancel": {
       "open": "إلغاء الموعد",
@@ -2348,14 +2376,6 @@
         "from": "الموعد الحالي",
         "to": "الموعد الجديد"
       }
-    },
-    "postponement": {
-      "title": "الحلاق يقترح موعداً جديداً",
-      "body": "اعتذر الحلاق عن موعدك، ويقترح {when} بدلاً منه. الموعد محجوز لك حتى {until}.",
-      "accept": "قبول الموعد الجديد",
-      "decline": "رفض",
-      "accepted": "تم نقل حجزك إلى الموعد الجديد.",
-      "declined": "رفضت الموعد الجديد، وبقي حجزك في موعده."
     }
   },
   "review": {
@@ -2408,7 +2428,8 @@
     "remove": "أزل {name} من المفضلة",
     "signInToSave": "سجّل الدخول لحفظ {name} في المفضلة",
     "book": "احجز",
-    "bookWith": "احجز مع {name}"
+    "bookWith": "احجز مع {name}",
+    "bookAt": "احجز في {name}"
   },
   "shopBoard": {
     "live": {
@@ -2480,6 +2501,7 @@
       "notFound": "الموعد غير موجود.",
       "when": "الموعد",
       "outsideSchedule": "هذا الموعد لم يعد ضمن دوام الحلاق (إجازة أو استراحة أو إغلاق). لم يُلغَ شيء — راجع العميل إن لزم.",
+      "unavailableBarber": "{name} غير متوفر اليوم: يتعامل مع حجوزاته زملاؤه",
       "rows": {
         "customer": "العميل",
         "service": "الخدمة",
@@ -2494,7 +2516,7 @@
       },
       "amount": "{price} — يُدفع في المحل",
       "channel": {
-        "Online": "تطبيق العميل",
+        "Online": "أونلاين",
         "WalkIn": "حضوري",
         "Qr": "رمز QR",
         "Phone": "بالتلفون"
@@ -2507,8 +2529,7 @@
         "Completed": "انتهت الخدمة",
         "NoShow": "الزبون ما حضر (تأخر أكثر من ربع ساعة)",
         "CancelledByShop": "إلغاء الموعد",
-        "CancelledByCustomer": "ألغاه العميل",
-        "reject": "رفض الحجز"
+        "CancelledByCustomer": "ألغاه العميل"
       },
       "stale": "تغيّر الموعد قبل قليل — حدّثنا البيانات، راجعها ثم أعد المحاولة.",
       "notes": {
@@ -2538,9 +2559,11 @@
       "change": {
         "title": "طوارئ",
         "reschedule": "تأجيل الموعد",
+        "changedToday": "غيّرت موعد هالزبون اليوم. إذا صار ظرف ثاني: انقل الحجز لزميل أو ألغه مع ذكر السبب.",
         "move": "نقل الحجز إلى حلاق آخر",
         "rescheduleTitle": "موعد جديد لـ {name}",
         "rescheduleBody": "مع نفس الحلاق ولنفس الخدمة. يصل العميلَ إشعار بالموعد الجديد.",
+        "rescheduleBodyOnline": "مع نفس الحلاق ولنفس الخدمة. يتغير الموعد فوراً، ويصل الزبونَ «تغيير موعدك» بالموعد القديم والجديد، ويقدر يلغي أو يغيّر مجاناً. مرة وحدة باليوم لكل زبون.",
         "current": "الموعد الحالي: {when}",
         "pickDay": "اختر اليوم",
         "pickTime": "اختر الوقت",
@@ -2557,10 +2580,7 @@
         "confirmMove": "نقل الحجز",
         "keep": "تراجع",
         "loading": "جارٍ التحميل…",
-        "order": "بالترتيب: انقل الحجز لزميل فاضي، أو أجّله بموافقة الزبون، وإلا ألغِه مع ذكر السبب.",
-        "offerTitle": "تأجيل حجز {name}",
-        "offerBody": "اختر موعداً جديداً مع نفس الحلاق. يُحجز للزبون، ويصله إشعار ليقبله أو يرفضه حتى قبل الموعد الحالي بساعة. إن رفض أو لم يرد يبقى الحجز في موعده.",
-        "confirmOffer": "إرسال العرض للزبون"
+        "order": "بالترتيب: انقل الحجز لزميل فاضي، أو غيّر موعده، وإلا ألغِه مع ذكر السبب."
       },
       "cancel": {
         "title": "إلغاء الموعد؟",
@@ -2586,11 +2606,6 @@
         "title": "جوال العميل",
         "body": "سجّله المحل مع الحجز، ويختفي بعد «انتهت الخدمة»."
       },
-      "reject": {
-        "title": "رفض الحجز؟",
-        "body": "يُخطر العميل بأن المحل لم يقبل الحجز، ويُتاح الوقت لغيره.",
-        "confirm": "نعم، ارفض الحجز"
-      },
       "noShow": {
         "title": "{name} ما حضر؟",
         "body": "الزبون ما حضر (تأخر أكثر من ربع ساعة). يُسجَّل الموعد «لم يحضر»، ويصير وقته متاحاً. لا يمكن التراجع.",
@@ -2611,11 +2626,6 @@
         "room": "باقي قبل حجزك الجاي: {duration}",
         "doesNotFit": "{duration} — ما تلحق قبل حجزك الجاي",
         "none": "ما فيه خدمات ثانية تقدمها تنضاف."
-      },
-      "postponement": {
-        "waiting": "عرض تأجيل إلى {when} بانتظار رد الزبون حتى الساعة {until}. الوقت محجوز له.",
-        "declined": "رفض الزبون موعد التأجيل. انقل الحجز لزميل فاضي أو ألغِه مع ذكر السبب.",
-        "lapsed": "انتهت مهلة عرض التأجيل دون رد، وبقي الحجز في موعده."
       },
       "overdue": {
         "title": "فات الموعد وما انسجل «وصل» ولا «ما حضر»",
@@ -2657,6 +2667,9 @@
       "finishKeep": "تراجع",
       "overdue": "حجوزات تحتاج إقفال",
       "overdueHint": "خلص وقتها وما انقفلت. أي حلاق في المحل يقدر يقفلها.",
+      "unavailable": "حجوزات حلاق غير متوفر",
+      "unavailableHint": "بالترتيب: انقل الحجز لزميل فاضي، أو غيّر موعده، وإلا ألغه مع ذكر السبب. افتح الحجز للتعامل معه.",
+      "unavailableBarber": "{name} غير متوفر اليوم",
       "overdueBadge": "متأخر",
       "responsible": "المسؤول: {name}",
       "pending": "حجوزات تنتظر القبول",
@@ -2692,7 +2705,7 @@
         "walkIn": "زبون حضوري",
         "phone": "حجز بالتلفون",
         "break": "بريك",
-        "pause": "إيقاف الحجز"
+        "unavailable": "غير متوفر اليوم"
       }
     },
     "visit": {
@@ -2944,6 +2957,8 @@
       "name": "العميل",
       "bookings": "الحجوزات",
       "upcoming": "القادمة",
+      "noShows": "ما حضر",
+      "cancelled": "ألغى",
       "last": "آخر حجز",
       "registered": "تاريخ التسجيل"
     },
@@ -3220,7 +3235,14 @@
       "QrCodeLink": "رمز QR",
       "WhatsAppTemplate": "قالب واتساب",
       "WhatsAppDispatch": "رسالة واتساب",
-      "LegalDocument": "صفحة قانونية"
+      "LegalDocument": "صفحة قانونية",
+      "ServiceSection": "قسم الخدمات",
+      "SubscriptionCoverage": "تغطية الاشتراك",
+      "LoyaltySettings": "برنامج الولاء",
+      "LoyaltyProgram": "برنامج الولاء",
+      "LoyaltyAddOnPrice": "سعر إضافة الولاء",
+      "LoyaltyAddOnPeriod": "فترة إضافة الولاء",
+      "ProfessionalTimeOff": "إجازة حلاق"
     },
     "actions": {
       "shop_created": "إنشاء محل",
@@ -3293,8 +3315,156 @@
       "customer_account_deleted": "حذف عميل حسابه",
       "customer_contact_changed": "تعديل عميل لبريده أو رقمه",
       "legal_document_saved": "حفظ نص صفحة قانونية",
-      "legal_document_reset": "استعادة النص الافتراضي لصفحة قانونية"
-    }
+      "legal_document_reset": "استعادة النص الافتراضي لصفحة قانونية",
+      "barber_login_enabled": "فتح دخول للحلاق",
+      "barber_login_disabled": "إيقاف دخول الحلاق",
+      "barber_login_deleted": "حذف حساب الحلاق",
+      "booking_walk_in_contact_revealed": "إظهار جوال عميل حضوري",
+      "loyalty_rules_saved": "حفظ برنامج الولاء",
+      "loyalty_program_saved": "حفظ برنامج الولاء",
+      "loyalty_add_on_price_added": "إضافة سعر لإضافة الولاء",
+      "loyalty_add_on_switched_on": "تفعيل إضافة الولاء",
+      "loyalty_add_on_stopped": "إيقاف إضافة الولاء",
+      "service_section_created": "إضافة قسم خدمات",
+      "service_section_renamed": "تغيير اسم قسم خدمات",
+      "service_section_ordered": "ترتيب أقسام الخدمات",
+      "service_section_deleted": "حذف قسم خدمات",
+      "shop_booking_settings_changed": "تغيير إعدادات الحجز",
+      "shop_demo_changed": "تغيير «محل تجريبي»",
+      "shop_user_created": "إنشاء حساب للمحل",
+      "whatsapp_shop_messages_saved": "حفظ رسائل واتساب للمحل",
+      "shop_call_button_set": "زر «اتصال» في صفحة المحل",
+      "schedule_unavailable_today": "حلاق غير متوفر اليوم",
+      "schedule_unavailable_today_undone": "إلغاء «غير متوفر اليوم»"
+    },
+    "summaries": {
+      "legal_document_saved": "حُفظت وثيقة {kind, select, Privacy {الخصوصية} other {الشروط}} ({locale})",
+      "legal_document_reset": "أُعيدت وثيقة {kind, select, Privacy {الخصوصية} other {الشروط}} ({locale}) للنص الافتراضي",
+      "platform_settings_updated": "تغيّر: {fields}",
+      "booking_cancelled_by_admin": "الحجز {reference}: من {from} إلى {to}",
+      "booking_status_changed_by_admin": "الحجز {reference}: من {from} إلى {to}",
+      "booking_rescheduled_by_admin": "الحجز {reference}: من {from} إلى {to}",
+      "role_created": "الدور: {name}",
+      "role_deleted": "الدور: {name}",
+      "role_renamed": "من {from} إلى {to}",
+      "role_permissions_changed": "{role}: أُضيف {added}، وأُزيل {removed}",
+      "staff_roles_changed": "الأدوار: من {from} إلى {to}",
+      "customer_contact_changed": "تغيّر: {fields}",
+      "shop_user_invited": "بدور {role}",
+      "staff_invited": "بدور {role}",
+      "shop_user_created": "بدور {role}",
+      "barber_login_created_with_barber": "فُعّل دخول الحلاق مع إضافته",
+      "loyalty_rules_saved": "{by, select, admin {من المنصة} other {من المحل}}: أول زيارة {firstVisit, number, arab} — كل زيارة {visit, number, arab} — المكافأة بعد {pointsForReward, number, arab} نقطة ({rewardType, select, FreeService {خدمة مجانية} other {خصم {rewardAmount}}}) — بلا زيارات: {inactivityRule, select, Wipe {تُصفّر البطاقة بعد {inactivityDays, number, arab} يوم} DecayPerPeriod {تنقص نقطة كل {inactivityDays, number, arab} يوم} other {لا شيء}}",
+      "whatsapp_dispatch_retried": "{event} إلى {audience} — المحاولة {attempt, number, arab}",
+      "whatsapp_shop_messages_saved": "{changes}",
+      "whatsapp_template_activated": "{event} إلى {audience} ({locale}): الإصدار {to}{from, select, none {} other { بدل {from}}}",
+      "whatsapp_template_test_sent": "الإصدار {version, number, arab}: {event} إلى {audience} ({locale})",
+      "professional_created": "{by, select, admin {من المنصة} other {من المحل}} — واتساب: {whatsApp, select, true {مضاف} other {بدون}} — الإشعارات: {notifications, select, true {مفعّلة} other {موقوفة}}",
+      "professional_updated": "{by, select, admin {من المنصة} other {من المحل}}",
+      "professional_enabled": "{by, select, admin {من المنصة} other {من المحل}} — الحالة: {status}",
+      "professional_disabled": "{by, select, admin {من المنصة} other {من المحل}} — الحالة: {status}",
+      "professional_whatsapp_changed": "{by, select, admin {من المنصة} other {من المحل}} — الرقم: {number, select, unchanged {كما هو} removed {حُذف} added {أُضيف} other {تغيّر}} — الإشعارات: {notifications, select, true {مفعّلة} other {موقوفة}}",
+      "professional_avatar_changed": "{by, select, admin {من المنصة} other {من المحل}} — الصورة: {change, select, removed {حُذفت} other {تغيّرت}}",
+      "professional_services_assigned": "{by, select, admin {من المنصة} other {من المحل}} — {count, plural, =0 {بلا خدمات} one {خدمة واحدة} two {خدمتان} few {{count, number, arab} خدمات} other {{count, number, arab} خدمة}}",
+      "qr_created": "رمز {kind, select, shop {المحل} other {الحلاق}}: {code}{automatic, select, true { (تلقائي عند إضافة الحلاق)} other {}}",
+      "qr_activated": "الرمز: {code}",
+      "qr_deactivated": "الرمز: {code}",
+      "review_flagged": "تقييم {rating, number, arab} من ٥",
+      "review_hidden": "تقييم {rating, number, arab} من ٥",
+      "review_published": "تقييم {rating, number, arab} من ٥",
+      "review_report_cleared": "تقييم {rating, number, arab} من ٥",
+      "review_shop_contacted": "تقييم {rating, number, arab} من ٥ — رسالة من {length, number, arab} حرف",
+      "service_category_created": "الأيقونة: {icon}",
+      "service_support_override": "{priceFrom, select, none {} other {السعر: من {priceFrom} إلى {priceTo}. }}{durationFrom, select, none {} other {المدة: من {durationFrom} إلى {durationTo}. }}{name, select, none {} other {الاسم تغيّر. }}{category, select, none {} other {القسم تغيّر. }}{online, select, none {} true {الحجز الإلكتروني: مفعّل. } other {الحجز الإلكتروني: موقوف. }}{barbers, select, none {} other {الحلاقون: {barbers}.}}",
+      "service_admin_created": "{price} — {duration} — الحلاقون: {barbers}",
+      "package_admin_created": "{price} — {duration} — الخدمات: {services}",
+      "package_admin_updated": "السعر: من {priceFrom} إلى {priceTo} — المدة: من {durationFrom} إلى {durationTo} — الخدمات: {services}",
+      "service_section_created": "القسم: {name}",
+      "service_section_renamed": "القسم: {name}",
+      "service_section_deleted": "القسم: {name}",
+      "service_section_ordered": "{count, plural, one {قسم واحد} two {قسمان} few {{count, number, arab} أقسام} other {{count, number, arab} قسماً}} بالترتيب الجديد",
+      "shop_created": "الحالة: {status}",
+      "shop_activated": "من {from} إلى {to}",
+      "shop_suspended": "من {from} إلى {to}",
+      "shop_profile_updated": "{by, select, admin {من المنصة} other {من المحل}}: {fields}",
+      "shop_location_set": "{by, select, admin {من المنصة} other {من المحل}} — {source}",
+      "shop_demo_changed": "{demo, select, true {صار محلاً تجريبياً} other {لم يعد تجريبياً}}",
+      "shop_editable_policy_set": "يعدّل المحل: {fields}",
+      "shop_image_changed": "{image, select, Logo {الشعار} Cover {الغلاف} other {المعرض}}: {change, select, removed {حُذف} added {أُضيف} other {تغيّر}}",
+      "shop_call_button_set": "زر «اتصال»: {enabled, select, true {ظاهر} other {مخفي}}{numberChanged, select, true {، وتغيّر الرقم} other {}}",
+      "shop_booking_settings_changed": "{by, select, admin {من المنصة} other {من المحل}}: الأوقات كل {slotStep} — أقل مهلة {minLeadTime} — الحجز حتى {horizonDays, plural, one {يوم واحد} two {يومين} few {{horizonDays, number, arab} أيام} other {{horizonDays, number, arab} يوماً}} قدّام — فاصل {buffer}",
+      "shop_online_booking_paused": "{by, select, admin {من المنصة} other {من المحل}}{resumesAt, select, none { — بلا وقت رجوع} other { — يرجع {resumesAt}}}",
+      "shop_online_booking_resumed": "{by, select, admin {من المنصة} system {تلقائياً عند وقت الرجوع} other {من المحل}}",
+      "schedule_unavailable_today": "{by, select, barber {الحلاق بنفسه} other {صاحب المحل}} — حتى {until}",
+      "schedule_unavailable_today_undone": "{by, select, barber {الحلاق بنفسه} other {صاحب المحل}}",
+      "plan_created": "{price, select, none {بلا سعر بعد} other {السعر الأول: {price}}}",
+      "plan_published": "الحالة: {status}",
+      "plan_deactivated": "الحالة: {status}",
+      "plan_archived": "الحالة: {status}",
+      "plan_reordered": "{count, plural, one {باقة واحدة} two {باقتان} few {{count, number, arab} باقات} other {{count, number, arab} باقة}} بالترتيب الجديد",
+      "plan_price_added": "الإصدار {version, number, arab}: {amount} من {from}",
+      "subscription_assigned": "{plan}: من {start} إلى {end} — {amount}{custom, select, true { (سعر خاص بدل {standardAmount})} other {}}",
+      "subscription_renewed": "{plan}: من {start} إلى {end} — {amount}{custom, select, true { (سعر خاص بدل {standardAmount})} other {}}",
+      "subscription_overridden": "{amountFrom, select, none {} other {المبلغ: من {amountFrom} إلى {amountTo}. }}{endFrom, select, none {} other {النهاية: من {endFrom} إلى {endTo}.}}"
+    },
+    "values": {
+      "nothing": "لا شيء",
+      "on": "مفعّلة",
+      "off": "موقوفة",
+      "ar": "العربية",
+      "en": "الإنجليزية",
+      "tr": "التركية",
+      "Terms": "الشروط",
+      "Privacy": "الخصوصية",
+      "Customer": "العميل",
+      "Professional": "الحلاق",
+      "BookingConfirmed": "تأكيد الحجز",
+      "BookingPending": "طلب بانتظار التأكيد",
+      "BookingRescheduled": "تعديل الموعد",
+      "BookingCancelled": "إلغاء الحجز",
+      "BookingCancelledByShop": "إلغاء من المحل",
+      "BookingReminder": "التذكير",
+      "BookingProfessionalChanged": "نقل الحجز لحلاق آخر",
+      "WinBack": "ندعوك للعودة",
+      "Pending": "بانتظار التأكيد",
+      "Confirmed": "مؤكد",
+      "Arrived": "وصل",
+      "Completed": "مكتمل",
+      "CancelledByCustomer": "ألغاه العميل",
+      "CancelledByShop": "ألغاه المحل",
+      "NoShow": "ما حضر",
+      "Active": "نشط",
+      "Disabled": "موقوف",
+      "Draft": "مسودة",
+      "Suspended": "معلّق",
+      "Published": "منشورة",
+      "Inactive": "غير متاحة",
+      "Archived": "مؤرشفة",
+      "SuperAdmin": "المشرف العام",
+      "OperationsManager": "مدير العمليات",
+      "Support": "الدعم",
+      "ShopOwner": "صاحب المحل",
+      "ShopBarber": "حلاق",
+      "Name": "الاسم",
+      "Description": "الوصف",
+      "Category": "النوع",
+      "PublicPhone": "رقم المحل",
+      "Amenities": "المرافق",
+      "Logo": "الشعار",
+      "Cover": "الغلاف",
+      "Gallery": "المعرض",
+      "Location": "الموقع",
+      "ShortName": "الاسم المختصر",
+      "Verified": "موثّق",
+      "Unverified": "غير موثّق",
+      "phone": "رقم الجوال",
+      "email": "البريد",
+      "displayName": "الاسم",
+      "Manual": "حُدّد يدوياً على الخريطة",
+      "Geocoded": "من العنوان",
+      "Device": "من موقع الجهاز"
+    },
+    "legacy": "سجل قديم بالإنجليزية"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -3330,7 +3500,10 @@
         "booking_postponement_offered": "عرض الحلاق على {customer} تأجيل حجزه إلى {offeredDate} الساعة {offeredTime}",
         "booking_postponement_declined": "رفض {customer} تأجيل حجزه، وبقي في موعده {date} الساعة {time}",
         "whatsapp_allowance_reached": "{allowance, plural, =0 {باقتكم لا تشمل رسائل واتساب للعملاء. تصل إشعاراتهم داخل التطبيق.} other {وصلتم إلى حد رسائل واتساب لهذا الشهر ({allowance, number, arab}). تستمر الإشعارات داخل التطبيق، وتعود رسائل واتساب أول الشهر القادم.}}",
-        "barber_account_deleted": "حذف {name} حسابه في Groom Here. يبقى في المحل مع حجوزاته، وتقدر تسوي له دخول جديد من «الحلاقون»."
+        "marketing_limit_reached": "وصل الحد: استُخدمت رسائل الدعوة لهالشهر ({allowance, number, arab}). ما تُرسل رسائل دعوة جديدة حتى {windowEnd}",
+        "barber_account_deleted": "حذف {name} حسابه في Groom Here. يبقى في المحل مع حجوزاته، وتقدر تسوي له دخول جديد من «الحلاقون».",
+        "shop_online_booking_paused": "{by, select, admin {أوقف فريق Groom Here الحجز الإلكتروني لمحلك مؤقتاً} other {أُوقف الحجز الإلكتروني مؤقتاً}}{resumesAt, select, none {} other { حتى {resumesAt}}}. {bookings, plural, =0 {ما عندك حجوزات مؤكدة وقت الإيقاف.} one {عندك حجز مؤكد واحد وقت الإيقاف: تعامل معه من شاشة اليوم.} two {عندك حجزان مؤكدان وقت الإيقاف: تعامل معهما من شاشة اليوم.} few {عندك {bookings, number, arab} حجوزات مؤكدة وقت الإيقاف: تعامل معها من شاشة اليوم.} other {عندك {bookings, number, arab} حجزاً مؤكداً وقت الإيقاف: تعامل معها من شاشة اليوم.}}",
+        "professional_unavailable_today": "{professional} غير متوفر اليوم من {since}{bookings, plural, =0 {.} one {، وعنده حجز واحد باقي اليوم يتعامل معه زملاؤه.} two {، وعنده حجزان باقيان اليوم يتعامل معهما زملاؤه.} few {، وعنده {bookings, number, arab} حجوزات باقية اليوم يتعامل معها زملاؤه.} other {، وعنده {bookings, number, arab} حجزاً باقياً اليوم يتعامل معها زملاؤه.}}"
       },
       "customer": {
         "booking_confirmed": "أكّد {shop} حجزك: {item} يوم {date} الساعة {time}",
@@ -3339,7 +3512,14 @@
         "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ",
         "booking_postponement_offered": "يقترح {shop} موعداً جديداً لحجزك: {offeredDate} الساعة {offeredTime} بدلاً من {date} الساعة {time}. اقبله أو ارفضه من صفحة الحجز",
         "loyalty_visit_completed": "خلصت زيارتك في {shop}{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}",
-        "booking_completed": "شكراً لزيارتك في {shop}{loyalty, select, on {{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}} other {.}} قيّم زيارتك ليستفيد غيرك من تجربتك."
+        "booking_completed": "شكراً لزيارتك في {shop}{loyalty, select, on {{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}} other {.}} قيّم زيارتك ليستفيد غيرك من تجربتك.",
+        "customer_booking_confirmed": "تم تأكيد حجزك في {shop}: {item} مع {professional} يوم {date} الساعة {time}",
+        "customer_booking_rescheduled": "{actor, select, Customer {غيّرت موعدك في {shop} من {previousDate} الساعة {previousTime} إلى {date} الساعة {time}} other {تغيير موعدك في {shop}: من {previousDate} الساعة {previousTime} إلى {date} الساعة {time}. تقدر تلغي أو تغيّر مجاناً}}",
+        "customer_booking_cancelled": "ألغيت حجزك في {shop} يوم {date} الساعة {time}",
+        "customer_booking_cancelled_by_shop": "نعتذر منك، ألغى {shop} حجزك يوم {date} الساعة {time}. السبب: {reasonCode, select, StaffUnwell {الحلاق تعبان} Emergency {ظرف طارئ عند الحلاق} ShopClosed {المحل مسكّر (كهرباء أو غيره)} Other {{reason}} other {ظرف عند المحل}}. احجز من جديد بالوقت اللي يناسبك",
+        "customer_booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ",
+        "customer_booking_reminder": "تذكير: موعدك في {shop} مع {professional} يوم {date} الساعة {time}",
+        "customer_win_back": "اشتقنا لك في {shop}! احجز موعدك القادم بسهولة"
       },
       "barber": {
         "booking_created": "حجز جديد لـ {customer}: {item} يوم {date} الساعة {time}",
@@ -3348,7 +3528,9 @@
         "booking_rescheduled": "تغيّر موعد {customer} إلى {date} الساعة {time} ({item})",
         "booking_cancelled": "أُلغي حجز {customer} يوم {date} الساعة {time} ({item})",
         "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}",
-        "booking_postponement_declined": "رفض {customer} موعد التأجيل، وبقي حجزه {date} الساعة {time}. انقله لزميل أو ألغِه"
+        "booking_postponement_declined": "رفض {customer} موعد التأجيل، وبقي حجزه {date} الساعة {time}. انقله لزميل أو ألغِه",
+        "professional_unavailable_today": "سجّلك صاحب المحل غير متوفر اليوم من {since}. حجوزاتك الباقية اليوم يتعامل معها زملاؤك.",
+        "professional_unavailable_bookings": "حجوزات حلاق غير متوفر: {professional} غير متوفر اليوم وعنده {bookings, plural, one {حجز واحد باقي} two {حجزان باقيان} few {{bookings, number, arab} حجوزات باقية} other {{bookings, number, arab} حجزاً باقياً}}. انقلها لزميل، أو غيّر موعدها، أو ألغها مع ذكر السبب."
       },
       "admin": {
         "whatsapp_dispatch_failed": "تعذّر إرسال رسالة واتساب ({event})",
@@ -3370,8 +3552,10 @@
       "BookingPending": "طلب بانتظار التأكيد",
       "BookingRescheduled": "تعديل الموعد",
       "BookingCancelled": "إلغاء الحجز",
+      "BookingCancelledByShop": "إلغاء من المحل",
       "BookingReminder": "التذكير قبل الموعد",
-      "BookingProfessionalChanged": "نقل الحجز إلى حلاق آخر"
+      "BookingProfessionalChanged": "نقل الحجز إلى حلاق آخر",
+      "WinBack": "ندعوك للعودة"
     },
     "audience": {
       "Customer": "العميل",
@@ -3456,7 +3640,8 @@
       "amount": "المبلغ",
       "address": "العنوان",
       "booking_reference": "رقم الحجز",
-      "manage_url": "رابط إدارة الموعد"
+      "manage_url": "رابط إدارة الموعد",
+      "reason": "سبب الإلغاء"
     },
     "testSend": {
       "open": "إرسال تجريبي",
@@ -3478,7 +3663,8 @@
         "Sent": "أُرسلت",
         "Delivered": "سُلِّمت",
         "Read": "قُرئت",
-        "Failed": "فشلت"
+        "Failed": "فشلت",
+        "LimitReached": "وصل الحد"
       },
       "anyAudience": "كل الجماهير",
       "anyEvent": "كل الأحداث",
@@ -3496,7 +3682,8 @@
       "kind": {
         "Lifecycle": "حدث حجز",
         "Reminder": "تذكير",
-        "Test": "تجريبية"
+        "Test": "تجريبية",
+        "WinBack": "دعوة للعودة"
       },
       "versionShort": "ن{number}",
       "empty": {
@@ -3762,9 +3949,6 @@
     "rulesForm": {
       "title": "برنامج الولاء",
       "intro": "تُضاف النقاط فقط عند «انتهت الخدمة»، ويُسجَّل اسم الحلاق الذي أنهاها. تُحسب النقاط على رقم جوال العميل، فتجتمع زياراته الإلكترونية والحضورية والهاتفية في بطاقة واحدة.",
-      "addOnOff": "برنامج الولاء إضافة مدفوعة غير مفعّلة لمحلك. يمكنك ضبط القواعد الآن، ويبدأ عملاؤك بجمع النقاط عند تفعيلها من فريق المنصة.",
-      "addOnOffAdmin": "الإضافة غير مفعّلة لهذا المحل، فلا يجمع عملاؤه النقاط الآن. فعّلها من تبويب الاشتراك.",
-      "addOnOn": "الإضافة مفعّلة: يجمع العملاء النقاط ويستخدمون مكافآتهم.",
       "notSet": "لم تُضبط قواعد النقاط بعد.",
       "firstVisitPoints": "نقاط أول زيارة",
       "visitPoints": "نقاط كل زيارة بعدها",
@@ -3793,7 +3977,6 @@
         "rewardsHeld": "مكافآت محجوزة لمواعيد",
         "rewardsRedeemed": "مكافآت استُخدمت"
       },
-      "paidAdmin": "ميزة مدفوعة: المحل ما يقدر يفعّلها بنفسه. يفعّلها فريق المنصة لمدة من تبويب الاشتراك.",
       "toSubscription": "إلى الاشتراك",
       "expiry": {
         "legend": "تنتهي النقاط إذا ما زار العميل المحل خلال",
@@ -3806,7 +3989,11 @@
         "Wipe": "تُمسح البطاقة",
         "DecayPerPeriod": "تنقص نقطة واحدة عن كل مدة بلا زيارة"
       },
-      "outOfRange": "لازم تكون من {min} إلى {max}"
+      "outOfRange": "لازم تكون من {min} إلى {max}",
+      "includedOn": "باقة المحل تشمل برنامج الولاء: يجمع العملاء النقاط ويستخدمون مكافآتهم.",
+      "includedOff": "باقتك الحالية لا تشمل برنامج الولاء. تقدر تضبط القواعد الآن، ويبدأ عملاؤك بجمع النقاط إذا انتقلت لباقة تشمله.",
+      "includedOffAdmin": "باقة هذا المحل لا تشمل برنامج الولاء، فلا يجمع عملاؤه النقاط الآن.",
+      "planAdmin": "البرنامج يأتي مع الباقة: المحل ما يقدر يفعّله بنفسه. انقله لباقة تشمله من تبويب الاشتراك."
     }
   },
   "legalAdmin": {
@@ -3892,6 +4079,7 @@
       "movedOut": "نُقل منه",
       "movedIn": "نُقل له",
       "postponed": "تأجيل",
+      "unavailableDays": "أيام غير متوفر",
       "lateCancellations": "إلغاء متأخر",
       "noShows": "ما حضر",
       "closedLate": "انقفل متأخر",
@@ -3934,11 +4122,7 @@
     }
   },
   "bookingSettings": {
-    "confirmation": "تأكيد الحجوزات",
     "times": "المواعيد",
-    "manual": "أؤكد الحجوزات بنفسي",
-    "manualOn": "تصل الحجوزات الجديدة من الإنترنت «بانتظار التأكيد» حتى يؤكدها المحل.",
-    "manualOff": "تُؤكَّد الحجوزات من الإنترنت تلقائياً لحظة الحجز.",
     "fields": {
       "slotStepMinutes": "تبدأ المواعيد",
       "minLeadTimeMinutes": "أقل مهلة قبل الموعد",
@@ -3967,17 +4151,6 @@
     "bn": "البنغالية",
     "tl": "الفلبينية",
     "tr": "التركية"
-  },
-  "messageUsage": {
-    "title": "رسائل واتساب للعملاء",
-    "month": "شهر {month}",
-    "of": "{used, number, arab} من {allowance, number, arab}",
-    "sent": "{used, plural, =0 {لم تُرسل رسائل بعد هذا الشهر} one {أُرسلت رسالة واحدة هذا الشهر} two {أُرسلت رسالتان هذا الشهر} few {أُرسلت {used, number, arab} رسائل هذا الشهر} many {أُرسلت {used, number, arab} رسالة هذا الشهر} other {أُرسلت {used, number, arab} رسالة هذا الشهر}}",
-    "unlimited": "الرسائل غير محدودة في الباقة الحالية.",
-    "none": "الباقة الحالية لا تشمل رسائل واتساب للعملاء. تصل إشعاراتهم داخل التطبيق.",
-    "reached": "وصلتم إلى حد هذا الشهر. تستمر الإشعارات داخل التطبيق، وتعود رسائل واتساب أول الشهر القادم.",
-    "note": "تُحسب الرسائل المرسلة إلى العملاء فقط، ولا تُحسب رسائل الحلاقين ورموز الدخول.",
-    "progress": "استُخدم {percent, number, arab}٪ من رسائل الشهر"
   },
   "shopAccount": {
     "title": "حسابي",
@@ -4022,5 +4195,22 @@
       "confirm": "نعم، احذف حسابي",
       "cancel": "تراجع"
     }
+  },
+  "planUsage": {
+    "title": "مزايا الباقة",
+    "loyaltyActive": "برنامج الولاء: مشمول ومفعّل",
+    "loyaltyIncluded": "برنامج الولاء: مشمول، ويعمل حين يكون الاشتراك سارياً",
+    "loyaltyNotIncluded": "برنامج الولاء: غير مشمول في هذه الباقة",
+    "winBackOn": "رسالة «ندعوك للعودة»: تُرسل للعميل بعد {days, plural, one {يوم واحد} two {يومين} few {{days, number, arab} أيام} many {{days, number, arab} يوماً} other {{days, number, arab} يوم}} من آخر زيارة",
+    "winBackOff": "رسائل «ندعوك للعودة»: غير مشمولة في هذه الباقة",
+    "of": "رسائل الدعوة هالشهر: {used, number, arab} من {allowance, number, arab}",
+    "sent": "رسائل الدعوة هالشهر: {used, number, arab}",
+    "window": "الشهر من {start} إلى {end}",
+    "unlimited": "بلا حد في هذه الباقة.",
+    "none": "الباقة لا تشمل رسائل دعوة.",
+    "reached": "وصل الحد",
+    "reachedBody": "لا تُرسل رسائل دعوة أخرى حتى نهاية الشهر في {date}.",
+    "progress": "استُخدم {percent, number, arab}٪ من رسائل الشهر",
+    "note": "تُحسب رسائل الدعوة للعودة فقط. رسائل تأكيد الحجز وتغييره وإلغائه تصل دائماً ولا تُحسب."
   }
 }

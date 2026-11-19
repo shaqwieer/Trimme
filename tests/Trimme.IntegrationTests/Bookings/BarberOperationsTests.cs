@@ -52,8 +52,12 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         return [.. slots.GetProperty("slots").EnumerateArray().Select(s => s.GetProperty("localTime").GetString()!)];
     }
 
-    private static async Task<JsonElement> BookedAsync(ApiSession customer, BookingWorld w, Guid serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct, Guid? packageId = null) =>
-        await OkAsync(BookAsync(customer, w.SlugA, serviceId, professionalId, start, ct, packageId: packageId), ct, HttpStatusCode.Created);
+    /// <summary>An online booking by its own customer (one active booking per customer, D-155), named «نورة».</summary>
+    private static async Task<JsonElement> BookedAsync(BookingWorld w, Guid serviceId, Guid professionalId, DateTimeOffset start, CancellationToken ct, Guid? packageId = null)
+    {
+        using var customer = await CustomerAsync(w.Factory, "نورة", ct);
+        return await OkAsync(BookAsync(customer, w.SlugA, serviceId, professionalId, start, ct, packageId: packageId), ct, HttpStatusCode.Created);
+    }
 
     [Fact]
     public async Task TheOwner_WatchesEverything_AndChangesNothing()
@@ -61,25 +65,22 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         var ct = TestContext.Current.CancellationToken;
         await using var w = await ArrangeAsync(postgres, "d147_owner", ct);
         using var customer = await CustomerAsync(w.Factory, "نورة", ct);
-        var booking = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10), ct);
+        var booking = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
         var id = booking.GetProperty("id").GetGuid();
         var version = booking.GetProperty("version").GetUInt32();
         var iso = Iso(Target);
 
-        // Every action on a booking, the barbers' breaks and the pause are the barbers' (D-147).
+        // Every action on a booking and the barbers' breaks are the barbers' (D-147); the pause is the owner's again (D-155).
         foreach (var call in new Func<Task<HttpResponseMessage>>[]
         {
             () => Transition(w.OwnerA, id, "CancelledByShop", version, ct, "إغلاق طارئ"),
             () => w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/notes", new { text = "x" }, ct),
             () => w.OwnerA.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/reschedule", new { startsAt = At(Target, 12), version }, ct, headers: Key()),
             () => w.OwnerA.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/professional", new { professionalId = w.Omar, version }, ct, headers: Key()),
-            () => w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/postpone", new { startsAt = At(Target, 12), version }, ct),
             () => w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/services", new { serviceId = w.Beard, version }, ct),
             () => w.OwnerA.PostAsync($"/api/v1/shop/bookings/{id}/services/{w.Haircut}/delete", new { version }, ct),
             () => w.OwnerA.PutAsync("/api/v1/shop/schedule/barber-day", new { professionalId = w.Faisal, date = iso, breaks = Array.Empty<object>() }, ct),
             () => w.OwnerA.GetAsync($"/api/v1/shop/schedule/barber-day?professionalId={w.Faisal}&date={iso}", ct),
-            () => w.OwnerA.PostAsync("/api/v1/shop/online-booking/pause", new { }, ct),
-            () => w.OwnerA.PostAsync("/api/v1/shop/online-booking/resume", null, ct),
             () => w.OwnerA.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in", new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 15), customerName = "زائر" }, ct, headers: Key()),
         })
         {
@@ -88,7 +89,7 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         }
 
         // What the owner still sees: the bookings, their details (no actions offered by the API's rules apply to the
-        // barbers), the shop's pending and red bookings, the calendar, and the overview with its figures.
+        // barbers), the shop's red bookings, the calendar, and the overview with its figures.
         Ids((await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}", ct), ct)).GetProperty("items")).ShouldBe([id]);
         (await DetailAsync(w.OwnerA, id, ct)).GetProperty("status").GetString().ShouldBe("Confirmed");
         await AttentionAsync(w.OwnerA, ct);
@@ -109,62 +110,25 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task AnyBarber_AcceptsOrRejects_TheShopsPendingBookings_ButNotAColleaguesOrdinaryOne()
+    public async Task OnlineBookings_AreConfirmedAtOnce_AndAColleaguesOrdinaryBookingIsReadOnly()
     {
+        // D-155 «التأكيد التلقائي دايم»: no shop confirms an online booking, so nothing waits and nobody accepts or rejects.
         var ct = TestContext.Current.CancellationToken;
-        await using var w = await ArrangeAsync(postgres, "d147_pending", ct);
-        await using (var connection = new NpgsqlConnection(w.Factory.ConnectionString))
-        {
-            await connection.OpenAsync(ct);
-            await using var command = new NpgsqlCommand("UPDATE shops.shops SET require_manual_confirmation = true WHERE id = @p", connection);
-            command.Parameters.AddWithValue("p", w.Shops.A.ShopId);
-            (await command.ExecuteNonQueryAsync(ct)).ShouldBe(1);
-        }
-
+        await using var w = await ArrangeAsync(postgres, "d155_confirmed", ct);
         using var faisal = await w.BarberAsync(w.Faisal, ct);
-        using var customer = await CustomerAsync(w.Factory, "نورة", ct);
-        var first = await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 10), ct);
-        var second = await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 11), ct);
-        first.GetProperty("status").GetString().ShouldBe("Pending");
-        var firstId = first.GetProperty("id").GetGuid();
-        var secondId = second.GetProperty("id").GetGuid();
+        var booking = await BookedAsync(w, w.Haircut, w.Omar, At(Target, 10), ct);
+        booking.GetProperty("status").GetString().ShouldBe("Confirmed");
+        var id = booking.GetProperty("id").GetGuid();
 
-        // Omar's pending bookings are in every barber's attention list, and Faisal may accept or reject them.
         var attention = await AttentionAsync(faisal, ct);
-        Ids(attention.GetProperty("pending")).ShouldBe([firstId, secondId]);
+        attention.TryGetProperty("pending", out _).ShouldBeFalse();
         attention.GetProperty("overdue").GetArrayLength().ShouldBe(0);
-        Ids((await AttentionAsync(w.OwnerA, ct)).GetProperty("pending")).ShouldBe([firstId, secondId], "the owner sees them, read-only");
-        var colleagues = await DetailAsync(faisal, firstId, ct);
-        Allowed(colleagues).ShouldBe(["Confirmed", "CancelledByShop"]);
-
-        var accepted = await OkAsync(Transition(faisal, firstId, "Confirmed", colleagues.GetProperty("version").GetUInt32(), ct), ct);
-        accepted.GetProperty("status").GetString().ShouldBe("Confirmed");
-        accepted.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar, "accepting does not take it over");
-        var rejected = await OkAsync(Transition(faisal, secondId, "CancelledByShop", second.GetProperty("version").GetUInt32(), ct, "لا يوجد وقت"), ct);
-        rejected.GetProperty("status").GetString().ShouldBe("CancelledByShop");
-
-        // The owner hears what Faisal did to Omar's bookings (D-145's «the owner hears what barbers did», D-147).
-        await ProcessOutboxAsync(w.Factory, ct);
-        var inbox = (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/notifications", ct), ct)).GetProperty("items").EnumerateArray()
-            .Where(n => n.GetProperty("bookingId").ValueKind == JsonValueKind.String)
-            .Select(n => (Booking: n.GetProperty("bookingId").GetGuid(), Kind: n.GetProperty("kind").GetString()))
-            .ToList();
-        inbox.ShouldContain((firstId, "booking.confirmed"));
-        inbox.ShouldContain((secondId, "booking.cancelled"));
-
-        // The history names Faisal, the customer's own entry names the customer.
-        using (var omar = await w.BarberAsync(w.Omar, ct))
-        {
-            var history = (await OkAsync(omar.GetAsync($"/api/v1/shop/bookings/{firstId}", ct), ct)).GetProperty("history");
-            history[0].GetProperty("actorType").GetString().ShouldBe("Customer");
-            history[0].GetProperty("actorName").GetString().ShouldBe("نورة");
-            history[history.GetArrayLength() - 1].GetProperty("actorName").GetString().ShouldBe("فيصل");
-        }
-
-        // Once accepted it is Omar's ordinary booking again: Faisal reads it (D-151) but cannot act on it.
-        Allowed(await DetailAsync(faisal, firstId, ct)).ShouldBeEmpty();
-        await FailsAsync(Transition(faisal, firstId, "CancelledByShop", accepted.GetProperty("version").GetUInt32(), ct, "تجربة"), HttpStatusCode.NotFound, null, ct);
-        (await AttentionAsync(faisal, ct)).GetProperty("pending").GetArrayLength().ShouldBe(0);
+        Allowed(await DetailAsync(faisal, id, ct)).ShouldBeEmpty("a colleague's ordinary booking is read-only (D-151)");
+        await FailsAsync(Transition(faisal, id, "CancelledByShop", booking.GetProperty("version").GetUInt32(), ct, "تجربة"), HttpStatusCode.NotFound, null, ct);
+        (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/booking-settings", ct), ct)).TryGetProperty("requireManualConfirmation", out _).ShouldBeFalse();
+        var counts = (await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={Iso(Target)}&to={Iso(Target)}", ct), ct)).GetProperty("counts");
+        counts.TryGetProperty("pending", out _).ShouldBeFalse();
+        counts.GetProperty("confirmed").GetInt32().ShouldBe(1);
     }
 
     [Fact]
@@ -178,8 +142,8 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         Guid id, second;
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
-            id = (await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 10), ct)).GetProperty("id").GetGuid();
-            second = (await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 11), ct)).GetProperty("id").GetGuid();
+            id = (await BookedAsync(w, w.Haircut, w.Omar, At(Target, 10), ct)).GetProperty("id").GetGuid();
+            second = (await BookedAsync(w, w.Haircut, w.Omar, At(Target, 11), ct)).GetProperty("id").GetGuid();
         }
 
         // 10:25: the 30-minute visit has not ended: not red, and Omar's. Faisal opens it read-only (D-151).
@@ -264,10 +228,10 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         JsonElement served, missed, lateCancel, earlyCancel;
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
-            served = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-            missed = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 11), ct);
-            lateCancel = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 12), ct);
-            earlyCancel = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 14), ct);
+            served = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
+            missed = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 11), ct);
+            lateCancel = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 12), ct);
+            earlyCancel = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 14), ct);
         }
 
         // «انتهت الخدمة» needs «وصل» first; the actual start and end are what the barber pressed.
@@ -377,7 +341,7 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         // An online booking never carries a number.
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
-            var online = await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 16), ct);
+            var online = await BookedAsync(w, w.Haircut, w.Omar, At(Target, 16), ct);
             (await DetailAsync(omar, online.GetProperty("id").GetGuid(), ct)).GetProperty("customerPhone").ValueKind.ShouldBe(JsonValueKind.Null);
         }
 
@@ -388,85 +352,55 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Postponement_HoldsTheOfferedTime_UntilTheCustomerAcceptsOrDeclines()
+    public async Task TheBarbersNewTime_MovesAnOnlineBookingAtOnce_OnceADayForTheCustomer()
     {
+        // D-155 «الحلاق يغيّر الموعد مباشرة، بدون موافقة الزبون»: no offer, no waiting. The customer is told and may cancel
+        // or change it; the shop changes the same customer's time once a day.
         var ct = TestContext.Current.CancellationToken;
-        await using var w = await ArrangeAsync(postgres, "d147_postpone", ct);
+        await using var w = await ArrangeAsync(postgres, "d155_direct", ct);
         using var faisal = await w.BarberAsync(w.Faisal, ct);
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
-        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
-        var booking = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 10), ct);
+        var booking = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), ct, HttpStatusCode.Created);
         var id = booking.GetProperty("id").GetGuid();
-        Task<HttpResponseMessage> Postpone(Guid bookingId, DateTimeOffset start, uint version) =>
-            faisal.PostAsync($"/api/v1/shop/bookings/{bookingId}/postpone", new { startsAt = start, version }, ct);
-        Task<HttpResponseMessage> Answer(ApiSession customer, Guid bookingId, string action, uint version) =>
-            customer.PostAsync($"/api/v1/me/bookings/{bookingId}/postponement/{action}", new { version }, ct);
-        async Task<JsonElement> Mine(ApiSession customer, Guid bookingId) => await OkAsync(customer.GetAsync($"/api/v1/me/bookings/{bookingId}", ct), ct);
+        Task<HttpResponseMessage> Reschedule(Guid bookingId, DateTimeOffset start, uint version) =>
+            faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{bookingId}/reschedule", new { startsAt = start, version }, ct, headers: Key());
 
-        // Faisal offers 14:00 instead of 10:00: the booking stays at 10:00, and 14:00 is held for Noura.
-        var offered = await OkAsync(Postpone(id, At(Target, 14), booking.GetProperty("version").GetUInt32()), ct);
-        offered.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 10));
-        offered.GetProperty("postponement").GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 14));
-        var mine = await Mine(noura, id);
-        mine.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 10));
-        var offer = mine.GetProperty("postponement");
-        offer.GetProperty("live").GetBoolean().ShouldBeTrue();
-        offer.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 14));
-        offer.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(At(Target, 9), "until an hour before the original appointment");
-
-        // Nobody else gets the held time: not online, not at the shop, not in the public slots.
-        (await PublicSlotsAsync(w, w.Faisal, Target, ct)).ShouldNotContain("14:00");
-        await FailsAsync(BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, At(Target, 14), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
-        await FailsAsync(faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
-                new { serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 14), customerName = "زائر" }, ct, headers: Key()),
-            HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
-
-        // Noura accepts: the booking moves to 14:00, the history says so, and 10:00 is free again.
-        var accepted = await OkAsync(Answer(noura, id, "accept", mine.GetProperty("version").GetUInt32()), ct);
-        accepted.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 14));
-        (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("history").EnumerateArray()
-            .Select(h => h.GetProperty("kind").GetString()).ShouldContain("PostponementAccepted");
+        var moved = await OkAsync(Reschedule(id, At(Target, 14), booking.GetProperty("version").GetUInt32()), ct);
+        moved.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 14));
+        moved.GetProperty("changedToday").GetBoolean().ShouldBeTrue("the answer says the day's change is used");
+        var mine = await OkAsync(noura.GetAsync($"/api/v1/me/bookings/{id}", ct), ct);
+        mine.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 14));
+        mine.TryGetProperty("postponement", out _).ShouldBeFalse();
+        mine.GetProperty("allowedActions").EnumerateArray().Select(a => a.GetString()).ShouldBe(["Cancel", "Reschedule"]);
         (await PublicSlotsAsync(w, w.Faisal, Target, ct)).ShouldContain("10:00");
-        await FailsAsync(Answer(noura, id, "accept", accepted.GetProperty("version").GetUInt32()), HttpStatusCode.Conflict, "booking.postponement_gone", ct);
 
-        // Another offer, declined: the booking keeps its time and the held one is free again.
-        var other = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 16), ct);
-        var otherId = other.GetProperty("id").GetGuid();
-        await OkAsync(Postpone(otherId, At(Target, 17), other.GetProperty("version").GetUInt32()), ct);
-        (await PublicSlotsAsync(w, w.Faisal, Target, ct)).ShouldNotContain("17:00");
-        await FailsAsync(Answer(sara, otherId, "decline", other.GetProperty("version").GetUInt32()), HttpStatusCode.NotFound, null, ct);
-        var declined = await OkAsync(Answer(noura, otherId, "decline", (await Mine(noura, otherId)).GetProperty("version").GetUInt32()), ct);
-        declined.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(Target, 16));
-        (await PublicSlotsAsync(w, w.Faisal, Target, ct)).ShouldContain("17:00");
-        (await Mine(noura, otherId)).GetProperty("postponement").ValueKind.ShouldBe(JsonValueKind.Null, "the customer sees an offer only while it is live");
-        (await Mine(noura, id)).GetProperty("postponement").ValueKind.ShouldBe(JsonValueKind.Null, "the accepted one is done too");
+        // The history says who changed it and from when; the detail tells the barber the day's change is used.
+        var detail = await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct);
+        var last = detail.GetProperty("history").EnumerateArray().Last();
+        last.GetProperty("kind").GetString().ShouldBe("Rescheduled");
+        last.GetProperty("actorName").GetString().ShouldBe("فيصل");
+        last.GetProperty("previousStartsAt").GetDateTimeOffset().ShouldBe(At(Target, 10));
+        detail.GetProperty("booking").GetProperty("changedToday").GetBoolean().ShouldBeTrue();
 
-        // Walk-in and phone bookings get their new time directly, never an offer.
+        // A second change today is refused; giving it to a colleague at the same time, or cancelling, still works.
+        await FailsAsync(Reschedule(id, At(Target, 15), moved.GetProperty("version").GetUInt32()), HttpStatusCode.Conflict, "booking.changed_today", ct);
+        var given = await OkAsync(faisal.SendAsync(HttpMethod.Post, $"/api/v1/shop/bookings/{id}/professional",
+            new { professionalId = w.Omar, version = moved.GetProperty("version").GetUInt32() }, ct, headers: Key()), ct);
+        given.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar);
+
+        // The customer's bell keeps the change with the old time (D-155).
+        await ProcessOutboxAsync(w.Factory, ct);
+        var bell = (await OkAsync(noura.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray().ToList();
+        bell.ShouldContain(n => n.GetProperty("kind").GetString() == "customer.booking_confirmed", "the booking's own confirmation is kept too");
+        var change = bell.Single(n => n.GetProperty("kind").GetString() == "customer.booking_rescheduled");
+        change.GetProperty("parameters").GetProperty("previousStartsAt").GetDateTimeOffset().ShouldBe(At(Target, 10));
+
+        // The shop's own phone bookings are not limited.
         var phone = await OkAsync(faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
                 new { channel = "Phone", serviceId = w.Haircut, professionalId = w.Faisal, startsAt = At(Target, 18), customerName = "متصل" }, ct, headers: Key()),
             ct, HttpStatusCode.Created);
-        await FailsAsync(Postpone(phone.GetProperty("id").GetGuid(), At(Target, 19), phone.GetProperty("version").GetUInt32()),
-            HttpStatusCode.UnprocessableEntity, "booking.postpone_online_only", ct);
-    }
-
-    [Fact]
-    public async Task Postponement_IsRefused_LessThanAnHourBeforeTheStart()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
-        await using var w = await ArrangeAsync(postgres, "d147_postpone_late", ct, clock);
-        await w.EnsureBarberLoginAsync(w.Faisal, ct);
-        JsonElement booking;
-        using (var noura = await CustomerAsync(w.Factory, "نورة", ct))
-        {
-            booking = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-        }
-
-        clock.SetUtcNow(At(Target, 9, 10).ToUniversalTime());
-        using var faisal = await w.BarberAsync(w.Faisal, ct);
-        await FailsAsync(
-            faisal.PostAsync($"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/postpone", new { startsAt = At(Target, 14), version = booking.GetProperty("version").GetUInt32() }, ct),
-            HttpStatusCode.UnprocessableEntity, "booking.postpone_too_late", ct);
+        var once = await OkAsync(Reschedule(phone.GetProperty("id").GetGuid(), At(Target, 19), phone.GetProperty("version").GetUInt32()), ct);
+        await OkAsync(Reschedule(phone.GetProperty("id").GetGuid(), At(Target, 20), once.GetProperty("version").GetUInt32()), ct);
     }
 
     [Fact]
@@ -480,10 +414,10 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         JsonElement served, quick, moved, forgotten;
         using (var noura = await CustomerAsync(w.Factory, "نورة", ct))
         {
-            served = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-            quick = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 11), ct);
-            moved = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 13), ct);
-            forgotten = await BookedAsync(noura, w, w.Haircut, w.Omar, At(Target, 10), ct);
+            served = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
+            quick = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 11), ct);
+            moved = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 13), ct);
+            forgotten = await BookedAsync(w, w.Haircut, w.Omar, At(Target, 10), ct);
         }
 
         async Task Step(DateOnly day, int hour, int minute, Guid professional, Func<ApiSession, Task> act)
@@ -567,9 +501,9 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         JsonElement visit, next, package;
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
-            visit = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10), ct);
-            next = await BookedAsync(customer, w, w.Haircut, w.Faisal, At(Target, 10, 50), ct);
-            package = await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 12), ct, w.Package);
+            visit = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 10), ct);
+            next = await BookedAsync(w, w.Haircut, w.Faisal, At(Target, 10, 50), ct);
+            package = await BookedAsync(w, w.Haircut, w.Omar, At(Target, 12), ct, w.Package);
         }
 
         var id = visit.GetProperty("id").GetGuid();
@@ -627,44 +561,54 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
     }
 
     /// <summary>
-    /// The hold cannot race (R-BKG-03 for offers): an offer and another customer's booking of the same time, sent together,
-    /// never both succeed. Both triggers take the same per-barber lock, so whichever commits second sees the first.
+    /// One active booking per customer, at every shop (D-155, «حجز واحد فعّال بس للزبون، في كل المحلات»), checked on the
+    /// server under a per-customer lock: the same customer booking two shops at the same moment gets exactly one.
     /// </summary>
     [Fact]
-    public async Task Postponement_AndABookingOfTheSameTime_SentTogether_NeverBothWin()
+    public async Task OneCustomer_BookingTwoShopsAtOnce_GetsOnlyOne()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var w = await ArrangeAsync(postgres, "d147_race", ct);
-        using var faisal = await w.BarberAsync(w.Faisal, ct);
+        await using var w = await ArrangeAsync(postgres, "d155_one_active", ct);
+        var slugB = (await OkAsync(w.Admin.GetAsync($"/api/v1/admin/shops/{w.Shops.B.ShopId}", ct), ct)).GetProperty("slug").GetString()!;
         using var noura = await CustomerAsync(w.Factory, "نورة", ct);
-        using var sara = await CustomerAsync(w.Factory, "سارة", ct);
-        var outcomes = new List<(bool Offered, bool Booked)>();
-        for (var round = 0; round < 5; round++)
-        {
-            var booking = await BookedAsync(noura, w, w.Haircut, w.Faisal, At(Target, 10 + round), ct);
-            var contested = At(Target, 16 + round);
-            var responses = await Task.WhenAll(
-                Task.Run(() => faisal.PostAsync(
-                    $"/api/v1/shop/bookings/{booking.GetProperty("id").GetGuid()}/postpone",
-                    new { startsAt = contested, version = booking.GetProperty("version").GetUInt32() }, ct), ct),
-                Task.Run(() => BookAsync(sara, w.SlugA, w.Haircut, w.Faisal, contested, ct), ct));
-            foreach (var response in responses)
-            {
-                var body = await response.Content.ReadAsStringAsync(ct);
-                if (!response.IsSuccessStatusCode)
-                {
-                    response.StatusCode.ShouldBe(HttpStatusCode.Conflict, body);
-                    body.ShouldContain("booking.slot_unavailable");
-                }
-            }
+        (await noura.GetAsync("/api/v1/me/bookings/active", ct)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
-            outcomes.Add((responses[0].IsSuccessStatusCode, responses[1].IsSuccessStatusCode));
+        for (var round = 0; round < 4; round++)
+        {
+            var responses = await Task.WhenAll(
+                Task.Run(() => BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10 + round), ct), ct),
+                Task.Run(() => BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 10 + round), ct), ct));
+            responses.Count(r => r.IsSuccessStatusCode).ShouldBe(1, $"round {round}");
+            var refused = responses.Single(r => !r.IsSuccessStatusCode);
+            refused.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+            (await refused.Content.ReadAsStringAsync(ct)).ShouldContain("booking.active_booking_exists");
+
+            // The one that won is the customer's active booking; cancelling it frees them to book again.
+            var won = await OkAsync(Task.FromResult(responses.Single(r => r.IsSuccessStatusCode)), ct, HttpStatusCode.Created);
+            var active = await OkAsync(noura.GetAsync("/api/v1/me/bookings/active", ct), ct);
+            active.GetProperty("id").GetGuid().ShouldBe(won.GetProperty("id").GetGuid());
+            active.GetProperty("shop").GetProperty("slug").GetString().ShouldNotBeNullOrEmpty();
+            await OkAsync(noura.PostAsync($"/api/v1/me/bookings/{won.GetProperty("id").GetGuid()}/cancel", new { reason = (string?)null, version = won.GetProperty("version").GetUInt32() }, ct), ct);
             foreach (var response in responses)
             {
                 response.Dispose();
             }
         }
 
-        outcomes.ShouldAllBe(o => o.Offered != o.Booked, string.Join(", ", outcomes));
+        // A booking past its end that nobody closed (red) does not stop a new one; one that has not ended does.
+        var first = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 16), ct), ct, HttpStatusCode.Created);
+        await FailsAsync(BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 17), ct), HttpStatusCode.Conflict, "booking.active_booking_exists", ct);
+        await using (var connection = new NpgsqlConnection(w.Factory.ConnectionString))
+        {
+            await connection.OpenAsync(ct);
+            await using var command = new NpgsqlCommand(
+                "UPDATE bookings.bookings SET starts_at = now() - interval '2 hours', ends_at = now() - interval '90 minutes', blocked_until = now() - interval '90 minutes' WHERE id = @id",
+                connection);
+            command.Parameters.AddWithValue("id", first.GetProperty("id").GetGuid());
+            (await command.ExecuteNonQueryAsync(ct)).ShouldBe(1);
+        }
+
+        (await noura.GetAsync("/api/v1/me/bookings/active", ct)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        await OkAsync(BookAsync(noura, slugB, w.ServiceB, w.ProB, At(Target, 17), ct), ct, HttpStatusCode.Created);
     }
 }

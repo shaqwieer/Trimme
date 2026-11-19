@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useId, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { SelectField, Switch, TextField } from '@/components/ui/inputs';
+import { SelectField, TextField } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { browserApi } from '@/lib/api/client';
@@ -73,7 +73,7 @@ function Section({
 
 /**
  * The platform settings that later phases read (D-076): booking policy, reminder offset, subscription threshold and
- * enforcement (D-014), discovery (D-013) and map defaults. Region values are shown read-only in v1. Ranges are
+ * enforcement (D-014) and map defaults (D-155: paused shops always stay listed, so the discovery switch is gone). Region values are shown read-only in v1. Ranges are
  * validated by the API (field errors come back per field); a stale version answers 409.
  */
 export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings; canEdit: boolean }) {
@@ -87,7 +87,6 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
   );
   const [slotStep, setSlotStep] = useState(String(settings.slotStepMinutes));
   const [enforcement, setEnforcement] = useState<Enforcement>(settings.expiredSubscriptionEnforcement);
-  const [hidePaused, setHidePaused] = useState(settings.hidePausedShopsFromDiscovery);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [failure, setFailure] = useState<string>();
   const [saved, setSaved] = useState(false);
@@ -97,13 +96,11 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
   const dirty =
     NUMBER_FIELDS.some((f) => values[f] !== String(settings[f])) ||
     slotStep !== String(settings.slotStepMinutes) ||
-    enforcement !== settings.expiredSubscriptionEnforcement ||
-    hidePaused !== settings.hidePausedShopsFromDiscovery;
+    enforcement !== settings.expiredSubscriptionEnforcement;
   const discard = () => {
     setValues(initial());
     setSlotStep(String(settings.slotStepMinutes));
     setEnforcement(settings.expiredSubscriptionEnforcement);
-    setHidePaused(settings.hidePausedShopsFromDiscovery);
     setErrors({});
     setFailure(undefined);
   };
@@ -152,7 +149,6 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
             >),
             slotStepMinutes: Number(slotStep),
             expiredSubscriptionEnforcement: enforcement,
-            hidePausedShopsFromDiscovery: hidePaused,
             version: settings.version,
           },
         }),
@@ -221,14 +217,6 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
             </option>
           ))}
         </SelectField>
-      </Section>
-      <Section title={t('sections.discovery')} description={t('descriptions.discovery')}>
-        <Switch
-          checked={hidePaused}
-          disabled={!canEdit}
-          onCheckedChange={setHidePaused}
-          label={t('fields.hidePausedShopsFromDiscovery')}
-        />
       </Section>
       <Section title={t('sections.map')} description={t('descriptions.map')}>
         {numberField('mapDefaultLatitude', true)}

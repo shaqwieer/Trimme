@@ -120,7 +120,8 @@ internal sealed class SaveShopMessagesHandler(TrimmeDbContext db, IAdminDataScop
         if (changes.Count > 0)
         {
             audit.Record(new AuditRecord(
-                "whatsapp_shop_messages.saved", "Shop", shopId.Value.ToString(), shopId, string.Join(", ", changes)));
+                "whatsapp_shop_messages.saved", "Shop", shopId.Value.ToString(), shopId, string.Join(", ", changes),
+                SummaryArgs: AuditArgs.Of(("changes", AuditArgs.List(changes)))));
             await db.SaveChangesAsync(cancellationToken);
         }
 
