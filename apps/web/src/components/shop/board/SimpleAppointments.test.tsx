@@ -18,7 +18,14 @@ const booking = (id: string, name: string, startsAt: string, status = 'Confirmed
   channel: 'Online',
   viaQr: false,
   professional: { id: 'p1', nameAr: 'سلطان الحربي', nameEn: 'Sultan' },
-  item: { nameAr: 'حلاقة شعر', nameEn: 'Haircut', price: 60, currency: 'SAR', durationMinutes: 30 },
+  item: {
+    nameAr: 'حلاقة شعر',
+    nameEn: 'Haircut',
+    price: 60,
+    currency: 'SAR',
+    durationMinutes: 30,
+    packageItems: [],
+  },
   startsAt,
   endsAt: startsAt,
   status,
@@ -28,6 +35,11 @@ const booking = (id: string, name: string, startsAt: string, status = 'Confirmed
   version: 3,
 });
 
+const BARBERS = [
+  { id: 'p1', nameAr: 'سلطان الحربي', nameEn: 'Sultan' },
+  { id: 'p2', nameAr: 'عمر', nameEn: 'Omar' },
+];
+
 // 2026-10-21 is today in Riyadh (UTC+3).
 const week = [
   booking('1', 'سعود الرشيد', '2026-10-21T07:00:00Z', 'Arrived'),
@@ -36,41 +48,39 @@ const week = [
   booking('4', 'ماجد القحطاني', '2026-10-24T13:00:00Z'),
 ];
 
-function renderList() {
+function renderList(props: Partial<Parameters<typeof SimpleAppointments>[0]> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return renderWithIntl(
     <QueryClientProvider client={client}>
-      <SimpleAppointments today="2026-10-21" timeZone="Asia/Riyadh" canUpdate />
+      <SimpleAppointments today="2026-10-21" timeZone="Asia/Riyadh" canUpdate {...props} />
     </QueryClientProvider>,
   );
 }
+
+/** The API's list for one day: the bookings starting on it (all these start before 21:00 UTC, so the same date). */
+const dayList = (from: string) => {
+  const items = week.filter((b) => b.startsAt.slice(0, 10) === from);
+  return ok({ items, page: 1, pageSize: 100, total: items.length });
+};
 
 beforeEach(() => {
   api.GET.mockReset();
   api.POST.mockReset();
   window.history.replaceState(null, '', '/');
   api.GET.mockImplementation((path: string, init: { params: { query: { from: string } } }) =>
-    Promise.resolve(
-      path === '/api/v1/shop/bookings'
-        ? ok({
-            items: init.params.query.from === '2026-10-21' ? week : [],
-            page: 1,
-            pageSize: 100,
-            total: init.params.query.from === '2026-10-21' ? week.length : 0,
-          })
-        : ok(null),
-    ),
+    Promise.resolve(path === '/api/v1/shop/bookings' ? dayList(init.params.query.from) : ok(null)),
   );
 });
 
-describe('SimpleAppointments (D-134, D-147)', () => {
-  it("puts the shop's red and pending bookings first, with their barber, and who closed the late ones", async () => {
+describe('SimpleAppointments (D-134, D-147, D-151)', () => {
+  it("puts the shop's bookings to close first, with who is responsible, and who closed the late ones", async () => {
     const user = userEvent.setup();
     const red = {
       ...booking('9', 'بندر السبيعي', '2026-10-20T07:00:00Z'),
       professional: { id: 'p2', nameAr: 'عمر', nameEn: 'Omar' },
       overdue: true,
-      allowedTransitions: ['Completed', 'NoShow', 'CancelledByShop'],
+      // D-151: the usual buttons on a red booking, for any barber of the shop.
+      allowedTransitions: ['Arrived', 'Completed', 'NoShow', 'CancelledByShop'],
     };
     const pending = {
       ...booking('3', 'فهد الدوسري', '2026-10-22T09:00:00Z', 'Pending'),
@@ -87,12 +97,7 @@ describe('SimpleAppointments (D-134, D-147)', () => {
         path === '/api/v1/shop/bookings/attention'
           ? ok({ pending: [pending], overdue: [red], closedLate: [closed] })
           : path === '/api/v1/shop/bookings'
-            ? ok({
-                items: init.params.query.from === '2026-10-21' ? week : [],
-                page: 1,
-                pageSize: 100,
-                total: week.length,
-              })
+            ? dayList(init.params.query.from)
             : ok(null),
       ),
     );
@@ -100,10 +105,14 @@ describe('SimpleAppointments (D-134, D-147)', () => {
     renderList();
 
     const overdue = await screen.findByTestId('attention-overdue');
+    expect(within(overdue).getByRole('heading')).toHaveTextContent('حجوزات تحتاج إقفال (١)');
     expect(overdue).toHaveTextContent('بندر السبيعي');
-    expect(overdue).toHaveTextContent('الحلاق المسؤول: عمر');
-    expect(within(overdue).getByRole('button', { name: 'انتهت الخدمة: بندر السبيعي' })).toBeInTheDocument();
-    expect(screen.getByTestId('attention-closed-late')).toHaveTextContent('قفله: سلطان');
+    expect(overdue).toHaveTextContent('المسؤول: عمر');
+    for (const action of ['وصل', 'انتهت الخدمة', 'ما حضر'])
+      expect(within(overdue).getByRole('button', { name: `${action}: بندر السبيعي` })).toBeInTheDocument();
+    expect(screen.getByTestId('attention-closed-late')).toHaveTextContent(
+      'المسؤول: سلطان الحربي — قفله: سلطان',
+    );
 
     // A pending booking is shown once, in its own section, where any barber accepts it.
     const waiting = screen.getByTestId('attention-pending');
@@ -117,70 +126,106 @@ describe('SimpleAppointments (D-134, D-147)', () => {
     );
   });
 
-  it('gives the owner nothing to press (D-147: the owner only watches)', async () => {
-    renderWithIntl(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <SimpleAppointments today="2026-10-21" timeZone="Asia/Riyadh" canUpdate={false} />
-      </QueryClientProvider>,
-    );
+  it('gives the owner nothing to press and no quick buttons, and everyone’s day by default (D-147)', async () => {
+    renderList({ canUpdate: false, barbers: BARBERS });
     await screen.findByTestId('coming-today');
     expect(
       screen.queryByRole('button', { name: /^(وصل|انتهت الخدمة|ما حضر|قبول):/ }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-actions')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'جدولي' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'الكل' })).toHaveAttribute('aria-pressed', 'true');
+    expect(api.GET).toHaveBeenCalledWith('/api/v1/shop/bookings', {
+      params: { query: expect.objectContaining({ from: '2026-10-21', to: '2026-10-21', all: true }) },
+    });
   });
 
-  it("lists today's bookings, then the coming days, with names only: no filters, no cancellations", async () => {
-    const { container } = renderList();
+  it("shows a barber their own day first, then everyone's or a colleague's, with the quick buttons (D-151, 1-1)", async () => {
+    const user = userEvent.setup();
+    const { container } = renderList({ ownProfessionalId: 'p1', barbers: BARBERS, quickActions: true });
 
     const today = await screen.findByTestId('coming-today');
+    await within(today).findByText('سعود الرشيد');
     expect(api.GET).toHaveBeenCalledWith('/api/v1/shop/bookings', {
       params: {
         query: {
           from: '2026-10-21',
-          to: '2026-10-27',
+          to: '2026-10-21',
           status: ['Pending', 'Confirmed', 'Arrived'],
           page: 1,
           pageSize: 100,
         },
       },
     });
-    expect(within(today).getByRole('heading')).toHaveTextContent('حجوزات اليوم');
+    expect(within(today).getByRole('heading', { level: 2 })).toHaveTextContent('اليوم ·');
+    expect(screen.getByRole('button', { name: 'جدولي' })).toHaveAttribute('aria-pressed', 'true');
     expect(
       within(today)
         .getAllByTestId('coming-appointment')
         .map((row) => row.textContent),
     ).toEqual([expect.stringContaining('سعود الرشيد'), expect.stringContaining('ناصر العتيبي')]);
-    const later = screen.getByTestId('coming-later');
-    expect(within(later).getByRole('heading', { level: 2 })).toHaveTextContent('المواعيد القادمة');
-    expect(within(later).getByRole('heading', { name: 'غداً' })).toBeInTheDocument();
-    expect(within(later).getByText('فهد الدوسري')).toBeInTheDocument();
-    expect(within(later).getByText('ماجد القحطاني')).toBeInTheDocument();
+    expect(within(today).getAllByTestId('coming-appointment')[0]).toHaveTextContent('حلاقة شعر · ');
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-    expect(screen.queryByText(/ملغي/)).not.toBeInTheDocument();
+    const quick = screen.getByTestId('quick-actions');
+    expect(within(quick).getByRole('link', { name: 'زبون حضوري' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/shop\/walk-in$/),
+    );
+    expect(within(quick).getByRole('link', { name: 'حجز بالتلفون' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/shop\/walk-in\?kind=phone$/),
+    );
+    expect(within(quick).getByRole('link', { name: 'بريك' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/shop\/schedule#breaks$/),
+    );
+    expect(within(quick).getByRole('link', { name: 'إيقاف الحجز' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/shop\/schedule#pause$/),
+    );
     await expectNoAxeViolations(container);
+
+    await user.click(screen.getByRole('button', { name: 'الكل' }));
+    await waitFor(() =>
+      expect(api.GET).toHaveBeenLastCalledWith('/api/v1/shop/bookings', {
+        params: { query: expect.objectContaining({ all: true }) },
+      }),
+    );
+    // A colleague: only the other barbers have a chip, the barber themself is «جدولي».
+    expect(screen.queryByRole('button', { name: 'سلطان الحربي' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'عمر' }));
+    await waitFor(() =>
+      expect(api.GET).toHaveBeenLastCalledWith('/api/v1/shop/bookings', {
+        params: { query: expect.objectContaining({ professionalId: 'p2' }) },
+      }),
+    );
+    expect(screen.getByRole('button', { name: 'عمر' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByText(/ملغي/)).not.toBeInTheDocument();
   });
 
-  it("moves a week at a time, never before this week, and opens a booking's details", async () => {
+  it("moves a day at a time, never before today, and opens a booking's details", async () => {
     const user = userEvent.setup();
     renderList();
     await screen.findByTestId('coming-today');
-    expect(screen.getByRole('button', { name: 'الأسبوع السابق' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'اليوم السابق' })).toBeDisabled();
 
-    await user.click(screen.getByRole('button', { name: 'الأسبوع التالي' }));
+    await user.click(screen.getByRole('button', { name: 'اليوم التالي' }));
     await waitFor(() =>
       expect(api.GET).toHaveBeenLastCalledWith('/api/v1/shop/bookings', {
         params: expect.objectContaining({
-          query: expect.objectContaining({ from: '2026-10-28', to: '2026-11-03' }),
+          query: expect.objectContaining({ from: '2026-10-22', to: '2026-10-22' }),
         }),
       }),
     );
-    expect(await screen.findByText('لا مواعيد قادمة في هذه الأيام.')).toBeInTheDocument();
-    expect(screen.queryByTestId('coming-today')).not.toBeInTheDocument();
+    expect(await screen.findByText('فهد الدوسري')).toBeInTheDocument();
+    expect(screen.getByTestId('coming-day')).not.toHaveTextContent('اليوم ·');
 
-    await user.click(screen.getByRole('button', { name: 'الأسبوع السابق' }));
+    await user.click(screen.getByRole('button', { name: 'اليوم التالي' }));
+    expect(await screen.findByText('لا حجوزات في هذا اليوم.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'اليوم السابق' }));
+    await user.click(screen.getByRole('button', { name: 'اليوم السابق' }));
     await user.click(await screen.findByRole('button', { name: 'تفاصيل موعد سعود الرشيد' }));
     expect(window.location.search).toContain('booking=1');
   });
@@ -189,8 +234,7 @@ describe('SimpleAppointments (D-134, D-147)', () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValue(ok({ ...week[0], status: 'Completed' }));
     renderList();
-    await screen.findByTestId('coming-today');
-    expect(screen.getByText('زبون عائد')).toBeInTheDocument();
+    expect(await screen.findByText('زبون عائد')).toBeInTheDocument();
 
     // Only the visit under way offers it; the coming ones do not. «تراجع» sends nothing.
     expect(screen.getAllByRole('button', { name: /^انتهت الخدمة:/ })).toHaveLength(1);

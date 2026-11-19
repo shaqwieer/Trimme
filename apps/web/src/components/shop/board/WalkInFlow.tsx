@@ -57,6 +57,7 @@ export function WalkInFlow({
   initialProfessionalId,
   initialStart,
   initialDate,
+  initialKind,
   ownProfessionalId,
 }: {
   offers: WalkInOffer[];
@@ -67,6 +68,8 @@ export function WalkInFlow({
   initialProfessionalId?: string;
   initialStart?: string;
   initialDate?: string;
+  /** «حجز بالتلفون» from the day screen's quick buttons (D-151) opens with the phone kind chosen. */
+  initialKind?: Kind;
 }) {
   const t = useTranslations('shopBoard.walkIn');
   const tCatalog = useTranslations('booking.catalog');
@@ -75,7 +78,9 @@ export function WalkInFlow({
   const apiMessage = useApiErrorMessage();
   const rewardName = useLoyaltyRewardName();
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<Kind>(initialDate && initialDate !== today ? 'Phone' : 'WalkIn');
+  const [kind, setKind] = useState<Kind>(
+    initialKind ?? (initialDate && initialDate !== today ? 'Phone' : 'WalkIn'),
+  );
   const [serviceIds, setServiceIds] = useState<string[]>(() => {
     const first = offers.find((o) => o.kind === 'service');
     return first ? [first.id] : [];

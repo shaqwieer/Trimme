@@ -146,6 +146,22 @@ internal sealed class AccountStore(
         user.SecurityStamp = Guid.NewGuid().ToString("N");
     }
 
+    public async Task EraseBarberLoginAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var user = await db.Set<ApplicationUser>()
+            .SingleAsync(u => u.Id == userId && u.UserType == UserType.ShopUser && u.ProfessionalId != null, cancellationToken);
+        user.DisplayName = null;
+        user.ContactEmail = null;
+        user.PhoneLookupHash = null;
+        user.ProtectedPhone = null;
+        user.LoginPhoneHash = null;
+        user.PhoneNumberConfirmed = false;
+        user.ProfessionalId = null;
+        user.DisabledAt ??= now;
+        user.DeletedAt = now;
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+    }
+
     public async Task<StaffPasswordCheck> CheckStaffPasswordAsync(string email, string password, CancellationToken cancellationToken) =>
         await CheckPasswordAsync(await users.FindByEmailAsync(email), password, cancellationToken);
 

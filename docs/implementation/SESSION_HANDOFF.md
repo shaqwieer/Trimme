@@ -1,6 +1,6 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-19 (Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
+- **Updated:** 2026-11-19 (Session 29: D-151 verified and committed by trimme-8b after its own session ended; D-155 (the client's next file: always confirmed, one active booking, the barber's direct change, plans with features and win-back, pausing for the owner and admin, «غير متوفر اليوم» and smaller fixes) planned in `phases/after-17-d155-auto-confirm-plans-absence.md`; D-152 on its own branch. Before it, Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
@@ -15,7 +15,7 @@
   - Session 26 (D-144) is pushed and deployed with D-145 (below).
   - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
-- **Working tree:** clean after the D-150 commit (D-149 slices 4–5).
+- **Working tree:** D-151 committed. D-152 (the client's iPhone test) lives on branch `worktree-d152-client-iphone-review` (worktree `.claude/worktrees/d152-client-iphone-review`, session trimme-d5), not merged: merge it after D-151 and keep both migrations (`BarberDayAndAccount`, `ShopShortName`). D-155 is in progress in the main checkout.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
   - Session 28, third request, slices 4–5: api and web rebuilt from the tree (no `down -v`): `migrate` up to date at 28 (`LoyaltyAddOnAndPlanMessages`); seed not re-run; codes **on**. No shop has the loyalty add-on locally.
   - Session 28, third request, rebuilt api and web from its tree (no `down -v`): `migrate` up to date at 27 (`OwnerSettings`), seed ran (al-asala 5 sections, barber-house 4); codes **on**.
@@ -30,6 +30,16 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 29: D-151 verified and committed (the barber's day screen, «حسابي», reasons, reports cards, services tiles)
+- **The request and the build** are D-151's own (`phases/after-17-d151-barber-day-account-services.md`). Its session (trimme-30) ended during E2E, out of memory. This session (trimme-8b) ran the remaining gates on the same tree, at the user's choice («finish and commit D-151 first»).
+- **Fixed while verifying:** four layouts spilled sideways at 390 px, because this design's `sm` is 390 px: the service tiles, the barber's quick buttons, the loyalty expiry presets and the loyalty counts. They now change columns at `md`. `shop-dashboard.spec` now unticks every service but «قص وتصفيف».
+- **Evidence:**
+  - .NET: 0 warnings; unit 501/501; architecture 69/69; integration 273/273.
+  - Web: format, lint, typecheck and OpenAPI clean; 576/576.
+  - E2E at one worker: the route audit 25/25 in light and dark; `services`, `shop-schedule` and `shop-dashboard` pass.
+- **Local stack:** api and web built from this tree. The database is at 30 migrations, including D-152's `ShopShortName`, applied from that branch.
+- **Committed locally, not pushed or deployed.**
 
 ## Session 28, after the deploy: the most booked services on the admin home (D-154)
 - **What changed:** «الخدمات الأكثر حجزاً» lists the five most booked services and packages with their shops («قص وتصفيف · باربر هاوس»), replacing the platform-category ranking.

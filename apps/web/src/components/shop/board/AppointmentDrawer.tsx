@@ -3,11 +3,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
+import { useDisplayCalendar } from '@/components/providers/CalendarProvider';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Timeline, type TimelineItem } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
 import { TextareaField } from '@/components/ui/inputs';
+import { RadioCard } from '@/components/ui/selection';
 import { ConfirmDialog, Dialog, Sheet } from '@/components/ui/overlays';
 import { InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
@@ -32,6 +34,10 @@ export { BOARD_KEY };
 
 type Detail = components['schemas']['ShopBookingDetailResponse'];
 type Status = components['schemas']['BookingStatus'];
+type ReasonCode = NonNullable<components['schemas']['ShopCancellationReason']>;
+
+/** The app's ready reasons (D-151, the client's 2-7), so the reports can count them; «سبب ثاني» is typed. */
+const REASONS: ReasonCode[] = ['StaffUnwell', 'Emergency', 'ShopClosed', 'Other'];
 
 const NOTE_MAX = 500;
 
@@ -76,7 +82,9 @@ export function AppointmentDrawer({
   const t = useTranslations('shopBoard.drawer');
   const tStatus = useTranslations('status.booking');
   const tLoyalty = useTranslations('loyalty');
+  const tReasons = useTranslations('shopBoard.drawer.reasons');
   const locale = useLocale() as AppLocale;
+  const calendar = useDisplayCalendar();
   const queryClient = useQueryClient();
   const apiMessage = useApiErrorMessage();
   const [error, setError] = useState<string>();
@@ -84,6 +92,7 @@ export function AppointmentDrawer({
   const [cancelOpen, setCancelOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<'Completed' | 'NoShow' | null>(null);
   const [reason, setReason] = useState('');
+  const [reasonCode, setReasonCode] = useState<ReasonCode | null>(null);
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [changing, setChanging] = useState<'reschedule' | 'move' | null>(null);
@@ -100,7 +109,7 @@ export function AppointmentDrawer({
       ),
   });
 
-  const transition = async (to: Status, why?: string) => {
+  const transition = async (to: Status, why?: string, code?: ReasonCode | null) => {
     const current = queryClient.getQueryData<Detail>(key);
     if (!current || !bookingId) return;
     setError(undefined);
@@ -114,12 +123,18 @@ export function AppointmentDrawer({
       ensureOk(
         await browserApi.POST('/api/v1/shop/bookings/{bookingId}/transitions', {
           params: { path: { bookingId } },
-          body: { to, reason: why ?? null, version: current.booking.version },
+          body: {
+            to,
+            reason: why ?? null,
+            ...(code ? { reasonCode: code } : {}),
+            version: current.booking.version,
+          },
         }),
       );
       setCancelOpen(false);
       setConfirmOpen(null);
       setReason('');
+      setReasonCode(null);
     } catch (failure) {
       queryClient.setQueryData<Detail>(key, current);
       setError(
@@ -181,7 +196,7 @@ export function AppointmentDrawer({
                     : h.kind === 'PostponementDeclined'
                       ? t('history.postponementDeclined')
                       : t('history.status', { status: tStatus(h.toStatus) }),
-    meta: `${formatDate(h.occurredAt, locale, { timeZone })} ${formatTime(h.occurredAt, locale, timeZone)} — ${h.actorName ?? t(`actor.${h.actorType}`)}${h.reason && h.kind !== 'ServiceAdded' && h.kind !== 'ServiceRemoved' ? ` — ${h.reason}` : ''}`,
+    meta: `${formatDate(h.occurredAt, locale, { timeZone, calendar })} ${formatTime(h.occurredAt, locale, timeZone)} — ${h.actorName ?? t(`actor.${h.actorType}`)}${h.reason && h.kind !== 'ServiceAdded' && h.kind !== 'ServiceRemoved' ? ` — ${h.reason}` : ''}`,
     tone:
       h.toStatus === 'Completed'
         ? 'success'
@@ -251,7 +266,7 @@ export function AppointmentDrawer({
                 {formatTime(booking.endsAt, locale, timeZone)}
               </span>
               <span className="text-helper text-text-strong">
-                {formatDate(booking.startsAt, locale, { timeZone })} —{' '}
+                {formatDate(booking.startsAt, locale, { timeZone, calendar })} —{' '}
                 {formatDurationMinutes(booking.item.durationMinutes, locale)}
               </span>
               <span className="mt-1 flex flex-wrap gap-1.5">
@@ -261,13 +276,35 @@ export function AppointmentDrawer({
                 {booking.cancelledLate && <Badge tone="danger">{t('flags.cancelledLate')}</Badge>}
               </span>
             </div>
-            {booking.overdue && <InlineAlert tone="danger" title={t('overdueNote')} />}
+            {/* D-151, the client's 1-2: what happened, then who may close it. */}
+            {booking.overdue && (
+              <div data-testid="drawer-overdue">
+                <InlineAlert
+                  tone="danger"
+                  title={booking.status === 'Arrived' ? t('overdue.arrivedTitle') : t('overdue.title')}
+                >
+                  <p>{t('overdue.body')}</p>
+                </InlineAlert>
+              </div>
+            )}
+            {booking.closedBy && (
+              <p className="text-label font-bold text-text-strong" data-testid="drawer-closed-by">
+                {t('closedLine', {
+                  responsible: localizedName(
+                    locale,
+                    booking.professional.nameAr,
+                    booking.professional.nameEn,
+                  ),
+                  closer: booking.closedBy,
+                })}
+              </p>
+            )}
             {booking.postponement &&
               (booking.postponement.live ? (
                 <InlineAlert
                   tone="info"
                   title={t('postponement.waiting', {
-                    when: `${formatDate(booking.postponement.startsAt, locale, { timeZone })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`,
+                    when: `${formatDate(booking.postponement.startsAt, locale, { timeZone, calendar })} ${formatTime(booking.postponement.startsAt, locale, timeZone)}`,
                     until: formatTime(booking.postponement.expiresAt, locale, timeZone),
                   })}
                 />
@@ -322,8 +359,20 @@ export function AppointmentDrawer({
                     : []),
                   ...(booking.closedBy ? [[t('rows.closedBy'), booking.closedBy]] : []),
                   ...(booking.note ? [[t('rows.note'), booking.note]] : []),
-                  ...(booking.cancellationReason
-                    ? [[t('rows.cancellationReason'), booking.cancellationReason]]
+                  ...(booking.cancellationReason || booking.cancellationReasonCode
+                    ? [
+                        [
+                          t('rows.cancellationReason'),
+                          [
+                            booking.cancellationReasonCode && booking.cancellationReasonCode !== 'Other'
+                              ? tReasons(booking.cancellationReasonCode)
+                              : null,
+                            booking.cancellationReason,
+                          ]
+                            .filter(Boolean)
+                            .join(' — '),
+                        ],
+                      ]
                     : []),
                 ] as Array<[string, ReactNode]>
               ).map(([label, value]) => (
@@ -397,7 +446,6 @@ export function AppointmentDrawer({
             {editableServices && (
               <BookingServicesEditor
                 booking={booking}
-                ownProfessionalId={ownProfessionalId}
                 onChanged={() => queryClient.invalidateQueries({ queryKey: [BOARD_KEY] })}
               />
             )}
@@ -439,7 +487,7 @@ export function AppointmentDrawer({
                       <li key={n.id} className="rounded-card bg-bg-subtle p-3 text-label text-text-strong">
                         {n.text}
                         <span className="block text-helper text-text-tertiary">
-                          {formatDate(n.createdAt, locale, { timeZone })}{' '}
+                          {formatDate(n.createdAt, locale, { timeZone, calendar })}{' '}
                           {formatTime(n.createdAt, locale, timeZone)}
                         </span>
                       </li>
@@ -528,9 +576,16 @@ export function AppointmentDrawer({
             <Button
               variant="dangerSolid"
               className="flex-1"
-              disabled={reason.trim().length < 3}
+              disabled={rejects || reasonCode === 'Other' ? reason.trim().length < 3 : reasonCode === null}
               loading={pending === 'CancelledByShop'}
-              onClick={() => void transition('CancelledByShop', reason.trim())}
+              onClick={() =>
+                void transition(
+                  'CancelledByShop',
+                  // The text goes with a rejection or «سبب ثاني» only; a ready reason is its code.
+                  rejects || reasonCode === 'Other' ? reason.trim() : undefined,
+                  rejects ? null : reasonCode,
+                )
+              }
             >
               {rejects ? t('reject.confirm') : t('cancel.confirm')}
             </Button>
@@ -540,14 +595,44 @@ export function AppointmentDrawer({
           </>
         }
       >
-        <TextareaField
-          label={t('cancel.reason')}
-          helper={rejects ? undefined : t('cancel.late')}
-          maxLength={NOTE_MAX}
-          rows={2}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-        />
+        {rejects ? (
+          <TextareaField
+            label={t('cancel.reason')}
+            maxLength={NOTE_MAX}
+            rows={2}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            <fieldset className="flex min-w-0 flex-col gap-2" data-testid="cancel-reasons">
+              <legend className="mb-1 text-label font-bold text-text-strong">{t('cancel.reason')}</legend>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {REASONS.map((code) => (
+                  <RadioCard
+                    key={code}
+                    name="cancellationReason"
+                    value={code}
+                    checked={reasonCode === code}
+                    onChange={() => setReasonCode(code)}
+                  >
+                    {tReasons(code)}
+                  </RadioCard>
+                ))}
+              </div>
+            </fieldset>
+            {reasonCode === 'Other' && (
+              <TextareaField
+                label={t('cancel.otherReason')}
+                maxLength={NOTE_MAX}
+                rows={2}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            )}
+            <p className="text-helper text-text-secondary">{t('cancel.late')}</p>
+          </div>
+        )}
       </Dialog>
     </Sheet>
   );

@@ -88,6 +88,9 @@ public sealed record UpdateShopBarberRequest(
     uint Version,
     IReadOnlyList<string>? Languages = null);
 
+/// <summary>A barber renames themselves (D-151): the Arabic name, the English one (empty keeps it) and the version read.</summary>
+public sealed record RenameShopAccountRequest(string NameAr, string? NameEn, uint Version);
+
 internal static class ProfessionalEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -201,6 +204,13 @@ internal static class ProfessionalEndpoints
             .WithName("ListShopProfessionals").WithSummary("The shop's own professionals, read-only and without contact data.")
             .Produces<IReadOnlyList<ShopProfessionalResponse>>();
         MapShopBarbers(api.MapGroup("/shop/professionals").WithTags("Shop").RequirePermission(ShopBarbersManage));
+        api.MapPut("/shop/account/name", async (RenameShopAccountRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new RenameOwnBarberCommand(r.NameAr ?? string.Empty, r.NameEn, r.Version), ct)).ToHttpResult())
+            .RequireUserType(UserTypes.ShopUser).WithTags("Shop: account")
+            .WithName("RenameShopAccount")
+            .WithSummary("A barber renames themselves from «حسابي» (D-151): their name on their page, the owner's list and new log lines, by the owner's edit rules (audited, optimistic concurrency). The owner: 403.")
+            .Produces<BarberAccountNameResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
 
         api.MapGet("/public/shops/{slug}/professionals", PublicList).AllowAnonymous().CachePublicly().WithTags("Public")
             .WithName("ListPublicShopProfessionals").WithSummary("Active professionals of an active shop. No contact data.")

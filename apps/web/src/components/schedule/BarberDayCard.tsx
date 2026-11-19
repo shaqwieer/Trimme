@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useDisplayCalendar } from '@/components/providers/CalendarProvider';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { SelectField } from '@/components/ui/inputs';
@@ -58,14 +59,25 @@ type Pending =
   | { kind: 'clear' };
 
 /**
- * A barber's breaks for one day (D-134, the client's «البريكات»), every 5 minutes (D-137): the day's 24 hours; tapping
- * one opens its twelve 5-minute slots, as the booking's hour and minutes do. Free slots are picked and then confirmed
+ * A barber's breaks for one day (D-134, the client's «البريكات»), every 5 minutes (D-137): the barber's working hours
+ * only (D-151: the grid used to start at midnight), midnight written in words; tapping an hour opens its twelve 5-minute
+ * slots, as the booking's hour and minutes do. A barber's own login reads «بريكاتي». Free slots are picked and then confirmed
  * as a break; tapping a break offers to cancel it. Every change asks first and then says what was saved. No reason is
  * asked and nothing repeats. Booked time, the owner's breaks and time off cannot be changed here.
  */
-export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; today: LocalDate }) {
+export function BarberDayCard({
+  barbers,
+  today,
+  own = false,
+}: {
+  barbers: BreakBarber[];
+  today: LocalDate;
+  /** A barber's own login (D-145): the card is «بريكاتي» (D-151). */
+  own?: boolean;
+}) {
   const t = useTranslations('shopSchedule.barberDay');
   const locale = useLocale() as AppLocale;
+  const calendar = useDisplayCalendar();
   const apiMessage = useApiErrorMessage();
   const queryClient = useQueryClient();
   const panelId = useId();
@@ -181,7 +193,10 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
           : { title: t('confirm.clear.title', { barber: barberName }), key: 'clear' as const }
     : undefined;
 
-  const hour = openHour !== null && current ? cells[openHour] : undefined;
+  const hour = openHour !== null && current ? cells.find((c) => c.hour === openHour) : undefined;
+  // Working hours only (D-151); an hour holding one of the barber's breaks stays, so it can still be cancelled.
+  const shown = cells.filter((c) => c.state !== 'outside');
+  const hourLabel = (start: number) => (start === 0 ? t('midnight') : time(start));
   const slots = hour && current ? minuteCells(current, hour.hour) : [];
   const freeSlots = slots.filter((s) => s.toggles && s.state === 'free').map((s) => s.start);
   const allPicked = freeSlots.length > 0 && freeSlots.every((start) => picked.includes(start));
@@ -192,12 +207,13 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-e1"
+      className="flex scroll-mt-24 flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-e1"
+      id="breaks"
       data-testid="barber-day"
       aria-busy={saving || day.isFetching}
     >
       <div className="flex flex-col gap-1">
-        <h2 className="text-h3 font-bold text-text-primary">{t('title')}</h2>
+        <h2 className="text-h3 font-bold text-text-primary">{own ? t('titleOwn') : t('title')}</h2>
         {/* One barber (a barber's own login, D-145, or a one-barber shop): nothing to choose but the day. */}
         <p className="text-caption text-text-secondary">{barbers.length > 1 ? t('body') : t('bodyOne')}</p>
       </div>
@@ -234,10 +250,10 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
         />
         <div className="flex min-w-0 flex-col items-center text-center">
           <span className="text-label font-bold text-text-primary">
-            {date === today ? t('today') : formatLocalDate(date, locale, { weekday: 'long' })}
+            {date === today ? t('today') : formatLocalDate(date, locale, { weekday: 'long' }, calendar)}
           </span>
           <span className="text-helper text-text-secondary">
-            {formatLocalDate(date, locale, { day: 'numeric', month: 'long' })}
+            {formatLocalDate(date, locale, { day: 'numeric', month: 'long' }, calendar)}
           </span>
         </div>
         <IconButton
@@ -266,7 +282,7 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
             className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-2"
             data-testid="barber-day-hours"
           >
-            {cells.map((cell) => (
+            {shown.map((cell) => (
               <li key={cell.hour}>
                 <button
                   type="button"
@@ -275,7 +291,7 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
                   aria-expanded={cell.opens ? openHour === cell.hour : undefined}
                   aria-controls={cell.opens && openHour === cell.hour ? panelId : undefined}
                   aria-label={t('cell', {
-                    from: time(cell.start),
+                    from: hourLabel(cell.start),
                     to: time(cell.end),
                     state: stateLabel(cell.state, cell.breakMinutes),
                   })}
@@ -293,7 +309,7 @@ export function BarberDayCard({ barbers, today }: { barbers: BreakBarber[]; toda
                     openHour === cell.hour && 'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface',
                   )}
                 >
-                  <span className="text-label font-bold">{time(cell.start)}</span>
+                  <span className="text-label font-bold">{hourLabel(cell.start)}</span>
                   <span className="text-helper">{stateLabel(cell.state, cell.breakMinutes)}</span>
                 </button>
               </li>

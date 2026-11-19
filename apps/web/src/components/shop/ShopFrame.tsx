@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { SessionExpiryRedirect, SignOutButton } from '@/components/auth/SessionClient';
+import { CalendarProvider } from '@/components/providers/CalendarProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { DashboardShell } from '@/components/shell/DashboardShell';
 import { PermissionDenied } from '@/components/ui/states';
@@ -7,6 +8,7 @@ import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { homeFor } from '@/lib/auth/paths';
 import { type Me, requireUser } from '@/lib/auth/server';
+import { readDisplayCalendar } from '@/lib/i18n/calendar.server';
 import { localizedName } from '@/lib/i18n/localized';
 import { LiveIndicator, OperationsLiveProvider } from './live/OperationsLive';
 import { ShopBanners } from './ShopBanners';
@@ -35,12 +37,13 @@ export async function ShopFrame({ locale, path, title: titleFor, children }: Sho
 
   const api = await getServerApi();
   // One round of reads: the shop, its pause state and (with the permission) its subscription.
-  const [{ data: shop }, pause, subscription] = await Promise.all([
+  const [{ data: shop }, pause, subscription, calendar] = await Promise.all([
     api.GET('/api/v1/shop/me'),
     api.GET('/api/v1/shop/online-booking').then((r) => r.data ?? null),
     me.permissions.includes('Shop.Subscription.Read') && path !== '/shop/subscription'
       ? api.GET('/api/v1/shop/subscription').then((r) => r.data ?? null)
       : Promise.resolve(null),
+    readDisplayCalendar(),
   ]);
   const name = shop ? localizedName(asLocale(locale), shop.nameAr, shop.nameEn) : '';
   const status = shop?.status ?? 'Suspended';
@@ -57,24 +60,27 @@ export async function ShopFrame({ locale, path, title: titleFor, children }: Sho
     </>
   );
 
+  // The barber's «ميلادي أو هجري» (D-151) for every date the shop's client components write.
   return (
     <QueryProvider>
-      {live ? (
-        <OperationsLiveProvider>
-          <Shell
-            title={title}
-            name={name}
-            permissions={operable ? me.permissions : []}
-            addon={<LiveIndicator />}
-          >
+      <CalendarProvider calendar={calendar}>
+        {live ? (
+          <OperationsLiveProvider>
+            <Shell
+              title={title}
+              name={name}
+              permissions={operable ? me.permissions : []}
+              addon={<LiveIndicator />}
+            >
+              {content}
+            </Shell>
+          </OperationsLiveProvider>
+        ) : (
+          <Shell title={title} name={name} permissions={operable ? me.permissions : []}>
             {content}
           </Shell>
-        </OperationsLiveProvider>
-      ) : (
-        <Shell title={title} name={name} permissions={operable ? me.permissions : []}>
-          {content}
-        </Shell>
-      )}
+        )}
+      </CalendarProvider>
     </QueryProvider>
   );
 }

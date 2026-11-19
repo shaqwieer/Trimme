@@ -61,9 +61,10 @@ export function PauseCard({
   return (
     <section
       className={cn(
-        'flex flex-col gap-3 rounded-card border p-5 shadow-e1',
+        'flex scroll-mt-24 flex-col gap-3 rounded-card border p-5 shadow-e1',
         paused ? 'border-warning-border bg-warning-50' : 'border-border bg-surface',
       )}
+      id="pause"
       data-testid="pause-card"
       data-paused={paused}
     >

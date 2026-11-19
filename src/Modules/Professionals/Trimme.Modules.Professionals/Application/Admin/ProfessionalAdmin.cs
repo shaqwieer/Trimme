@@ -197,6 +197,7 @@ internal sealed class UpdateProfessionalHandler(
     TrimmeDbContext db,
     IAdminDataScope scope,
     ProfessionalSupport support,
+    IBarberLoginSync logins,
     IAuditLog audit,
     TimeProvider clock) : ICommandHandler<UpdateProfessionalCommand, Result<AdminProfessionalResponse>>
 {
@@ -224,6 +225,9 @@ internal sealed class UpdateProfessionalHandler(
         {
             return invalid.Error;
         }
+
+        // The barber's login shows their Arabic name (D-151).
+        await logins.NameChangedAsync(professional.Id, professional.NameAr, cancellationToken);
 
         audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited"));
         await db.SaveChangesAsync(cancellationToken);

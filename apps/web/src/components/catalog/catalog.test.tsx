@@ -261,6 +261,51 @@ describe('the owner’s services (D-137)', () => {
     expect(String(api.POST.mock.calls[0]![0])).not.toMatch(/deactivate$/);
   });
 
+  it('groups the tiles by the shop’s sections and saves a tile’s price and length with its version (D-151, 3-2)', async () => {
+    const user = userEvent.setup();
+    api.PUT.mockResolvedValue({ data: {}, response: new Response(null, { status: 200 }) });
+    renderWithIntl(
+      <ShopServiceList
+        items={[
+          { ...service('a', 'حلاقة', 1, ['faisal']), sectionId: 'hair' },
+          { ...service('b', 'تحديد لحية', 2), sectionId: 'beard' },
+          service('c', 'تنظيف بشرة', 3),
+        ]}
+        sections={[
+          { id: 'hair', nameAr: 'الشعر', nameEn: 'Hair' },
+          { id: 'beard', nameAr: 'اللحية', nameEn: null },
+        ]}
+      />,
+    );
+
+    expect(within(screen.getByTestId('service-group-hair')).getByRole('heading')).toHaveTextContent('الشعر');
+    expect(
+      within(screen.getByTestId('service-group-beard')).getByTestId('catalog-row-b'),
+    ).toBeInTheDocument();
+    expect(within(screen.getByTestId('service-group-other')).getByRole('heading')).toHaveTextContent('أخرى');
+
+    const tile = screen.getByTestId('catalog-row-a');
+    expect(within(tile).queryByRole('button', { name: 'حفظ سعر ومدة حلاقة' })).not.toBeInTheDocument();
+    const price = within(tile).getByLabelText('السعر (⃁)');
+    await user.clear(price);
+    await user.type(price, '٧٥');
+    await user.click(within(tile).getByRole('button', { name: 'زيادة المدة' }));
+    expect(within(tile).getByRole('group', { name: 'المدة' })).toHaveTextContent('٣٥');
+    await user.click(within(tile).getByRole('button', { name: 'حفظ سعر ومدة حلاقة' }));
+
+    await waitFor(() => expect(api.PUT).toHaveBeenCalled());
+    const [path, init] = api.PUT.mock.calls[0]!;
+    expect(path).toBe('/api/v1/shop/services/{serviceId}');
+    expect(init.body).toMatchObject({
+      nameAr: 'حلاقة',
+      price: 75,
+      durationMinutes: 35,
+      version: 3,
+      sectionId: 'hair',
+      professionalIds: ['faisal'],
+    });
+  });
+
   it('rolls the move back when the save fails', async () => {
     api.PUT.mockResolvedValue({
       error: { errorCode: 'server.unexpected' },

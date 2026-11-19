@@ -125,6 +125,24 @@ internal sealed class ProfessionalLoginNumbers(TrimmeDbContext db, IPersonalData
 }
 
 /// <summary>
+/// <see cref="IBarberAccountProfiles"/> (D-151): a barber's own names, version and masked number for their «حسابي». Reads
+/// through the caller's scope (the barber's own shop); never decrypts the number.
+/// </summary>
+internal sealed class BarberAccountProfiles(TrimmeDbContext db) : IBarberAccountProfiles
+{
+    public async Task<BarberAccountProfile?> FindAsync(ProfessionalId professionalId, CancellationToken cancellationToken)
+    {
+        var row = await (from professional in db.Set<Professional>().AsNoTracking()
+                         join contact in db.Set<ProfessionalContact>().AsNoTracking() on professional.Id equals contact.ProfessionalId into contacts
+                         from contact in contacts.DefaultIfEmpty()
+                         where professional.Id == professionalId
+                         select new { professional.Id, professional.ShopId, professional.NameAr, professional.NameEn, professional.Version, Masked = contact == null ? null : contact.WhatsAppMasked })
+            .SingleOrDefaultAsync(cancellationToken);
+        return row is null ? null : new BarberAccountProfile(row.Id, row.ShopId, row.NameAr, row.NameEn, row.Version, row.Masked);
+    }
+}
+
+/// <summary>
 /// <see cref="IProfessionalContactReader"/>: the professional's WhatsApp number, decrypted only when notifications are on
 /// (spec §16), for the notification jobs (architecture rule). Reads through the caller's scope (the system scope in jobs).
 /// </summary>

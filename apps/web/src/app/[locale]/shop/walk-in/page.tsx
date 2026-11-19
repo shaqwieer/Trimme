@@ -69,6 +69,7 @@ export default async function ShopWalkInPage({ params, searchParams }: PageProps
             ownProfessionalId={me.professionalId ?? undefined}
             initialStart={firstParam(query.startsAt)}
             initialDate={date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= today ? date : undefined}
+            initialKind={firstParam(query.kind) === 'phone' ? 'Phone' : undefined}
           />
         );
       }}

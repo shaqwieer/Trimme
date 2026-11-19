@@ -181,6 +181,7 @@ export default async function AdminShopPage({
                     .filter((s) => !s.isArchived)
                     .map((s) => ({ id: s.id, nameAr: s.nameAr, nameEn: s.nameEn }))}
                   canEdit={me.permissions.includes('Admin.Loyalty.Manage')}
+                  subscriptionHref={tabHref('subscription')}
                 />
               </Card>
               <Card title={tl('stats.title')}>

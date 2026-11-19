@@ -56,7 +56,7 @@ export function LoyaltyStatsGrid({ stats }: { stats: Stats }) {
   const t = useTranslations('loyalty.rulesForm.stats');
   const locale = useLocale() as AppLocale;
   return (
-    <dl className="grid gap-3 text-caption sm:grid-cols-5" data-testid="loyalty-stats">
+    <dl className="grid grid-cols-2 gap-3 text-caption md:grid-cols-5" data-testid="loyalty-stats">
       {(
         [
           ['members', stats.members],

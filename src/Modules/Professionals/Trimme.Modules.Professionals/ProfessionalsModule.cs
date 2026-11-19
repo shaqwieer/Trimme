@@ -28,6 +28,7 @@ public sealed class ProfessionalsModule : ModuleBase
         services.AddScoped<ProfessionalSupport>();
         services.AddScoped<IProfessionalDirectory, ProfessionalDirectory>();
         services.AddScoped<IProfessionalLoginNumbers, ProfessionalLoginNumbers>();
+        services.AddScoped<IBarberAccountProfiles, BarberAccountProfiles>();
         services.AddScoped<BuildingBlocks.Application.Notifications.IProfessionalContactReader, ProfessionalContactReader>();
         services.AddScoped<BuildingBlocks.Application.Reporting.IProfessionalStatistics, ProfessionalStatistics>();
         services.AddSingleton<IDevSeeder, DemoProfessionalsSeeder>();

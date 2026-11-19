@@ -69,6 +69,23 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
         return null;
     }
 
+    public async Task<IReadOnlyList<ProfessionalServiceOffer>> ServicesForAsync(ShopId shopId, ProfessionalId professionalId, CancellationToken cancellationToken)
+    {
+        var assigned = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+            .Where(a => a.ShopId == shopId && a.ProfessionalId == professionalId).ToListAsync(cancellationToken);
+        var ids = assigned.Select(a => a.ServiceId).ToList();
+        var services = await db.Set<ShopService>().AsNoTracking()
+            .Where(s => s.ShopId == shopId && ids.Contains(s.Id) && s.IsActive && !s.IsArchived && s.Moderation == ModerationState.Visible)
+            .OrderBy(s => s.DisplayOrder).ThenBy(s => s.NameAr)
+            .ToListAsync(cancellationToken);
+        var byService = assigned.ToDictionary(a => a.ServiceId);
+        return
+        [
+            .. services.Select(s => new ProfessionalServiceOffer(
+                s.Id.Value, s.NameAr, s.NameEn, s.SectionId?.Value, s.Price, s.Currency, byService[s.Id].MinutesFor(s))),
+        ];
+    }
+
     public async Task<BookableOffer?> FindServicesAsync(ShopId shopId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken)
     {
         if (serviceIds.Count <= 1)

@@ -56,6 +56,8 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     await form.getByLabel('Service name in Arabic').fill(name);
     await form.getByLabel('Price (SAR)').fill('٧٢٫٥'); // Arabic-Indic digits and decimal separator
     await form.getByLabel('Duration').selectOption('45');
+    // In the shop's first section, so its tile has neighbours to move past (D-151: tiles by section).
+    await form.getByLabel('Section').selectOption({ index: 1 });
     // Every active barber starts picked; keep one.
     const barbers = form.getByTestId('service-professionals').getByRole('checkbox');
     const count = await barbers.count();
@@ -85,11 +87,19 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     expect(saved.durationMinutes).toBe(50);
     expect(saved.professionalIds).toEqual(created.professionalIds);
 
-    // Keyboard reorder: the new service is last; move it up once.
+    // Keyboard reorder: the new service is last in its section; move it up once.
     await page.goto('/en/shop/services');
     const row = page.getByTestId(`catalog-row-${serviceId}`);
-    await expect(row).toContainText('SAR 80');
-    await expect(row).toContainText('50 min');
+    // A tile (D-151, 3-2): its price and length are changed in place, the length with − and +.
+    await expect(row.getByLabel('Price (SAR)')).toHaveValue('80');
+    await expect(row.getByRole('group', { name: 'Duration' })).toContainText('50 min');
+    await row.getByRole('button', { name: 'Increase Duration' }).click();
+    await row.getByRole('button', { name: `Save the price and length of ${name}` }).click();
+    // The stepper's <output> is a status region too; the save's message is the other.
+    await expect(row.getByText('Changes saved.')).toBeVisible();
+    expect(
+      (await (await page.request.get(`/api/v1/shop/services/${serviceId}`)).json()).durationMinutes,
+    ).toBe(55);
     const moveUp = row.getByRole('button', { name: `Move ${name} up` });
     await moveUp.focus();
     await page.keyboard.press('Enter');

@@ -86,7 +86,8 @@ public sealed record CustomerBookingResponse(
     BookingLoyaltyRewardResponse? LoyaltyReward,
     uint Version,
     DateTimeOffset? ProfessionalChangedAt = null,
-    PostponementOfferResponse? Postponement = null);
+    PostponementOfferResponse? Postponement = null,
+    ShopCancellationReason? CancellationReasonCode = null);
 
 /// <summary>
 /// A booking as the shop sees it: the customer's name, never a phone number (R-NEG-04). <c>AllowedTransitions</c> is
@@ -96,8 +97,9 @@ public sealed record CustomerBookingResponse(
 /// online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
 /// <para>
 /// D-147: <c>ActualStartAt</c> (when «وصل» was pressed, or a walk-in started at once) and <c>ActualEndAt</c> (when
-/// «انتهت الخدمة» was pressed); <c>Overdue</c> (red: open 15 minutes past its end); <c>CancelledLate</c> («إلغاء متأخر»);
-/// <c>ClosedLate</c> («انقفل متأخر») and <c>ClosedBy</c> (the name of who closed it).
+/// «انتهت الخدمة» was pressed); <c>Overdue</c> (red: open past its booked end, D-151); <c>CancelledLate</c> («إلغاء متأخر»);
+/// <c>ClosedLate</c> («انقفل متأخر»: closed more than a quarter hour after its end) and <c>ClosedBy</c> (the name of who
+/// closed it). D-151: <c>CancellationReasonCode</c>, the ready reason the shop chose, beside the typed one.
 /// </para>
 /// </summary>
 public sealed record ShopBookingResponse(
@@ -126,7 +128,8 @@ public sealed record ShopBookingResponse(
     string? ClosedBy = null,
     string? CustomerPhone = null,
     PostponementOfferResponse? Postponement = null,
-    decimal? AmountDue = null)
+    decimal? AmountDue = null,
+    ShopCancellationReason? CancellationReasonCode = null)
 {
     /// <summary>Never print the number (records list every member by default).</summary>
     public override string ToString() => $"{nameof(ShopBookingResponse)} {{ Id = {Id}, Status = {Status} }}";
@@ -236,7 +239,8 @@ internal static class BookingMapping
         Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null, IReadOnlyList<BookingStatus>? allowed = null) =>
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
             b.CancellationReason, allowed ?? b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), visit, b.Version,
-            b.ActualStartAt, b.CompletedAt, b.IsOverdue(now), b.CancelledLate, b.ClosedLate, b.ClosingEntry?.ActorName, AmountDue: b.AmountDue);
+            b.ActualStartAt, b.CompletedAt, b.IsOverdue(now), b.CancelledLate, b.ClosedLate, b.ClosingEntry?.ActorName, AmountDue: b.AmountDue,
+            CancellationReasonCode: b.CancellationReasonCode);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
     {
@@ -252,7 +256,7 @@ internal static class BookingMapping
 
         return new(b.Id.Value, b.Reference, Shop(shop, b.ShopId), Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.Channel, b.CustomerNote,
             b.CancellationReason, b.PaymentStatus, b.AmountDue, actions, view.CutoffMinutes, rating, rating is null ? deadline : null, LoyaltyReward(b), b.Version,
-            b.ProfessionalChangedAt, view.Offers?.GetValueOrDefault(b.Id.Value));
+            b.ProfessionalChangedAt, view.Offers?.GetValueOrDefault(b.Id.Value), b.CancellationReasonCode);
     }
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>

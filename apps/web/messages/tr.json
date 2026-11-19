@@ -58,7 +58,8 @@
       "notifications": "Bildirimler",
       "settings": "Salon ayarları",
       "qr": "QR kodlar",
-      "reports": "Raporlar"
+      "reports": "Raporlar",
+      "account": "Hesabım"
     },
     "admin": {
       "overview": "Genel bakış",
@@ -208,6 +209,10 @@
     "ratingDistribution": {
       "label": "Puan dağılımı",
       "row": "{stars} yıldız: {count, plural, one {{count} değerlendirme} other {{count} değerlendirme}}"
+    },
+    "numberStepper": {
+      "decrease": "{label} azalt",
+      "increase": "{label} artır"
     }
   },
   "status": {
@@ -1058,7 +1063,13 @@
       "cancel": "Vazgeç",
       "nameAr": "Bölüm adı (Arapça)",
       "nameEn": "Bölüm adı (İngilizce)"
-    }
+    },
+    "otherSection": "Diğer",
+    "archivedGroup": "Arşivlenenler",
+    "priceNote": "Fiyatı veya süreyi değiştirmek önceden yapılmış randevuları değiştirmez.",
+    "saveTile": "Kaydet",
+    "saveItem": "{name} fiyatını ve süresini kaydet",
+    "tileForm": "{name} fiyatı ve süresi"
   },
   "adminServices": {
     "title": "Hizmetler ve kategoriler",
@@ -1619,7 +1630,9 @@
         "wholeDay": "Tüm gün {barber} için mola oldu.",
         "clear": "{barber} için bu günün molaları şu andan itibaren iptal edildi."
       },
-      "tooMany": "Bir günde en fazla 48 ayrı mola olabilir. Yan yana dakikaları seçin."
+      "tooMany": "Bir günde en fazla 48 ayrı mola olabilir. Yan yana dakikaları seçin.",
+      "titleOwn": "Molalarım",
+      "midnight": "Gece yarısı"
     },
     "timeOff": {
       "title": "İzinler ve kapalı günler",
@@ -2540,7 +2553,8 @@
         "reason": "Neden",
         "confirm": "Evet, iptal et",
         "keep": "Randevuyu koru",
-        "late": "Başlangıçtan önceki son 15 dakikadaki iptal «geç iptal» olarak kaydedilir."
+        "late": "Başlangıçtan önceki son 15 dakikadaki iptal «geç iptal» olarak kaydedilir.",
+        "otherReason": "Sebebi yazın"
       },
       "finish": {
         "title": "{name} için hizmet bitti mi?",
@@ -2553,7 +2567,6 @@
         "closedLate": "Geç kapatıldı",
         "cancelledLate": "Geç iptal"
       },
-      "overdueNote": "Bu randevunun saati geçti ve kapatılmadı. Dükkândaki her berber kapatabilir; «geç kapatıldı» yazılır.",
       "phone": {
         "title": "Müşterinin cep telefonu",
         "body": "Dükkân randevuyla birlikte kaydetti; «Hizmet bitti»den sonra kaybolur."
@@ -2574,18 +2587,32 @@
         "remove": "Çıkar",
         "removeLabel": "{name} hizmetini randevudan çıkar",
         "add": "Hizmet ekle",
-        "pick": "Hizmet",
-        "choose": "Bir hizmet seçin",
+        "pick": "Eklenecek hizmet",
         "loading": "Yükleniyor…",
         "addHint": "Randevu uzar ve fiyatı artar. Ardından aynı saatte başka randevu varsa önce onu taşıyın.",
         "confirmAdd": "Ekle",
         "cancel": "Vazgeç",
-        "addAfterArrival": "Hizmet «Geldi»den sonra eklenir."
+        "addAfterArrival": "Hizmet «Geldi»den sonra eklenir.",
+        "room": "Sonraki randevunuza kalan süre: {duration}",
+        "doesNotFit": "{duration} — sonraki randevunuzdan önce yetişmez",
+        "none": "Eklenebilecek başka hizmetiniz yok."
       },
       "postponement": {
         "waiting": "{when} için erteleme teklif edildi; müşterinin cevabı {until} saatine kadar bekleniyor. Saat müşteri için ayrıldı.",
         "declined": "Müşteri yeni saati reddetti. Randevuyu boştaki bir meslektaşa aktarın ya da sebebini yazarak iptal edin.",
         "lapsed": "Erteleme teklifi cevapsız kaldı; randevu saatinde kaldı."
+      },
+      "overdue": {
+        "title": "Randevu geçti; ne «Geldi» ne de «Gelmedi» kaydedildi",
+        "arrivedTitle": "Hizmet süresi bitti ve «Hizmet bitti» kaydedilmedi",
+        "body": "Süresi bitti ve kapatılmadı. Dükkândaki her berber kapatabilir; bitişinden çeyrek saat sonra kapatılırsa «geç kapatıldı» yazılır."
+      },
+      "closedLine": "Sorumlu: {responsible} — kapatan: {closer}",
+      "reasons": {
+        "StaffUnwell": "Çalışan rahatsız",
+        "Emergency": "Acil durum",
+        "ShopClosed": "Dükkân kapalı (elektrik kesintisi vb.)",
+        "Other": "Başka bir sebep"
       }
     },
     "appointments": {
@@ -2604,15 +2631,8 @@
       "open": "Randevu ayrıntıları: {name}"
     },
     "simple": {
-      "thisWeek": "Bu hafta",
-      "week": "{from} – {to}",
-      "previousWeek": "Önceki hafta",
-      "nextWeek": "Sonraki hafta",
       "today": "Bugünün randevuları",
-      "upcoming": "Yaklaşan randevular",
-      "tomorrow": "Yarın",
       "noneToday": "Bugün başka randevu yok.",
-      "noneUpcoming": "Bu günlerde yaklaşan randevu yok.",
       "finish": "Hizmet bitti",
       "finishLabel": "{name} için hizmet bitti",
       "finished": "{name} için hizmet bitti; berberin zamanı yeniden boş.",
@@ -2620,14 +2640,14 @@
       "finishBody": "Randevu şimdi bitmiş olarak kaydedilir ve berberin kalan zamanı rezervasyona açılır. Geri alınamaz.",
       "finishConfirm": "Evet, hizmet bitti",
       "finishKeep": "Vazgeç",
-      "overdue": "Geciken randevular",
-      "overdueHint": "Saati geçti ve kapatılmadı. Dükkândaki her berber kapatabilir.",
+      "overdue": "Kapatılması gereken randevular",
+      "overdueHint": "Süresi bitti ve kapatılmadı. Dükkândaki her berber kapatabilir.",
       "overdueBadge": "Gecikti",
-      "responsible": "Berber: {name}",
+      "responsible": "Sorumlu: {name}",
       "pending": "Onay bekleyen randevular",
       "pendingHint": "Dükkândaki her berber kabul edebilir veya reddedebilir.",
       "closedLate": "Geç kapatılanlar (son 3 gün)",
-      "closedLateBy": "Berber: {responsible} · kapatan: {closer} · {status} · geç kapatıldı",
+      "closedLateBy": "Sorumlu: {responsible} · kapatan: {closer} · {status} · geç kapatıldı",
       "actionLabel": "{action}: {name}",
       "row": {
         "Confirmed": "Kabul et",
@@ -2643,7 +2663,22 @@
       },
       "noShowTitle": "{name} gelmedi mi?",
       "noShowBody": "Müşteri gelmedi (çeyrek saatten fazla gecikti). Randevu «gelmedi» olarak kaydedilir ve zamanı açılır. Geri alınamaz.",
-      "noShowConfirm": "Evet, gelmedi"
+      "noShowConfirm": "Evet, gelmedi",
+      "todayShort": "Bugün",
+      "previousDay": "Önceki gün",
+      "nextDay": "Sonraki gün",
+      "noneOnDay": "Bu günde randevu yok.",
+      "timeRange": "{from} – {to}",
+      "whose": "Kimin programı",
+      "mine": "Programım",
+      "all": "Herkes",
+      "quick": {
+        "label": "Hızlı işlemler",
+        "walkIn": "Kapıdan müşteri",
+        "phone": "Telefonla randevu",
+        "break": "Mola",
+        "pause": "Randevuyu durdur"
+      }
     },
     "visit": {
       "New": "Yeni müşteri",
@@ -3279,7 +3314,8 @@
         "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}",
         "booking_postponement_offered": "Bir berber {customer} için yeni saat önerdi: {offeredDate} {offeredTime}",
         "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı",
-        "whatsapp_allowance_reached": "{allowance, plural, =0 {Paketinizde müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.} other {Bu ayın WhatsApp sınırına ulaştınız ({allowance}). Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.}}"
+        "whatsapp_allowance_reached": "{allowance, plural, =0 {Paketinizde müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.} other {Bu ayın WhatsApp sınırına ulaştınız ({allowance}). Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.}}",
+        "barber_account_deleted": "{name} Groom Here hesabını sildi. Randevularıyla birlikte işletmede kalır; «Berberler» bölümünden yeni bir giriş açabilirsiniz."
       },
       "customer": {
         "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
@@ -3726,12 +3762,6 @@
       "rewardService": "Ücretsiz hizmet",
       "chooseService": "Bir hizmet seçin",
       "rewardAmount": "İndirim tutarı (SAR)",
-      "inactivity": "Müşteri gelmeyi bırakırsa",
-      "inactivityRules": {
-        "None": "Puanlar korunur",
-        "Wipe": "Kart bir süre sonra silinir",
-        "DecayPerPeriod": "Her dönem bir puan düşer"
-      },
       "inactivityDays": "Süre (gün)",
       "inactivityHelper": "Son ziyaretten itibaren, {min} – {max}",
       "preview": "Müşterilerinizin gördüğü",
@@ -3746,7 +3776,21 @@
         "rewardsReady": "Hazır ödüller",
         "rewardsHeld": "Randevular için ayrılan ödüller",
         "rewardsRedeemed": "Kullanılan ödüller"
-      }
+      },
+      "paidAdmin": "Ücretli özellik: işletme bunu kendisi açamaz. Platform ekibi Abonelik sekmesinden bir süreliğine açar.",
+      "toSubscription": "Aboneliğe git",
+      "expiry": {
+        "legend": "Müşteri şu süre içinde gelmezse puanlar sona erer",
+        "none": "Sona ermez",
+        "month": "Bir ay",
+        "twoMonths": "İki ay",
+        "threeMonths": "3 ay",
+        "custom": "Başka süre",
+        "then": "Ardından",
+        "Wipe": "Kart silinir",
+        "DecayPerPeriod": "Ziyaretsiz geçen her süre için bir puan düşülür"
+      },
+      "outOfRange": "{min} ile {max} arasında olmalı"
     }
   },
   "legalAdmin": {
@@ -3862,7 +3906,16 @@
       "unclosed": "Kapatılmadı",
       "loyalty": "Sadakat ödülü"
     },
-    "truncated": "Yalnızca ilk {count} randevu listelenir; yukarıdaki rakamlar dönemin tüm randevularını kapsar."
+    "truncated": "Yalnızca ilk {count} randevu listelenir; yukarıdaki rakamlar dönemin tüm randevularını kapsar.",
+    "income": {
+      "title": "Beklenen gelir",
+      "byDay": "Her gün",
+      "byBarber": "Her berber"
+    },
+    "reasons": {
+      "title": "İşletmenin iptal sebepleri",
+      "none": "Bu dönemde sebebi seçilmiş iptal yok."
+    }
   },
   "bookingSettings": {
     "confirmation": "Randevu onayı",
@@ -3909,5 +3962,49 @@
     "reached": "Bu ayın sınırına ulaştınız. Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.",
     "note": "Yalnızca müşterilere giden mesajlar sayılır; berber mesajları ve giriş kodları sayılmaz.",
     "progress": "Bu ayın mesajlarının %{percent} kadarı kullanıldı"
+  },
+  "shopAccount": {
+    "title": "Hesabım",
+    "name": {
+      "title": "Ad",
+      "edit": "Adı düzenle",
+      "ar": "Arapça adınız",
+      "en": "İngilizce adınız",
+      "everywhere": "Adınız her yerde değişir: müşterilere açık sayfanız, işletme sahibinin berber listesi ve bundan sonraki randevu kayıtları.",
+      "save": "Adı kaydet",
+      "cancel": "Vazgeç",
+      "saved": "Ad kaydedildi.",
+      "tooShort": "En az iki karakter yazın"
+    },
+    "mobile": {
+      "title": "Cep telefonu",
+      "later": "Numarayı değiştirme daha sonra mümkün olacak."
+    },
+    "email": "E-posta",
+    "calendar": {
+      "title": "Takvim",
+      "body": "Bu cihazda işletme ekranlarında tarihlerin gösterimi.",
+      "gregory": "Miladi",
+      "islamic-umalqura": "Hicri"
+    },
+    "language": {
+      "title": "İşletme ekranlarının dili",
+      "body": "Bu cihazda işletme sayfalarının dili."
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "body": "Yeni randevular ve randevularınızdaki değişiklikler.",
+      "open": "Bildirimleri aç"
+    },
+    "signOut": "Çıkış yap",
+    "delete": {
+      "title": "Hesabı sil",
+      "body": "Adınız ve numaranızla birlikte girişiniz silinir ve tüm cihazlardan çıkış yapılır. Randevularınız ve geçmişiyle işletmede kalırsınız; işletme sahibine bildirilir ve size yeni bir giriş açabilir.",
+      "button": "Hesabımı sil",
+      "confirmTitle": "Hesabınız silinsin mi?",
+      "confirmBody": "Bu hesapla bir daha giriş yapamazsınız. Geri alınamaz.",
+      "confirm": "Evet, hesabımı sil",
+      "cancel": "Vazgeç"
+    }
   }
 }

@@ -30,6 +30,10 @@ public sealed partial class ShopFacingContractTests(PostgresFixture postgres)
         // customer's; owner only (Shop.Barbers.Manage), never a barber's login.
         ["ShopBarberResponse.WhatsApp"] = "The shop's own barber's WhatsApp number, masked, for the owner (D-146).",
         ["ShopBarberCreatedResponse.Barber.WhatsApp"] = "The same, in the answer that adds the barber (D-146).",
+
+        // D-151: «حسابي», the signed-in shop user's own sign-in number, masked (a barber's WhatsApp number as on every other
+        // page); never a customer's, never unmasked.
+        ["ShopAccountResponse.MobileMasked"] = "The signed-in shop user's own sign-in number, masked (D-151).",
     };
 
     /// <summary>

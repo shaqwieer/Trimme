@@ -159,11 +159,13 @@ public sealed class ShopBookingChangeTests(PostgresFixture postgres)
                 new { to = "CancelledByShop", reason = "إغلاق", version = taken.GetProperty("version").GetUInt32() }, ct), ct);
         }
 
-        // Faisal gives it to Omar: it leaves Faisal's reach; the owner sees it with Omar; the history keeps who had it.
+        // Faisal gives it to Omar: it leaves Faisal's hands (he still reads it, read-only, D-151); the owner sees it with
+        // Omar; the history keeps who had it.
         var changed = await OkAsync(ChangeAsync(faisal, id, w.Omar, booking.GetProperty("version").GetUInt32(), ct), ct);
         changed.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar);
         changed.GetProperty("startsAt").GetDateTimeOffset().ShouldBe(At(day, 9, 30));
-        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), HttpStatusCode.NotFound, null, ct);
+        (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct)).GetProperty("booking").GetProperty("allowedTransitions").GetArrayLength().ShouldBe(0);
+        await FailsAsync(ChangeAsync(faisal, id, w.Faisal, changed.GetProperty("version").GetUInt32(), ct), HttpStatusCode.NotFound, null, ct);
         var detail = await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{id}", ct), ct);
         var last = detail.GetProperty("history").EnumerateArray().Last();
         last.GetProperty("kind").GetString().ShouldBe("ProfessionalChanged");

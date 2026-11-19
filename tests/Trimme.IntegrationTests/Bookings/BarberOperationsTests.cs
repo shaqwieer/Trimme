@@ -161,8 +161,8 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
             history[history.GetArrayLength() - 1].GetProperty("actorName").GetString().ShouldBe("فيصل");
         }
 
-        // Once accepted it is Omar's ordinary booking again: out of Faisal's reach.
-        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{firstId}", ct), HttpStatusCode.NotFound, null, ct);
+        // Once accepted it is Omar's ordinary booking again: Faisal reads it (D-151) but cannot act on it.
+        Allowed(await DetailAsync(faisal, firstId, ct)).ShouldBeEmpty();
         await FailsAsync(Transition(faisal, firstId, "CancelledByShop", accepted.GetProperty("version").GetUInt32(), ct, "تجربة"), HttpStatusCode.NotFound, null, ct);
         (await AttentionAsync(faisal, ct)).GetProperty("pending").GetArrayLength().ShouldBe(0);
     }
@@ -175,21 +175,32 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         await using var w = await ArrangeAsync(postgres, "d147_red", ct, clock);
         await w.EnsureBarberLoginAsync(w.Faisal, ct);
         await w.EnsureBarberLoginAsync(w.Omar, ct);
-        Guid id;
+        Guid id, second;
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))
         {
             id = (await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 10), ct)).GetProperty("id").GetGuid();
+            second = (await BookedAsync(customer, w, w.Haircut, w.Omar, At(Target, 11), ct)).GetProperty("id").GetGuid();
         }
 
-        // 10:40: the 30-minute visit ended ten minutes ago: not red yet, and still Omar's alone.
-        clock.SetUtcNow(At(Target, 10, 40).ToUniversalTime());
+        // 10:25: the 30-minute visit has not ended: not red, and Omar's. Faisal opens it read-only (D-151).
+        clock.SetUtcNow(At(Target, 10, 25).ToUniversalTime());
         using (var faisal = await w.BarberAsync(w.Faisal, ct))
         {
             (await AttentionAsync(faisal, ct)).GetProperty("overdue").GetArrayLength().ShouldBe(0);
-            await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), HttpStatusCode.NotFound, null, ct);
+            Allowed(await DetailAsync(faisal, id, ct)).ShouldBeEmpty("a colleague's booking that is neither pending nor red is read-only");
         }
 
-        // 10:50: red, for every barber of the shop and the owner.
+        // 10:33, three minutes after its end: red (D-151: «حجز فات وقته ٦:٠٠، والساعة ٦:٠٣ شكله عادي»), for every barber of
+        // the shop and the owner. A colleague may press the usual buttons: «وصل», «انتهت الخدمة», «ما حضر», or cancel.
+        clock.SetUtcNow(At(Target, 10, 33).ToUniversalTime());
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            var early = (await AttentionAsync(faisal, ct)).GetProperty("overdue").EnumerateArray().ShouldHaveSingleItem();
+            early.GetProperty("id").GetGuid().ShouldBe(id);
+            Allowed(await DetailAsync(faisal, id, ct)).ShouldBe(["Arrived", "Completed", "NoShow", "CancelledByShop"]);
+        }
+
+        // 10:50: still red, for every barber of the shop and the owner.
         clock.SetUtcNow(At(Target, 10, 50).ToUniversalTime());
         using var faisalLater = await w.BarberAsync(w.Faisal, ct);
         using var omarLater = await w.BarberAsync(w.Omar, ct);
@@ -199,8 +210,7 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         red.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar, "it names the barber responsible");
         Ids((await AttentionAsync(omarLater, ct)).GetProperty("overdue")).ShouldBe([id]);
         var detail = await DetailAsync(faisalLater, id, ct);
-        Allowed(detail).ShouldBe(["Completed", "NoShow", "CancelledByShop"], "a colleague closes it, nothing else");
-        await FailsAsync(Transition(faisalLater, id, "Arrived", detail.GetProperty("version").GetUInt32(), ct), HttpStatusCode.Conflict, "booking.invalid_transition", ct);
+        Allowed(detail).ShouldBe(["Arrived", "Completed", "NoShow", "CancelledByShop"], "a colleague closes it (D-147), or marks the arrival (D-151)");
 
         // Faisal closes it: «انتهت الخدمة» from Confirmed, closed late, with his name; no actual start, so no speed figure.
         var closed = await OkAsync(Transition(faisalLater, id, "Completed", detail.GetProperty("version").GetUInt32(), ct), ct);
@@ -219,6 +229,23 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         using (var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
         {
             Ids((await AttentionAsync(owner, ct)).GetProperty("closedLate")).ShouldBe([id], "the owner sees it too");
+        }
+
+        // The 11:00 visit: red at 11:31; a colleague marks «وصل» (D-151) and closes it at 11:40, within the quarter hour after
+        // its end, so it is not «انقفل متأخر» and keeps its times.
+        clock.SetUtcNow(At(Target, 11, 31).ToUniversalTime());
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            var version = (await DetailAsync(faisal, second, ct)).GetProperty("version").GetUInt32();
+            var arrived = await OkAsync(Transition(faisal, second, "Arrived", version, ct), ct);
+            arrived.GetProperty("status").GetString().ShouldBe("Arrived");
+            arrived.GetProperty("overdue").GetBoolean().ShouldBeTrue("still open past its end");
+            clock.SetUtcNow(At(Target, 11, 40).ToUniversalTime());
+            var done = await OkAsync(Transition(faisal, second, "Completed", arrived.GetProperty("version").GetUInt32(), ct), ct);
+            done.GetProperty("closedLate").GetBoolean().ShouldBeFalse();
+            done.GetProperty("closedBy").GetString().ShouldBe("فيصل");
+            done.GetProperty("actualStartAt").GetDateTimeOffset().ShouldBe(At(Target, 11, 31));
+            Ids((await AttentionAsync(faisal, ct)).GetProperty("closedLate")).ShouldBe([id], "only the one closed more than a quarter hour late");
         }
 
         // Three days later it leaves the barbers' lists.
@@ -324,7 +351,7 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         phone.GetProperty("item").GetProperty("durationMinutes").GetInt32().ShouldBe(50);
         phone.GetProperty("item").GetProperty("nameAr").GetString().ShouldBe("حلاقة + لحية");
         phone.GetProperty("endsAt").GetDateTimeOffset().ShouldBe(At(Target, 12, 50));
-        phone.GetProperty("customerPhone").GetString().ShouldBe(E164, "the barber who typed it");
+        phone.GetProperty("customerPhone").ValueKind.ShouldBe(JsonValueKind.Null, "it is Omar's booking: a colleague never reads the number (D-151)");
         (await DetailAsync(omar, id, ct)).GetProperty("actualStartAt").ValueKind.ShouldBe(JsonValueKind.Null);
 
         // A walk-in for later keeps its channel; a walk-in starting now is under way at once.
@@ -342,7 +369,10 @@ public sealed class BarberOperationsTests(PostgresFixture postgres)
         (await DetailAsync(w.OwnerA, id, ct)).GetProperty("customerPhone").ValueKind.ShouldBe(JsonValueKind.Null);
         var ownersList = await w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}", ct);
         (await ownersList.Content.ReadAsStringAsync(ct)).ShouldNotContain("551234567");
-        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{id}", ct), HttpStatusCode.NotFound, null, ct);
+        // Faisal opens his colleague's booking read-only, without the number (D-151).
+        var colleagues = await DetailAsync(faisal, id, ct);
+        colleagues.GetProperty("customerPhone").ValueKind.ShouldBe(JsonValueKind.Null);
+        Allowed(colleagues).ShouldBeEmpty();
 
         // An online booking never carries a number.
         using (var customer = await CustomerAsync(w.Factory, "نورة", ct))

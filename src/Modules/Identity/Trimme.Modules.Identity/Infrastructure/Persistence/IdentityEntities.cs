@@ -47,14 +47,16 @@ internal sealed class ApplicationUser : IdentityUser<Guid>, ITenantMember
     public string? ContactEmail { get; set; }
 
     /// <summary>
-    /// The customer deleted their account (D-144): name, number and email are erased, sign-in is closed for good and
-    /// the number can register again as a new account. Bookings and reviews keep their own records.
+    /// The customer deleted their account (D-144), or a barber their login (D-151): name, number and email are erased,
+    /// sign-in is closed for good and the number can register again as a new account. Bookings and reviews keep their own
+    /// records.
     /// </summary>
     public DateTimeOffset? DeletedAt { get; set; }
 
     /// <summary>
     /// The professional a barber's login belongs to (D-145): one login per professional, of the same shop, set when the
-    /// login is created and never changed.
+    /// login is created and never changed to another professional. When the barber deletes their login (D-151) it is
+    /// cleared, so the owner can give the barber a new one.
     /// </summary>
     public Guid? ProfessionalId { get; set; }
 

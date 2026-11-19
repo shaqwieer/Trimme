@@ -879,6 +879,11 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("cancellation_reason");
 
+                    b.Property<string>("CancellationReasonCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("cancellation_reason_code");
+
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasMaxLength(12)

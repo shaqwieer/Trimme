@@ -1,5 +1,6 @@
 import { OPERATING_TIME_ZONE } from './config';
-import { type AppLocale, TIME_LOCALE } from './format';
+import type { DisplayCalendar } from './calendar';
+import { type AppLocale, dateLocale } from './format';
 
 /**
  * A calendar day in the shop's time zone, as "YYYY-MM-DD". Booking UIs work with these strings
@@ -69,8 +70,10 @@ export function formatLocalDate(
   value: LocalDate,
   locale: AppLocale,
   options: Intl.DateTimeFormatOptions,
+  /** A shop user's Hijri (D-151); Gregorian by default. */
+  calendar?: DisplayCalendar,
 ): string {
-  return new Intl.DateTimeFormat(TIME_LOCALE[locale], { ...options, timeZone: 'UTC' }).format(
+  return new Intl.DateTimeFormat(dateLocale(locale, calendar), { ...options, timeZone: 'UTC' }).format(
     toUtcNoon(value),
   );
 }

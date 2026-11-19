@@ -41,7 +41,10 @@ export default async function ShopServicesPage({
 
         return (
           <div className="flex max-w-[1000px] flex-col gap-5">
-            <p className="text-body text-text-secondary">{t('intro')}</p>
+            <div className="flex flex-col gap-1">
+              <p className="text-body text-text-secondary">{t('intro')}</p>
+              <p className="text-helper text-text-secondary">{t('priceNote')}</p>
+            </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Link
                 href={includeArchived ? '/shop/services' : '/shop/services?archived=1'}
@@ -59,7 +62,7 @@ export default async function ShopServicesPage({
                   <EmptyState icon="tag" title={t('empty.title')} body={t('empty.body')} />
                 </div>
               ) : (
-                <ShopServiceList items={data} />
+                <ShopServiceList items={data} sections={sections ?? []} />
               )}
             </section>
             {sections && (

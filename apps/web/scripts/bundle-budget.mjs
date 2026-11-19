@@ -27,6 +27,13 @@ const BUDGETS = [
     // 335 since D-149: the admin's shop page also carries the shop's sections and booking settings (330.7 KB).
     kb: 335,
   },
+  {
+    name: "the owner's barber page",
+    match: /\/shop\/barbers\/\[professionalId\]$/,
+    // 335 since D-151: every shop page carries the Hijri date option (the shared date formatting and the calendar
+    // context), which took this one, already the largest of the shop's, from 329.4 KB to 330.2 KB.
+    kb: 335,
+  },
   { name: 'sign-in, booking and discover', match: /\/(auth\/.*|shops\/\[slug\]\/book|discover)$/, kb: 260 },
   {
     name: 'public pages',

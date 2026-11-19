@@ -53,7 +53,8 @@ internal sealed record GetAdminBookingQuery(Guid BookingId) : IQuery<AdminBookin
 
 internal sealed record RevealWalkInContactCommand(Guid BookingId, string? Reason) : ICommand<Result<WalkInContactResponse>>;
 
-internal sealed record AdminTransitionBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version) : ICommand<Result<AdminBookingResponse>>;
+internal sealed record AdminTransitionBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version, ShopCancellationReason? ReasonCode = null)
+    : ICommand<Result<AdminBookingResponse>>;
 
 internal sealed record AdminRescheduleBookingCommand(Guid BookingId, DateTimeOffset StartsAt, Guid? ProfessionalId, string? Reason, uint Version, string IdempotencyKey)
     : ICommand<Result<AdminRescheduleResult>>;
@@ -211,7 +212,7 @@ internal sealed class AdminTransitionBookingHandler(
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
         var now = clock.GetUtcNow();
         var from = booking.Status;
-        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), command.Reason, now);
+        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), command.Reason, now, command.ReasonCode);
         if (moved.IsFailure)
         {
             return moved.Error;

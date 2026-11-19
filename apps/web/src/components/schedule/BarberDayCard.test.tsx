@@ -58,12 +58,14 @@ describe('BarberDayCard (D-134, D-137)', () => {
     saveWith();
     const { container } = renderCard(<BarberDayCard barbers={barbers} today="2026-10-21" />);
 
-    await waitFor(() => expect(screen.getByTestId('barber-day-hours').children).toHaveLength(24));
+    // Working hours only (D-151): 09:00–13:00 is four hours, not the day's 24.
+    await waitFor(() => expect(screen.getByTestId('barber-day-hours').children).toHaveLength(4));
     expect(api.GET).toHaveBeenCalledWith('/api/v1/shop/schedule/barber-day', {
       params: { query: { professionalId: 'p1', date: '2026-10-21' } },
     });
-    expect(hour(8)).toHaveAttribute('data-state', 'outside');
-    expect(hour(8)).toBeDisabled();
+    expect(screen.getByRole('heading', { name: 'بريكات الحلاقين' })).toBeInTheDocument();
+    expect(screen.getByTestId('barber-day-hours').querySelector('[data-hour="8"]')).toBeNull();
+    expect(screen.getByTestId('barber-day-hours').querySelector('[data-hour="13"]')).toBeNull();
     // Booked 11:00–11:30: the free half can still be a break.
     expect(hour(11)).toHaveAttribute('data-state', 'partFree');
     expect(hour(11)).toBeEnabled();
@@ -116,6 +118,19 @@ describe('BarberDayCard (D-134, D-137)', () => {
     await user.click(within(dialog()).getByRole('button', { name: 'إلغاء الاستراحة' }));
     await waitFor(() => expect(api.PUT.mock.calls[0]![1].body.breaks).toEqual([]));
     expect(await screen.findByText(/^أُلغيت استراحة .*، والوقت متاح للحجز\.$/)).toBeInTheDocument();
+  });
+
+  it('reads «بريكاتي» for a barber, and writes midnight in words when the day starts then (D-151)', async () => {
+    api.GET.mockImplementation((_path: string, init: { params: { query: { date: string } } }) =>
+      Promise.resolve(ok({ ...day(init.params.query.date, []), working: [w(0, 120), w(1320, 1440)] })),
+    );
+    renderCard(<BarberDayCard barbers={[barbers[0]!]} today="2026-10-21" own />);
+
+    await waitFor(() => expect(screen.getByTestId('barber-day-hours').children).toHaveLength(4));
+    expect(screen.getByRole('heading', { name: 'بريكاتي' })).toBeInTheDocument();
+    expect(hour(0)).toHaveTextContent('منتصف الليل');
+    expect(hour(23)).toHaveAttribute('data-state', 'free');
+    expect(screen.getByTestId('barber-day-hours').querySelector('[data-hour="12"]')).toBeNull();
   });
 
   it('picks the whole hour at once, around the booked half', async () => {

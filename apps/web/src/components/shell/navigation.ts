@@ -69,6 +69,8 @@ export const shopNav: NavItem<'shop'>[] = [
   { key: 'qr', href: '/shop/qr', icon: QrCode, permission: 'Shop.Qr.View' },
   { key: 'notifications', href: '/shop/notifications', icon: Bell },
   { key: 'settings', href: '/shop/settings', icon: Settings, permission: 'Shop.Profile.Edit' },
+  // «حسابي» for everyone in the shop (D-151): name, mobile, calendar, language, sign-out and, for a barber, deletion.
+  { key: 'account', href: '/shop/account', icon: User },
 ];
 
 /**

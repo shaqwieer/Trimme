@@ -57,6 +57,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.PaymentStatus).HasConversion<string>().HasMaxLength(20);
         builder.Property(b => b.CustomerNote).HasMaxLength(BookingRules.MaxNoteLength);
         builder.Property(b => b.CancellationReason).HasMaxLength(BookingRules.MaxReasonLength);
+        builder.Property(b => b.CancellationReasonCode).HasConversion<string>().HasMaxLength(16);
         builder.Property(b => b.LoyaltyRewardTitleAr).HasMaxLength(BookingRules.MaxNameLength);
         builder.Property(b => b.LoyaltyRewardTitleEn).HasMaxLength(BookingRules.MaxNameLength);
         // What the booking holds of the barber's time: through its cleaning time (D-149), so the exclusion constraint

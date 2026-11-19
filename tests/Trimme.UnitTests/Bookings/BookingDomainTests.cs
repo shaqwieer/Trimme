@@ -190,14 +190,27 @@ public sealed class BookingDomainTests
             b => b.ClosedLate.ShouldBeFalse(),
             b => b.ClosingEntry!.ActorName.ShouldBe("سلطان"));
 
-        // Red 15 minutes after the booked end; closed then, even from Confirmed, it is «انقفل متأخر».
+        // Red from the booked end itself (D-151); it may then be closed from Confirmed. Closed more than a quarter hour
+        // after the end, it is «انقفل متأخر».
         var forgotten = Online();
-        forgotten.IsOverdue(Start.AddMinutes(45)).ShouldBeFalse();
-        forgotten.IsOverdue(Start.AddMinutes(46)).ShouldBeTrue();
-        forgotten.AllowedShopTransitions(Start.AddMinutes(46)).ShouldContain(BookingStatus.Completed);
+        forgotten.IsOverdue(Start.AddMinutes(30)).ShouldBeFalse();
+        forgotten.IsOverdue(Start.AddMinutes(30).AddSeconds(1)).ShouldBeTrue();
+        forgotten.IsOverdue(Start.AddMinutes(33)).ShouldBeTrue("«حجز فات وقته ٦:٠٠، والساعة ٦:٠٣ شكله عادي»");
+        forgotten.AllowedShopTransitions(Start.AddMinutes(29)).ShouldNotContain(BookingStatus.Completed);
+        forgotten.AllowedShopTransitions(Start.AddMinutes(31)).ShouldContain(BookingStatus.Completed);
         forgotten.ApplyShopTransition(BookingStatus.Completed, sultan, null, Start.AddHours(5)).IsSuccess.ShouldBeTrue();
         forgotten.ShouldSatisfyAllConditions(
             b => b.ClosedLate.ShouldBeTrue(), b => b.ActualStartAt.ShouldBeNull(), b => b.IsOverdue(Start.AddHours(6)).ShouldBeFalse());
+
+        // Red but closed within the quarter hour after the end: not «انقفل متأخر», so it stays in the speed figures.
+        var overran = Online();
+        overran.ApplyShopTransition(BookingStatus.Arrived, sultan, null, Start).IsSuccess.ShouldBeTrue();
+        overran.IsOverdue(Start.AddMinutes(40)).ShouldBeTrue();
+        overran.ApplyShopTransition(BookingStatus.Completed, sultan, null, Start.AddMinutes(45)).IsSuccess.ShouldBeTrue();
+        overran.ClosedLate.ShouldBeFalse();
+        var later = Online();
+        later.ApplyShopTransition(BookingStatus.Completed, sultan, null, Start.AddMinutes(45).AddSeconds(1)).IsSuccess.ShouldBeTrue();
+        later.ClosedLate.ShouldBeTrue();
 
         // A cancellation in the last quarter hour (or after the start) is late; one before it is not.
         var early = Online();
@@ -211,6 +224,39 @@ public sealed class BookingDomainTests
         var arrived = Online();
         arrived.ApplyShopTransition(BookingStatus.Arrived, sultan, null, Start).IsSuccess.ShouldBeTrue();
         arrived.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "مرض", Start.AddMinutes(1)).Error!.Code.ShouldBe("booking.invalid_transition");
+    }
+
+    [Fact]
+    public void ShopCancellation_TakesAReadyReasonWithoutText_OrATypedOne_D151()
+    {
+        var sultan = new BookingActor(Guid.CreateVersion7(), ActorType.ShopUser, "سلطان");
+
+        // A ready reason needs no text, and is kept beside the (empty) text.
+        var unwell = Online();
+        unwell.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, null, Now, ShopCancellationReason.StaffUnwell).IsSuccess.ShouldBeTrue();
+        unwell.ShouldSatisfyAllConditions(
+            b => b.Status.ShouldBe(BookingStatus.CancelledByShop),
+            b => b.CancellationReasonCode.ShouldBe(ShopCancellationReason.StaffUnwell),
+            b => b.CancellationReason.ShouldBeNull());
+        var closed = Online();
+        closed.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "انقطعت الكهرباء", Now, ShopCancellationReason.ShopClosed).IsSuccess.ShouldBeTrue();
+        closed.CancellationReason.ShouldBe("انقطعت الكهرباء");
+
+        // «سبب ثاني», or no code at all, needs the reason typed (at least 3 characters).
+        Online().ApplyShopTransition(BookingStatus.CancelledByShop, sultan, " ", Now, ShopCancellationReason.Other).Error!.Code.ShouldBe("validation.failed");
+        Online().ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "مرض", Now, ShopCancellationReason.Other)
+            .IsSuccess.ShouldBeTrue();
+        var typed = Online();
+        typed.ApplyShopTransition(BookingStatus.CancelledByShop, sultan, "العميل اتصل", Now).IsSuccess.ShouldBeTrue();
+        typed.CancellationReasonCode.ShouldBeNull();
+
+        // A code is only for a cancellation.
+        var confirming = Online(manual: true);
+        var refused = confirming.ApplyShopTransition(BookingStatus.Confirmed, sultan, null, Now, ShopCancellationReason.Emergency);
+        refused.Error!.Code.ShouldBe("validation.failed");
+        refused.Error.FieldErrors!.Keys.ShouldContain("reasonCode");
+        confirming.Status.ShouldBe(BookingStatus.Pending);
+        Online().ApplyShopTransition(BookingStatus.CancelledByShop, sultan, null, Now, (ShopCancellationReason)42).Error!.Code.ShouldBe("validation.failed");
     }
 
     [Fact]

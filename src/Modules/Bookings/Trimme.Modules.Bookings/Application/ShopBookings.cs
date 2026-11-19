@@ -20,8 +20,12 @@ namespace Trimme.Modules.Bookings.Application;
 // shop's booking id is 404. Responses carry the customer's name only, never a phone number (R-NEG-04): the mobile the
 // desk takes for a walk-in goes one way, into an encrypted row only the platform team reads (D-134).
 
+/// <summary>
+/// <c>All</c>: a barber lists the whole shop (D-151, «الكل»); without it, and without a professional, a barber lists their
+/// own bookings. The owner always lists the whole shop.
+/// </summary>
 internal sealed record ListShopBookingsQuery(
-    DateOnly? From, DateOnly? To, IReadOnlyCollection<BookingStatus>? Statuses, Guid? ProfessionalId, string? Search, PageRequest Page)
+    DateOnly? From, DateOnly? To, IReadOnlyCollection<BookingStatus>? Statuses, Guid? ProfessionalId, string? Search, PageRequest Page, bool All = false)
     : IQuery<ShopBookingListResponse?>;
 
 internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingDetailResponse?>;
@@ -30,8 +34,9 @@ internal sealed record GetShopBookingQuery(Guid BookingId) : IQuery<ShopBookingD
 internal sealed record GetShopAttentionQuery : IQuery<ShopAttentionResponse?>;
 
 /// <summary>
-/// Pending bookings (oldest start first), red bookings («متأخر»: open 15 minutes past their end) and those closed while
-/// red («انقفل متأخر», with who closed them), all started within the last 3 days, whoever's barber they are (D-147).
+/// Pending bookings (oldest start first), red bookings («متأخر»: open past their booked end, D-151) and those closed late
+/// («انقفل متأخر»: more than a quarter hour after their end, with who closed them), all started within the last 3 days,
+/// whoever's barber they are (D-147).
 /// Every barber of the shop sees them and may act on the open ones; the owner sees them read-only.
 /// </summary>
 public sealed record ShopAttentionResponse(
@@ -46,7 +51,8 @@ internal sealed record CreateWalkInCommand(
     public override string ToString() => $"{nameof(CreateWalkInCommand)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt}, Channel = {Channel} }}";
 }
 
-internal sealed record TransitionShopBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version) : ICommand<Result<ShopBookingResponse>>;
+internal sealed record TransitionShopBookingCommand(Guid BookingId, BookingStatus To, string? Reason, uint Version, ShopCancellationReason? ReasonCode = null)
+    : ICommand<Result<ShopBookingResponse>>;
 
 internal sealed record AddBookingNoteCommand(Guid BookingId, string Text) : ICommand<Result<BookingNoteResponse>>;
 
@@ -90,18 +96,20 @@ internal sealed class ShopBookingReader(
 
     /// <summary>
     /// The one reviewed way a customer's number reaches a shop (D-147, the client's table, overriding D-134 and spec §7 for
-    /// shop-recorded bookings only): a barber's login reads the mobile typed into a walk-in or phone booking while that
-    /// booking is open (Pending, Confirmed or Arrived). Never for the owner, never for an online customer, never once the
-    /// booking is completed, missed or cancelled; never in an event, a notification or a log.
+    /// shop-recorded bookings only): a barber's login reads the mobile typed into a walk-in or phone booking of their own
+    /// while that booking is open (Pending, Confirmed or Arrived). Never for the owner, never for a colleague's booking
+    /// (D-151: barbers now read their colleagues' schedules, and red or pending ones of theirs, without the number), never
+    /// for an online customer, never once the booking is completed, missed or cancelled; never in an event, a notification
+    /// or a log.
     /// </summary>
     private async Task<IReadOnlyDictionary<BookingId, string>> PhonesForBarberAsync(IReadOnlyList<Booking> bookings, CancellationToken cancellationToken)
     {
-        if (user.Own() is null)
+        if (user.Own() is not { } own)
         {
             return new Dictionary<BookingId, string>();
         }
 
-        var ids = bookings.Where(b => b.IsShopRecorded && b.IsActive).Select(b => b.Id).ToList();
+        var ids = bookings.Where(b => b.ProfessionalId == own && b.IsShopRecorded && b.IsActive).Select(b => b.Id).ToList();
         if (ids.Count == 0)
         {
             return new Dictionary<BookingId, string>();
@@ -162,7 +170,8 @@ internal sealed class ShopBookingReader(
 /// <summary>
 /// The appointments list (s-appointments, DV-S08/DV-S18): local-date range, any of several statuses, professional, name
 /// or reference search, paged by start. The status chips' counts use every filter except the status, so each chip shows
-/// what it would list; the cancelled chip counts both cancellation statuses.
+/// what it would list; the cancelled chip counts both cancellation statuses. A barber lists their own bookings, a
+/// colleague's or the whole shop's (D-151, <see cref="BarberScope.ListedFor"/>), read-only beyond their own.
 /// </summary>
 internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, IShopDirectory shops, ShopBookingReader reader)
     : IQueryHandler<ListShopBookingsQuery, ShopBookingListResponse?>
@@ -178,7 +187,7 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
         DateTimeOffset? Start(DateOnly? date) =>
             date is { } d ? new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), zone.GetUtcOffset(d.ToDateTime(TimeOnly.MinValue))).ToUniversalTime() : null;
         var unfiltered = ShopBookingReader.Filter(
-            db.Set<Booking>().AsNoTracking().OwnOnly(user), Start(query.From), Start(query.To?.AddDays(1)), null, query.ProfessionalId, query.Search);
+            db.Set<Booking>().AsNoTracking().ListedFor(user, query.All, query.ProfessionalId), Start(query.From), Start(query.To?.AddDays(1)), null, query.ProfessionalId, query.Search);
         var byStatus = await unfiltered.GroupBy(b => b.Status).Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         int Count(params BookingStatus[] statuses) => statuses.Sum(s => byStatus.GetValueOrDefault(s));
@@ -198,14 +207,18 @@ internal sealed class ListShopBookingsHandler(TrimmeDbContext db, ICurrentTenant
     }
 }
 
-internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ICurrentUser user, ShopBookingReader reader, TimeProvider clock)
+/// <summary>
+/// One of the shop's bookings. Any barber of the shop may open any of its bookings (D-151: colleagues' schedules are
+/// read-only), the tenant filter keeping other shops' out; what they may do on it is <see cref="BarberScope.AllowedFor"/>.
+/// </summary>
+internal sealed class GetShopBookingHandler(TrimmeDbContext db, ICurrentTenant tenant, ShopBookingReader reader)
     : IQueryHandler<GetShopBookingQuery, ShopBookingDetailResponse?>
 {
     public async Task<ShopBookingDetailResponse?> Handle(GetShopBookingQuery query, CancellationToken cancellationToken)
     {
         var id = new BookingId(query.BookingId);
         return tenant.ShopId is not null
-            && await db.Set<Booking>().AsNoTracking().Reachable(user, clock.GetUtcNow()).SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
+            && await db.Set<Booking>().AsNoTracking().SingleOrDefaultAsync(b => b.Id == id, cancellationToken) is { } booking
             ? await reader.DetailAsync(booking, cancellationToken)
             : null;
     }
@@ -228,11 +241,11 @@ internal sealed class GetShopAttentionHandler(TrimmeDbContext db, ICurrentTenant
         var bookings = await db.Set<Booking>().AsNoTracking().NeedingAttention(now)
             .OrderBy(b => b.StartsAt).ThenBy(b => b.Id).Take(Limit).ToListAsync(cancellationToken);
 
-        // Closed after they turned red: the last change (the closing one) came after the end plus the grace. The exact
-        // rule is the domain's (ClosedLate), applied after loading.
+        // Closed late: the last change (the closing one) came more than the quarter hour after the end. The exact rule is
+        // the domain's (ClosedLate), applied after loading.
         var visibleFrom = now - BookingRules.OverdueVisibleFor;
         var open = BookingRules.Active.ToArray();
-        var grace = (int)BookingRules.OverdueAfter.TotalMinutes;
+        var grace = (int)BookingRules.ClosedLateAfter.TotalMinutes;
         var closed = await db.Set<Booking>().AsNoTracking()
             .Where(b => b.StartsAt >= visibleFrom && !open.Contains(b.Status) && b.UpdatedAt > b.EndsAt.AddMinutes(grace))
             .OrderByDescending(b => b.UpdatedAt).Take(Limit).ToListAsync(cancellationToken);
@@ -470,7 +483,7 @@ internal sealed class TransitionShopBookingHandler(
         }
 
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
-        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), command.Reason, now);
+        var moved = booking.ApplyShopTransition(command.To, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), command.Reason, now, command.ReasonCode);
         if (moved.IsFailure)
         {
             return moved.Error;

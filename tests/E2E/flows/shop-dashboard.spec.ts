@@ -89,14 +89,16 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const customer = `زائر ${Date.now().toString(36).slice(-5)}`;
     await staffSignIn(page, OMAR_LOGIN);
     await expect(page.getByTestId('shop-overview')).toBeVisible();
-    // A barber sees what comes next, no figures (D-147).
+    // A barber's home is their day, no figures (D-147, D-151): the quick buttons, «جدولي» pressed.
     await expect(page.getByTestId('shop-kpis')).toHaveCount(0);
+    await expect(page.getByTestId('quick-actions')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'جدولي' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
     });
     await expectNoSeriousAxe(page, 'overview');
 
-    // A second screen (the owner) watching this week's appointments (the simple list, D-136).
+    // A second screen (the owner) watching the appointments (the simple list, D-136), one day at a time (D-151).
     const date = riyadhDate(2);
     const watcherContext = await browser.newContext();
     const watcher = await watcherContext.newPage();
@@ -106,7 +108,11 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(watcher.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
     });
-    await expect(watcher.getByTestId('coming-later')).toBeVisible();
+    await expect(watcher.getByTestId('coming-today')).toBeVisible();
+    await expect(watcher.getByTestId('quick-actions')).toHaveCount(0);
+    // The phone booking will be two days ahead: the owner moves to that day.
+    await watcher.getByRole('button', { name: 'اليوم التالي' }).click();
+    await watcher.getByRole('button', { name: 'اليوم التالي' }).click();
     const watched = watcher.getByTestId('coming-appointment').filter({ hasText: customer });
     await expect(watched).toHaveCount(0);
 
@@ -115,7 +121,15 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await page.goto('/ar/shop/walk-in');
     await expect(page.getByTestId('walk-in')).toBeVisible();
     await page.locator('label').filter({ hasText: 'بالتلفون' }).click();
-    // The first service may be ticked already: a label click would untick it.
+    // The first service is ticked by default, and services.spec may have reordered the section (D-151): untick
+    // anything but «قص وتصفيف», which both barbers do. A label click toggles, so «قص وتصفيف» is ticked only if it isn't.
+    for (const box of await page
+      .getByRole('group', { name: /الخدمات/ })
+      .getByRole('checkbox', { checked: true })
+      .all()) {
+      const label = box.locator('xpath=ancestor::label[1]');
+      if (!/قص وتصفيف/.test((await label.textContent()) ?? '')) await label.click();
+    }
     if (!(await page.getByRole('checkbox', { name: /قص وتصفيف/ }).isChecked()))
       await page.locator('label').filter({ hasText: 'قص وتصفيف' }).click();
     await expect(page.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
@@ -171,7 +185,9 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
 
     await drawer.getByRole('button', { name: 'إلغاء الموعد' }).click();
     const dialog = page.getByRole('dialog', { name: 'إلغاء الموعد؟' });
-    await dialog.getByLabel('سبب الإلغاء').fill('طلب العميل تأجيله');
+    // The ready reasons (D-151, 2-7); «سبب ثاني» is typed.
+    await dialog.locator('label').filter({ hasText: 'سبب ثاني' }).click();
+    await dialog.getByLabel('اكتب السبب').fill('طلب العميل تأجيله');
     await dialog.getByRole('button', { name: 'نعم، ألغِ الموعد' }).click();
     await expect(drawer).toContainText('ألغاه الصالون');
     // The simple list has no cancellations: the walk-in leaves the other screen live.

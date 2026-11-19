@@ -255,7 +255,11 @@ internal sealed class GetShopBarberHandler(TrimmeDbContext db) : IQueryHandler<G
     }
 }
 
-internal sealed class UpdateShopBarberHandler(TrimmeDbContext db, ProfessionalSupport support, IAuditLog audit, TimeProvider clock)
+/// <summary>
+/// The owner's edit of a barber's profile (D-146), also the path of a barber renaming themselves (D-151,
+/// <see cref="RenameOwnBarberHandler"/>). The barber's login shows their Arabic name, so it follows.
+/// </summary>
+internal sealed class UpdateShopBarberHandler(TrimmeDbContext db, ProfessionalSupport support, IBarberLoginSync logins, IAuditLog audit, TimeProvider clock)
     : ICommandHandler<UpdateShopBarberCommand, Result<ShopBarberResponse>>
 {
     public async Task<Result<ShopBarberResponse>> Handle(UpdateShopBarberCommand command, CancellationToken cancellationToken)
@@ -269,6 +273,7 @@ internal sealed class UpdateShopBarberHandler(TrimmeDbContext db, ProfessionalSu
         // Optimistic concurrency: a stale version makes the save fail with 409.
         db.Entry(professional).Property(p => p.Version).OriginalValue = command.Version;
         professional.UpdateProfile(ProfessionalMapping.Profile(command), clock.GetUtcNow());
+        await logins.NameChangedAsync(professional.Id, professional.NameAr, cancellationToken);
         audit.Record(new AuditRecord("professional.updated", nameof(Professional), professional.Id.ToString(), professional.ShopId, "Profile edited by the shop"));
         await db.SaveChangesAsync(cancellationToken);
         return await ShopBarberMapping.ResponseAsync(db, professional, cancellationToken);

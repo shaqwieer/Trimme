@@ -1866,6 +1866,85 @@ This refines D-126.
 - **Also in this change:** on the owner's dashboard, a late («red») booking's second line was grey on the red card (#5f6f80 on danger-50, about 4.3:1); it is now the darker text (about 7:1). The route checks met it once a seeded booking turned late.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`.
 
+## D-151 — The barber's day screen, red at the booked end, «حسابي» for barbers, «بريكاتي», ready cancellation reasons, reports as cards on a phone, services as tiles, the add-service list, the admin's loyalty tab — Accepted (Session 29, after Phase 17, at the user's request)
+- **The request.** The user sent nine pages of the client's comparison. Each page puts the Groom Here app (right, what is wanted) beside the site (left, what exists), numbered as in the client's update file.
+  - The document's rule: «خذ الفكرة والترتيب، مب التصميم حرفياً. ألوان الموقع وشكله ممتازة، خلها مثل ما هي». The app's arrangement and behaviour are used; the site keeps its own look.
+  - Item 7 (a shop whose booking is paused stays in discovery) says «لا تغيّره لين يقرر فيصل». It is deferred, and nothing was built.
+  - Two notes from the client's next file arrived through another session (D-152) and are folded in:
+    - the red block belongs at the top of the barber's home;
+    - the red card's buttons go under its text.
+- **The user's answers (AskUserQuestion):**
+  - a booking turns red at its booked end, and «انقفل متأخر» still starts 15 minutes after the end;
+  - a barber sees colleagues' bookings read-only, and colleagues' walk-in and phone numbers stay hidden;
+  - deleting a barber's account removes the login only;
+  - «تعديل الاسم» renames the barber everywhere.
+- **1-1 The barber's day** (`/shop` for a barber, and `/shop/appointments` for everyone; `SimpleAppointments`):
+  - For a barber, quick buttons come first:
+    - «زبون حضوري» opens the walk-in form;
+    - «حجز بالتلفون» opens it with the phone kind chosen (`?kind=phone`);
+    - «بريك» and «إيقاف الحجز» open «الدوام والبريكات» at those cards (`#breaks`, `#pause`).
+  - Then the red «حجوزات تحتاج إقفال», each row with «المسؤول: …», and the pending bookings.
+  - Then one day at a time («اليوم · الخميس ١٩ نوفمبر», previous and next, never before today), with chips: «جدولي», «الكل» and each colleague. The owner gets «الكل» and each barber, and «الكل» is the default.
+  - Each row shows the start and end, the status, the customer, the service and its source. A row of everyone's day also names the barber. The number shows only on the barber's own walk-in or phone bookings.
+  - The buttons sit under the text.
+  - The closed-late block comes last, with «المسؤول: … — قفله: …».
+  - The week list of D-134/D-136 is replaced. The owner's overview is unchanged.
+- **1-2 Red** (`Booking.IsOverdue`: open past its booked end; `BookingRules.ClosedLateAfter` = 15 minutes for «انقفل متأخر», the speed figures and the attention list):
+  - A colleague's red booking now offers «وصل» too (`BarberScope.AllowedFor`). This reverses D-147's change that left only «انتهت الخدمة» and «ما حضر». A red row shows all three.
+  - The details open with a red bar: «فات الموعد وما انسجل «وصل» ولا «ما حضر»», or «خلص وقت الخدمة وما انسجل «انتهت الخدمة»» once arrived. Under it: «يقفلها أي حلاق في المحل».
+  - A closed booking reads «المسؤول: … — قفله: …».
+- **Colleagues' bookings, read-only.** This is a fourth reviewed exception in `BarberScope` (`ListedFor`).
+  - `GET /shop/bookings` gains `all`. A barber's list is their own unless they ask for `all` or name a colleague (`professionalId`).
+  - `GET /shop/bookings/{id}` opens any booking of the shop.
+  - Every change endpoint keeps its scope (404), and the transition still checks `AllowedFor`.
+  - `customerPhone` is filled on the barber's own walk-in and phone bookings only, so it is now hidden on a colleague's red or pending booking too.
+- **2-2 «حسابي»** (`/shop/account`, a nav item for every shop user):
+  - **Name.** The page shows it; a barber changes it with «تعديل الاسم», which sends the owner's `UpdateShopBarberCommand`, so validation, audit and 409 are the same. The login's display name follows every rename (owner, admin or barber).
+  - **Mobile.** Shown masked, with «تغيير الرقم بيكون متاح لاحقاً»; the owner sees their email.
+  - **Calendar.** «ميلادي» or «هجري», kept in a cookie on this device (`trimme_calendar`). Hijri (Umm al-Qura) changes only how dates are written on the shop's screens: the day screen, the details and their log, «بريكاتي» and the page's own preview. Date inputs, the month grid, the API, the reports and the public pages stay Gregorian (`dateLocale`, `CalendarProvider` in `ShopFrame`).
+  - **Language.** The shop screens' language: العربية, Türkçe or English.
+  - **Rest.** A link to the notifications, and «تسجيل الخروج».
+  - **Delete (barbers only).** `DELETE /shop/account` erases the login's name and number, disables it, unlinks it from the barber, ends every session and clears the cookies; audit `barber_login.deleted`. The barber, their bookings and history stay. The owner gets the in-app notice `barber.account_deleted`, which leads to the barber's page, and can turn a new login on.
+  - **API.** `GET /shop/account`, `PUT /shop/account/name` (403 `account.barbers_only` for the owner) and `DELETE /shop/account`.
+- **2-3 «بريكاتي»:**
+  - The grid shows the barber's working hours only, plus any hour that holds one of their breaks; it used to show the day's 24.
+  - Midnight is written «منتصف الليل».
+  - A barber's own card is titled «بريكاتي».
+- **2-7 Cancellation reasons:**
+  - `reasonCode` on the transition is one of `StaffUnwell` «الموظف تعبان», `Emergency` «ظرف طارئ», `ShopClosed` «المحل مسكّر (كهرباء أو غيره)» or `Other` «سبب ثاني».
+  - A ready reason needs no text; «سبب ثاني» needs at least 3 characters; a code with any other target is a 400.
+  - It is stored in `bookings.cancellation_reason_code`, the one migration (`BarberDayAndAccount`), and returned as `cancellationReasonCode`.
+  - A pending booking's rejection keeps free text.
+  - The reports count the shop's cancellations by reason (`cancellationReasons`).
+- **3-1 Reports on a phone:**
+  - A green «الدخل المتوقع» card with each day (`days`, computed over every booking, zeros included) and each barber, at every width.
+  - Below `md`: a card per barber with all the columns, then «المحل كامل», then the bookings as cards. From `md`: the tables, unchanged.
+  - Both layouts are drawn on the server.
+- **3-2 Services as tiles.** The owner's services are grouped by the shop's sections, then «أخرى» and the archived.
+  - Each tile changes its price (Arabic-Indic digits accepted) and its length with − and +, 5 minutes at a time. «حفظ» sends the service's version. «تغيير السعر أو المدة لا يغيّر الحجوزات اللي قبل».
+  - The badge and its button stay D-149's.
+  - Reordering is within the section; «تعديل», archive and delete stay.
+- **9-2 Adding a service, for the barber:**
+  - `GET /shop/bookings/{id}/services/candidates` lists the shop's services this barber does that are not on the booking, each with its price, the barber's own length and `fits`. It also gives `roomMinutes`, the time before the next booking or live hold.
+  - The add and the list share one rule (`BookingRoom`).
+  - The drawer lists them with their price and length. One that cannot finish in time is greyed, cannot be chosen, and says «ما تلحق قبل حجزك الجاي».
+- **5-2 The admin's loyalty tab:**
+  - The «ميزة مدفوعة: المحل ما يقدر يفعّلها بنفسه» line, with a link to the subscription tab's period panel (D-150, not bypassed).
+  - − and + for the points.
+  - Expiry as the app's ready periods (ما تنتهي، شهر، شهرين، ٣ شهور، مدة أخرى), then «تُمسح البطاقة» or «تنقص نقطة واحدة عن كل مدة بلا زيارة».
+  - The owner's tab gets the same form.
+  - From the client's 3-7, forwarded by D-152: typed numbers accept Arabic-Indic digits, and an error names the range («لازم تكون من … إلى …»).
+- **Bundle:** the owner's barber page went from 329.4 to 330.2 KB. Every shop page carries the shared Hijri date code and the calendar context, so that page alone has a 335 KB budget. The other routes are unchanged in budget; the stepper draws its own − rather than adding an icon to the shared map.
+- **To tell the client:**
+  - red starts at the booked end; «انقفل متأخر» still starts 15 minutes after it;
+  - colleagues' numbers are hidden, even on a red booking another barber closes;
+  - Hijri is per device;
+  - the barber's rename changes their public name;
+  - item 7 waits on Faisal.
+- **Fixed while verifying (390 px):** `sm` is 390 px in this design, so the service tiles, the barber's four quick buttons, the loyalty expiry presets and the loyalty counts now change columns at `md`. Each had spilled sideways at 390 px. `shop-dashboard.spec` unticks every service but «قص وتصفيف», because `services.spec` leaves the first section reordered.
+- **Verified and committed by another session** (trimme-8b), after D-151's own session ended mid-E2E. Item 7 has since been decided by D-155.
+- **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d151-barber-day-account-services.md`.
+
 ## D-153 — The walk-in form shows each barber's own length, and the admin's platform categories page is gone — Accepted (Session 28, after Phase 17, at the user's request; the two items D-149 left)
 - **The request** (the user: "ok do them", naming the two items D-149 left as they were).
 - **1. A barber's own length on the walk-in form (D-149 item 2).**

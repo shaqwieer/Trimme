@@ -67,8 +67,8 @@
 
 | Permission | ShopOwner | ShopBarber (D-145) |
 |---|---|---|
-| `Shop.Bookings.Read` | ✓ view only (D-147) | ✓ own bookings, plus the shop's pending and red ones (D-147) |
-| `Shop.Bookings.UpdateStatus` | — (D-147: the owner only watches) | ✓ own bookings; a colleague's: accept/reject while pending, close once red (D-147); notes and a booking's services: own only |
+| `Shop.Bookings.Read` | ✓ view only (D-147) | ✓ own bookings, plus the shop's pending and red ones (D-147); a colleague's or the whole shop's, read-only, without a colleague's customer's mobile (D-151) |
+| `Shop.Bookings.UpdateStatus` | — (D-147: the owner only watches) | ✓ own bookings; a colleague's: accept/reject while pending, «وصل» or close once red (D-147, D-151); notes and a booking's services: own only |
 | `Shop.Bookings.CreateWalkIn` | — (D-146: the barbers book walk-ins) | ✓ walk-in and phone bookings, for themselves or a free colleague (D-147) |
 | `Shop.Bookings.ResendNotification` | — (D-147) | — |
 | `Shop.Bookings.Reschedule` | — (D-147) | ✓ own bookings: walk-in/phone directly; online by a postponement offer (D-147) |
@@ -87,7 +87,7 @@
 | `Shop.Barbers.ManageLogin` | ✓ (generated temporary password, D-146) | — |
 | `Shop.Barbers.Manage` | ✓ add and edit the shop's own barbers (D-146) | — |
 
-A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings and breaks (D-145). It signs in with the professional's WhatsApp number. D-147 adds three reviewed exceptions (`BarberScope`, `BarberScopeTests`): any barber of the shop may open, accept or reject a colleague's pending booking and close a colleague's red booking (open 15 minutes past its end, for 3 days), and may record a walk-in or phone booking for a free colleague. A barber sees no figures and no income: the overview's KPIs, load and hours are empty for them. The customer's mobile of a walk-in or phone booking reaches barbers (never the owner) while the booking is open (D-147).
+A ShopBarber login is linked to one professional (`identity.users.professional_id`, the `professional_id` claim): the handlers keep it to that professional's bookings and breaks (D-145). It signs in with the professional's WhatsApp number. D-147 adds three reviewed exceptions (`BarberScope`, `BarberScopeTests`): any barber of the shop may open, accept or reject a colleague's pending booking and close a colleague's red booking (open past its booked end since D-151, for 3 days; D-151 adds «وصل» on it), and may record a walk-in or phone booking for a free colleague. D-151 adds a fourth, read-only: a barber lists a colleague's or the whole shop's bookings (`all=true`, or a colleague's `professionalId`) and opens any of the shop's bookings, without a colleague's customer's mobile. A barber's «حسابي» (`/shop/account`) reads their names and masked number, renames their professional by the owner's edit rules, and deletes their own login (the professional and its history stay). A barber sees no figures and no income: the overview's KPIs, load and hours are empty for them. The customer's mobile of a walk-in or phone booking reaches barbers (never the owner) while the booking is open (D-147).
 
 ## Customer
 
@@ -181,7 +181,10 @@ The `Customer` role holds no catalogue permission. Customers use self-service en
 | `POST /api/v1/shop/bookings/{id}/services`, `POST …/services/{serviceId}/delete` | `Shop.Bookings.UpdateStatus` · own bookings · add after «وصل», remove until «انتهت الخدمة» (D-147) |
 | `POST /api/v1/shop/bookings/{id}/postpone` | `Shop.Bookings.Reschedule` · own online booking, more than an hour before it starts: a held offer the customer answers (D-147) |
 | `POST /api/v1/me/bookings/{id}/postponement/accept`, `…/decline` | Customer, own booking · while the offer is live (D-147) |
-| `GET /api/v1/shop/reports?from&to` | `Shop.Insights.View` (the owner) · at most 31 shop-local days (D-147) |
+| `GET /api/v1/shop/reports?from&to` | `Shop.Insights.View` (the owner) · at most 31 shop-local days (D-147) · each day's figures and the shop's cancellations by ready reason (D-151) |
+| `GET /api/v1/shop/bookings/{id}/services/candidates` | `Shop.Bookings.UpdateStatus` · own bookings (as the add) · the services the barber could add, at their own length, and whether each fits before their next booked or held time (D-151) |
+| `GET /api/v1/shop/account`, `DELETE /api/v1/shop/account` | User type ShopUser, self · the login's names and masked sign-in number; deleting: a barber's own login only (the owner: 403), its personal data erased and unlinked from the professional, sessions ended, the owner told in-app (D-151) |
+| `PUT /api/v1/shop/account/name` | User type ShopUser, self · a barber renames their own professional by the owner's edit rules (the owner: 403) (D-151) |
 | `GET /api/v1/shop/bookings`, `GET .../{id}`, `GET /api/v1/shop/dashboard/overview` | `Shop.Bookings.Read`; with `Shop.Insights.View` (the owner) each online booking also says whether the customer is new or returning, and the overview adds the last 30 days' new customers and returning visits (D-135) |
 | `POST /api/v1/admin/bookings/{id}/transitions`, `POST .../cancel` | `Admin.Bookings.Intervene` · reason required (5–300) · the shop's state machine · audited (D-103) |
 | `GET /api/v1/admin/bookings/{id}/reschedule/options`, `POST .../reschedule` | `Admin.Bookings.Intervene` · reschedule: `Idempotency-Key`, reason, collision rules, not in the past · audited (D-103) |

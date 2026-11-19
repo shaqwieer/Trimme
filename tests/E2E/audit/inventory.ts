@@ -113,6 +113,8 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/reports?period=month' },
         { path: '/shop/packages/new' },
         { path: `/shop/packages/${SEED.barberHousePackage}` },
+        // «حسابي» (D-151): every shop user has it; the owner's has no rename or deletion.
+        { path: '/shop/account' },
       ];
     case 'barber':
       // A barber's own login (D-145): their overview, appointments, calendar, walk-ins, breaks and notifications.
@@ -122,6 +124,9 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/calendar' },
         { path: '/shop/calendar?view=week' },
         { path: '/shop/walk-in' },
+        // The phone kind from the day's quick buttons, and «حسابي» with its rename and deletion (D-151).
+        { path: '/shop/walk-in?kind=phone' },
+        { path: '/shop/account' },
         { path: '/shop/schedule' },
         { path: '/shop/notifications' },
       ];

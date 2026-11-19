@@ -57,8 +57,12 @@ public sealed record WalkInRequest(
 /// <summary>Why the admin needs the walk-in's number (5–300 characters); audited.</summary>
 public sealed record RevealWalkInContactRequest(string? Reason);
 
-/// <summary>Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read.</summary>
-public sealed record BookingTransitionRequest(BookingStatus To, string? Reason, uint Version);
+/// <summary>
+/// Confirmed, Arrived, Completed, NoShow or CancelledByShop. Send the version read. A cancellation needs a reason: a ready
+/// one (<c>ReasonCode</c> StaffUnwell, Emergency or ShopClosed, D-151) with the text optional, or the text (at least 3
+/// characters) with <c>Other</c> or no code. <c>ReasonCode</c> with any other target is 400.
+/// </summary>
+public sealed record BookingTransitionRequest(BookingStatus To, string? Reason, uint Version, ShopCancellationReason? ReasonCode = null);
 
 public sealed record BookingNoteRequest(string Text);
 
@@ -178,24 +182,24 @@ internal static class BookingEndpoints
 
     private static void MapShop(RouteGroupBuilder group)
     {
-        group.MapGet("/", async (DateOnly? from, DateOnly? to, [FromQuery] BookingStatus[]? status, Guid? professionalId, string? search, int? page, int? pageSize, IDispatcher d, CancellationToken ct) =>
-                await d.Send(new ListShopBookingsQuery(from, to, status, professionalId, search, new PageRequest(page, pageSize)), ct) is { } list
+        group.MapGet("/", async (DateOnly? from, DateOnly? to, [FromQuery] BookingStatus[]? status, Guid? professionalId, string? search, int? page, int? pageSize, bool? all, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new ListShopBookingsQuery(from, to, status, professionalId, search, new PageRequest(page, pageSize), all ?? false), ct) is { } list
                     ? TypedResults.Ok(list)
                     : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
             .WithName("ListShopBookings")
-            .WithSummary("The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip.")
+            .WithSummary("The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip. A barber lists their own unless they name a colleague or send all=true (D-151, read-only).")
             .Produces<ShopBookingListResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapGet("/attention", async (IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopAttentionQuery(), ct) is { } attention ? TypedResults.Ok(attention) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
             .WithName("GetShopAttention")
-            .WithSummary("The shop's pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever's barber they are (D-147).")
+            .WithSummary("The shop's pending bookings, red ones (open past their booked end) and those closed late (a quarter hour past it), last 3 days, whoever's barber they are (D-147, D-151).")
             .Produces<ShopAttentionResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapGet("/{bookingId:guid}", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetShopBookingQuery(bookingId), ct) is { } booking ? TypedResults.Ok(booking) : BookingErrors.NotFound().ToProblem())
             .RequirePermission(ShopRead)
-            .WithName("GetShopBooking").WithSummary("One of the shop's bookings with its history and internal notes; never the customer's phone.")
+            .WithName("GetShopBooking").WithSummary("One of the shop's bookings with its history and internal notes. Barbers open any of the shop's bookings, read-only beyond their own (D-151); the mobile only on their own open walk-in or phone booking (D-147).")
             .Produces<ShopBookingDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/walk-in", async ([FromHeader(Name = IdempotencyHeader)] string? key, WalkInRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CreateWalkInCommand(
@@ -207,9 +211,9 @@ internal static class BookingEndpoints
             .Produces<ShopBookingResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapPost("/{bookingId:guid}/transitions", async (Guid bookingId, BookingTransitionRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new TransitionShopBookingCommand(bookingId, r.To, r.Reason, r.Version), ct)).ToHttpResult())
+                (await d.Send(new TransitionShopBookingCommand(bookingId, r.To, r.Reason, r.Version, r.ReasonCode), ct)).ToHttpResult())
             .RequirePermission(ShopUpdateStatus)
-            .WithName("TransitionShopBooking").WithSummary("Moves the booking along the state machine (D-016); invalid transitions answer 409.")
+            .WithName("TransitionShopBooking").WithSummary("Moves the booking along the state machine (D-016); invalid transitions answer 409. A cancellation takes a ready reason code or a typed reason (D-151).")
             .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         group.MapPost("/{bookingId:guid}/services", async (Guid bookingId, AddBookingServiceRequest r, IDispatcher d, CancellationToken ct) =>
@@ -219,6 +223,12 @@ internal static class BookingEndpoints
             .WithSummary("Adds a service at the visit, once the customer has arrived (D-147); the barber must do it and be free for the extra time (409).")
             .Produces<ShopBookingResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapGet("/{bookingId:guid}/services/candidates", async (Guid bookingId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new GetBookingServiceCandidatesQuery(bookingId), ct)).ToHttpResult())
+            .RequirePermission(ShopUpdateStatus)
+            .WithName("GetBookingServiceCandidates")
+            .WithSummary("The services the barber could add to their own booking (D-151): each at its price and their own length, and whether it ends before their next booked or held time (fits).")
+            .Produces<BookingServiceCandidatesResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         // "delete", not "remove": no route may contain "move" (R-NEG-01, the no-transfer guard).
         group.MapPost("/{bookingId:guid}/services/{serviceId:guid}/delete", async (Guid bookingId, Guid serviceId, RemoveBookingServiceRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new RemoveBookingServiceCommand(bookingId, serviceId, r.Version), ct)).ToHttpResult())
@@ -339,7 +349,7 @@ internal static class BookingEndpoints
             .WithSummary("The mobile number the desk took for a walk-in (D-134); a reason of at least 5 characters is required and the view is audited (never cached).")
             .Produces<WalkInContactResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/{bookingId:guid}/transitions", async (Guid bookingId, BookingTransitionRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new AdminTransitionBookingCommand(bookingId, r.To, r.Reason, r.Version), ct)).ToHttpResult())
+                (await d.Send(new AdminTransitionBookingCommand(bookingId, r.To, r.Reason, r.Version, r.ReasonCode), ct)).ToHttpResult())
             .RequirePermission(AdminIntervene)
             .WithName("AdminTransitionBooking")
             .WithSummary("Moves the booking along the state machine on the shop's behalf; a reason is required (audited). Invalid transitions answer 409.")

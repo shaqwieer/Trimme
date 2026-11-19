@@ -33,17 +33,20 @@ describe('LoyaltyRulesForm (D-149)', () => {
 
     // The add-on is off: the owner can still set the rules.
     expect(screen.getByText(/إضافة مدفوعة غير مفعّلة لمحلك/)).toBeInTheDocument();
-    const first = screen.getByLabelText('نقاط أول زيارة');
-    await user.clear(first);
-    await user.type(first, '3');
-    const needed = screen.getByLabelText('النقاط المطلوبة للمكافأة');
-    await user.clear(needed);
-    await user.type(needed, '10');
+    // − and + as in the app (D-151): 1 → 3 first-visit points, 6 → 10 for a reward.
+    const firstUp = screen.getByRole('button', { name: 'زيادة نقاط أول زيارة' });
+    await user.click(firstUp);
+    await user.click(firstUp);
+    expect(screen.getByRole('group', { name: 'نقاط أول زيارة' })).toHaveTextContent('٣');
+    expect(screen.getByRole('button', { name: 'إنقاص نقاط كل زيارة بعدها' })).toBeDisabled();
+    for (let i = 0; i < 4; i++)
+      await user.click(screen.getByRole('button', { name: 'زيادة النقاط المطلوبة للمكافأة' }));
     await user.selectOptions(screen.getByLabelText('الخدمة المجانية'), 'svc-hair');
-    await user.click(screen.getByRole('radio', { name: 'تُمسح البطاقة بعد مدة' }));
-    const days = screen.getByLabelText('المدة بالأيام');
-    await user.clear(days);
-    await user.type(days, '60');
+    // The app's ready periods, then what happens: two months, the card wiped.
+    expect(screen.getByRole('radio', { name: 'ما تنتهي' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: 'تُمسح البطاقة' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'شهرين' }));
+    await user.click(screen.getByRole('radio', { name: 'تُمسح البطاقة' }));
 
     // The preview reads as the customers will.
     const preview = screen.getByTestId('loyalty-rules-preview');
@@ -92,15 +95,21 @@ describe('LoyaltyRulesForm (D-149)', () => {
       />,
     );
 
+    // A saved 30 days is the ready «شهر», with a point taken off per period.
+    expect(screen.getByRole('radio', { name: 'شهر' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'تنقص نقطة واحدة عن كل مدة بلا زيارة' })).toBeChecked();
+    expect(screen.getByText(/ميزة مدفوعة: المحل ما يقدر يفعّلها بنفسه/)).toBeInTheDocument();
     const amount = screen.getByLabelText('مبلغ الخصم (⃁)');
     await user.clear(amount);
     await user.type(amount, '4');
     await user.click(screen.getByRole('button', { name: 'حفظ القواعد' }));
     expect(api.PUT).not.toHaveBeenCalled();
-    expect(amount).toHaveAccessibleDescription('هذه القيمة خارج النطاق المسموح');
+    // The message names the range (the client's 3-7).
+    expect(amount).toHaveAccessibleDescription(/لازم تكون من ٥ ⃁ إلى ١٬٠٠٠ ⃁/);
 
+    // Arabic-Indic digits from an Arabic keypad count (the client's 3-7: «٣» was always refused).
     await user.clear(amount);
-    await user.type(amount, '25.5');
+    await user.type(amount, '٢٥٫٥');
     expect(screen.getByTestId('loyalty-rules-preview')).toHaveTextContent(
       'تنقص نقطة واحدة عن كل ٣٠ يوماً تمرّ دون زيارة.',
     );

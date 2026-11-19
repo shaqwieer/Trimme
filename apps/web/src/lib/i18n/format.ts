@@ -1,4 +1,5 @@
 import type { Locale } from '@/i18n/routing';
+import type { DisplayCalendar } from './calendar';
 import { OPERATING_CURRENCY, OPERATING_TIME_ZONE } from './config';
 
 /**
@@ -9,7 +10,8 @@ import { OPERATING_CURRENCY, OPERATING_TIME_ZONE } from './config';
  *   ("٥:٣٠ م", "٨٥ ⃁", "٢٫٤ كم"), with the new Saudi Riyal sign (U+20C1, drawn by the bundled one-glyph font).
  *   Phone numbers stay as typed (Latin, left to right).
  * - English and Turkish use Latin digits everywhere and «SAR»; Turkish keeps its 24-hour clock ("17:30") and decimal comma.
- * The Gregorian calendar is always forced: plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar.
+ * The Gregorian calendar is forced by default: plain `ar-SA` defaults to the Umm al-Qura (Hijri) calendar. A shop user
+ * may read date text in Hijri instead (D-151, `calendar`); clock times never change.
  */
 export type AppLocale = Locale;
 
@@ -19,6 +21,13 @@ export const TIME_LOCALE: Record<AppLocale, string> = {
   en: 'en-GB-u-nu-latn-ca-gregory',
   tr: 'tr-TR-u-nu-latn-ca-gregory',
 };
+
+/** The date-text locale in the chosen calendar (D-151): Gregorian unless a shop user picked Hijri. */
+export function dateLocale(locale: AppLocale, calendar: DisplayCalendar = 'gregory'): string {
+  return calendar === 'gregory'
+    ? TIME_LOCALE[locale]
+    : TIME_LOCALE[locale].replace('ca-gregory', `ca-${calendar}`);
+}
 
 /** Relative times ("قبل ٣ أيام" / "3 days ago" / "3 gün önce"), clock-style digits in Arabic. */
 export const RELATIVE_TIME_LOCALE: Record<AppLocale, string> = {
@@ -78,10 +87,10 @@ export function formatHour(value: DateInput, locale: AppLocale, timeZone = OPERA
 export function formatDate(
   value: DateInput,
   locale: AppLocale,
-  options: { withYear?: boolean; withWeekday?: boolean; timeZone?: string } = {},
+  options: { withYear?: boolean; withWeekday?: boolean; timeZone?: string; calendar?: DisplayCalendar } = {},
 ): string {
-  const { withYear = false, withWeekday = true, timeZone = OPERATING_TIME_ZONE } = options;
-  return new Intl.DateTimeFormat(TIME_LOCALE[locale], {
+  const { withYear = false, withWeekday = true, timeZone = OPERATING_TIME_ZONE, calendar } = options;
+  return new Intl.DateTimeFormat(dateLocale(locale, calendar), {
     weekday: withWeekday ? 'long' : undefined,
     day: 'numeric',
     month: 'long',

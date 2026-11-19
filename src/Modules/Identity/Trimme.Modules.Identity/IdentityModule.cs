@@ -87,6 +87,7 @@ public sealed class IdentityModule : ModuleBase
     {
         AuthEndpoints.Map(api);
         CustomerAccountEndpoints.Map(api);
+        ShopAccountEndpoints.Map(api);
         BarberLoginEndpoints.Map(api);
         AdminIdentityEndpoints.Map(api);
         AdminAccountEndpoints.Map(api);

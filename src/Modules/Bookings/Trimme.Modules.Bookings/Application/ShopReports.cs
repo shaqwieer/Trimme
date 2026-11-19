@@ -23,8 +23,8 @@ namespace Trimme.Modules.Bookings.Application;
 /// <param name="MovedIn">Bookings given to this barber by a colleague («نقل الحجز»).</param>
 /// <param name="MovedOut">Bookings this barber gave to a colleague.</param>
 /// <param name="Postponed">Times a booking got a new time from the shop: a walk-in or phone booking changed, or an offer the customer accepted.</param>
-/// <param name="ClosedLate">Closed while red («انقفل متأخر»).</param>
-/// <param name="Unclosed">Still open a quarter hour past their end.</param>
+/// <param name="ClosedLate">Closed more than a quarter hour after their booked end («انقفل متأخر»).</param>
+/// <param name="Unclosed">Still open past their booked end (red, D-151).</param>
 /// <param name="Breaks">The barber's own breaks on those days.</param>
 /// <param name="BreakMinutes">Their minutes.</param>
 /// <param name="AverageMinutes">Average actual length («وصل» to «انتهت الخدمة») of completed visits not closed late; null without any.</param>
@@ -73,6 +73,15 @@ public sealed record ReportVisitResponse(
     decimal ExpectedIncome,
     bool LoyaltyReward);
 
+/// <summary>
+/// One shop-local day of the period (D-151, the client's 3-1 «كل يوم»): its bookings by outcome and the expected income of
+/// its completed visits. Every booking counts, not only the table's.
+/// </summary>
+public sealed record ReportDayResponse(DateOnly Date, int Bookings, int Completed, int NoShows, int Cancelled, decimal ExpectedIncome);
+
+/// <summary>How many of the period's shop cancellations gave this ready reason (D-151, the client's 2-7).</summary>
+public sealed record ReportCancellationReasonResponse(ShopCancellationReason Code, int Count);
+
 /// <summary>Who closed the visits that stamped loyalty circles or used rewards, by name.</summary>
 public sealed record LoyaltyByActorResponse(string Name, int Stamps, int Redemptions);
 
@@ -81,7 +90,9 @@ public sealed record LoyaltyReportResponse(int Stamps, int Redemptions, IReadOnl
 /// <summary>
 /// The owner's report for the shop-local dates <c>From</c>…<c>To</c> (at most 31). The counts and the income cover every
 /// booking of the period; the <c>Visits</c> table lists the first <see cref="GetShopReportHandler.MaxVisits"/> of them
-/// (<c>VisitsTruncated</c> when there were more). <c>Loyalty</c> is null when the programme is off.
+/// (<c>VisitsTruncated</c> when there were more). <c>Loyalty</c> is null when the programme is off. D-151: <c>Days</c>, every
+/// date of the period with its figures, and <c>CancellationReasons</c>, the shop's cancellations by ready reason (every
+/// reason, zeros included; cancellations without one are not in it).
 /// </summary>
 public sealed record ShopReportResponse(
     DateOnly From,
@@ -91,6 +102,8 @@ public sealed record ShopReportResponse(
     ReportCountsResponse Shop,
     IReadOnlyList<BarberReportResponse> Barbers,
     IReadOnlyList<ReportVisitResponse> Visits,
+    IReadOnlyList<ReportDayResponse> Days,
+    IReadOnlyList<ReportCancellationReasonResponse> CancellationReasons,
     LoyaltyReportResponse? Loyalty,
     bool VisitsTruncated = false);
 
@@ -171,9 +184,30 @@ internal sealed class GetShopReportHandler(
             loyaltyReport = new LoyaltyReportResponse(activity.Stamps.Count, activity.Redemptions.Count, byActor);
         }
 
+        var income = visits.ToDictionary(v => v.Id, v => v.ExpectedIncome);
+        var byDay = bookings.ToLookup(b => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(b.StartsAt, zone).DateTime));
+        var days = Enumerable.Range(0, query.To.DayNumber - query.From.DayNumber + 1)
+            .Select(offset =>
+            {
+                var date = query.From.AddDays(offset);
+                var those = byDay[date].ToList();
+                return new ReportDayResponse(
+                    date,
+                    those.Count,
+                    those.Count(b => b.Status == BookingStatus.Completed),
+                    those.Count(b => b.Status == BookingStatus.NoShow),
+                    those.Count(b => BookingRules.IsCancelled(b.Status)),
+                    those.Sum(b => income[b.Id.Value]));
+            })
+            .ToList();
+        var reasons = Enum.GetValues<ShopCancellationReason>()
+            .Select(code => new ReportCancellationReasonResponse(
+                code, bookings.Count(b => b.Status == BookingStatus.CancelledByShop && b.CancellationReasonCode == code)))
+            .ToList();
+
         return new ShopReportResponse(
-            query.From, query.To, shop.TimeZone, bookings.FirstOrDefault()?.Currency ?? "SAR", shopCounts, barbers, [.. visits.Take(MaxVisits)], loyaltyReport,
-            visits.Count > MaxVisits);
+            query.From, query.To, shop.TimeZone, bookings.FirstOrDefault()?.Currency ?? "SAR", shopCounts, barbers, [.. visits.Take(MaxVisits)], days, reasons,
+            loyaltyReport, visits.Count > MaxVisits);
     }
 
     private static ReportVisitResponse Visit(Booking b, DateTimeOffset now, IReadOnlyDictionary<Guid, LoyaltyRewardTerms> terms)

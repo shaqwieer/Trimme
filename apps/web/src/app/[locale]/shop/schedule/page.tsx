@@ -48,6 +48,7 @@ export default async function ShopSchedulePage({ params }: PageProps<'/[locale]/
                   .filter((p) => p.status === 'Active' && (!me.professionalId || p.id === me.professionalId))
                   .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
                 today={today}
+                own={Boolean(me.professionalId)}
               />
               {pause && (
                 <PauseCard

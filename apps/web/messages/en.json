@@ -58,7 +58,8 @@
       "notifications": "Notifications",
       "settings": "Shop settings",
       "qr": "QR codes",
-      "reports": "Reports"
+      "reports": "Reports",
+      "account": "My account"
     },
     "admin": {
       "overview": "Overview",
@@ -208,6 +209,10 @@
     "ratingDistribution": {
       "label": "Rating distribution",
       "row": "{stars} stars: {count, plural, one {{count} review} other {{count} reviews}}"
+    },
+    "numberStepper": {
+      "decrease": "Decrease {label}",
+      "increase": "Increase {label}"
     }
   },
   "status": {
@@ -1058,7 +1063,13 @@
       "cancel": "Cancel",
       "nameAr": "Section name in Arabic",
       "nameEn": "Section name in English"
-    }
+    },
+    "otherSection": "Other",
+    "archivedGroup": "Archived",
+    "priceNote": "Changing a price or length doesn't change bookings already made.",
+    "saveTile": "Save",
+    "saveItem": "Save the price and length of {name}",
+    "tileForm": "Price and length of {name}"
   },
   "adminServices": {
     "title": "Services & categories",
@@ -1619,7 +1630,9 @@
         "wholeDay": "The whole day is now a break for {barber}.",
         "clear": "{barber}’s breaks this day are cancelled from now on."
       },
-      "tooMany": "A day can have at most 48 separate breaks. Pick minutes next to each other."
+      "tooMany": "A day can have at most 48 separate breaks. Pick minutes next to each other.",
+      "titleOwn": "My breaks",
+      "midnight": "Midnight"
     },
     "timeOff": {
       "title": "Time off and closures",
@@ -2540,7 +2553,8 @@
         "reason": "Reason",
         "confirm": "Yes, cancel it",
         "keep": "Keep it",
-        "late": "A cancellation in the last 15 minutes before the start is recorded as a late cancellation."
+        "late": "A cancellation in the last 15 minutes before the start is recorded as a late cancellation.",
+        "otherReason": "Write the reason"
       },
       "finish": {
         "title": "Is {name}'s service finished?",
@@ -2553,7 +2567,6 @@
         "closedLate": "Closed late",
         "cancelledLate": "Late cancellation"
       },
-      "overdueNote": "This booking's time has passed and it was not closed. Any barber of the shop can close it; it is marked «closed late».",
       "phone": {
         "title": "Customer's mobile",
         "body": "The shop recorded it with the booking; it disappears after «Service finished»."
@@ -2574,18 +2587,32 @@
         "remove": "Remove",
         "removeLabel": "Remove {name} from the booking",
         "add": "Add a service",
-        "pick": "Service",
-        "choose": "Choose a service",
+        "pick": "The service to add",
         "loading": "Loading…",
         "addHint": "The booking gets longer and its price goes up. If another booking follows at that time, move it first.",
         "confirmAdd": "Add",
         "cancel": "Cancel",
-        "addAfterArrival": "Services are added after «Arrived»."
+        "addAfterArrival": "Services are added after «Arrived».",
+        "room": "Time left before your next booking: {duration}",
+        "doesNotFit": "{duration} — doesn't fit before your next booking",
+        "none": "No other service you do can be added."
       },
       "postponement": {
         "waiting": "Postponement to {when} offered; waiting for the customer until {until}. The time is held for them.",
         "declined": "The customer declined the new time. Move the booking to a free colleague or cancel it with a reason.",
         "lapsed": "The postponement offer lapsed without an answer; the booking kept its time."
+      },
+      "overdue": {
+        "title": "The appointment passed with neither «Arrived» nor «No-show» recorded",
+        "arrivedTitle": "The service time is over and «Service finished» wasn't recorded",
+        "body": "Its time is over and it wasn't closed. Any barber of the shop can close it; closed more than a quarter hour after its end, it is marked «closed late»."
+      },
+      "closedLine": "Responsible: {responsible} — closed by: {closer}",
+      "reasons": {
+        "StaffUnwell": "Staff member unwell",
+        "Emergency": "Emergency",
+        "ShopClosed": "Shop closed (power cut or other)",
+        "Other": "Another reason"
       }
     },
     "appointments": {
@@ -2604,15 +2631,8 @@
       "open": "Details of {name}'s appointment"
     },
     "simple": {
-      "thisWeek": "This week",
-      "week": "{from} to {to}",
-      "previousWeek": "Previous week",
-      "nextWeek": "Next week",
       "today": "Today's bookings",
-      "upcoming": "Coming up",
-      "tomorrow": "Tomorrow",
       "noneToday": "No more bookings today.",
-      "noneUpcoming": "No appointments coming up on these days.",
       "finish": "Service finished",
       "finishLabel": "Service finished for {name}",
       "finished": "{name}'s service is finished; the barber's time is free again.",
@@ -2620,14 +2640,14 @@
       "finishBody": "The visit is recorded as finished now, and the rest of the barber's time becomes free to book. This can't be undone.",
       "finishConfirm": "Yes, service finished",
       "finishKeep": "Go back",
-      "overdue": "Overdue bookings",
-      "overdueHint": "Their time has passed and they were not closed. Any barber of the shop can close them.",
+      "overdue": "Bookings to close",
+      "overdueHint": "Their time is over and they weren't closed. Any barber of the shop can close them.",
       "overdueBadge": "Overdue",
-      "responsible": "Barber: {name}",
+      "responsible": "Responsible: {name}",
       "pending": "Waiting to be accepted",
       "pendingHint": "Any barber of the shop can accept or reject them.",
       "closedLate": "Closed late (last 3 days)",
-      "closedLateBy": "Barber: {responsible} · closed by: {closer} · {status} · closed late",
+      "closedLateBy": "Responsible: {responsible} · closed by: {closer} · {status} · closed late",
       "actionLabel": "{action}: {name}",
       "row": {
         "Confirmed": "Accept",
@@ -2643,7 +2663,22 @@
       },
       "noShowTitle": "Did {name} not come?",
       "noShowBody": "The customer didn't come (more than a quarter hour late). The booking is recorded as a no-show and its time is free. This can't be undone.",
-      "noShowConfirm": "Yes, they didn't come"
+      "noShowConfirm": "Yes, they didn't come",
+      "todayShort": "Today",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "noneOnDay": "No bookings on this day.",
+      "timeRange": "{from} – {to}",
+      "whose": "Whose schedule",
+      "mine": "My schedule",
+      "all": "Everyone",
+      "quick": {
+        "label": "Quick actions",
+        "walkIn": "Walk-in",
+        "phone": "Phone booking",
+        "break": "Break",
+        "pause": "Pause booking"
+      }
     },
     "visit": {
       "New": "New customer",
@@ -3279,7 +3314,8 @@
         "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}",
         "booking_postponement_offered": "A barber offered {customer} a new time: {offeredDate} at {offeredTime}",
         "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}",
-        "whatsapp_allowance_reached": "{allowance, plural, =0 {Your plan has no WhatsApp messages to customers. They get their notices in the app.} other {You’ve reached this month’s WhatsApp limit ({allowance}). Notices continue in the app, and WhatsApp messages resume at the start of next month.}}"
+        "whatsapp_allowance_reached": "{allowance, plural, =0 {Your plan has no WhatsApp messages to customers. They get their notices in the app.} other {You’ve reached this month’s WhatsApp limit ({allowance}). Notices continue in the app, and WhatsApp messages resume at the start of next month.}}",
+        "barber_account_deleted": "{name} deleted their Groom Here account. They stay in the shop with their bookings; you can give them a new login from «Barbers»."
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
@@ -3726,12 +3762,6 @@
       "rewardService": "Free service",
       "chooseService": "Choose a service",
       "rewardAmount": "Amount off (SAR)",
-      "inactivity": "When a customer stops visiting",
-      "inactivityRules": {
-        "None": "Points are kept",
-        "Wipe": "The card is cleared after a while",
-        "DecayPerPeriod": "One point is taken off per period"
-      },
       "inactivityDays": "Period in days",
       "inactivityHelper": "Counted from the last visit, {min} to {max}",
       "preview": "What your customers see",
@@ -3746,7 +3776,21 @@
         "rewardsReady": "Rewards ready",
         "rewardsHeld": "Rewards held for appointments",
         "rewardsRedeemed": "Rewards used"
-      }
+      },
+      "paidAdmin": "A paid feature: the shop can't switch it on itself. The platform team switches it on for a period from the Subscription tab.",
+      "toSubscription": "Go to Subscription",
+      "expiry": {
+        "legend": "Points expire if the customer doesn't visit within",
+        "none": "Never",
+        "month": "A month",
+        "twoMonths": "Two months",
+        "threeMonths": "3 months",
+        "custom": "Other length",
+        "then": "Then",
+        "Wipe": "The card is wiped",
+        "DecayPerPeriod": "One point is taken off for each period without a visit"
+      },
+      "outOfRange": "Must be from {min} to {max}"
     }
   },
   "legalAdmin": {
@@ -3862,7 +3906,16 @@
       "unclosed": "Not closed",
       "loyalty": "Loyalty reward"
     },
-    "truncated": "Only the first {count} bookings are listed; the figures above cover every booking of the period."
+    "truncated": "Only the first {count} bookings are listed; the figures above cover every booking of the period.",
+    "income": {
+      "title": "Expected income",
+      "byDay": "Each day",
+      "byBarber": "Each barber"
+    },
+    "reasons": {
+      "title": "The shop's cancellation reasons",
+      "none": "No cancellations with a chosen reason in this period."
+    }
   },
   "bookingSettings": {
     "confirmation": "Booking confirmation",
@@ -3909,5 +3962,49 @@
     "reached": "You’ve reached this month’s limit. Notices continue in the app, and WhatsApp messages resume at the start of next month.",
     "note": "Only messages to customers count; barbers’ messages and sign-in codes don’t.",
     "progress": "{percent}% of this month’s messages used"
+  },
+  "shopAccount": {
+    "title": "My account",
+    "name": {
+      "title": "Name",
+      "edit": "Edit name",
+      "ar": "Your name in Arabic",
+      "en": "Your name in English",
+      "everywhere": "Your name changes everywhere: your page for customers, the owner's list of barbers and the booking log from now on.",
+      "save": "Save name",
+      "cancel": "Cancel",
+      "saved": "Name saved.",
+      "tooShort": "Write at least two characters"
+    },
+    "mobile": {
+      "title": "Mobile",
+      "later": "Changing the number will be available later."
+    },
+    "email": "Email",
+    "calendar": {
+      "title": "Calendar",
+      "body": "How dates are shown on the shop's screens on this device.",
+      "gregory": "Gregorian",
+      "islamic-umalqura": "Hijri"
+    },
+    "language": {
+      "title": "Shop screens' language",
+      "body": "The language of the shop's pages on this device."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "body": "New bookings and changes to your bookings.",
+      "open": "Open notifications"
+    },
+    "signOut": "Sign out",
+    "delete": {
+      "title": "Delete account",
+      "body": "Your login, with your name and number in it, is deleted, and you're signed out everywhere. You stay in the shop with your bookings and their history; the owner is told and can give you a new login.",
+      "button": "Delete my account",
+      "confirmTitle": "Delete your account?",
+      "confirmBody": "You won't be able to sign in with this account again. This can't be undone.",
+      "confirm": "Yes, delete my account",
+      "cancel": "Cancel"
+    }
   }
 }

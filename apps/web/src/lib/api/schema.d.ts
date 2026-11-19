@@ -227,6 +227,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shop/account/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** A barber renames themselves from «حسابي» (D-151): their name on their page, the owner's list and new log lines, by the owner's edit rules (audited, optimistic concurrency). The owner: 403. */
+        put: operations["RenameShopAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/shops/{slug}/professionals": {
         parameters: {
             query?: never;
@@ -1041,6 +1058,24 @@ export interface paths {
         put: operations["UpdateCustomerProfile"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in shop user's account: a barber's names (with the version to rename with) and masked sign-in number, or the owner's name and email; whether they may rename or delete it. */
+        get: operations["GetShopAccount"];
+        put?: never;
+        post?: never;
+        /** A barber deletes their login: its personal data is erased, every session ends and the cookies are cleared. The barber stays in the shop with their history; the owner is told and can make a new login. The owner's account: 403. */
+        delete: operations["DeleteShopAccount"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3149,7 +3184,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip. */
+        /** The shop's bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip. A barber lists their own unless they name a colleague or send all=true (D-151, read-only). */
         get: operations["ListShopBookings"];
         put?: never;
         post?: never;
@@ -3166,7 +3201,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The shop's pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever's barber they are (D-147). */
+        /** The shop's pending bookings, red ones (open past their booked end) and those closed late (a quarter hour past it), last 3 days, whoever's barber they are (D-147, D-151). */
         get: operations["GetShopAttention"];
         put?: never;
         post?: never;
@@ -3183,7 +3218,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One of the shop's bookings with its history and internal notes; never the customer's phone. */
+        /** One of the shop's bookings with its history and internal notes. Barbers open any of the shop's bookings, read-only beyond their own (D-151); the mobile only on their own open walk-in or phone booking (D-147). */
         get: operations["GetShopBooking"];
         put?: never;
         post?: never;
@@ -3219,7 +3254,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Moves the booking along the state machine (D-016); invalid transitions answer 409. */
+        /** Moves the booking along the state machine (D-016); invalid transitions answer 409. A cancellation takes a ready reason code or a typed reason (D-151). */
         post: operations["TransitionShopBooking"];
         delete?: never;
         options?: never;
@@ -3238,6 +3273,23 @@ export interface paths {
         put?: never;
         /** Adds a service at the visit, once the customer has arrived (D-147); the barber must do it and be free for the extra time (409). */
         post: operations["AddBookingService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/bookings/{bookingId}/services/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The services the barber could add to their own booking (D-151): each at its price and their own length, and whether it ends before their next booked or held time (fits). */
+        get: operations["GetBookingServiceCandidates"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4964,6 +5016,15 @@ export interface components {
             slots: components["schemas"]["AvailabilitySlotResponse"][];
             open: components["schemas"]["TimeWindow"][];
         };
+        /** @description A barber's names after they renamed themselves, with the version for the next change. */
+        BarberAccountNameResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            nameAr: string;
+            nameEn: string;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description A barber's own one-off breaks on one date, replacing the ones saved before (D-134). Empty clears them. */
         BarberDayBreaksRequest: {
             /** Format: uuid */
@@ -5115,6 +5176,33 @@ export interface components {
             nameAr: string;
             nameEn: string;
         };
+        /**
+         * @description One service the barber could add (D-151, the client's 9-2): its price, the barber's own length, and whether it ends
+         *     before their next booked or held time (`Fits`; one that does not is greyed and cannot be chosen).
+         */
+        BookingServiceCandidateResponse: {
+            /** Format: uuid */
+            serviceId: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: uuid */
+            sectionId: null | string;
+            /** Format: double */
+            price: number;
+            currency: string;
+            /** Format: int32 */
+            durationMinutes: number;
+            fits: boolean;
+        };
+        /**
+         * @description What may be added to the booking at the visit: `RoomMinutes` is the time free after it (with its cleaning time)
+         *     until the barber's next booking or held offer, null when nothing follows within a day.
+         */
+        BookingServiceCandidatesResponse: {
+            /** Format: int32 */
+            roomMinutes: null | number;
+            services: components["schemas"]["BookingServiceCandidateResponse"][];
+        };
         BookingShopResponse: {
             /** Format: uuid */
             id: string;
@@ -5129,12 +5217,17 @@ export interface components {
          * @enum {unknown}
          */
         BookingStatus: "Pending" | "Confirmed" | "Arrived" | "Completed" | "CancelledByCustomer" | "CancelledByShop" | "NoShow";
-        /** @description Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read. */
+        /**
+         * @description Confirmed, Arrived, Completed, NoShow or CancelledByShop. Send the version read. A cancellation needs a reason: a ready
+         *     one (`ReasonCode` StaffUnwell, Emergency or ShopClosed, D-151) with the text optional, or the text (at least 3
+         *     characters) with `Other` or no code. `ReasonCode` with any other target is 400.
+         */
         BookingTransitionRequest: {
             to: components["schemas"]["BookingStatus"];
             reason: null | string;
             /** Format: uint32 */
             version: number;
+            reasonCode?: null | components["schemas"]["ShopCancellationReason"];
         };
         /**
          * @description A break for one professional or everyone (`ProfessionalId` null): weekly on `Weekdays`, or once on
@@ -5461,6 +5554,7 @@ export interface components {
             /** Format: date-time */
             professionalChangedAt?: null | string;
             postponement?: null | components["schemas"]["PostponementOfferResponse"];
+            cancellationReasonCode?: null | components["schemas"]["ShopCancellationReason"];
         };
         /** @description The customer's full mobile in E.164, returned once to an authorized admin (never cached, never logged). */
         CustomerContactResponse: {
@@ -6926,6 +7020,13 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /** @description A barber renames themselves (D-151): the Arabic name, the English one (empty keeps it) and the version read. */
+        RenameShopAccountRequest: {
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: uint32 */
+            version: number;
+        };
         /** @description A button as rendered into a dispatch: its label and the URL the platform built. */
         RenderedButton: {
             label: string;
@@ -6952,6 +7053,12 @@ export interface components {
         /** @description Every non-archived item of the shop, in the new order. */
         ReorderRequest: {
             orderedIds: string[];
+        };
+        /** @description How many of the period's shop cancellations gave this ready reason (D-151, the client's 2-7). */
+        ReportCancellationReasonResponse: {
+            code: components["schemas"]["ShopCancellationReason"];
+            /** Format: int32 */
+            count: number;
         };
         ReportCountsResponse: {
             /**
@@ -6996,12 +7103,12 @@ export interface components {
             postponed: number;
             /**
              * Format: int32
-             * @description Closed while red («انقفل متأخر»).
+             * @description Closed more than a quarter hour after their booked end («انقفل متأخر»).
              */
             closedLate: number;
             /**
              * Format: int32
-             * @description Still open a quarter hour past their end.
+             * @description Still open past their booked end (red, D-151).
              */
             unclosed: number;
             /**
@@ -7028,6 +7135,24 @@ export interface components {
              * Format: double
              * @description Expected income of completed visits.
              */
+            expectedIncome: number;
+        };
+        /**
+         * @description One shop-local day of the period (D-151, the client's 3-1 «كل يوم»): its bookings by outcome and the expected income of
+         *     its completed visits. Every booking counts, not only the table's.
+         */
+        ReportDayResponse: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            bookings: number;
+            /** Format: int32 */
+            completed: number;
+            /** Format: int32 */
+            noShows: number;
+            /** Format: int32 */
+            cancelled: number;
+            /** Format: double */
             expectedIncome: number;
         };
         /** @description One booking of the period: its outcome, its actual times and length, and what it is expected to bring in. */
@@ -7262,11 +7387,30 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
+        /**
+         * @description The signed-in shop user's account (D-151). For a barber: their names as the shop shows them (`NameAr`,
+         *     `NameEn`, with the `Version` to rename with) and the WhatsApp number they sign in with, masked. For the owner:
+         *     their display name and email. `CanRename` and `CanDelete`: barbers only.
+         */
+        ShopAccountResponse: {
+            displayName: null | string;
+            email: null | string;
+            mobileMasked: null | string;
+            /** Format: uuid */
+            professionalId: null | string;
+            nameAr: null | string;
+            nameEn: null | string;
+            /** Format: uint32 */
+            version: null | number;
+            canRename: boolean;
+            canDelete: boolean;
+        };
         /** @enum {unknown} */
         ShopAmenity: "Parking" | "WiFi" | "KidsFriendly" | "WheelchairAccessible" | "WaitingArea" | "PrayerArea";
         /**
-         * @description Pending bookings (oldest start first), red bookings («متأخر»: open 15 minutes past their end) and those closed while
-         *     red («انقفل متأخر», with who closed them), all started within the last 3 days, whoever's barber they are (D-147).
+         * @description Pending bookings (oldest start first), red bookings («متأخر»: open past their booked end, D-151) and those closed late
+         *     («انقفل متأخر»: more than a quarter hour after their end, with who closed them), all started within the last 3 days,
+         *     whoever's barber they are (D-147).
          *     Every barber of the shop sees them and may act on the open ones; the owner sees them read-only.
          */
         ShopAttentionResponse: {
@@ -7351,8 +7495,9 @@ export interface components {
          *                 hours, breaks, time off or closures (DV-S22) — nothing is cancelled automatically. `Visit` says whether an
          *                 online booking's customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).
          *                 D-147: ActualStartAt (when «وصل» was pressed, or a walk-in started at once) and ActualEndAt (when
-         *     «انتهت الخدمة» was pressed); Overdue (red: open 15 minutes past its end); CancelledLate («إلغاء متأخر»);
-         *     ClosedLate («انقفل متأخر») and ClosedBy (the name of who closed it).
+         *     «انتهت الخدمة» was pressed); Overdue (red: open past its booked end, D-151); CancelledLate («إلغاء متأخر»);
+         *     ClosedLate («انقفل متأخر»: closed more than a quarter hour after its end) and ClosedBy (the name of who
+         *     closed it). D-151: CancellationReasonCode, the ready reason the shop chose, beside the typed one.
          */
         ShopBookingResponse: {
             /** Format: uuid */
@@ -7391,6 +7536,7 @@ export interface components {
             postponement?: null | components["schemas"]["PostponementOfferResponse"];
             /** Format: double */
             amountDue?: null | number;
+            cancellationReasonCode?: null | components["schemas"]["ShopCancellationReason"];
         };
         ShopBookingSettingsRequest: {
             requireManualConfirmation: boolean;
@@ -7425,6 +7571,8 @@ export interface components {
             professionals: components["schemas"]["CalendarProfessionalResponse"][];
             days: components["schemas"]["CalendarDayResponse"][];
         };
+        /** @enum {unknown} */
+        ShopCancellationReason: "StaffUnwell" | "Emergency" | "ShopClosed" | "Other" | null;
         /**
          * @description Kind of business. Fixed to a men's barbershop since D-149 (the platform is for men); the other values stay so older
          *     rows and the contract read the same.
@@ -7688,7 +7836,9 @@ export interface components {
         /**
          * @description The owner's report for the shop-local dates `From`…`To` (at most 31). The counts and the income cover every
          *     booking of the period; the `Visits` table lists the first int GetShopReportHandler.MaxVisits of them
-         *     (`VisitsTruncated` when there were more). `Loyalty` is null when the programme is off.
+         *     (`VisitsTruncated` when there were more). `Loyalty` is null when the programme is off. D-151: `Days`, every
+         *     date of the period with its figures, and `CancellationReasons`, the shop's cancellations by ready reason (every
+         *     reason, zeros included; cancellations without one are not in it).
          */
         ShopReportResponse: {
             /** Format: date */
@@ -7700,6 +7850,8 @@ export interface components {
             shop: components["schemas"]["ReportCountsResponse"];
             barbers: components["schemas"]["BarberReportResponse"][];
             visits: components["schemas"]["ReportVisitResponse"][];
+            days: components["schemas"]["ReportDayResponse"][];
+            cancellationReasons: components["schemas"]["ReportCancellationReasonResponse"][];
             loyalty: null | components["schemas"]["LoyaltyReportResponse"];
             /** @default false */
             visitsTruncated: boolean;
@@ -8825,6 +8977,66 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenameShopAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameShopAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarberAccountNameResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10621,6 +10833,71 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetShopAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopAccountResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteShopAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16759,6 +17036,7 @@ export interface operations {
                 search?: string;
                 page?: number;
                 pageSize?: number;
+                all?: boolean;
             };
             header?: never;
             path?: never;
@@ -17005,6 +17283,37 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBookingServiceCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingServiceCandidatesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

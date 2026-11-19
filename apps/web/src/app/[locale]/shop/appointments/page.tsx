@@ -5,6 +5,7 @@ import { SimpleAppointments } from '@/components/shop/board/SimpleAppointments';
 import { ShopFrame } from '@/components/shop/ShopFrame';
 import { EmptyState, SkeletonList } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
+import { getServerApi } from '@/lib/api/server';
 import { todayLocal } from '@/lib/i18n/localDate';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -12,8 +13,9 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 /**
  * The shop's appointments with the detail drawer (s-appointments, spec §13). The shop comes from the session. At the
  * client's request the barbers (D-134, D-145) and the owner (D-136) have the same simple list of what is coming; the
- * barbers act on it, the owner only watches (D-147) and sees whether each customer is new or returning (D-135). Past
- * visits stay in the calendar; the overview and the reports have the figures.
+ * barbers act on it, the owner only watches (D-147) and sees whether each customer is new or returning (D-135). Since
+ * D-151 it is the app's day: one day at a time, «جدولي», «الكل» or a colleague, the red «حجوزات تحتاج إقفال» on top
+ * and, for a barber, the quick buttons. Past visits stay in the calendar; the overview and the reports have the figures.
  */
 export default async function ShopAppointmentsPage({ params }: PageProps<'/[locale]/shop/appointments'>) {
   const { locale: raw } = await params;
@@ -22,10 +24,11 @@ export default async function ShopAppointmentsPage({ params }: PageProps<'/[loca
 
   return (
     <ShopFrame locale={locale} path="/shop/appointments" title={t('title')}>
-      {(me, shop) => {
+      {async (me, shop) => {
         if (shop.status === 'Suspended' || !me.permissions.includes('Shop.Bookings.Read')) {
           return <EmptyState icon="shield" title={t('title')} />;
         }
+        const { data: professionals } = await (await getServerApi()).GET('/api/v1/shop/professionals');
         return (
           <Suspense fallback={<SkeletonList rows={5} label={t('loading')} />}>
             <SimpleAppointments
@@ -35,6 +38,10 @@ export default async function ShopAppointmentsPage({ params }: PageProps<'/[loca
               canReschedule={me.permissions.includes('Shop.Bookings.Reschedule')}
               canMove={me.permissions.includes('Shop.Bookings.ChangeProfessional')}
               ownProfessionalId={me.professionalId ?? null}
+              barbers={(professionals ?? [])
+                .filter((p) => p.status === 'Active')
+                .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
+              quickActions={me.permissions.includes('Shop.Bookings.CreateWalkIn')}
             />
           </Suspense>
         );

@@ -39,6 +39,8 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'admin.message',
     // The plan's WhatsApp messages for the month are used up (D-149): notices continue in the app.
     'whatsapp.allowance_reached',
+    // A barber deleted their own login (D-151, «حذف الحساب»): the barber stays; the owner can give a new login.
+    'barber.account_deleted',
   ],
   customer: [
     'booking.confirmed',
@@ -107,6 +109,7 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     toNext: Number(p.pointsToNext ?? 0),
     ready: Number(p.rewardsReady ?? 0),
     allowance: Number(p.allowance ?? 0),
+    name: p.name ?? '',
   };
 }
 
@@ -117,6 +120,8 @@ export function noticeHref(audience: NoticeAudience, notice: Notice): string | u
     case 'shop':
       if (notice.kind.startsWith('subscription.') || notice.kind === 'whatsapp.allowance_reached')
         return '/shop/subscription';
+      if (notice.kind === 'barber.account_deleted' && p.professionalId)
+        return `/shop/barbers/${p.professionalId}`;
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'barber':
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;

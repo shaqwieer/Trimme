@@ -187,7 +187,7 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     expect(within(watched).queryByLabelText('ملاحظة جديدة')).not.toBeInTheDocument();
   });
 
-  it('asks for a reason before cancelling, and staff without the permission see no actions', async () => {
+  it('asks for a ready reason before cancelling, «سبب ثاني» typed, and staff without the permission see no actions (D-151, 2-7)', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(detail()));
     api.POST.mockResolvedValue(ok({}));
@@ -196,13 +196,25 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     );
     await user.click(await screen.findByRole('button', { name: 'إلغاء الموعد' }));
     const dialog = screen.getByRole('dialog', { name: 'إلغاء الموعد؟' });
-    expect(within(dialog).getByRole('button', { name: 'نعم، ألغِ الموعد' })).toBeDisabled();
-    await user.type(within(dialog).getByLabelText('سبب الإلغاء'), 'إغلاق مبكر');
-    await user.click(within(dialog).getByRole('button', { name: 'نعم، ألغِ الموعد' }));
+    const confirm = within(dialog).getByRole('button', { name: 'نعم، ألغِ الموعد' });
+    expect(confirm).toBeDisabled();
+    for (const reason of ['الموظف تعبان', 'ظرف طارئ', 'المحل مسكّر (كهرباء أو غيره)', 'سبب ثاني'])
+      expect(within(dialog).getByRole('radio', { name: reason })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument();
+
+    // «سبب ثاني» needs the reason typed.
+    await user.click(within(dialog).getByRole('radio', { name: 'سبب ثاني' }));
+    expect(confirm).toBeDisabled();
+    await user.type(within(dialog).getByLabelText('اكتب السبب'), 'إغلاق مبكر');
+    expect(confirm).toBeEnabled();
+
+    // A ready reason is enough on its own.
+    await user.click(within(dialog).getByRole('radio', { name: 'ظرف طارئ' }));
+    await user.click(confirm);
     await waitFor(() =>
       expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/bookings/{bookingId}/transitions', {
         params: { path: { bookingId: 'b1' } },
-        body: { to: 'CancelledByShop', reason: 'إغلاق مبكر', version: 4 },
+        body: { to: 'CancelledByShop', reason: null, reasonCode: 'Emergency', version: 4 },
       }),
     );
     unmount();

@@ -28,7 +28,17 @@ public interface IBookableOfferCatalog
     /// package (see <see cref="BookableOfferRequest.OverlapsPackageAsync"/>).
     /// </summary>
     Task<BookableOffer?> FindPackageWithServicesAsync(ShopId shopId, Guid packageId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The shop's published services <paramref name="professionalId"/> does, each at its price and their own length (D-149),
+    /// in the shop's order: what a barber may add to a booking at the visit (D-151, the client's 9-2).
+    /// </summary>
+    Task<IReadOnlyList<ProfessionalServiceOffer>> ServicesForAsync(ShopId shopId, ProfessionalId professionalId, CancellationToken cancellationToken);
 }
+
+/// <summary>One published service a barber does (D-151): its section, its price and the barber's own length.</summary>
+public sealed record ProfessionalServiceOffer(
+    Guid ServiceId, string NameAr, string? NameEn, Guid? SectionId, decimal Price, string Currency, int DurationMinutes);
 
 /// <summary>How a request names what it books: one service, several services, one package, or a package with services (D-148).</summary>
 public static class BookableOfferRequest

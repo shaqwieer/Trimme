@@ -15,7 +15,9 @@ namespace Trimme.IntegrationTests.Identity;
 /// reach is reviewed here, as scoped to the barber (checked below with a colleague's booking and day) or shop-wide by
 /// design; a new endpoint a barber can reach fails until it is classified. D-147 adds three reviewed exceptions: the
 /// shop's pending bookings (any barber accepts or rejects them), the shop's red bookings (any barber closes them), and a
-/// walk-in or phone booking made for a free colleague. A barber's overview carries no figures.
+/// walk-in or phone booking made for a free colleague. A barber's overview carries no figures. D-151 adds a fourth,
+/// read-only: a barber lists a colleague's or the whole shop's bookings and opens any of them, without acting on them
+/// beyond the first two exceptions and never with a colleague's customer's mobile.
 /// </summary>
 public sealed class BarberScopeTests(PostgresFixture postgres)
 {
@@ -23,12 +25,16 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
 
     private const string PendingAndRed = "scoped to the barber, plus the shop's pending and red bookings (D-147 exceptions 1 and 2)";
 
+    private const string ReadOnlyShop =
+        "any of the shop's bookings, read-only beyond the barber's own and D-147's exceptions; a colleague's customer's mobile never (D-151 exception 4)";
+
     /// <summary>The reviewed list: every endpoint a ShopBarber login can call, and why that is safe.</summary>
     private static readonly Dictionary<string, string> BarberReachable = new(StringComparer.Ordinal)
     {
-        // Scoped: a colleague's booking answers 404, lists and boards hold only the barber's own (tested below).
-        ["GET /api/v1/shop/bookings/"] = Scoped,
-        ["GET /api/v1/shop/bookings/{bookingId:guid}"] = PendingAndRed,
+        // Scoped: a colleague's booking answers 404 to every change; boards hold only the barber's own (tested below).
+        ["GET /api/v1/shop/bookings/"] = "the barber's own by default; a colleague's or the whole shop's when asked. " + ReadOnlyShop,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}"] = ReadOnlyShop,
+        ["GET /api/v1/shop/bookings/{bookingId:guid}/services/candidates"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/transitions"] = PendingAndRed + ": on a colleague's, only accept or reject while pending, close once red",
         ["POST /api/v1/shop/bookings/{bookingId:guid}/notes"] = Scoped,
         ["POST /api/v1/shop/bookings/{bookingId:guid}/services"] = Scoped,
@@ -67,6 +73,9 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
 
         // The account's own.
         ["GET /api/v1/me"] = "self",
+        ["GET /api/v1/shop/account/"] = "self: the login's names and masked number (D-151)",
+        ["PUT /api/v1/shop/account/name"] = "self: the barber's own professional's name (D-151)",
+        ["DELETE /api/v1/shop/account/"] = "self: the barber's own login (D-151)",
         ["GET /api/v1/auth/sessions"] = "self",
         ["DELETE /api/v1/auth/sessions/{sessionId:guid}"] = "self",
         ["POST /api/v1/auth/sessions/revoke-all"] = "self",
@@ -115,17 +124,23 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         var theirs = omars.GetProperty("id").GetGuid();
         var iso = Iso(day);
 
-        // Lists, even when asking for a colleague: only the barber's own.
+        // Lists: the barber's own by default; a colleague's or the whole shop's when asked (D-151, «جدولي / الكل / اسم
+        // الحلاق»), read-only: nothing to do on a colleague's booking that is neither pending nor red.
         static IEnumerable<Guid> Ids(JsonElement list) => list.GetProperty("items").EnumerateArray().Select(b => b.GetProperty("id").GetGuid());
         Ids(await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}", ct), ct)).ShouldBe([mine]);
-        Ids(await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}&professionalId={w.Omar}", ct), ct)).ShouldBeEmpty();
+        var colleague = await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}&professionalId={w.Omar}", ct), ct);
+        Ids(colleague).ShouldBe([theirs]);
+        colleague.GetProperty("items")[0].GetProperty("allowedTransitions").GetArrayLength().ShouldBe(0);
+        Ids(await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}&all=true", ct), ct)).ShouldBe([mine, theirs], ignoreOrder: true);
         Ids(await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}", ct), ct)).ShouldBe([mine, theirs], ignoreOrder: true);
 
-        // A colleague's booking is not found, to read or to change.
-        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{theirs}", ct), HttpStatusCode.NotFound, null, ct);
+        // A colleague's booking opens read-only, and is not found to change.
+        var opened = await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{theirs}", ct), ct);
+        opened.GetProperty("booking").GetProperty("allowedTransitions").GetArrayLength().ShouldBe(0);
         await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{theirs}/transitions", new { to = "CancelledByShop", reason = "busy", version = omars.GetProperty("version").GetUInt32() }, ct),
             HttpStatusCode.NotFound, null, ct);
         await FailsAsync(faisal.PostAsync($"/api/v1/shop/bookings/{theirs}/notes", new { text = "x" }, ct), HttpStatusCode.NotFound, null, ct);
+        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{theirs}/services/candidates", ct), HttpStatusCode.NotFound, null, ct);
         await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{mine}", ct), ct);
         await OkAsync(faisal.PostAsync($"/api/v1/shop/bookings/{mine}/notes", new { text = "يحب التدريج" }, ct), ct, HttpStatusCode.Created);
 
@@ -149,7 +164,24 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
                 new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(day, 15), customerName = "زائر" }, ct, headers: Key()),
             ct, HttpStatusCode.Created);
         forOmar.GetProperty("professional").GetProperty("id").GetGuid().ShouldBe(w.Omar);
-        await FailsAsync(faisal.GetAsync($"/api/v1/shop/bookings/{forOmar.GetProperty("id").GetGuid()}", ct), HttpStatusCode.NotFound, null, ct);
+
+        // A phone booking for Omar with the customer's mobile: Omar reads it, Faisal (a colleague) opens it without it
+        // (D-151), the owner never (D-147).
+        var withNumber = await OkAsync(
+            faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
+                new { serviceId = w.Haircut, professionalId = w.Omar, startsAt = At(day, 16), customerName = "متصل", customerPhone = "0555123456", channel = "Phone" },
+                ct, headers: Key()),
+            ct, HttpStatusCode.Created);
+        var numbered = withNumber.GetProperty("id").GetGuid();
+        static string? Phone(JsonElement booking) =>
+            booking.TryGetProperty("customerPhone", out var phone) && phone.ValueKind == JsonValueKind.String ? phone.GetString() : null;
+        Phone(withNumber).ShouldBeNull("Faisal made it for a colleague");
+        Phone((await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{numbered}", ct), ct)).GetProperty("booking")).ShouldBeNull();
+        (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings?from={iso}&to={iso}&all=true", ct), ct)).GetProperty("items").EnumerateArray()
+            .Where(b => b.GetProperty("id").GetGuid() == numbered).Select(Phone).ShouldBe([null]);
+        using var omar = await BarberLoginTests.BarberAsync(w, w.Omar, "+966512340012", ct);
+        Phone((await OkAsync(omar.GetAsync($"/api/v1/shop/bookings/{numbered}", ct), ct)).GetProperty("booking")).ShouldBe("+966555123456");
+        Phone((await OkAsync(w.OwnerA.GetAsync($"/api/v1/shop/bookings/{numbered}", ct), ct)).GetProperty("booking")).ShouldBeNull();
         await FailsAsync(
             faisal.SendAsync(HttpMethod.Post, "/api/v1/shop/bookings/walk-in",
                 new { serviceId = w.Haircut, professionalId = w.ProB, startsAt = At(day, 15), customerName = "زائر" }, ct, headers: Key()),

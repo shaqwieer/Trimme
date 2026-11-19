@@ -116,6 +116,13 @@ internal interface IAccountStore
     /// <summary>Turns a barber's login off; the caller revokes its sessions. <see langword="null"/> when there is none.</summary>
     Task<Guid?> DisableBarberLoginAsync(Guid professionalId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// A barber deletes their own login (D-151): its name, number hash and contact data are erased, it is closed for good
+    /// and no longer belongs to the professional, so the owner can give the barber a new login. Staged on the context: the
+    /// caller saves it with the rest of the deletion.
+    /// </summary>
+    Task EraseBarberLoginAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken);
+
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
 
     Task<bool> RoleExistsAsync(string roleName, UserType userType, CancellationToken cancellationToken);

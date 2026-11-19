@@ -262,6 +262,7 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         ["DELETE /api/v1/me/favorites/professionals/{professionalId:guid}"] = RateLimitPolicies.Favorites,
         ["DELETE /api/v1/me/favorites/shops/{shopId:guid}"] = RateLimitPolicies.Favorites,
         ["DELETE /api/v1/me"] = RateLimitPolicies.Auth,
+        ["DELETE /api/v1/shop/account/"] = RateLimitPolicies.Auth,
         ["GET /api/v1/admin/geo/map-link"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/admin/geo/reverse"] = RateLimitPolicies.Geocode,
         ["GET /api/v1/admin/geo/search"] = RateLimitPolicies.Geocode,

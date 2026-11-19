@@ -189,7 +189,7 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     await expect(page.getByTestId('pause-card')).toBeVisible();
     await expect(page.getByText('الإجازات والتعطيل')).toHaveCount(0);
 
-    // Sultan, on the target day: 24 hours, he works noon to 10 PM.
+    // Sultan, on the target day: he works noon to 10 PM.
     // His own login has no barber picker: the card names him (D-145).
     await expect(card.getByLabel('الحلاق')).toHaveCount(0);
     await expect(card).toContainText('سلطان الحربي');
@@ -202,9 +202,11 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
       await card.getByRole('button', { name: 'اليوم التالي' }).click();
       await waiting;
     }
+    // His working hours only (D-151, «بريكاتي»): noon to 10 PM; 10 and 11 AM and 10 PM are not offered.
+    await expect(card.getByRole('heading', { name: 'بريكاتي' })).toBeVisible();
     const hours = card.getByTestId('barber-day-hours');
-    await expect(hours.locator('[data-hour]')).toHaveCount(24);
-    await expect(hours.locator('[data-hour="10"]')).toHaveAttribute('data-state', 'outside');
+    for (const hour of [12, 16, 21]) await expect(hours.locator(`[data-hour="${hour}"]`)).toBeVisible();
+    for (const hour of [10, 11, 22]) await expect(hours.locator(`[data-hour="${hour}"]`)).toHaveCount(0);
     const one = hours.locator('[data-hour="16"]');
     await expect(one).toHaveAttribute('data-state', 'free');
 

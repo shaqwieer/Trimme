@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
 import { BookingRow } from '@/components/shop/board/BookingRow';
+import { SimpleAppointments } from '@/components/shop/board/SimpleAppointments';
 import { LiveRefresh } from '@/components/shop/live/OperationsLive';
 import { ShopFrame } from '@/components/shop/ShopFrame';
 import { BarChart } from '@/components/ui/charts';
 import { KpiTile } from '@/components/ui/cards';
-import { EmptyState, ErrorState, InlineAlert } from '@/components/ui/states';
+import { EmptyState, ErrorState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { type AppLocale, formatDate, formatNumber } from '@/lib/i18n/format';
+import { todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 import { hourLabel, loadPercent, trimHours } from '@/lib/shop/board';
 
@@ -60,6 +63,33 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
         }
 
         const api = await getServerApi();
+
+        // A barber's home is their day (D-151, the client's 1-1 and «أول شي يفتحونه»): the quick buttons, the shop's
+        // red bookings on top, then the day with «جدولي», «الكل» or a colleague. The owner keeps the overview below.
+        if (me.professionalId) {
+          const { data: professionals } = await api.GET('/api/v1/shop/professionals');
+          const tAppointments = await getTranslations({ locale, namespace: 'shopBoard.appointments' });
+          return (
+            <div className="flex max-w-[760px] flex-col gap-4" data-testid="shop-overview">
+              {identity}
+              <Suspense fallback={<SkeletonList rows={5} label={tAppointments('loading')} />}>
+                <SimpleAppointments
+                  today={todayLocal(shop.timeZone)}
+                  timeZone={shop.timeZone}
+                  canUpdate={me.permissions.includes('Shop.Bookings.UpdateStatus')}
+                  canReschedule={me.permissions.includes('Shop.Bookings.Reschedule')}
+                  canMove={me.permissions.includes('Shop.Bookings.ChangeProfessional')}
+                  ownProfessionalId={me.professionalId}
+                  barbers={(professionals ?? [])
+                    .filter((p) => p.status === 'Active')
+                    .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
+                  quickActions={me.permissions.includes('Shop.Bookings.CreateWalkIn')}
+                />
+              </Suspense>
+            </div>
+          );
+        }
+
         const { data } = await api.GET('/api/v1/shop/dashboard/overview');
         if (!data) return <ErrorState />;
         // A barber sees what comes next only, no figures or income (D-147): the API sends no KPIs to them.

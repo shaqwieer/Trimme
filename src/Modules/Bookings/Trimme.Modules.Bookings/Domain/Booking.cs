@@ -36,6 +36,25 @@ public enum BookingChannel
     Phone,
 }
 
+/// <summary>
+/// The ready reasons a barber taps to cancel a booking (D-151, the client's 2-7), so the owner's reports can count them.
+/// <see cref="Other"/> («سبب ثاني») needs the reason typed; the others may come without text.
+/// </summary>
+public enum ShopCancellationReason
+{
+    /// <summary>«الموظف تعبان».</summary>
+    StaffUnwell,
+
+    /// <summary>«ظرف طارئ».</summary>
+    Emergency,
+
+    /// <summary>«المحل مسكّر (كهرباء أو غيره)».</summary>
+    ShopClosed,
+
+    /// <summary>«سبب ثاني»: the text says what.</summary>
+    Other,
+}
+
 public enum ActorType
 {
     Customer,
@@ -200,10 +219,11 @@ public static class BookingRules
     public static readonly TimeSpan LateCancellationWindow = TimeSpan.FromMinutes(15);
 
     /// <summary>
-    /// An open booking whose booked end passed this long ago is red («متأخر», D-147): any barber of the shop may close it,
-    /// and one closed then is «انقفل متأخر» and leaves the speed figures.
+    /// A booking closed this long after its booked end is «انقفل متأخر» (D-147) and leaves the speed figures. Red starts
+    /// at the end itself (D-151, the client's «حجز فات وقته ٦:٠٠، والساعة ٦:٠٣ شكله عادي»); this quarter hour only keeps a
+    /// visit that runs a little over out of the late figures.
     /// </summary>
-    public static readonly TimeSpan OverdueAfter = TimeSpan.FromMinutes(15);
+    public static readonly TimeSpan ClosedLateAfter = TimeSpan.FromMinutes(15);
 
     /// <summary>Red bookings stay in every barber's list for this long after their start; then only the owner's reports show them.</summary>
     public static readonly TimeSpan OverdueVisibleFor = TimeSpan.FromDays(3);
@@ -360,6 +380,9 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public string? CustomerNote { get; private set; }
 
     public string? CancellationReason { get; private set; }
+
+    /// <summary>The ready reason the shop chose when it cancelled (D-151); null for older cancellations, rejections and the customer's.</summary>
+    public ShopCancellationReason? CancellationReasonCode { get; private set; }
 
     /// <summary>Payment seam (R-BKG-10): no online payment in v1.</summary>
     public PaymentStatus PaymentStatus { get; private set; }
@@ -535,11 +558,14 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public BookingHistoryEntry? ClosingEntry =>
         BookingStateMachine.IsTerminal(Status) ? _history.LastOrDefault(h => h.Kind == BookingEventKind.StatusChanged && h.ToStatus == Status) : null;
 
-    /// <summary>Red (D-147): still open more than <see cref="BookingRules.OverdueAfter"/> after its booked end.</summary>
-    public bool IsOverdue(DateTimeOffset now) => IsActive && now > EndsAt + BookingRules.OverdueAfter;
+    /// <summary>Red (D-147; D-151: from the booked end itself): still open after its booked end.</summary>
+    public bool IsOverdue(DateTimeOffset now) => IsActive && now > EndsAt;
 
-    /// <summary>Closed while red, «انقفل متأخر» (D-147): its times are not counted in the speed figures.</summary>
-    public bool ClosedLate => ClosingEntry is { } closing && closing.OccurredAt > EndsAt + BookingRules.OverdueAfter;
+    /// <summary>
+    /// «انقفل متأخر» (D-147): closed more than <see cref="BookingRules.ClosedLateAfter"/> after its booked end; its times are
+    /// not counted in the speed figures.
+    /// </summary>
+    public bool ClosedLate => ClosingEntry is { } closing && closing.OccurredAt > EndsAt + BookingRules.ClosedLateAfter;
 
     /// <summary>Cancelled less than <see cref="BookingRules.LateCancellationWindow"/> before the start, or after it: «إلغاء متأخر» (D-147).</summary>
     public bool CancelledLate =>
@@ -549,14 +575,27 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// A shop's transition (D-016, D-087, D-147): confirm, mark arrived (from an hour before the start), complete (after
     /// «وصل»; from Confirmed only to close a red booking late), mark a no-show (15 minutes after the start) or cancel (with
     /// a reason; never once arrived). Admins cancel through the same rule with their own actor. A visit finished before its
-    /// booked end ends then (<see cref="FinishAt"/>).
+    /// booked end ends then (<see cref="FinishAt"/>). A cancellation may carry a ready reason (D-151): one other than
+    /// <see cref="ShopCancellationReason.Other"/> needs no text; without one, or with «سبب ثاني», the text is required.
     /// </summary>
-    public Result ApplyShopTransition(BookingStatus to, BookingActor actor, string? reason, DateTimeOffset now)
+    public Result ApplyShopTransition(BookingStatus to, BookingActor actor, string? reason, DateTimeOffset now, ShopCancellationReason? reasonCode = null)
     {
+        if (reasonCode is not null && to != BookingStatus.CancelledByShop)
+        {
+            return BookingErrors.ReasonCodeNotAllowed();
+        }
+
+        if (reasonCode is { } code && !Enum.IsDefined(code))
+        {
+            return BookingErrors.ReasonCodeNotAllowed();
+        }
+
         if (!BookingStateMachine.CanTransition(Status, to) || to == BookingStatus.CancelledByCustomer)
         {
             return BookingErrors.InvalidTransition(Status, to);
         }
+
+        var readyReason = reasonCode is { } chosen && chosen != ShopCancellationReason.Other;
 
         switch (to)
         {
@@ -565,7 +604,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
                 return BookingErrors.TooEarly(to);
             case BookingStatus.Completed when Status == BookingStatus.Confirmed && !IsOverdue(now):
                 return BookingErrors.ArrivalRequired();
-            case BookingStatus.CancelledByShop when string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 3:
+            case BookingStatus.CancelledByShop when !readyReason && (string.IsNullOrWhiteSpace(reason) || reason.Trim().Length < 3):
                 return BookingErrors.ReasonRequired();
         }
 
@@ -575,6 +614,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         }
 
         Move(to, actor, Clean(reason), now);
+        if (to == BookingStatus.CancelledByShop)
+        {
+            CancellationReasonCode = reasonCode;
+        }
+
         if (to == BookingStatus.Completed)
         {
             FinishAt(now);
@@ -1092,6 +1136,10 @@ public static class BookingErrors
 
     public static Error ServicesClosed(BookingStatus status) =>
         Error.Conflict("booking.services_closed", $"A {status} booking's services cannot change.").WithDetail("status", status.ToString());
+
+    public static Error ReasonCodeNotAllowed() =>
+        Error.Validation("validation.failed", "A ready reason is only for the shop's cancellation.",
+            new Dictionary<string, string[]>(StringComparer.Ordinal) { ["reasonCode"] = ["validation.invalid"] });
 
     public static Error ReasonRequired() =>
         Error.Validation("validation.failed", "A reason is required.", new Dictionary<string, string[]>(StringComparer.Ordinal) { ["reason"] = ["validation.reason_required"] });

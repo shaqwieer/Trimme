@@ -44,6 +44,15 @@ internal sealed class BarberLoginSync(TrimmeDbContext db, IAccountStore accounts
         }
     }
 
+    public async Task NameChangedAsync(ProfessionalId professionalId, string nameAr, CancellationToken cancellationToken)
+    {
+        var user = await LoginAsync(professionalId, cancellationToken);
+        if (user is not null)
+        {
+            user.DisplayName = nameAr;
+        }
+    }
+
     public async Task<Result<string>> CreateAsync(NewBarberAccount account, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(account);

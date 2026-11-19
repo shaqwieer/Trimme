@@ -634,6 +634,77 @@
         }
       }
     },
+    "/api/v1/shop/account/name": {
+      "put": {
+        "tags": [
+          "Shop: account"
+        ],
+        "summary": "A barber renames themselves from \u00AB\u062D\u0633\u0627\u0628\u064A\u00BB (D-151): their name on their page, the owner\u0027s list and new log lines, by the owner\u0027s edit rules (audited, optimistic concurrency). The owner: 403.",
+        "operationId": "RenameShopAccount",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameShopAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarberAccountNameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/shops/{slug}/professionals": {
       "get": {
         "tags": [
@@ -2933,6 +3004,69 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/account": {
+      "get": {
+        "tags": [
+          "Shop: account"
+        ],
+        "summary": "The signed-in shop user\u0027s account: a barber\u0027s names (with the version to rename with) and masked sign-in number, or the owner\u0027s name and email; whether they may rename or delete it.",
+        "operationId": "GetShopAccount",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopAccountResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: account"
+        ],
+        "summary": "A barber deletes their login: its personal data is erased, every session ends and the cookies are cleared. The barber stays in the shop with their history; the owner is told and can make a new login. The owner\u0027s account: 403.",
+        "operationId": "DeleteShopAccount",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11471,7 +11605,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "The shop\u0027s bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip.",
+        "summary": "The shop\u0027s bookings by local date range, any of the given statuses and professional; search by customer name or reference only. Counts per status chip. A barber lists their own unless they name a colleague or send all=true (D-151, read-only).",
         "operationId": "ListShopBookings",
         "parameters": [
           {
@@ -11530,6 +11664,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -11561,7 +11702,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "The shop\u0027s pending bookings and red ones (open 15 minutes past their end, last 3 days), whoever\u0027s barber they are (D-147).",
+        "summary": "The shop\u0027s pending bookings, red ones (open past their booked end) and those closed late (a quarter hour past it), last 3 days, whoever\u0027s barber they are (D-147, D-151).",
         "operationId": "GetShopAttention",
         "responses": {
           "200": {
@@ -11592,7 +11733,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "One of the shop\u0027s bookings with its history and internal notes; never the customer\u0027s phone.",
+        "summary": "One of the shop\u0027s bookings with its history and internal notes. Barbers open any of the shop\u0027s bookings, read-only beyond their own (D-151); the mobile only on their own open walk-in or phone booking (D-147).",
         "operationId": "GetShopBooking",
         "parameters": [
           {
@@ -11714,7 +11855,7 @@
         "tags": [
           "Shop: bookings"
         ],
-        "summary": "Moves the booking along the state machine (D-016); invalid transitions answer 409.",
+        "summary": "Moves the booking along the state machine (D-016); invalid transitions answer 409. A cancellation takes a ready reason code or a typed reason (D-151).",
         "operationId": "TransitionShopBooking",
         "parameters": [
           {
@@ -11842,6 +11983,48 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/bookings/{bookingId}/services/candidates": {
+      "get": {
+        "tags": [
+          "Shop: bookings"
+        ],
+        "summary": "The services the barber could add to their own booking (D-151): each at its price and their own length, and whether it ends before their next booked or held time (fits).",
+        "operationId": "GetBookingServiceCandidates",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingServiceCandidatesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -18120,6 +18303,32 @@
         },
         "description": "Slots of one local date. When the shop takes no online bookings right now (paused, subscription not in force\u2026),\n\u0060Bookable\u0060 is false, \u0060BlockedReason\u0060 says why and there are no slots (D-013, D-078). \u0060Open\u0060 is the\nshop\u0027s opening windows of that business day (D-148): the page lays every time out in order and greys the taken ones."
       },
+      "BarberAccountNameResponse": {
+        "required": [
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A barber\u0027s names after they renamed themselves, with the version for the next change."
+      },
       "BarberDayBreaksRequest": {
         "required": [
           "professionalId",
@@ -18635,6 +18844,79 @@
           }
         }
       },
+      "BookingServiceCandidateResponse": {
+        "required": [
+          "serviceId",
+          "nameAr",
+          "nameEn",
+          "sectionId",
+          "price",
+          "currency",
+          "durationMinutes",
+          "fits"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fits": {
+            "type": "boolean"
+          }
+        },
+        "description": "One service the barber could add (D-151, the client\u0027s 9-2): its price, the barber\u0027s own length, and whether it ends\nbefore their next booked or held time (\u0060Fits\u0060; one that does not is greyed and cannot be chosen)."
+      },
+      "BookingServiceCandidatesResponse": {
+        "required": [
+          "roomMinutes",
+          "services"
+        ],
+        "type": "object",
+        "properties": {
+          "roomMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookingServiceCandidateResponse"
+            }
+          }
+        },
+        "description": "What may be added to the booking at the visit: \u0060RoomMinutes\u0060 is the time free after it (with its cleaning time)\nuntil the barber\u0027s next booking or held offer, null when nothing follows within a day."
+      },
       "BookingShopResponse": {
         "required": [
           "id",
@@ -18698,9 +18980,19 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "reasonCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopCancellationReason"
+              }
+            ]
           }
         },
-        "description": "Confirmed, Arrived, Completed, NoShow or CancelledByShop (reason required). Send the version read."
+        "description": "Confirmed, Arrived, Completed, NoShow or CancelledByShop. Send the version read. A cancellation needs a reason: a ready\none (\u0060ReasonCode\u0060 StaffUnwell, Emergency or ShopClosed, D-151) with the text optional, or the text (at least 3\ncharacters) with \u0060Other\u0060 or no code. \u0060ReasonCode\u0060 with any other target is 400."
       },
       "BreakRequest": {
         "required": [
@@ -19871,6 +20163,16 @@
               },
               {
                 "$ref": "#/components/schemas/PostponementOfferResponse"
+              }
+            ]
+          },
+          "cancellationReasonCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopCancellationReason"
               }
             ]
           }
@@ -24459,6 +24761,30 @@
         },
         "description": "The booking\u0027s version, to take one of its services off (D-147)."
       },
+      "RenameShopAccountRequest": {
+        "required": [
+          "nameAr",
+          "nameEn",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "uint32"
+          }
+        },
+        "description": "A barber renames themselves (D-151): the Arabic name, the English one (empty keeps it) and the version read."
+      },
       "RenderedButton": {
         "required": [
           "label",
@@ -24548,6 +24874,23 @@
         },
         "description": "Every non-archived item of the shop, in the new order."
       },
+      "ReportCancellationReasonResponse": {
+        "required": [
+          "code",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ShopCancellationReason"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many of the period\u0027s shop cancellations gave this ready reason (D-151, the client\u0027s 2-7)."
+      },
       "ReportCountsResponse": {
         "required": [
           "bookings",
@@ -24610,12 +24953,12 @@
           },
           "closedLate": {
             "type": "integer",
-            "description": "Closed while red (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB).",
+            "description": "Closed more than a quarter hour after their booked end (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB).",
             "format": "int32"
           },
           "unclosed": {
             "type": "integer",
-            "description": "Still open a quarter hour past their end.",
+            "description": "Still open past their booked end (red, D-151).",
             "format": "int32"
           },
           "breaks": {
@@ -24647,6 +24990,44 @@
             "format": "double"
           }
         }
+      },
+      "ReportDayResponse": {
+        "required": [
+          "date",
+          "bookings",
+          "completed",
+          "noShows",
+          "cancelled",
+          "expectedIncome"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "noShows": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cancelled": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expectedIncome": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "description": "One shop-local day of the period (D-151, the client\u0027s 3-1 \u00AB\u0643\u0644 \u064A\u0648\u0645\u00BB): its bookings by outcome and the expected income of\nits completed visits. Every booking counts, not only the table\u0027s."
       },
       "ReportVisitResponse": {
         "required": [
@@ -25405,6 +25786,73 @@
         },
         "description": "Send the version read."
       },
+      "ShopAccountResponse": {
+        "required": [
+          "displayName",
+          "email",
+          "mobileMasked",
+          "professionalId",
+          "nameAr",
+          "nameEn",
+          "version",
+          "canRename",
+          "canDelete"
+        ],
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobileMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "professionalId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "uint32"
+          },
+          "canRename": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean"
+          }
+        },
+        "description": "The signed-in shop user\u0027s account (D-151). For a barber: their names as the shop shows them (\u0060NameAr\u0060,\n\u0060NameEn\u0060, with the \u0060Version\u0060 to rename with) and the WhatsApp number they sign in with, masked. For the owner:\ntheir display name and email. \u0060CanRename\u0060 and \u0060CanDelete\u0060: barbers only."
+      },
       "ShopAmenity": {
         "enum": [
           "Parking",
@@ -25442,7 +25890,7 @@
             }
           }
         },
-        "description": "Pending bookings (oldest start first), red bookings (\u00AB\u0645\u062A\u0623\u062E\u0631\u00BB: open 15 minutes past their end) and those closed while\nred (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB, with who closed them), all started within the last 3 days, whoever\u0027s barber they are (D-147).\nEvery barber of the shop sees them and may act on the open ones; the owner sees them read-only."
+        "description": "Pending bookings (oldest start first), red bookings (\u00AB\u0645\u062A\u0623\u062E\u0631\u00BB: open past their booked end, D-151) and those closed late\n(\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: more than a quarter hour after their end, with who closed them), all started within the last 3 days,\nwhoever\u0027s barber they are (D-147).\nEvery barber of the shop sees them and may act on the open ones; the owner sees them read-only."
       },
       "ShopBarberCreatedResponse": {
         "required": [
@@ -25824,9 +26272,19 @@
               "number"
             ],
             "format": "double"
+          },
+          "cancellationReasonCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShopCancellationReason"
+              }
+            ]
           }
         },
-        "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open 15 minutes past its end); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB) and ClosedBy (the name of who closed it)."
+        "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open past its booked end, D-151); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB: closed more than a quarter hour after its end) and ClosedBy (the name of who\nclosed it). D-151: CancellationReasonCode, the ready reason the shop chose, beside the typed one."
       },
       "ShopBookingSettingsRequest": {
         "required": [
@@ -25926,6 +26384,15 @@
           }
         },
         "description": "Business days \u0060From\u0060\u2026\u0060To\u0060 (at most seven) with lanes per professional and their bookings (s-calendar)."
+      },
+      "ShopCancellationReason": {
+        "enum": [
+          "StaffUnwell",
+          "Emergency",
+          "ShopClosed",
+          "Other",
+          null
+        ]
       },
       "ShopCategory": {
         "enum": [
@@ -26740,6 +27207,8 @@
           "shop",
           "barbers",
           "visits",
+          "days",
+          "cancellationReasons",
           "loyalty"
         ],
         "type": "object",
@@ -26773,6 +27242,18 @@
               "$ref": "#/components/schemas/ReportVisitResponse"
             }
           },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportDayResponse"
+            }
+          },
+          "cancellationReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCancellationReasonResponse"
+            }
+          },
           "loyalty": {
             "oneOf": [
               {
@@ -26788,7 +27269,7 @@
             "default": false
           }
         },
-        "description": "The owner\u0027s report for the shop-local dates \u0060From\u0060\u2026\u0060To\u0060 (at most 31). The counts and the income cover every\nbooking of the period; the \u0060Visits\u0060 table lists the first int GetShopReportHandler.MaxVisits of them\n(\u0060VisitsTruncated\u0060 when there were more). \u0060Loyalty\u0060 is null when the programme is off."
+        "description": "The owner\u0027s report for the shop-local dates \u0060From\u0060\u2026\u0060To\u0060 (at most 31). The counts and the income cover every\nbooking of the period; the \u0060Visits\u0060 table lists the first int GetShopReportHandler.MaxVisits of them\n(\u0060VisitsTruncated\u0060 when there were more). \u0060Loyalty\u0060 is null when the programme is off. D-151: \u0060Days\u0060, every\ndate of the period with its figures, and \u0060CancellationReasons\u0060, the shop\u0027s cancellations by ready reason (every\nreason, zeros included; cancellations without one are not in it)."
       },
       "ShopRescheduleBookingRequest": {
         "required": [
@@ -29158,6 +29639,9 @@
     },
     {
       "name": "Public"
+    },
+    {
+      "name": "Shop: account"
     },
     {
       "name": "Admin: services"
