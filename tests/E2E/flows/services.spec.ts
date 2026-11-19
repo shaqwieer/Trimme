@@ -184,7 +184,9 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     const admin = await adminContext.newPage();
     await staffSignIn(admin, ADMIN_EMAIL, ADMIN_PASSWORD);
     await admin.goto('/en/admin/services');
-    await expect(admin.getByRole('link', { name: 'Categories', exact: true })).toBeVisible();
+    // Each shop has its own sections (D-149): the platform categories tab is gone (D-152).
+    await expect(admin.getByRole('link', { name: 'Packages', exact: true })).toBeVisible();
+    await expect(admin.getByRole('link', { name: 'Categories', exact: true })).toHaveCount(0);
     await expectNoSeriousAxeViolations(admin);
 
     // Moderation: hidden from the public catalogue until shown again.

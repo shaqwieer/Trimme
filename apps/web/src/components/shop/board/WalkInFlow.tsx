@@ -107,7 +107,8 @@ export function WalkInFlow({
     ...(chosenPackage ? [chosenPackage] : []),
     ...serviceIds.map((id) => services.find((s) => s.id === id)).filter((s): s is WalkInOffer => Boolean(s)),
   ];
-  const duration = chosen.reduce((sum, o) => sum + o.durationMinutes, 0);
+  // The standard lengths; once a barber is chosen, theirs (D-149: a barber's own length per service, from the API).
+  const standard = chosen.reduce((sum, o) => sum + o.durationMinutes, 0);
   const price = chosen.reduce((sum, o) => sum + o.price, 0);
   const currency = chosen[0]?.currency ?? 'SAR';
   const offerKey = `package:${packageId ?? ''}|services:${serviceIds.join(',')}`;
@@ -131,6 +132,7 @@ export function WalkInFlow({
   });
 
   const professional = options.data?.professionals.find((p) => p.id === professionalId);
+  const duration = professional?.durationMinutes ?? standard;
   const startsAt = start === NOW ? options.data?.now : start || undefined;
   const nameError =
     name.trim().length === 0 ? undefined : name.trim().length > NAME_MAX ? t('nameTooLong') : undefined;
@@ -435,11 +437,14 @@ export function WalkInFlow({
             <div className="grid gap-2.5 sm:grid-cols-2">
               {options.data.professionals.map((p) => {
                 const freeNow = kind === 'WalkIn' && p.freeNow;
-                const meta = freeNow
+                const availability = freeNow
                   ? t('freeNow')
                   : p.nextFreeAt
                     ? t('freeAt', { time: formatTime(p.nextFreeAt, locale, timeZone) })
                     : t('noTimes');
+                // A barber whose own length differs from the standard says so, as in the customer's booking.
+                const own =
+                  p.durationMinutes !== standard ? formatDurationMinutes(p.durationMinutes, locale) : null;
                 return (
                   <RadioCard
                     key={p.id}
@@ -461,8 +466,16 @@ export function WalkInFlow({
                     <span
                       className={`block text-helper ${freeNow ? 'font-bold text-success-700' : 'text-text-secondary'}`}
                     >
-                      {meta}
+                      {availability}
                     </span>
+                    {own && (
+                      <span
+                        className="block text-helper text-text-secondary"
+                        data-testid="walk-in-own-length"
+                      >
+                        {own}
+                      </span>
+                    )}
                   </RadioCard>
                 );
               })}

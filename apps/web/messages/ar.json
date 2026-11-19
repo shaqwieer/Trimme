@@ -949,17 +949,7 @@
     "hiddenReason": "أخفتها إدارة المنصة: {reason}",
     "unbookable": "غير متاحة للحجز: إحدى خدماتها متوقفة أو مؤرشفة أو مخفية",
     "noCategory": "بلا تصنيف",
-    "durationOption": "{minutes} دقيقة",
-    "icons": {
-      "scissors": "مقص",
-      "user": "شخص",
-      "users": "أشخاص",
-      "star": "نجمة",
-      "heart": "قلب",
-      "layers": "طبقات",
-      "tag": "وسم",
-      "coffee": "كوب"
-    }
+    "durationOption": "{minutes} دقيقة"
   },
   "shopServices": {
     "title": "الخدمات",
@@ -1075,7 +1065,6 @@
     "tabs": {
       "label": "أقسام الخدمات",
       "services": "خدمات المحلات",
-      "categories": "التصنيفات",
       "packages": "الباقات"
     },
     "intro": "كل محل يحدد خدماته وأسعاره ومدده. هنا تراجعها وتخفي المخالف وتصحح خدمة بطلب المحل.",
@@ -1128,23 +1117,6 @@
       "newPackageTitle": "باقة جديدة",
       "editPackageTitle": "تعديل الباقة",
       "packageNotFound": "الباقة غير موجودة"
-    },
-    "categories": {
-      "caption": "تصنيفات الخدمات",
-      "add": "إضافة تصنيف",
-      "nameAr": "الاسم بالعربية",
-      "nameEn": "الاسم بالإنجليزية",
-      "icon": "الأيقونة",
-      "order": "الترتيب",
-      "services": "خدمات",
-      "edit": "تعديل",
-      "editTitle": "تعديل التصنيف",
-      "save": "حفظ",
-      "create": "إضافة",
-      "activate": "تفعيل",
-      "deactivate": "إيقاف",
-      "saved": "حُفظ التصنيف.",
-      "empty": "لا توجد تصنيفات بعد"
     },
     "packages": {
       "caption": "باقات المحلات",

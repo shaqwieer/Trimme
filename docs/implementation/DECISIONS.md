@@ -1781,7 +1781,7 @@ This refines D-126.
   - The development seed gives each demo shop its sections the same way (only a shop that has none).
 - **Accepted beyond the brief** (the backend's notes, reviewed): the owner's empty English name; the 90-day range per request; saving booking settings changes the shop row's version (they sit on their own page, so no open profile form is affected).
 - **Also in this change:** the admin booking page's intervention buttons wrap on a phone; the admin shop page's bundle budget is 335 KB (it carries the two new forms; `next/dynamic` from the server page grew every route and was reverted).
-- **Left as they are:** the walk-in form does not show each barber's own length per barber (the API returns it); the admin's platform categories page still edits categories nothing public uses.
+- **Left as they are (both done later in D-153):** the walk-in form did not show each barber's own length per barber (the API returns it); the admin's platform categories page still edited categories nothing public uses.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`. .NET: Release build 0 warnings; unit 483/483; architecture 69/69; integration 264/264. Web: 549/549; 89 routes within budget. E2E: the full run then the fixed specs (23/23).
 
 ## D-150 — Loyalty as a paid add-on (points per mobile number, a reward at booking, «خلصت زيارتك») and the plans' monthly WhatsApp allowance — Accepted (Session 28, after Phase 17, at the user's request; D-149 slices 4–5)
@@ -1865,3 +1865,20 @@ This refines D-126.
   - The admin shop page is 332.8 / 335 KB.
 - **Also in this change:** on the owner's dashboard, a late («red») booking's second line was grey on the red card (#5f6f80 on danger-50, about 4.3:1); it is now the darker text (about 7:1). The route checks met it once a seeded booking turned late.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`.
+
+## D-153 — The walk-in form shows each barber's own length, and the admin's platform categories page is gone — Accepted (Session 28, after Phase 17, at the user's request; the two items D-149 left)
+- **The request** (the user: "ok do them", naming the two items D-149 left as they were).
+- **1. A barber's own length on the walk-in form (D-149 item 2).**
+  - The walk-in options API already returned each barber's length for the chosen services (`durationMinutes`); the form used the standard lengths.
+  - A barber card now shows that barber's own length when it differs from the standard, as the customer's booking does.
+  - Once a barber is chosen, the services line («خدمتان — … — …») and the end time follow their length.
+- **2. The admin's platform categories page is removed (D-149 item 1).** Each shop has its own sections (D-149), and nothing customers see uses the platform categories.
+  - Removed: the «التصنيفات» tab, `/admin/services/categories`, the category editor and their messages (`adminServices.categories`, `adminServices.tabs.categories`, `catalog.icons`).
+  - **Kept:**
+    - the categories in the database and the API's admin category endpoints;
+    - the category already on older services;
+    - the admin home's «الأكثر حجزاً», which still groups bookings by platform category. New services carry no category, so that card will lean on older services over time; switching it to the most booked services is a separate change.
+- **Numbering:** D-151 and D-152 belong to two other sessions working on the same repository at the same time. This one was verified in its own git worktree (`HEAD` plus only these changes) and committed alone.
+- **Evidence:**
+  - web: lint, typecheck, format and `openapi:check` pass; `pnpm test` 61 files, 571 tests (new: the walk-in barber's own length); `pnpm build` and the bundle budget pass, 89 routes within budget (the walk-in page is 285.9 / 330 KB);
+  - E2E (web image built from the worktree, 3 workers): the route audit (light and dark, every role) and `services.spec`, which checks the admin's tabs show no «Categories»: 22 passed, 1 failed. The failure was the dark-mode anonymous audit: `/ar/auth/session` had no title while it redirects. That page is untouched here and passed in light mode; re-run twice, both passed (timing).

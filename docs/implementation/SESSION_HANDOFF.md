@@ -31,6 +31,13 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 28, after the deploy: the two items D-149 left (D-153)
+- **What changed:**
+  - the walk-in form shows each barber's own length on their card, and the chosen barber's length in the total and the end time;
+  - the admin's platform categories page, tab and editor are removed. The categories stay in the data, the API and the admin home's «الأكثر حجزاً».
+- **Committed locally, not pushed or deployed.**
+- **Shared tree:** two other sessions worked in this repository at the same time, holding D-151 (`trimme-30`: the client's comparison pages) and D-152 (`trimme-d5`: iPhone review). D-153 was verified in its own worktree and committed alone; their uncommitted work was left in place.
+
 ## Session 28, third request, slices 4–5: loyalty as a paid add-on and the plans' WhatsApp allowance (D-150)
 - **The request:** the client's 6-2 (loyalty) and 6-5 (plans), with the user's answers. Details are in D-150 and `phases/after-17-d149-owner-settings-loyalty-plans.md`.
 - **What was built (one migration, `LoyaltyAddOnAndPlanMessages`, tables and columns only):**

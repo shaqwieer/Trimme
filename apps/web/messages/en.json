@@ -949,17 +949,7 @@
     "hiddenReason": "Hidden by the platform: {reason}",
     "unbookable": "Not bookable: one of its services is off, archived or hidden",
     "noCategory": "No category",
-    "durationOption": "{minutes} min",
-    "icons": {
-      "scissors": "Scissors",
-      "user": "Person",
-      "users": "People",
-      "star": "Star",
-      "heart": "Heart",
-      "layers": "Layers",
-      "tag": "Tag",
-      "coffee": "Cup"
-    }
+    "durationOption": "{minutes} min"
   },
   "shopServices": {
     "title": "Services",
@@ -1075,7 +1065,6 @@
     "tabs": {
       "label": "Service sections",
       "services": "Shop services",
-      "categories": "Categories",
       "packages": "Packages"
     },
     "intro": "Each shop sets its own services, prices and durations. Review them here, hide what breaks the rules and correct a service at a shop's request.",
@@ -1128,23 +1117,6 @@
       "newPackageTitle": "New package",
       "editPackageTitle": "Edit the package",
       "packageNotFound": "Package not found"
-    },
-    "categories": {
-      "caption": "Service categories",
-      "add": "Add category",
-      "nameAr": "Name in Arabic",
-      "nameEn": "Name in English",
-      "icon": "Icon",
-      "order": "Order",
-      "services": "Services",
-      "edit": "Edit",
-      "editTitle": "Edit category",
-      "save": "Save",
-      "create": "Add",
-      "activate": "Turn on",
-      "deactivate": "Turn off",
-      "saved": "Category saved.",
-      "empty": "No categories yet"
     },
     "packages": {
       "caption": "Shop packages",

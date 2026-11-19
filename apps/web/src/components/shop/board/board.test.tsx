@@ -265,6 +265,7 @@ const options = {
       freeNow: false,
       nextFreeAt: '2026-10-08T15:20:00Z',
       starts: ['2026-10-08T15:20:00Z', '2026-10-08T15:25:00Z'],
+      durationMinutes: 30,
     },
     {
       id: 'p2',
@@ -273,11 +274,36 @@ const options = {
       freeNow: true,
       nextFreeAt: '2026-10-08T14:15:00Z',
       starts: ['2026-10-08T14:15:00Z'],
+      durationMinutes: 30,
     },
   ],
 };
 
 describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
+  it('shows a barber’s own length on their card, and the chosen barber’s length in the total and the end (D-149)', async () => {
+    const user = userEvent.setup();
+    api.GET.mockResolvedValue(
+      ok({
+        ...options,
+        professionals: [{ ...options.professionals[0]!, durationMinutes: 45 }, options.professionals[1]!],
+      }),
+    );
+    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+
+    const faisal = await screen.findByRole('radio', { name: /فيصل القحطاني/ });
+    const sultan = screen.getByRole('radio', { name: /سلطان الحربي/ });
+    // Faisal takes 45 minutes for the haircut; Sultan the standard 30, so his card says nothing more.
+    expect(within(faisal.closest('label')!).getByTestId('walk-in-own-length')).toHaveTextContent('٤٥');
+    expect(within(sultan.closest('label')!).queryByTestId('walk-in-own-length')).not.toBeInTheDocument();
+    expect(screen.getByTestId('walk-in-total')).toHaveTextContent('٣٠');
+
+    await user.click(faisal);
+    expect(screen.getByTestId('walk-in-total')).toHaveTextContent('٤٥');
+    await user.click(screen.getByRole('radio', { name: '٦:٢٠ م' }));
+    // 6:20 pm plus his 45 minutes.
+    expect(screen.getByText('ينتهي').closest('div')).toHaveTextContent('٧:٠٥ م');
+  });
+
   it('numbers its five steps whatever is chosen, adds several services up, and books a phone appointment for a colleague', async () => {
     const user = userEvent.setup();
     const offers: WalkInOffer[] = [

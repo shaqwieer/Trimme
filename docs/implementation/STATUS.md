@@ -105,6 +105,7 @@
   - **Small items:** service status badge and button wording; the shop type fixed to a men's barbershop; «المحل غير متاح حالياً» for a shop its subscription hides.
   - Migration 27 `OwnerSettings` (sections from each shop's categories, every shop a barbershop, 14 days, bookings held until their end). Gates in `phases/after-17-d149-owner-settings-loyalty-plans.md`.
   - **Slices 1–5 pushed (`87307ec`) and deployed to groomhere.sa on 2026-11-19** after a database backup (28 migrations there now); the admin data steps (plans, add-on price) are not done yet.
+  - **D-153 (after the deploy, committed locally, not deployed):** the walk-in form shows each barber's own length; the admin's platform categories page, tab and editor are removed (the data stays).
   - **Slices 4–5 (D-150):**
     - **Loyalty as a paid add-on:** SuperAdmin prices it in versions; the admin switches it on until a date or off; earning and redeeming stop when it ends and points are kept.
     - **Points per mobile number per shop** (keyed hash only): the owner's rules (first visit, later visits, points for a reward, a free service or 5–1,000 SAR off, wipe or decay without visits); points only at «انتهت الخدمة» with the barber's name; «+٢» beyond a full card; «استخدم مكافأتي» at booking (one per booking, never with a package; held, used at completion, returned on a cancellation or no-show); walk-in redemption through the barber's lookup; «خلصت زيارتك» in the app.

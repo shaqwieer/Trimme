@@ -949,17 +949,7 @@
     "hiddenReason": "Platform tarafından gizlendi: {reason}",
     "unbookable": "Randevuya açık değil: hizmetlerinden biri kapalı, arşivlenmiş veya gizli",
     "noCategory": "Kategori yok",
-    "durationOption": "{minutes} dk",
-    "icons": {
-      "scissors": "Makas",
-      "user": "Kişi",
-      "users": "Kişiler",
-      "star": "Yıldız",
-      "heart": "Kalp",
-      "layers": "Katmanlar",
-      "tag": "Etiket",
-      "coffee": "Fincan"
-    }
+    "durationOption": "{minutes} dk"
   },
   "shopServices": {
     "title": "Hizmetler",
@@ -1075,7 +1065,6 @@
     "tabs": {
       "label": "Hizmet bölümleri",
       "services": "Salon hizmetleri",
-      "categories": "Kategoriler",
       "packages": "Paketler"
     },
     "intro": "Her salon kendi hizmetlerini, fiyatlarını ve sürelerini belirler. Bunları buradan inceleyin, kurallara aykırı olanları gizleyin ve salonun isteği üzerine bir hizmeti düzeltin.",
@@ -1128,23 +1117,6 @@
       "newPackageTitle": "Yeni paket",
       "editPackageTitle": "Paketi düzenle",
       "packageNotFound": "Paket bulunamadı"
-    },
-    "categories": {
-      "caption": "Hizmet kategorileri",
-      "add": "Kategori ekle",
-      "nameAr": "Arapça ad",
-      "nameEn": "İngilizce ad",
-      "icon": "Simge",
-      "order": "Sıra",
-      "services": "Hizmetler",
-      "edit": "Düzenle",
-      "editTitle": "Kategoriyi düzenle",
-      "save": "Kaydet",
-      "create": "Ekle",
-      "activate": "Aç",
-      "deactivate": "Kapat",
-      "saved": "Kategori kaydedildi.",
-      "empty": "Henüz kategori yok"
     },
     "packages": {
       "caption": "Salon paketleri",

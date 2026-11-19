@@ -141,7 +141,6 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/admin/professionals/new' },
         { path: `/admin/professionals/${SEED.faisal}` },
         { path: '/admin/services' },
-        { path: '/admin/services/categories' },
         { path: `/admin/services/${SEED.haircut}` },
         { path: `/admin/services/new?shopId=${SEED.alAsala.id}` },
         { path: `/admin/packages/new?shopId=${SEED.barberHouse.id}` },

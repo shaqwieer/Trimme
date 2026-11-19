@@ -140,3 +140,6 @@
   - the one assertion failure is the late booking's contrast, now fixed (web image not yet rebuilt).
   - **re-run** (the user chose the affected specs, 3 workers) after rebuilding the web image with the fix: `routes.spec` in both the light and the dark project, `shop-dashboard` and `whatsapp-notifications`, **23/23 passed**. The route audit covers every role, including `/shop/settings/loyalty`, `/admin/shops/{id}?tab=subscription` and `?tab=loyalty`, `/account/loyalty`, `/shop/subscription` and `/admin/subscription-plans`.
   - Not re-run after the kill: the smoke and flow specs that had already passed in the stopped run (91 passed there).
+
+## After the five slices (D-153)
+- The two items left as they were are done: the walk-in form shows each barber's own length; the admin's platform categories page, tab and editor are removed (the data stays).
