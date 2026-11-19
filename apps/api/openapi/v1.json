@@ -16230,7 +16230,7 @@
           "newCustomers",
           "newCustomersPrevious",
           "trend",
-          "popularCategories",
+          "popularServices",
           "topShops"
         ],
         "type": "object",
@@ -16280,10 +16280,10 @@
               "$ref": "#/components/schemas/OverviewTrendDay"
             }
           },
-          "popularCategories": {
+          "popularServices": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OverviewCategory"
+              "$ref": "#/components/schemas/OverviewService"
             }
           },
           "topShops": {
@@ -16293,7 +16293,7 @@
             }
           }
         },
-        "description": "\u0060Days\u0060: The KPI window: today only (1), or the last 7 or 30 days including today.\n        \u0060AppointmentsToday\u0060: Today\u0027s bookings (the whole platform day) without cancellations.\n        \u0060Period\u0060: Bookings that started from the window\u0027s first day until now.\n        \u0060Previous\u0060: The same elapsed length immediately before, for the deltas.\n        \u0060Trend\u0060: The last 14 days, oldest first, every day present."
+        "description": "\u0060Days\u0060: The KPI window: today only (1), or the last 7 or 30 days including today.\n        \u0060AppointmentsToday\u0060: Today\u0027s bookings (the whole platform day) without cancellations.\n        \u0060Period\u0060: Bookings that started from the window\u0027s first day until now.\n        \u0060Previous\u0060: The same elapsed length immediately before, for the deltas.\n        \u0060Trend\u0060: The last 14 days, oldest first, every day present.\n        \u0060PopularServices\u0060: The most booked services and packages in the window, cancellations left out."
       },
       "AdminPackageListItem": {
         "required": [
@@ -22013,50 +22013,10 @@
         },
         "description": "SuperAdmin override of the period in force: a shop-specific price and/or end date, with a reason."
       },
-      "OverviewCategory": {
-        "required": [
-          "kind",
-          "categoryId",
-          "nameAr",
-          "nameEn",
-          "bookings"
-        ],
-        "type": "object",
-        "properties": {
-          "kind": {
-            "$ref": "#/components/schemas/OverviewCategoryKind"
-          },
-          "categoryId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "nameAr": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "nameEn": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "bookings": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "description": "Bookings of one platform category (services are shop-owned, so they are never grouped by a global service, DV-S02)."
-      },
-      "OverviewCategoryKind": {
+      "OverviewOfferKind": {
         "enum": [
-          "Category",
-          "Packages",
-          "Uncategorised"
+          "Service",
+          "Package"
         ]
       },
       "OverviewPeriod": {
@@ -22111,6 +22071,52 @@
           }
         },
         "description": "\u0060Total\u0060: Bookings that started in the window, cancellations included (the rates\u0027 denominator).\n        \u0060CompletionRate\u0060: Completed \u00F7 total, in percent with one decimal; 0 when there were none."
+      },
+      "OverviewService": {
+        "required": [
+          "kind",
+          "id",
+          "nameAr",
+          "nameEn",
+          "shopId",
+          "shopNameAr",
+          "shopNameEn",
+          "bookings"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/OverviewOfferKind"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "shopId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shopNameAr": {
+            "type": "string"
+          },
+          "shopNameEn": {
+            "type": "string"
+          },
+          "bookings": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Bookings of one shop\u0027s service or package (D-154). Services and packages are each shop\u0027s own (DV-S02), so a row names\nits shop: \u00AB\u0642\u0635 \u0627\u0644\u0634\u0639\u0631 \u00B7 \u0627\u0644\u0623\u0635\u0627\u0644\u0629\u00BB. It replaces the platform categories, which each shop\u0027s own sections (D-149) superseded."
       },
       "OverviewTopShop": {
         "required": [

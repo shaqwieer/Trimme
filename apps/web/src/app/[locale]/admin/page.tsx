@@ -19,7 +19,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * The platform overview (a-overview, R-AD-01, D-101): KPIs for today or the last 7 or 30 days with their change, the
- * 14-day booking trend, the most booked categories, the busiest shops and the subscriptions to follow up. Every figure
+ * 14-day booking trend, the most booked services and packages (each with its shop, D-154), the busiest shops and the subscriptions to follow up. Every figure
  * comes from the API; nothing is computed or invented here.
  */
 export default async function AdminHomePage({ params, searchParams }: PageProps<'/[locale]/admin'>) {
@@ -179,18 +179,19 @@ export default async function AdminHomePage({ params, searchParams }: PageProps<
               </Card>
               <Card as="section" className="flex flex-col gap-4 p-5">
                 <h2 className="text-h3 font-bold text-navy-900">{t('popular.title')}</h2>
-                {data.popularCategories.length === 0 ? (
+                {data.popularServices.length === 0 ? (
                   <p className="text-caption text-text-secondary">{t('popular.empty')}</p>
                 ) : (
                   <RankedBars
                     label={t('popular.title')}
-                    rows={data.popularCategories.map((c) => ({
-                      key: `${c.kind}-${c.categoryId ?? ''}`,
-                      name:
-                        c.kind === 'Category'
-                          ? localizedName(lang, c.nameAr ?? '', c.nameEn)
-                          : t(`popular.${c.kind}`),
-                      value: c.bookings,
+                    rows={data.popularServices.map((s) => ({
+                      key: `${s.kind}-${s.id}`,
+                      // Each shop's own service or package, named with its shop (D-154).
+                      name: t(s.kind === 'Package' ? 'popular.package' : 'popular.service', {
+                        name: localizedName(lang, s.nameAr, s.nameEn),
+                        shop: localizedName(lang, s.shopNameAr, s.shopNameEn),
+                      }),
+                      value: s.bookings,
                     }))}
                   />
                 )}

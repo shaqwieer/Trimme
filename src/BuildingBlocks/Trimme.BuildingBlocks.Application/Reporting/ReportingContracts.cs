@@ -76,11 +76,15 @@ public interface ICustomerStatistics
     Task<int> RegisteredAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }
 
-/// <summary>The platform category of shop services (implemented by the Services module; categories are platform data).</summary>
-public interface IServiceCategoryLookup
+/// <summary>
+/// The names and shops of booked services and packages (implemented by the Services module), for the overview's most
+/// booked list (D-154). Services and packages are each shop's own, so every row carries its shop.
+/// </summary>
+public interface IBookedOfferLookup
 {
-    /// <summary>Each given service's category; services without a category are absent.</summary>
-    Task<IReadOnlyDictionary<Guid, ServiceCategoryRef>> CategoriesOfAsync(IReadOnlyCollection<Guid> serviceIds, CancellationToken cancellationToken);
+    /// <summary>Each given service and package that still exists, by id (archived ones included).</summary>
+    Task<IReadOnlyDictionary<Guid, BookedOfferRef>> OffersAsync(
+        IReadOnlyCollection<Guid> serviceIds, IReadOnlyCollection<Guid> packageIds, CancellationToken cancellationToken);
 }
 
-public sealed record ServiceCategoryRef(Guid Id, string NameAr, string NameEn);
+public sealed record BookedOfferRef(Guid Id, ShopId ShopId, string NameAr, string? NameEn);

@@ -1882,3 +1882,20 @@ This refines D-126.
 - **Evidence:**
   - web: lint, typecheck, format and `openapi:check` pass; `pnpm test` 61 files, 571 tests (new: the walk-in barber's own length); `pnpm build` and the bundle budget pass, 89 routes within budget (the walk-in page is 285.9 / 330 KB);
   - E2E (web image built from the worktree, 3 workers): the route audit (light and dark, every role) and `services.spec`, which checks the admin's tabs show no «Categories»: 22 passed, 1 failed. The failure was the dark-mode anonymous audit: `/ar/auth/session` had no title while it redirects. That page is untouched here and passed in light mode; re-run twice, both passed (timing).
+
+## D-154 — The admin home ranks the most booked services, each with its shop, instead of platform categories — Accepted (Session 28, after Phase 17, at the user's request)
+- **The request.** The user said "ok switch it to rank the most-booked services", following D-153's note that the admin home's «الأكثر حجزاً» still grouped bookings by the platform categories, which each shop's own sections replaced (D-149).
+- **The card «الخدمات الأكثر حجزاً»** lists the five most booked services and packages in the window: today, 7 or 30 days, bookings that started, cancellations left out (the same window and counting as before).
+  - Services and packages are each shop's own (DV-S02), so every row names its shop: «قص الشعر · الأصالة», «باقة الشعر واللحية (باقة) · باربر هاوس».
+  - Equal counts are ordered services before packages, then by Arabic name. A service or package deleted since is left out.
+- **API:**
+  - `AdminOverviewResponse.popularCategories` is replaced by `popularServices`: `{kind: Service|Package, id, nameAr, nameEn, shopId, shopNameAr, shopNameEn, bookings}`;
+  - the reporting port `IServiceCategoryLookup` is replaced by `IBookedOfferLookup` (Services module: names and shops of booked services and packages, read in the admin scope);
+  - OpenAPI regenerated.
+- **Kept:** the platform categories in the data and the admin category endpoints; nothing reads them for the overview any more.
+- **Shared tree:** D-151 and D-152 were in progress in two other sessions. This was built and verified in its own worktree (`HEAD` plus only these changes), and committed by applying its patch to the index, so their uncommitted API and message changes stayed out.
+- **Evidence** (all in the worktree):
+  - .NET: Release build 0 warnings; unit 500/500; architecture 69/69; `AdminOperationsTests` and `OpenApiContractTests` 10/10 (OpenAPI regenerated); full integration 270/270.
+  - Web: `openapi:generate`, typecheck, lint and format pass; `pnpm test` 61 files, 571 tests; `pnpm build` and the bundle budget pass, 89 routes (the admin home 264.1 / 330 KB).
+  - E2E (api and web built from the worktree): the admin route audit, light and dark, 4/4.
+  - On the local data, the card lists «قص وتصفيف · باربر هاوس ١٠», «حلاقة أطفال · باربر هاوس ٢»… for 30 days.

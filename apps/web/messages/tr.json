@@ -2798,10 +2798,10 @@
       "date": "Tarih"
     },
     "popular": {
-      "title": "En çok randevu alınan kategoriler",
+      "title": "En çok rezerve edilen hizmetler",
       "empty": "Bu dönemde henüz randevu yok.",
-      "Packages": "Paketler",
-      "Uncategorised": "Kategorisiz"
+      "service": "{name} · {shop}",
+      "package": "{name} (paket) · {shop}"
     },
     "topShops": {
       "title": "En yoğun salonlar",

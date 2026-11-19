@@ -19,15 +19,18 @@ public sealed record OverviewPeriod(
 
 public sealed record OverviewTrendDay(DateOnly Date, int Completed, int CancelledOrNoShow, int Other);
 
-public enum OverviewCategoryKind
+public enum OverviewOfferKind
 {
-    Category,
-    Packages,
-    Uncategorised,
+    Service,
+    Package,
 }
 
-/// <summary>Bookings of one platform category (services are shop-owned, so they are never grouped by a global service, DV-S02).</summary>
-public sealed record OverviewCategory(OverviewCategoryKind Kind, Guid? CategoryId, string? NameAr, string? NameEn, int Bookings);
+/// <summary>
+/// Bookings of one shop's service or package (D-154). Services and packages are each shop's own (DV-S02), so a row names
+/// its shop: «قص الشعر · الأصالة». It replaces the platform categories, which each shop's own sections (D-149) superseded.
+/// </summary>
+public sealed record OverviewService(
+    OverviewOfferKind Kind, Guid Id, string NameAr, string? NameEn, Guid ShopId, string ShopNameAr, string ShopNameEn, int Bookings);
 
 public sealed record OverviewTopShop(Guid ShopId, string Slug, string NameAr, string NameEn, int Bookings, decimal CancellationRate, decimal Rating, int ReviewCount);
 
@@ -37,6 +40,7 @@ public sealed record OverviewTopShop(Guid ShopId, string Slug, string NameAr, st
 /// <c>Period</c>: Bookings that started from the window's first day until now.
 /// <c>Previous</c>: The same elapsed length immediately before, for the deltas.
 /// <c>Trend</c>: The last 14 days, oldest first, every day present.
+/// <c>PopularServices</c>: The most booked services and packages in the window, cancellations left out.
 /// </summary>
 public sealed record AdminOverviewResponse(
     int Days,
@@ -51,7 +55,7 @@ public sealed record AdminOverviewResponse(
     int NewCustomers,
     int NewCustomersPrevious,
     IReadOnlyList<OverviewTrendDay> Trend,
-    IReadOnlyList<OverviewCategory> PopularCategories,
+    IReadOnlyList<OverviewService> PopularServices,
     IReadOnlyList<OverviewTopShop> TopShops);
 
 internal sealed record GetAdminOverviewQuery(int Days) : IQuery<Result<AdminOverviewResponse>>;
@@ -63,7 +67,7 @@ internal sealed class GetAdminOverviewHandler(
     IShopStatistics shops,
     IProfessionalStatistics professionals,
     ICustomerStatistics customers,
-    IServiceCategoryLookup categories,
+    IBookedOfferLookup offers,
     IShopDirectory directory,
     IRatingReader ratings,
     TimeProvider clock)
@@ -127,25 +131,34 @@ internal sealed class GetAdminOverviewHandler(
     private static decimal Percent(int part, int total) =>
         total == 0 ? 0 : Math.Round(100m * part / total, 1, MidpointRounding.AwayFromZero);
 
-    private async Task<IReadOnlyList<OverviewCategory>> PopularAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<OverviewService>> PopularAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
     {
-        var items = await bookings.ItemsAsync(from, to, cancellationToken);
-        var byService = await categories.CategoriesOfAsync([.. items.Where(i => i.ServiceId is not null).Select(i => i.ServiceId!.Value)], cancellationToken);
-        var buckets = new Dictionary<(OverviewCategoryKind Kind, Guid? Id), (ServiceCategoryRef? Category, int Count)>();
-        foreach (var item in items)
+        // One count per booked service or package; a row that no longer exists (deleted) is left out.
+        var counts = new Dictionary<(OverviewOfferKind Kind, Guid Id), int>();
+        foreach (var item in await bookings.ItemsAsync(from, to, cancellationToken))
         {
-            var category = item.ServiceId is { } serviceId ? byService.GetValueOrDefault(serviceId) : null;
-            var key = item.PackageId is not null
-                ? (OverviewCategoryKind.Packages, (Guid?)null)
-                : category is null ? (OverviewCategoryKind.Uncategorised, null) : (OverviewCategoryKind.Category, category.Id);
-            buckets[key] = (category, buckets.GetValueOrDefault(key).Count + item.Count);
+            var key = item.PackageId is { } packageId ? (OverviewOfferKind.Package, packageId) : (OverviewOfferKind.Service, item.ServiceId!.Value);
+            counts[key] = counts.GetValueOrDefault(key) + item.Count;
         }
 
+        var named = await offers.OffersAsync(
+            [.. counts.Keys.Where(k => k.Kind == OverviewOfferKind.Service).Select(k => k.Id)],
+            [.. counts.Keys.Where(k => k.Kind == OverviewOfferKind.Package).Select(k => k.Id)],
+            cancellationToken);
+        var top = counts.Where(c => named.ContainsKey(c.Key.Id))
+            .OrderByDescending(c => c.Value).ThenBy(c => c.Key.Kind).ThenBy(c => named[c.Key.Id].NameAr, StringComparer.Ordinal).ThenBy(c => c.Key.Id)
+            .Take(ListSize)
+            .ToList();
+        var shopNames = await directory.FindManyAsync([.. top.Select(c => named[c.Key.Id].ShopId).Distinct()], cancellationToken);
         return
         [
-            .. buckets.OrderByDescending(b => b.Value.Count).ThenBy(b => b.Key.Kind).ThenBy(b => b.Value.Category?.NameEn, StringComparer.Ordinal)
-                .Take(ListSize)
-                .Select(b => new OverviewCategory(b.Key.Kind, b.Key.Id, b.Value.Category?.NameAr, b.Value.Category?.NameEn, b.Value.Count)),
+            .. top.Select(c =>
+            {
+                var offer = named[c.Key.Id];
+                var shop = shopNames.GetValueOrDefault(offer.ShopId);
+                return new OverviewService(
+                    c.Key.Kind, offer.Id, offer.NameAr, offer.NameEn, offer.ShopId.Value, shop?.NameAr ?? string.Empty, shop?.NameEn ?? string.Empty, c.Value);
+            }),
         ];
     }
 

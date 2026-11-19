@@ -4417,6 +4417,7 @@ export interface components {
          *             `Period`: Bookings that started from the window's first day until now.
          *             `Previous`: The same elapsed length immediately before, for the deltas.
          *             `Trend`: The last 14 days, oldest first, every day present.
+         *             `PopularServices`: The most booked services and packages in the window, cancellations left out.
          */
         AdminOverviewResponse: {
             /** Format: int32 */
@@ -4437,7 +4438,7 @@ export interface components {
             /** Format: int32 */
             newCustomersPrevious: number;
             trend: components["schemas"]["OverviewTrendDay"][];
-            popularCategories: components["schemas"]["OverviewCategory"][];
+            popularServices: components["schemas"]["OverviewService"][];
             topShops: components["schemas"]["OverviewTopShop"][];
         };
         AdminPackageListItem: {
@@ -6141,18 +6142,8 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
-        /** @description Bookings of one platform category (services are shop-owned, so they are never grouped by a global service, DV-S02). */
-        OverviewCategory: {
-            kind: components["schemas"]["OverviewCategoryKind"];
-            /** Format: uuid */
-            categoryId: null | string;
-            nameAr: null | string;
-            nameEn: null | string;
-            /** Format: int32 */
-            bookings: number;
-        };
         /** @enum {unknown} */
-        OverviewCategoryKind: "Category" | "Packages" | "Uncategorised";
+        OverviewOfferKind: "Service" | "Package";
         /**
          * @description `Total`: Bookings that started in the window, cancellations included (the rates' denominator).
          *             `CompletionRate`: Completed ÷ total, in percent with one decimal; 0 when there were none.
@@ -6176,6 +6167,23 @@ export interface components {
             cancellationRate: number;
             /** Format: double */
             noShowRate: number;
+        };
+        /**
+         * @description Bookings of one shop's service or package (D-154). Services and packages are each shop's own (DV-S02), so a row names
+         *     its shop: «قص الشعر · الأصالة». It replaces the platform categories, which each shop's own sections (D-149) superseded.
+         */
+        OverviewService: {
+            kind: components["schemas"]["OverviewOfferKind"];
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: uuid */
+            shopId: string;
+            shopNameAr: string;
+            shopNameEn: string;
+            /** Format: int32 */
+            bookings: number;
         };
         OverviewTopShop: {
             /** Format: uuid */

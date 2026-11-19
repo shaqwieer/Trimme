@@ -2798,10 +2798,10 @@
       "date": "Date"
     },
     "popular": {
-      "title": "Most booked categories",
+      "title": "Most booked services",
       "empty": "No bookings in this period yet.",
-      "Packages": "Packages",
-      "Uncategorised": "Without a category"
+      "service": "{name} · {shop}",
+      "package": "{name} (package) · {shop}"
     },
     "topShops": {
       "title": "Busiest shops",

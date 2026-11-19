@@ -2798,10 +2798,10 @@
       "date": "التاريخ"
     },
     "popular": {
-      "title": "التصنيفات الأكثر حجزاً",
+      "title": "الخدمات الأكثر حجزاً",
       "empty": "لا حجوزات في هذه الفترة بعد.",
-      "Packages": "الباقات",
-      "Uncategorised": "دون تصنيف"
+      "service": "{name} · {shop}",
+      "package": "{name} (باقة) · {shop}"
     },
     "topShops": {
       "title": "المحلات الأعلى نشاطاً",

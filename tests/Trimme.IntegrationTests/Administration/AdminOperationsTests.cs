@@ -69,7 +69,7 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/schedule/opening-hours",
             new { intervals = lateHours, version = schedule.GetProperty("openingHours").GetProperty("version").GetUInt32() }, ct), ct);
 
-        // A categorised service, so popular services group by platform category (DV-S02).
+        // Another service of shop A. It still carries a platform category, which the ranking no longer uses (D-154).
         var hair = (await OkAsync(w.Admin.PostAsync("/api/v1/admin/service-categories", new { nameAr = "شعر", nameEn = "Hair", icon = "scissors", displayOrder = 1 }, ct), ct, HttpStatusCode.Created))
             .GetProperty("id").GetGuid();
         var cut = (await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/services", new { nameAr = "قص", price = 50m, durationMinutes = 30, onlineBookable = true, categoryId = hair }, ct), ct, HttpStatusCode.Created))
@@ -145,11 +145,19 @@ public sealed class AdminOperationsTests(PostgresFixture postgres)
         trend[^2].GetProperty("other").GetInt32().ShouldBe(1, "shop B's confirmed visit");
         trend[^1].GetProperty("other").GetInt32().ShouldBe(2);
 
-        var popular = week.GetProperty("popularCategories").EnumerateArray().ToList();
-        popular.Select(p => p.GetProperty("kind").GetString()).ShouldBe(["Uncategorised", "Category"]);
-        popular[0].GetProperty("bookings").GetInt32().ShouldBe(4, "the cancelled package and the future booking are not counted");
-        popular[1].GetProperty("nameEn").GetString().ShouldBe("Hair");
-        popular[1].GetProperty("bookings").GetInt32().ShouldBe(1);
+        // The most booked services and packages (D-154): each shop's own, named with its shop. The cancelled package and
+        // the future booking are not counted.
+        var popular = week.GetProperty("popularServices").EnumerateArray().ToList();
+        popular.Count.ShouldBe(4);
+        popular[0].GetProperty("kind").GetString().ShouldBe("Service");
+        popular[0].GetProperty("id").GetGuid().ShouldBe(w.Haircut);
+        popular[0].GetProperty("bookings").GetInt32().ShouldBe(2, "the no-show and the late-night visit");
+        popular[0].GetProperty("shopId").GetGuid().ShouldBe(w.Shops.A.ShopId);
+        popular[0].GetProperty("shopNameAr").GetString().ShouldNotBeNullOrWhiteSpace();
+        popular.Skip(1).Select(p => p.GetProperty("id").GetGuid()).ShouldBe([cut, w.Beard, w.ServiceB], ignoreOrder: true);
+        popular.Skip(1).ShouldAllBe(p => p.GetProperty("bookings").GetInt32() == 1);
+        popular.Single(p => p.GetProperty("id").GetGuid() == w.ServiceB).GetProperty("shopId").GetGuid().ShouldBe(w.Shops.B.ShopId);
+        popular.ShouldNotContain(p => p.GetProperty("kind").GetString() == "Package");
 
         var top = week.GetProperty("topShops").EnumerateArray().ToList();
         top.Select(s => s.GetProperty("shopId").GetGuid()).ShouldBe([w.Shops.A.ShopId, w.Shops.B.ShopId]);

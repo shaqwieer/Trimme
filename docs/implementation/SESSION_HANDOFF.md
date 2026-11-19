@@ -31,6 +31,11 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 28, after the deploy: the most booked services on the admin home (D-154)
+- **What changed:** «الخدمات الأكثر حجزاً» lists the five most booked services and packages with their shops («قص وتصفيف · باربر هاوس»), replacing the platform-category ranking.
+- **API:** `popularCategories` became `popularServices`; the reporting port is now `IBookedOfferLookup`.
+- **Committed locally, not pushed or deployed.** Built and verified in its own worktree, and committed as a patch to the index, while D-151 and D-152 were in progress in other sessions.
+
 ## Session 28, after the deploy: the two items D-149 left (D-153)
 - **What changed:**
   - the walk-in form shows each barber's own length on their card, and the chosen barber's length in the total and the end time;
