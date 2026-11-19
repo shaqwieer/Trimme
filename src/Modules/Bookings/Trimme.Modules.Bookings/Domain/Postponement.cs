@@ -27,7 +27,11 @@ public sealed class PostponementOffer : ICustomerOwned
     /// <summary>The customer may answer until this long before the original start (the document's «قبل الموعد بساعة»).</summary>
     public static readonly TimeSpan AnswerBefore = TimeSpan.FromHours(1);
 
-    public PostponementOffer(Guid id, Booking booking, DateTimeOffset startsAt, BookingActor actor, DateTimeOffset now)
+    /// <summary>
+    /// An offer of <paramref name="startsAt"/> for the booking. <paramref name="bufferMinutes"/> is the shop's cleaning time
+    /// now, the one the offered time was checked with (D-149); without it, the booking's own.
+    /// </summary>
+    public PostponementOffer(Guid id, Booking booking, DateTimeOffset startsAt, BookingActor actor, DateTimeOffset now, int? bufferMinutes = null)
     {
         Id = id;
         BookingId = booking.Id;
@@ -37,6 +41,7 @@ public sealed class PostponementOffer : ICustomerOwned
         OriginalStartsAt = booking.StartsAt;
         StartsAt = startsAt.ToUniversalTime();
         EndsAt = StartsAt.AddMinutes(booking.DurationMinutes);
+        BlockedUntil = EndsAt.AddMinutes(Math.Max(bufferMinutes ?? booking.BufferMinutes, 0));
         ExpiresAt = booking.StartsAt - AnswerBefore;
         Status = PostponementStatus.Open;
         OfferedBy = actor.Id;
@@ -64,6 +69,12 @@ public sealed class PostponementOffer : ICustomerOwned
     public DateTimeOffset StartsAt { get; private set; }
 
     public DateTimeOffset EndsAt { get; private set; }
+
+    /// <summary>The end plus the shop's cleaning time (D-149): what the offer holds of the barber's time.</summary>
+    public DateTimeOffset BlockedUntil { get; private set; }
+
+    /// <summary>The cleaning time the offer holds after its end; the booking takes it when the customer accepts.</summary>
+    public int BufferMinutes => (int)Math.Round((BlockedUntil - EndsAt).TotalMinutes);
 
     public DateTimeOffset ExpiresAt { get; private set; }
 

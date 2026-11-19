@@ -55,7 +55,7 @@ internal sealed class UpdatePlatformSettingsValidator : AbstractValidator<Update
     public UpdatePlatformSettingsValidator()
     {
         RuleFor(c => c.MinLeadTimeMinutes).InclusiveBetween(0, 1440).WithErrorCode("validation.out_of_range");
-        RuleFor(c => c.BookingHorizonDays).InclusiveBetween(1, 365).WithErrorCode("validation.out_of_range");
+        RuleFor(c => c.BookingHorizonDays).InclusiveBetween(1, 90).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.SlotStepMinutes).Must(PlatformSettings.SlotSteps.Contains).WithErrorCode("validation.invalid");
         RuleFor(c => c.CancellationCutoffMinutes).InclusiveBetween(0, 10080).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.ReviewWindowDays).InclusiveBetween(1, 90).WithErrorCode("validation.out_of_range");

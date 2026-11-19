@@ -66,7 +66,8 @@ internal sealed class ShopProfileRules<T> : AbstractValidator<T>
             .MaximumLength(Shop.MaxNameLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.DescriptionAr).MaximumLength(Shop.MaxDescriptionLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.DescriptionEn).MaximumLength(Shop.MaxDescriptionLength).WithErrorCode("validation.too_long");
-        RuleFor(p => p.Category).IsInEnum().WithErrorCode("validation.invalid");
+        // The platform is for men's barbershops only (D-149): «صالون تجميل» and «للجميع» are no longer offered.
+        RuleFor(p => p.Category).Equal(ShopCategory.Barbershop).WithErrorCode("validation.invalid");
         RuleFor(p => p.PublicPhone)
             .Must(phone => string.IsNullOrWhiteSpace(phone) || PhoneNumber.TryParse(phone, out _))
             .WithErrorCode("validation.phone_invalid");

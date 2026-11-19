@@ -3,11 +3,11 @@
 import { useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { CatalogTabs } from '@/components/booking/CatalogTabs';
-import { catalogGroups, type CatalogCategory, type CatalogItem, packageSaving } from '@/lib/booking/catalog';
+import { catalogGroups, type CatalogSection, type CatalogItem, packageSaving } from '@/lib/booking/catalog';
 import { type AppLocale, formatNumber, formatPrice } from '@/lib/i18n/format';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 
-export type { CatalogCategory, CatalogItem };
+export type { CatalogSection, CatalogItem };
 
 /** What a choosable tile needs (the booking's service step draws it). */
 export type CatalogChoice = {
@@ -20,19 +20,19 @@ export type CatalogChoice = {
 };
 
 /**
- * The booking's service step (D-148, «٤-١»/«٤-٢»): the shop's services in category tabs, packages last, as choosable
+ * The booking's service step (D-148, «٤-١»/«٤-٢»): the shop's services in its own section tabs (D-149), packages last, as choosable
  * tiles two to a row on a phone. A tab counts the items chosen from it in a small circle, never «٠»; a package says
  * what it saves. The shop page shows the same tabs from the server (`ShopServiceCatalog`).
  */
 export function ServiceCatalog({
   items,
-  categories,
+  sections,
   selected,
   choice,
   label,
 }: {
   items: CatalogItem[];
-  categories: CatalogCategory[];
+  sections: CatalogSection[];
   /** The chosen items. */
   selected: CatalogItem[];
   /** Draws a choosable tile. */
@@ -42,7 +42,7 @@ export function ServiceCatalog({
 }) {
   const t = useTranslations('booking.catalog');
   const locale = useLocale() as AppLocale;
-  const groups = catalogGroups(items, categories, locale, { other: t('other'), packages: t('packages') });
+  const groups = catalogGroups(items, sections, locale, { other: t('other'), packages: t('packages') });
   const isChosen = (item: CatalogItem) => selected.some((s) => s.kind === item.kind && s.id === item.id);
 
   return (

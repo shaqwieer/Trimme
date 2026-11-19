@@ -55,9 +55,11 @@ test.describe('the owner’s barbers (D-146)', () => {
     await owner.getByRole('link', { name: 'Add a barber' }).click();
     await expect(owner).toHaveURL(/\/en\/shop\/barbers\/new$/);
     await expect(owner.getByLabel('Shop')).toHaveCount(0);
+    // Added by mobile (D-149): the mobile first, then the names and the languages the barber speaks.
+    await owner.getByLabel("Barber's mobile").fill(national);
     await owner.getByLabel('Name in Arabic').fill(`حلاق ${suffix}`);
     await owner.getByLabel('Name in English').fill(nameEn);
-    await owner.getByLabel("Professional's WhatsApp number").fill(national);
+    await owner.getByRole('checkbox', { name: 'Urdu' }).check();
     await owner.getByRole('button', { name: 'Add the barber' }).click();
 
     // The password is shown once, in a dialog, never in the address bar.

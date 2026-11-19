@@ -26,11 +26,15 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
                 return null;
             }
 
-            var professionals = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
-                .Where(a => a.ShopId == shopId && a.ServiceId == id).Select(a => a.ProfessionalId).ToListAsync(cancellationToken);
+            var assigned = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+                .Where(a => a.ShopId == shopId && a.ServiceId == id).ToListAsync(cancellationToken);
+
+            // Each barber's own length (D-149), where it is not the service's.
+            var lengths = assigned.Where(a => a.MinutesFor(service) != service.DurationMinutes)
+                .ToDictionary(a => a.ProfessionalId, a => new BarberLength(a.MinutesFor(service), new Dictionary<Guid, int>()));
             return new BookableOffer(
-                service.Id.Value, IsPackage: false, service.DurationMinutes, service.OnlineBookable, professionals,
-                service.NameAr, service.NameEn, service.Price, service.Currency, []);
+                service.Id.Value, IsPackage: false, service.DurationMinutes, service.OnlineBookable, [.. assigned.Select(a => a.ProfessionalId)],
+                service.NameAr, service.NameEn, service.Price, service.Currency, [], lengths.Count == 0 ? null : lengths);
         }
 
         if (packageId is { } rawPackageId && serviceId is null)
@@ -97,7 +101,8 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
         return new BookableOffer(
             services[0].Id.Value, IsPackage: false, services.Sum(s => s.DurationMinutes), services.All(s => s.OnlineBookable), eligible,
             Joined(services.Select(s => s.NameAr)), nameEn, services.Sum(s => s.Price), currency,
-            [.. services.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))]);
+            [.. services.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))],
+            Lengths(eligible, services, assignments, 0));
     }
 
     public async Task<BookableOffer?> FindPackageWithServicesAsync(ShopId shopId, Guid packageId, IReadOnlyList<Guid> serviceIds, CancellationToken cancellationToken)
@@ -140,7 +145,32 @@ internal sealed class BookableOfferCatalog(TrimmeDbContext db) : IBookableOfferC
         return new BookableOffer(
             package.Id, IsPackage: true, package.DurationMinutes + extras.Sum(s => s.DurationMinutes), package.OnlineBookable && extras.All(s => s.OnlineBookable),
             eligible, Joined([package.NameAr, .. extras.Select(s => s.NameAr)]), nameEn, package.Price + extras.Sum(s => s.Price), package.Currency,
-            [.. package.Items, .. extras.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))]);
+            [.. package.Items, .. extras.Select(s => new BookableOfferItem(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.DurationMinutes))],
+            Lengths(eligible, extras, assigned, package.DurationMinutes));
+    }
+
+    /// <summary>
+    /// Each eligible barber's length where it differs from the standard (D-149): <paramref name="fixedMinutes"/> (a
+    /// package keeps the length the shop set) plus the barber's own length for each of <paramref name="services"/>.
+    /// </summary>
+    private static Dictionary<ProfessionalId, BarberLength>? Lengths(
+        IReadOnlyList<ProfessionalId> eligible, IReadOnlyList<ShopService> services, IReadOnlyList<ProfessionalServiceAssignment> assignments, int fixedMinutes)
+    {
+        var standard = fixedMinutes + services.Sum(s => s.DurationMinutes);
+        var lengths = new Dictionary<ProfessionalId, BarberLength>();
+        foreach (var professional in eligible)
+        {
+            var items = services.ToDictionary(
+                s => s.Id.Value,
+                s => assignments.FirstOrDefault(a => a.ProfessionalId == professional && a.ServiceId == s.Id)?.MinutesFor(s) ?? s.DurationMinutes);
+            var total = fixedMinutes + items.Values.Sum();
+            if (total != standard || items.Any(i => i.Value != services.First(s => s.Id.Value == i.Key).DurationMinutes))
+            {
+                lengths[professional] = new BarberLength(total, items);
+            }
+        }
+
+        return lengths.Count == 0 ? null : lengths;
     }
 
     /// <summary>The services' names as one booked item name, shortened to the snapshot's length.</summary>

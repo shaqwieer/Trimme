@@ -2,8 +2,12 @@ using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.Modules.Availability.Domain.Engine;
 
-/// <summary>Platform booking rules (spec §11, D-076): minimum lead time, horizon and slot step.</summary>
-public sealed record BookingPolicy(int MinLeadMinutes, int HorizonDays, int SlotStepMinutes);
+/// <summary>
+/// Booking rules (spec §11, D-076; per shop since D-149): minimum lead time, horizon, slot step, and the cleaning time a
+/// booking holds after its end (<paramref name="BufferMinutes"/>): a start fits only when the item and the cleaning after
+/// it are free.
+/// </summary>
+public sealed record BookingPolicy(int MinLeadMinutes, int HorizonDays, int SlotStepMinutes, int BufferMinutes = 0);
 
 /// <summary>The shop's side of availability: its time zone, weekly opening hours and closed days.</summary>
 public sealed record ShopCalendar(TimeZoneInfo TimeZone, IReadOnlyList<WeeklyInterval> OpeningHours, IReadOnlyList<DateRange> Closures);
@@ -27,8 +31,16 @@ public sealed record ProfessionalCalendar(
 /// <param name="Blocked">Time off (and bookings, when loaded) within the working time.</param>
 public sealed record ProfessionalDay(InstantSet Working, InstantSet Breaks, InstantSet Blocked);
 
-/// <summary>Slots wanted for the local dates <see cref="From"/>…<see cref="To"/> (inclusive), for an item of <see cref="DurationMinutes"/>.</summary>
-public sealed record AvailabilityQuery(DateOnly From, DateOnly To, int DurationMinutes, DateTimeOffset Now, BookingPolicy Policy);
+/// <summary>
+/// Slots wanted for the local dates <see cref="From"/>…<see cref="To"/> (inclusive), for an item of
+/// <see cref="DurationMinutes"/>. <see cref="Durations"/> are the professionals whose own length differs (D-149).
+/// </summary>
+public sealed record AvailabilityQuery(
+    DateOnly From, DateOnly To, int DurationMinutes, DateTimeOffset Now, BookingPolicy Policy, IReadOnlyDictionary<ProfessionalId, int>? Durations = null)
+{
+    public int DurationFor(ProfessionalId professional) =>
+        Durations is not null && Durations.TryGetValue(professional, out var minutes) ? minutes : DurationMinutes;
+}
 
 /// <summary>Where a slot sits in the day (D-009 groups the slot grid by period).</summary>
 public enum DayPeriod
@@ -46,7 +58,8 @@ public enum DayPeriod
 /// <summary>
 /// A bookable start. <see cref="Date"/> and <see cref="LocalTime"/> are the shop-local calendar date and time of
 /// <see cref="StartsAt"/>; <see cref="Professionals"/> are every professional free for the whole item (the candidate set
-/// of "any professional", D-012).
+/// of "any professional", D-012), each for their own length. <see cref="EndsAt"/> is the end at the candidates' length
+/// when they share one, else at the standard length.
 /// </summary>
 public sealed record AvailableSlot(
     DateTimeOffset StartsAt,
@@ -87,7 +100,8 @@ public static class AvailabilityEngine
         ArgumentNullException.ThrowIfNull(shop);
         ArgumentNullException.ThrowIfNull(professionals);
         ArgumentNullException.ThrowIfNull(query);
-        if (query.DurationMinutes <= 0 || professionals.Count == 0 || !SlotSteps.Contains(query.Policy.SlotStepMinutes))
+        if (query.DurationMinutes <= 0 || professionals.Count == 0 || !SlotSteps.Contains(query.Policy.SlotStepMinutes)
+            || professionals.Any(p => query.DurationFor(p.Id) <= 0))
         {
             return [];
         }
@@ -104,15 +118,18 @@ public static class AvailabilityEngine
         // The window of the day before `first` can run past midnight into it.
         var businessDays = Days(first.AddDays(-1), last);
         var open = Windows(clock, shop.OpeningHours, businessDays.Where(d => !shop.Closures.Any(c => c.Contains(d))));
-        var free = professionals.Select(p => (p.Id, Free: FreeTime(clock, shop, p, businessDays, open))).ToList();
-
-        var duration = TimeSpan.FromMinutes(query.DurationMinutes);
+        // Each professional needs their own length, and the shop's cleaning time after it, free (D-149).
+        var buffer = Math.Max(query.Policy.BufferMinutes, 0);
+        var free = professionals
+            .Select(p => (p.Id, Minutes: query.DurationFor(p.Id), Free: FreeTime(clock, shop, p, businessDays, open)))
+            .ToList();
+        var shortest = TimeSpan.FromMinutes(free.Min(p => p.Minutes) + buffer);
         var step = query.Policy.SlotStepMinutes;
         var earliest = query.Now.AddMinutes(query.Policy.MinLeadMinutes);
         var slots = new List<AvailableSlot>();
         foreach (var window in open.Ranges)
         {
-            for (var start = FirstOnGrid(clock, window.Start, step); start + duration <= window.End; start = start.AddMinutes(step))
+            for (var start = FirstOnGrid(clock, window.Start, step); start + shortest <= window.End; start = start.AddMinutes(step))
             {
                 var local = clock.Local(start);
                 var date = DateOnly.FromDateTime(local);
@@ -121,11 +138,12 @@ public static class AvailabilityEngine
                     continue;
                 }
 
-                var item = new InstantRange(start, start + duration);
-                var candidates = free.Where(p => p.Free.Contains(item)).Select(p => p.Id).ToList();
-                if (candidates.Count > 0)
+                var fitting = free.Where(p => p.Free.Contains(new InstantRange(start, start.AddMinutes(p.Minutes + buffer)))).ToList();
+                if (fitting.Count > 0)
                 {
-                    slots.Add(new AvailableSlot(start, item.End, date, TimeOnly.FromDateTime(local), PeriodOf(local.Hour), candidates));
+                    var minutes = fitting.Select(p => p.Minutes).Distinct().Count() == 1 ? fitting[0].Minutes : query.DurationMinutes;
+                    slots.Add(new AvailableSlot(
+                        start, start.AddMinutes(minutes), date, TimeOnly.FromDateTime(local), PeriodOf(local.Hour), [.. fitting.Select(p => p.Id)]));
                 }
             }
         }
@@ -159,10 +177,10 @@ public static class AvailabilityEngine
     }
 
     /// <summary>
-    /// The walk-in rule (D-088): the professional is free for the whole item. Any start minute is allowed, including
-    /// "now"; there is no lead time, horizon or grid.
+    /// The walk-in rule (D-088): the professional is free for the whole item and the shop's cleaning time after it
+    /// (D-149). Any start minute is allowed, including "now"; there is no lead time, horizon or grid.
     /// </summary>
-    public static bool IsFree(ShopCalendar shop, ProfessionalCalendar professional, DateTimeOffset start, int durationMinutes)
+    public static bool IsFree(ShopCalendar shop, ProfessionalCalendar professional, DateTimeOffset start, int durationMinutes, int bufferMinutes = 0)
     {
         ArgumentNullException.ThrowIfNull(shop);
         if (durationMinutes <= 0)
@@ -171,7 +189,7 @@ public static class AvailabilityEngine
         }
 
         var clock = new ShopClock(shop.TimeZone);
-        var item = new InstantRange(start, start.AddMinutes(durationMinutes));
+        var item = new InstantRange(start, start.AddMinutes(durationMinutes + Math.Max(bufferMinutes, 0)));
         return FreeTime(shop, professional, clock.Date(item.Start), clock.Date(item.End)).Contains(item);
     }
 

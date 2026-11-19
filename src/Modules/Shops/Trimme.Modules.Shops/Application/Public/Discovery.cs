@@ -193,7 +193,8 @@ internal sealed class DiscoveryCatalog(
                 [.. offer.ProfessionalIds.Where(active.Contains)],
                 today,
                 today.AddDays(ProbeDays - 1),
-                1))));
+                1,
+                offer.Durations))));
         }
 
         // One batch for every shop and probe offer: a fixed number of queries, not a handful per shop (Phase 17).

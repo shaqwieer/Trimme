@@ -10,6 +10,8 @@ namespace Trimme.Modules.Services.Application.Public;
 /// <summary>
 /// A published service: active, not archived, not hidden by the platform. <c>NameEn</c> may be null (D-070).
 /// <c>ProfessionalIds</c> are the professionals assigned to it (the booking wizard shows the active ones among them).
+/// <c>SectionId</c> is the shop's own section (D-149; null shows it under «أخرى»). <c>ProfessionalDurations</c> are the
+/// barbers who take their own time for it, others take <c>DurationMinutes</c>.
 /// </summary>
 public sealed record PublicServiceResponse(
     Guid Id,
@@ -22,7 +24,12 @@ public sealed record PublicServiceResponse(
     string Currency,
     int DurationMinutes,
     bool OnlineBookable,
-    IReadOnlyList<Guid> ProfessionalIds);
+    IReadOnlyList<Guid> ProfessionalIds,
+    Guid? SectionId = null,
+    IReadOnlyList<ProfessionalDurationResponse>? ProfessionalDurations = null);
+
+/// <summary>A barber's own length for a service (D-149).</summary>
+public sealed record ProfessionalDurationResponse(Guid ProfessionalId, int DurationMinutes);
 
 public sealed record PublicPackageItemResponse(Guid ServiceId, string NameAr, string? NameEn);
 
@@ -47,6 +54,29 @@ internal sealed record ListPublicCategoriesQuery : IQuery<IReadOnlyList<ServiceC
 internal sealed record ListPublicServicesQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicServiceResponse>?>;
 
 internal sealed record ListPublicPackagesQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicPackageResponse>?>;
+
+internal sealed record ListPublicSectionsQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicServiceSectionResponse>?>;
+
+/// <summary>The shop's own sections in its order (D-149), the tabs of the shop page and the booking.</summary>
+internal sealed class ListPublicSectionsHandler(TrimmeDbContext db, IPublicDataScope scope, IShopDirectory shops)
+    : IQueryHandler<ListPublicSectionsQuery, IReadOnlyList<PublicServiceSectionResponse>?>
+{
+    public async Task<IReadOnlyList<PublicServiceSectionResponse>?> Handle(ListPublicSectionsQuery query, CancellationToken cancellationToken)
+    {
+        if (await PublishedShop.FindAsync(scope, shops, query.ShopSlug, cancellationToken) is not { } shopId)
+        {
+            return null;
+        }
+
+        using var _ = scope.Begin(shopId);
+        return
+        [
+            .. (await db.Set<ServiceSection>().AsNoTracking().Where(s => s.ShopId == shopId)
+                    .OrderBy(s => s.DisplayOrder).ThenBy(s => s.CreatedAt).ToListAsync(cancellationToken))
+                .Select(s => new PublicServiceSectionResponse(s.Id.Value, s.NameAr, s.NameEn)),
+        ];
+    }
+}
 
 internal sealed class ListPublicCategoriesHandler(TrimmeDbContext db) : IQueryHandler<ListPublicCategoriesQuery, IReadOnlyList<ServiceCategoryResponse>>
 {
@@ -103,11 +133,15 @@ internal sealed class ListPublicServicesHandler(TrimmeDbContext db, IPublicDataS
             .Where(s => s.ShopId == shopId && s.IsActive && !s.IsArchived && s.Moderation == ModerationState.Visible)
             .OrderBy(s => s.DisplayOrder).ToListAsync(cancellationToken);
         var assigned = await PublishedShop.AssignmentsAsync(db, shopId, cancellationToken);
+        var ownLengths = (await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
+                .Where(a => a.ShopId == shopId && a.DurationMinutes != null).ToListAsync(cancellationToken))
+            .ToLookup(a => a.ServiceId);
         return
         [
             .. services.Select(s => new PublicServiceResponse(
                 s.Id.Value, s.NameAr, s.NameEn, s.DescriptionAr, s.DescriptionEn, s.CategoryId?.Value, s.Price, s.Currency, s.DurationMinutes, s.OnlineBookable,
-                PublishedShop.Eligible(assigned, [s.Id]))),
+                PublishedShop.Eligible(assigned, [s.Id]), s.SectionId?.Value,
+                [.. ownLengths[s.Id].Select(a => new ProfessionalDurationResponse(a.ProfessionalId.Value, a.MinutesFor(s))).OrderBy(d => d.ProfessionalId)])),
         ];
     }
 }

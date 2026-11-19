@@ -20,7 +20,8 @@ internal sealed class AvailabilityChecker(IShopDirectory shops, IPlatformSetting
         int durationMinutes,
         AvailabilityCheckMode mode,
         Guid? ignoreBookingId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<ProfessionalId, int>? durations = null)
     {
         if (candidates.Count == 0 || await shops.FindAsync(shopId, cancellationToken) is not { } shop)
         {
@@ -29,16 +30,19 @@ internal sealed class AvailabilityChecker(IShopDirectory shops, IPlatformSetting
 
         var zone = ScheduleLoader.Zone(shop.TimeZone);
         var shopClock = new ShopClock(zone);
+        // Each candidate for their own length (D-149), with the shop's cleaning time after it.
+        int Minutes(ProfessionalId id) => durations is not null && durations.TryGetValue(id, out var own) ? own : durationMinutes;
+        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken), shop.Booking);
+        var longest = candidates.Max(Minutes) + policy.BufferMinutes;
         var from = shopClock.Date(start);
-        var to = shopClock.Date(start.AddMinutes(durationMinutes));
+        var to = shopClock.Date(start.AddMinutes(longest));
         var (calendar, professionals) = await loader.CalendarsAsync(shopId, zone, candidates, from, to, cancellationToken, ignoreBookingId);
-        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
         var now = clock.GetUtcNow();
         return
         [
             .. professionals.Where(p => mode == AvailabilityCheckMode.Online
-                    ? AvailabilityEngine.IsBookable(calendar, p, start, durationMinutes, now, policy)
-                    : AvailabilityEngine.IsFree(calendar, p, start, durationMinutes))
+                    ? AvailabilityEngine.IsBookable(calendar, p, start, Minutes(p.Id), now, policy)
+                    : AvailabilityEngine.IsFree(calendar, p, start, Minutes(p.Id), policy.BufferMinutes))
                 .Select(p => p.Id),
         ];
     }

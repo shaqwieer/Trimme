@@ -243,6 +243,7 @@ internal sealed class AdminRescheduleBookingHandler(
     IAvailabilityChecker availability,
     AdminBookingMapper mapper,
     BookingActors actors,
+    ShopRulesReader rules,
     TimeProvider clock)
     : ICommandHandler<AdminRescheduleBookingCommand, Result<AdminRescheduleResult>>
 {
@@ -294,8 +295,11 @@ internal sealed class AdminRescheduleBookingHandler(
             return target.Error;
         }
 
+        // Another barber takes it for their own length (D-149).
+        var length = await RescheduleTargets.LengthAsync(booking, target.Value.Id, catalog, cancellationToken);
         var free = await availability.FreeProfessionalsAsync(
-            booking.ShopId, [target.Value.Id], command.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value, cancellationToken);
+            booking.ShopId, [target.Value.Id], command.StartsAt, length?.DurationMinutes ?? booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value,
+            cancellationToken);
         if (free.Count == 0)
         {
             return BookingErrors.SlotUnavailable();
@@ -303,7 +307,8 @@ internal sealed class AdminRescheduleBookingHandler(
 
         var previous = booking.StartsAt;
         var moved = booking.Reschedule(
-            command.StartsAt, target.Value, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), now, cutoffMinutes: null, command.Reason);
+            command.StartsAt, target.Value, await actors.CurrentAsync(ActorType.PlatformAdmin, cancellationToken), now, cutoffMinutes: null, command.Reason, length,
+            (await rules.GetAsync(booking.ShopId, cancellationToken)).BufferMinutes);
         if (moved.IsFailure)
         {
             return moved.Error;
@@ -390,7 +395,9 @@ internal sealed class GetAdminRescheduleOptionsHandler(
             return BookingErrors.StartInPast();
         }
 
-        var slots = await probe.ProbeAsync(shop.Id, shop.TimeZone, booking.DurationMinutes, [chosen], date, date, MaxSlots, cancellationToken, booking.Id.Value);
+        var length = await RescheduleTargets.LengthAsync(booking, chosen, catalog, cancellationToken);
+        var slots = await probe.ProbeAsync(
+            shop.Id, shop.TimeZone, length?.DurationMinutes ?? booking.DurationMinutes, [chosen], date, date, MaxSlots, cancellationToken, booking.Id.Value);
         return new AdminRescheduleOptionsResponse(
             shop.TimeZone, date, chosen.Value, [.. candidates.Select(p => new AdminRescheduleProfessional(p.Id.Value, p.NameAr, p.NameEn))],
             [.. slots.Select(s => new AdminRescheduleSlot(s.StartsAt, s.LocalTime, s.Period))]);

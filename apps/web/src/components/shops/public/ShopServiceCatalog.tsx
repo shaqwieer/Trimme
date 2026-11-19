@@ -2,27 +2,27 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
-import { catalogGroups, type CatalogCategory, type CatalogItem, packageSaving } from '@/lib/booking/catalog';
+import { catalogGroups, type CatalogSection, type CatalogItem, packageSaving } from '@/lib/booking/catalog';
 import { bookHref } from '@/lib/booking/links';
 import { type AppLocale, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 
 /**
- * The shop page's services (D-148, «٤-١»): the same category tabs as the booking's service step, packages last, each
+ * The shop page's services (D-148, «٤-١»): the same section tabs (the shop's own, D-149) as the booking's service step, packages last, each
  * tile with its name, price, length and «احجز» link (or «حضوري فقط»), and a package's saving. The tabs are native radio
- * buttons inside the pills and CSS (`:has(:checked)`) shows the chosen category's tiles: no script on the public page, arrow keys work, and every service
+ * buttons inside the pills and CSS (`:has(:checked)`) shows the chosen section's tiles: no script on the public page, arrow keys work, and every service
  * stays in the page's HTML for search engines.
  */
 export function ShopServiceCatalog({
   slug,
   items,
-  categories,
+  sections,
   bookable,
   onlineIds,
 }: {
   slug: string;
   items: CatalogItem[];
-  categories: CatalogCategory[];
+  sections: CatalogSection[];
   bookable: boolean;
   /** Services that can be booked online (packages always can, when the shop takes online bookings). */
   onlineIds: string[];
@@ -30,7 +30,7 @@ export function ShopServiceCatalog({
   const t = useTranslations('shopPage.services');
   const tCatalog = useTranslations('booking.catalog');
   const locale = useLocale() as AppLocale;
-  const groups = catalogGroups(items, categories, locale, {
+  const groups = catalogGroups(items, sections, locale, {
     other: tCatalog('other'),
     packages: tCatalog('packages'),
   });

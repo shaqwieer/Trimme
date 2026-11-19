@@ -90,11 +90,13 @@ public sealed class PlatformSettings : Entity<PlatformSettingsId>, IConcurrencyV
 
     /// <summary>
     /// The spec defaults (§6, §12, §15, §16; D-013, D-014, D-015, D-017): Riyadh map, Arabic, SAR. The customer cancels or
-    /// changes until the start (D-148, the client's decision; it was 2 hours under D-015).
+    /// changes until the start (D-148, the client's decision; it was 2 hours under D-015). Bookings open 14 days ahead,
+    /// as in the app (D-149; it was 30). Since D-149 the lead time, the horizon and the slot step are the defaults of a
+    /// shop that has not set its own.
     /// </summary>
     public static EditablePlatformSettings Defaults { get; } = new(
         MinLeadTimeMinutes: 60,
-        BookingHorizonDays: 30,
+        BookingHorizonDays: 14,
         SlotStepMinutes: 5,
         CancellationCutoffMinutes: 0,
         ReviewWindowDays: 7,

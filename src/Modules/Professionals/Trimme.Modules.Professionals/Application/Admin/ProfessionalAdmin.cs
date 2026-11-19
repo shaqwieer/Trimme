@@ -56,7 +56,8 @@ public sealed record AdminProfessionalResponse(
     AdminWhatsAppResponse WhatsApp,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    uint Version);
+    uint Version,
+    IReadOnlyList<string> Languages);
 
 /// <summary>The full number, returned once per audited reveal. Never cached.</summary>
 public sealed record RevealedWhatsAppResponse(string Number);
@@ -71,7 +72,8 @@ internal sealed record CreateProfessionalCommand(
     string? BioAr,
     string? BioEn,
     string? WhatsAppNumber,
-    bool NotificationsEnabled) : ICommand<Result<AdminProfessionalResponse>>, IProfessionalProfileFields;
+    bool NotificationsEnabled,
+    IReadOnlyList<string>? Languages = null) : ICommand<Result<AdminProfessionalResponse>>, IProfessionalProfileFields;
 
 /// <summary>No shop id: a professional's shop never changes (D-011).</summary>
 internal sealed record UpdateProfessionalCommand(
@@ -83,7 +85,8 @@ internal sealed record UpdateProfessionalCommand(
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
-    uint Version) : ICommand<Result<AdminProfessionalResponse>>, IProfessionalProfileFields;
+    uint Version,
+    IReadOnlyList<string>? Languages = null) : ICommand<Result<AdminProfessionalResponse>>, IProfessionalProfileFields;
 
 internal sealed record ChangeProfessionalStatusCommand(Guid ProfessionalId, bool Enable, string? Reason) : ICommand<Result<AdminProfessionalResponse>>;
 

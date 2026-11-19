@@ -45,10 +45,12 @@ export type WizardOffer = {
   durationMinutes: number;
   /** Professionals assigned to the service (or to every service of the package). */
   professionalIds: string[];
-  /** A service's category, its tab (D-148). */
-  categoryId?: string | null;
+  /** A service's section in its shop, its tab (D-148, D-149). */
+  sectionId?: string | null;
   /** A package's services (D-148: what it saves, and a service chosen twice). */
   itemIds?: string[];
+  /** A service's own length for the barbers who set one (D-149); the others take `durationMinutes`. */
+  professionalDurations?: { professionalId: string; durationMinutes: number }[];
 };
 
 export type WizardProfessional = { id: string };
@@ -145,6 +147,21 @@ export function combineOffers(items: WizardOffer[]): WizardOffer | undefined {
       rest.every((item) => item.professionalIds.includes(id)),
     ),
   };
+}
+
+/**
+ * How long the chosen items take with this professional (D-149): a service takes the barber's own length when they set
+ * one, else its standard length; a package keeps the length the owner set. With «أي مختص» the standard lengths are
+ * shown (the server applies each barber's own when it finds the time).
+ */
+export function durationFor(items: WizardOffer[], pro: string): number {
+  return items.reduce((sum, item) => {
+    const own =
+      item.kind === 'service' && pro !== ANY_PROFESSIONAL
+        ? item.professionalDurations?.find((d) => d.professionalId === pro)?.durationMinutes
+        : undefined;
+    return sum + (own ?? item.durationMinutes);
+  }, 0);
 }
 
 /**

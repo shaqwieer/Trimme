@@ -866,6 +866,14 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("amount_due");
 
+                    b.Property<DateTimeOffset>("BlockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("blocked_until");
+
+                    b.Property<int>("BufferMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("buffer_minutes");
+
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
@@ -911,7 +919,7 @@ namespace Trimme.Migrations.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tstzrange")
                         .HasColumnName("during")
-                        .HasComputedColumnSql("tstzrange(starts_at, ends_at, '[)')", true);
+                        .HasComputedColumnSql("tstzrange(starts_at, blocked_until, '[)')", true);
 
                     b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("timestamp with time zone")
@@ -1053,6 +1061,8 @@ namespace Trimme.Migrations.Migrations
 
                     b.ToTable("bookings", "bookings", t =>
                         {
+                            t.HasCheckConstraint("ck_bookings_blocked", "blocked_until >= ends_at");
+
                             t.HasCheckConstraint("ck_bookings_item", "(service_id IS NULL) <> (package_id IS NULL)");
 
                             t.HasCheckConstraint("ck_bookings_range", "ends_at > starts_at");
@@ -1110,6 +1120,10 @@ namespace Trimme.Migrations.Migrations
                     b.Property<DateTimeOffset?>("AnsweredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("answered_at");
+
+                    b.Property<DateTimeOffset>("BlockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("blocked_until");
 
                     b.Property<Guid>("BookingId")
                         .HasColumnType("uuid")
@@ -2506,6 +2520,11 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.PrimitiveCollection<string[]>("Languages")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("languages");
+
                     b.Property<string>("NameAr")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -2969,6 +2988,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("assigned_at");
 
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
                     b.Property<Guid>("ShopId")
                         .HasColumnType("uuid")
                         .HasColumnName("shop_id");
@@ -2982,7 +3005,10 @@ namespace Trimme.Migrations.Migrations
                     b.HasIndex("ShopId", "ServiceId")
                         .HasDatabaseName("ix_professional_services_shop_id_service_id");
 
-                    b.ToTable("professional_services", "services");
+                    b.ToTable("professional_services", "services", t =>
+                        {
+                            t.HasCheckConstraint("ck_professional_services_duration", "duration_minutes IS NULL OR (duration_minutes > 0 AND duration_minutes % 5 = 0)");
+                        });
                 });
 
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ServiceCategory", b =>
@@ -3169,6 +3195,51 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("service_package_items", "services");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServiceSection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name_en");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_service_sections");
+
+                    b.HasAlternateKey("ShopId", "Id")
+                        .HasName("ak_service_sections_shop_id_id");
+
+                    b.HasIndex("ShopId", "DisplayOrder")
+                        .HasDatabaseName("ix_service_sections_shop_id_display_order");
+
+                    b.ToTable("service_sections", "services");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ShopService", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3251,6 +3322,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("price");
 
+                    b.Property<Guid?>("SectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("section_id");
+
                     b.Property<Guid>("ShopId")
                         .HasColumnType("uuid")
                         .HasColumnName("shop_id");
@@ -3276,6 +3351,9 @@ namespace Trimme.Migrations.Migrations
 
                     b.HasIndex("ShopId", "DisplayOrder")
                         .HasDatabaseName("ix_shop_services_shop_id_display_order");
+
+                    b.HasIndex("ShopId", "SectionId")
+                        .HasDatabaseName("ix_shop_services_shop_id_section_id");
 
                     b.HasIndex("ShopId", "IsArchived", "IsActive")
                         .HasDatabaseName("ix_shop_services_shop_id_is_archived_is_active");
@@ -3319,6 +3397,14 @@ namespace Trimme.Migrations.Migrations
                         .IsRequired()
                         .HasColumnType("text[]")
                         .HasColumnName("amenities");
+
+                    b.Property<int?>("BookingHorizonDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("booking_horizon_days");
+
+                    b.Property<int>("BufferMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("buffer_minutes");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -3366,6 +3452,10 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("logo_media_id");
 
+                    b.Property<int?>("MinLeadTimeMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_lead_time_minutes");
+
                     b.Property<string>("NameAr")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -3386,6 +3476,10 @@ namespace Trimme.Migrations.Migrations
                     b.Property<bool>("RequireManualConfirmation")
                         .HasColumnType("boolean")
                         .HasColumnName("require_manual_confirmation");
+
+                    b.Property<int?>("SlotStepMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("slot_step_minutes");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -4596,6 +4690,16 @@ namespace Trimme.Migrations.Migrations
                         .HasConstraintName("fk_service_package_items_shop_service_shop_id_service_id");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Services.Domain.ServiceSection", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_sections_shops_shop_id");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Services.Domain.ShopService", b =>
                 {
                     b.HasOne("Trimme.Modules.Services.Domain.ServiceCategory", null)
@@ -4610,6 +4714,13 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_shop_services_shops_shop_id");
+
+                    b.HasOne("Trimme.Modules.Services.Domain.ServiceSection", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId", "SectionId")
+                        .HasPrincipalKey("ShopId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_shop_services_service_sections_shop_id_section_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Shops.Domain.OnlineBookingPause", b =>

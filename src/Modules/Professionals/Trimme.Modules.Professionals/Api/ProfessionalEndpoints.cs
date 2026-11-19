@@ -27,9 +27,13 @@ public sealed record CreateProfessionalRequest(
     string? BioAr,
     string? BioEn,
     string? WhatsAppNumber,
-    bool NotificationsEnabled);
+    bool NotificationsEnabled,
+    IReadOnlyList<string>? Languages = null);
 
-/// <summary>Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop.</summary>
+/// <summary>
+/// Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop. <c>Languages</c>
+/// left out keeps the barber's languages (D-149).
+/// </summary>
 public sealed record UpdateProfessionalRequest(
     string NameAr,
     string NameEn,
@@ -38,7 +42,8 @@ public sealed record UpdateProfessionalRequest(
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
-    uint Version);
+    uint Version,
+    IReadOnlyList<string>? Languages = null);
 
 public sealed record ChangeProfessionalStatusRequest(string? Reason);
 
@@ -51,31 +56,37 @@ public sealed record SetProfessionalWhatsAppRequest(string? WhatsAppNumber, bool
 public sealed record RevealProfessionalWhatsAppRequest(string Reason);
 
 /// <summary>
-/// The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made
-/// from the English name). The mobile is required: it is the barber's WhatsApp number and their sign-in.
+/// The owner adds a barber to their own shop by their mobile (D-146, D-149): no shop field (it comes from the claims) and
+/// no page address (made from the English name). The mobile is required: it is the barber's WhatsApp number and their
+/// sign-in. The English name is optional (the Arabic one is used); <c>Languages</c> are codes from the fixed list.
 /// </summary>
 public sealed record CreateShopBarberRequest(
     string NameAr,
-    string NameEn,
+    string? NameEn,
     string? SpecialtyAr,
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
     string WhatsAppNumber,
-    bool NotificationsEnabled)
+    bool NotificationsEnabled,
+    IReadOnlyList<string>? Languages = null)
 {
     public override string ToString() => $"{nameof(CreateShopBarberRequest)} {{ NotificationsEnabled = {NotificationsEnabled} }}";
 }
 
-/// <summary>The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011).</summary>
+/// <summary>
+/// The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011). The English name is
+/// optional (the Arabic one is used); <c>Languages</c> left out keeps them (D-149).
+/// </summary>
 public sealed record UpdateShopBarberRequest(
     string NameAr,
-    string NameEn,
+    string? NameEn,
     string? SpecialtyAr,
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
-    uint Version);
+    uint Version,
+    IReadOnlyList<string>? Languages = null);
 
 internal static class ProfessionalEndpoints
 {
@@ -97,8 +108,8 @@ internal static class ProfessionalEndpoints
         shop.MapPost("/", async (CreateShopBarberRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(
                     new CreateShopBarberCommand(
-                        r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn, r.WhatsAppNumber ?? string.Empty,
-                        r.NotificationsEnabled),
+                        r.NameAr ?? string.Empty, EnglishOrArabic(r.NameEn, r.NameAr), r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn,
+                        r.WhatsAppNumber ?? string.Empty, r.NotificationsEnabled, r.Languages),
                     ct)).ToHttpResult(created => TypedResults.Created($"/api/v1/shop/professionals/{created.Barber.Id}", created)))
             .WithName("CreateShopBarber")
             .WithSummary("Adds a barber to the owner's shop with their login: the generated temporary password is answered once (audited).")
@@ -111,7 +122,8 @@ internal static class ProfessionalEndpoints
         shop.MapPut("/{professionalId:guid}", async (Guid professionalId, UpdateShopBarberRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(
                     new UpdateShopBarberCommand(
-                        professionalId, r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn, r.Version),
+                        professionalId, r.NameAr ?? string.Empty, EnglishOrArabic(r.NameEn, r.NameAr), r.SpecialtyAr, r.SpecialtyEn, r.BioAr, r.BioEn, r.Version,
+                        r.Languages),
                     ct)).ToHttpResult())
             .WithName("UpdateShopBarber").WithSummary("Edits the barber's profile (audited, optimistic concurrency). The shop cannot change.")
             .Produces<ShopBarberResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
@@ -207,6 +219,10 @@ internal static class ProfessionalEndpoints
             ? TypedResults.Ok(professional)
             : Error.NotFound("professional.not_found", "The professional was not found.").ToProblem();
 
+    /// <summary>The owner may leave the English name out (D-149): the Arabic name stands in.</summary>
+    private static string EnglishOrArabic(string? nameEn, string? nameAr) =>
+        string.IsNullOrWhiteSpace(nameEn) ? nameAr ?? string.Empty : nameEn;
+
     private static async Task<IResult> PublicNextSlots(string slug, string professionalSlug, IDispatcher dispatcher, CancellationToken cancellationToken) =>
         await dispatcher.Send(new GetProfessionalNextSlotsQuery(slug, professionalSlug), cancellationToken) is { } slots
             ? TypedResults.Ok(slots)
@@ -217,7 +233,8 @@ internal static class ProfessionalEndpoints
         var result = await dispatcher.Send(
             new CreateProfessionalCommand(
                 request.ShopId, request.NameAr ?? string.Empty, request.NameEn ?? string.Empty, request.Slug,
-                request.SpecialtyAr, request.SpecialtyEn, request.BioAr, request.BioEn, request.WhatsAppNumber, request.NotificationsEnabled),
+                request.SpecialtyAr, request.SpecialtyEn, request.BioAr, request.BioEn, request.WhatsAppNumber, request.NotificationsEnabled,
+                request.Languages),
             cancellationToken);
         return result.ToHttpResult(professional => TypedResults.Created($"/api/v1/admin/professionals/{professional.Id}", professional));
     }
@@ -235,7 +252,7 @@ internal static class ProfessionalEndpoints
         Send(
             new UpdateProfessionalCommand(
                 professionalId, request.NameAr ?? string.Empty, request.NameEn ?? string.Empty, request.Slug,
-                request.SpecialtyAr, request.SpecialtyEn, request.BioAr, request.BioEn, request.Version),
+                request.SpecialtyAr, request.SpecialtyEn, request.BioAr, request.BioEn, request.Version, request.Languages),
             dispatcher,
             cancellationToken);
 

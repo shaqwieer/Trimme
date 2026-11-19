@@ -254,6 +254,31 @@ internal static class BookingMapping
     public static BookedItem Snapshot(BookableOffer offer) =>
         new(offer.IsPackage ? null : offer.Id, offer.IsPackage ? offer.Id : null, offer.NameAr, offer.NameEn, offer.Price, offer.Currency,
             offer.DurationMinutes, [.. offer.Items.Select(i => BookedPackageItem.Of(i.ServiceId, i.NameAr, i.NameEn, i.Price, i.DurationMinutes))]);
+
+    /// <summary>
+    /// The offer as <paramref name="professional"/> does it, for the booking snapshot (D-149): their own length for the
+    /// whole and for each service that carries its own.
+    /// </summary>
+    public static BookedItem Snapshot(BookableOffer offer, ProfessionalId professional) => Snapshot(offer.For(professional));
+
+    /// <summary>How long <paramref name="professional"/> takes for the booked offer (D-149), for a move to them.</summary>
+    public static BookedLength Length(BookableOffer offer, ProfessionalId professional)
+    {
+        var own = offer.For(professional);
+        return new BookedLength(
+            own.DurationMinutes,
+            own.Items.Where(i => i.DurationMinutes is not null).GroupBy(i => i.ServiceId).ToDictionary(g => g.Key, g => g.First().DurationMinutes!.Value));
+    }
+}
+
+/// <summary>
+/// A shop's booking rules (D-149): its own start interval, minimum notice, horizon and cleaning time over the platform's.
+/// Reads the shop through the caller's scope.
+/// </summary>
+internal sealed class ShopRulesReader(IShopDirectory shops, BuildingBlocks.Application.Platform.IPlatformSettings settings)
+{
+    public async Task<EffectiveBookingRules> GetAsync(ShopId shopId, CancellationToken cancellationToken) =>
+        EffectiveBookingRules.Of(await settings.GetAsync(cancellationToken), (await shops.FindAsync(shopId, cancellationToken))?.Booking);
 }
 
 /// <summary>

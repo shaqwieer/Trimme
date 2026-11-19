@@ -31,6 +31,7 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.ToTable("bookings", t =>
         {
             t.HasCheckConstraint("ck_bookings_range", "ends_at > starts_at");
+            t.HasCheckConstraint("ck_bookings_blocked", "blocked_until >= ends_at");
             t.HasCheckConstraint("ck_bookings_item", "(service_id IS NULL) <> (package_id IS NULL)");
         });
         builder.HasKey(b => b.Id);
@@ -58,8 +59,10 @@ internal sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.Property(b => b.CancellationReason).HasMaxLength(BookingRules.MaxReasonLength);
         builder.Property(b => b.LoyaltyRewardTitleAr).HasMaxLength(BookingRules.MaxNameLength);
         builder.Property(b => b.LoyaltyRewardTitleEn).HasMaxLength(BookingRules.MaxNameLength);
+        // What the booking holds of the barber's time: through its cleaning time (D-149), so the exclusion constraint
+        // keeps the cleaning time free too.
         builder.Property<NpgsqlRange<DateTime>>("During").HasColumnName(BookingModel.DuringColumn)
-            .HasComputedColumnSql("tstzrange(starts_at, ends_at, '[)')", stored: true);
+            .HasComputedColumnSql("tstzrange(starts_at, blocked_until, '[)')", stored: true);
 
         builder.HasIndex(b => new { b.ShopId, b.StartsAt });
         builder.HasIndex(b => new { b.CustomerId, b.StartsAt });

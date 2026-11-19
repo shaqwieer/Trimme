@@ -51,9 +51,11 @@ internal sealed class AddBookingServiceHandler(
 
         db.Entry(booking).Property(b => b.Version).OriginalValue = command.Version;
         var now = clock.GetUtcNow();
-        var oldEnd = booking.EndsAt;
+        var oldEnd = booking.BlockedUntil;
+
+        // At the barber's own length for the service (D-149); the price stays the shop's.
         var added = booking.AddService(
-            BookedPackageItem.Of(offer.Id, offer.NameAr, offer.NameEn, offer.Price, offer.DurationMinutes),
+            BookedPackageItem.Of(offer.Id, offer.NameAr, offer.NameEn, offer.Price, offer.DurationFor(booking.ProfessionalId)),
             await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now);
         if (added.IsFailure)
         {
@@ -61,9 +63,9 @@ internal sealed class AddBookingServiceHandler(
         }
 
         var open = BookingRules.Active.ToArray();
-        var newEnd = booking.EndsAt;
+        var newEnd = booking.BlockedUntil;
         if (await db.Set<Booking>().AsNoTracking().AnyAsync(
-                b => b.Id != booking.Id && b.ProfessionalId == booking.ProfessionalId && open.Contains(b.Status) && b.StartsAt < newEnd && b.EndsAt > oldEnd,
+                b => b.Id != booking.Id && b.ProfessionalId == booking.ProfessionalId && open.Contains(b.Status) && b.StartsAt < newEnd && b.BlockedUntil > oldEnd,
                 cancellationToken))
         {
             return BookingErrors.ProfessionalBusy();

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Application.Scheduling;
+using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Availability.Domain;
@@ -14,8 +15,12 @@ namespace Trimme.Modules.Availability.Application;
 /// </summary>
 internal sealed class ScheduleLoader(TrimmeDbContext db, IBookedTimeReader bookings)
 {
-    public static BookingPolicy Policy(PlatformSettingsSnapshot settings) =>
-        new(settings.MinLeadTimeMinutes, settings.BookingHorizonDays, settings.SlotStepMinutes);
+    /// <summary>The engine's policy for one shop (D-149): its own booking rules over the platform's.</summary>
+    public static BookingPolicy Policy(PlatformSettingsSnapshot settings, ShopBookingOverrides? shop) =>
+        Policy(EffectiveBookingRules.Of(settings, shop));
+
+    public static BookingPolicy Policy(EffectiveBookingRules rules) =>
+        new(rules.MinLeadTimeMinutes, rules.BookingHorizonDays, rules.SlotStepMinutes, rules.BufferMinutes);
 
     public static TimeZoneInfo Zone(string timeZone) => TimeZoneInfo.FindSystemTimeZoneById(timeZone);
 
@@ -95,8 +100,9 @@ internal sealed class ScheduleLoader(TrimmeDbContext db, IBookedTimeReader booki
                     [.. shopBreaks.Where(b => b.AppliesTo(id)).Select(b => b.ToRule())],
                     [
                         .. timeOff.Where(t => t.ProfessionalId == id && t.EndsAt > start && t.StartsAt < end).Select(t => t.Span()),
-                        .. busy.Where(b => b.ProfessionalId == id && b.StartsAt < end && b.EndsAt > start)
-                            .Select(b => new InstantRange(b.StartsAt, b.EndsAt)),
+                        // A booking holds its barber until its cleaning time is over (D-149).
+                        .. busy.Where(b => b.ProfessionalId == id && b.StartsAt < end && b.BusyUntil > start)
+                            .Select(b => new InstantRange(b.StartsAt, b.BusyUntil)),
                     ])).ToList();
                 var shopClosures = closures
                     .Where(c => c.ShopId == request.ShopId && c.EndDate >= request.From.AddDays(-1) && c.StartDate <= request.To)

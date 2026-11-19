@@ -1,12 +1,11 @@
 import type { ChosenLocation } from './location';
 
 /**
- * Discovery filters as they appear in the page URL (`/search?q=&category=&sort=&open=1…`), so back, refresh and shared
+ * Discovery filters as they appear in the page URL (`/search?q=&sort=&open=1…`), so back, refresh and shared
  * links keep the search (the filter drawer and the map share this one state, mapRules #3).
  */
 export type SearchFilters = {
   q: string;
-  category: string | null;
   sort: SearchSort;
   openNow: boolean;
   verified: boolean;
@@ -36,8 +35,6 @@ type Params = Record<string, string | string[] | undefined>;
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function positive(value: string | undefined): number | null {
   if (value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -50,7 +47,6 @@ export function parseSearchFilters(params: Params, hasLocation: boolean): Search
   const radius = positive(first(params.radius));
   return {
     q: (first(params.q) ?? '').trim().slice(0, 100),
-    category: UUID.test(first(params.category) ?? '') ? first(params.category)! : null,
     sort: sort === 'rating' || sort === 'earliest' ? sort : hasLocation ? 'nearest' : 'rating',
     openNow: first(params.open) === '1',
     verified: first(params.verified) === '1',
@@ -66,7 +62,6 @@ export function parseSearchFilters(params: Params, hasLocation: boolean): Search
 /** The number shown on the "Filters — N" chip: every filter the drawer sets that differs from the default. */
 export function activeFilterCount(filters: SearchFilters): number {
   return [
-    filters.category !== null,
     filters.openNow,
     filters.verified,
     filters.today,
@@ -79,7 +74,6 @@ export function activeFilterCount(filters: SearchFilters): number {
 export function filtersToQuery(filters: Partial<SearchFilters>): Record<string, string> {
   const query: Record<string, string> = {};
   if (filters.q) query.q = filters.q;
-  if (filters.category) query.category = filters.category;
   if (filters.sort && filters.sort !== 'nearest') query.sort = filters.sort;
   if (filters.openNow) query.open = '1';
   if (filters.verified) query.verified = '1';
@@ -99,7 +93,6 @@ export function toApiQuery(filters: SearchFilters, location: ChosenLocation | nu
     lng: location?.lng,
     radiusKm: location ? (filters.radiusKm ?? DEFAULT_RADIUS_KM) : undefined,
     q: filters.q || undefined,
-    categoryId: filters.category ?? undefined,
     openNow: filters.openNow || undefined,
     verified: filters.verified || undefined,
     bookableToday: filters.today || undefined,

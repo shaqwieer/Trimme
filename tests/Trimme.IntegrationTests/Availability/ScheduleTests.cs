@@ -217,7 +217,8 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/slots?date={Iso(Target)}", ct), HttpStatusCode.BadRequest, null, ct);
         await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/slots?serviceId={Guid.NewGuid()}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, "availability.offer_not_found", ct);
         await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/slots?serviceId={s.ServiceB}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, "availability.offer_not_found", ct);
-        await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/dates?serviceId={s.ServiceA}&from={Iso(Target)}&to={Iso(Target.AddDays(40))}", ct), HttpStatusCode.BadRequest, null, ct);
+        // At most 90 days in one request: the furthest bookable day a shop can set (D-149).
+        await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/dates?serviceId={s.ServiceA}&from={Iso(Target)}&to={Iso(Target.AddDays(90))}", ct), HttpStatusCode.BadRequest, null, ct);
 
         // A professional of another shop, or one not assigned to the service.
         await FailsAsync(anonymous.GetAsync($"/api/v1/public/shops/{s.SlugA}/availability/slots?serviceId={s.ServiceA}&professionalId={s.ProB}&date={Iso(Target)}", ct), HttpStatusCode.NotFound, "professional.not_found", ct);
@@ -389,6 +390,13 @@ public sealed class ScheduleTests(PostgresFixture postgres)
         var schedule = await OkAsync(owner.GetAsync("/api/v1/shop/schedule", ct), ct);
         schedule.GetProperty("breaks").GetArrayLength().ShouldBe(0);
         schedule.GetProperty("professionals").EnumerateArray().Count(p => !p.GetProperty("followsShopHours").GetBoolean()).ShouldBe(1, "Sultan has his own hours");
+
+        // Each demo shop has its own sections (D-149), one per category its services use, with the services placed in them.
+        var sections = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{DemoData.AlAsala.Slug}/service-sections", ct), ct);
+        sections.EnumerateArray().Select(x => x.GetProperty("nameAr").GetString()).ShouldBe(["قص الشعر", "اللحية", "العناية", "الأطفال", "الصبغة"]);
+        var services = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{DemoData.AlAsala.Slug}/services", ct), ct);
+        services.EnumerateArray().First(x => x.GetProperty("id").GetGuid() == haircut).GetProperty("sectionId").GetGuid()
+            .ShouldBe(sections.EnumerateArray().First().GetProperty("id").GetGuid());
     }
 
     private async Task<Arranged> ArrangeAsync(string prefix, CancellationToken ct, bool subscribeA = true)

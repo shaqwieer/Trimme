@@ -67,10 +67,8 @@ internal sealed class PublicAvailabilityService(
     ScheduleLoader loader,
     TimeProvider clock)
 {
-    /// <summary>At most this many days per request (a month of the date strip).</summary>
-    public const int MaxRangeDays = 31;
-
-    public const int DefaultRangeDays = 14;
+    /// <summary>At most this many days per request (three months: the longest booking horizon a shop can set, D-149).</summary>
+    public const int MaxRangeDays = 90;
 
     public async Task<Result<AvailabilityRun>> RunAsync(
         string slug, Guid? serviceId, IReadOnlyList<Guid>? serviceIds, Guid? packageId, Guid? professionalId, DateOnly? from, DateOnly? to,
@@ -94,8 +92,13 @@ internal sealed class PublicAvailabilityService(
 
         var zone = ScheduleLoader.Zone(shop.TimeZone);
         var now = clock.GetUtcNow();
+        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken), shop.Booking);
+
+        // The date strip runs from today to the shop's furthest bookable day unless the caller asks otherwise (D-149, 6-1).
         var start = from ?? new ShopClock(zone).Date(now);
-        var end = to ?? start.AddDays(DefaultRangeDays - 1);
+        var last = AvailabilityEngine.BookableDates(zone, now, policy).Last;
+        var end = to ?? (last < start ? start : last > start.AddDays(MaxRangeDays - 1) ? start.AddDays(MaxRangeDays - 1) : last);
+
         if (end < start || end.DayNumber - start.DayNumber >= MaxRangeDays)
         {
             return ScheduleErrors.InvalidQuery("to");
@@ -143,9 +146,8 @@ internal sealed class PublicAvailabilityService(
             candidates = [chosen];
         }
 
-        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
         var (shopCalendar, calendars) = await loader.CalendarsAsync(shop.Id, zone, candidates, start, end, cancellationToken);
-        var slots = AvailabilityEngine.FindSlots(shopCalendar, calendars, new AvailabilityQuery(start, end, offer.DurationMinutes, now, policy));
+        var slots = AvailabilityEngine.FindSlots(shopCalendar, calendars, new AvailabilityQuery(start, end, offer.DurationMinutes, now, policy, offer.Durations));
         return new AvailabilityRun(shop, zone, start, end, null, slots, shopCalendar);
     }
 

@@ -24,6 +24,7 @@ import {
 } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { mayBeSignedIn } from '@/lib/auth/session.server';
+import { knownLanguages } from '@/lib/i18n/languages';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 import { breadcrumbLd } from '@/lib/seo/jsonld';
 import { absoluteUrl, localizedAlternates, NO_INDEX, OG_IMAGE, OG_LOCALE } from '@/lib/seo/site';
@@ -80,11 +81,12 @@ export default async function ProfessionalPage({
   const { locale: raw, slug, proSlug } = await params;
   const locale = asLocale(raw);
   const [pro, shop] = await Promise.all([getPublicProfessional(slug, proSlug), getPublicShop(slug)]);
-  if (!pro || !shop) notFound();
+  if (!pro || !shop || !shop.listedInDiscovery) notFound(); // a shop its subscription hides (D-149, 6-4)
 
   const t = await getTranslations({ locale, namespace: 'proPage' });
   const tCrumb = await getTranslations({ locale, namespace: 'shopPage.breadcrumb' });
   const tServices = await getTranslations({ locale, namespace: 'shopPage.services' });
+  const tSpoken = await getTranslations({ locale, namespace: 'spokenLanguages' });
   const api = await getPublicApi();
   const reviews = await optional(
     () =>
@@ -98,6 +100,8 @@ export default async function ProfessionalPage({
   const specialty =
     pro.specialtyAr || pro.specialtyEn ? localizedName(locale, pro.specialtyAr ?? '', pro.specialtyEn) : null;
   const bio = localizedText(locale, pro.bioAr, pro.bioEn);
+  // The languages the barber speaks (D-149), in the fixed list's order.
+  const languages = knownLanguages(pro.languages);
   const signedIn = await mayBeSignedIn();
   const shopUrl = absoluteUrl(`/${locale}/shops/${pro.shopSlug}`);
   const url = `${shopUrl}/professionals/${pro.slug}`;
@@ -112,6 +116,7 @@ export default async function ProfessionalPage({
             '@type': 'Person',
             name,
             jobTitle: specialty ?? undefined,
+            knowsLanguage: languages.length > 0 ? languages : undefined,
             image: pro.avatarUrl ? absoluteUrl(pro.avatarUrl) : undefined,
             url,
             worksFor: { '@type': 'HairSalon', name: shopName, url: shopUrl },
@@ -148,6 +153,11 @@ export default async function ProfessionalPage({
           <Avatar name={name} src={pro.avatarUrl} size="xl" />
           <h1 className="text-h1 font-bold text-navy-900">{name}</h1>
           {specialty && <p className="text-body text-text-secondary">{specialty}</p>}
+          {languages.length > 0 && (
+            <p className="text-caption text-text-secondary" data-testid="pro-languages">
+              {tSpoken('label')}: {languages.map((code) => tSpoken(code)).join(locale === 'ar' ? '، ' : ', ')}
+            </p>
+          )}
           <RatingStars value={pro.rating} count={pro.reviewCount} size="md" />
           {bio && (
             <p lang={langIfOther(bio, locale)} className="max-w-[52ch] text-body text-text-strong">

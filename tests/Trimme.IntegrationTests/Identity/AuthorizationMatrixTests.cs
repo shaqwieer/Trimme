@@ -51,6 +51,9 @@ public sealed partial class AuthorizationMatrixTests(PostgresFixture postgres)
         "GET /api/v1/public/shops/{slug}/services",
         "GET /api/v1/public/shops/{slug}/packages",
 
+        // D-149: the shop's own sections of its services (names and order only), the tabs of its public pages.
+        "GET /api/v1/public/shops/{slug}/service-sections",
+
         // Phase 09: computed availability of published items (rate-limited; no professional contact or booking details).
         "GET /api/v1/public/shops/{slug}/availability/dates",
         "GET /api/v1/public/shops/{slug}/availability/slots",

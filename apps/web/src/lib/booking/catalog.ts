@@ -2,7 +2,7 @@ import type { AppLocale } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 
 /** A shop's catalog grouped the way the app shows it (D-148, «٤-١»); shared by the shop page and the booking wizard. */
-export type CatalogCategory = { id: string; nameAr: string; nameEn: string | null };
+export type CatalogSection = { id: string; nameAr: string; nameEn: string | null };
 
 export type CatalogItem = {
   kind: 'service' | 'package';
@@ -14,8 +14,8 @@ export type CatalogItem = {
   price: number;
   currency: string;
   durationMinutes: number;
-  /** A service's category (the tab it sits in); null for «أخرى». */
-  categoryId?: string | null;
+  /** A service's section in its shop (the tab it sits in, D-149); null for «أخرى». */
+  sectionId?: string | null;
   /** A package's services (to work out what it saves). */
   itemIds?: string[];
 };
@@ -32,25 +32,25 @@ export function packageSaving(pkg: CatalogItem, items: CatalogItem[]): number {
 }
 
 /**
- * The tabs and what sits under each: the platform's categories in their order (only those the shop uses), then «أخرى»
- * for services without a known category, then the packages last.
+ * The tabs and what sits under each: the shop's own sections in the owner's order (only those with services, D-149),
+ * then «أخرى» for services in no section, then the packages last.
  */
 export function catalogGroups<T extends CatalogItem>(
   items: T[],
-  categories: CatalogCategory[],
+  sections: CatalogSection[],
   locale: AppLocale,
   labels: { other: string; packages: string },
 ): CatalogGroup<T>[] {
   const services = items.filter((i) => i.kind === 'service');
   const packages = items.filter((i) => i.kind === 'package');
-  const known = new Set(categories.map((c) => c.id));
-  const other = services.filter((s) => !s.categoryId || !known.has(s.categoryId));
+  const known = new Set(sections.map((c) => c.id));
+  const other = services.filter((s) => !s.sectionId || !known.has(s.sectionId));
   return [
-    ...categories
+    ...sections
       .map((c) => ({
         key: c.id,
         label: localizedName(locale, c.nameAr, c.nameEn),
-        items: services.filter((s) => s.categoryId === c.id),
+        items: services.filter((s) => s.sectionId === c.id),
       }))
       .filter((g) => g.items.length > 0),
     ...(other.length > 0 ? [{ key: 'other', label: labels.other, items: other }] : []),

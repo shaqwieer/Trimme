@@ -33,22 +33,27 @@ export default async function AdminServicePage({
     >
       {async (me) => {
         const api = await getServerApi();
-        const [{ data: service, response }, { data: categories }] = await Promise.all([
-          api.GET('/api/v1/admin/services/{serviceId}', { params: { path: { serviceId } } }),
-          api.GET('/api/v1/public/service-categories'),
-        ]);
+        const { data: service, response } = await api.GET('/api/v1/admin/services/{serviceId}', {
+          params: { path: { serviceId } },
+        });
         if (response.status === 404 || response.status === 400)
           return <EmptyState icon="tag" title={t('empty.title')} />;
         if (!service) return <ErrorState />;
 
         const name = localizedName(lang, service.nameAr, service.nameEn);
         const canManage = me.permissions.includes('Admin.ShopServices.Manage') && !service.isArchived;
-        const { data: professionals } =
+        const [{ data: sections }, { data: professionals }] = await Promise.all([
+          canManage
+            ? api.GET('/api/v1/admin/shops/{shopId}/service-sections', {
+                params: { path: { shopId: service.shopId } },
+              })
+            : Promise.resolve({ data: undefined }),
           canManage && me.permissions.includes('Admin.Professionals.View')
-            ? await api.GET('/api/v1/admin/professionals', {
+            ? api.GET('/api/v1/admin/professionals', {
                 params: { query: { shopId: service.shopId, pageSize: 100 } },
               })
-            : { data: undefined };
+            : Promise.resolve({ data: undefined }),
+        ]);
         return (
           <div className="flex max-w-[1000px] flex-col gap-5">
             <Breadcrumb items={[{ label: t('detail.back'), href: '/admin/services' }, { label: name }]} />
@@ -108,7 +113,7 @@ export default async function AdminServicePage({
                 <AdminServiceEditor
                   shopId={service.shopId}
                   service={service}
-                  categories={categories ?? []}
+                  sections={sections ?? []}
                   professionals={(professionals?.items ?? [])
                     .filter((pro) => pro.status === 'Active' || service.professionalIds.includes(pro.id))
                     .map((pro) => ({ id: pro.id, name: localizedName(lang, pro.nameAr, pro.nameEn) }))}
@@ -125,7 +130,7 @@ export default async function AdminServicePage({
                 >
                   <h2 className="text-h3 font-bold text-navy-900">{t('detail.overrideTitle')}</h2>
                   <p className="text-caption text-text-secondary">{t('detail.overrideBody')}</p>
-                  <ServiceOverride service={service} categories={categories ?? []} />
+                  <ServiceOverride service={service} />
                 </section>
               )}
           </div>

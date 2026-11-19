@@ -1,3 +1,4 @@
+using Trimme.BuildingBlocks.Application.Platform;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 
 namespace Trimme.BuildingBlocks.Application.Tenancy;
@@ -87,6 +88,7 @@ public interface IShopDirectory
 /// <param name="OnlineBookingPausedAt">When the shop paused online booking; <see langword="null"/> while it is live (D-013).</param>
 /// <param name="RequireManualConfirmation">Online bookings start Pending and the shop confirms them (D-006); otherwise Confirmed.</param>
 /// <param name="Address">The confirmed address of the shop's location (for messages), when it has one.</param>
+/// <param name="Booking">The shop's own booking settings (D-149); <see langword="null"/> follows the platform's.</param>
 public sealed record ShopSummary(
     ShopId Id,
     string Slug,
@@ -96,7 +98,37 @@ public sealed record ShopSummary(
     string TimeZone,
     DateTimeOffset? OnlineBookingPausedAt,
     bool RequireManualConfirmation,
-    string? Address = null)
+    string? Address = null,
+    ShopBookingOverrides? Booking = null)
 {
     public bool OnlineBookingPaused => OnlineBookingPausedAt is not null;
+
+    /// <summary>The booking rules this shop runs on (D-149): its own values where it set them, else the platform's.</summary>
+    public EffectiveBookingRules BookingRules(PlatformSettingsSnapshot platform) => EffectiveBookingRules.Of(platform, Booking);
+}
+
+/// <summary>
+/// A shop's own booking settings (D-149): the start-time interval, the minimum notice and the furthest bookable day, each
+/// following the platform's value while <see langword="null"/>, and the cleaning time after each booking (0 = none).
+/// </summary>
+public sealed record ShopBookingOverrides(int? SlotStepMinutes, int? MinLeadTimeMinutes, int? BookingHorizonDays, int BufferMinutes)
+{
+    public static readonly ShopBookingOverrides None = new(null, null, null, 0);
+}
+
+/// <summary>
+/// The booking rules one shop runs on (D-149): the platform's settings are the defaults, the shop's own values win. The
+/// buffer is the cleaning time a booking holds after its end, before the barber's next booking (or closing).
+/// </summary>
+public sealed record EffectiveBookingRules(int MinLeadTimeMinutes, int BookingHorizonDays, int SlotStepMinutes, int BufferMinutes)
+{
+    public static EffectiveBookingRules Of(PlatformSettingsSnapshot platform, ShopBookingOverrides? shop)
+    {
+        ArgumentNullException.ThrowIfNull(platform);
+        return new(
+            shop?.MinLeadTimeMinutes ?? platform.MinLeadTimeMinutes,
+            shop?.BookingHorizonDays ?? platform.BookingHorizonDays,
+            shop?.SlotStepMinutes ?? platform.SlotStepMinutes,
+            shop?.BufferMinutes ?? 0);
+    }
 }

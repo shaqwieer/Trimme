@@ -71,7 +71,8 @@ public sealed record AdminServiceResponse(
     string? ModerationReason,
     int AssignedProfessionalCount,
     uint Version,
-    IReadOnlyList<Guid> ProfessionalIds);
+    IReadOnlyList<Guid> ProfessionalIds,
+    Guid? SectionId = null);
 
 public sealed record AdminPackageListItem(
     Guid Id,
@@ -100,9 +101,14 @@ public sealed record ProfessionalServiceOption(
     string Currency,
     int DurationMinutes,
     bool IsActive,
-    bool Assigned);
+    bool Assigned,
+    int? OwnDurationMinutes = null);
 
-/// <summary>The professional's own shop's services (with that shop's prices) and which are assigned (DV-S04).</summary>
+/// <summary>
+/// The professional's own shop's services (with that shop's prices) and which are assigned (DV-S04). On each option,
+/// <c>DurationMinutes</c> is the service's standard length and <c>OwnDurationMinutes</c> this barber's own, when they
+/// set one (D-149).
+/// </summary>
 public sealed record ProfessionalServicesResponse(Guid ProfessionalId, Guid ShopId, IReadOnlyList<ProfessionalServiceOption> Services);
 
 internal interface ICategoryFields
@@ -158,7 +164,8 @@ internal sealed record AdminCreateServiceCommand(
     decimal Price,
     int DurationMinutes,
     bool OnlineBookable,
-    IReadOnlyList<Guid>? ProfessionalIds) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
+    IReadOnlyList<Guid>? ProfessionalIds,
+    Guid? SectionId = null) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
 
 /// <summary>An admin's edit of a shop's service (D-127); <c>ProfessionalIds</c> null keeps who does it.</summary>
 internal sealed record AdminUpdateServiceCommand(
@@ -172,7 +179,8 @@ internal sealed record AdminUpdateServiceCommand(
     int DurationMinutes,
     bool OnlineBookable,
     IReadOnlyList<Guid>? ProfessionalIds,
-    uint Version) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
+    uint Version,
+    Guid? SectionId = null) : ICommand<Result<AdminServiceResponse>>, ICatalogTextFields;
 
 /// <summary>A package an admin adds to a shop (D-130): the shop's own price and duration, of that shop's services.</summary>
 internal sealed record AdminCreatePackageCommand(
@@ -205,7 +213,9 @@ internal sealed record ModeratePackageCommand(Guid PackageId, ModerationAction A
 
 internal sealed record GetProfessionalServicesQuery(Guid ProfessionalId) : IQuery<ProfessionalServicesResponse?>;
 
-internal sealed record SetProfessionalServicesCommand(Guid ProfessionalId, IReadOnlyList<Guid> ServiceIds) : ICommand<Result<ProfessionalServicesResponse>>;
+/// <summary><c>Services</c> (with each barber's own length, D-149) wins over the plain <c>ServiceIds</c>.</summary>
+internal sealed record SetProfessionalServicesCommand(Guid ProfessionalId, IReadOnlyList<Guid> ServiceIds, IReadOnlyList<BarberServiceItem>? Services = null)
+    : ICommand<Result<ProfessionalServicesResponse>>;
 
 internal sealed class CategoryRules<T> : AbstractValidator<T>
     where T : ICategoryFields
@@ -378,7 +388,8 @@ internal static class AdminCatalogReader
             service.ModerationReason,
             assigned.Count,
             service.Version,
-            [.. assigned.Select(p => p.Value)]);
+            [.. assigned.Select(p => p.Value)],
+            service.SectionId?.Value);
     }
 
     public static AdminPackageListItem Package(ServicePackage package, ShopSummary? shop) => new(
@@ -602,6 +613,12 @@ internal sealed class AdminCreateServiceHandler(
             return category.Error;
         }
 
+        var section = await ServiceSections.ResolveAsync(db, shopId, command.SectionId, cancellationToken);
+        if (section.IsFailure)
+        {
+            return section.Error;
+        }
+
         // The admin scope lifts the tenant filter, so the order is counted within this shop only.
         var order = (await db.Set<ShopService>().Where(s => s.ShopId == shopId).MaxAsync(s => (int?)s.DisplayOrder, cancellationToken) ?? 0) + 1;
         var now = clock.GetUtcNow();
@@ -614,6 +631,7 @@ internal sealed class AdminCreateServiceHandler(
         }
 
         var service = created.Value;
+        service.PlaceIn(section.Value, now);
         db.Add(service);
         var assigned = await ServiceChanges.AssignAsync(db, professionals, service, command.ProfessionalIds ?? [], now, cancellationToken);
         if (assigned.IsFailure)
@@ -649,6 +667,12 @@ internal sealed class AdminUpdateServiceHandler(
             return category.Error;
         }
 
+        var section = await ServiceSections.ResolveAsync(db, service.ShopId, command.SectionId, cancellationToken);
+        if (section.IsFailure)
+        {
+            return section.Error;
+        }
+
         var before = ServiceChanges.Snapshot(service);
         db.Entry(service).Property(s => s.Version).OriginalValue = command.Version;
         var now = clock.GetUtcNow();
@@ -657,6 +681,8 @@ internal sealed class AdminUpdateServiceHandler(
         {
             return updated.Error;
         }
+
+        service.PlaceIn(section.Value, now);
 
         var changes = ServiceChanges.Describe(before, service);
         if (command.ProfessionalIds is { } professionalIds)
@@ -865,24 +891,14 @@ internal sealed class SetProfessionalServicesHandler(TrimmeDbContext db, IAdminD
             return Error.NotFound("professional.not_found", "The professional was not found.");
         }
 
-        var requested = (command.ServiceIds ?? []).Distinct().Select(id => new ShopServiceId(id)).ToList();
-        var valid = await db.Set<ShopService>()
-            .CountAsync(s => requested.Contains(s.Id) && s.ShopId == professional.ShopId && !s.IsArchived, cancellationToken);
-        if (valid != requested.Count)
+        var replaced = await BarberServices.ReplaceAsync(db, professional, command.ServiceIds, command.Services, clock.GetUtcNow(), cancellationToken);
+        if (replaced.IsFailure)
         {
-            return CatalogErrors.ItemsNotInShop();
-        }
-
-        var current = await db.Set<ProfessionalServiceAssignment>().Where(a => a.ProfessionalId == professionalId).ToListAsync(cancellationToken);
-        db.RemoveRange(current.Where(a => !requested.Contains(a.ServiceId)));
-        var now = clock.GetUtcNow();
-        foreach (var serviceId in requested.Where(id => current.All(a => a.ServiceId != id)))
-        {
-            db.Add(new ProfessionalServiceAssignment(professional.ShopId, professionalId, serviceId, now));
+            return replaced.Error;
         }
 
         audit.Record(new AuditRecord(
-            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"{requested.Count} services assigned"));
+            "professional.services_assigned", "Professional", professionalId.ToString(), professional.ShopId, $"{replaced.Value} services assigned"));
         await db.SaveChangesAsync(cancellationToken);
         return await ProfessionalServicesReader.ReadAsync(db, professional, cancellationToken);
     }
@@ -893,13 +909,17 @@ internal static class ProfessionalServicesReader
     public static async Task<ProfessionalServicesResponse> ReadAsync(TrimmeDbContext db, ProfessionalSummary professional, CancellationToken cancellationToken)
     {
         var assigned = await db.Set<ProfessionalServiceAssignment>().AsNoTracking()
-            .Where(a => a.ProfessionalId == professional.Id).Select(a => a.ServiceId).ToListAsync(cancellationToken);
+            .Where(a => a.ProfessionalId == professional.Id).ToDictionaryAsync(a => a.ServiceId, cancellationToken);
         var services = await db.Set<ShopService>().AsNoTracking()
             .Where(s => s.ShopId == professional.ShopId && !s.IsArchived)
             .OrderBy(s => s.DisplayOrder).ToListAsync(cancellationToken);
         return new ProfessionalServicesResponse(
             professional.Id.Value,
             professional.ShopId.Value,
-            [.. services.Select(s => new ProfessionalServiceOption(s.Id.Value, s.NameAr, s.NameEn, s.Price, s.Currency, s.DurationMinutes, s.IsActive, assigned.Contains(s.Id)))]);
+            [
+                .. services.Select(s => new ProfessionalServiceOption(
+                    s.Id.Value, s.NameAr, s.NameEn, s.Price, s.Currency, s.DurationMinutes, s.IsActive, assigned.ContainsKey(s.Id),
+                    assigned.GetValueOrDefault(s.Id)?.DurationMinutes)),
+            ]);
     }
 }

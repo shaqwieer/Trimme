@@ -145,7 +145,8 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const locale = asLocale(raw);
   const query = await searchParams;
   const shop = await getPublicShop(slug);
-  if (!shop) notFound();
+  // A shop its subscription hides (expired, suspended or none) shows «المحل غير متاح حالياً» (D-149, 6-4).
+  if (!shop || !shop.listedInDiscovery) notFound();
 
   const tab = typeof query.tab === 'string' ? query.tab : 'services';
   const reviewsPage = Math.max(1, Number(typeof query.reviewsPage === 'string' ? query.reviewsPage : 1) || 1);
@@ -153,7 +154,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const api = await getPublicApi();
   const signedIn = await mayBeSignedIn();
   const path = { params: { path: { slug: shop.slug } } };
-  const [services, packages, professionals, reviews, loyalty, categories] = await Promise.all([
+  const [services, packages, professionals, reviews, loyalty, sections] = await Promise.all([
     optional(() => api.GET('/api/v1/public/shops/{slug}/services', path), 'services'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/packages', path), 'packages'),
     optional(() => api.GET('/api/v1/public/shops/{slug}/professionals', path), 'professionals'),
@@ -165,7 +166,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
       'reviews',
     ),
     optional(() => api.GET('/api/v1/public/shops/{slug}/loyalty', path), 'loyalty'),
-    optional(() => api.GET('/api/v1/public/service-categories'), 'categories'),
+    optional(() => api.GET('/api/v1/public/shops/{slug}/service-sections', path), 'service sections'),
   ]);
 
   const name = shopName(shop, locale);
@@ -364,10 +365,11 @@ ${url}`)}`}
                     services={services ?? []}
                     packages={packages ?? []}
                     bookable={shop.listedInDiscovery}
-                    categories={(categories ?? [])
-                      .filter((c) => c.isActive)
-                      .sort((a, b) => a.displayOrder - b.displayOrder)
-                      .map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn }))}
+                    sections={(sections ?? []).map((c) => ({
+                      id: c.id,
+                      nameAr: c.nameAr,
+                      nameEn: c.nameEn ?? null,
+                    }))}
                   />
                 ),
               },

@@ -9,8 +9,9 @@ using Trimme.Modules.Services.Domain;
 namespace Trimme.Modules.Services.Infrastructure.Seeding;
 
 /// <summary>
-/// Categories, then different services, prices and durations per demo shop, a package each, and assignments
-/// (spec §20). Idempotent by fixed ids; development only.
+/// Categories, then different services, prices and durations per demo shop, each shop's own sections (D-149: one per
+/// category its services use, as the <c>OwnerSettings</c> migration makes them for existing shops), a package each, and
+/// assignments (spec §20). Idempotent by fixed ids; development only.
 /// </summary>
 internal sealed class DemoCatalogSeeder : IDevSeeder
 {
@@ -44,6 +45,13 @@ internal sealed class DemoCatalogSeeder : IDevSeeder
             [Guid.Parse("0199a0de-5a10-7000-8000-000000000401"), Guid.Parse("0199a0de-5a10-7000-8000-000000000402")]),
         (Guid.Parse("0199a0de-5a10-7000-8000-000000000511"), DemoData.BarberHouse.Id, "باقة القص واللحية", "Cut & beard", 75m, 45,
             [Guid.Parse("0199a0de-5a10-7000-8000-000000000411"), Guid.Parse("0199a0de-5a10-7000-8000-000000000412")]),
+    ];
+
+    /// <summary>Each demo shop and the base of its sections' fixed ids (one section per category it uses, D-149).</summary>
+    private static readonly (ShopId Shop, int IdBase)[] SectionShops =
+    [
+        (DemoData.AlAsala.Id, 0x600),
+        (DemoData.BarberHouse.Id, 0x610),
     ];
 
     /// <summary>Professional (DemoData) → assigned services of their own shop.</summary>
@@ -90,6 +98,31 @@ internal sealed class DemoCatalogSeeder : IDevSeeder
             }
 
             db.Add(service);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        // The shop's own sections (D-149), only for a shop that has none yet (an older local database already got them
+        // from the migration), in the categories' order, with the services placed in them.
+        foreach (var (shop, idBase) in SectionShops)
+        {
+            if (await db.Set<ServiceSection>().AnyAsync(x => x.ShopId == shop, cancellationToken))
+            {
+                continue;
+            }
+
+            var used = Services.Where(s => s.Shop == shop).Select(s => s.Category).Distinct().Order().ToList();
+            for (var i = 0; i < used.Count; i++)
+            {
+                var category = used[i];
+                var sectionId = new ServiceSectionId(Guid.Parse($"0199a0de-5a10-7000-8000-000000000{idBase + category + 1:x3}"));
+                db.Add(ServiceSection.Create(sectionId, shop, Categories[category].Ar, Categories[category].En, i + 1, SeededAt));
+                foreach (var demo in Services.Where(s => s.Shop == shop && s.Category == category))
+                {
+                    var service = await db.Set<ShopService>().SingleAsync(x => x.Id == new ShopServiceId(demo.Id), cancellationToken);
+                    service.PlaceIn(sectionId, SeededAt);
+                }
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);

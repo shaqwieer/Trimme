@@ -31,8 +31,15 @@ public sealed record OfferMatch(Guid? CategoryId, string? NormalizedQuery)
 public sealed record OfferSummary(
     Guid Id, bool IsPackage, string NameAr, string? NameEn, decimal Price, string Currency, int DurationMinutes, bool OnlineBookable);
 
-/// <summary>An online-bookable offer and the professionals who can do it (every item, for a package).</summary>
-public sealed record ProbeOffer(OfferSummary Offer, IReadOnlyList<ProfessionalId> ProfessionalIds);
+/// <summary>
+/// An online-bookable offer and the professionals who can do it (every item, for a package). <c>Durations</c> are the
+/// barbers whose own length for a service differs from the offer's (D-149); a package keeps its own length.
+/// </summary>
+public sealed record ProbeOffer(OfferSummary Offer, IReadOnlyList<ProfessionalId> ProfessionalIds, IReadOnlyDictionary<ProfessionalId, int>? Durations = null)
+{
+    public int DurationFor(ProfessionalId professional) =>
+        Durations is not null && Durations.TryGetValue(professional, out var minutes) ? minutes : Offer.DurationMinutes;
+}
 
 /// <param name="MinPrice">The cheapest published service or package.</param>
 /// <param name="Currency">The currency of the prices.</param>
@@ -82,7 +89,8 @@ public sealed record SlotProbeRequest(
     IReadOnlyList<ProfessionalId> ProfessionalIds,
     DateOnly From,
     DateOnly To,
-    int MaxSlots);
+    int MaxSlots,
+    IReadOnlyDictionary<ProfessionalId, int>? Durations = null);
 
 /// <summary>
 /// Genuinely bookable starts of one offer, for discovery's bounded probe (implemented by the Availability module, D-091).
@@ -92,8 +100,9 @@ public interface ISlotProbe
 {
     /// <summary>
     /// Bookable starts of an item of <paramref name="durationMinutes"/> for these professionals over local dates <paramref name="from"/>…<paramref name="to"/>,
-    /// earliest first, at most <paramref name="maxSlots"/>. <paramref name="ignoreBookingId"/> is a booking being rescheduled,
-    /// whose own time does not block it.
+    /// earliest first, at most <paramref name="maxSlots"/>, under the shop's own booking rules (D-149).
+    /// <paramref name="ignoreBookingId"/> is a booking being rescheduled, whose own time does not block it;
+    /// <paramref name="durations"/> are the barbers whose own length differs (<c>BookableOffer.Durations</c>).
     /// </summary>
     Task<IReadOnlyList<ProbedSlot>> ProbeAsync(
         ShopId shopId,
@@ -104,7 +113,8 @@ public interface ISlotProbe
         DateOnly to,
         int maxSlots,
         CancellationToken cancellationToken,
-        Guid? ignoreBookingId = null);
+        Guid? ignoreBookingId = null,
+        IReadOnlyDictionary<ProfessionalId, int>? durations = null);
 
     /// <summary>
     /// Several probes at once, results in request order. Their schedules and bookings are read with a fixed number of

@@ -114,6 +114,12 @@ public sealed class BookedPackageItem
 /// <summary>The professional as named at booking time (and after a reschedule to another professional).</summary>
 public sealed record BookedProfessional(ProfessionalId Id, string NameAr, string NameEn);
 
+/// <summary>
+/// How long a booking takes with a given barber (D-149: barbers have their own length per service): the whole, and each
+/// booked service that carries its own length.
+/// </summary>
+public sealed record BookedLength(int DurationMinutes, IReadOnlyDictionary<Guid, int> ItemDurations);
+
 /// <summary>One entry of the booking's history (R-BKG-02): every status change and reschedule, with actor and time.</summary>
 public sealed class BookingHistoryEntry
 {
@@ -267,7 +273,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     private Booking(
         BookingId id, ShopId shopId, Guid? customerId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, BookingStatus status, BookingChannel channel, string? customerNote, DateTimeOffset now)
+        DateTimeOffset startsAt, BookingStatus status, BookingChannel channel, string? customerNote, DateTimeOffset now, int bufferMinutes)
         : base(id)
     {
         ShopId = shopId;
@@ -285,7 +291,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         PackageItems = [.. item.PackageItems];
         // Instants are stored in UTC (timestamptz); clients may send any offset.
         StartsAt = startsAt.ToUniversalTime();
-        EndsAt = StartsAt.AddMinutes(item.DurationMinutes);
+        BufferMinutes = Math.Max(bufferMinutes, 0);
+        SetEnd(StartsAt.AddMinutes(item.DurationMinutes));
         Status = status;
         Channel = channel;
         CustomerNote = customerNote;
@@ -335,6 +342,15 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public DateTimeOffset StartsAt { get; private set; }
 
     public DateTimeOffset EndsAt { get; private set; }
+
+    /// <summary>The shop's cleaning time after this booking, as set when it was made (D-149).</summary>
+    public int BufferMinutes { get; private set; }
+
+    /// <summary>
+    /// When the barber is free again: the end plus <see cref="BufferMinutes"/>. The exclusion constraint and the
+    /// postponement holds compare <c>[StartsAt, BlockedUntil)</c>, so the cleaning time cannot be double-booked.
+    /// </summary>
+    public DateTimeOffset BlockedUntil { get; private set; }
 
     public BookingStatus Status { get; private set; }
 
@@ -386,10 +402,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public static Booking CreateOnline(
         BookingId id, ShopId shopId, Guid customerId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null)
+        DateTimeOffset startsAt, bool requireManualConfirmation, string? customerNote, DateTimeOffset now, (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null,
+        int bufferMinutes = 0)
     {
         var status = requireManualConfirmation ? BookingStatus.Pending : BookingStatus.Confirmed;
-        var booking = new Booking(id, shopId, customerId, customerName.Trim(), professional, item, startsAt, status, BookingChannel.Online, Clean(customerNote), now);
+        var booking = new Booking(id, shopId, customerId, customerName.Trim(), professional, item, startsAt, status, BookingChannel.Online, Clean(customerNote), now, bufferMinutes);
         booking.QrLinkId = qrScan?.LinkId;
         booking.QrVisitId = qrScan?.VisitId;
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, new BookingActor(customerId, ActorType.Customer, customerName), null, now));
@@ -402,7 +419,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// </summary>
     public static Booking CreateWalkIn(
         BookingId id, ShopId shopId, string customerName, BookedProfessional professional, BookedItem item,
-        DateTimeOffset startsAt, bool startsNow, string? note, BookingActor actor, DateTimeOffset now, BookingChannel channel = BookingChannel.WalkIn)
+        DateTimeOffset startsAt, bool startsNow, string? note, BookingActor actor, DateTimeOffset now, BookingChannel channel = BookingChannel.WalkIn,
+        int bufferMinutes = 0)
     {
         if (channel == BookingChannel.Online)
         {
@@ -410,7 +428,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         }
 
         var status = startsNow && channel == BookingChannel.WalkIn ? BookingStatus.Arrived : BookingStatus.Confirmed;
-        var booking = new Booking(id, shopId, null, customerName.Trim(), professional, item, startsAt, status, channel, Clean(note), now);
+        var booking = new Booking(id, shopId, null, customerName.Trim(), professional, item, startsAt, status, channel, Clean(note), now, bufferMinutes);
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, status, null, actor, null, now));
         return booking;
     }
@@ -422,9 +440,9 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public static Booking Seeded(
         BookingId id, ShopId shopId, Guid? customerId, string customerName, BookedProfessional professional, BookedItem item,
         DateTimeOffset startsAt, BookingChannel channel, IReadOnlyList<BookingStatus> path, string? reason, DateTimeOffset createdAt,
-        (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null)
+        (QrCodeLinkId LinkId, Guid VisitId)? qrScan = null, int bufferMinutes = 0)
     {
-        var booking = new Booking(id, shopId, customerId, customerName, professional, item, startsAt, path[0], channel, null, createdAt);
+        var booking = new Booking(id, shopId, customerId, customerName, professional, item, startsAt, path[0], channel, null, createdAt, bufferMinutes);
         booking.QrLinkId = qrScan?.LinkId;
         booking.QrVisitId = qrScan?.VisitId;
         booking._history.Add(new BookingHistoryEntry(BookingEventKind.Created, null, path[0], null, BookingActor.System, null, createdAt));
@@ -563,8 +581,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// <summary>
     /// Moves a Pending or Confirmed booking to a new start (and optionally another professional) with the same snapshot
     /// and status (D-087). The caller has rechecked availability; the customer's cutoff applies to the current start.
+    /// <paramref name="bufferMinutes"/> is the shop's cleaning time now, the one the new place was checked with (D-149).
     /// </summary>
-    public Result Reschedule(DateTimeOffset newStart, BookedProfessional professional, BookingActor actor, DateTimeOffset now, int? cutoffMinutes, string? reason = null)
+    public Result Reschedule(
+        DateTimeOffset newStart, BookedProfessional professional, BookingActor actor, DateTimeOffset now, int? cutoffMinutes, string? reason = null,
+        BookedLength? length = null, int? bufferMinutes = null)
     {
         if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
         {
@@ -579,7 +600,15 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         var previous = StartsAt;
         var previousProfessional = CurrentProfessional;
         StartsAt = newStart.ToUniversalTime();
-        EndsAt = StartsAt.AddMinutes(DurationMinutes);
+
+        // Another barber takes the booking for their own length (D-149); the same barber keeps the booked one.
+        if (length is not null)
+        {
+            ApplyLength(length);
+        }
+
+        UseBuffer(bufferMinutes);
+        SetEnd(StartsAt.AddMinutes(DurationMinutes));
         SetProfessional(professional);
         UpdatedAt = now;
 
@@ -601,10 +630,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     /// <summary>
     /// Gives a Pending or Confirmed booking that has not started to another barber of the same shop, at the same time
-    /// (D-145). The caller has checked that the barber does the booked item and is free. Until the start, the customer
-    /// may then cancel or change it even inside the cancellation window.
+    /// (D-145), for that barber's own length when given (D-149). The caller has checked that the barber does the booked
+    /// item and is free for it. Until the start, the customer may then cancel or change it even inside the cancellation window.
     /// </summary>
-    public Result ChangeProfessional(BookedProfessional professional, BookingActor actor, DateTimeOffset now)
+    public Result ChangeProfessional(
+        BookedProfessional professional, BookingActor actor, DateTimeOffset now, BookedLength? length = null, int? bufferMinutes = null)
     {
         if (Status is not (BookingStatus.Pending or BookingStatus.Confirmed))
         {
@@ -623,6 +653,13 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
         var previous = CurrentProfessional;
         SetProfessional(professional);
+        if (length is not null)
+        {
+            ApplyLength(length);
+        }
+
+        UseBuffer(bufferMinutes);
+        SetEnd(StartsAt.AddMinutes(DurationMinutes));
         ProfessionalChangedAt = now;
         UpdatedAt = now;
         _history.Add(new BookingHistoryEntry(BookingEventKind.ProfessionalChanged, Status, Status, null, actor, null, now, previous));
@@ -663,7 +700,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         Price += price;
         AmountDue = Price;
         DurationMinutes += minutes;
-        EndsAt = EndsAt.AddMinutes(minutes);
+        SetEnd(EndsAt.AddMinutes(minutes));
         Rename(PackageId is null ? null : service, null);
         UpdatedAt = now;
         _history.Add(new BookingHistoryEntry(BookingEventKind.ServiceAdded, Status, Status, null, actor, Truncated(service.NameAr), now));
@@ -712,7 +749,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         Price -= price;
         AmountDue = Price;
         DurationMinutes -= minutes;
-        EndsAt = EndsAt.AddMinutes(-minutes);
+        SetEnd(EndsAt.AddMinutes(-minutes));
         if (PackageId is null)
         {
             ServiceId = items[0].ServiceId;
@@ -777,7 +814,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
         var previous = StartsAt;
         StartsAt = offer.StartsAt;
-        EndsAt = offer.EndsAt;
+        BufferMinutes = offer.BufferMinutes;
+        SetEnd(offer.EndsAt);
         UpdatedAt = now;
         offer.Close(PostponementStatus.Accepted, now);
         _history.Add(new BookingHistoryEntry(
@@ -836,7 +874,38 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         var minute = now.ToUniversalTime().AddTicks(-(now.Ticks % TimeSpan.TicksPerMinute));
         if (minute > StartsAt && minute < EndsAt)
         {
-            EndsAt = minute;
+            SetEnd(minute);
+        }
+    }
+
+    /// <summary>A booking placed again takes the cleaning time its new place was checked with (D-149); none keeps its own.</summary>
+    private void UseBuffer(int? bufferMinutes)
+    {
+        if (bufferMinutes is { } minutes)
+        {
+            BufferMinutes = Math.Max(minutes, 0);
+        }
+    }
+
+    /// <summary>Sets the end, and with it when the barber is free again (the cleaning time after it, D-149).</summary>
+    private void SetEnd(DateTimeOffset end)
+    {
+        EndsAt = end;
+        BlockedUntil = end.AddMinutes(BufferMinutes);
+    }
+
+    /// <summary>Takes another barber's length (D-149): the whole, and each booked service that carries its own.</summary>
+    private void ApplyLength(BookedLength length)
+    {
+        DurationMinutes = length.DurationMinutes;
+        if (PackageItems.Any(i => i.DurationMinutes is not null && length.ItemDurations.ContainsKey(i.ServiceId)))
+        {
+            PackageItems =
+            [
+                .. PackageItems.Select(i => i.DurationMinutes is not null && length.ItemDurations.TryGetValue(i.ServiceId, out var minutes)
+                    ? new BookedPackageItem { ServiceId = i.ServiceId, NameAr = i.NameAr, NameEn = i.NameEn, Price = i.Price, DurationMinutes = minutes, Added = i.Added }
+                    : i),
+            ];
         }
     }
 

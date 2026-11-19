@@ -12,9 +12,11 @@ namespace Trimme.Modules.Availability.Application;
 
 /// <summary>
 /// One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day's
-/// grid, and every free start that day.
+/// grid, and every free start that day. <c>DurationMinutes</c> is how long this barber takes for it (D-149: barbers have
+/// their own length per service).
 /// </summary>
-public sealed record WalkInProfessionalResponse(Guid Id, string NameAr, string NameEn, bool FreeNow, DateTimeOffset? NextFreeAt, IReadOnlyList<DateTimeOffset> Starts);
+public sealed record WalkInProfessionalResponse(
+    Guid Id, string NameAr, string NameEn, bool FreeNow, DateTimeOffset? NextFreeAt, IReadOnlyList<DateTimeOffset> Starts, int DurationMinutes);
 
 /// <summary>Walk-in and phone-booking choices for a service, several services or a package on one shop-local date (s-walkin, D-147).</summary>
 public sealed record WalkInOptionsResponse(
@@ -79,18 +81,21 @@ internal sealed class GetWalkInOptionsHandler(
             // A barber first, then the colleagues they may book for (D-147).
             .OrderByDescending(p => p.Id.Value == user.ProfessionalId)
             .ToList();
-        var step = (await settings.GetAsync(cancellationToken)).SlotStepMinutes;
+        var rules = shop.BookingRules(await settings.GetAsync(cancellationToken));
+        var step = rules.SlotStepMinutes;
         var (calendar, calendars) = await loader.CalendarsAsync(shopId, zone, [.. candidates.Select(p => p.Id)], date, date, cancellationToken);
 
-        // The desk policy: no lead time, and the date asked for is always inside the horizon.
-        var policy = new BookingPolicy(0, MaxDaysAhead + 1, step);
+        // The desk policy: no lead time, and the date asked for is always inside the horizon; the shop's start interval
+        // and cleaning time (D-149).
+        var policy = new BookingPolicy(0, MaxDaysAhead + 1, step, rules.BufferMinutes);
         var result = candidates.Select(p =>
         {
             var own = calendars.Single(c => c.Id == p.Id);
-            var starts = AvailabilityEngine.FindSlots(calendar, [own], new AvailabilityQuery(date, date, offer.DurationMinutes, now, policy))
+            var minutes = offer.DurationFor(p.Id);
+            var starts = AvailabilityEngine.FindSlots(calendar, [own], new AvailabilityQuery(date, date, minutes, now, policy))
                 .Select(s => s.StartsAt).ToList();
-            var freeNow = date == today && AvailabilityEngine.IsFree(calendar, own, now, offer.DurationMinutes);
-            return new WalkInProfessionalResponse(p.Id.Value, p.NameAr, p.NameEn, freeNow, starts.Count > 0 ? starts[0] : null, starts);
+            var freeNow = date == today && AvailabilityEngine.IsFree(calendar, own, now, minutes, rules.BufferMinutes);
+            return new WalkInProfessionalResponse(p.Id.Value, p.NameAr, p.NameEn, freeNow, starts.Count > 0 ? starts[0] : null, starts, minutes);
         }).ToList();
 
         return new WalkInOptionsResponse(date, shop.TimeZone, now, offer.DurationMinutes, step, result);

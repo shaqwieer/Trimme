@@ -38,6 +38,7 @@ public sealed class BookingsModule : ModuleBase
         services.AddScoped<BuildingBlocks.Application.Privacy.ICustomerUpcomingBookings, CustomerUpcomingBookings>();
         services.AddScoped<RescheduleAvailability>();
         services.AddScoped<ProfessionalPicker>();
+        services.AddScoped<ShopRulesReader>();
         services.AddScoped<CustomerVisits>();
         services.AddScoped<ShopBookingReader>();
         services.AddScoped<BookingActors>();

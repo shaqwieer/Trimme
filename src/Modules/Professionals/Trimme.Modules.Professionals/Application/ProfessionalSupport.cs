@@ -30,6 +30,9 @@ internal interface IProfessionalProfileFields
     string? BioAr { get; }
 
     string? BioEn { get; }
+
+    /// <summary>The languages the barber speaks (D-149); <see langword="null"/> keeps them on an edit.</summary>
+    IReadOnlyList<string>? Languages { get; }
 }
 
 internal sealed class ProfessionalProfileRules<T> : AbstractValidator<T>
@@ -48,6 +51,9 @@ internal sealed class ProfessionalProfileRules<T> : AbstractValidator<T>
         RuleFor(p => p.SpecialtyEn).MaximumLength(Professional.MaxSpecialtyLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.BioAr).MaximumLength(Professional.MaxBioLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.BioEn).MaximumLength(Professional.MaxBioLength).WithErrorCode("validation.too_long");
+        RuleForEach(p => p.Languages)
+            .Must(code => code is not null && Professional.LanguageCodes.Contains(code.Trim().ToLowerInvariant()))
+            .WithErrorCode("validation.invalid");
     }
 }
 
@@ -164,7 +170,8 @@ internal sealed class ProfessionalSupport(TrimmeDbContext db, IPersonalDataProte
             WhatsApp(contact),
             professional.CreatedAt,
             professional.UpdatedAt,
-            professional.Version);
+            professional.Version,
+            professional.Languages);
     }
 
     public static AdminWhatsAppResponse WhatsApp(ProfessionalContact? contact) =>
@@ -174,5 +181,5 @@ internal sealed class ProfessionalSupport(TrimmeDbContext db, IPersonalDataProte
 internal static class ProfessionalMapping
 {
     public static ProfessionalProfile Profile(IProfessionalProfileFields fields) =>
-        ProfessionalProfile.Create(fields.NameAr, fields.NameEn, fields.SpecialtyAr, fields.SpecialtyEn, fields.BioAr, fields.BioEn);
+        ProfessionalProfile.Create(fields.NameAr, fields.NameEn, fields.SpecialtyAr, fields.SpecialtyEn, fields.BioAr, fields.BioEn, fields.Languages);
 }

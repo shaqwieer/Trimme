@@ -5,6 +5,7 @@ import {
   ANY_PROFESSIONAL,
   blockingItem,
   combineOffers,
+  durationFor,
   currentStep,
   eligibleProfessionals,
   keyFor,
@@ -295,5 +296,33 @@ describe('booking display helpers', () => {
     // The same instant is the same day in UTC but not in Riyadh.
     expect(calendarDaysUntil('2026-10-01T21:30:00Z', 'UTC', now)).toBe(1);
     expect(calendarDaysUntil('2026-09-29T10:00:00Z', 'Asia/Riyadh', now)).toBe(0);
+  });
+});
+
+describe('durationFor (D-149)', () => {
+  const cut: WizardOffer = {
+    kind: 'service',
+    id: 'cut',
+    nameAr: 'حلاقة',
+    nameEn: null,
+    descriptionAr: null,
+    descriptionEn: null,
+    price: 60,
+    currency: 'SAR',
+    durationMinutes: 30,
+    professionalIds: ['ahmed', 'mohamed'],
+    professionalDurations: [{ professionalId: 'mohamed', durationMinutes: 45 }],
+  };
+  const beard: WizardOffer = { ...cut, id: 'beard', durationMinutes: 20, professionalDurations: [] };
+  const pkg: WizardOffer = { ...cut, kind: 'package', id: 'pkg', durationMinutes: 40 };
+
+  it("adds each service's length with the chosen barber: their own where set, else the standard", () => {
+    expect(durationFor([cut, beard], 'ahmed')).toBe(50);
+    expect(durationFor([cut, beard], 'mohamed')).toBe(65);
+  });
+
+  it('uses the standard lengths for «أي مختص», and a package keeps the length the owner set', () => {
+    expect(durationFor([cut], ANY_PROFESSIONAL)).toBe(30);
+    expect(durationFor([pkg, beard], 'mohamed')).toBe(60);
   });
 });

@@ -25,9 +25,9 @@ describe('search filters in the URL (mapRules #3)', () => {
       },
       true,
     );
+    expect(filters).not.toHaveProperty('category'); // no service filter since D-149: each shop has its own sections
     expect(filters).toMatchObject({
       q: 'تهذيب',
-      category: null,
       sort: 'earliest',
       openNow: true,
       verified: false,
@@ -50,9 +50,9 @@ describe('search filters in the URL (mapRules #3)', () => {
       true,
     );
     const query = filtersToQuery(filters);
-    expect(query).toEqual({ q: 'قص', category: '0199a0de-5a10-7000-8000-000000000301', open: '1' });
+    expect(query).toEqual({ q: 'قص', open: '1' });
     expect(parseSearchFilters(query, true)).toEqual(filters);
-    expect(activeFilterCount(filters)).toBe(2);
+    expect(activeFilterCount(filters)).toBe(1);
   });
 
   it('maps to the API query: location with a radius, API sort names, distance falls back to rating without a location', () => {

@@ -96,6 +96,8 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: `/shop/services/${SEED.cutAndStyle}` },
         { path: '/shop/settings' },
         { path: '/shop/settings/location', map: true },
+        // The shop's own booking settings (D-149).
+        { path: '/shop/settings/booking' },
         { path: '/shop/subscription' },
         { path: '/shop/notifications' },
         { path: '/shop/qr' },
@@ -128,6 +130,9 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/admin/shops/new', map: true },
         { path: `/admin/shops/${SEED.alAsala.id}` },
         { path: `/admin/shops/${SEED.alAsala.id}?tab=loyalty` },
+        // The shop's sections and booking settings, kept by the admin too (D-149).
+        { path: `/admin/shops/${SEED.alAsala.id}?tab=services` },
+        { path: `/admin/shops/${SEED.alAsala.id}?tab=booking` },
         { path: '/admin/professionals' },
         { path: '/admin/professionals/new' },
         { path: `/admin/professionals/${SEED.faisal}` },

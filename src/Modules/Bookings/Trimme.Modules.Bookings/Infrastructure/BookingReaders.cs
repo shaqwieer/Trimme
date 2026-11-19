@@ -22,8 +22,8 @@ internal sealed class BookedTimeReader(TrimmeDbContext db, TimeProvider clock) :
     {
         var ids = professionalIds.ToArray();
         var booked = await Active(shopId)
-            .Where(b => ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.EndsAt > from)
-            .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt))
+            .Where(b => ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.BlockedUntil > from)
+            .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt, b.BlockedUntil))
             .ToListAsync(cancellationToken);
         return [.. booked, .. await HeldAsync([shopId], ids, from, to, cancellationToken)];
     }
@@ -35,8 +35,8 @@ internal sealed class BookedTimeReader(TrimmeDbContext db, TimeProvider clock) :
         var ids = professionalIds.ToArray();
         var active = BookingRules.Active.ToArray();
         var booked = await db.Set<Booking>().AsNoTracking()
-            .Where(b => shops.Contains(b.ShopId) && active.Contains(b.Status) && ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.EndsAt > from)
-            .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt))
+            .Where(b => shops.Contains(b.ShopId) && active.Contains(b.Status) && ids.Contains(b.ProfessionalId) && b.StartsAt < to && b.BlockedUntil > from)
+            .Select(b => new BusyTime(b.Id.Value, b.ProfessionalId, b.StartsAt, b.EndsAt, b.BlockedUntil))
             .ToListAsync(cancellationToken);
         return [.. booked, .. await HeldAsync(shops, ids, from, to, cancellationToken)];
     }
@@ -48,11 +48,11 @@ internal sealed class BookedTimeReader(TrimmeDbContext db, TimeProvider clock) :
         var now = clock.GetUtcNow();
         return await db.Set<PostponementOffer>().AsNoTracking()
             .Where(o => shops.Contains(o.ShopId) && ids.Contains(o.ProfessionalId) && o.Status == PostponementStatus.Open && o.ExpiresAt > now
-                        && o.StartsAt < to && o.EndsAt > from)
+                        && o.StartsAt < to && o.BlockedUntil > from)
             .Join(db.Set<Booking>().AsNoTracking(), o => o.BookingId, b => b.Id, (o, b) => new { o, b })
             .Where(x => (x.b.Status == BookingStatus.Pending || x.b.Status == BookingStatus.Confirmed)
                         && x.b.StartsAt == x.o.OriginalStartsAt && x.b.ProfessionalId == x.o.ProfessionalId)
-            .Select(x => new BusyTime(x.o.BookingId.Value, x.o.ProfessionalId, x.o.StartsAt, x.o.EndsAt))
+            .Select(x => new BusyTime(x.o.BookingId.Value, x.o.ProfessionalId, x.o.StartsAt, x.o.EndsAt, x.o.BlockedUntil))
             .ToListAsync(cancellationToken);
     }
 

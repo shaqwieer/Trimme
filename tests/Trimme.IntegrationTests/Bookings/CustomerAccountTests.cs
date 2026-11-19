@@ -279,7 +279,8 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
         var dates = await OkAsync(mine.GetAsync($"/api/v1/me/bookings/{id}/reschedule/dates?from={Iso(Target)}&to={Iso(Target.AddDays(2))}", ct), ct);
         dates.GetProperty("dates").EnumerateArray().Select(d => d.GetProperty("date").GetString()).ShouldBe([Iso(Target), Iso(Target.AddDays(1)), Iso(Target.AddDays(2))]);
         dates.GetProperty("dates")[0].GetProperty("slotCount").GetInt32().ShouldBe(starts.Count);
-        await FailsAsync(mine.GetAsync($"/api/v1/me/bookings/{id}/reschedule/dates?from={Iso(Target)}&to={Iso(Target.AddDays(40))}", ct), HttpStatusCode.BadRequest, "validation.out_of_range", ct);
+        // At most 90 days in one request: the furthest bookable day a shop can set (D-149).
+        await FailsAsync(mine.GetAsync($"/api/v1/me/bookings/{id}/reschedule/dates?from={Iso(Target)}&to={Iso(Target.AddDays(90))}", ct), HttpStatusCode.BadRequest, "validation.out_of_range", ct);
 
         // Only the customer's own active bookings.
         await FailsAsync(other.GetAsync($"/api/v1/me/bookings/{id}/reschedule/slots?date={Iso(Target)}", ct), HttpStatusCode.NotFound, "booking.not_found", ct);

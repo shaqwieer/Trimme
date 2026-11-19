@@ -33,7 +33,8 @@ public sealed record PublicProfessionalDetailResponse(
     string ShopNameEn,
     decimal Rating,
     int ReviewCount,
-    IReadOnlyList<PublicProfessionalOfferResponse> Offers);
+    IReadOnlyList<PublicProfessionalOfferResponse> Offers,
+    IReadOnlyList<string> Languages);
 
 /// <summary>A bookable start: the instant and its local time (<c>HH:mm</c>, shop time zone).</summary>
 public sealed record NextSlotResponse(DateTimeOffset StartsAt, string LocalTime);
@@ -106,7 +107,7 @@ internal sealed class GetPublicProfessionalHandler(TrimmeDbContext db, IPublicDa
         return new PublicProfessionalDetailResponse(
             p.Id.Value, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, p.BioAr, p.BioEn, MediaRules.Url(p.AvatarMediaId),
             shop.Id.Value, shop.Slug, shop.NameAr, shop.NameEn, rating.Average, rating.Count,
-            [.. list.Select(PublicProfessionalQueries.ToResponse)]);
+            [.. list.Select(PublicProfessionalQueries.ToResponse)], p.Languages);
     }
 }
 
@@ -148,7 +149,7 @@ internal sealed class GetProfessionalNextSlotsHandler(
         var today = probe.Today(shop.TimeZone, clock.GetUtcNow());
         for (var day = today; day < today.AddDays(PublicProfessionalQueries.NextSlotsDays); day = day.AddDays(1))
         {
-            var slots = await probe.ProbeAsync(shop.Id, shop.TimeZone, offer.Offer.DurationMinutes, [p.Id], day, day, MaxProbeSlots, cancellationToken);
+            var slots = await probe.ProbeAsync(shop.Id, shop.TimeZone, offer.DurationFor(p.Id), [p.Id], day, day, MaxProbeSlots, cancellationToken);
             if (slots.Count > 0)
             {
                 return new ProfessionalNextSlotsResponse(

@@ -194,7 +194,8 @@ internal sealed class GetPublicShopStatusHandler(
             var groups = chosen.Select(group => (Offer: group.First().Offer!, Who: group.Select(x => x.Id).ToList())).ToList();
             var probed = await probe.ProbeManyAsync(
                 [.. groups.Select(g => new SlotProbeRequest(
-                    shop.Id, shop.TimeZone, g.Offer.Offer.DurationMinutes, g.Who, today, today.AddDays(DiscoveryCatalog.ProbeDays - 1), MaxProbeSlots))],
+                    shop.Id, shop.TimeZone, g.Offer.Offer.DurationMinutes, g.Who, today, today.AddDays(DiscoveryCatalog.ProbeDays - 1), MaxProbeSlots,
+                    g.Offer.Durations))],
                 cancellationToken);
             for (var i = 0; i < groups.Count; i++)
             {

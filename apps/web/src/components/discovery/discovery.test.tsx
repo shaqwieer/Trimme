@@ -155,7 +155,6 @@ describe('FilterSheet (c-map filter drawer)', () => {
       <FilterSheet
         filters={{
           q: '',
-          category: null,
           sort: 'nearest',
           openNow: true,
           verified: false,
@@ -166,7 +165,6 @@ describe('FilterSheet (c-map filter drawer)', () => {
           view: 'list',
           page: 1,
         }}
-        categories={[{ id: 'c1', name: 'اللحية' }]}
         priceRange={{ min: 25, max: 90 }}
         location={{ lat: 24.77, lng: 46.64, label: '', source: 'device' }}
         activeCount={1}

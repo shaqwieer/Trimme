@@ -25,6 +25,65 @@ public readonly record struct ServicePackageId(Guid Value) : IEntityId<ServicePa
     public override string ToString() => Value.ToString();
 }
 
+public readonly record struct ServiceSectionId(Guid Value) : IEntityId<ServiceSectionId>
+{
+    public static ServiceSectionId From(Guid value) => new(value);
+
+    public override string ToString() => Value.ToString();
+}
+
+/// <summary>
+/// A section of one shop's services (D-149, the client's «أقسام للخدمات»): hair, beard, care… The owner adds, renames,
+/// orders and deletes them; the shop page and the booking show the services in tabs in this order, packages last.
+/// Deleting a section leaves its services without one («أخرى»).
+/// </summary>
+public sealed class ServiceSection : AggregateRoot<ServiceSectionId>, IShopOwned, IPublicContent
+{
+    public const int MaxNameLength = 60;
+    public const int MaxSections = 30;
+
+    private ServiceSection(ServiceSectionId id, ShopId shopId, string nameAr, string? nameEn, int displayOrder, DateTimeOffset now)
+        : base(id)
+    {
+        ShopId = shopId;
+        NameAr = nameAr;
+        NameEn = nameEn;
+        DisplayOrder = displayOrder;
+        CreatedAt = now;
+    }
+
+    private ServiceSection()
+    {
+        NameAr = string.Empty;
+    }
+
+    public ShopId ShopId { get; private set; }
+
+    public string NameAr { get; private set; }
+
+    public string? NameEn { get; private set; }
+
+    public int DisplayOrder { get; private set; }
+
+    public DateTimeOffset CreatedAt { get; private set; }
+
+    public DateTimeOffset? UpdatedAt { get; private set; }
+
+    public static ServiceSection Create(ServiceSectionId id, ShopId shopId, string nameAr, string? nameEn, int displayOrder, DateTimeOffset now) =>
+        new(id, shopId, nameAr.Trim(), Clean(nameEn), displayOrder, now);
+
+    public void Rename(string nameAr, string? nameEn, DateTimeOffset now)
+    {
+        NameAr = nameAr.Trim();
+        NameEn = Clean(nameEn);
+        UpdatedAt = now;
+    }
+
+    public void MoveTo(int displayOrder) => DisplayOrder = displayOrder;
+
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
 /// <summary>Platform moderation of a shop's service or package (DV-S02). A hidden item is never published.</summary>
 public enum ModerationState
 {
@@ -159,6 +218,9 @@ public sealed class ShopService : AggregateRoot<ShopServiceId>, IShopOwned, ICon
 
     public ServiceCategoryId? CategoryId { get; private set; }
 
+    /// <summary>The shop's own section it sits in (D-149); <see langword="null"/> shows it under «أخرى».</summary>
+    public ServiceSectionId? SectionId { get; private set; }
+
     public decimal Price { get; private set; }
 
     /// <summary>Stored with the price so bookings can snapshot both (Phase 10).</summary>
@@ -245,6 +307,16 @@ public sealed class ShopService : AggregateRoot<ShopServiceId>, IShopOwned, ICon
     }
 
     public void MoveTo(int displayOrder) => DisplayOrder = displayOrder;
+
+    /// <summary>Puts the service in one of its shop's sections, or none (D-149); the caller checks the section is the shop's.</summary>
+    public void PlaceIn(ServiceSectionId? sectionId, DateTimeOffset now)
+    {
+        if (SectionId != sectionId)
+        {
+            SectionId = sectionId;
+            UpdatedAt = now;
+        }
+    }
 
     public void Moderate(ModerationState state, string? reason, DateTimeOffset now)
     {
@@ -476,16 +548,18 @@ public sealed class ServicePackageItem : IShopOwned
 
 /// <summary>
 /// A professional assigned to one of their own shop's services (spec §10: the platform admin assigns). Both
-/// references include the shop id, so the database rejects any cross-shop pairing (R-NEG-06, D-073).
+/// references include the shop id, so the database rejects any cross-shop pairing (R-NEG-06, D-073). The barber may take
+/// their own time for it (D-149: a haircut takes one barber 30 minutes and another 45); the price stays the shop's.
 /// </summary>
 public sealed class ProfessionalServiceAssignment : IShopOwned, IPublicContent
 {
-    public ProfessionalServiceAssignment(ShopId shopId, ProfessionalId professionalId, ShopServiceId serviceId, DateTimeOffset assignedAt)
+    public ProfessionalServiceAssignment(ShopId shopId, ProfessionalId professionalId, ShopServiceId serviceId, DateTimeOffset assignedAt, int? durationMinutes = null)
     {
         ShopId = shopId;
         ProfessionalId = professionalId;
         ServiceId = serviceId;
         AssignedAt = assignedAt;
+        DurationMinutes = durationMinutes;
     }
 
     private ProfessionalServiceAssignment()
@@ -499,6 +573,15 @@ public sealed class ProfessionalServiceAssignment : IShopOwned, IPublicContent
     public ShopServiceId ServiceId { get; private set; }
 
     public DateTimeOffset AssignedAt { get; private set; }
+
+    /// <summary>This barber's own length for the service, or <see langword="null"/> for the service's (D-149).</summary>
+    public int? DurationMinutes { get; private set; }
+
+    /// <summary>How long this barber takes for <paramref name="service"/>.</summary>
+    public int MinutesFor(ShopService service) => DurationMinutes ?? service.DurationMinutes;
+
+    /// <summary>Sets the barber's own length; the service's own length (or none) clears it.</summary>
+    public void SetDuration(int? minutes, int serviceMinutes) => DurationMinutes = minutes == serviceMinutes ? null : minutes;
 }
 
 public static class CatalogErrors
@@ -521,7 +604,16 @@ public static class CatalogErrors
 
     public static Error InvalidCategory() => Field("categoryId", "validation.invalid");
 
+    public static Error SectionNotFound() => Error.NotFound("service_section.not_found", "The section was not found.");
+
+    public static Error InvalidSection() => Field("sectionId", "validation.invalid");
+
+    public static Error TooManySections() => Field("nameAr", "validation.too_many");
+
     public static Error OrderMismatch() => Field("orderedIds", "validation.order_mismatch");
+
+    /// <summary>A barber's own length must be a valid service length (D-149).</summary>
+    public static Error InvalidBarberDuration() => Field("durationMinutes", "validation.duration_invalid");
 
     public static Error? Validate(decimal price, int durationMinutes)
     {

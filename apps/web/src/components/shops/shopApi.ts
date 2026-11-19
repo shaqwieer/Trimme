@@ -11,7 +11,8 @@ export type ShopProfileField = Schemas['ShopProfileField'];
 export type ShopImage = Schemas['ShopImageResponse'];
 export type ShopLocation = Schemas['ShopLocationResponse'];
 
-export const SHOP_CATEGORIES: ShopCategory[] = ['Barbershop', 'Salon', 'Unisex'];
+/** The only shop type (D-149): «حلاقة رجالية». */
+export const SHOP_CATEGORIES: ShopCategory[] = ['Barbershop'];
 export const SHOP_AMENITIES: ShopAmenity[] = [
   'Parking',
   'WiFi',

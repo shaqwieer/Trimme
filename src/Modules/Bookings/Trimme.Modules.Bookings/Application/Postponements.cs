@@ -32,6 +32,7 @@ internal sealed class PostponeBookingHandler(
     IAvailabilityChecker availability,
     ShopBookingReader reader,
     BookingActors actors,
+    ShopRulesReader rules,
     TimeProvider clock) : ICommandHandler<PostponeBookingCommand, Result<ShopBookingResponse>>
 {
     public async Task<Result<ShopBookingResponse>> Handle(PostponeBookingCommand command, CancellationToken cancellationToken)
@@ -74,7 +75,7 @@ internal sealed class PostponeBookingHandler(
         {
             // The withdrawal is saved first, so the new offer's hold check no longer sees the old one.
             await db.SaveChangesAsync(cancellationToken);
-            db.Add(new PostponementOffer(Guid.CreateVersion7(), booking, command.StartsAt, actor, now));
+            db.Add(new PostponementOffer(Guid.CreateVersion7(), booking, command.StartsAt, actor, now, (await rules.GetAsync(shopId, cancellationToken)).BufferMinutes));
             BookingEvents.Add(db, BookingEvents.PostponementOffered, booking, now, command.StartsAt.ToUniversalTime());
             await db.SaveChangesAsync(cancellationToken);
         }

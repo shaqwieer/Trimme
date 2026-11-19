@@ -15,22 +15,19 @@ import { filtersToQuery, type SearchFilters, type SearchSort, toApiQuery } from 
 import { cn } from '@/lib/cn';
 import { type AppLocale, formatPrice } from '@/lib/i18n/format';
 
-type CategoryOption = { id: string; name: string };
-
 /**
- * The filter drawer (c-map "FILTER DRAWER" 1166–1220): sort, service, price range and three switches. One filter state
+ * The filter drawer (c-map "FILTER DRAWER" 1166–1220): sort, price range and three switches (the service filter went
+ * with the platform's categories: each shop has its own sections, D-149). One filter state
  * serves the list and the map (mapRules #3): applying writes it to the URL. The live result count is shown in the apply
  * button before the drawer closes; Esc, the scrim and the close button dismiss it (focus returns to the chip).
  */
 export function FilterSheet({
   filters,
-  categories,
   priceRange,
   location,
   activeCount,
 }: {
   filters: SearchFilters;
-  categories: CategoryOption[];
   priceRange: { min: number; max: number } | null;
   location: ChosenLocation | null;
   activeCount: number;
@@ -80,7 +77,6 @@ export function FilterSheet({
   function clear() {
     setDraft({
       ...filters,
-      category: null,
       openNow: false,
       verified: false,
       today: false,
@@ -134,33 +130,6 @@ export function FilterSheet({
             </RadioCard>
           ))}
         </fieldset>
-
-        {categories.length > 0 && (
-          <fieldset className="flex min-w-0 flex-col gap-2">
-            <legend className="mb-2 text-label font-bold text-text-primary">{t('service')}</legend>
-            <div className="flex flex-wrap gap-2">
-              {[{ id: null as string | null, name: t('anyService') }, ...categories].map((category) => {
-                const selected = draft.category === category.id;
-                return (
-                  <button
-                    key={category.id ?? 'any'}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setDraft((d) => ({ ...d, category: category.id }))}
-                    className={cn(
-                      'inline-flex min-h-11 items-center rounded-pill px-4 text-label font-bold',
-                      selected
-                        ? 'bg-navy-900 text-on-navy'
-                        : 'border border-border bg-surface text-text-strong hover:border-brand-500',
-                    )}
-                  >
-                    {category.name}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-        )}
 
         {bounds && bounds.max > bounds.min && (
           <RangeSlider

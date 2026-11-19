@@ -49,8 +49,8 @@ internal sealed class RescheduleAvailability(
     ISlotProbe probe,
     IShopDayPlanReader plans)
 {
-    public const int DefaultDays = 14;
-    public const int MaxDays = 31;
+    /// <summary>At most this many days per request (the longest horizon a shop can set, D-149).</summary>
+    public const int MaxDays = 90;
 
     /// <summary>At most this many starts are read for one request (a month of 5-minute starts is well below it).</summary>
     private const int MaxSlots = 10_000;
@@ -75,8 +75,11 @@ internal sealed class RescheduleAvailability(
             return BookingErrors.NotFound();
         }
 
-        var start = from ?? probe.Today(shop.TimeZone, support.Now);
-        var end = to ?? start.AddDays(DefaultDays - 1);
+        // From today to the shop's furthest bookable day unless the caller asks otherwise (D-149, 6-1).
+        var today = probe.Today(shop.TimeZone, support.Now);
+        var start = from ?? today;
+        var horizonEnd = today.AddDays(Math.Max((await support.RulesAsync(shop, cancellationToken)).BookingHorizonDays, 1) - 1);
+        var end = to ?? Min(Max(start, horizonEnd), start.AddDays(MaxDays - 1));
         if (end < start || end.DayNumber - start.DayNumber >= MaxDays)
         {
             return Error.Validation("validation.failed", "The date range is invalid.", new Dictionary<string, string[]>(StringComparer.Ordinal) { ["to"] = ["validation.out_of_range"] });
@@ -93,6 +96,10 @@ internal sealed class RescheduleAvailability(
             shop.Id, shop.TimeZone, booking.DurationMinutes, [booking.ProfessionalId], start, end, MaxSlots, cancellationToken, ignoreBookingId: booking.Id.Value);
         return new RescheduleRun(true, null, shop.TimeZone, start, end, slots, await plans.GetAsync(shop.Id, shop.TimeZone, [], start, end, cancellationToken));
     }
+
+    private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
+
+    private static DateOnly Min(DateOnly a, DateOnly b) => a < b ? a : b;
 }
 
 internal sealed class GetRescheduleDatesHandler(RescheduleAvailability availability) : IQueryHandler<GetRescheduleDatesQuery, Result<RescheduleDatesResponse>>

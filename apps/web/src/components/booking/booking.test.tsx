@@ -416,20 +416,20 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     });
   });
 
-  it('shows the services in category tabs with packages last, counts the chosen ones, and books a package with a service (D-148)', async () => {
+  it('shows the services in the shop section tabs with packages last, counts the chosen ones, and books a package with a service (D-148)', async () => {
     const user = userEvent.setup();
     availability();
-    const HAIR = { ...SERVICE, categoryId: 'hair' };
-    const TRIM = { ...BEARD, categoryId: 'beard' };
+    const HAIR = { ...SERVICE, sectionId: 'hair' };
+    const TRIM = { ...BEARD, sectionId: 'beard' };
     const WASH = {
       ...BEARD,
       id: 'svc-4',
       nameAr: 'غسيل شعر',
       price: 15,
       durationMinutes: 10,
-      categoryId: null,
+      sectionId: null,
     };
-    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'], categoryId: null };
+    const COLOR = { ...BEARD, id: 'svc-3', nameAr: 'صبغة', professionalIds: ['majed'], sectionId: null };
     const PACKAGE: WizardOffer = {
       ...SERVICE,
       kind: 'package',
@@ -445,7 +445,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
       <BookingWizard
         shop={{ ...SHOP, slug: 'catalog-tabs' }}
         offers={[HAIR, TRIM, WASH, COLOR, PACKAGE]}
-        categories={[
+        sections={[
           { id: 'hair', nameAr: 'الشعر', nameEn: 'Hair' },
           { id: 'beard', nameAr: 'اللحية', nameEn: 'Beard' },
         ]}
@@ -454,7 +454,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
       />,
     );
 
-    // «٤-١»: the shop's categories, then «أخرى», then the packages; no «كل الخدمات» list and no «٠» on a tab.
+    // «٤-١»: the shop's sections, then «أخرى», then the packages; no «كل الخدمات» list and no «٠» on a tab.
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
       'الشعر',
       'اللحية',
@@ -955,5 +955,36 @@ describe('RescheduleForm (D-144)', () => {
     expect(await screen.findByText(/حُجز هذا الوقت للتو/)).toBeInTheDocument();
     expect(screen.getByTestId('reschedule-title')).toHaveTextContent('إعادة الجدولة');
     expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("a barber's own length (D-149)", () => {
+  const OWN: WizardOffer = {
+    ...BEARD,
+    professionalDurations: [{ professionalId: 'majed', durationMinutes: 35 }],
+  };
+
+  it('shows a barber whose length differs on their card, and their length on the review', async () => {
+    availability();
+    window.history.replaceState(null, '', '/ar/shops/barber-house/book?service=svc-2&step=professional');
+    renderWizard(<BookingWizard shop={SHOP} offers={[OWN]} professionals={PROS} viewer="customer" />);
+
+    const majed = await screen.findByRole('radio', { name: /ماجد العتيبي/ });
+    expect(majed.closest('label')).toHaveTextContent('٣٥');
+    // Omar takes the standard 20 minutes: his card says nothing about the length.
+    expect(screen.getByRole('radio', { name: /عمر السالم/ }).closest('label')).not.toHaveTextContent('٢٠');
+  });
+
+  it('times the review with the chosen barber’s own length', async () => {
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-2&pro=majed&date=${D1}&time=10:00&step=review`,
+    );
+    renderWizard(<BookingWizard shop={SHOP} offers={[OWN]} professionals={PROS} viewer="customer" />);
+
+    const summary = await screen.findByText('المدة');
+    expect(summary.parentElement).toHaveTextContent('٣٥');
   });
 });

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { ServiceSections } from '@/components/catalog/ServiceSections';
 import { ShopPackageList } from '@/components/catalog/ShopPackages';
 import { ShopServiceList } from '@/components/catalog/ShopServices';
 import { ShopFrame } from '@/components/shop/ShopFrame';
@@ -14,7 +15,8 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
  * The owner's services (s-services, corrected per DV-S03; back with D-137): the shop sets names, prices, durations and
- * who does each, turns them on and off, reorders and archives them; and its packages (D-147; the admin keeps them too).
+ * who does each, turns them on and off, reorders and archives them; its own sections (D-149: the tabs of its page); and
+ * its packages (D-147; the admin keeps them too).
  * Barbers have no access.
  */
 export default async function ShopServicesPage({
@@ -30,9 +32,10 @@ export default async function ShopServicesPage({
       {async (me) => {
         if (!me.permissions.includes('Shop.Services.Manage')) return <PermissionDenied homeHref="/shop" />;
         const api = await getServerApi();
-        const [{ data }, { data: packages }] = await Promise.all([
+        const [{ data }, { data: packages }, { data: sections }] = await Promise.all([
           api.GET('/api/v1/shop/services', { params: { query: { includeArchived } } }),
           api.GET('/api/v1/shop/packages', { params: { query: { includeArchived } } }),
+          api.GET('/api/v1/shop/service-sections'),
         ]);
         if (!data) return <ErrorState />;
 
@@ -59,6 +62,17 @@ export default async function ShopServicesPage({
                 <ShopServiceList items={data} />
               )}
             </section>
+            {sections && (
+              <section
+                className="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-4 shadow-e1 md:px-6"
+                aria-labelledby="sections-title"
+              >
+                <h2 id="sections-title" className="text-h3 font-bold text-navy-900">
+                  {t('sections.title')}
+                </h2>
+                <ServiceSections scope={{ kind: 'shop' }} sections={sections} />
+              </section>
+            )}
             <section
               className="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-4 shadow-e1 md:px-6"
               aria-labelledby="packages-title"

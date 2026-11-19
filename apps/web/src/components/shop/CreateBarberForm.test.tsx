@@ -25,6 +25,7 @@ const created = {
     whatsApp: { masked: '+966 5•• ••• •01', notificationsEnabled: true, verification: 'Unverified' },
     createdAt: '2026-11-18T09:00:00Z',
     version: 1,
+    languages: ['ar', 'ur'],
   },
   temporaryPassword: 'k7m3p9x2qa4b',
 };
@@ -34,8 +35,8 @@ beforeEach(() => {
   router.push.mockReset();
 });
 
-describe('CreateBarberForm (D-146)', () => {
-  it('needs the mobile, adds the barber with their login, shows the password once, then opens their page', async () => {
+describe('CreateBarberForm (D-146, D-149)', () => {
+  it('needs the mobile, adds the barber with their login and languages, shows the password once, then opens their page', async () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValue({ data: created, response: new Response(null, { status: 201 }) });
     renderWithIntl(
@@ -49,28 +50,31 @@ describe('CreateBarberForm (D-146)', () => {
     expect(screen.queryByLabelText(/رابط صفحة الحلاق/)).not.toBeInTheDocument();
     await expectNoAxeViolations(document.body);
 
+    // Added by mobile (D-149): the mobile comes first; the English name may be left empty.
+    const fields = screen.getAllByRole('textbox');
+    expect(fields[0]).toBe(screen.getByLabelText(/جوال الحلاق/));
     await user.type(screen.getByLabelText('الاسم بالعربية'), 'سعد');
-    await user.type(screen.getByLabelText('الاسم بالإنجليزية'), 'Saad');
+    await user.click(screen.getByRole('checkbox', { name: 'العربية' }));
+    await user.click(screen.getByRole('checkbox', { name: 'الأردية' }));
     await user.click(screen.getByRole('button', { name: 'إضافة الحلاق' }));
-    await waitFor(() =>
-      expect(screen.getByLabelText(/رقم واتساب الحلاق/)).toHaveAccessibleDescription(/مطلوب/),
-    );
+    await waitFor(() => expect(screen.getByLabelText(/جوال الحلاق/)).toHaveAccessibleDescription(/مطلوب/));
     expect(api.POST).not.toHaveBeenCalled();
 
-    await user.type(screen.getByLabelText(/رقم واتساب الحلاق/), '512341001');
+    await user.type(screen.getByLabelText(/جوال الحلاق/), '512341001');
     await user.click(screen.getByRole('button', { name: 'إضافة الحلاق' }));
 
     expect(await screen.findByTestId('temporary-password-value')).toHaveTextContent('k7m3p9x2qa4b');
     expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/professionals', {
       body: {
         nameAr: 'سعد',
-        nameEn: 'Saad',
+        nameEn: null,
         specialtyAr: null,
         specialtyEn: null,
         bioAr: null,
         bioEn: null,
         whatsAppNumber: '+966512341001',
         notificationsEnabled: true,
+        languages: ['ar', 'ur'],
       },
     });
     expect(router.push).not.toHaveBeenCalled();

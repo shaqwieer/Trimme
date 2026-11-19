@@ -35,9 +35,9 @@ export default async function AdminNewServicePage({
       {async (me) => {
         if (!shopId) return <EmptyState icon="store" title={t('noShop')} />;
         const api = await getServerApi();
-        const [{ data: shop, response }, { data: categories }, { data: professionals }] = await Promise.all([
+        const [{ data: shop, response }, { data: sections }, { data: professionals }] = await Promise.all([
           api.GET('/api/v1/admin/shops/{shopId}', { params: { path: { shopId } } }),
-          api.GET('/api/v1/public/service-categories'),
+          api.GET('/api/v1/admin/shops/{shopId}/service-sections', { params: { path: { shopId } } }),
           me.permissions.includes('Admin.Professionals.View')
             ? api.GET('/api/v1/admin/professionals', { params: { query: { shopId, pageSize: 100 } } })
             : Promise.resolve({ data: undefined }),
@@ -59,7 +59,7 @@ export default async function AdminNewServicePage({
             <section className="rounded-card border border-border bg-surface p-6 shadow-e1">
               <AdminServiceEditor
                 shopId={shop.id}
-                categories={categories ?? []}
+                sections={sections ?? []}
                 professionals={(professionals?.items ?? [])
                   .filter((pro) => pro.status === 'Active')
                   .map((pro) => ({ id: pro.id, name: localizedName(lang, pro.nameAr, pro.nameEn) }))}

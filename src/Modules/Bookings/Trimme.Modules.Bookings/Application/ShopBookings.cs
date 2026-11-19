@@ -264,6 +264,7 @@ internal sealed class CreateWalkInHandler(
     ShopBookingReader reader,
     IPersonalDataProtector protector,
     BookingActors actors,
+    ShopRulesReader rules,
     TimeProvider clock)
     : ICommandHandler<CreateWalkInCommand, Result<ShopBookingResponse>>
 {
@@ -369,7 +370,9 @@ internal sealed class CreateWalkInHandler(
             record = claim.Record;
         }
 
-        var free = await availability.FreeProfessionalsAsync(shopId, [professional.Id], start, offer.DurationMinutes, AvailabilityCheckMode.WalkIn, null, cancellationToken);
+        // The barber's own length (D-149), and the shop's cleaning time after it.
+        var free = await availability.FreeProfessionalsAsync(
+            shopId, [professional.Id], start, offer.DurationFor(professional.Id), AvailabilityCheckMode.WalkIn, null, cancellationToken);
         if (free.Count == 0)
         {
             return BookingErrors.SlotUnavailable();
@@ -377,7 +380,8 @@ internal sealed class CreateWalkInHandler(
 
         var booking = Booking.CreateWalkIn(
             EntityId.New<BookingId>(), shopId, command.CustomerName, new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn),
-            BookingMapping.Snapshot(offer), start, startsNow, command.Note, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now, command.Channel);
+            BookingMapping.Snapshot(offer, professional.Id), start, startsNow, command.Note, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now,
+            command.Channel, (await rules.GetAsync(shopId, cancellationToken)).BufferMinutes);
         db.Add(booking);
         if (phone is not null)
         {

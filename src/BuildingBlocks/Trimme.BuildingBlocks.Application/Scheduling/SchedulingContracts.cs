@@ -101,6 +101,11 @@ public static class BookableOfferRequest
 /// <param name="Price">The shop's own price.</param>
 /// <param name="Currency">ISO currency of the price.</param>
 /// <param name="Items">For a package or several services booked together, the services in order; empty for one service.</param>
+/// <param name="Lengths">
+/// The barbers whose own length differs from <paramref name="DurationMinutes"/> (D-149: a haircut takes one barber 30
+/// minutes and another 45); <see langword="null"/> or missing means the standard length. A package keeps the length the
+/// shop set for it; services booked with it add each barber's own.
+/// </param>
 public sealed record BookableOffer(
     Guid Id,
     bool IsPackage,
@@ -111,7 +116,39 @@ public sealed record BookableOffer(
     string? NameEn,
     decimal Price,
     string Currency,
-    IReadOnlyList<BookableOfferItem> Items);
+    IReadOnlyList<BookableOfferItem> Items,
+    IReadOnlyDictionary<ProfessionalId, BarberLength>? Lengths = null)
+{
+    /// <summary>How long <paramref name="professional"/> takes for the whole offer.</summary>
+    public int DurationFor(ProfessionalId professional) =>
+        Lengths is not null && Lengths.TryGetValue(professional, out var length) ? length.DurationMinutes : DurationMinutes;
+
+    /// <summary>Each barber's own length where it is not the standard one, for the availability engine.</summary>
+    public IReadOnlyDictionary<ProfessionalId, int>? Durations =>
+        Lengths is null || Lengths.Count == 0 ? null : Lengths.ToDictionary(l => l.Key, l => l.Value.DurationMinutes);
+
+    /// <summary>
+    /// The offer as <paramref name="professional"/> does it: their length, and their length for every item that carries
+    /// its own (services booked together, or with a package), so the booking snapshot holds what this barber takes.
+    /// </summary>
+    public BookableOffer For(ProfessionalId professional)
+    {
+        if (Lengths is null || !Lengths.TryGetValue(professional, out var length))
+        {
+            return Lengths is null ? this : this with { Lengths = null };
+        }
+
+        return this with
+        {
+            DurationMinutes = length.DurationMinutes,
+            Items = [.. Items.Select(i => i.DurationMinutes is not null && length.ItemDurations.TryGetValue(i.ServiceId, out var minutes) ? i with { DurationMinutes = minutes } : i)],
+            Lengths = null,
+        };
+    }
+}
+
+/// <summary>One barber's length for an offer (D-149): the whole, and each item that carries its own length.</summary>
+public sealed record BarberLength(int DurationMinutes, IReadOnlyDictionary<Guid, int> ItemDurations);
 
 /// <summary>
 /// One service of a package or of several services booked together, for the booking snapshot and reporting. Services
@@ -142,7 +179,14 @@ public interface IBookedTimeReader
         ShopId shopId, ProfessionalId? professionalId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken);
 }
 
-public sealed record BusyTime(Guid BookingId, ProfessionalId ProfessionalId, DateTimeOffset StartsAt, DateTimeOffset EndsAt);
+/// <summary>
+/// A booking's time. <paramref name="BlockedUntil"/> is when the barber is free again: the end plus the shop's cleaning
+/// time at booking time (D-149); the same range the database's exclusion constraint compares.
+/// </summary>
+public sealed record BusyTime(Guid BookingId, ProfessionalId ProfessionalId, DateTimeOffset StartsAt, DateTimeOffset EndsAt, DateTimeOffset? BlockedUntil = null)
+{
+    public DateTimeOffset BusyUntil => BlockedUntil is { } until && until > EndsAt ? until : EndsAt;
+}
 
 /// <summary>How strictly a time is checked (D-088).</summary>
 public enum AvailabilityCheckMode
@@ -165,8 +209,10 @@ public sealed record ScheduledTime(Guid BookingId, ProfessionalId ProfessionalId
 public interface IAvailabilityChecker
 {
     /// <summary>
-    /// The candidates who can take <c>[start, start + duration)</c> in this mode, in the given order.
-    /// <paramref name="ignoreBookingId"/> is the booking being rescheduled, whose own time does not block it.
+    /// The candidates who can take <c>[start, start + duration)</c> in this mode, in the given order, with the shop's
+    /// cleaning time after it (D-149). <paramref name="durations"/> are the barbers whose own length differs from
+    /// <paramref name="durationMinutes"/> (<see cref="BookableOffer.Durations"/>). <paramref name="ignoreBookingId"/> is the
+    /// booking being rescheduled, whose own time does not block it.
     /// </summary>
     Task<IReadOnlyList<ProfessionalId>> FreeProfessionalsAsync(
         ShopId shopId,
@@ -175,7 +221,8 @@ public interface IAvailabilityChecker
         int durationMinutes,
         AvailabilityCheckMode mode,
         Guid? ignoreBookingId,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<ProfessionalId, int>? durations = null);
 
     /// <summary>
     /// The bookings that no longer fit their professional's schedule (hours, breaks, time off, closures), whatever the

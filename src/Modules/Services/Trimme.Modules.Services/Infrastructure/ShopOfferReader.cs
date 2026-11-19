@@ -49,8 +49,13 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
 
     public async Task<IReadOnlyList<OfferSummary>> ListForProfessionalAsync(ShopId shopId, ProfessionalId professionalId, CancellationToken cancellationToken)
     {
+        // At this barber's own length for a service (D-149); a package keeps the length the shop set.
         var published = await LoadAsync([shopId], cancellationToken);
-        return [.. published.Offers.Where(o => published.Eligible(o).Contains(professionalId)).Select(o => o.Summary)];
+        return
+        [
+            .. published.Offers.Where(o => published.Eligible(o).Contains(professionalId))
+                .Select(o => published.Durations(o) is { } lengths && lengths.TryGetValue(professionalId, out var minutes) ? o.Summary with { DurationMinutes = minutes } : o.Summary),
+        ];
     }
 
     public async Task<IReadOnlyList<ProbeOffer>> ListProbeOffersAsync(ShopId shopId, CancellationToken cancellationToken)
@@ -60,7 +65,7 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
         [
             .. published.Offers
                 .Where(o => o.Summary.OnlineBookable)
-                .Select(o => new ProbeOffer(o.Summary, published.Eligible(o)))
+                .Select(o => new ProbeOffer(o.Summary, published.Eligible(o), published.Durations(o)))
                 .Where(p => p.ProfessionalIds.Count > 0),
         ];
     }
@@ -73,7 +78,7 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
     {
         if (matched is { Summary.OnlineBookable: true } && published.Eligible(matched) is { Count: > 0 } matchedProfessionals)
         {
-            return [new ProbeOffer(matched.Summary, matchedProfessionals)];
+            return [new ProbeOffer(matched.Summary, matchedProfessionals, published.Durations(matched))];
         }
 
         var bookable = offers
@@ -88,7 +93,7 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
                 .Distinct()
                 .Select(professional => (Professional: professional, Offer: bookable.First(x => x.Professionals.Contains(professional)).Offer))
                 .GroupBy(x => x.Offer.Summary.Id)
-                .Select(g => new ProbeOffer(g.First().Offer.Summary, [.. g.Select(x => x.Professional)])),
+                .Select(g => new ProbeOffer(g.First().Offer.Summary, [.. g.Select(x => x.Professional)], published.Durations(g.First().Offer))),
         ];
     }
 
@@ -138,6 +143,11 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
         var professionalsByService = assignments.GroupBy(a => a.ServiceId)
             .ToDictionary(g => g.Key, g => g.Select(a => a.ProfessionalId).ToHashSet());
 
+        // Each barber's own length for a service, where they set one (D-149).
+        var ownLengths = assignments.Where(a => a.DurationMinutes is not null && publishedServices.ContainsKey(a.ServiceId))
+            .GroupBy(a => a.ServiceId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyDictionary<ProfessionalId, int>)g.ToDictionary(a => a.ProfessionalId, a => a.MinutesFor(publishedServices[a.ServiceId])));
+
         var offers = new List<PublishedOffer>();
         foreach (var service in services)
         {
@@ -169,15 +179,24 @@ internal sealed class ShopOfferReader(TrimmeDbContext db) : IShopOfferReader
                 items));
         }
 
-        return new PublishedCatalog(offers, professionalsByService);
+        return new PublishedCatalog(offers, professionalsByService, ownLengths);
     }
 
     private sealed record PublishedOffer(
         ShopId ShopId, ServiceCategoryId? CategoryId, OfferSummary Summary, string SearchText, IReadOnlyList<ShopServiceId> Services);
 
-    private sealed class PublishedCatalog(List<PublishedOffer> offers, Dictionary<ShopServiceId, HashSet<ProfessionalId>> professionalsByService)
+    private sealed class PublishedCatalog(
+        List<PublishedOffer> offers,
+        Dictionary<ShopServiceId, HashSet<ProfessionalId>> professionalsByService,
+        Dictionary<ShopServiceId, IReadOnlyDictionary<ProfessionalId, int>>? ownLengths = null)
     {
         public List<PublishedOffer> Offers { get; } = offers;
+
+        /// <summary>Each barber's own length for a single service (D-149); a package keeps the length the shop set.</summary>
+        public IReadOnlyDictionary<ProfessionalId, int>? Durations(PublishedOffer offer) =>
+            !offer.Summary.IsPackage && offer.Services.Count == 1 && ownLengths is not null && ownLengths.TryGetValue(offer.Services[0], out var lengths)
+                ? lengths
+                : null;
 
         /// <summary>Professionals assigned to every service of the offer (one professional does a whole package).</summary>
         public IReadOnlyList<ProfessionalId> Eligible(PublishedOffer offer)

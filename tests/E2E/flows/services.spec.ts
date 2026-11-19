@@ -96,8 +96,11 @@ test.describe('services and packages (R-SVC-01/04, E2 service part)', () => {
     await expect(page.getByText(new RegExp(`${name} moved to position`))).toBeAttached();
 
     // Off, then archive (confirm): the demo shop keeps no test service in use.
-    await row.getByRole('switch', { name: `${name}: bookable` }).click();
+    // The badge says the state, the button the action (D-149): «Bookable» with «Stop booking», then «Off».
+    await expect(row).toContainText('Bookable');
+    await row.getByRole('button', { name: `Stop booking: ${name}` }).click();
     await expect(row).toContainText('Off');
+    await expect(row.getByRole('button', { name: `Turn on booking: ${name}` })).toBeVisible();
     await row.getByRole('button', { name: `Archive ${name}` }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Archive' }).click();
     await expect(page.getByTestId(`catalog-row-${serviceId}`)).toHaveCount(0);

@@ -23,6 +23,12 @@ public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopO
     public const int MaxSpecialtyLength = 80;
     public const int MaxBioLength = 600;
 
+    /// <summary>
+    /// The languages a barber can speak with customers (D-149), from a fixed list: Arabic, English, Urdu, Hindi, Bengali,
+    /// Tagalog and Turkish.
+    /// </summary>
+    public static readonly IReadOnlyList<string> LanguageCodes = ["ar", "en", "ur", "hi", "bn", "tl", "tr"];
+
     private Professional(ProfessionalId id, ShopId shopId, string slug, ProfessionalProfile profile, DateTimeOffset now)
         : base(id)
     {
@@ -34,6 +40,7 @@ public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopO
         SpecialtyEn = profile.SpecialtyEn;
         BioAr = profile.BioAr;
         BioEn = profile.BioEn;
+        Languages = [.. profile.Languages ?? []];
         Status = ProfessionalStatus.Active;
         CreatedAt = now;
     }
@@ -60,6 +67,9 @@ public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopO
     public string? BioAr { get; private set; }
 
     public string? BioEn { get; private set; }
+
+    /// <summary>The languages the barber speaks (D-149), codes from <see cref="LanguageCodes"/> in that order.</summary>
+    public string[] Languages { get; private set; } = [];
 
     public MediaId? AvatarMediaId { get; private set; }
 
@@ -93,6 +103,13 @@ public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopO
         SpecialtyEn = profile.SpecialtyEn;
         BioAr = profile.BioAr;
         BioEn = profile.BioEn;
+
+        // A request without languages keeps them (an older client, or the admin's form before D-149).
+        if (profile.Languages is not null)
+        {
+            Languages = [.. profile.Languages];
+        }
+
         UpdatedAt = now;
     }
 
@@ -160,11 +177,21 @@ public sealed partial class Professional : AggregateRoot<ProfessionalId>, IShopO
     private static partial Regex RepeatedDashes();
 }
 
-/// <summary>Normalized profile text (trimmed; empty optional text → null).</summary>
-public sealed record ProfessionalProfile(string NameAr, string NameEn, string? SpecialtyAr, string? SpecialtyEn, string? BioAr, string? BioEn)
+/// <summary>
+/// Normalized profile text (trimmed; empty optional text → null). <c>Languages</c> are known codes in the list's order;
+/// <see langword="null"/> leaves them as they are on an edit.
+/// </summary>
+public sealed record ProfessionalProfile(
+    string NameAr, string NameEn, string? SpecialtyAr, string? SpecialtyEn, string? BioAr, string? BioEn, IReadOnlyList<string>? Languages = null)
 {
-    public static ProfessionalProfile Create(string nameAr, string nameEn, string? specialtyAr, string? specialtyEn, string? bioAr, string? bioEn) =>
-        new(nameAr.Trim(), nameEn.Trim(), Clean(specialtyAr), Clean(specialtyEn), Clean(bioAr), Clean(bioEn));
+    public static ProfessionalProfile Create(
+        string nameAr, string nameEn, string? specialtyAr, string? specialtyEn, string? bioAr, string? bioEn, IEnumerable<string>? languages = null)
+    {
+        var wanted = languages?.Select(l => l.Trim().ToLowerInvariant()).ToHashSet(StringComparer.Ordinal);
+        return new(
+            nameAr.Trim(), nameEn.Trim(), Clean(specialtyAr), Clean(specialtyEn), Clean(bioAr), Clean(bioEn),
+            wanted is null ? null : [.. Professional.LanguageCodes.Where(wanted.Contains)]);
+    }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

@@ -40,7 +40,8 @@ public sealed record ShopBarberResponse(
     ProfessionalStatus Status,
     ShopBarberWhatsAppResponse WhatsApp,
     DateTimeOffset CreatedAt,
-    uint Version);
+    uint Version,
+    IReadOnlyList<string> Languages);
 
 /// <summary>
 /// A barber the owner just added, and the temporary password of the login made with them (D-146). The password is in this
@@ -60,7 +61,8 @@ internal sealed record CreateShopBarberCommand(
     string? BioAr,
     string? BioEn,
     string WhatsAppNumber,
-    bool NotificationsEnabled) : ICommand<Result<ShopBarberCreatedResponse>>, IProfessionalProfileFields
+    bool NotificationsEnabled,
+    IReadOnlyList<string>? Languages = null) : ICommand<Result<ShopBarberCreatedResponse>>, IProfessionalProfileFields
 {
     /// <summary>The owner does not choose the address of the barber's page: it is made from the English name.</summary>
     public string? Slug => null;
@@ -79,7 +81,8 @@ internal sealed record UpdateShopBarberCommand(
     string? SpecialtyEn,
     string? BioAr,
     string? BioEn,
-    uint Version) : ICommand<Result<ShopBarberResponse>>, IProfessionalProfileFields
+    uint Version,
+    IReadOnlyList<string>? Languages = null) : ICommand<Result<ShopBarberResponse>>, IProfessionalProfileFields
 {
     public string? Slug => null;
 }
@@ -141,7 +144,8 @@ internal static class ShopBarberMapping
             new ShopBarberWhatsAppResponse(
                 contact?.WhatsAppMasked, contact?.NotificationsEnabled ?? false, contact?.Verification ?? WhatsAppVerification.Unverified),
             professional.CreatedAt,
-            professional.Version);
+            professional.Version,
+            professional.Languages);
 
     public static async Task<ShopBarberResponse> ResponseAsync(TrimmeDbContext db, Professional professional, CancellationToken cancellationToken) =>
         Response(

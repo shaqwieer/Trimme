@@ -27,6 +27,7 @@ public sealed class ServicesModule : ModuleBase
     {
         base.AddServices(services, configuration);
         services.AddScoped<ShopCatalogReader>();
+        services.AddScoped<ServiceSectionStore>();
         services.AddScoped<IShopServiceUsage, PackageServiceUsage>();
         services.AddScoped<IBookableOfferCatalog, BookableOfferCatalog>();
         services.AddScoped<IShopOfferReader, ShopOfferReader>();

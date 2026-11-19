@@ -28,7 +28,8 @@ public sealed record CreateShopServiceRequest(
     decimal Price,
     int DurationMinutes,
     bool OnlineBookable,
-    IReadOnlyList<Guid>? ProfessionalIds = null);
+    IReadOnlyList<Guid>? ProfessionalIds = null,
+    Guid? SectionId = null);
 
 /// <summary>
 /// Edit of the shop's own service; a stale <c>Version</c> answers 409. <c>ProfessionalIds</c> null keeps who does it;
@@ -44,7 +45,8 @@ public sealed record UpdateShopServiceRequest(
     int DurationMinutes,
     bool OnlineBookable,
     uint Version,
-    IReadOnlyList<Guid>? ProfessionalIds = null);
+    IReadOnlyList<Guid>? ProfessionalIds = null,
+    Guid? SectionId = null);
 
 /// <summary>A package of 2–10 of the shop's own services, with its own price and total duration.</summary>
 public sealed record CreateShopPackageRequest(
@@ -87,7 +89,11 @@ public sealed record OverrideServiceRequest(
     string Reason,
     uint Version);
 
-public sealed record ProfessionalServicesRequest(IReadOnlyList<Guid> ServiceIds);
+/// <summary>
+/// The services a barber does. <c>Services</c> also sets the barber's own length for each (D-149: null is the service's
+/// standard length) and wins over <c>ServiceIds</c>, which keeps the lengths of the services the barber keeps.
+/// </summary>
+public sealed record ProfessionalServicesRequest(IReadOnlyList<Guid>? ServiceIds, IReadOnlyList<BarberServiceItem>? Services = null);
 
 /// <summary>An admin's package for a shop (D-130): the shop's own price and duration, of that shop's services.</summary>
 public sealed record AdminPackageRequest(
@@ -114,7 +120,8 @@ public sealed record AdminServiceRequest(
     int DurationMinutes,
     bool OnlineBookable,
     IReadOnlyList<Guid>? ProfessionalIds,
-    uint Version = 0);
+    uint Version = 0,
+    Guid? SectionId = null);
 
 internal static class CatalogEndpoints
 {
@@ -132,6 +139,15 @@ internal static class CatalogEndpoints
     public static void Map(IEndpointRouteBuilder api)
     {
         MapShopServices(api.MapGroup("/shop/services").WithTags("Shop: services"));
+        MapOwnSections(api.MapGroup("/shop/service-sections").WithTags("Shop: services"));
+        MapShopSections(api.MapGroup("/admin/shops/{shopId:guid}/service-sections").WithTags("Admin: services"));
+        api.MapGet("/public/shops/{slug}/service-sections", async (string slug, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new ListPublicSectionsQuery(slug), ct) is { } sections
+                    ? TypedResults.Ok(sections)
+                    : Error.NotFound("shop.not_found", "The shop was not found.").ToProblem())
+            .AllowAnonymous().CachePublicly().WithTags("Public")
+            .WithName("ListPublicServiceSections").WithSummary("The shop's own sections of its services, in the shop's order (D-149): the tabs of the shop page and the booking.")
+            .Produces<IReadOnlyList<PublicServiceSectionResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
         MapShopPackages(api.MapGroup("/shop/packages").WithTags("Shop: services"));
         MapShopBarberServices(api.MapGroup("/shop/professionals/{professionalId:guid}/services").WithTags("Shop: services").RequirePermission(ShopBarbersManage));
         MapAdmin(api);
@@ -157,9 +173,73 @@ internal static class CatalogEndpoints
             .WithName("GetShopBarberServices").WithSummary("The shop's services and which of them the barber does.")
             .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPut("/", async (Guid professionalId, ProfessionalServicesRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new SetShopBarberServicesCommand(professionalId, r.ServiceIds ?? []), ct)).ToHttpResult())
+                (await d.Send(new SetShopBarberServicesCommand(professionalId, r.ServiceIds ?? [], r.Services), ct)).ToHttpResult())
             .WithName("SetShopBarberServices").WithSummary("Replaces the services the barber does; the shop's own services only (audited).")
             .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    /// <summary>The owner's sections (D-149): add, rename, delete (its services stay, without one) and order.</summary>
+    private static void MapOwnSections(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new ListOwnServiceSectionsQuery(), ct) is { } list ? TypedResults.Ok(list) : CatalogErrors.SectionNotFound().ToProblem())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("ListOwnServiceSections").WithSummary("The shop's sections in order, with how many services sit in each.")
+            .Produces<IReadOnlyList<ServiceSectionResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPost("/", async (ServiceSectionRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new CreateOwnServiceSectionCommand(r.NameAr ?? string.Empty, r.NameEn), ct))
+                    .ToHttpResult(s => TypedResults.Created($"/api/v1/shop/service-sections/{s.Id}", s)))
+            .RequirePermission(ShopManage)
+            .WithName("CreateOwnServiceSection").WithSummary("Adds a section at the end (audited).")
+            .Produces<ServiceSectionResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest);
+        group.MapPut("/{sectionId:guid}", async (Guid sectionId, ServiceSectionRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new RenameOwnServiceSectionCommand(sectionId, r.NameAr ?? string.Empty, r.NameEn), ct)).ToHttpResult())
+            .RequirePermission(ShopManage)
+            .WithName("RenameOwnServiceSection").WithSummary("Renames a section (audited).")
+            .Produces<ServiceSectionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapDelete("/{sectionId:guid}", async (Guid sectionId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new DeleteOwnServiceSectionCommand(sectionId), ct)).ToHttpResult())
+            .RequirePermission(ShopManage)
+            .WithName("DeleteOwnServiceSection").WithSummary("Deletes a section; its services stay, without a section (audited).")
+            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPut("/order", async (ReorderRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new OrderOwnServiceSectionsCommand(r.OrderedIds ?? []), ct)).ToHttpResult())
+            .RequirePermission(ShopManage)
+            .WithName("OrderOwnServiceSections").WithSummary("Sets the order from the full list of the shop's sections.")
+            .Produces<IReadOnlyList<ServiceSectionResponse>>().ProducesProblem(StatusCodes.Status400BadRequest);
+    }
+
+    /// <summary>The admin's work on one shop's sections (D-149), from the shop's admin page.</summary>
+    private static void MapShopSections(RouteGroupBuilder group)
+    {
+        group.MapGet("/", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new ListShopServiceSectionsQuery(shopId), ct) is { } list
+                    ? TypedResults.Ok(list)
+                    : Error.NotFound("shop.not_found", "The shop was not found.").ToProblem())
+            .RequirePermission(ServicesView)
+            .WithName("AdminListServiceSections").WithSummary("A shop's sections in order, with how many services sit in each.")
+            .Produces<IReadOnlyList<ServiceSectionResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPost("/", async (Guid shopId, ServiceSectionRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new CreateShopServiceSectionCommand(shopId, r.NameAr ?? string.Empty, r.NameEn), ct))
+                    .ToHttpResult(s => TypedResults.Created($"/api/v1/admin/shops/{shopId}/service-sections/{s.Id}", s)))
+            .RequirePermission(ServicesManage)
+            .WithName("AdminCreateServiceSection").WithSummary("Adds a section to a shop (audited).")
+            .Produces<ServiceSectionResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPut("/{sectionId:guid}", async (Guid shopId, Guid sectionId, ServiceSectionRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new RenameShopServiceSectionCommand(shopId, sectionId, r.NameAr ?? string.Empty, r.NameEn), ct)).ToHttpResult())
+            .RequirePermission(ServicesManage)
+            .WithName("AdminRenameServiceSection").WithSummary("Renames a shop's section (audited).")
+            .Produces<ServiceSectionResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapDelete("/{sectionId:guid}", async (Guid shopId, Guid sectionId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new DeleteShopServiceSectionCommand(shopId, sectionId), ct)).ToHttpResult())
+            .RequirePermission(ServicesManage)
+            .WithName("AdminDeleteServiceSection").WithSummary("Deletes a shop's section; its services stay, without a section (audited).")
+            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
+        group.MapPut("/order", async (Guid shopId, ReorderRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new OrderShopServiceSectionsCommand(shopId, r.OrderedIds ?? []), ct)).ToHttpResult())
+            .RequirePermission(ServicesManage)
+            .WithName("AdminOrderServiceSections").WithSummary("Sets the order of a shop's sections from their full list.")
+            .Produces<IReadOnlyList<ServiceSectionResponse>>().ProducesProblem(StatusCodes.Status400BadRequest);
     }
 
     private static void MapShopServices(RouteGroupBuilder group)
@@ -175,13 +255,13 @@ internal static class CatalogEndpoints
             .WithName("GetShopService").WithSummary("One of the shop's own services; another shop's id is 404.")
             .Produces<ShopServiceResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         group.MapPost("/", async (CreateShopServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new CreateShopServiceCommand(r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds), ct))
+                (await d.Send(new CreateShopServiceCommand(r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds, r.SectionId), ct))
                     .ToHttpResult(s => TypedResults.Created($"/api/v1/shop/services/{s.Id}", s)))
             .RequirePermission(ShopManage)
             .WithName("CreateShopService").WithSummary("Creates a service with the shop's own name, price and duration, and the shop's own barbers who do it.")
             .Produces<ShopServiceResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest);
         group.MapPut("/{serviceId:guid}", async (Guid serviceId, UpdateShopServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new UpdateShopServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.Version, r.ProfessionalIds), ct)).ToHttpResult())
+                (await d.Send(new UpdateShopServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.Version, r.ProfessionalIds, r.SectionId), ct)).ToHttpResult())
             .RequirePermission(ShopManage)
             .WithName("UpdateShopService").WithSummary("Edits the shop's own service and, when given, who of its barbers does it (optimistic concurrency).")
             .Produces<ShopServiceResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
@@ -296,12 +376,12 @@ internal static class CatalogEndpoints
             .Produces<AdminServiceResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
 
         services.MapPut("/{serviceId:guid}", async (Guid serviceId, AdminServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new AdminUpdateServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds, r.Version), ct)).ToHttpResult())
+                (await d.Send(new AdminUpdateServiceCommand(serviceId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds, r.Version, r.SectionId), ct)).ToHttpResult())
             .RequirePermission(ServicesManage)
             .WithName("AdminUpdateService").WithSummary("Edits a shop's service and who does it, with the shop's own price and duration (audited).")
             .Produces<AdminServiceResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         api.MapPost("/admin/shops/{shopId:guid}/services", async (Guid shopId, AdminServiceRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new AdminCreateServiceCommand(shopId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds), ct))
+                (await d.Send(new AdminCreateServiceCommand(shopId, r.NameAr ?? string.Empty, r.NameEn, r.DescriptionAr, r.DescriptionEn, r.CategoryId, r.Price, r.DurationMinutes, r.OnlineBookable, r.ProfessionalIds, r.SectionId), ct))
                     .ToHttpResult(s => TypedResults.Created($"/api/v1/admin/services/{s.Id}", s)))
             .RequirePermission(ServicesManage).WithTags("Admin: services")
             .WithName("AdminCreateService").WithSummary("Adds a service to a shop with the shop's own price and duration, and the shop's barbers who do it (audited).")
@@ -344,7 +424,7 @@ internal static class CatalogEndpoints
             .WithName("AdminGetProfessionalServices").WithSummary("The professional's own shop's services, with that shop's prices, and which are assigned.")
             .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status404NotFound);
         assignments.MapPut("/", async (Guid professionalId, ProfessionalServicesRequest r, IDispatcher d, CancellationToken ct) =>
-                (await d.Send(new SetProfessionalServicesCommand(professionalId, r.ServiceIds ?? []), ct)).ToHttpResult())
+                (await d.Send(new SetProfessionalServicesCommand(professionalId, r.ServiceIds ?? [], r.Services), ct)).ToHttpResult())
             .RequirePermission(AssignServices)
             .WithName("AdminSetProfessionalServices").WithSummary("Replaces the assigned services; only the professional's own shop's services (audited).")
             .Produces<ProfessionalServicesResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);

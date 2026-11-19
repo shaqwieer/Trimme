@@ -24,7 +24,8 @@ public sealed record PublicProfessionalResponse(
     string? BioEn,
     string? AvatarUrl,
     decimal Rating,
-    int ReviewCount);
+    int ReviewCount,
+    IReadOnlyList<string> Languages);
 
 internal sealed record ListPublicProfessionalsQuery(string ShopSlug) : IQuery<IReadOnlyList<PublicProfessionalResponse>?>;
 
@@ -65,7 +66,7 @@ internal sealed class ListPublicProfessionalsHandler(TrimmeDbContext db, IPublic
         [
             .. professionals.Select(p => new PublicProfessionalResponse(
                 p.Id.Value, p.Slug, p.NameAr, p.NameEn, p.SpecialtyAr, p.SpecialtyEn, p.BioAr, p.BioEn, MediaRules.Url(p.AvatarMediaId),
-                rated.GetValueOrDefault(p.Id.Value)?.Average ?? 0, rated.GetValueOrDefault(p.Id.Value)?.Count ?? 0)),
+                rated.GetValueOrDefault(p.Id.Value)?.Average ?? 0, rated.GetValueOrDefault(p.Id.Value)?.Count ?? 0, p.Languages)),
         ];
     }
 }

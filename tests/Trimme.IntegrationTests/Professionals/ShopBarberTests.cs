@@ -122,10 +122,14 @@ public sealed class ShopBarberTests(PostgresFixture postgres)
         await FailsAsync(w.OwnerB.PutAsync($"/api/v1/shop/professionals/{proB}/whatsapp", new { whatsAppNumber = "0512342001", notificationsEnabled = true }, ct),
             HttpStatusCode.BadRequest, "validation.whatsapp_taken", ct);
 
-        // The number is required and must be a mobile; the names are required.
+        // The number is required and must be a mobile; the Arabic name is required, the English one is optional since D-149
+        // (the owner adds a barber by mobile; the Arabic name stands in).
         await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/professionals", NewBarber(""), ct), HttpStatusCode.BadRequest, "validation.required", ct);
         await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/professionals", NewBarber("0112345678"), ct), HttpStatusCode.BadRequest, "validation.phone_invalid", ct);
-        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/professionals", NewBarber("0512342003", nameEn: " "), ct), HttpStatusCode.BadRequest, "validation.required", ct);
+        await FailsAsync(w.OwnerA.PostAsync("/api/v1/shop/professionals", new { nameAr = " ", whatsAppNumber = "0512342003", notificationsEnabled = false }, ct),
+            HttpStatusCode.BadRequest, "validation.required", ct);
+        (await OkAsync(w.OwnerA.PostAsync("/api/v1/shop/professionals", NewBarber("0512342003", nameEn: " "), ct), ct, HttpStatusCode.Created))
+            .GetProperty("barber").GetProperty("nameEn").GetString().ShouldBe("سعد");
     }
 
     [Fact]

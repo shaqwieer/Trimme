@@ -3,7 +3,6 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Button, ButtonLink, IconButton } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/inputs';
 import { ConfirmDialog } from '@/components/ui/overlays';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
@@ -15,10 +14,9 @@ import type { components } from '@/lib/api/schema';
 import { formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 import { CatalogStatusBadge } from './CatalogStatusBadge';
-import { ServiceForm, type ServiceFormProfessional } from './ServiceForm';
+import { ServiceForm, type ServiceFormProfessional, type ServiceFormSection } from './ServiceForm';
 
 type Service = components['schemas']['ShopServiceResponse'];
-type Category = components['schemas']['ServiceCategoryResponse'];
 
 async function send(id: string, action: 'activate' | 'deactivate' | 'archive') {
   const path = { params: { path: { serviceId: id } } };
@@ -112,18 +110,19 @@ export function ShopServiceList({ items }: { items: Service[] }) {
       </div>
       {!item.isArchived && (
         <div className="flex flex-wrap items-center gap-2">
-          <Switch
-            checked={item.isActive}
-            label={t('activeFor', { name: nameOf(item) })}
-            hideLabel
+          {/* The badge says the state, the button says what it does (D-149, the owner's item 3). */}
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t(item.isActive ? 'stopBookingFor' : 'startBookingFor', { name: nameOf(item) })}
+            loading={busy === `toggle-${item.id}`}
             disabled={busy !== null}
-            onCheckedChange={(on) =>
-              void run(`toggle-${item.id}`, () => send(item.id, on ? 'activate' : 'deactivate'))
+            onClick={() =>
+              void run(`toggle-${item.id}`, () => send(item.id, item.isActive ? 'deactivate' : 'activate'))
             }
-          />
-          <span aria-hidden="true" className="text-caption text-text-primary">
-            {t('active')}
-          </span>
+          >
+            {t(item.isActive ? 'stopBooking' : 'startBooking')}
+          </Button>
           {index !== null && (
             <>
               <IconButton
@@ -218,17 +217,17 @@ export function ShopServiceList({ items }: { items: Service[] }) {
  */
 export function ShopServiceEditor({
   service,
-  categories,
+  sections,
   professionals,
 }: {
   service?: Service;
-  categories: Category[];
+  sections: ServiceFormSection[];
   professionals: ServiceFormProfessional[];
 }) {
   const router = useRouter();
   return (
     <ServiceForm
-      categories={categories}
+      sections={sections}
       service={service}
       professionals={professionals}
       assignedIds={service?.professionalIds}

@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { TemporaryPasswordDialog } from '@/components/shop/TemporaryPasswordDialog';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '@/components/shops/ShopImagesEditor';
 import { Button } from '@/components/ui/Button';
-import { PhoneField, SelectField, Switch, TextareaField } from '@/components/ui/inputs';
+import { Checkbox, PhoneField, SelectField, Switch, TextareaField } from '@/components/ui/inputs';
 import { ConfirmDialog, Dialog } from '@/components/ui/overlays';
 import { InlineAlert } from '@/components/ui/states';
 import { UploadDropZone } from '@/components/ui/UploadDropZone';
@@ -27,6 +27,7 @@ import {
 } from '@/lib/forms/fields';
 import { applyProblemToForm, codeToMessageKey } from '@/lib/forms/problem';
 import { requiredText, withParams } from '@/lib/forms/validation';
+import { BARBER_LANGUAGES, knownLanguages } from '@/lib/i18n/languages';
 import { localizedName } from '@/lib/i18n/localized';
 
 type Professional = components['schemas']['AdminProfessionalResponse'];
@@ -42,7 +43,16 @@ export type ProfessionalScope = 'admin' | 'shop';
 /** The profile fields the admin's and the owner's answers share. */
 type ProfessionalProfile = Pick<
   Professional,
-  'id' | 'slug' | 'nameAr' | 'nameEn' | 'specialtyAr' | 'specialtyEn' | 'bioAr' | 'bioEn' | 'version'
+  | 'id'
+  | 'slug'
+  | 'nameAr'
+  | 'nameEn'
+  | 'specialtyAr'
+  | 'specialtyEn'
+  | 'bioAr'
+  | 'bioEn'
+  | 'version'
+  | 'languages'
 >;
 
 const optionalText = (max: number) =>
@@ -71,8 +81,20 @@ const profileFields = {
   specialtyEn: optionalText(80),
   bioAr: optionalText(600),
   bioEn: optionalText(600),
+  languages: z.array(z.string()),
 };
-const PROFILE_KEYS = ['nameAr', 'nameEn', 'slug', 'specialtyAr', 'specialtyEn', 'bioAr', 'bioEn'] as const;
+const PROFILE_KEYS = [
+  'nameAr',
+  'nameEn',
+  'slug',
+  'specialtyAr',
+  'specialtyEn',
+  'bioAr',
+  'bioEn',
+  'languages',
+] as const;
+/** The owner's forms take the English name as optional (the Arabic one is used, D-149). */
+const ownerNameEn = { nameEn: optionalText(120) };
 
 function useFailure() {
   const apiMessage = useApiErrorMessage();
@@ -89,16 +111,27 @@ const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 function ProfileFields({
   control,
   showSlug = true,
+  nameEnOptional = false,
 }: {
   control: ReturnType<typeof useZodForm<z.ZodObject<typeof profileFields>>>['control'];
   /** The page address is the platform's to set; the owner's is made from the English name (D-146). */
   showSlug?: boolean;
+  /** The owner's forms: the English name may be left empty (D-149). */
+  nameEnOptional?: boolean;
 }) {
   const t = useTranslations('adminProfessionals.create');
+  const tLanguage = useTranslations('spokenLanguages');
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <FormTextField control={control} name="nameAr" label={t('nameAr')} dir="rtl" />
-      <FormTextField control={control} name="nameEn" label={t('nameEn')} dir="ltr" />
+      <FormTextField
+        control={control}
+        name="nameEn"
+        label={t('nameEn')}
+        helper={nameEnOptional ? t('nameEnHelper') : undefined}
+        dir="ltr"
+        optional={nameEnOptional}
+      />
       <FormTextField control={control} name="specialtyAr" label={t('specialtyAr')} dir="rtl" optional />
       <FormTextField control={control} name="specialtyEn" label={t('specialtyEn')} dir="ltr" optional />
       <FormTextareaField
@@ -116,6 +149,35 @@ function ProfileFields({
         dir="ltr"
         optional
         maxLength={600}
+      />
+      <Controller
+        control={control}
+        name="languages"
+        render={({ field }) => (
+          <fieldset
+            className="flex min-w-0 flex-col gap-2 md:col-span-2"
+            data-testid="professional-languages"
+          >
+            <legend className="pb-1 text-label font-bold text-text-strong">{t('languages')}</legend>
+            <p className="text-helper text-text-tertiary">{t('languagesHelper')}</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {BARBER_LANGUAGES.map((code) => (
+                <Checkbox
+                  key={code}
+                  label={tLanguage(code)}
+                  checked={field.value.includes(code)}
+                  onChange={(event) =>
+                    field.onChange(
+                      event.target.checked
+                        ? knownLanguages([...field.value, code])
+                        : field.value.filter((value) => value !== code),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </fieldset>
+        )}
       />
       {showSlug && (
         <FormTextField
@@ -165,6 +227,7 @@ export function CreateProfessionalForm({
       specialtyEn: '',
       bioAr: '',
       bioEn: '',
+      languages: [],
       whatsApp: '',
       notificationsEnabled: true,
     },
@@ -186,6 +249,7 @@ export function CreateProfessionalForm({
             bioEn: orNull(values.bioEn),
             whatsAppNumber: values.whatsApp ? toE164(values.whatsApp) : null,
             notificationsEnabled: values.whatsApp ? values.notificationsEnabled : false,
+            languages: values.languages,
           },
         }),
       );
@@ -258,6 +322,7 @@ export function CreateProfessionalForm({
 /** The owner's new barber: the mobile is required, it is their WhatsApp number and their sign-in (D-146). */
 const createBarberSchema = z.object({
   ...profileFields,
+  ...ownerNameEn,
   whatsApp: z
     .string()
     .transform((value) => normalizeSaudiMobile(value))
@@ -288,6 +353,7 @@ export function CreateBarberForm() {
       specialtyEn: '',
       bioAr: '',
       bioEn: '',
+      languages: [],
       whatsApp: '',
       notificationsEnabled: true,
     },
@@ -300,7 +366,7 @@ export function CreateBarberForm() {
         await browserApi.POST('/api/v1/shop/professionals', {
           body: {
             nameAr: values.nameAr,
-            nameEn: values.nameEn,
+            nameEn: orNull(values.nameEn),
             specialtyAr: orNull(values.specialtyAr),
             specialtyEn: orNull(values.specialtyEn),
             bioAr: orNull(values.bioAr),
@@ -308,6 +374,7 @@ export function CreateBarberForm() {
             // The schema has made sure it is a valid mobile.
             whatsAppNumber: toE164(values.whatsApp) ?? '',
             notificationsEnabled: values.notificationsEnabled,
+            languages: values.languages,
           },
         }),
       );
@@ -337,13 +404,14 @@ export function CreateBarberForm() {
       className="flex max-w-[900px] flex-col gap-5 rounded-card border border-border bg-surface p-6 shadow-e1"
       data-testid="create-barber-form"
     >
-      <ProfileFields control={form.control as never} showSlug={false} />
+      {/* The barber is added by their mobile (D-149, the owner's item 2): their WhatsApp and their sign-in. */}
       <FormPhoneField
         control={form.control}
         name="whatsApp"
-        label={t('whatsapp')}
+        label={tShop('mobile')}
         helper={tShop('mobileHelper')}
       />
+      <ProfileFields control={form.control as never} showSlug={false} nameEnOptional />
       <Controller
         control={form.control}
         name="notificationsEnabled"
@@ -375,6 +443,7 @@ export function CreateBarberForm() {
 }
 
 const editSchema = z.object(profileFields);
+const ownerEditSchema = editSchema.extend(ownerNameEn);
 
 /** Profile edit. Deliberately no shop field: the shop is shown read-only on the page (R-NEG-01). */
 export function EditProfessionalForm({
@@ -388,7 +457,7 @@ export function EditProfessionalForm({
   const router = useRouter();
   const { failure, clear, fail } = useFailure();
   const [saved, setSaved] = useState(false);
-  const form = useZodForm(editSchema, {
+  const form = useZodForm(scope === 'shop' ? ownerEditSchema : editSchema, {
     mode: 'onSubmit',
     defaultValues: {
       nameAr: professional.nameAr,
@@ -398,6 +467,7 @@ export function EditProfessionalForm({
       specialtyEn: professional.specialtyEn ?? '',
       bioAr: professional.bioAr ?? '',
       bioEn: professional.bioEn ?? '',
+      languages: knownLanguages(professional.languages),
     },
   });
 
@@ -412,12 +482,16 @@ export function EditProfessionalForm({
         specialtyEn: orNull(values.specialtyEn),
         bioAr: orNull(values.bioAr),
         bioEn: orNull(values.bioEn),
+        languages: values.languages,
         version: professional.version,
       };
       const path = { params: { path: { professionalId: professional.id } } };
       ensureOk(
         scope === 'shop'
-          ? await browserApi.PUT('/api/v1/shop/professionals/{professionalId}', { ...path, body: profile })
+          ? await browserApi.PUT('/api/v1/shop/professionals/{professionalId}', {
+              ...path,
+              body: { ...profile, nameEn: orNull(values.nameEn) },
+            })
           : await browserApi.PUT('/api/v1/admin/professionals/{professionalId}', {
               ...path,
               body: { ...profile, slug: orNull(values.slug) },
@@ -440,7 +514,11 @@ export function EditProfessionalForm({
       className="flex flex-col gap-5"
       data-testid="edit-professional-form"
     >
-      <ProfileFields control={form.control} showSlug={scope === 'admin'} />
+      <ProfileFields
+        control={form.control as never}
+        showSlug={scope === 'admin'}
+        nameEnOptional={scope === 'shop'}
+      />
       {saved && <InlineAlert tone="success" title={t('saved')} />}
       {failure && <InlineAlert tone="danger" title={failure} />}
       <Button type="submit" icon="check" loading={form.formState.isSubmitting} className="self-start">

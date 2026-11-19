@@ -33,7 +33,8 @@ const SLOT_STEPS = [5, 10, 15, 20, 30, 60];
 /** The API's accepted ranges (D-076), shown under each field so a value outside them is caught before saving. */
 const RANGES: Record<NumberField, [number, number]> = {
   minLeadTimeMinutes: [0, 1440],
-  bookingHorizonDays: [1, 365],
+  // A shop's own furthest day is at most 90 (D-149); the platform default stays inside it.
+  bookingHorizonDays: [1, 90],
   cancellationCutoffMinutes: [0, 10080],
   reviewWindowDays: [1, 90],
   reminderOffsetMinutes: [5, 1440],

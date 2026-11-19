@@ -39,4 +39,21 @@ internal static class RescheduleTargets
 
         return new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn);
     }
+
+    /// <summary>
+    /// How long <paramref name="professional"/> takes for the booked offer (D-149: barbers have their own length per
+    /// service), or <see langword="null"/> to keep the booked length: the same barber, or an offer no longer published.
+    /// </summary>
+    public static async Task<BookedLength?> LengthAsync(Booking booking, ProfessionalId professional, IBookableOfferCatalog catalog, CancellationToken cancellationToken)
+    {
+        if (professional == booking.ProfessionalId)
+        {
+            return null;
+        }
+
+        var offer = await catalog.FindBookedAsync(
+            booking.ShopId, booking.ServiceId, booking.PackageId, [.. booking.PackageItems.Select(i => i.ServiceId)], cancellationToken,
+            booking.PackageExtras);
+        return offer is null ? null : BookingMapping.Length(offer, professional);
+    }
 }

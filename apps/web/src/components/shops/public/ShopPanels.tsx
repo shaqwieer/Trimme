@@ -25,7 +25,7 @@ import { getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatRating, formatTime } from '@/lib/i18n/format';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 import { ShopServiceCatalog } from '@/components/shops/public/ShopServiceCatalog';
-import type { CatalogCategory } from '@/lib/booking/catalog';
+import type { CatalogSection } from '@/lib/booking/catalog';
 import { ShopMiniMap } from './ShopMiniMap';
 
 const WEEK: OpeningInterval['day'][] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -53,14 +53,14 @@ export function ServicesPanel({
   services,
   packages,
   bookable,
-  categories = [],
+  sections = [],
 }: {
   slug: string;
   services: PublicService[];
   packages: PublicPackage[];
   bookable: boolean;
-  /** The platform's service categories, in order: the tabs (D-148). */
-  categories?: CatalogCategory[];
+  /** The shop's own sections, in the owner's order: the tabs (D-148, D-149). */
+  sections?: CatalogSection[];
 }) {
   const t = useTranslations('shopPage.services');
   if (services.length === 0 && packages.length === 0) return <EmptyState icon="scissors" title={t('empty')} />;
@@ -69,7 +69,7 @@ export function ServicesPanel({
     <ShopServiceCatalog
       slug={slug}
       bookable={bookable}
-      categories={categories}
+      sections={sections}
       onlineIds={services.filter((s) => s.onlineBookable).map((s) => s.id)}
       items={[
         ...services.map((s) => ({
@@ -82,7 +82,7 @@ export function ServicesPanel({
           price: s.price,
           currency: s.currency,
           durationMinutes: s.durationMinutes,
-          categoryId: s.categoryId ?? null,
+          sectionId: s.sectionId ?? null,
         })),
         ...packages.map((p) => ({
           kind: 'package' as const,

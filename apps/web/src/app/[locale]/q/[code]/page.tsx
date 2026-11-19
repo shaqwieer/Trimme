@@ -98,7 +98,8 @@ export default async function QrLandingPage({ params }: PageProps<'/[locale]/q/[
   const target = await resolveCode(code);
   if (!target) notFound();
   const shop = await getPublicShop(target.shopSlug);
-  if (!shop) notFound();
+  // A shop its subscription hides (expired, suspended or none) shows «المحل غير متاح حالياً» (D-149, 6-4).
+  if (!shop || !shop.listedInDiscovery) notFound();
   const professional =
     target.targetType === 'Professional' && target.professionalSlug
       ? await getPublicProfessional(target.shopSlug, target.professionalSlug)

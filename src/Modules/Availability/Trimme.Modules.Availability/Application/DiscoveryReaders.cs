@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Trimme.BuildingBlocks.Application.Discovery;
 using Trimme.BuildingBlocks.Application.Platform;
+using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
 using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Availability.Domain;
@@ -58,7 +59,7 @@ internal sealed class ShopOpeningReader(TrimmeDbContext db, ScheduleLoader loade
 /// <see cref="ISlotProbe"/> (D-091): the public slot rules for one item, used by discovery for "earliest slot" and
 /// "bookable today". Reads through the caller's data scope.
 /// </summary>
-internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings settings, TimeProvider clock) : ISlotProbe
+internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings settings, IShopDirectory shops, TimeProvider clock) : ISlotProbe
 {
     public async Task<IReadOnlyList<ProbedSlot>> ProbeAsync(
         ShopId shopId,
@@ -69,7 +70,8 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
         DateOnly to,
         int maxSlots,
         CancellationToken cancellationToken,
-        Guid? ignoreBookingId = null)
+        Guid? ignoreBookingId = null,
+        IReadOnlyDictionary<ProfessionalId, int>? durations = null)
     {
         ArgumentNullException.ThrowIfNull(professionalIds);
         if (professionalIds.Count == 0 || maxSlots <= 0 || to < from)
@@ -78,9 +80,9 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
         }
 
         var zone = ScheduleLoader.Zone(timeZone);
-        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
+        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken), (await shops.FindAsync(shopId, cancellationToken))?.Booking);
         var (shop, calendars) = await loader.CalendarsAsync(shopId, zone, professionalIds, from, to, cancellationToken, ignoreBookingId);
-        var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(from, to, durationMinutes, clock.GetUtcNow(), policy));
+        var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(from, to, durationMinutes, clock.GetUtcNow(), policy, durations));
         return [.. slots.Take(maxSlots).Select(Probed)];
     }
 
@@ -98,7 +100,8 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
             return results;
         }
 
-        var policy = ScheduleLoader.Policy(await settings.GetAsync(cancellationToken));
+        var platform = await settings.GetAsync(cancellationToken);
+        var summaries = await shops.FindManyAsync([.. runnable.Select(x => x.Request.ShopId).Distinct()], cancellationToken);
         var loaded = await loader.CalendarsAsync(
             [.. runnable.Select(x => new CalendarRequest(
                 x.Request.ShopId, ScheduleLoader.Zone(x.Request.TimeZone), x.Request.ProfessionalIds, x.Request.From, x.Request.To))],
@@ -108,7 +111,8 @@ internal sealed class SlotProbe(ScheduleLoader loader, IPlatformSettings setting
         {
             var (request, index) = runnable[i];
             var (shop, calendars) = loaded[i];
-            var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(request.From, request.To, request.DurationMinutes, now, policy));
+            var policy = ScheduleLoader.Policy(platform, summaries.GetValueOrDefault(request.ShopId)?.Booking);
+            var slots = AvailabilityEngine.FindSlots(shop, calendars, new AvailabilityQuery(request.From, request.To, request.DurationMinutes, now, policy, request.Durations));
             results[index] = [.. slots.Take(request.MaxSlots).Select(Probed)];
         }
 

@@ -19,7 +19,8 @@ import { requiredText, withParams } from '@/lib/forms/validation';
 import { formatDurationMinutes } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 
-type Category = components['schemas']['ServiceCategoryResponse'];
+/** One of the shop's own sections (D-149). */
+export type ServiceFormSection = { id: string; nameAr: string; nameEn: string | null };
 type Service = components['schemas']['ShopServiceResponse'];
 
 const optionalText = (max: number) =>
@@ -33,7 +34,7 @@ export const serviceSchema = z.object({
   nameEn: optionalText(120),
   descriptionAr: optionalText(500),
   descriptionEn: optionalText(500),
-  categoryId: z.string(),
+  sectionId: z.string(),
   price: z.string().refine((value) => parsePrice(value) !== null, { error: 'priceInvalid' }),
   durationMinutes: z
     .string()
@@ -46,7 +47,7 @@ const FIELDS = [
   'nameEn',
   'descriptionAr',
   'descriptionEn',
-  'categoryId',
+  'sectionId',
   'price',
   'durationMinutes',
 ] as const;
@@ -57,12 +58,12 @@ const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
 export type ServiceFormProfessional = { id: string; name: string };
 
 /**
- * The shop's own service form (DV-A01, DV-S03): Arabic name required, English optional, the shop's own price and a
- * duration in 5-minute steps, and the shop's barbers who do it. Saved through `onSubmitValues`: by the owner (D-137),
+ * The shop's own service form (DV-A01, DV-S03): Arabic name required, English optional, the shop's own section (D-149),
+ * the shop's own price and a duration in 5-minute steps, and the shop's barbers who do it. Saved through `onSubmitValues`: by the owner (D-137),
  * by the admin's support override (with a reason) and by the admin building a shop's catalogue (D-127).
  */
 export function ServiceForm({
-  categories,
+  sections,
   service,
   submitLabel,
   onSubmitValues,
@@ -71,7 +72,8 @@ export function ServiceForm({
   assignedIds,
   barbersAddedBy = 'admin',
 }: {
-  categories: Category[];
+  /** The shop's sections, to place the service in one; without it (the support override) the section is not shown. */
+  sections?: ServiceFormSection[];
   service?: Service | components['schemas']['AdminServiceResponse'];
   submitLabel?: string;
   /**
@@ -94,7 +96,6 @@ export function ServiceForm({
 }) {
   const t = useTranslations('shopServices.form');
   const tServices = useTranslations('shopServices');
-  const tCatalog = useTranslations('catalog');
   const locale = useLocale();
   const router = useRouter();
   const message = useValidationMessage();
@@ -113,7 +114,7 @@ export function ServiceForm({
       nameEn: service?.nameEn ?? '',
       descriptionAr: service?.descriptionAr ?? '',
       descriptionEn: service?.descriptionEn ?? '',
-      categoryId: service?.categoryId ?? '',
+      sectionId: service?.sectionId ?? '',
       price: service ? String(service.price) : '',
       durationMinutes: String(service?.durationMinutes ?? 30),
       onlineBookable: service?.onlineBookable ?? true,
@@ -130,7 +131,10 @@ export function ServiceForm({
       nameEn: orNull(values.nameEn),
       descriptionAr: orNull(values.descriptionAr),
       descriptionEn: orNull(values.descriptionEn),
-      categoryId: values.categoryId || null,
+      // The platform category is no longer shown (D-149) but is sent back as it is, so an edit never clears it; the
+      // section is sent on every save (leaving it out would take the service out of its section).
+      categoryId: service?.categoryId ?? null,
+      sectionId: sections ? values.sectionId || null : (service?.sectionId ?? null),
       price: parsePrice(values.price) ?? 0,
       durationMinutes: Number(values.durationMinutes),
       onlineBookable: values.onlineBookable,
@@ -181,27 +185,30 @@ export function ServiceForm({
           optional
           maxLength={500}
         />
-        <Controller
-          control={form.control}
-          name="categoryId"
-          render={({ field, fieldState }) => (
-            <SelectField
-              label={t('category')}
-              name={field.name}
-              value={field.value}
-              onChange={field.onChange}
-              optional
-              error={message(fieldState.error)}
-            >
-              <option value="">{tCatalog('noCategory')}</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {localizedName(locale, category.nameAr, category.nameEn)}
-                </option>
-              ))}
-            </SelectField>
-          )}
-        />
+        {sections && (
+          <Controller
+            control={form.control}
+            name="sectionId"
+            render={({ field, fieldState }) => (
+              <SelectField
+                label={t('section')}
+                helper={t('sectionHelper')}
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                optional
+                error={message(fieldState.error)}
+              >
+                <option value="">{t('noSection')}</option>
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {localizedName(locale, section.nameAr, section.nameEn)}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+          />
+        )}
         <FormTextField
           control={form.control}
           name="price"

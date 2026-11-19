@@ -42,6 +42,9 @@ internal sealed class ShopServiceConfiguration : IEntityTypeConfiguration<ShopSe
         builder.Property(s => s.Moderation).HasConversion<string>().HasMaxLength(20);
         builder.Property(s => s.ModerationReason).HasMaxLength(500);
         builder.HasOne<ServiceCategory>().WithMany().HasForeignKey(s => s.CategoryId).OnDelete(DeleteBehavior.Restrict);
+
+        // A section of the service's own shop only (D-149); unchecked while section_id is null.
+        builder.HasShopScopedReference<ShopService, ServiceSection>(nameof(ShopService.SectionId));
         builder.HasIndex(s => new { s.ShopId, s.DisplayOrder });
         builder.HasIndex(s => new { s.ShopId, s.IsArchived, s.IsActive });
         builder.ToTable(t =>
@@ -50,6 +53,20 @@ internal sealed class ShopServiceConfiguration : IEntityTypeConfiguration<ShopSe
             t.HasCheckConstraint("ck_shop_services_duration", "duration_minutes BETWEEN 5 AND 480 AND duration_minutes % 5 = 0");
         });
         builder.Ignore(s => s.IsPubliclyAvailable);
+    }
+}
+
+/// <summary>A shop's own sections (D-149); a service references one of its own shop's through (shop_id, section_id).</summary>
+internal sealed class ServiceSectionConfiguration : IEntityTypeConfiguration<ServiceSection>
+{
+    public void Configure(EntityTypeBuilder<ServiceSection> builder)
+    {
+        builder.ToTable("service_sections");
+        builder.HasKey(s => s.Id);
+        builder.HasShopScopedKey();
+        builder.Property(s => s.NameAr).HasMaxLength(ServiceSection.MaxNameLength);
+        builder.Property(s => s.NameEn).HasMaxLength(ServiceSection.MaxNameLength);
+        builder.HasIndex(s => new { s.ShopId, s.DisplayOrder });
     }
 }
 
@@ -100,7 +117,8 @@ internal sealed class ProfessionalServiceAssignmentConfiguration : IEntityTypeCo
 {
     public void Configure(EntityTypeBuilder<ProfessionalServiceAssignment> builder)
     {
-        builder.ToTable("professional_services");
+        builder.ToTable("professional_services", t => t.HasCheckConstraint(
+            "ck_professional_services_duration", "duration_minutes IS NULL OR (duration_minutes > 0 AND duration_minutes % 5 = 0)"));
         builder.HasKey(a => new { a.ProfessionalId, a.ServiceId });
         builder.HasShopScopedReference<ProfessionalServiceAssignment, ShopService>(nameof(ProfessionalServiceAssignment.ServiceId), DeleteBehavior.Cascade);
         builder.HasShopScopedReference(CatalogModel.ProfessionalEntityType, nameof(ProfessionalServiceAssignment.ProfessionalId), DeleteBehavior.Cascade);

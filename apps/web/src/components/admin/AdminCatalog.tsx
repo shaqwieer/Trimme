@@ -3,7 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { PackageForm } from '@/components/catalog/PackageForm';
-import { ServiceForm, type ServiceFormProfessional } from '@/components/catalog/ServiceForm';
+import {
+  ServiceForm,
+  type ServiceFormProfessional,
+  type ServiceFormSection,
+} from '@/components/catalog/ServiceForm';
 import { Button } from '@/components/ui/Button';
 import { SelectField, TextareaField, TextField } from '@/components/ui/inputs';
 import { Dialog } from '@/components/ui/overlays';
@@ -135,18 +139,14 @@ export function ModerationControl({
   );
 }
 
-/** Support override of one shop service: the shop's form plus a required reason; audited before → after. */
-export function ServiceOverride({
-  service,
-  categories,
-}: {
-  service: Schemas['AdminServiceResponse'];
-  categories: Schemas['ServiceCategoryResponse'][];
-}) {
+/**
+ * Support override of one shop service: the shop's form plus a required reason; audited before → after. The section is
+ * the shop's own arrangement (D-149) and stays as it is.
+ */
+export function ServiceOverride({ service }: { service: Schemas['AdminServiceResponse'] }) {
   const t = useTranslations('adminServices.detail');
   return (
     <ServiceForm
-      categories={categories}
       service={service}
       submitLabel={t('overrideSubmit')}
       reasonLabel={t('overrideReason')}
@@ -169,19 +169,20 @@ export function ServiceOverride({
 export function AdminServiceEditor({
   shopId,
   service,
-  categories,
+  sections,
   professionals,
 }: {
   shopId: string;
   service?: Schemas['AdminServiceResponse'];
-  categories: Schemas['ServiceCategoryResponse'][];
+  /** The shop's own sections (D-149). */
+  sections: ServiceFormSection[];
   professionals: ServiceFormProfessional[];
 }) {
   const t = useTranslations('adminServices.manage');
   const router = useRouter();
   return (
     <ServiceForm
-      categories={categories}
+      sections={sections}
       service={service}
       professionals={professionals}
       assignedIds={service?.professionalIds}

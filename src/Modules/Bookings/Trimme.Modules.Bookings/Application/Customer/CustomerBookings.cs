@@ -63,6 +63,10 @@ internal sealed class CustomerBookingSupport(
 
     public async Task<int> CutoffAsync(CancellationToken cancellationToken) => (await settings.GetAsync(cancellationToken)).CancellationCutoffMinutes;
 
+    /// <summary>The shop's booking rules (D-149): its own start interval, notice, horizon and cleaning time over the platform's.</summary>
+    public async Task<EffectiveBookingRules> RulesAsync(ShopSummary shop, CancellationToken cancellationToken) =>
+        shop.BookingRules(await settings.GetAsync(cancellationToken));
+
     public async Task<ShopSummary?> ShopBySlugAsync(string slug, CancellationToken cancellationToken)
     {
         using (scope.Begin(shopId: null))
@@ -237,7 +241,8 @@ internal sealed class CreateOnlineBookingHandler(
                 eligible = [new ProfessionalId(requested)];
             }
 
-            var free = await availability.FreeProfessionalsAsync(shop.Id, eligible, command.StartsAt, offer.DurationMinutes, AvailabilityCheckMode.Online, null, cancellationToken);
+            var free = await availability.FreeProfessionalsAsync(
+                shop.Id, eligible, command.StartsAt, offer.DurationMinutes, AvailabilityCheckMode.Online, null, cancellationToken, offer.Durations);
             if (free.Count == 0)
             {
                 return BookingErrors.SlotUnavailable();
@@ -251,9 +256,10 @@ internal sealed class CreateOnlineBookingHandler(
         }
 
         var now = support.Now;
+        var rules = await support.RulesAsync(shop, cancellationToken);
         var booking = Booking.CreateOnline(
-            EntityId.New<BookingId>(), shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer), command.StartsAt,
-            shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId));
+            EntityId.New<BookingId>(), shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer, chosen.Id), command.StartsAt,
+            shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId), rules.BufferMinutes);
 
         // A loyalty reward the customer chose is held in the same transaction, so it is used by this booking or not at all (D-132).
         if (command.LoyaltyRewardId is { } rewardId)
@@ -352,6 +358,7 @@ internal sealed class RescheduleMyBookingHandler(
         }
 
         BookedProfessional target;
+        BookedLength? length = null;
         using (scope.Begin(booking.ShopId))
         {
             var gate = await bookability.GetAsync(booking.ShopId, cancellationToken);
@@ -380,9 +387,12 @@ internal sealed class RescheduleMyBookingHandler(
                 return BookingErrors.ProfessionalNotEligible();
             }
 
-            // The booked duration (snapshot) is kept; its own current time does not block the move.
+            // The same barber keeps the booked duration (snapshot); another barber takes the booking for their own length
+            // (D-149). Its own current time does not block the move.
+            length = requested == booking.ProfessionalId ? null : BookingMapping.Length(offer, requested);
             var free = await availability.FreeProfessionalsAsync(
-                booking.ShopId, [requested], command.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.Online, booking.Id.Value, cancellationToken);
+                booking.ShopId, [requested], command.StartsAt, length?.DurationMinutes ?? booking.DurationMinutes, AvailabilityCheckMode.Online, booking.Id.Value,
+                cancellationToken);
             if (free.Count == 0)
             {
                 return BookingErrors.SlotUnavailable();
@@ -391,7 +401,9 @@ internal sealed class RescheduleMyBookingHandler(
             target = new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn);
         }
 
-        var moved = booking.Reschedule(command.StartsAt, target, new BookingActor(customerId, ActorType.Customer, booking.CustomerName), now, cutoff);
+        var buffer = await support.ShopAsync(booking.ShopId, cancellationToken) is { } placed ? (await support.RulesAsync(placed, cancellationToken)).BufferMinutes : (int?)null;
+        var moved = booking.Reschedule(
+            command.StartsAt, target, new BookingActor(customerId, ActorType.Customer, booking.CustomerName), now, cutoff, length: length, bufferMinutes: buffer);
         if (moved.IsFailure)
         {
             return moved.Error;

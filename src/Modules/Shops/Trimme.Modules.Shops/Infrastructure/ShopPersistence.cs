@@ -106,5 +106,6 @@ internal sealed class ShopDirectory(TrimmeDbContext db) : IShopDirectory
             s.Id, s.Slug, s.NameAr, s.NameEn, s.Status, s.TimeZone,
             db.Set<OnlineBookingPause>().Where(p => p.ShopId == s.Id).Select(p => (DateTimeOffset?)p.PausedAt).FirstOrDefault(),
             s.RequireManualConfirmation,
-            s.Location == null ? null : s.Location.FormattedAddress ?? s.Location.AddressLine));
+            s.Location == null ? null : s.Location.FormattedAddress ?? s.Location.AddressLine,
+            new ShopBookingOverrides(s.SlotStepMinutes, s.MinLeadTimeMinutes, s.BookingHorizonDays, s.BufferMinutes)));
 }

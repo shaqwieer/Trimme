@@ -41,7 +41,8 @@ internal sealed record ChangeBookingProfessionalCommand(Guid BookingId, Guid Pro
 
 /// <summary>The free starts for the booking's barber and duration (its own time does not block it), on the desk's rules.</summary>
 internal sealed class ShopRescheduleAvailability(
-    TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IShopDirectory shops, ISlotProbe probe, IShopDayPlanReader plans, TimeProvider clock)
+    TrimmeDbContext db, ICurrentUser user, ICurrentTenant tenant, IShopDirectory shops, ISlotProbe probe, IShopDayPlanReader plans, ShopRulesReader rules,
+    TimeProvider clock)
 {
     private const int MaxSlots = 10_000;
 
@@ -60,8 +61,11 @@ internal sealed class ShopRescheduleAvailability(
             return BookingErrors.NotReschedulable(booking.Status);
         }
 
-        var start = from ?? probe.Today(shop.TimeZone, clock.GetUtcNow());
-        var end = to ?? start.AddDays(RescheduleAvailability.DefaultDays - 1);
+        // From today to the shop's furthest bookable day unless the caller asks otherwise (D-149, 6-1).
+        var today = probe.Today(shop.TimeZone, clock.GetUtcNow());
+        var start = from ?? today;
+        var horizonEnd = today.AddDays(Math.Max((await rules.GetAsync(shopId, cancellationToken)).BookingHorizonDays, 1) - 1);
+        var end = to ?? (horizonEnd < start ? start : horizonEnd > start.AddDays(RescheduleAvailability.MaxDays - 1) ? start.AddDays(RescheduleAvailability.MaxDays - 1) : horizonEnd);
         if (end < start || end.DayNumber - start.DayNumber >= RescheduleAvailability.MaxDays)
         {
             return Error.Validation("validation.failed", "The date range is invalid.", new Dictionary<string, string[]>(StringComparer.Ordinal) { ["to"] = ["validation.out_of_range"] });
@@ -135,10 +139,19 @@ internal sealed class GetBookingProfessionalOptionsHandler(
 
         var others = (await RescheduleTargets.CandidatesAsync(booking, catalog, professionals, cancellationToken))
             .Where(p => p.IsActive && p.Id != booking.ProfessionalId).ToList();
+
+        // Each colleague for their own length (D-149): a longer one may not fit at the same start.
+        var lengths = new Dictionary<ProfessionalId, int>();
+        foreach (var other in others)
+        {
+            lengths[other.Id] = (await RescheduleTargets.LengthAsync(booking, other.Id, catalog, cancellationToken))?.DurationMinutes ?? booking.DurationMinutes;
+        }
+
         var free = others.Count == 0
             ? []
             : (await availability.FreeProfessionalsAsync(
-                booking.ShopId, [.. others.Select(p => p.Id)], booking.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value, cancellationToken))
+                booking.ShopId, [.. others.Select(p => p.Id)], booking.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value, cancellationToken,
+                lengths))
                 .ToHashSet();
         return new BookingProfessionalOptionsResponse(
             booking.StartsAt, [.. others.Select(p => new BookingProfessionalOption(p.Id.Value, p.NameAr, p.NameEn, free.Contains(p.Id)))]);
@@ -230,7 +243,8 @@ internal sealed class ShopBookingChanger(
 /// A new time with the same barber (D-145) for a walk-in or phone booking, once the customer agreed (D-147: an online
 /// booking gets a postponement offer instead). A walk-in with a mobile gets «تم تغيير موعد حجزك».
 /// </summary>
-internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, BookingActors actors, IAvailabilityChecker availability, TimeProvider clock)
+internal sealed class ShopRescheduleBookingHandler(
+    ShopBookingChanger changer, BookingActors actors, IAvailabilityChecker availability, ShopRulesReader rules, TimeProvider clock)
     : ICommandHandler<ShopRescheduleBookingCommand, Result<ShopBookingChangeResult>>
 {
     private const string Scope = "bookings.shop_reschedule";
@@ -261,7 +275,8 @@ internal sealed class ShopRescheduleBookingHandler(ShopBookingChanger changer, B
             }
 
             var moved = booking.Reschedule(
-                command.StartsAt, booking.CurrentProfessional, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now, cutoffMinutes: null);
+                command.StartsAt, booking.CurrentProfessional, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now, cutoffMinutes: null,
+                bufferMinutes: (await rules.GetAsync(booking.ShopId, cancellationToken)).BufferMinutes);
             if (moved.IsFailure)
             {
                 return moved.Error;
@@ -283,6 +298,7 @@ internal sealed class ChangeBookingProfessionalHandler(
     IBookableOfferCatalog catalog,
     IProfessionalDirectory professionals,
     IAvailabilityChecker availability,
+    ShopRulesReader rules,
     TimeProvider clock) : ICommandHandler<ChangeBookingProfessionalCommand, Result<ShopBookingChangeResult>>
 {
     private const string Scope = "bookings.change_professional";
@@ -303,14 +319,19 @@ internal sealed class ChangeBookingProfessionalHandler(
                 return target.Error;
             }
 
+            // The colleague takes it for their own length (D-149); a longer one that no longer fits is «مشغول».
+            var length = await RescheduleTargets.LengthAsync(booking, target.Value.Id, catalog, cancellationToken);
             var free = await availability.FreeProfessionalsAsync(
-                booking.ShopId, [target.Value.Id], booking.StartsAt, booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value, cancellationToken);
+                booking.ShopId, [target.Value.Id], booking.StartsAt, length?.DurationMinutes ?? booking.DurationMinutes, AvailabilityCheckMode.WalkIn, booking.Id.Value,
+                cancellationToken);
             if (free.Count == 0)
             {
                 return BookingErrors.ProfessionalBusy();
             }
 
-            var changed = booking.ChangeProfessional(target.Value, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), clock.GetUtcNow());
+            var changed = booking.ChangeProfessional(
+                target.Value, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), clock.GetUtcNow(), length,
+                (await rules.GetAsync(booking.ShopId, cancellationToken)).BufferMinutes);
             if (changed.IsFailure)
             {
                 return changed.Error;

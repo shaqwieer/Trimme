@@ -6,7 +6,7 @@ import { Controller } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
-import { Checkbox, SelectField, Switch } from '@/components/ui/inputs';
+import { Checkbox, Switch } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { useRouter } from '@/i18n/navigation';
 import { useApiErrorMessage } from '@/lib/api/errors';
@@ -17,7 +17,6 @@ import { requiredText, withParams } from '@/lib/forms/validation';
 import {
   type EditorMode,
   SHOP_AMENITIES,
-  SHOP_CATEGORIES,
   type ShopProfileData,
   type ShopProfileField,
   shopApi,
@@ -34,7 +33,8 @@ const schema = z.object({
   nameEn: requiredText(120),
   descriptionAr: optionalText(1000),
   descriptionEn: optionalText(1000),
-  category: z.enum(SHOP_CATEGORIES as [string, ...string[]]),
+  // Fixed to «حلاقة رجالية»: the platform is for men (D-149, the owner's item 4).
+  category: z.literal('Barbershop'),
   publicPhone: z
     .string()
     .trim()
@@ -79,7 +79,6 @@ type ShopProfileEditorProps = {
  */
 export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorProps) {
   const t = useTranslations('shopProfile');
-  const tCategory = useTranslations('shopCategory');
   const tAmenity = useTranslations('amenity');
   const router = useRouter();
   const apiMessage = useApiErrorMessage();
@@ -96,7 +95,7 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
       nameEn: profile.nameEn,
       descriptionAr: profile.descriptionAr ?? '',
       descriptionEn: profile.descriptionEn ?? '',
-      category: profile.category,
+      category: 'Barbershop',
       publicPhone: profile.publicPhone ?? '',
       amenities: [...profile.amenities],
       isVerified: profile.isVerified,
@@ -176,26 +175,6 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
           maxLength={1000}
           disabled={!editable('Description')}
           helper={lock('Description')}
-        />
-        <Controller
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <SelectField
-              label={t('category')}
-              name={field.name}
-              value={field.value}
-              onChange={field.onChange}
-              disabled={!editable('Category')}
-              helper={lock('Category')}
-            >
-              {SHOP_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {tCategory(category)}
-                </option>
-              ))}
-            </SelectField>
-          )}
         />
         <FormTextField
           control={form.control}

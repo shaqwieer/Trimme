@@ -302,4 +302,41 @@ public sealed class AvailabilityEngineTests
         AvailabilityEngine.DayOf(closed, pro, thursday).Working.Ranges.ShouldBeEmpty();
         AvailabilityEngine.OpenWindows(closed, thursday).Ranges.ShouldBeEmpty();
     }
+
+    [Fact]
+    public void TheCleaningTime_MustFitAfterEachStart_BeforeTheNextBookingAndClosing()
+    {
+        // 9:00–11:20, a booking 10:00–10:30 that holds the barber until 10:40 (its own cleaning time, D-149). A new start
+        // needs its 30 minutes and its own 10 of cleaning free, before that booking and before closing.
+        var shop = Shop(Day(DayOfWeek.Sunday, M(9), M(11, 20)));
+        var pro = Pro(A, blocked: [new InstantRange(Local(Sunday, 10, 0), Local(Sunday, 10, 40))]);
+        var policy = new BookingPolicy(0, 30, 10, BufferMinutes: 10);
+
+        var slots = Find(shop, [pro], Sunday, Sunday, 30, policy);
+        Times(slots).ShouldBe(["10-04 09:00", "10-04 09:10", "10-04 09:20", "10-04 10:40"]);
+        slots[0].EndsAt.ShouldBe(Local(Sunday, 9, 30), "the slot ends with the service; the cleaning is the shop's");
+
+        // The walk-in rule holds the cleaning time too.
+        AvailabilityEngine.IsFree(shop, pro, Local(Sunday, 9, 25), 30, bufferMinutes: 10).ShouldBeFalse();
+        AvailabilityEngine.IsFree(shop, pro, Local(Sunday, 9, 25), 30).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void EachProfessional_IsCheckedForTheirOwnLength()
+    {
+        // A haircut is 30 minutes; B takes 45 (D-149). The shop closes at 11:00.
+        var shop = Shop(Day(DayOfWeek.Sunday, M(10), M(11)));
+        var query = new AvailabilityQuery(Sunday, Sunday, 30, SundayMidnight, Policy(step: 15), new Dictionary<ProfessionalId, int> { [B] = 45 });
+        var slots = AvailabilityEngine.FindSlots(shop, [Pro(A), Pro(B)], query);
+
+        Times(slots).ShouldBe(["10-04 10:00", "10-04 10:15", "10-04 10:30"]);
+        slots.Single(s => s.LocalTime == new TimeOnly(10, 15)).Professionals.ShouldBe([A, B]);
+        slots.Single(s => s.LocalTime == new TimeOnly(10, 30)).Professionals.ShouldBe([A]);
+        slots.Single(s => s.LocalTime == new TimeOnly(10, 30)).EndsAt.ShouldBe(Local(Sunday, 11, 0));
+
+        // B alone: his own 45 minutes, and the slot ends with them.
+        var own = AvailabilityEngine.FindSlots(shop, [Pro(B)], query);
+        Times(own).ShouldBe(["10-04 10:00", "10-04 10:15"]);
+        own[0].EndsAt.ShouldBe(Local(Sunday, 10, 45));
+    }
 }

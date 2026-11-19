@@ -28,7 +28,8 @@ public sealed record ShopServiceResponse(
     string? ModerationReason,
     int AssignedProfessionalCount,
     uint Version,
-    IReadOnlyList<Guid> ProfessionalIds);
+    IReadOnlyList<Guid> ProfessionalIds,
+    Guid? SectionId = null);
 
 public sealed record PackageItemResponse(Guid ServiceId, string NameAr, string? NameEn, bool IsAvailable);
 
@@ -101,7 +102,8 @@ internal static class CatalogMapping
         service.ModerationReason,
         professionalIds.Count,
         service.Version,
-        professionalIds);
+        professionalIds,
+        service.SectionId?.Value);
 
     public static ShopPackageResponse ToResponse(ServicePackage package, IReadOnlyDictionary<ShopServiceId, ShopService> services)
     {

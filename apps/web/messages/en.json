@@ -574,7 +574,8 @@
     "booking_postponement_gone": "The postponement offer is no longer open.",
     "booking_postpone_same_time": "That is the booking’s own time.",
     "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only.",
-    "booking_service_in_package": "This service is already in the chosen package."
+    "booking_service_in_package": "This service is already in the chosen package.",
+    "service_section_not_found": "This section no longer exists. Reload the page."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -652,13 +653,15 @@
       "services": "Services",
       "subscription": "Subscription",
       "loyalty": "Loyalty",
-      "whatsapp": "WhatsApp messages"
+      "whatsapp": "WhatsApp messages",
+      "booking": "Booking settings"
     },
     "sections": {
       "profile": "Shop profile",
       "images": "Shop images",
       "policy": "Shop edit permissions",
-      "location": "Shop location on the map"
+      "location": "Shop location on the map",
+      "booking": "Booking settings"
     },
     "policy": {
       "title": "Fields the shop edits itself",
@@ -680,7 +683,8 @@
       "emptyBody": "Add the first service so customers can book.",
       "packagesTitle": "The salon's packages",
       "noPackages": "No packages yet.",
-      "addPackage": "Add a package"
+      "addPackage": "Add a package",
+      "sectionsTitle": "Service sections"
     },
     "whatsapp": {
       "title": "WhatsApp messages for this salon",
@@ -853,7 +857,10 @@
       "whatsapp": "Professional's WhatsApp number",
       "whatsappHelper": "Receives booking and reminder notifications. Never shown to customers or other shops.",
       "notifications": "Send WhatsApp notifications to this professional",
-      "submit": "Add professional"
+      "submit": "Add professional",
+      "languages": "Languages spoken",
+      "languagesHelper": "Shown on the barber's page so customers can pick someone who speaks their language.",
+      "nameEnHelper": "Optional — the Arabic name is shown if left empty"
     },
     "detail": {
       "back": "All professionals",
@@ -909,13 +916,15 @@
     "tabs": {
       "label": "Settings sections",
       "profile": "Shop profile",
-      "location": "Location"
+      "location": "Location",
+      "booking": "Booking settings"
     },
     "profile": "Shop profile",
     "images": "Shop images",
     "location": "Shop location",
     "unavailableTitle": "Settings are not available right now",
-    "unavailableBody": "The shop is suspended. Contact the platform admin."
+    "unavailableBody": "The shop is suspended. Contact the platform admin.",
+    "booking": "Booking settings"
   },
   "catalog": {
     "currency": "SAR",
@@ -924,7 +933,7 @@
       "Hidden": "Hidden by the admin"
     },
     "status": {
-      "active": "On",
+      "active": "Bookable",
       "inactive": "Off",
       "archived": "Archived",
       "hidden": "Hidden by the admin"
@@ -964,7 +973,6 @@
       "title": "No packages yet",
       "body": "Bundle two or more services with their own price and duration."
     },
-    "active": "Bookable",
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
     "moved": "{name} moved to position {position}",
@@ -991,7 +999,9 @@
       "nameEnHelper": "Optional — the Arabic name is shown if left empty",
       "descriptionAr": "Description in Arabic",
       "descriptionEn": "Description in English",
-      "category": "Category",
+      "section": "Section",
+      "sectionHelper": "The service shows under this section on your shop page and in the booking. Sections are managed on the Services page.",
+      "noSection": "No section (shown under “Other”)",
       "price": "Price (SAR)",
       "priceHelper": "Your shop's own price — up to two decimals",
       "duration": "Duration",
@@ -1009,7 +1019,6 @@
       "noShopProfessionalsOwner": "Your salon has no barbers yet. The Groom Here team adds them; then pick them here.",
       "noProfessionalsPicked": "No barber picked: the service shows no times until at least one barber is picked."
     },
-    "activeFor": "{name}: bookable",
     "editItem": "Edit {name}",
     "archiveItem": "Archive {name}",
     "deleteItem": "Delete {name}",
@@ -1020,13 +1029,37 @@
       "newTitle": "New package",
       "editTitle": "Edit package",
       "notFound": "The package was not found.",
-      "activate": "Turn on",
-      "deactivate": "Turn off",
+      "activate": "Turn on booking",
+      "deactivate": "Stop booking",
       "archive": "Archive",
       "archiveTitle": "Archive the package?",
       "archiveBody": "It leaves booking and the shop page, and stays on past bookings. This cannot be undone.",
       "archiveConfirm": "Yes, archive it",
       "keep": "Go back"
+    },
+    "startBooking": "Turn on booking",
+    "stopBooking": "Stop booking",
+    "startBookingFor": "Turn on booking: {name}",
+    "stopBookingFor": "Stop booking: {name}",
+    "sections": {
+      "title": "Service sections",
+      "body": "Arrange your services under your own sections (hair, beard, care…) in the order you choose. Sections show as tabs on your shop page and in the booking; services without one show under “Other”.",
+      "empty": "No sections yet. Add the first one below.",
+      "count": "{count, plural, =0 {No services} one {# service} other {# services}}",
+      "moveUp": "Move section {name} up",
+      "moveDown": "Move section {name} down",
+      "moved": "Section {name} moved to position {position}",
+      "rename": "Rename",
+      "renameItem": "Rename section {name}",
+      "delete": "Delete",
+      "deleteItem": "Delete section {name}",
+      "deleteTitle": "Delete the section “{name}”?",
+      "deleteBody": "Its services stay as they are and show under “Other” until you put them in another section.",
+      "add": "Add section",
+      "save": "Save name",
+      "cancel": "Cancel",
+      "nameAr": "Section name in Arabic",
+      "nameEn": "Section name in English"
     }
   },
   "adminServices": {
@@ -1115,12 +1148,14 @@
     },
     "professionalServices": {
       "title": "Assigned services",
-      "body": "Only this professional's own shop's services, with that shop's prices and durations.",
+      "body": "Only this barber's shop services, at the shop's prices. Each service has its standard length; you can set how long it takes this barber.",
       "empty": "This professional's shop has no services yet",
       "save": "Save assignment",
       "saved": "Service assignment saved.",
       "inactive": "Off",
-      "emptyShop": "Your shop has no services yet. Add them under «Services»."
+      "emptyShop": "Your shop has no services yet. Add them under «Services».",
+      "ownDuration": "How long “{service}” takes this barber",
+      "standardDuration": "Standard length — {duration}"
     }
   },
   "billing": {
@@ -1347,7 +1382,8 @@
       "title": "Add a barber",
       "mobileHelper": "The barber's WhatsApp number, which they also sign in with. After saving it is shown partly hidden.",
       "loginNote": "The barber's login is made when you save, and you see a temporary password once to give them. They change it at their first sign-in.",
-      "submit": "Add the barber"
+      "submit": "Add the barber",
+      "mobile": "Barber's mobile"
     },
     "detail": {
       "title": "Barber",
@@ -1384,7 +1420,7 @@
     "title": "Platform settings",
     "intro": "These values apply to every shop, and each change is recorded in the activity log. Region values are fixed in v1.",
     "sections": {
-      "booking": "Booking policy",
+      "booking": "Booking policy (defaults)",
       "notifications": "Reminders",
       "subscriptions": "Subscriptions",
       "discovery": "Discovery",
@@ -1418,7 +1454,7 @@
     "saved": "Settings saved.",
     "readOnly": "You can view these settings but not change them.",
     "descriptions": {
-      "booking": "What customers may book online: how far ahead, how soon, on which time grid, until when they can cancel or move a booking, and for how long they can review a visit.",
+      "booking": "What every shop starts with: the minimum notice, the furthest bookable day and the start-time interval. Each owner changes them for their shop in “Booking settings”; the cancellation and review windows here apply to everyone.",
       "notifications": "When the customer's and the barber's WhatsApp reminders go out before an appointment.",
       "subscriptions": "When a shop's subscription counts as ending soon, and what happens while none is in force. Existing bookings are never changed.",
       "discovery": "Whether shops that paused online booking still appear in search and on the map. Their page stays reachable by link.",
@@ -3750,5 +3786,40 @@
       "loyalty": "Loyalty reward"
     },
     "truncated": "Only the first {count} bookings are listed; the figures above cover every booking of the period."
+  },
+  "bookingSettings": {
+    "confirmation": "Booking confirmation",
+    "times": "Times",
+    "manual": "I confirm bookings myself",
+    "manualOn": "New online bookings arrive “awaiting confirmation” until the shop confirms them.",
+    "manualOff": "Online bookings are confirmed automatically when made.",
+    "fields": {
+      "slotStepMinutes": "Start times",
+      "minLeadTimeMinutes": "Minimum notice",
+      "bookingHorizonDays": "Furthest bookable day",
+      "bufferMinutes": "Cleaning time after each service"
+    },
+    "hints": {
+      "slotStepMinutes": "The gap between start times (10:00, 10:15, 10:30…), not the service length: starts every 15 minutes, a service may take 45.",
+      "minLeadTimeMinutes": "No time closer than this to now is offered.",
+      "bookingHorizonDays": "How many days ahead customers can book. The date strip follows this setting.",
+      "bufferMinutes": "The barber stays unavailable this long after each booking."
+    },
+    "everyMinutes": "Every {duration}",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "noNotice": "No notice",
+    "noCleaning": "No cleaning time",
+    "save": "Save booking settings",
+    "saved": "Booking settings saved. They apply to new bookings from now on."
+  },
+  "spokenLanguages": {
+    "label": "Speaks",
+    "ar": "Arabic",
+    "en": "English",
+    "ur": "Urdu",
+    "hi": "Hindi",
+    "bn": "Bengali",
+    "tl": "Filipino",
+    "tr": "Turkish"
   }
 }

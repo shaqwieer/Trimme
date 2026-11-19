@@ -12,7 +12,6 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { cn } from '@/lib/cn';
 import { dataOrNull, getPublicApi } from '@/lib/api/public';
-import { optional } from '@/lib/api/safe';
 import { readLocation } from '@/lib/discovery/location.server';
 import {
   activeFilterCount,
@@ -26,7 +25,6 @@ import {
   WIDE_RADIUS_KM,
 } from '@/lib/discovery/search';
 import { formatNumber } from '@/lib/i18n/format';
-import { localizedName } from '@/lib/i18n/localized';
 import { NO_INDEX } from '@/lib/seo/site';
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/search'>): Promise<Metadata> {
@@ -54,12 +52,9 @@ export default async function SearchPage({ params, searchParams }: PageProps<'/[
   const filters = parseSearchFilters(await searchParams, location !== null);
   const pageSize = filters.view === 'map' ? MAP_PAGE_SIZE : LIST_PAGE_SIZE;
   const api = await getPublicApi();
-  const [categories, result] = await Promise.all([
-    optional(() => api.GET('/api/v1/public/service-categories'), 'categories'),
-    api
-      .GET('/api/v1/public/shops/search', { params: { query: toApiQuery(filters, location, pageSize) } })
-      .then((r) => dataOrNull(r, 'search')),
-  ]);
+  const result = await api
+    .GET('/api/v1/public/shops/search', { params: { query: toApiQuery(filters, location, pageSize) } })
+    .then((r) => dataOrNull(r, 'search'));
   const href = (overrides: Partial<SearchFilters>) => ({
     pathname: '/search',
     query: filtersToQuery({ ...filters, page: 1, ...overrides }),
@@ -108,10 +103,6 @@ export default async function SearchPage({ params, searchParams }: PageProps<'/[
               <li>
                 <FilterSheet
                   filters={filters}
-                  categories={(categories ?? []).map((c) => ({
-                    id: c.id,
-                    name: localizedName(locale, c.nameAr, c.nameEn),
-                  }))}
                   priceRange={result?.priceRange ?? null}
                   location={location}
                   activeCount={active}

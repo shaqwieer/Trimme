@@ -513,7 +513,7 @@ public sealed class SubscriptionTests(PostgresFixture postgres)
 
         var defaults = await OkJsonAsync(super.GetAsync("/api/v1/admin/settings", ct), ct);
         defaults.GetProperty("minLeadTimeMinutes").GetInt32().ShouldBe(60);
-        defaults.GetProperty("bookingHorizonDays").GetInt32().ShouldBe(30);
+        defaults.GetProperty("bookingHorizonDays").GetInt32().ShouldBe(14);
         defaults.GetProperty("slotStepMinutes").GetInt32().ShouldBe(5);
         defaults.GetProperty("cancellationCutoffMinutes").GetInt32().ShouldBe(0); // until the start (D-148; it was 120, D-015)
         defaults.GetProperty("reviewWindowDays").GetInt32().ShouldBe(7);

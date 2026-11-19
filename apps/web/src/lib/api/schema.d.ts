@@ -278,6 +278,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/shops/{slug}/service-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's own sections of its services, in the shop's order (D-149): the tabs of the shop page and the booking. */
+        get: operations["ListPublicServiceSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/shops/{shopId}/services": {
         parameters: {
             query?: never;
@@ -1393,6 +1410,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's booking settings in force: its own, or the platform's where it has none (D-149). */
+        get: operations["AdminGetShopBookingSettings"];
+        /** Sets the shop's confirmation, start interval, minimum notice, furthest day and cleaning time (D-149). Audited. */
+        put: operations["AdminUpdateShopBookingSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/shops/{shopId}/editable-policy": {
         parameters: {
             query?: never;
@@ -1563,6 +1598,24 @@ export interface paths {
         post?: never;
         /** Removes one of the shop's gallery images, if the policy allows. */
         delete: operations["RemoveOwnShopGalleryImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/booking-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's booking settings in force: its own, or the platform's where it has none (D-149). */
+        get: operations["GetOwnBookingSettings"];
+        /** The owner sets confirmation, the start interval, the minimum notice, the furthest day and the cleaning time (D-149). Audited. */
+        put: operations["UpdateOwnBookingSettings"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2045,6 +2098,112 @@ export interface paths {
         get?: never;
         /** Sets the display order from the full list of non-archived services. */
         put: operations["ReorderShopServices"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/service-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The shop's sections in order, with how many services sit in each. */
+        get: operations["ListOwnServiceSections"];
+        put?: never;
+        /** Adds a section at the end (audited). */
+        post: operations["CreateOwnServiceSection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/service-sections/{sectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Renames a section (audited). */
+        put: operations["RenameOwnServiceSection"];
+        post?: never;
+        /** Deletes a section; its services stay, without a section (audited). */
+        delete: operations["DeleteOwnServiceSection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/service-sections/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the order from the full list of the shop's sections. */
+        put: operations["OrderOwnServiceSections"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/service-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A shop's sections in order, with how many services sit in each. */
+        get: operations["AdminListServiceSections"];
+        put?: never;
+        /** Adds a section to a shop (audited). */
+        post: operations["AdminCreateServiceSection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/service-sections/{sectionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Renames a shop's section (audited). */
+        put: operations["AdminRenameServiceSection"];
+        post?: never;
+        /** Deletes a shop's section; its services stay, without a section (audited). */
+        delete: operations["AdminDeleteServiceSection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/service-sections/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the order of a shop's sections from their full list. */
+        put: operations["AdminOrderServiceSections"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4292,6 +4451,7 @@ export interface components {
             updatedAt: null | string;
             /** Format: uint32 */
             version: number;
+            languages: string[];
         };
         /** @description An admin reschedule: the new start, optionally another eligible professional, a reason (≥ 5 characters) and the version read. */
         AdminRescheduleBookingRequest: {
@@ -4427,6 +4587,8 @@ export interface components {
              * @default 0
              */
             version: number;
+            /** Format: uuid */
+            sectionId?: null | string;
         };
         AdminServiceResponse: {
             /** Format: uuid */
@@ -4456,6 +4618,8 @@ export interface components {
             /** Format: uint32 */
             version: number;
             professionalIds: string[];
+            /** Format: uuid */
+            sectionId?: null | string;
         };
         /** @description A shop with its full profile, location and shop-edit policy, as the platform admin edits it. */
         AdminShopDetailResponse: {
@@ -4771,6 +4935,13 @@ export interface components {
             nameEn: string;
             counts: components["schemas"]["ReportCountsResponse"];
         };
+        /** @description A service a barber does, and their own length for it (D-149); `null` is the service's. */
+        BarberServiceItem: {
+            /** Format: uuid */
+            serviceId: string;
+            /** Format: int32 */
+            durationMinutes: null | number;
+        };
         /** @enum {unknown} */
         BillingIntervalUnit: "Day" | "Month";
         /** @description One booked service, with its own price and length when it has them, and whether the barber added it at the visit (D-147). */
@@ -5082,6 +5253,7 @@ export interface components {
             bioEn: null | string;
             whatsAppNumber: null | string;
             notificationsEnabled: boolean;
+            languages?: null | string[];
         };
         /** @description A shop code (no professional) or a code for one of the shop's active professionals, with an optional label. */
         CreateQrCodeRequest: {
@@ -5092,18 +5264,20 @@ export interface components {
             label: null | string;
         };
         /**
-         * @description The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made
-         *     from the English name). The mobile is required: it is the barber's WhatsApp number and their sign-in.
+         * @description The owner adds a barber to their own shop by their mobile (D-146, D-149): no shop field (it comes from the claims) and
+         *     no page address (made from the English name). The mobile is required: it is the barber's WhatsApp number and their
+         *     sign-in. The English name is optional (the Arabic one is used); `Languages` are codes from the fixed list.
          */
         CreateShopBarberRequest: {
             nameAr: string;
-            nameEn: string;
+            nameEn: null | string;
             specialtyAr: null | string;
             specialtyEn: null | string;
             bioAr: null | string;
             bioEn: null | string;
             whatsAppNumber: string;
             notificationsEnabled: boolean;
+            languages?: null | string[];
         };
         /** @description A package of 2–10 of the shop's own services, with its own price and total duration. */
         CreateShopPackageRequest: {
@@ -5140,6 +5314,8 @@ export interface components {
             durationMinutes: number;
             onlineBookable: boolean;
             professionalIds?: null | string[];
+            /** Format: uuid */
+            sectionId?: null | string;
         };
         CreateShopUserRequest: {
             email: string;
@@ -6088,6 +6264,13 @@ export interface components {
             /** Format: int32 */
             addedSince: number;
         };
+        /** @description A barber's own length for a service (D-149). */
+        ProfessionalDurationResponse: {
+            /** Format: uuid */
+            professionalId: string;
+            /** Format: int32 */
+            durationMinutes: number;
+        };
         /** @description A professional's weekly hours as the shop manages them (no contact data). */
         ProfessionalHoursResponse: {
             /** Format: uuid */
@@ -6157,11 +6340,22 @@ export interface components {
             durationMinutes: number;
             isActive: boolean;
             assigned: boolean;
+            /** Format: int32 */
+            ownDurationMinutes?: null | number;
         };
+        /**
+         * @description The services a barber does. `Services` also sets the barber's own length for each (D-149: null is the service's
+         *     standard length) and wins over `ServiceIds`, which keeps the lengths of the services the barber keeps.
+         */
         ProfessionalServicesRequest: {
-            serviceIds: string[];
+            serviceIds: null | string[];
+            services?: null | components["schemas"]["BarberServiceItem"][];
         };
-        /** @description The professional's own shop's services (with that shop's prices) and which are assigned (DV-S04). */
+        /**
+         * @description The professional's own shop's services (with that shop's prices) and which are assigned (DV-S04). On each option,
+         *     `DurationMinutes` is the service's standard length and `OwnDurationMinutes` this barber's own, when they
+         *     set one (D-149).
+         */
         ProfessionalServicesResponse: {
             /** Format: uuid */
             professionalId: string;
@@ -6225,6 +6419,7 @@ export interface components {
             /** Format: int32 */
             reviewCount: number;
             offers: components["schemas"]["PublicProfessionalOfferResponse"][];
+            languages: string[];
         };
         /** @description A service or package the professional does, with the shop's own price and duration. */
         PublicProfessionalOfferResponse: {
@@ -6258,6 +6453,7 @@ export interface components {
             rating: number;
             /** Format: int32 */
             reviewCount: number;
+            languages: string[];
         };
         /**
          * @description A published review as the public sees it (D-017): the author's first name and surname initial, never the full name
@@ -6285,6 +6481,8 @@ export interface components {
         /**
          * @description A published service: active, not archived, not hidden by the platform. `NameEn` may be null (D-070).
          *     `ProfessionalIds` are the professionals assigned to it (the booking wizard shows the active ones among them).
+         *     `SectionId` is the shop's own section (D-149; null shows it under «أخرى»). `ProfessionalDurations` are the
+         *     barbers who take their own time for it, others take `DurationMinutes`.
          */
         PublicServiceResponse: {
             /** Format: uuid */
@@ -6302,6 +6500,16 @@ export interface components {
             durationMinutes: number;
             onlineBookable: boolean;
             professionalIds: string[];
+            /** Format: uuid */
+            sectionId?: null | string;
+            professionalDurations?: null | components["schemas"]["ProfessionalDurationResponse"][];
+        };
+        /** @description A section as customers see it on the shop page and in the booking (D-149). */
+        PublicServiceSectionResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
         };
         /** @description Where a customer finds the shop: the confirmed point and the address, without who confirmed it. */
         PublicShopLocationResponse: {
@@ -6790,6 +6998,22 @@ export interface components {
             displayOrder: number;
             isActive: boolean;
         };
+        /** @description A section's names; the English one is optional (the Arabic one is shown instead). */
+        ServiceSectionRequest: {
+            nameAr: string;
+            nameEn: null | string;
+        };
+        /** @description One of the shop's sections, with how many of its (non-archived) services sit in it. */
+        ServiceSectionResponse: {
+            /** Format: uuid */
+            id: string;
+            nameAr: string;
+            nameEn: null | string;
+            /** Format: int32 */
+            displayOrder: number;
+            /** Format: int32 */
+            serviceCount: number;
+        };
         SessionResponse: {
             /** Format: uuid */
             id: string;
@@ -6856,6 +7080,7 @@ export interface components {
             createdAt: string;
             /** Format: uint32 */
             version: number;
+            languages: string[];
         };
         /** @description The barber's WhatsApp settings as the owner sees them (D-146): the number masked only, with no reveal. */
         ShopBarberWhatsAppResponse: {
@@ -6942,6 +7167,29 @@ export interface components {
             customerPhone?: null | string;
             postponement?: null | components["schemas"]["PostponementOfferResponse"];
         };
+        ShopBookingSettingsRequest: {
+            requireManualConfirmation: boolean;
+            /** Format: int32 */
+            slotStepMinutes: number;
+            /** Format: int32 */
+            minLeadTimeMinutes: number;
+            /** Format: int32 */
+            bookingHorizonDays: number;
+            /** Format: int32 */
+            bufferMinutes: number;
+        };
+        /** @description The shop's booking settings in force (its own, or the platform's where it has none). */
+        ShopBookingSettingsResponse: {
+            requireManualConfirmation: boolean;
+            /** Format: int32 */
+            slotStepMinutes: number;
+            /** Format: int32 */
+            minLeadTimeMinutes: number;
+            /** Format: int32 */
+            bookingHorizonDays: number;
+            /** Format: int32 */
+            bufferMinutes: number;
+        };
         /** @description Business days `From`…`To` (at most seven) with lanes per professional and their bookings (s-calendar). */
         ShopCalendarResponse: {
             /** Format: date */
@@ -6953,7 +7201,8 @@ export interface components {
             days: components["schemas"]["CalendarDayResponse"][];
         };
         /**
-         * @description Kind of business, shown on the public page and used by discovery filters (Phase 11).
+         * @description Kind of business. Fixed to a men's barbershop since D-149 (the platform is for men); the other values stay so older
+         *     rows and the contract read the same.
          * @enum {unknown}
          */
         ShopCategory: "Barbershop" | "Salon" | "Unisex";
@@ -7336,6 +7585,8 @@ export interface components {
             /** Format: uint32 */
             version: number;
             professionalIds: string[];
+            /** Format: uuid */
+            sectionId?: null | string;
         };
         /** @enum {unknown} */
         ShopStatus: "Draft" | "Active" | "Suspended" | null;
@@ -7731,7 +7982,10 @@ export interface components {
             /** Format: uint32 */
             version: number;
         };
-        /** @description Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop. */
+        /**
+         * @description Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop. `Languages`
+         *     left out keeps the barber's languages (D-149).
+         */
         UpdateProfessionalRequest: {
             nameAr: string;
             nameEn: string;
@@ -7742,17 +7996,22 @@ export interface components {
             bioEn: null | string;
             /** Format: uint32 */
             version: number;
+            languages?: null | string[];
         };
-        /** @description The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011). */
+        /**
+         * @description The owner's profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011). The English name is
+         *     optional (the Arabic one is used); `Languages` left out keeps them (D-149).
+         */
         UpdateShopBarberRequest: {
             nameAr: string;
-            nameEn: string;
+            nameEn: null | string;
             specialtyAr: null | string;
             specialtyEn: null | string;
             bioAr: null | string;
             bioEn: null | string;
             /** Format: uint32 */
             version: number;
+            languages?: null | string[];
         };
         UpdateShopPackageRequest: {
             nameAr: string;
@@ -7802,6 +8061,8 @@ export interface components {
             /** Format: uint32 */
             version: number;
             professionalIds?: null | string[];
+            /** Format: uuid */
+            sectionId?: null | string;
         };
         VerifyOtpRequest: {
             /** Format: uuid */
@@ -7827,7 +8088,8 @@ export interface components {
         };
         /**
          * @description One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day's
-         *     grid, and every free start that day.
+         *     grid, and every free start that day. `DurationMinutes` is how long this barber takes for it (D-149: barbers have
+         *     their own length per service).
          */
         WalkInProfessionalResponse: {
             /** Format: uuid */
@@ -7838,6 +8100,8 @@ export interface components {
             /** Format: date-time */
             nextFreeAt: null | string;
             starts: string[];
+            /** Format: int32 */
+            durationMinutes: number;
         };
         /**
          * @description A booking the shop records (D-035, D-147). `Channel``WalkIn` (the default): without `StartsAt` it
@@ -8400,6 +8664,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfessionalNextSlotsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPublicServiceSections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicServiceSectionResponse"][];
                 };
             };
             /** @description Not Found */
@@ -11178,6 +11473,81 @@ export interface operations {
             };
         };
     };
+    AdminGetShopBookingSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingSettingsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminUpdateShopBookingSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopBookingSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     AdminSetShopEditablePolicy: {
         parameters: {
             query?: never;
@@ -11782,6 +12152,77 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOwnBookingSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingSettingsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateOwnBookingSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShopBookingSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopBookingSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13125,6 +13566,359 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopServiceResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListOwnServiceSections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateOwnServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenameOwnServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteOwnServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    OrderOwnServiceSections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminListServiceSections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminCreateServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminRenameServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+                sectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceSectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminDeleteServiceSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+                sectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AdminOrderServiceSections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSectionResponse"][];
                 };
             };
             /** @description Bad Request */

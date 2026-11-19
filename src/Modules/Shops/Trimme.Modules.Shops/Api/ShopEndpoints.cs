@@ -146,6 +146,17 @@ internal static class ShopEndpoints
                 SendAdmin(new SetShopDemoCommand(shopId, request.IsDemo), dispatcher, ct)).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopDemo").WithSummary("Marks the shop as a demo, so its card and page say «تجريبي» (D-148; audited).")
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapGet("/{shopId:guid}/booking-settings", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetShopBookingSettingsQuery(shopId), ct) is { } settings ? TypedResults.Ok(settings) : ShopErrors.NotFound().ToProblem())
+            .RequirePermission(ShopsView)
+            .WithName("AdminGetShopBookingSettings").WithSummary("The shop's booking settings in force: its own, or the platform's where it has none (D-149).")
+            .Produces<ShopBookingSettingsResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapPut("/{shopId:guid}/booking-settings", async (Guid shopId, ShopBookingSettingsRequest request, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new UpdateShopBookingSettingsCommand(shopId, request), ct)).ToHttpResult())
+            .RequirePermission(ShopsEdit)
+            .WithName("AdminUpdateShopBookingSettings")
+            .WithSummary("Sets the shop's confirmation, start interval, minimum notice, furthest day and cleaning time (D-149). Audited.")
+            .Produces<ShopBookingSettingsResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         admin.MapPut("/{shopId:guid}/editable-policy", SetPolicy).RequirePermission(ShopsEdit)
             .WithName("AdminSetShopEditablePolicy").WithSummary("Sets which profile fields the shop may edit itself (audited).")
             .Produces<AdminShopDetailResponse>().ProducesProblem(StatusCodes.Status404NotFound);
@@ -218,6 +229,17 @@ internal static class ShopEndpoints
             .RequirePermission(ShopProfileEdit)
             .WithName("RemoveOwnShopGalleryImage").WithSummary("Removes one of the shop's gallery images, if the policy allows.")
             .Produces<ShopOwnProfileResponse>().ProducesProblem(StatusCodes.Status403Forbidden).ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapGet("/booking-settings", async (IDispatcher d, CancellationToken ct) =>
+                await d.Send(new GetOwnBookingSettingsQuery(), ct) is { } settings ? TypedResults.Ok(settings) : ShopErrors.NotFound().ToProblem())
+            .RequireUserType(UserTypes.ShopUser)
+            .WithName("GetOwnBookingSettings").WithSummary("The shop's booking settings in force: its own, or the platform's where it has none (D-149).")
+            .Produces<ShopBookingSettingsResponse>().ProducesProblem(StatusCodes.Status404NotFound);
+        shop.MapPut("/booking-settings", async (ShopBookingSettingsRequest request, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new UpdateOwnBookingSettingsCommand(request), ct)).ToHttpResult())
+            .RequirePermission(ShopProfileEdit)
+            .WithName("UpdateOwnBookingSettings")
+            .WithSummary("The owner sets confirmation, the start interval, the minimum notice, the furthest day and the cleaning time (D-149). Audited.")
+            .Produces<ShopBookingSettingsResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound);
         shop.MapPut("/location", SetOwnLocation).RequirePermission(ShopLocationEdit)
             .WithName("SetOwnShopLocation").WithSummary("Sets the shop's map point, if the admin policy opens the location to the shop.")
             .Produces<ShopOwnProfileResponse>().ProducesProblem(StatusCodes.Status403Forbidden);

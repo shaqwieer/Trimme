@@ -1743,3 +1743,43 @@ This refines D-126.
   - `bookings.reference` widened to `varchar(12)`;
   - the cutoff set to 0.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d148-customer-pages.md`. .NET: Release build 0 warnings; unit 480/480; architecture 69/69; integration 256/256. Web: 535/535; 88 routes within budget. E2E: everything passes but the one test skipped by design.
+
+## D-149 — The owner's dashboard: the shop's own sections, a barber's own length per service, languages and adding by mobile, the shop's own booking settings with a cleaning time, fixed shop type, service status wording, a 14-day horizon and the unavailable page for an expired shop — Accepted (Session 28, after Phase 17, at the user's request; slices 1–3)
+- **The request** (from the user: two screenshots of the client's section 6 and a pasted list of five owner-dashboard changes). The items, the answers and the slices are in `phases/after-17-d149-owner-settings-loyalty-plans.md`. Slices 4 (loyalty add-on) and 5 (plans and the WhatsApp allowance) follow on top of this one.
+- **The user's answers** (AskUserQuestion):
+  - sections are each shop's own (the owner adds, renames, orders and deletes them), and the search page's category filter goes;
+  - a package keeps the length the owner set, tiles show the standard length, and a barber's own length applies once the barber is chosen (each barber's own for «أي مختص»); prices stay the shop's;
+  - «الاحترافية» has no WhatsApp and «الاحترافية بلس» sends up to 500 a month (slice 5);
+  - half-year and yearly plans are hidden from new shops as admin data (slice 5).
+- **One migration for slices 1–3**, `OwnerSettings`, so they were built and committed together:
+  - new columns on shops (the booking overrides, `buffer_minutes`), professionals (`languages`), barber assignments (`duration_minutes`), bookings and postponement offers (`buffer_minutes`, `blocked_until`);
+  - existing bookings and offers get `blocked_until = ends_at`; the `during` column, the exclusion constraint, the two hold functions and the booking trigger are rebuilt on `[starts_at, blocked_until)`;
+  - each shop gets one section per platform category its non-archived services use (same names, platform order), and those services are placed in it;
+  - every shop becomes `Barbershop`; the platform's furthest day becomes 14.
+- **1. Service status (the owner's item 3).** The badge says the state («متوقفة» / «متاحة للحجز»), the button what it does («تفعيل الحجز» / «إيقاف الحجز»); the switch is gone. Packages use the same words.
+- **2. Shop type (item 4).** Fixed to a men's barbershop: the field is gone from the profile form, the API refuses any other category (`validation.invalid`), and the migration sets every shop. The JSON-LD type stays `HairSalon`: schema.org has no barbershop type.
+- **3. Furthest day and the date strip (6-1).** The platform default and every shop are 14 days. The public dates and both reschedule dates endpoints default to today through the shop's own furthest day, so the strip always follows the setting. The longest range per request went from 31 to 90 days (the longest a shop can set).
+- **4. An expired shop (6-4).** The API already hid it (`HiddenBySubscription`, warnings at 14, 7, 3 and 1 days). The shop page, its booking page, its barbers' pages and its QR link now answer «المحل غير متاح حالياً» instead of a page that still rendered.
+- **5. The shop's own booking settings (item 5).**
+  - Manual or automatic confirmation, the start-time interval (5, 10, 15, 20, 30 or 60 minutes), the minimum notice (0–1,440 minutes), the furthest day (1–90 days) and a cleaning time after each booking (0–60 minutes in steps of 5).
+  - The owner sets them on «إعدادات المحل» › «إعدادات الحجز» (`Shop.Profile.Edit`; barbers read them), the admin on the shop's «إعدادات الحجز» tab. Audited as `shop.booking_settings_changed`.
+  - A shop that has not set one takes the platform's value; the platform values are now called the defaults. The cancellation window, the review window and the reminder stay platform-wide.
+  - The platform's furthest day is now capped at 90 too, so a default never falls outside what a shop may save.
+  - **Cleaning time:** each booking stores its cleaning time and `blocked_until` (its end plus that time). The availability engine, the exclusion constraint and the postponement holds all use it, so the database itself refuses a booking that overlaps only inside another's cleaning time. A booking placed again takes the shop's current cleaning time.
+- **6. A barber's own length (item 2).**
+  - On the barber's page, each assigned service has «مدة … عند هذا الحلاق»: the standard length, or 5 to 480 minutes in steps of 5. The request sends `services: [{serviceId, durationMinutes}]`; the old `serviceIds` form still works and keeps the lengths.
+  - Slots for one barber use their length; «أي مختص» checks each barber's own; several services add up the barber's own lengths; a package keeps its set length and extras with it use the barber's. Walk-ins, reschedules, the reschedule options and adding a service at the visit follow. Handing a booking to a colleague whose longer length no longer fits answers `booking.professional_busy`.
+  - The booking wizard shows the chosen barber's own length on the summary and the end time, and a barber whose length differs says so on their card («٣٥ دقيقة»).
+- **7. Languages and adding by mobile (item 2).**
+  - Languages from a fixed list (ar, en, ur, hi, bn, tl, tr) on the admin's and the owner's barber forms, shown on the barber's public page («يتحدث: العربية، الأردية») and in its JSON-LD (`knowsLanguage`).
+  - The owner's add-barber form opens with «جوال الحلاق» (required: their WhatsApp and their sign-in, D-146). The English name is optional for the owner (the Arabic one is used); the admin's forms still require it.
+- **8. The shop's own sections (item 1).**
+  - The owner adds, renames, orders (up/down buttons, announced) and deletes sections on «الخدمات»; the admin does the same on the shop's services tab. At most 30, names up to 60 characters. Deleting a section keeps its services, which show under «أخرى».
+  - A service is placed in a section on its own form («القسم»; «بدون قسم» shows it under «أخرى»). The form sends the section on every save and sends the old platform category back unchanged, since the API clears a field left out.
+  - The shop page and the booking's service step take their tabs from `GET /public/shops/{slug}/service-sections` in the owner's order; the search page's category filter is gone (text search still finds services).
+  - The platform categories stay in the data and on the admin's categories page but no longer show anywhere public.
+  - The development seed gives each demo shop its sections the same way (only a shop that has none).
+- **Accepted beyond the brief** (the backend's notes, reviewed): the owner's empty English name; the 90-day range per request; saving booking settings changes the shop row's version (they sit on their own page, so no open profile form is affected).
+- **Also in this change:** the admin booking page's intervention buttons wrap on a phone; the admin shop page's bundle budget is 335 KB (it carries the two new forms; `next/dynamic` from the server page grew every route and was reverted).
+- **Left as they are:** the walk-in form does not show each barber's own length per barber (the API returns it); the admin's platform categories page still edits categories nothing public uses.
+- **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`. .NET: Release build 0 warnings; unit 483/483; architecture 69/69; integration 264/264. Web: 549/549; 89 routes within budget. E2E: the full run then the fixed specs (23/23).

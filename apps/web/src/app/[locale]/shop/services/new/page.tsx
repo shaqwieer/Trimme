@@ -21,8 +21,8 @@ export default async function NewShopServicePage({ params }: PageProps<'/[locale
       {async (me) => {
         if (!me.permissions.includes('Shop.Services.Manage')) return <PermissionDenied homeHref="/shop" />;
         const api = await getServerApi();
-        const [{ data: categories }, { data: professionals }] = await Promise.all([
-          api.GET('/api/v1/public/service-categories'),
+        const [{ data: sections }, { data: professionals }] = await Promise.all([
+          api.GET('/api/v1/shop/service-sections'),
           api.GET('/api/v1/shop/professionals'),
         ]);
         return (
@@ -30,7 +30,7 @@ export default async function NewShopServicePage({ params }: PageProps<'/[locale
             <Breadcrumb items={[{ label: t('back'), href: '/shop/services' }, { label: t('newTitle') }]} />
             <section className="rounded-card border border-border bg-surface p-4 shadow-e1 md:p-6">
               <ShopServiceEditor
-                categories={categories ?? []}
+                sections={sections ?? []}
                 professionals={(professionals ?? [])
                   .filter((pro) => pro.status === 'Active')
                   .map((pro) => ({ id: pro.id, name: localizedName(lang, pro.nameAr, pro.nameEn) }))}

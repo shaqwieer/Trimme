@@ -183,7 +183,8 @@ test.describe('shops, locations and professionals (R-SHP-01/02, R-PRO-01, R-NEG-
 
     const form = page.getByTestId('shop-profile-form');
     await expect(form.getByLabel('Shop name in Arabic')).toBeDisabled();
-    await expect(form.getByLabel('Shop type')).toBeDisabled();
+    // The shop type is fixed to a men's barbershop (D-149): no field.
+    await expect(form.getByLabel('Shop type')).toHaveCount(0);
     await expect(form.getByText('Locked by the admin').first()).toBeVisible();
 
     const description = form.getByLabel(/Description in English/);

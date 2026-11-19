@@ -38,11 +38,12 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
   const { locale: raw, slug } = await params;
   const locale = asLocale(raw);
   const shop = await getPublicShop(slug);
-  if (!shop) notFound();
+  // A shop its subscription hides (expired, suspended or none) shows «المحل غير متاح حالياً» (D-149, 6-4).
+  if (!shop || !shop.listedInDiscovery) notFound();
 
   const api = await getPublicApi();
   const path = { params: { path: { slug } } };
-  const [services, packages, professionals, me, t, categories] = await Promise.all([
+  const [services, packages, professionals, me, t, sections] = await Promise.all([
     api.GET('/api/v1/public/shops/{slug}/services', path).then((r) => dataOrNull(r, 'services') ?? []),
     api.GET('/api/v1/public/shops/{slug}/packages', path).then((r) => dataOrNull(r, 'packages') ?? []),
     api
@@ -50,7 +51,9 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
       .then((r) => dataOrNull(r, 'professionals') ?? []),
     getMe(),
     getTranslations({ locale, namespace: 'booking' }),
-    api.GET('/api/v1/public/service-categories').then((r) => dataOrNull(r, 'categories') ?? []),
+    api
+      .GET('/api/v1/public/shops/{slug}/service-sections', path)
+      .then((r) => dataOrNull(r, 'service sections') ?? []),
   ]);
 
   const offers: WizardOffer[] = [
@@ -67,7 +70,8 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
         currency: s.currency,
         durationMinutes: s.durationMinutes,
         professionalIds: s.professionalIds,
-        categoryId: s.categoryId ?? null,
+        sectionId: s.sectionId ?? null,
+        professionalDurations: s.professionalDurations ?? [],
       })),
     ...packages.map((p) => ({
       kind: 'package' as const,
@@ -125,10 +129,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
             }))}
             viewer={viewer}
             rewards={rewards}
-            categories={categories
-              .filter((c) => c.isActive)
-              .sort((a, b) => a.displayOrder - b.displayOrder)
-              .map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn }))}
+            sections={sections.map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn ?? null }))}
           />
         </Suspense>
       </QueryProvider>

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { type CatalogCategory, ServiceCatalog } from '@/components/booking/ServiceCatalog';
+import { type CatalogSection, ServiceCatalog } from '@/components/booking/ServiceCatalog';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button, IconButton } from '@/components/ui/Button';
 import { BookingProgress, DateStrip, HourMinutePicker } from '@/components/ui/booking';
@@ -22,6 +22,7 @@ import {
   ANY_PROFESSIONAL,
   blockingItem,
   currentStep,
+  durationFor,
   eligibleProfessionals,
   firstIncompleteStep,
   keyFor,
@@ -144,15 +145,15 @@ export function BookingWizard({
   professionals,
   viewer,
   rewards = [],
-  categories = [],
+  sections = [],
 }: {
   shop: WizardShop;
   offers: WizardOffer[];
   professionals: WizardPro[];
   viewer: WizardViewer;
   rewards?: WizardReward[];
-  /** The platform's service categories, in order: the service step's tabs (D-148). */
-  categories?: CatalogCategory[];
+  /** The shop's own sections, in the owner's order: the service step's tabs (D-148, D-149). */
+  sections?: CatalogSection[];
 }) {
   const t = useTranslations('booking');
   const tl = useTranslations('loyalty.wizard');
@@ -305,9 +306,11 @@ export function BookingWizard({
       : formatLocalDate(day, locale, { weekday: 'long', day: 'numeric', month: 'long' });
   const dateLabel = date ? dayLabel(date) : '';
   const timeLabel = startsAt ? formatTime(startsAt, locale, shop.timeZone) : '';
+  // The chosen barber's own lengths (D-149); the standard ones for «أي مختص».
+  const duration = durationFor(items, pro);
   const itemsLabel =
     items.length > 1
-      ? `${t('selectedCount', { count: items.length })} — ${formatDurationMinutes(offer!.durationMinutes, locale)}`
+      ? `${t('selectedCount', { count: items.length })} — ${formatDurationMinutes(duration, locale)}`
       : offerName;
 
   const canContinue =
@@ -491,7 +494,7 @@ export function BookingWizard({
               offers={offersFor(offers, pro)}
               value={items}
               onToggle={toggle}
-              categories={categories}
+              sections={sections}
             />
             {catalogNote && (
               <p role="status" className="rounded-card bg-warning-50 p-3 text-label text-warning-700">
@@ -547,6 +550,14 @@ export function BookingWizard({
                 {eligible.map((p) => {
                   const name = localizedName(locale, p.nameAr, p.nameEn);
                   const specialty = localizedName(locale, p.specialtyAr ?? '', p.specialtyEn) || null;
+                  // A barber whose own length differs says it on their card (D-149: «٤٥ دقيقة»).
+                  const own = durationFor(items, p.id);
+                  const detail = [
+                    specialty,
+                    own !== durationFor(items, ANY_PROFESSIONAL) ? formatDurationMinutes(own, locale) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' — ');
                   return (
                     <ProfessionalOption
                       key={p.id}
@@ -555,7 +566,7 @@ export function BookingWizard({
                       checked={pro === p.id}
                       onChange={() => go({ ...selection, pro: p.id }, 'professional', 'replace')}
                       displayName={name}
-                      specialty={specialty ?? undefined}
+                      specialty={detail || undefined}
                       photoUrl={p.avatarUrl}
                       rating={p.reviewCount > 0 ? p.rating : null}
                       reviewCount={p.reviewCount}
@@ -639,7 +650,7 @@ export function BookingWizard({
                         <Icon name="clock" className="size-4 shrink-0" />
                         {t('durationNote', {
                           service: offerName,
-                          duration: formatDurationMinutes(offer.durationMinutes, locale),
+                          duration: formatDurationMinutes(duration, locale),
                         })}
                       </p>
                     )}
@@ -715,8 +726,7 @@ export function BookingWizard({
                 value={
                   startsAt ? (
                     <span>
-                      {timeLabel} —{' '}
-                      {formatTime(endOf(startsAt, offer.durationMinutes), locale, shop.timeZone)}
+                      {timeLabel} — {formatTime(endOf(startsAt, duration), locale, shop.timeZone)}
                     </span>
                   ) : (
                     '…'
@@ -726,7 +736,7 @@ export function BookingWizard({
               <SummaryRow
                 icon="info"
                 label={t('summary.duration')}
-                value={formatDurationMinutes(offer.durationMinutes, locale)}
+                value={formatDurationMinutes(duration, locale)}
               />
             </dl>
             <div className="flex items-center justify-between rounded-card bg-bg-subtle px-4 py-3">
@@ -843,19 +853,19 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 }
 
 /**
- * The service step (D-125, D-148): the shop's services in category tabs, packages last, as tiles; several services and
+ * The service step (D-125, D-148): the shop's services in its own section tabs, packages last, as tiles; several services and
  * a package can be booked together. The tabs replace D-130's «كل الخدمات».
  */
 function ServiceStep({
   offers,
   value,
   onToggle,
-  categories,
+  sections,
 }: {
   offers: WizardOffer[];
   value: WizardOffer[];
   onToggle: (offer: WizardOffer) => void;
-  categories: CatalogCategory[];
+  sections: CatalogSection[];
 }) {
   const t = useTranslations('booking');
   if (offers.length === 0) {
@@ -864,7 +874,7 @@ function ServiceStep({
   return (
     <ServiceCatalog
       items={offers}
-      categories={categories}
+      sections={sections}
       selected={value}
       choice={({ item, name, description, badge, checked }) => (
         <ServiceTile

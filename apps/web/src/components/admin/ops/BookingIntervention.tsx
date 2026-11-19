@@ -137,8 +137,10 @@ export function BookingIntervention({
             size="md"
             variant={status === 'CancelledByShop' ? 'danger' : 'secondary'}
             onClick={() => open(status)}
+            className="max-w-full py-2"
           >
-            {tActions(status)}
+            {/* A long action («… over a quarter hour late») wraps on a phone instead of widening the page. */}
+            <span className="whitespace-normal">{tActions(status)}</span>
           </Button>
         ))}
         {canReschedule && (

@@ -776,6 +776,50 @@
         }
       }
     },
+    "/api/v1/public/shops/{slug}/service-sections": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "The shop\u0027s own sections of its services, in the shop\u0027s order (D-149): the tabs of the shop page and the booking.",
+        "operationId": "ListPublicServiceSections",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicServiceSectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/shops/{shopId}/services": {
       "post": {
         "tags": [
@@ -4427,6 +4471,108 @@
         }
       }
     },
+    "/api/v1/admin/shops/{shopId}/booking-settings": {
+      "get": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "The shop\u0027s booking settings in force: its own, or the platform\u0027s where it has none (D-149).",
+        "operationId": "AdminGetShopBookingSettings",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin: shops"
+        ],
+        "summary": "Sets the shop\u0027s confirmation, start interval, minimum notice, furthest day and cleaning time (D-149). Audited.",
+        "operationId": "AdminUpdateShopBookingSettings",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopBookingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/shops/{shopId}/editable-policy": {
       "put": {
         "tags": [
@@ -5208,6 +5354,86 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/booking-settings": {
+      "get": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The shop\u0027s booking settings in force: its own, or the platform\u0027s where it has none (D-149).",
+        "operationId": "GetOwnBookingSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "The owner sets confirmation, the start interval, the minimum notice, the furthest day and the cleaning time (D-149). Audited.",
+        "operationId": "UpdateOwnBookingSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopBookingSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopBookingSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7072,6 +7298,491 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ShopServiceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/service-sections": {
+      "get": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "The shop\u0027s sections in order, with how many services sit in each.",
+        "operationId": "ListOwnServiceSections",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Adds a section at the end (audited).",
+        "operationId": "CreateOwnServiceSection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/service-sections/{sectionId}": {
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Renames a section (audited).",
+        "operationId": "RenameOwnServiceSection",
+        "parameters": [
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Deletes a section; its services stay, without a section (audited).",
+        "operationId": "DeleteOwnServiceSection",
+        "parameters": [
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shop/service-sections/order": {
+      "put": {
+        "tags": [
+          "Shop: services"
+        ],
+        "summary": "Sets the order from the full list of the shop\u0027s sections.",
+        "operationId": "OrderOwnServiceSections",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/service-sections": {
+      "get": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "A shop\u0027s sections in order, with how many services sit in each.",
+        "operationId": "AdminListServiceSections",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Adds a section to a shop (audited).",
+        "operationId": "AdminCreateServiceSection",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/service-sections/{sectionId}": {
+      "put": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Renames a shop\u0027s section (audited).",
+        "operationId": "AdminRenameServiceSection",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceSectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Deletes a shop\u0027s section; its services stay, without a section (audited).",
+        "operationId": "AdminDeleteServiceSection",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/service-sections/order": {
+      "put": {
+        "tags": [
+          "Admin: services"
+        ],
+        "summary": "Sets the order of a shop\u0027s sections from their full list.",
+        "operationId": "AdminOrderServiceSections",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceSectionResponse"
                   }
                 }
               }
@@ -15511,7 +16222,8 @@
           "whatsApp",
           "createdAt",
           "updatedAt",
-          "version"
+          "version",
+          "languages"
         ],
         "type": "object",
         "properties": {
@@ -15591,6 +16303,12 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A professional as the platform admin edits it. Guid AdminProfessionalResponse.ShopId is read-only: it is fixed at creation and no\nrequest can change it (R-NEG-01)."
@@ -16038,6 +16756,13 @@
             "type": "integer",
             "format": "uint32",
             "default": 0
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "An admin\u0027s service for a shop (D-127): the shop\u0027s own name, price and duration, and the shop\u0027s barbers who do it.\nOn an edit, \u0060ProfessionalIds\u0060 null keeps them and \u0060Version\u0060 is the one read."
@@ -16152,6 +16877,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -17217,6 +17949,27 @@
             "$ref": "#/components/schemas/ReportCountsResponse"
           }
         }
+      },
+      "BarberServiceItem": {
+        "required": [
+          "serviceId",
+          "durationMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "serviceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "durationMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A service a barber does, and their own length for it (D-149); \u0060null\u0060 is the service\u0027s."
       },
       "BillingIntervalUnit": {
         "enum": [
@@ -18347,6 +19100,15 @@
           },
           "notificationsEnabled": {
             "type": "boolean"
+          },
+          "languages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "The one shop is chosen here, at creation, and can never be changed afterwards (D-011)."
@@ -18396,7 +19158,10 @@
             "type": "string"
           },
           "nameEn": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "specialtyAr": {
             "type": [
@@ -18427,9 +19192,18 @@
           },
           "notificationsEnabled": {
             "type": "boolean"
+          },
+          "languages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "description": "The owner adds a barber to their own shop (D-146): no shop field (it comes from the claims) and no page address (made\nfrom the English name). The mobile is required: it is the barber\u0027s WhatsApp number and their sign-in."
+        "description": "The owner adds a barber to their own shop by their mobile (D-146, D-149): no shop field (it comes from the claims) and\nno page address (made from the English name). The mobile is required: it is the barber\u0027s WhatsApp number and their\nsign-in. The English name is optional (the Arabic one is used); \u0060Languages\u0060 are codes from the fixed list."
       },
       "CreateShopPackageRequest": {
         "required": [
@@ -18569,6 +19343,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "A new service of the signed-in shop. Price in SAR (\u2264 2 decimals); duration a multiple of 5 minutes.\n\u0060ProfessionalIds\u0060 are the shop\u0027s own barbers who do it (D-137); null or empty assigns none."
@@ -21566,6 +22347,24 @@
           }
         }
       },
+      "ProfessionalDurationResponse": {
+        "required": [
+          "professionalId",
+          "durationMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "professionalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A barber\u0027s own length for a service (D-149)."
+      },
       "ProfessionalHoursResponse": {
         "required": [
           "professionalId",
@@ -21753,6 +22552,13 @@
           },
           "assigned": {
             "type": "boolean"
+          },
+          "ownDurationMinutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -21763,13 +22569,26 @@
         "type": "object",
         "properties": {
           "serviceIds": {
-            "type": "array",
+            "type": [
+              "null",
+              "array"
+            ],
             "items": {
               "type": "string",
               "format": "uuid"
             }
+          },
+          "services": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/BarberServiceItem"
+            }
           }
-        }
+        },
+        "description": "The services a barber does. \u0060Services\u0060 also sets the barber\u0027s own length for each (D-149: null is the service\u0027s\nstandard length) and wins over \u0060ServiceIds\u0060, which keeps the lengths of the services the barber keeps."
       },
       "ProfessionalServicesResponse": {
         "required": [
@@ -21794,7 +22613,7 @@
             }
           }
         },
-        "description": "The professional\u0027s own shop\u0027s services (with that shop\u0027s prices) and which are assigned (DV-S04)."
+        "description": "The professional\u0027s own shop\u0027s services (with that shop\u0027s prices) and which are assigned (DV-S04). On each option,\n\u0060DurationMinutes\u0060 is the service\u0027s standard length and \u0060OwnDurationMinutes\u0060 this barber\u0027s own, when they\nset one (D-149)."
       },
       "ProfessionalStatus": {
         "enum": [
@@ -21928,7 +22747,8 @@
           "shopNameEn",
           "rating",
           "reviewCount",
-          "offers"
+          "offers",
+          "languages"
         ],
         "type": "object",
         "properties": {
@@ -22001,6 +22821,12 @@
             "items": {
               "$ref": "#/components/schemas/PublicProfessionalOfferResponse"
             }
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A professional\u0027s public page (\u0060/shops/{slug}/professionals/{proSlug}\u0060): profile, their shop, rating and the\npublished services they do. Never carries a phone or WhatsApp number (R-PRO-02). Cached (D-093)."
@@ -22059,7 +22885,8 @@
           "bioEn",
           "avatarUrl",
           "rating",
-          "reviewCount"
+          "reviewCount",
+          "languages"
         ],
         "type": "object",
         "properties": {
@@ -22113,6 +22940,12 @@
           "reviewCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A professional on the public shop page, with their published rating (zero reviews = no rating). Never carries a phone\nor WhatsApp number (R-PRO-02)."
@@ -22250,9 +23083,49 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "professionalDurations": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProfessionalDurationResponse"
+            }
           }
         },
-        "description": "A published service: active, not archived, not hidden by the platform. \u0060NameEn\u0060 may be null (D-070).\n\u0060ProfessionalIds\u0060 are the professionals assigned to it (the booking wizard shows the active ones among them)."
+        "description": "A published service: active, not archived, not hidden by the platform. \u0060NameEn\u0060 may be null (D-070).\n\u0060ProfessionalIds\u0060 are the professionals assigned to it (the booking wizard shows the active ones among them).\n\u0060SectionId\u0060 is the shop\u0027s own section (D-149; null shows it under \u00AB\u0623\u062E\u0631\u0649\u00BB). \u0060ProfessionalDurations\u0060 are the\nbarbers who take their own time for it, others take \u0060DurationMinutes\u0060."
+      },
+      "PublicServiceSectionResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A section as customers see it on the shop page and in the booking (D-149)."
       },
       "PublicShopLocationResponse": {
         "required": [
@@ -23709,6 +24582,59 @@
           }
         }
       },
+      "ServiceSectionRequest": {
+        "required": [
+          "nameAr",
+          "nameEn"
+        ],
+        "type": "object",
+        "properties": {
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A section\u0027s names; the English one is optional (the Arabic one is shown instead)."
+      },
+      "ServiceSectionResponse": {
+        "required": [
+          "id",
+          "nameAr",
+          "nameEn",
+          "displayOrder",
+          "serviceCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serviceCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "One of the shop\u0027s sections, with how many of its (non-archived) services sit in it."
+      },
       "SessionResponse": {
         "required": [
           "id",
@@ -23844,7 +24770,8 @@
           "status",
           "whatsApp",
           "createdAt",
-          "version"
+          "version",
+          "languages"
         ],
         "type": "object",
         "properties": {
@@ -23904,6 +24831,12 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "description": "A barber as the shop\u0027s owner manages them (D-146): profile, photo, status and the masked WhatsApp number, which is also\ntheir sign-in. Owner only (\u0060Shop.Barbers.Manage\u0060); the shop-wide list a barber reads stays without contact data."
@@ -24184,6 +25117,69 @@
         },
         "description": "            A booking as the shop sees it: the customer\u0027s name, never a phone number (R-NEG-04). \u0060AllowedTransitions\u0060 is\n            what the UI may offer (DV-S08); \u0060ViaQr\u0060 marks an online booking credited to a QR scan (the design\u0027s \u00AB\u0631\u0645\u0632 QR\u00BB source);\n            \u0060OutsideSchedule\u0060 flags an active booking that no longer fits the professional\u0027s\n            hours, breaks, time off or closures (DV-S22) \u2014 nothing is cancelled automatically. \u0060Visit\u0060 says whether an\n            online booking\u0027s customer is new or returning, for the owner only; it is null for the desk and for walk-ins (D-135).\n            D-147: ActualStartAt (when \u00AB\u0648\u0635\u0644\u00BB was pressed, or a walk-in started at once) and ActualEndAt (when\n\u00AB\u0627\u0646\u062A\u0647\u062A \u0627\u0644\u062E\u062F\u0645\u0629\u00BB was pressed); Overdue (red: open 15 minutes past its end); CancelledLate (\u00AB\u0625\u0644\u063A\u0627\u0621 \u0645\u062A\u0623\u062E\u0631\u00BB);\nClosedLate (\u00AB\u0627\u0646\u0642\u0641\u0644 \u0645\u062A\u0623\u062E\u0631\u00BB) and ClosedBy (the name of who closed it)."
       },
+      "ShopBookingSettingsRequest": {
+        "required": [
+          "requireManualConfirmation",
+          "slotStepMinutes",
+          "minLeadTimeMinutes",
+          "bookingHorizonDays",
+          "bufferMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "requireManualConfirmation": {
+            "type": "boolean"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingHorizonDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bufferMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ShopBookingSettingsResponse": {
+        "required": [
+          "requireManualConfirmation",
+          "slotStepMinutes",
+          "minLeadTimeMinutes",
+          "bookingHorizonDays",
+          "bufferMinutes"
+        ],
+        "type": "object",
+        "properties": {
+          "requireManualConfirmation": {
+            "type": "boolean"
+          },
+          "slotStepMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minLeadTimeMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bookingHorizonDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bufferMinutes": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The shop\u0027s booking settings in force (its own, or the platform\u0027s where it has none)."
+      },
       "ShopCalendarResponse": {
         "required": [
           "from",
@@ -24226,7 +25222,7 @@
           "Salon",
           "Unisex"
         ],
-        "description": "Kind of business, shown on the public page and used by discovery filters (Phase 11)."
+        "description": "Kind of business. Fixed to a men\u0027s barbershop since D-149 (the platform is for men); the other values stay so older\nrows and the contract read the same."
       },
       "ShopCounts": {
         "required": [
@@ -25458,6 +26454,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "A shop\u0027s own service as the shop manages it. Shop-facing contract: no customer data. \u0060NameEn\u0060 may be null;\nclients show the Arabic name instead (D-070)."
@@ -26850,9 +27853,18 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "languages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "description": "Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop."
+        "description": "Profile edit. There is deliberately no shop field: a professional cannot be moved to another shop. \u0060Languages\u0060\nleft out keeps the barber\u0027s languages (D-149)."
       },
       "UpdateShopBarberRequest": {
         "required": [
@@ -26870,7 +27882,10 @@
             "type": "string"
           },
           "nameEn": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "specialtyAr": {
             "type": [
@@ -26899,9 +27914,18 @@
           "version": {
             "type": "integer",
             "format": "uint32"
+          },
+          "languages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "description": "The owner\u0027s profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011)."
+        "description": "The owner\u0027s profile edit (D-146). No shop field: a barber cannot be moved to another shop (D-011). The English name is\noptional (the Arabic one is used); \u0060Languages\u0060 left out keeps them (D-149)."
       },
       "UpdateShopPackageRequest": {
         "required": [
@@ -27084,6 +28108,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "sectionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "Edit of the shop\u0027s own service; a stale \u0060Version\u0060 answers 409. \u0060ProfessionalIds\u0060 null keeps who does it;\na list makes exactly those of the shop\u0027s own barbers do it (D-137)."
@@ -27162,7 +28193,8 @@
           "nameEn",
           "freeNow",
           "nextFreeAt",
-          "starts"
+          "starts",
+          "durationMinutes"
         ],
         "type": "object",
         "properties": {
@@ -27192,9 +28224,13 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "format": "int32"
           }
         },
-        "description": "One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day\u0027s\ngrid, and every free start that day."
+        "description": "One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day\u0027s\ngrid, and every free start that day. \u0060DurationMinutes\u0060 is how long this barber takes for it (D-149: barbers have\ntheir own length per service)."
       },
       "WalkInRequest": {
         "required": [

@@ -136,7 +136,7 @@ internal sealed class ConflictFinder(IBookedTimeReader bookings, IPlatformSettin
     /// <summary>Every occurrence of the break within the booking horizon.</summary>
     public async Task<IReadOnlyList<InstantRange>> BreakRangesAsync(ShopScope scope, BreakRule rule, CancellationToken cancellationToken)
     {
-        var horizon = (await settings.GetAsync(cancellationToken)).BookingHorizonDays;
+        var horizon = scope.Shop.BookingRules(await settings.GetAsync(cancellationToken)).BookingHorizonDays;
         return
         [
             .. Enumerable.Range(0, horizon).Select(scope.Today.AddDays).Where(rule.AppliesOn)

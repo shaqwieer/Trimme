@@ -23,9 +23,9 @@ export default async function ShopServicePage({ params }: PageProps<'/[locale]/s
       {async (me) => {
         if (!me.permissions.includes('Shop.Services.Manage')) return <PermissionDenied homeHref="/shop" />;
         const api = await getServerApi();
-        const [{ data: service }, { data: categories }, { data: professionals }] = await Promise.all([
+        const [{ data: service }, { data: sections }, { data: professionals }] = await Promise.all([
           api.GET('/api/v1/shop/services/{serviceId}', { params: { path: { serviceId } } }),
-          api.GET('/api/v1/public/service-categories'),
+          api.GET('/api/v1/shop/service-sections'),
           api.GET('/api/v1/shop/professionals'),
         ]);
         if (!service) return <EmptyState icon="tag" title={t('empty.title')} />;
@@ -50,7 +50,7 @@ export default async function ShopServicePage({ params }: PageProps<'/[locale]/s
               ) : (
                 <ShopServiceEditor
                   service={service}
-                  categories={categories ?? []}
+                  sections={sections ?? []}
                   // A disabled barber who still does it stays listed, so a save does not take them off unnoticed.
                   professionals={(professionals ?? [])
                     .filter((pro) => pro.status === 'Active' || service.professionalIds.includes(pro.id))

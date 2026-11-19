@@ -60,6 +60,8 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         ["GET /api/v1/shop/services/{serviceId:guid}"] = "one of the shop's services",
         ["GET /api/v1/shop/packages/"] = "the shop's packages",
         ["GET /api/v1/shop/packages/{packageId:guid}"] = "one of the shop's packages",
+        ["GET /api/v1/shop/service-sections/"] = "the shop's sections of its services, names and order (D-149)",
+        ["GET /api/v1/shop/booking-settings"] = "the shop's booking rules in force (D-149); only the owner changes them",
         ["GET /api/v1/shop/loyalty"] = "the loyalty programme's terms and totals, no customer",
 
         // The account's own.

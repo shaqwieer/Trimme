@@ -28,7 +28,8 @@ internal sealed record CreateShopServiceCommand(
     decimal Price,
     int DurationMinutes,
     bool OnlineBookable,
-    IReadOnlyList<Guid>? ProfessionalIds = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
+    IReadOnlyList<Guid>? ProfessionalIds = null,
+    Guid? SectionId = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
 
 internal sealed record UpdateShopServiceCommand(
     Guid ServiceId,
@@ -41,7 +42,8 @@ internal sealed record UpdateShopServiceCommand(
     int DurationMinutes,
     bool OnlineBookable,
     uint Version,
-    IReadOnlyList<Guid>? ProfessionalIds = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
+    IReadOnlyList<Guid>? ProfessionalIds = null,
+    Guid? SectionId = null) : ICommand<Result<ShopServiceResponse>>, ICatalogTextFields;
 
 internal enum CatalogStateChange
 {
@@ -197,6 +199,12 @@ internal sealed class CreateShopServiceHandler(
             return category.Error;
         }
 
+        var section = await ServiceSections.ResolveAsync(db, shopId, command.SectionId, cancellationToken);
+        if (section.IsFailure)
+        {
+            return section.Error;
+        }
+
         var now = clock.GetUtcNow();
         var created = ShopService.Create(
             EntityId.New<ShopServiceId>(), shopId, CatalogMapping.Text(command), category.Value, command.Price, command.DurationMinutes,
@@ -206,6 +214,7 @@ internal sealed class CreateShopServiceHandler(
             return created.Error;
         }
 
+        created.Value.PlaceIn(section.Value, now);
         db.Add(created.Value);
         // The owner picks who does it (D-137): the shop's own barbers only, as for the admin (D-127).
         var assigned = await ServiceChanges.AssignAsync(db, professionals, created.Value, command.ProfessionalIds ?? [], now, cancellationToken);
@@ -238,6 +247,12 @@ internal sealed class UpdateShopServiceHandler(
             return category.Error;
         }
 
+        var section = await ServiceSections.ResolveAsync(db, service.ShopId, command.SectionId, cancellationToken);
+        if (section.IsFailure)
+        {
+            return section.Error;
+        }
+
         // Optimistic concurrency: a stale version makes the save fail with 409.
         db.Entry(service).Property(s => s.Version).OriginalValue = command.Version;
         var now = clock.GetUtcNow();
@@ -246,6 +261,8 @@ internal sealed class UpdateShopServiceHandler(
         {
             return updated.Error;
         }
+
+        service.PlaceIn(section.Value, now);
 
         if (command.ProfessionalIds is { } professionalIds)
         {

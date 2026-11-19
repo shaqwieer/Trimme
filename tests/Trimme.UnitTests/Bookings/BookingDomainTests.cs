@@ -351,4 +351,36 @@ public sealed class BookingDomainTests
         booking.ProfessionalChangedAt.ShouldBeNull();
         booking.CustomerCanChange(Now, cutoffMinutes: 120).ShouldBeFalse();
     }
+
+    [Fact]
+    public void TheCleaningTime_FollowsTheEnd_ThroughEveryChange()
+    {
+        // D-149: a booking holds its barber until its end plus the shop's cleaning time at booking time.
+        var booking = Booking.CreateOnline(
+            new BookingId(Guid.CreateVersion7()), Shop, Customer, "نورة", Faisal, Haircut(), Start, false, null, Now, bufferMinutes: 10);
+        booking.BufferMinutes.ShouldBe(10);
+        booking.EndsAt.ShouldBe(Start.AddMinutes(30));
+        booking.BlockedUntil.ShouldBe(Start.AddMinutes(40));
+
+        // Another barber with their own length: the booking takes it, the cleaning time follows.
+        var omar = new BookedProfessional(new ProfessionalId(Guid.CreateVersion7()), "عمر", "Omar");
+        booking.Reschedule(Start.AddHours(1), omar, ShopUser, Now, cutoffMinutes: null, length: new BookedLength(45, new Dictionary<Guid, int>())).IsSuccess.ShouldBeTrue();
+        booking.DurationMinutes.ShouldBe(45);
+        booking.EndsAt.ShouldBe(Start.AddHours(1).AddMinutes(45));
+        booking.BlockedUntil.ShouldBe(Start.AddHours(1).AddMinutes(55));
+
+        // Back to the first barber at the same time, for their own 30 minutes.
+        booking.ChangeProfessional(Faisal, ShopUser, Now, new BookedLength(30, new Dictionary<Guid, int>())).IsSuccess.ShouldBeTrue();
+        booking.EndsAt.ShouldBe(Start.AddHours(1).AddMinutes(30));
+        booking.BlockedUntil.ShouldBe(Start.AddHours(1).AddMinutes(40));
+
+        // The shop lowered its cleaning time since: the booking placed again takes the time its new place was checked with.
+        booking.Reschedule(Start.AddHours(2), Faisal, ShopUser, Now, cutoffMinutes: null, bufferMinutes: 0).IsSuccess.ShouldBeTrue();
+        booking.BufferMinutes.ShouldBe(0);
+        booking.BlockedUntil.ShouldBe(booking.EndsAt);
+
+        // A walk-in without cleaning time holds the barber until its end.
+        var walkIn = Booking.CreateWalkIn(new BookingId(Guid.CreateVersion7()), Shop, "زائر", Faisal, Haircut(), Start, startsNow: false, null, ShopUser, Now);
+        walkIn.BlockedUntil.ShouldBe(walkIn.EndsAt);
+    }
 }

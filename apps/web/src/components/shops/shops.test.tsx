@@ -30,7 +30,8 @@ describe('ShopProfileEditor (R-SD-09, DV-S16)', () => {
     renderWithIntl(<ShopProfileEditor mode={{ kind: 'shop' }} profile={profile} canEdit />);
 
     expect(screen.getByLabelText('اسم المحل بالعربية')).toBeDisabled();
-    expect(screen.getByLabelText('نوع المحل')).toBeDisabled();
+    // The shop type is fixed to «حلاقة رجالية» (D-149): no field to change it.
+    expect(screen.queryByLabelText('نوع المحل')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/الوصف بالعربية/)).toBeEnabled();
     expect(screen.getByLabelText(/رقم هاتف المحل/)).toBeEnabled();
     expect(screen.getAllByText('مقفل من الإدارة').length).toBeGreaterThanOrEqual(3);
@@ -43,7 +44,7 @@ describe('ShopProfileEditor (R-SD-09, DV-S16)', () => {
     });
 
     expect(screen.getByLabelText('Shop name in Arabic')).toBeEnabled();
-    expect(screen.getByLabelText('Shop type')).toBeEnabled();
+    expect(screen.queryByLabelText('Shop type')).not.toBeInTheDocument(); // fixed to Barbershop (D-149)
     expect(screen.getByRole('switch', { name: 'Verified shop' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.queryByText('Locked by the admin')).not.toBeInTheDocument();
   });

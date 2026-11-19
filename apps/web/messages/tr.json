@@ -574,7 +574,8 @@
     "booking_postponement_gone": "Erteleme teklifi artık geçerli değil.",
     "booking_postpone_same_time": "Bu, randevunun kendi saati.",
     "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler.",
-    "booking_service_in_package": "Bu hizmet seçilen pakette zaten var."
+    "booking_service_in_package": "Bu hizmet seçilen pakette zaten var.",
+    "service_section_not_found": "Bu bölüm artık yok. Sayfayı yenileyin."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -652,13 +653,15 @@
       "services": "Hizmetler",
       "subscription": "Abonelik",
       "loyalty": "Sadakat",
-      "whatsapp": "WhatsApp mesajları"
+      "whatsapp": "WhatsApp mesajları",
+      "booking": "Randevu ayarları"
     },
     "sections": {
       "profile": "Salon profili",
       "images": "Salon görselleri",
       "policy": "Salon düzenleme yetkileri",
-      "location": "Salonun haritadaki konumu"
+      "location": "Salonun haritadaki konumu",
+      "booking": "Randevu ayarları"
     },
     "policy": {
       "title": "Salonun kendisinin düzenlediği alanlar",
@@ -680,7 +683,8 @@
       "emptyBody": "Müşterilerin randevu alabilmesi için ilk hizmeti ekleyin.",
       "packagesTitle": "Salonun paketleri",
       "noPackages": "Henüz paket yok.",
-      "addPackage": "Paket ekle"
+      "addPackage": "Paket ekle",
+      "sectionsTitle": "Hizmet bölümleri"
     },
     "whatsapp": {
       "title": "Bu salonun WhatsApp mesajları",
@@ -853,7 +857,10 @@
       "whatsapp": "Uzmanın WhatsApp numarası",
       "whatsappHelper": "Randevu ve hatırlatma bildirimlerini alır. Müşterilere veya diğer salonlara asla gösterilmez.",
       "notifications": "Bu uzmana WhatsApp bildirimleri gönder",
-      "submit": "Uzman ekle"
+      "submit": "Uzman ekle",
+      "languages": "Konuştuğu diller",
+      "languagesHelper": "Berberin sayfasında görünür; müşteri kendi dilini konuşan berberi seçebilir.",
+      "nameEnHelper": "İsteğe bağlı — boş bırakılırsa Arapça ad gösterilir"
     },
     "detail": {
       "back": "Tüm uzmanlar",
@@ -909,13 +916,15 @@
     "tabs": {
       "label": "Ayar bölümleri",
       "profile": "Salon profili",
-      "location": "Konum"
+      "location": "Konum",
+      "booking": "Randevu ayarları"
     },
     "profile": "Salon profili",
     "images": "Salon görselleri",
     "location": "Salon konumu",
     "unavailableTitle": "Ayarlar şu anda kullanılamıyor",
-    "unavailableBody": "Salon askıya alındı. Platform yöneticisiyle iletişime geçin."
+    "unavailableBody": "Salon askıya alındı. Platform yöneticisiyle iletişime geçin.",
+    "booking": "Randevu ayarları"
   },
   "catalog": {
     "currency": "SAR",
@@ -924,7 +933,7 @@
       "Hidden": "Yönetici tarafından gizlendi"
     },
     "status": {
-      "active": "Açık",
+      "active": "Randevuya açık",
       "inactive": "Kapalı",
       "archived": "Arşivlendi",
       "hidden": "Yönetici tarafından gizlendi"
@@ -964,7 +973,6 @@
       "title": "Henüz paket yok",
       "body": "İki veya daha fazla hizmeti kendi fiyatı ve süresi olan bir pakette birleştirin."
     },
-    "active": "Randevuya açık",
     "moveUp": "{name} öğesini yukarı taşı",
     "moveDown": "{name} öğesini aşağı taşı",
     "moved": "{name}, {position}. sıraya taşındı",
@@ -991,7 +999,9 @@
       "nameEnHelper": "İsteğe bağlı — boş bırakılırsa Arapça ad gösterilir",
       "descriptionAr": "Arapça açıklama",
       "descriptionEn": "İngilizce açıklama",
-      "category": "Kategori",
+      "section": "Bölüm",
+      "sectionHelper": "Hizmet, dükkân sayfanızda ve randevuda bu bölümün altında görünür. Bölümler Hizmetler sayfasından yönetilir.",
+      "noSection": "Bölüm yok (“Diğer” altında görünür)",
       "price": "Fiyat (SAR)",
       "priceHelper": "Salonunuzun kendi fiyatı — en fazla iki ondalık basamak",
       "duration": "Süre",
@@ -1009,7 +1019,6 @@
       "noShopProfessionalsOwner": "Salonunuzda henüz berber yok. Groom Here ekibi ekler; ardından burada seçin.",
       "noProfessionalsPicked": "Berber seçilmedi: en az bir berber seçilene kadar bu hizmet için saat gösterilmez."
     },
-    "activeFor": "{name}: randevuya açık",
     "editItem": "{name} öğesini düzenle",
     "archiveItem": "{name} öğesini arşivle",
     "deleteItem": "{name} öğesini sil",
@@ -1020,13 +1029,37 @@
       "newTitle": "Yeni paket",
       "editTitle": "Paketi düzenle",
       "notFound": "Paket bulunamadı.",
-      "activate": "Aç",
-      "deactivate": "Kapat",
+      "activate": "Randevuya aç",
+      "deactivate": "Randevuyu durdur",
       "archive": "Arşivle",
       "archiveTitle": "Paket arşivlensin mi?",
       "archiveBody": "Randevudan ve dükkân sayfasından kalkar, geçmiş randevularda kalır. Geri alınamaz.",
       "archiveConfirm": "Evet, arşivle",
       "keep": "Vazgeç"
+    },
+    "startBooking": "Randevuya aç",
+    "stopBooking": "Randevuyu durdur",
+    "startBookingFor": "Randevuya aç: {name}",
+    "stopBookingFor": "Randevuyu durdur: {name}",
+    "sections": {
+      "title": "Hizmet bölümleri",
+      "body": "Hizmetlerinizi kendi bölümlerinizde (saç, sakal, bakım…) seçtiğiniz sırayla düzenleyin. Bölümler dükkân sayfanızda ve randevuda sekme olarak görünür; bölümü olmayan hizmetler “Diğer” altında görünür.",
+      "empty": "Henüz bölüm yok. İlkini aşağıdan ekleyin.",
+      "count": "{count, plural, =0 {Hizmet yok} one {# hizmet} other {# hizmet}}",
+      "moveUp": "{name} bölümünü yukarı taşı",
+      "moveDown": "{name} bölümünü aşağı taşı",
+      "moved": "{name} bölümü {position}. sıraya taşındı",
+      "rename": "Yeniden adlandır",
+      "renameItem": "{name} bölümünü yeniden adlandır",
+      "delete": "Sil",
+      "deleteItem": "{name} bölümünü sil",
+      "deleteTitle": "“{name}” bölümü silinsin mi?",
+      "deleteBody": "Hizmetleri olduğu gibi kalır ve başka bir bölüme koyana kadar “Diğer” altında görünür.",
+      "add": "Bölüm ekle",
+      "save": "Adı kaydet",
+      "cancel": "Vazgeç",
+      "nameAr": "Bölüm adı (Arapça)",
+      "nameEn": "Bölüm adı (İngilizce)"
     }
   },
   "adminServices": {
@@ -1115,12 +1148,14 @@
     },
     "professionalServices": {
       "title": "Atanan hizmetler",
-      "body": "Yalnızca bu uzmanın kendi salonunun hizmetleri, o salonun fiyat ve süreleriyle.",
+      "body": "Yalnızca bu berberin dükkânının hizmetleri, dükkânın fiyatlarıyla. Her hizmetin standart bir süresi var; bu berberdeki süresini ayarlayabilirsiniz.",
       "empty": "Bu uzmanın salonunda henüz hizmet yok",
       "save": "Atamayı kaydet",
       "saved": "Hizmet ataması kaydedildi.",
       "inactive": "Kapalı",
-      "emptyShop": "Dükkânınızda henüz hizmet yok. «Hizmetler» bölümünden ekleyin."
+      "emptyShop": "Dükkânınızda henüz hizmet yok. «Hizmetler» bölümünden ekleyin.",
+      "ownDuration": "“{service}” bu berberde ne kadar sürer",
+      "standardDuration": "Standart süre — {duration}"
     }
   },
   "billing": {
@@ -1347,7 +1382,8 @@
       "title": "Berber ekle",
       "mobileHelper": "Berberin WhatsApp numarası; giriş de bu numarayla yapılır. Kaydedildikten sonra kısmen gizli gösterilir.",
       "loginNote": "Berberin girişi kaydettiğinizde oluşturulur ve kendisine vermeniz için geçici bir şifre bir kez gösterilir. İlk girişinde değiştirir.",
-      "submit": "Berberi ekle"
+      "submit": "Berberi ekle",
+      "mobile": "Berberin cep telefonu"
     },
     "detail": {
       "title": "Berber",
@@ -1384,7 +1420,7 @@
     "title": "Platform ayarları",
     "intro": "Bu değerler tüm salonlar için geçerlidir ve her değişiklik etkinlik günlüğüne kaydedilir. Bölge değerleri v1’de sabittir.",
     "sections": {
-      "booking": "Randevu politikası",
+      "booking": "Randevu politikası (varsayılan)",
       "notifications": "Hatırlatmalar",
       "subscriptions": "Abonelikler",
       "discovery": "Keşif",
@@ -1418,7 +1454,7 @@
     "saved": "Ayarlar kaydedildi.",
     "readOnly": "Bu ayarları görüntüleyebilirsiniz ancak değiştiremezsiniz.",
     "descriptions": {
-      "booking": "Müşterilerin çevrimiçi randevu alma kuralları: ne kadar ileriye, en geç ne kadar önce, hangi saat aralığıyla, bir randevuyu ne zamana kadar iptal edip taşıyabilecekleri ve bir ziyareti ne kadar süre içinde değerlendirebilecekleri.",
+      "booking": "Her dükkânın başladığı değerler: en az önceden bildirim, en uzak randevu günü ve başlangıç aralığı. Sahip bunları kendi dükkânı için “Randevu ayarları”ndan değiştirir; iptal ve değerlendirme süreleri herkes için buradadır.",
       "notifications": "Müşteriye ve berbere giden WhatsApp hatırlatmalarının randevudan ne kadar önce gönderileceği.",
       "subscriptions": "Bir salonun aboneliğinin ne zaman yakında sona erecek sayılacağı ve geçerli abonelik yokken ne olacağı. Mevcut randevular hiçbir zaman değişmez.",
       "discovery": "Çevrimiçi randevuyu duraklatan salonların aramada ve haritada görünmeye devam edip etmeyeceği. Sayfalarına bağlantıyla erişilmeye devam edilir.",
@@ -3750,5 +3786,40 @@
       "loyalty": "Sadakat ödülü"
     },
     "truncated": "Yalnızca ilk {count} randevu listelenir; yukarıdaki rakamlar dönemin tüm randevularını kapsar."
+  },
+  "bookingSettings": {
+    "confirmation": "Randevu onayı",
+    "times": "Saatler",
+    "manual": "Randevuları kendim onaylarım",
+    "manualOn": "Yeni çevrim içi randevular dükkân onaylayana kadar “onay bekliyor” olarak gelir.",
+    "manualOff": "Çevrim içi randevular alındığı anda otomatik onaylanır.",
+    "fields": {
+      "slotStepMinutes": "Başlangıç saatleri",
+      "minLeadTimeMinutes": "En az önceden bildirim",
+      "bookingHorizonDays": "Randevu alınabilen en uzak gün",
+      "bufferMinutes": "Her hizmetten sonra temizlik süresi"
+    },
+    "hints": {
+      "slotStepMinutes": "Başlangıç saatleri arasındaki aralık (10:00, 10:15, 10:30…), hizmet süresi değil: her 15 dakikada bir başlar, hizmet 45 sürebilir.",
+      "minLeadTimeMinutes": "Şu andan bu süreden daha yakın saat sunulmaz.",
+      "bookingHorizonDays": "Müşterilerin kaç gün ilerisi için randevu alabileceği. Gün şeridi bu ayarı izler.",
+      "bufferMinutes": "Berber her randevudan sonra bu süre müsait olmaz."
+    },
+    "everyMinutes": "Her {duration}",
+    "days": "{count, plural, one {# gün} other {# gün}}",
+    "noNotice": "Bildirim süresi yok",
+    "noCleaning": "Temizlik süresi yok",
+    "save": "Randevu ayarlarını kaydet",
+    "saved": "Randevu ayarları kaydedildi. Bundan sonraki yeni randevulara uygulanır."
+  },
+  "spokenLanguages": {
+    "label": "Konuştuğu diller",
+    "ar": "Arapça",
+    "en": "İngilizce",
+    "ur": "Urduca",
+    "hi": "Hintçe",
+    "bn": "Bengalce",
+    "tl": "Filipince",
+    "tr": "Türkçe"
   }
 }

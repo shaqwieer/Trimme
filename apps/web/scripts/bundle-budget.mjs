@@ -24,7 +24,8 @@ const BUDGETS = [
   {
     name: 'map pages',
     match: /\/(search|onboarding\/location|shop\/settings\/location|admin\/shops\/(new|\[shopId\]))$/,
-    kb: 330,
+    // 335 since D-149: the admin's shop page also carries the shop's sections and booking settings (330.7 KB).
+    kb: 335,
   },
   { name: 'sign-in, booking and discover', match: /\/(auth\/.*|shops\/\[slug\]\/book|discover)$/, kb: 260 },
   {

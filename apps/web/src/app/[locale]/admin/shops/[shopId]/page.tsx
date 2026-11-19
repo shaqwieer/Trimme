@@ -11,6 +11,8 @@ import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
 import { DemoMark } from '@/components/ui/cards';
 import { ShopWhatsAppMessagesForm } from '@/components/admin/ShopWhatsAppMessagesForm';
 import { CatalogStatusBadge } from '@/components/catalog/CatalogStatusBadge';
+import { ServiceSections } from '@/components/catalog/ServiceSections';
+import { BookingSettingsForm } from '@/components/shops/BookingSettingsForm';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
 import { ShopLocationEditor } from '@/components/shops/ShopLocationEditor';
 import { ShopProfileEditor } from '@/components/shops/ShopProfileEditor';
@@ -36,6 +38,7 @@ const TABS = [
   'users',
   'professionals',
   'services',
+  'booking',
   'subscription',
   'loyalty',
   'whatsapp',
@@ -56,9 +59,9 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 
 /**
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
- * exact location (pin picker), accounts, the shop's professionals, its services (added and edited here, D-127), its
- * subscription, its loyalty programme (D-132) and which WhatsApp messages its customers and barbers get (D-142). Tab
- * state lives in the URL (`?tab=`).
+ * exact location (pin picker), accounts, the shop's professionals, its services and sections (added and edited here,
+ * D-127, D-149), its booking settings (D-149), its subscription, its loyalty programme (D-132) and which WhatsApp
+ * messages its customers and barbers get (D-142). Tab state lives in the URL (`?tab=`).
  */
 export default async function AdminShopPage({
   params,
@@ -126,6 +129,17 @@ export default async function AdminShopPage({
           ) : (
             <EmptyState icon="shield" title={t('detail.invite.title')} />
           );
+        } else if (tab === 'booking') {
+          const { data: settings } = await api.GET('/api/v1/admin/shops/{shopId}/booking-settings', {
+            params: { path: { shopId: shop.id } },
+          });
+          content = settings ? (
+            <Card title={t('sections.booking')} testId="shop-booking-settings">
+              <BookingSettingsForm scope={mode} settings={settings} canEdit={canEdit} />
+            </Card>
+          ) : (
+            <ErrorState />
+          );
         } else if (tab === 'subscription') {
           content = <ShopSubscriptionTab shopId={shop.id} permissions={me.permissions} />;
         } else if (tab === 'whatsapp') {
@@ -187,93 +201,103 @@ export default async function AdminShopPage({
           );
         } else if (tab === 'services') {
           const canView = me.permissions.includes('Admin.ShopServices.View');
-          const [{ data: services }, { data: packages }] = canView
+          const [{ data: services }, { data: packages }, { data: sections }] = canView
             ? await Promise.all([
                 api.GET('/api/v1/admin/services', { params: { query: { shopId: shop.id, pageSize: 100 } } }),
                 api.GET('/api/v1/admin/packages', { params: { query: { shopId: shop.id, pageSize: 100 } } }),
+                api.GET('/api/v1/admin/shops/{shopId}/service-sections', {
+                  params: { path: { shopId: shop.id } },
+                }),
               ])
-            : [{ data: undefined }, { data: undefined }];
+            : [{ data: undefined }, { data: undefined }, { data: undefined }];
           const live = (services?.items ?? []).filter((service) => !service.isArchived);
           const livePackages = (packages?.items ?? []).filter((item) => !item.isArchived);
           const canManage = me.permissions.includes('Admin.ShopServices.Manage');
           content = (
-            <Card title={t('services.title')} testId="shop-services-card">
-              <p className="text-caption text-text-secondary">{t('services.body')}</p>
-              {live.length > 0 ? (
-                <ul className="flex flex-col divide-y divide-border-row">
-                  {live.map((service) => (
-                    <li key={service.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
-                      <Link
-                        href={`/admin/services/${service.id}`}
-                        className="min-w-0 flex-1 font-bold text-text-link hover:underline"
-                      >
-                        {localizedName(lang, service.nameAr, service.nameEn)}
-                      </Link>
-                      <span className="font-latin text-label font-bold text-navy-900">
-                        {formatPrice(service.price, lang, service.currency)}
-                      </span>
-                      <span className="text-helper text-text-secondary">
-                        {formatDurationMinutes(service.durationMinutes, lang)}
-                      </span>
-                      <CatalogStatusBadge item={service} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState icon="tag" title={t('services.empty')} body={t('services.emptyBody')} />
+            <>
+              {sections && (
+                <Card title={t('services.sectionsTitle')} testId="shop-sections-card">
+                  <ServiceSections scope={mode} sections={sections} canManage={canManage} />
+                </Card>
               )}
-              {canManage && (
-                <ButtonLink
-                  href={`/admin/services/new?shopId=${shop.id}`}
-                  size="md"
-                  icon="plus"
-                  className="self-start"
-                >
-                  {t('services.add')}
-                </ButtonLink>
-              )}
-              <h3 className="pt-3 text-label font-bold text-text-strong">{t('services.packagesTitle')}</h3>
-              {livePackages.length > 0 ? (
-                <ul className="flex flex-col divide-y divide-border-row" data-testid="shop-packages">
-                  {livePackages.map((item) => (
-                    <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
-                      {canManage ? (
+              <Card title={t('services.title')} testId="shop-services-card">
+                <p className="text-caption text-text-secondary">{t('services.body')}</p>
+                {live.length > 0 ? (
+                  <ul className="flex flex-col divide-y divide-border-row">
+                    {live.map((service) => (
+                      <li key={service.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
                         <Link
-                          href={`/admin/packages/${item.id}`}
+                          href={`/admin/services/${service.id}`}
                           className="min-w-0 flex-1 font-bold text-text-link hover:underline"
                         >
-                          {localizedName(lang, item.nameAr, item.nameEn)}
+                          {localizedName(lang, service.nameAr, service.nameEn)}
                         </Link>
-                      ) : (
-                        <span className="min-w-0 flex-1 font-bold text-text-primary">
-                          {localizedName(lang, item.nameAr, item.nameEn)}
+                        <span className="font-latin text-label font-bold text-navy-900">
+                          {formatPrice(service.price, lang, service.currency)}
                         </span>
-                      )}
-                      <span className="font-latin text-label font-bold text-navy-900">
-                        {formatPrice(item.price, lang, item.currency)}
-                      </span>
-                      <span className="text-helper text-text-secondary">
-                        {formatDurationMinutes(item.durationMinutes, lang)}
-                      </span>
-                      <CatalogStatusBadge item={item} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-helper text-text-secondary">{t('services.noPackages')}</p>
-              )}
-              {canManage && live.length > 1 && (
-                <ButtonLink
-                  href={`/admin/packages/new?shopId=${shop.id}`}
-                  variant="outline"
-                  size="md"
-                  icon="plus"
-                  className="self-start"
-                >
-                  {t('services.addPackage')}
-                </ButtonLink>
-              )}
-            </Card>
+                        <span className="text-helper text-text-secondary">
+                          {formatDurationMinutes(service.durationMinutes, lang)}
+                        </span>
+                        <CatalogStatusBadge item={service} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState icon="tag" title={t('services.empty')} body={t('services.emptyBody')} />
+                )}
+                {canManage && (
+                  <ButtonLink
+                    href={`/admin/services/new?shopId=${shop.id}`}
+                    size="md"
+                    icon="plus"
+                    className="self-start"
+                  >
+                    {t('services.add')}
+                  </ButtonLink>
+                )}
+                <h3 className="pt-3 text-label font-bold text-text-strong">{t('services.packagesTitle')}</h3>
+                {livePackages.length > 0 ? (
+                  <ul className="flex flex-col divide-y divide-border-row" data-testid="shop-packages">
+                    {livePackages.map((item) => (
+                      <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
+                        {canManage ? (
+                          <Link
+                            href={`/admin/packages/${item.id}`}
+                            className="min-w-0 flex-1 font-bold text-text-link hover:underline"
+                          >
+                            {localizedName(lang, item.nameAr, item.nameEn)}
+                          </Link>
+                        ) : (
+                          <span className="min-w-0 flex-1 font-bold text-text-primary">
+                            {localizedName(lang, item.nameAr, item.nameEn)}
+                          </span>
+                        )}
+                        <span className="font-latin text-label font-bold text-navy-900">
+                          {formatPrice(item.price, lang, item.currency)}
+                        </span>
+                        <span className="text-helper text-text-secondary">
+                          {formatDurationMinutes(item.durationMinutes, lang)}
+                        </span>
+                        <CatalogStatusBadge item={item} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-helper text-text-secondary">{t('services.noPackages')}</p>
+                )}
+                {canManage && live.length > 1 && (
+                  <ButtonLink
+                    href={`/admin/packages/new?shopId=${shop.id}`}
+                    variant="outline"
+                    size="md"
+                    icon="plus"
+                    className="self-start"
+                  >
+                    {t('services.addPackage')}
+                  </ButtonLink>
+                )}
+              </Card>
+            </>
           );
         } else {
           const { data: professionals } = me.permissions.includes('Admin.Professionals.View')

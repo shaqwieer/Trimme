@@ -95,6 +95,18 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     /// <summary>D-006: when true, online bookings start as Pending and the shop confirms them. Default off.</summary>
     public bool RequireManualConfirmation { get; private set; }
 
+    /// <summary>The shop's own start-time interval (D-149); <see langword="null"/> follows the platform's.</summary>
+    public int? SlotStepMinutes { get; private set; }
+
+    /// <summary>The shop's own minimum notice before an online booking (D-149); <see langword="null"/> follows the platform's.</summary>
+    public int? MinLeadTimeMinutes { get; private set; }
+
+    /// <summary>The shop's own furthest bookable day, counted from today (D-149); <see langword="null"/> follows the platform's.</summary>
+    public int? BookingHorizonDays { get; private set; }
+
+    /// <summary>Cleaning time after each booking before the barber's next one (D-149); 0 = none.</summary>
+    public int BufferMinutes { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -196,6 +208,27 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// The shop's own booking settings (D-149, the client's «إعدادات الحجز خاصة بكل محل»): confirmation, the start-time
+    /// interval, the minimum notice, the furthest bookable day and the cleaning time after each booking. The values are
+    /// validated by <see cref="ShopBookingRules"/>.
+    /// </summary>
+    public Result SetBookingSettings(bool requireManualConfirmation, int slotStepMinutes, int minLeadTimeMinutes, int bookingHorizonDays, int bufferMinutes, DateTimeOffset now)
+    {
+        if (ShopBookingRules.Validate(slotStepMinutes, minLeadTimeMinutes, bookingHorizonDays, bufferMinutes) is { } invalid)
+        {
+            return invalid;
+        }
+
+        RequireManualConfirmation = requireManualConfirmation;
+        SlotStepMinutes = slotStepMinutes;
+        MinLeadTimeMinutes = minLeadTimeMinutes;
+        BookingHorizonDays = bookingHorizonDays;
+        BufferMinutes = bufferMinutes;
+        UpdatedAt = now;
+        return Result.Success();
+    }
+
     public void SetDemo(bool demo, DateTimeOffset now)
     {
         IsDemo = demo;
@@ -266,7 +299,47 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     private static partial Regex SlugPattern();
 }
 
-/// <summary>Kind of business, shown on the public page and used by discovery filters (Phase 11).</summary>
+/// <summary>The bounds of a shop's own booking settings (D-149).</summary>
+public static class ShopBookingRules
+{
+    public static readonly IReadOnlySet<int> SlotSteps = new HashSet<int> { 5, 10, 15, 20, 30, 60 };
+    public const int MaxLeadTimeMinutes = 1440;
+    public const int MinHorizonDays = 1;
+    public const int MaxHorizonDays = 90;
+    public const int MaxBufferMinutes = 60;
+    public const int BufferStep = 5;
+
+    public static Error? Validate(int slotStepMinutes, int minLeadTimeMinutes, int bookingHorizonDays, int bufferMinutes)
+    {
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        if (!SlotSteps.Contains(slotStepMinutes))
+        {
+            errors["slotStepMinutes"] = ["validation.out_of_range"];
+        }
+
+        if (minLeadTimeMinutes is < 0 or > MaxLeadTimeMinutes)
+        {
+            errors["minLeadTimeMinutes"] = ["validation.out_of_range"];
+        }
+
+        if (bookingHorizonDays is < MinHorizonDays or > MaxHorizonDays)
+        {
+            errors["bookingHorizonDays"] = ["validation.out_of_range"];
+        }
+
+        if (bufferMinutes is < 0 or > MaxBufferMinutes || bufferMinutes % BufferStep != 0)
+        {
+            errors["bufferMinutes"] = ["validation.out_of_range"];
+        }
+
+        return errors.Count == 0 ? null : Error.Validation("validation.failed", "The booking settings are out of range.", errors);
+    }
+}
+
+/// <summary>
+/// Kind of business. Fixed to a men's barbershop since D-149 (the platform is for men); the other values stay so older
+/// rows and the contract read the same.
+/// </summary>
 public enum ShopCategory
 {
     Barbershop,
