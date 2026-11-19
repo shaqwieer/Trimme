@@ -113,6 +113,7 @@ The client's priorities: ضروري (before launch), مهم (must change), تح�
   - Conflicts were in the shop home's imports (the welcome line now heads D-151's barber day screen too), `notices.ts` (both parameters kept) and the docs. The design deviation became DV-A40, since D-151 took DV-A39. Four traceability ids were renumbered: R-WEB-24, R-BKG-16, R-LOY-12, R-SD-30.
   - .NET: Release build 0 warnings; `has-pending-model-changes` none (both migrations, `BarberDayAndAccount` and `ShopShortName`); OpenAPI regenerated from the live API with no change; unit 508/508; architecture 69/69; **full integration 276/276**.
   - Web: typecheck, lint and format pass; `pnpm test`: 62 files, 586 tests; build passes; bundle 90 routes within budget (the shop page 219.6 / 220, «مواعيدي» 265.3, the barber home 296.1).
+  - E2E on the merged build (api and web from `1a533cf`, 30 migrations, one worker): `shop-dashboard`, `customer-booking`, `tenancy` and the route audit: **29 passed, 1 failed**. The failure is E7, the same seeded-data age as before (Sara's visit past the 7-day review window on the shared volume).
 - **Waits on the user (a real iPhone, Safari, bar showing):**
   - 1-1: the bottom bars sit above the toolbar on the customer, barber, owner and admin pages, and the sticky headers clear the status bar;
   - 2-1: no sideways panning after typing in a field.
