@@ -98,13 +98,14 @@
     - cancelling or changing until the start (platform window 0);
     - full terms and privacy in ar, en and tr (a lawyer must review them).
   - Migration 26 `CustomerPages` (adds `is_demo`, widens `reference`, sets the cancellation window to 0). Gates are in `phases/after-17-d148-customer-pages.md`. Pushed (`972fcee`) and **deployed to groomhere.sa on 2026-11-18** with D-147, after a database backup.
-- **Session 28, third request (D-149), at the user's request** (the client's section 6 and five owner-dashboard changes). Slices 1–3 done and committed locally; **not pushed or deployed**:
+- **Session 28, third request (D-149), at the user's request** (the client's section 6 and five owner-dashboard changes). Slices 1–3 (D-149):
   - **Booking settings per shop:** manual or automatic confirmation, start interval, minimum notice, furthest day (14 by default, at most 90) and a cleaning time after each booking, set by the owner («إعدادات المحل» › «إعدادات الحجز») and the admin. The cleaning time is held by the engine and the database constraint.
   - **Barbers:** each barber's own length per service (slots, «أي مختص», walk-ins, reschedules); languages; the owner adds a barber by mobile first.
   - **Sections:** each shop's own, ordered by the owner; the shop page and booking tabs follow them; the search category filter is gone.
   - **Small items:** service status badge and button wording; the shop type fixed to a men's barbershop; «المحل غير متاح حالياً» for a shop its subscription hides.
   - Migration 27 `OwnerSettings` (sections from each shop's categories, every shop a barbershop, 14 days, bookings held until their end). Gates in `phases/after-17-d149-owner-settings-loyalty-plans.md`.
-  - **Slices 4–5 (D-150), committed locally after slices 1–3; not pushed or deployed:**
+  - **Slices 1–5 pushed (`87307ec`) and deployed to groomhere.sa on 2026-11-19** after a database backup (28 migrations there now); the admin data steps (plans, add-on price) are not done yet.
+  - **Slices 4–5 (D-150):**
     - **Loyalty as a paid add-on:** SuperAdmin prices it in versions; the admin switches it on until a date or off; earning and redeeming stop when it ends and points are kept.
     - **Points per mobile number per shop** (keyed hash only): the owner's rules (first visit, later visits, points for a reward, a free service or 5–1,000 SAR off, wipe or decay without visits); points only at «انتهت الخدمة» with the barber's name; «+٢» beyond a full card; «استخدم مكافأتي» at booking (one per booking, never with a package; held, used at completion, returned on a cancellation or no-show); walk-in redemption through the barber's lookup; «خلصت زيارتك» in the app.
     - **The plans' monthly WhatsApp allowance:** empty is unlimited, 0 is none, 500 a month; enforced before the provider with an atomic slot; the owner told once a month; the month's use on both subscription pages.
