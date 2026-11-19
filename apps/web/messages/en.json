@@ -3376,6 +3376,7 @@
       "review_shop_contacted": "A {rating}-star review — a {length}-character message",
       "service_category_created": "Icon: {icon}",
       "service_support_override": "{priceFrom, select, none {} other {Price: from {priceFrom} to {priceTo}. }}{durationFrom, select, none {} other {Length: from {durationFrom} to {durationTo}. }}{name, select, none {} other {Name changed. }}{category, select, none {} other {Section changed. }}{online, select, none {} true {Online booking: on. } other {Online booking: off. }}{barbers, select, none {} other {Barbers: {barbers}.}}",
+      "service_admin_updated": "{priceFrom, select, none {} other {Price: from {priceFrom} to {priceTo}. }}{durationFrom, select, none {} other {Length: from {durationFrom} to {durationTo}. }}{name, select, none {} other {Name changed. }}{category, select, none {} other {Section changed. }}{online, select, none {} true {Online booking: on. } other {Online booking: off. }}{barbers, select, none {} other {Barbers: {barbers}.}}",
       "service_admin_created": "{price} — {duration} — barbers: {barbers}",
       "package_admin_created": "{price} — {duration} — services: {services}",
       "package_admin_updated": "Price: from {priceFrom} to {priceTo} — length: from {durationFrom} to {durationTo} — services: {services}",

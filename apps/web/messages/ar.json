@@ -3376,6 +3376,7 @@
       "review_shop_contacted": "تقييم {rating, number, arab} من ٥ — رسالة من {length, number, arab} حرف",
       "service_category_created": "الأيقونة: {icon}",
       "service_support_override": "{priceFrom, select, none {} other {السعر: من {priceFrom} إلى {priceTo}. }}{durationFrom, select, none {} other {المدة: من {durationFrom} إلى {durationTo}. }}{name, select, none {} other {الاسم تغيّر. }}{category, select, none {} other {القسم تغيّر. }}{online, select, none {} true {الحجز الإلكتروني: مفعّل. } other {الحجز الإلكتروني: موقوف. }}{barbers, select, none {} other {الحلاقون: {barbers}.}}",
+      "service_admin_updated": "{priceFrom, select, none {} other {السعر: من {priceFrom} إلى {priceTo}. }}{durationFrom, select, none {} other {المدة: من {durationFrom} إلى {durationTo}. }}{name, select, none {} other {الاسم تغيّر. }}{category, select, none {} other {القسم تغيّر. }}{online, select, none {} true {الحجز الإلكتروني: مفعّل. } other {الحجز الإلكتروني: موقوف. }}{barbers, select, none {} other {الحلاقون: {barbers}.}}",
       "service_admin_created": "{price} — {duration} — الحلاقون: {barbers}",
       "package_admin_created": "{price} — {duration} — الخدمات: {services}",
       "package_admin_updated": "السعر: من {priceFrom} إلى {priceTo} — المدة: من {durationFrom} إلى {durationTo} — الخدمات: {services}",

@@ -3376,6 +3376,7 @@
       "review_shop_contacted": "{rating} yıldızlı yorum — {length} karakterlik mesaj",
       "service_category_created": "Simge: {icon}",
       "service_support_override": "{priceFrom, select, none {} other {Fiyat: {priceFrom} → {priceTo}. }}{durationFrom, select, none {} other {Süre: {durationFrom} → {durationTo}. }}{name, select, none {} other {Ad değişti. }}{category, select, none {} other {Bölüm değişti. }}{online, select, none {} true {Online randevu: açık. } other {Online randevu: kapalı. }}{barbers, select, none {} other {Berberler: {barbers}.}}",
+      "service_admin_updated": "{priceFrom, select, none {} other {Fiyat: {priceFrom} → {priceTo}. }}{durationFrom, select, none {} other {Süre: {durationFrom} → {durationTo}. }}{name, select, none {} other {Ad değişti. }}{category, select, none {} other {Bölüm değişti. }}{online, select, none {} true {Online randevu: açık. } other {Online randevu: kapalı. }}{barbers, select, none {} other {Berberler: {barbers}.}}",
       "service_admin_created": "{price} — {duration} — berberler: {barbers}",
       "package_admin_created": "{price} — {duration} — hizmetler: {services}",
       "package_admin_updated": "Fiyat: {priceFrom} → {priceTo} — süre: {durationFrom} → {durationTo} — hizmetler: {services}",

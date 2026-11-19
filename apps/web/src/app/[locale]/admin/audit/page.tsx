@@ -61,13 +61,15 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
       : tSettings.has(value as 'currency')
         ? tSettings(value as 'currency')
         : value;
-  // D-155 (the client's 8-3-6): the summary from its code and arguments, in the reader's language; an older row has
-  // only its English record, shown as such.
+  // D-155 (the client's 8-3-6): the summary from its code and arguments, in the reader's language. An older row has
+  // only its English record, shown as such (null). A code without arguments needs no summary: its action says it all
+  // (''). A code with arguments and no message (a gap) shows its English record (undefined).
   const summaryOf = (entry: { summaryCode?: string | null; summaryArgs?: Record<string, string> | null }) => {
     if (!entry.summaryCode) return null;
     const key = summaryKey(entry.summaryCode) as 'shop_created';
-    if (!tSummaries.has(key)) return '';
-    return tSummaries(key, summaryValues(entry.summaryArgs ?? {}, lang, word) as Record<string, string>);
+    const args = entry.summaryArgs ?? {};
+    if (!tSummaries.has(key)) return Object.keys(args).length === 0 ? '' : undefined;
+    return tSummaries(key, summaryValues(args, lang, word) as Record<string, string>);
   };
   const entityLabel = (type: string) => (tEntities.has(type as 'Shop') ? tEntities(type as 'Shop') : type);
   const actionLabel = (code: string) => {
@@ -116,12 +118,18 @@ export default async function AdminAuditPage({ params, searchParams }: PageProps
                     {summary}
                   </span>
                 ) : (
-                  summary === null &&
+                  summary !== '' &&
                   entry.summary && (
-                    // An older row: the English technical record written when the action happened (D-122).
+                    // The English technical record written when the action happened (D-122): an older row's, marked as
+                    // such, or a new code's that has no message yet.
                     <span className="block font-normal text-text-strong">
-                      <bdi lang="en">{entry.summary}</bdi>{' '}
-                      <span className="text-helper text-text-tertiary">({t('legacy')})</span>
+                      <bdi lang="en">{entry.summary}</bdi>
+                      {summary === null && (
+                        <>
+                          {' '}
+                          <span className="text-helper text-text-tertiary">({t('legacy')})</span>
+                        </>
+                      )}
                     </span>
                   )
                 )}

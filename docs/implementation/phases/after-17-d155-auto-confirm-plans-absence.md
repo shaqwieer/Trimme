@@ -250,6 +250,10 @@ Numbers missing from the cards (1-5, 3-1 to 3-4, 5-2, 5-3 of the main file) were
     - E1 now waits out the 30-second code limit after its own sign-up;
     - the favourites check is exact beside the new «احجز في …» link;
     - E7 needed a fresh volume.
+- **Known limits:**
+  - I4-4-1: the WhatsApp is still the existing reschedule template with the new time only; the bell copy has the old and the new. The old time needs a changed Meta template.
+  - I1-1-2: the card is disabled for the whole day, as the client wrote. A barber preselected by link (QR, «احجز مثل آخر مرة») stays selectable.
+- **Follow-up after the commit:** a message for `service.admin_updated` (it carries arguments and had none); a code with arguments but no message now falls back to its English record; a test lists every code the API records with arguments.
 - **Not checked here:**
   - the real Meta templates (two new ones to submit);
   - the win-back job against real customers;

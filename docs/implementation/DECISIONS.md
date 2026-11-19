@@ -2095,6 +2095,7 @@ This refines D-126.
   - Walk-ins, phone bookings and the admin are not limited.
   - After the shop's change the customer may cancel or change free until the start (derived from the history; `allowedActions` carries it). Their page then says «حتى يبدأ الموعد» rather than a deadline already gone.
   - Not locked: two simultaneous changes for one customer could both pass. Accepted.
+  - **Partly met on WhatsApp:** the client asked for «تغيير موعدك» with the old and the new time. The bell copy has both, but the WhatsApp is still the existing reschedule template, which shows the new time only. Adding the old time needs a changed Meta template, the same reason D-152 deferred 3-3.
 - **The shop's cancellation (I5-1-6):**
   - new event `BookingCancelledByShop`, sent when the shop or the admin cancels;
   - Meta UTILITY template `trimme_customer_booking_cancelled_by_shop` (ar and en) with `{{reason}}`, which is the ready reason's words, the typed text, or «ظرف عند المحل»;
@@ -2123,6 +2124,7 @@ This refines D-126.
   - `TimeOffKind.Unavailable` from now to the shop's day end, with who marked it (`created_by_user_id`), audited, and undoable the same day.
   - Set by the barber for themselves (the quick button where «إيقاف الحجز» was, and «بريكاتي», where it replaces the whole-day break) or by the owner for any barber.
   - Customers see the card disabled with «غير متوفر اليوم» on the booking step and the specialists tab, and their times today are gone; «أي مختص» never picks them.
+  - The card is disabled for the whole day, as the client wrote, so a customer booking that barber for a later day picks «أي مختص» or comes back tomorrow. A barber already chosen through the link (their QR code, «احجز مثل آخر مرة») stays selectable and can be booked for later days. Keeping the card selectable with only the badge is a one-line change if wanted.
   - Notices: the owner gets `professional.unavailable_today` and a dashboard line; colleagues get `professional.unavailable_bookings` («حجوزات حلاق غير متوفر»). The day screen has a block of those bookings.
   - A fifth reviewed `BarberScope` exception lets any barber give such a booking to another barber, change its time, or cancel it with a reason, today only.
   - The reports count each barber's «غير متوفر» days. Planned leave stays the owner's.
@@ -2135,6 +2137,7 @@ This refines D-126.
 - **The activity log in Arabic (I8-3-6):**
   - audit rows carry `summary_code` and `summary_args` (PII-free, ISO dates);
   - the web words them in the reader's language (`lib/admin/auditSummary.ts`, `adminAudit.summaries` and `adminAudit.values` in ar, en and tr), with dates, amounts and lengths formatted and lists joined;
+  - a code without arguments shows its action alone; a code with arguments but no message falls back to its English record (a test lists every code the API records with arguments);
   - older rows keep their English record, marked «سجل قديم بالإنجليزية»;
   - the booking settings' sentence moved from the reason to the summary;
   - every action and entity has ar, en and tr words.

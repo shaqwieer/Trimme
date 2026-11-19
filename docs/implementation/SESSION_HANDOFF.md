@@ -73,7 +73,8 @@
     - SuperAdmin ticking the plans' loyalty and win-back, since all start off;
     - submitting `trimme_customer_booking_cancelled_by_shop` (UTILITY) and `trimme_customer_win_back` (MARKETING) to Meta.
   - After `migrate`, barbers lose the pause and paused shops become listed.
-  - The client may want a disabled «غير متوفر اليوم» card to stay bookable for later days; today it is disabled for the whole day, as asked.
+  - The client may want a disabled «غير متوفر اليوم» card to stay bookable for later days; today it is disabled for the whole day, as asked (a barber preselected by link stays selectable).
+  - I4-4-1 is partly met on WhatsApp: the change message shows the new time only (the bell has old and new); the old time needs a changed Meta template, like D-152's 3-3.
 
 ## Session 29: the client's iPhone test (D-152)
 - **The request:** the client's file after the update file: 20 items (ضروري / مهم / تحسين), tested as a customer on an iPhone in Safari. Item statuses, answers and evidence are in `phases/after-17-d152-client-iphone-review.md`; the details are in D-152.
