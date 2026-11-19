@@ -159,7 +159,8 @@ export function SimpleAppointments({
       ? (b.overdue ? OVERDUE_QUICK : QUICK).filter((to) => b.allowedTransitions.includes(to)).slice(0, 2)
       : [];
 
-  const rows = (bookings: Booking[], extra?: (b: Booking) => ReactNode) => (
+  // On the red card the secondary grey is below 4.5:1 (#5f6f80 on danger-50), so its rows' second line is darker.
+  const rows = (bookings: Booking[], extra?: (b: Booking) => ReactNode, onDanger = false) => (
     <ul className="flex flex-col divide-y divide-border-row">
       {bookings.map((b) => (
         <li
@@ -182,7 +183,7 @@ export function SimpleAppointments({
                 {b.loyaltyReward && <LoyaltyChip reward={b.loyaltyReward} />}
                 <CustomerVisitBadge visit={b.visit} />
               </span>
-              <span className="text-helper text-text-secondary">
+              <span className={cn('text-helper', onDanger ? 'text-text-strong' : 'text-text-secondary')}>
                 {localizedName(locale, b.item.nameAr, b.item.nameEn)} —{' '}
                 {localizedName(locale, b.professional.nameAr, b.professional.nameEn)}
               </span>
@@ -292,13 +293,17 @@ export function SimpleAppointments({
           `${t('overdue')} (${formatNumber(overdue.length, locale)})`,
           <>
             <p className="text-helper text-danger-700">{t('overdueHint')}</p>
-            {rows(overdue, (b) => (
-              <span className="text-helper font-bold text-danger-700">
-                {t('responsible', {
-                  name: localizedName(locale, b.professional.nameAr, b.professional.nameEn),
-                })}
-              </span>
-            ))}
+            {rows(
+              overdue,
+              (b) => (
+                <span className="text-helper font-bold text-danger-700">
+                  {t('responsible', {
+                    name: localizedName(locale, b.professional.nameAr, b.professional.nameEn),
+                  })}
+                </span>
+              ),
+              true,
+            )}
           </>,
           'danger',
         )}

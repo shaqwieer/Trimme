@@ -157,3 +157,32 @@ public interface IWhatsAppAuthenticationSender
 {
     Task<bool> TrySendCodeAsync(string phoneE164, string code, string locale, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// The monthly WhatsApp allowance for a shop's customer messages (implemented by the Subscriptions module, D-149): the
+/// allowance of the plan in force, read through the caller's data scope (the dispatch job's system scope). Null is
+/// unlimited (plans without an allowance, and shops without a subscription, keep today's behaviour); 0 is none.
+/// </summary>
+public interface IWhatsAppAllowance
+{
+    Task<int?> MonthlyCustomerMessagesAsync(ShopId shopId, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// How many WhatsApp messages to a shop's customers were handed to the provider in a calendar month (implemented by the
+/// Notifications module, D-149), through the caller's data scope (the shop's own, or an admin's).
+/// </summary>
+public interface IWhatsAppUsage
+{
+    Task<int> UsedAsync(ShopId shopId, DateOnly month, CancellationToken cancellationToken);
+}
+
+/// <summary>The calendar month of an instant in the shop's time zone, as its first day (D-149: the allowance resets on the 1st).</summary>
+public static class WhatsAppMonths
+{
+    public static DateOnly Of(DateTimeOffset instant, string timeZone)
+    {
+        var local = TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById(timeZone));
+        return new DateOnly(local.Year, local.Month, 1);
+    }
+}

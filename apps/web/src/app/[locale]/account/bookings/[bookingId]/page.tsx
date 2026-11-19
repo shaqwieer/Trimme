@@ -79,6 +79,8 @@ export default async function BookingDetailPage({
   const timeZone = shop?.timeZone;
   const actions = new Set(booking.allowedActions);
   const active = isActive(booking);
+  // A points reward (D-149) is taken off what is due; a D-132 coupon is applied by the shop at the visit.
+  const discount = booking.loyaltyReward?.discount ?? null;
   const service = localizedName(locale, booking.item.nameAr, booking.item.nameEn);
   const shopName = localizedName(locale, booking.shop.nameAr, booking.shop.nameEn);
   const when = `${formatDate(booking.startsAt, locale, { timeZone })} ${formatTime(booking.startsAt, locale, timeZone)}`;
@@ -167,8 +169,10 @@ export default async function BookingDetailPage({
         )}
         {booking.loyaltyReward && (
           <Row icon="tag" label={tLoyalty('wizard.title')}>
-            <span className="text-success-700">
+            <span className="text-success-700" data-testid="booking-reward">
               {localizedName(locale, booking.loyaltyReward.titleAr, booking.loyaltyReward.titleEn)}
+              {booking.loyaltyReward.discount != null &&
+                ` (−${formatPrice(booking.loyaltyReward.discount, locale, booking.item.currency)})`}
             </span>
           </Row>
         )}
@@ -178,9 +182,18 @@ export default async function BookingDetailPage({
           </Row>
         )}
         <div className="flex items-center justify-between py-3.5">
-          <dt className="text-label font-bold text-text-strong">{t('total')}</dt>
-          <dd className="font-latin text-[1.125rem] font-extrabold text-navy-900">
-            {formatPrice(booking.item.price, locale, booking.item.currency)}
+          <dt className="text-label font-bold text-text-strong">
+            {discount != null ? tLoyalty('wizard.due') : t('total')}
+          </dt>
+          <dd className="flex items-baseline gap-2 font-latin text-[1.125rem] font-extrabold text-navy-900">
+            {discount != null && (
+              <span className="text-label font-bold text-text-tertiary line-through">
+                {formatPrice(booking.item.price, locale, booking.item.currency)}
+              </span>
+            )}
+            <span data-testid="booking-amount">
+              {formatPrice(booking.item.price - (discount ?? 0), locale, booking.item.currency)}
+            </span>
           </dd>
         </div>
       </dl>

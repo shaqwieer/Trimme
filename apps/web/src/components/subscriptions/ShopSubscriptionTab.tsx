@@ -5,6 +5,8 @@ import { EmptyState, ErrorState, InlineAlert } from '@/components/ui/states';
 import { getServerApi } from '@/lib/api/server';
 import { type AppLocale, formatNumber, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
+import { LoyaltyAddOnPanel } from './LoyaltyAddOnPanel';
+import { MessageUsage } from './MessageUsage';
 import { longDate } from './periods';
 import { SubscriptionHistory } from './SubscriptionHistory';
 import { OverrideForm, RecordPeriodForm, SuspensionControl } from './ShopSubscriptionPanel';
@@ -36,13 +38,18 @@ export async function ShopSubscriptionTab({
   const locale = (await getLocale()) as AppLocale;
   const t = await getTranslations({ locale, namespace: 'adminSubscriptions.panel' });
   const tTabs = await getTranslations({ locale, namespace: 'adminShops.tabs' });
+  const tAddOn = await getTranslations({ locale, namespace: 'adminSubscriptions.addOn' });
+  const tUsage = await getTranslations({ locale, namespace: 'messageUsage' });
   if (!permissions.includes('Admin.Subscriptions.View'))
     return <EmptyState icon="shield" title={tTabs('subscription')} />;
 
   const api = await getServerApi();
-  const [{ data: subscription }, { data: plans }] = await Promise.all([
+  // The loyalty add-on's price is the SuperAdmin's to read (D-149); others still switch it on at the price in force.
+  const readsPrices = permissions.includes('SuperAdmin.SubscriptionPlans.Manage');
+  const [{ data: subscription }, { data: plans }, prices] = await Promise.all([
     api.GET('/api/v1/admin/shops/{shopId}/subscription', { params: { path: { shopId } } }),
     api.GET('/api/v1/admin/subscription-plans'),
+    readsPrices ? api.GET('/api/v1/admin/loyalty-add-on/prices') : Promise.resolve(undefined),
   ]);
   if (!subscription || !plans) return <ErrorState />;
 
@@ -94,6 +101,22 @@ export async function ShopSubscriptionTab({
         )}
       </Card>
 
+      {subscription.messageUsage && (
+        <Card title={tUsage('title')} testId="shop-message-usage">
+          <MessageUsage usage={subscription.messageUsage} />
+        </Card>
+      )}
+      {subscription.loyaltyAddOn && (
+        <Card title={tAddOn('title')} testId="shop-loyalty-add-on">
+          <LoyaltyAddOnPanel
+            shopId={shopId}
+            addOn={subscription.loyaltyAddOn}
+            price={prices ? (prices.data?.current ?? null) : undefined}
+            today={subscription.today}
+            canManage={permissions.includes('Admin.Loyalty.Manage')}
+          />
+        </Card>
+      )}
       {canRecord && (
         <Card title={subscription.exists ? t('renewTitle') : t('assignTitle')}>
           <RecordPeriodForm

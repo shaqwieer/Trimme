@@ -19,12 +19,14 @@ namespace Trimme.Modules.Bookings.Api;
 /// <summary>
 /// A customer's online booking of a published service, several services booked together (<c>ServiceIds</c>, one
 /// professional back to back) or a package: services or a package, never both. Without a professional the server picks a
-/// free one (D-012). The start must be one of the offered slots. <c>LoyaltyRewardId</c> uses one of the customer's
-/// rewards at this shop (D-132); a reward that is not usable is 422 <c>loyalty.reward_unavailable</c>.
+/// free one (D-012). The start must be one of the offered slots. <c>UseLoyaltyReward</c> («استخدم مكافأتي», D-149) uses a
+/// ready points reward at this shop: one per booking, never with a package; the discount comes off the amount due.
+/// <c>LoyaltyRewardId</c> uses one of the customer's D-132 coupons instead; a reward that is not usable is 422
+/// <c>loyalty.reward_unavailable</c>.
 /// </summary>
 public sealed record CreateBookingRequest(
     string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, IReadOnlyList<Guid>? ServiceIds = null,
-    Guid? LoyaltyRewardId = null);
+    Guid? LoyaltyRewardId = null, bool UseLoyaltyReward = false);
 
 /// <summary>Moves the booking to another offered start (and optionally another eligible professional). Send the version read.</summary>
 public sealed record RescheduleBookingRequest(DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version);
@@ -46,7 +48,7 @@ public sealed record PostponeBookingRequest(DateTimeOffset StartsAt, uint Versio
 /// </summary>
 public sealed record WalkInRequest(
     Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note,
-    IReadOnlyList<Guid>? ServiceIds = null, BookingChannel Channel = BookingChannel.WalkIn)
+    IReadOnlyList<Guid>? ServiceIds = null, BookingChannel Channel = BookingChannel.WalkIn, bool UseLoyaltyReward = false)
 {
     /// <summary>Never print the number (records list every member by default).</summary>
     public override string ToString() => $"{nameof(WalkInRequest)} {{ ProfessionalId = {ProfessionalId}, StartsAt = {StartsAt}, Channel = {Channel} }}";
@@ -110,7 +112,7 @@ internal static class BookingEndpoints
         api.MapPost("/bookings", async ([FromHeader(Name = IdempotencyHeader)] string? key, CreateBookingRequest r, IDispatcher d, HttpContext http, CancellationToken ct) =>
                 KeyError(key) is { } missing
                     ? missing.ToProblem()
-                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds, r.LoyaltyRewardId), ct)))
+                    : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds, r.LoyaltyRewardId, r.UseLoyaltyReward), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking).WithTags("Customer: bookings")
             .WithName("CreateBooking")
             .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken.")
@@ -198,7 +200,7 @@ internal static class BookingEndpoints
         group.MapPost("/walk-in", async ([FromHeader(Name = IdempotencyHeader)] string? key, WalkInRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CreateWalkInCommand(
                         r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.CustomerName ?? string.Empty, r.CustomerPhone, r.Note,
-                        string.IsNullOrWhiteSpace(key) ? null : key, r.ServiceIds ?? [], r.Channel), ct))
+                        string.IsNullOrWhiteSpace(key) ? null : key, r.ServiceIds ?? [], r.Channel, r.UseLoyaltyReward), ct))
                     .ToHttpResult(b => TypedResults.Created($"/api/v1/shop/bookings/{b.Id}", b)))
             .RequirePermission(ShopWalkIn)
             .WithName("CreateWalkIn").WithSummary("Records a walk-in or phone booking with the same collision checks as online bookings (R-BKG-07, D-147).")

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Loyalty;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Tenancy;
@@ -12,11 +13,18 @@ internal sealed record ListMyLoyaltyQuery : IQuery<MyLoyaltyResponse>;
 internal sealed record GetMyShopLoyaltyQuery(string ShopSlug) : IQuery<MyShopLoyaltyResponse?>;
 
 /// <summary>
-/// The signed-in customer's own stamps and rewards (D-132). They are read through the customer's data scope; the shops'
-/// programmes are published data, read in a public scope of exactly those shops.
+/// The signed-in customer's loyalty (D-149), keyed by their account's mobile, so a card follows the number: points earned
+/// online, at the shop's desk with the number typed, or by an earlier account with the same number. The cards live with
+/// the shops that run or ran the add-on; they are read inside the public scope of those shops, filtered by the member key
+/// of the customer's own number. D-132 coupons are the customer's own rows.
 /// </summary>
-internal sealed class CustomerLoyaltyReader(TrimmeDbContext db, ICurrentCustomer customer, IPublicDataScope scope, IShopDirectory shops, TimeProvider clock)
+internal sealed class CustomerLoyaltyReader(
+    TrimmeDbContext db, ICurrentCustomer customer, IPublicDataScope scope, IShopDirectory shops, ILoyaltyAddOnStatus addOn, ILoyaltyMemberKeys keys,
+    TimeProvider clock)
 {
+    /// <summary>History lines per card.</summary>
+    public const int HistoryLength = 50;
+
     public async Task<MyLoyaltyResponse> ListAsync(CancellationToken cancellationToken)
     {
         if (customer.CustomerId is not { } customerId)
@@ -24,23 +32,17 @@ internal sealed class CustomerLoyaltyReader(TrimmeDbContext db, ICurrentCustomer
             return new MyLoyaltyResponse([]);
         }
 
-        var stamps = await OpenStampsAsync(customerId, null, cancellationToken);
-        var rewards = await RewardsAsync(customerId, null, cancellationToken);
-        var shopIds = stamps.Keys.Concat(rewards.Select(r => r.ShopId)).Distinct().Take(IPublicDataScope.MaxShops).ToList();
-        if (shopIds.Count == 0)
+        var memberKey = await keys.ForCustomerAsync(customerId, cancellationToken);
+        var coupons = await CouponsAsync(customerId, null, cancellationToken);
+        var candidates = (await addOn.ShopsWithAddOnAsync(IPublicDataScope.MaxShops, cancellationToken))
+            .Concat(coupons.Select(c => c.ShopId)).Distinct().Take(IPublicDataScope.MaxShops).ToList();
+        if (candidates.Count == 0)
         {
             return new MyLoyaltyResponse([]);
         }
 
-        var programs = await ProgramsAsync(shopIds, cancellationToken);
-        var summaries = await shops.FindManyAsync(shopIds, cancellationToken);
-        var items = shopIds
-            .Where(summaries.ContainsKey)
-            .Select(id => Card(summaries[id], programs.GetValueOrDefault(id), stamps.GetValueOrDefault(id), rewards.Where(r => r.ShopId == id)))
-            .OrderByDescending(c => c.Rewards.Count)
-            .ThenByDescending(c => c.Stamps)
-            .ToList();
-        return new MyLoyaltyResponse(items);
+        var cards = await CardsAsync(candidates, memberKey, coupons, onlyWithData: true, cancellationToken);
+        return new MyLoyaltyResponse([.. cards.OrderByDescending(c => c.RewardsReady).ThenByDescending(c => c.Points).ThenByDescending(c => c.Coupons.Count)]);
     }
 
     public async Task<MyShopLoyaltyResponse?> ForShopAsync(string slug, CancellationToken cancellationToken)
@@ -56,29 +58,78 @@ internal sealed class CustomerLoyaltyReader(TrimmeDbContext db, ICurrentCustomer
             return null;
         }
 
-        var programs = await ProgramsAsync([shop.Id], cancellationToken);
-        var stamps = await OpenStampsAsync(customerId, shop.Id, cancellationToken);
-        var rewards = await RewardsAsync(customerId, shop.Id, cancellationToken);
-        return Card(shop, programs.GetValueOrDefault(shop.Id), stamps.GetValueOrDefault(shop.Id), rewards);
+        var memberKey = await keys.ForCustomerAsync(customerId, cancellationToken);
+        var coupons = await CouponsAsync(customerId, shop.Id, cancellationToken);
+        return (await CardsAsync([shop.Id], memberKey, coupons, onlyWithData: false, cancellationToken)).SingleOrDefault();
     }
 
-    private static MyShopLoyaltyResponse Card(ShopSummary shop, LoyaltyProgram? program, int stamps, IEnumerable<LoyaltyReward> rewards) =>
-        new(LoyaltyMapping.Shop(shop), program is null ? null : LoyaltyMapping.Program(program), stamps,
-            [.. rewards.OrderBy(r => r.Status).ThenBy(r => r.ExpiresAt ?? DateTimeOffset.MaxValue).Select(LoyaltyMapping.Reward)]);
-
-    private async Task<Dictionary<ShopId, int>> OpenStampsAsync(Guid customerId, ShopId? shopId, CancellationToken cancellationToken)
+    private async Task<List<MyShopLoyaltyResponse>> CardsAsync(
+        IReadOnlyList<ShopId> shopIds, string? memberKey, IReadOnlyList<LoyaltyReward> coupons, bool onlyWithData, CancellationToken cancellationToken)
     {
-        var stamps = db.Set<LoyaltyStamp>().AsNoTracking().Where(s => s.CustomerId == customerId && s.RewardId == null);
-        if (shopId is { } only)
+        var now = clock.GetUtcNow();
+        var summaries = await shops.FindManyAsync(shopIds, cancellationToken);
+        var active = await addOn.ActiveManyAsync(shopIds, cancellationToken);
+        List<LoyaltySettings> settings;
+        List<LoyaltyAccount> accounts = [];
+        List<LoyaltyRedemption> held = [];
+        List<LoyaltyEntry> entries = [];
+        using (scope.BeginMany(shopIds))
         {
-            stamps = stamps.Where(s => s.ShopId == only);
+            settings = await db.Set<LoyaltySettings>().AsNoTracking().Where(s => shopIds.Contains(s.ShopId)).ToListAsync(cancellationToken);
+            if (memberKey is not null)
+            {
+                accounts = await db.Set<LoyaltyAccount>().AsNoTracking().Where(a => shopIds.Contains(a.ShopId) && a.MemberKey == memberKey).ToListAsync(cancellationToken);
+                held = await db.Set<LoyaltyRedemption>().AsNoTracking()
+                    .Where(r => shopIds.Contains(r.ShopId) && r.MemberKey == memberKey && r.Status == LoyaltyRedemptionStatus.Held)
+                    .ToListAsync(cancellationToken);
+                var withCards = accounts.Select(a => a.ShopId).ToList();
+                entries = withCards.Count == 0
+                    ? []
+                    : await db.Set<LoyaltyEntry>().AsNoTracking()
+                        .Where(e => withCards.Contains(e.ShopId) && e.MemberKey == memberKey)
+                        .OrderByDescending(e => e.At).Take(HistoryLength * withCards.Count)
+                        .ToListAsync(cancellationToken);
+            }
         }
 
-        return await stamps.GroupBy(s => s.ShopId).Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
+        var cards = new List<MyShopLoyaltyResponse>();
+        foreach (var shopId in shopIds)
+        {
+            if (summaries.GetValueOrDefault(shopId) is not { } shop)
+            {
+                continue;
+            }
+
+            var rules = settings.FirstOrDefault(s => s.ShopId == shopId);
+            var account = accounts.FirstOrDefault(a => a.ShopId == shopId);
+            var heldHere = held.Where(r => r.ShopId == shopId).ToList();
+            var couponsHere = coupons.Where(c => c.ShopId == shopId).ToList();
+            if (onlyWithData && account is null && heldHere.Count == 0 && couponsHere.Count == 0)
+            {
+                continue;
+            }
+
+            var points = heldHere.Sum(r => r.Points);
+            var card = LoyaltyBalance.Card(LoyaltyBalance.Available(account, rules, points, now), rules?.PointsForReward ?? 0);
+            var running = active.GetValueOrDefault(shopId) && rules is not null;
+            cards.Add(new MyShopLoyaltyResponse(
+                LoyaltyMapping.Shop(shop),
+                running,
+                rules is null ? null : LoyaltyMapping.Rules(rules),
+                card.Points,
+                card.RewardsReady,
+                card.CurrentCard,
+                card.PointsToNext,
+                heldHere.Count,
+                [.. entries.Where(e => e.ShopId == shopId).Take(HistoryLength).Select(LoyaltyMapping.Entry)],
+                [.. couponsHere.OrderBy(r => r.Status).ThenBy(r => r.ExpiresAt ?? DateTimeOffset.MaxValue).Select(LoyaltyMapping.Reward)]));
+        }
+
+        return cards;
     }
 
-    /// <summary>Rewards the customer can still use, and those held for an upcoming booking.</summary>
-    private async Task<List<LoyaltyReward>> RewardsAsync(Guid customerId, ShopId? shopId, CancellationToken cancellationToken)
+    /// <summary>D-132 coupons the customer can still use, and those held for an upcoming booking (their own rows).</summary>
+    private async Task<List<LoyaltyReward>> CouponsAsync(Guid customerId, ShopId? shopId, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         var rewards = db.Set<LoyaltyReward>().AsNoTracking()
@@ -90,14 +141,6 @@ internal sealed class CustomerLoyaltyReader(TrimmeDbContext db, ICurrentCustomer
         }
 
         return await rewards.ToListAsync(cancellationToken);
-    }
-
-    private async Task<Dictionary<ShopId, LoyaltyProgram>> ProgramsAsync(IReadOnlyCollection<ShopId> shopIds, CancellationToken cancellationToken)
-    {
-        using var _ = scope.BeginMany(shopIds);
-        return await db.Set<LoyaltyProgram>().AsNoTracking()
-            .Where(p => shopIds.Contains(p.ShopId) && p.IsActive)
-            .ToDictionaryAsync(p => p.ShopId, cancellationToken);
     }
 }
 

@@ -49,6 +49,8 @@ internal interface IPlanFields
     int? GraceDays { get; }
 
     bool AvailableToNewShops { get; }
+
+    int? MonthlyWhatsAppMessages { get; }
 }
 
 internal sealed record ListPlansQuery : IQuery<IReadOnlyList<PlanResponse>>;
@@ -68,7 +70,8 @@ internal sealed record CreatePlanCommand(
     int? TrialDays,
     int? GraceDays,
     bool AvailableToNewShops,
-    decimal? InitialPrice) : ICommand<Result<PlanResponse>>, IPlanFields;
+    decimal? InitialPrice,
+    int? MonthlyWhatsAppMessages = null) : ICommand<Result<PlanResponse>>, IPlanFields;
 
 internal sealed record UpdatePlanCommand(
     Guid PlanId,
@@ -84,7 +87,8 @@ internal sealed record UpdatePlanCommand(
     int? TrialDays,
     int? GraceDays,
     bool AvailableToNewShops,
-    uint Version) : ICommand<Result<PlanResponse>>, IPlanFields;
+    uint Version,
+    int? MonthlyWhatsAppMessages = null) : ICommand<Result<PlanResponse>>, IPlanFields;
 
 internal sealed record ChangePlanStateCommand(Guid PlanId, PlanStateChange Change) : ICommand<Result<PlanResponse>>;
 
@@ -113,6 +117,8 @@ internal sealed class PlanRules<T> : AbstractValidator<T>
         RuleFor(c => c.MaxServices).InclusiveBetween(1, 10_000).When(c => c.MaxServices is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.TrialDays).InclusiveBetween(0, 365).When(c => c.TrialDays is not null).WithErrorCode("validation.out_of_range");
         RuleFor(c => c.GraceDays).InclusiveBetween(0, 365).When(c => c.GraceDays is not null).WithErrorCode("validation.out_of_range");
+        RuleFor(c => c.MonthlyWhatsAppMessages).InclusiveBetween(0, PlanLimits.MaxMonthlyWhatsAppMessages).When(c => c.MonthlyWhatsAppMessages is not null)
+            .WithErrorCode("validation.out_of_range");
     }
 }
 
@@ -140,7 +146,7 @@ internal static class PlanReader
     public static PlanDetails Details(IPlanFields f) => new(
         f.NameAr, f.NameEn, f.DescriptionAr, f.DescriptionEn,
         [.. (f.Features ?? []).Select(x => PlanFeature.Of(x.Ar, x.En))],
-        f.MaxProfessionals, f.MaxServices, f.IntervalUnit, f.IntervalCount, f.TrialDays, f.GraceDays, f.AvailableToNewShops);
+        f.MaxProfessionals, f.MaxServices, f.IntervalUnit, f.IntervalCount, f.TrialDays, f.GraceDays, f.AvailableToNewShops, f.MonthlyWhatsAppMessages);
 
     public static Task<SubscriptionPlan?> FindAsync(TrimmeDbContext db, Guid planId, CancellationToken cancellationToken)
     {

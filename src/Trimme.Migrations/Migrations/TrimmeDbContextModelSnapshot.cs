@@ -936,6 +936,14 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("item_name_en");
 
+                    b.Property<decimal>("LoyaltyDiscount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("loyalty_discount");
+
+                    b.Property<Guid?>("LoyaltyRedemptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("loyalty_redemption_id");
+
                     b.Property<Guid?>("LoyaltyRewardId")
                         .HasColumnType("uuid")
                         .HasColumnName("loyalty_reward_id");
@@ -1780,6 +1788,128 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("users", "identity");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DecayPeriodsApplied")
+                        .HasColumnType("integer")
+                        .HasColumnName("decay_periods_applied");
+
+                    b.Property<DateTimeOffset?>("LastVisitAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_visit_at");
+
+                    b.Property<string>("MemberKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("member_key");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_accounts");
+
+                    b.HasIndex("MemberKey")
+                        .HasDatabaseName("ix_accounts_member_key");
+
+                    b.HasIndex("ShopId", "MemberKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_accounts_shop_id_member_key");
+
+                    b.ToTable("accounts", "loyalty", t =>
+                        {
+                            t.HasCheckConstraint("ck_accounts_points", "points >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<Guid?>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<Guid?>("ClosedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by_id");
+
+                    b.Property<string>("ClosedByName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("closed_by_name");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("MemberKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("member_key");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.Property<Guid?>("ProfessionalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("professional_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_entries");
+
+                    b.HasIndex("BookingId", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ix_entries_booking_id_kind")
+                        .HasFilter("booking_id IS NOT NULL");
+
+                    b.HasIndex("ShopId", "At")
+                        .HasDatabaseName("ix_entries_shop_id_at");
+
+                    b.HasIndex("ShopId", "MemberKey", "At")
+                        .HasDatabaseName("ix_entries_shop_id_member_key_at");
+
+                    b.ToTable("entries", "loyalty");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyProgram", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1855,6 +1985,95 @@ namespace Trimme.Migrations.Migrations
                             t.HasCheckConstraint("ck_programs_first_visit_stamps", "first_visit_stamps >= 1 AND first_visit_stamps < required_visits");
 
                             t.HasCheckConstraint("ck_programs_required_visits", "required_visits BETWEEN 2 AND 20");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyRedemption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("booking_id");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<decimal>("Discount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("discount");
+
+                    b.Property<DateTimeOffset>("HeldAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("held_at");
+
+                    b.Property<string>("MemberKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("member_key");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer")
+                        .HasColumnName("points");
+
+                    b.Property<string>("RewardType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("reward_type");
+
+                    b.Property<Guid?>("ServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("service_id");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title_ar");
+
+                    b.Property<string>("TitleEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title_en");
+
+                    b.HasKey("Id")
+                        .HasName("pk_redemptions");
+
+                    b.HasIndex("BookingId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_redemptions_booking_id");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_redemptions_customer_id");
+
+                    b.HasIndex("ShopId", "MemberKey", "Status")
+                        .HasDatabaseName("ix_redemptions_shop_id_member_key_status");
+
+                    b.ToTable("redemptions", "loyalty", t =>
+                        {
+                            t.HasCheckConstraint("ck_redemptions_discount", "discount >= 0");
+
+                            t.HasCheckConstraint("ck_redemptions_points", "points >= 1");
                         });
                 });
 
@@ -1946,6 +2165,92 @@ namespace Trimme.Migrations.Migrations
                         .HasDatabaseName("ix_rewards_shop_id_customer_id_status");
 
                     b.ToTable("rewards", "loyalty");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltySettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("FirstVisitPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_visit_points");
+
+                    b.Property<int?>("InactivityDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("inactivity_days");
+
+                    b.Property<string>("InactivityRule")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("inactivity_rule");
+
+                    b.Property<int>("PointsForReward")
+                        .HasColumnType("integer")
+                        .HasColumnName("points_for_reward");
+
+                    b.Property<decimal?>("RewardAmount")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)")
+                        .HasColumnName("reward_amount");
+
+                    b.Property<Guid?>("RewardServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reward_service_id");
+
+                    b.Property<string>("RewardServiceNameAr")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("reward_service_name_ar");
+
+                    b.Property<string>("RewardServiceNameEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("reward_service_name_en");
+
+                    b.Property<string>("RewardType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("reward_type");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int>("VisitPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("visit_points");
+
+                    b.HasKey("Id")
+                        .HasName("pk_settings");
+
+                    b.HasIndex("ShopId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_settings_shop_id");
+
+                    b.ToTable("settings", "loyalty", t =>
+                        {
+                            t.HasCheckConstraint("ck_settings_points", "first_visit_points BETWEEN 1 AND 100 AND visit_points BETWEEN 1 AND 100 AND points_for_reward BETWEEN 2 AND 1000");
+
+                            t.HasCheckConstraint("ck_settings_reward", "(reward_type = 'FreeService' AND reward_service_id IS NOT NULL) OR (reward_type = 'AmountOff' AND reward_amount BETWEEN 5 AND 1000)");
+                        });
                 });
 
             modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyStamp", b =>
@@ -2209,6 +2514,10 @@ namespace Trimme.Migrations.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AllowanceMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("allowance_month");
 
                     b.Property<int>("Attempts")
                         .HasColumnType("integer")
@@ -2493,6 +2802,33 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("whatsapp_template_versions", "notifications", t =>
                         {
                             t.HasCheckConstraint("ck_whatsapp_template_versions_body", "char_length(body) BETWEEN 1 AND 1024");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Notifications.Domain.WhatsAppUsageMonth", b =>
+                {
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateOnly>("Month")
+                        .HasColumnType("date")
+                        .HasColumnName("month");
+
+                    b.Property<DateTimeOffset?>("OwnerToldAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_told_at");
+
+                    b.Property<int>("Used")
+                        .HasColumnType("integer")
+                        .HasColumnName("used");
+
+                    b.HasKey("ShopId", "Month")
+                        .HasName("pk_whatsapp_usage");
+
+                    b.ToTable("whatsapp_usage", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_whatsapp_usage_used", "used >= 0");
                         });
                 });
 
@@ -3528,6 +3864,133 @@ namespace Trimme.Migrations.Migrations
                     b.ToTable("shops", "shops");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("PriceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_id");
+
+                    b.Property<int>("PriceVersionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("price_version_number");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid?>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shop_id");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("start_date");
+
+                    b.Property<Guid?>("StoppedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stopped_by");
+
+                    b.Property<DateOnly?>("StoppedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("stopped_on");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loyalty_add_on_periods");
+
+                    b.HasIndex("PriceId")
+                        .HasDatabaseName("ix_loyalty_add_on_periods_price_id");
+
+                    b.HasIndex("ShopId", "StartDate")
+                        .HasDatabaseName("ix_loyalty_add_on_periods_shop_id_start_date");
+
+                    b.ToTable("loyalty_add_on_periods", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_loyalty_add_on_periods_amount", "amount >= 0");
+
+                            t.HasCheckConstraint("ck_loyalty_add_on_periods_dates", "end_date >= start_date");
+                        });
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loyalty_add_on_prices");
+
+                    b.HasIndex("EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ix_loyalty_add_on_prices_effective_from");
+
+                    b.HasIndex("VersionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_loyalty_add_on_prices_version_number");
+
+                    b.ToTable("loyalty_add_on_prices", "subscriptions", t =>
+                        {
+                            t.HasCheckConstraint("ck_loyalty_add_on_prices_amount", "amount >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3663,6 +4126,14 @@ namespace Trimme.Migrations.Migrations
                     b.Property<bool>("IsSuspended")
                         .HasColumnType("boolean")
                         .HasColumnName("is_suspended");
+
+                    b.Property<DateOnly?>("LoyaltyAddOnEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("loyalty_add_on_end");
+
+                    b.Property<DateOnly?>("LoyaltyAddOnStart")
+                        .HasColumnType("date")
+                        .HasColumnName("loyalty_add_on_start");
 
                     b.HasKey("ShopId")
                         .HasName("pk_subscription_coverage");
@@ -3897,6 +4368,10 @@ namespace Trimme.Migrations.Migrations
                     b.Property<int?>("MaxServices")
                         .HasColumnType("integer")
                         .HasColumnName("max_services");
+
+                    b.Property<int?>("MonthlyWhatsAppMessages")
+                        .HasColumnType("integer")
+                        .HasColumnName("monthly_whats_app_messages");
 
                     b.Property<string>("NameAr")
                         .IsRequired()
@@ -4410,6 +4885,26 @@ namespace Trimme.Migrations.Migrations
                         .HasConstraintName("fk_users_shops_shop_id");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyAccount", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_accounts_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyEntry", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_entries_shops_shop_id");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyProgram", b =>
                 {
                     b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
@@ -4420,6 +4915,16 @@ namespace Trimme.Migrations.Migrations
                         .HasConstraintName("fk_programs_shops_shop_id");
                 });
 
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyRedemption", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_redemptions_shops_shop_id");
+                });
+
             modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyReward", b =>
                 {
                     b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
@@ -4428,6 +4933,16 @@ namespace Trimme.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_rewards_shops_shop_id");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltySettings", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_settings_shops_shop_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Loyalty.Domain.LoyaltyStamp", b =>
@@ -4537,6 +5052,16 @@ namespace Trimme.Migrations.Migrations
                         });
 
                     b.Navigation("Buttons");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Notifications.Domain.WhatsAppUsageMonth", b =>
+                {
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_whatsapp_usage_shops_shop_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Professionals.Domain.Professional", b =>
@@ -4807,6 +5332,23 @@ namespace Trimme.Migrations.Migrations
                         });
 
                     b.Navigation("Location");
+                });
+
+            modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPeriod", b =>
+                {
+                    b.HasOne("Trimme.Modules.Subscriptions.Domain.LoyaltyAddOnPrice", null)
+                        .WithMany()
+                        .HasForeignKey("PriceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loyalty_add_on_periods_loyalty_add_on_price_price_id");
+
+                    b.HasOne("Trimme.Modules.Shops.Domain.Shop", null)
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loyalty_add_on_periods_shops_shop_id");
                 });
 
             modelBuilder.Entity("Trimme.Modules.Subscriptions.Domain.PlanPrice", b =>

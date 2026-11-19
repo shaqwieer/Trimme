@@ -1783,3 +1783,85 @@ This refines D-126.
 - **Also in this change:** the admin booking page's intervention buttons wrap on a phone; the admin shop page's bundle budget is 335 KB (it carries the two new forms; `next/dynamic` from the server page grew every route and was reverted).
 - **Left as they are:** the walk-in form does not show each barber's own length per barber (the API returns it); the admin's platform categories page still edits categories nothing public uses.
 - **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`. .NET: Release build 0 warnings; unit 483/483; architecture 69/69; integration 264/264. Web: 549/549; 89 routes within budget. E2E: the full run then the fixed specs (23/23).
+
+## D-150 — Loyalty as a paid add-on (points per mobile number, a reward at booking, «خلصت زيارتك») and the plans' monthly WhatsApp allowance — Accepted (Session 28, after Phase 17, at the user's request; D-149 slices 4–5)
+- **The request:** the client's 6-2 (loyalty) and 6-5 (plans), with the user's answers, in `phases/after-17-d149-owner-settings-loyalty-plans.md`. This replaces D-132's earning model (stamps per customer account, an admin-set programme); D-132 coupons already issued stay usable until they expire.
+- **One migration, `LoyaltyAddOnAndPlanMessages` (28 in total).** It only adds tables and columns and changes no data:
+  - subscriptions: add-on prices and periods, the add-on's first and last day on the coverage row, and the plan's `monthly_whats_app_messages`;
+  - loyalty: settings, accounts, entries, redemptions;
+  - notifications: the monthly WhatsApp usage, and the month a dispatch took its slot in;
+  - bookings: the reward held and its discount.
+  - Existing plans stay unlimited (null).
+- **1. The add-on.**
+  - SuperAdmin prices it in versions like plan prices (`SuperAdmin.SubscriptionPlans.Manage`; the plans page lists the versions and adds one).
+  - The admin switches it on until an end date (`Admin.Loyalty.Manage`), and each period records the price version in force. Switched on again while on, the new period starts after the current end.
+  - It needs a subscription (409 `loyalty_add_on.no_subscription`) and a price (422 `loyalty_add_on.no_price`).
+  - Switching it off stops it from today. Audited.
+  - In force or not is computed from the dates, like the subscription. When it ends, earning and redeeming stop by themselves; points are kept and come back when it is switched on again.
+  - The owner's subscription page shows it with its periods, but not the admin's notes (stripped on the owner's response, as the renewals already were).
+- **2. Points per mobile number per shop.**
+  - The member is the mobile number, stored only as a keyed hash under its own purpose. It never appears in a loyalty table as a number, in anything the shop reads, or in a log.
+  - An online customer's account number and the number typed into a walk-in or phone booking (D-147) both count, so two accounts with one number share the card. A booking without a number earns nothing.
+- **3. The owner's rules.**
+  - The owner sets them on «إعدادات المحل» › «برنامج الولاء» (`Shop.Profile.Edit`; barbers read them), and the admin on the shop's «برنامج الولاء» tab. They can be set before the add-on is on.
+  - **Points:** the first visit 1–100, each later visit 1–100, and 2–1,000 for a reward.
+  - **The reward:** one of the shop's services free, or 5–1,000 SAR off with at most two decimals.
+  - **Without visits:** points kept (`None`), the card wiped after N days, or one point off per N days (N from 7 to 730). Days are counted from the last completed visit; points lost are dated at the end of the period.
+  - Each field is refused separately with `validation.*`.
+- **4. Earning.**
+  - Points are added only when a visit is closed as «انتهت الخدمة», with the barber who closed it on the entry. Never at booking, arrival or a no-show. Once per booking.
+  - A full card does not stop: 8 points for a reward of 6 is one reward ready and 2 on the next card, shown as «+٢» beside a full card.
+- **5. Using a reward (`useLoyaltyReward`).**
+  - At booking the customer chooses «استخدم مكافأتي». One radio group (none, the points reward, or a D-132 coupon), so there is one reward per booking; the API refuses a coupon and a points reward together.
+  - Never with a package (`loyalty.reward_not_with_package`).
+  - A free service only when the booking includes it (`loyalty.reward_service_not_booked`), and its discount is that service's price. An amount off never exceeds the price.
+  - The reward is held at booking, used when the visit is completed, and given back on a cancellation by anyone or a no-show.
+  - The booking keeps the reward and its discount. `amountDue` and the D-147 reports and expected income are net of it.
+  - The review step shows the discount and the amount due; the customer's booking page and the barber's drawer show them too.
+  - The amount off is titled the way the app writes prices («خصم ٥٠ ⃁», "SAR 50 off"). That title appears only in the app.
+- **6. Walk-in and phone bookings.**
+  - Once a complete mobile is typed, the barber's form asks `POST /shop/loyalty/lookup` (the number in the body; barbers only, `Shop.Bookings.CreateWalkIn`). It answers only whether a reward is ready and what it is: no points, no history, no name.
+  - The barber may tick «استخدم مكافأة العميل». The result is dropped whenever the number changes, and the reward is never offered with a package.
+- **7. «خلصت زيارتك».** After a completed visit, a signed-in customer gets an in-app notice (`loyalty.visit_completed`) with the points the visit added and what is left, or that a reward is ready. It links to «بطاقات الولاء». It is in-app only until a WhatsApp template is approved.
+- **8. The customer's cards** (`/account/loyalty`, and the shop page's card):
+  - the shop's rules in words;
+  - the points: circles up to 12, a bar beyond;
+  - a ready reward with «+N», what is left, and rewards held for upcoming bookings;
+  - the history with the barber's name, and earlier D-132 coupons;
+  - «متوقف حالياً» while the add-on is off.
+  - The shop page shows the card only while the add-on is on.
+- **9. The plans' WhatsApp allowance (6-5).**
+  - A plan has `monthlyWhatsAppMessages`: empty is unlimited (existing plans), 0 is none, N is up to N customer messages per calendar month in the shop's time zone. It is set by SuperAdmin on the plan form and shown in the plan list.
+  - **Enforced at dispatch,** before the provider: a customer message takes a slot by one atomic statement that cannot pass the allowance, so two sends at the last slot never both pass. The slot is given back if the provider never accepts the message.
+  - Without a slot the message is not sent by WhatsApp, and the in-app notice still is. The dispatch is recorded as failed with `whatsapp.allowance_reached`, which does not alert the admins.
+  - Messages to barbers and the owner, and sign-in codes, are never counted or blocked.
+  - At the month's first refusal the owner is told once (`whatsapp.allowance_reached` in the shop inbox, with the realtime push): «وصلتم إلى حد رسائل واتساب لهذا الشهر (٥٠٠)…», or that the plan has none.
+  - The month's use («١٢٠ من ٥٠٠», unlimited or none) is on the owner's subscription page and the admin's subscription tab.
+- **Accepted from the backend's report** (reviewed, my calls):
+  - the owner permission is `Shop.Profile.Edit` (no new permission);
+  - the add-on lives in the Subscriptions module, needs a subscription, and extends from the current end;
+  - the `None` rule; points lost dated at the period's end;
+  - a free-service reward needs the service on the booking;
+  - the lookup is for barbers only;
+  - the owner is told in the inbox and the realtime push (no WhatsApp: no approved template);
+  - refused messages are kept as failed without an admin alert;
+  - "counted" means accepted by the provider, and plans without an allowance are still counted for the display;
+  - the customer's cross-shop list covers at most 250 shops that ever had the add-on;
+  - the usage field is named `messageUsage` (the contract scan forbids "whatsapp" in member names);
+  - the outbox `BookingEvent` gains the staff actor's name (never a customer's).
+- **For the user to know (choices that can be flipped):**
+  - **A visit that uses a reward earns no points.** This is D-132's rule; the client's 6-2 does not say. Flipping it is one condition in the loyalty consumer.
+  - **Old D-132 stamps are not converted.** The member key needs each customer's decrypted mobile, which SQL cannot compute. So:
+    - shops that ran a D-132 programme stop earning until the add-on is switched on and rules are set;
+    - their members get first-visit points again;
+    - half-filled stamp cards no longer show (D-132 coupons do).
+- **Data at deploy time (not migrated or seeded on production):**
+  - the «الاحترافية» (489, allowance 0) and «الاحترافية بلس» (639, allowance 500) plans;
+  - hiding half-year and yearly plans from new shops;
+  - the add-on's price;
+  - which shops get the add-on.
+- **Bundle:** no budget was raised.
+  - The public shop page renders the card's heading and rules on the server and loads the signed-in customer's points card with `React.lazy`: 219.6 / 220 KB.
+  - The admin shop page is 332.8 / 335 KB.
+- **Also in this change:** on the owner's dashboard, a late («red») booking's second line was grey on the red card (#5f6f80 on danger-50, about 4.3:1); it is now the darker text (about 7:1). The route checks met it once a seeded booking turned late.
+- **Plan, checklist and evidence:** `docs/implementation/phases/after-17-d149-owner-settings-loyalty-plans.md`.

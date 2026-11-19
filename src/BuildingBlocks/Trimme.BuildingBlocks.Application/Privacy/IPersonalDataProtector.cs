@@ -32,6 +32,12 @@ public static class PersonalDataPurposes
     /// </summary>
     public const string BarberLogin = "trimme.barber-login";
 
+    /// <summary>
+    /// A loyalty member (D-149): the keyed hash of a customer's mobile under its own purpose, so loyalty points follow the
+    /// number (an online account's, or the one typed into a walk-in or phone booking) and never equal another hash of it.
+    /// </summary>
+    public const string LoyaltyMember = "trimme.loyalty-member";
+
     public const string IpAddress = "trimme.ip-address";
     public const string OtpCode = "trimme.otp-code";
 

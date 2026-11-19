@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Loyalty;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Paging;
@@ -38,7 +39,7 @@ public sealed record ShopAttentionResponse(
 
 internal sealed record CreateWalkInCommand(
     Guid? ServiceId, Guid? PackageId, Guid ProfessionalId, DateTimeOffset? StartsAt, string CustomerName, string? CustomerPhone, string? Note, string? IdempotencyKey,
-    IReadOnlyList<Guid> ServiceIds, BookingChannel Channel = BookingChannel.WalkIn)
+    IReadOnlyList<Guid> ServiceIds, BookingChannel Channel = BookingChannel.WalkIn, bool UseLoyaltyReward = false)
     : ICommand<Result<ShopBookingResponse>>
 {
     /// <summary>Never print the number (records list every member by default).</summary>
@@ -265,6 +266,7 @@ internal sealed class CreateWalkInHandler(
     IPersonalDataProtector protector,
     BookingActors actors,
     ShopRulesReader rules,
+    ILoyaltyRewardHolder loyalty,
     TimeProvider clock)
     : ICommandHandler<CreateWalkInCommand, Result<ShopBookingResponse>>
 {
@@ -314,6 +316,17 @@ internal sealed class CreateWalkInHandler(
         {
             return Error.Validation("validation.failed", "Choose up to 10 services, or one package.",
                 new Dictionary<string, string[]>(StringComparer.Ordinal) { ["serviceIds"] = ["validation.invalid"] });
+        }
+
+        // A reward for the typed number (D-149): one per booking, never on a package.
+        if (command.UseLoyaltyReward && phone is null)
+        {
+            return LoyaltyRewardErrors.PhoneRequired();
+        }
+
+        if (command.UseLoyaltyReward && command.PackageId is not null)
+        {
+            return LoyaltyRewardErrors.NotWithPackage();
         }
 
         var now = clock.GetUtcNow();
@@ -378,10 +391,30 @@ internal sealed class CreateWalkInHandler(
             return BookingErrors.SlotUnavailable();
         }
 
+        var bookingId = EntityId.New<BookingId>();
+        HeldPointsReward? pointsReward = null;
+        if (command.UseLoyaltyReward)
+        {
+            var booked = offer.For(professional.Id);
+            var held = await loyalty.HoldPointsRewardAsync(
+                new PointsRewardHold(shopId, bookingId.Value, null, phone!.E164, booked.Price, BookingMapping.ServicePrices(booked), now), cancellationToken);
+            if (held.IsFailure)
+            {
+                return held.Error;
+            }
+
+            pointsReward = held.Value;
+        }
+
         var booking = Booking.CreateWalkIn(
-            EntityId.New<BookingId>(), shopId, command.CustomerName, new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn),
+            bookingId, shopId, command.CustomerName, new BookedProfessional(professional.Id, professional.NameAr, professional.NameEn),
             BookingMapping.Snapshot(offer, professional.Id), start, startsNow, command.Note, await actors.CurrentAsync(ActorType.ShopUser, cancellationToken), now,
             command.Channel, (await rules.GetAsync(shopId, cancellationToken)).BufferMinutes);
+        if (pointsReward is not null)
+        {
+            booking.UsePointsReward(pointsReward.RedemptionId, pointsReward.TitleAr, pointsReward.TitleEn, pointsReward.Discount);
+        }
+
         db.Add(booking);
         if (phone is not null)
         {

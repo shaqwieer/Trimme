@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/schema';
 import { renderWithIntl } from '@/test/render';
 import { PlatformSettingsForm } from '../admin/PlatformSettingsForm';
+import { LoyaltyAddOnPanel } from './LoyaltyAddOnPanel';
+import { MessageUsage } from './MessageUsage';
 import { periodEnd, priceOn } from './periods';
 import { PlanForm } from './PlanForm';
 import { RecordPeriodForm, SuspensionControl } from './ShopSubscriptionPanel';
@@ -262,7 +264,149 @@ describe('PlanForm', () => {
       features: [{ ar: 'ظهور', en: 'Listed' }],
       initialPrice: 549.5,
       maxProfessionals: null,
+      monthlyWhatsAppMessages: null,
     });
+  });
+
+  it('sets the plan’s monthly WhatsApp messages to customers: 500, or 0 for none (D-149)', async () => {
+    api.PUT.mockResolvedValue({ data: plan(), response: new Response(null) });
+    renderWithIntl(<PlanForm plan={plan({ monthlyWhatsAppMessages: null })} />);
+    const field = screen.getByLabelText(/رسائل واتساب للعملاء شهرياً/);
+    expect(field).toHaveValue('');
+    expect(field).toHaveAccessibleDescription(/اتركه فارغاً لرسائل غير محدودة، أو ٠ لعدم إرسال/);
+    await userEvent.type(field, '500');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التغييرات' }));
+    await waitFor(() => expect(api.PUT).toHaveBeenCalledTimes(1));
+    expect(api.PUT.mock.calls[0]?.[1].body).toMatchObject({ monthlyWhatsAppMessages: 500 });
+
+    await userEvent.clear(field);
+    await userEvent.type(field, '0');
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ التغييرات' }));
+    await waitFor(() => expect(api.PUT).toHaveBeenCalledTimes(2));
+    expect(api.PUT.mock.calls[1]?.[1].body).toMatchObject({ monthlyWhatsAppMessages: 0 });
+  });
+});
+
+describe('MessageUsage (D-149)', () => {
+  const usage = (used: number, allowance: number | null) => ({ month: '2026-11-01', used, allowance });
+
+  it('counts this month’s messages against the plan’s allowance, and says when it is reached', () => {
+    const { unmount } = renderWithIntl(<MessageUsage usage={usage(120, 500)} />);
+    expect(screen.getByTestId('message-usage')).toHaveTextContent('١٢٠ من ٥٠٠');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '24');
+    expect(screen.getByText(/شهر نوفمبر ٢٠٢٦/)).toBeInTheDocument();
+    expect(screen.queryByText(/وصلتم إلى حد هذا الشهر/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithIntl(<MessageUsage usage={usage(500, 500)} />);
+    expect(screen.getByText(/وصلتم إلى حد هذا الشهر/)).toBeInTheDocument();
+  });
+
+  it('says unlimited without an allowance, and none at 0', () => {
+    const { unmount } = renderWithIntl(<MessageUsage usage={usage(37, null)} />);
+    expect(screen.getByText('أُرسلت ٣٧ رسالة هذا الشهر')).toBeInTheDocument();
+    expect(screen.getByText('الرسائل غير محدودة في الباقة الحالية.')).toBeInTheDocument();
+    unmount();
+
+    renderWithIntl(<MessageUsage usage={usage(0, 0)} />);
+    expect(screen.getByText(/لا تشمل رسائل واتساب للعملاء/)).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+});
+
+describe('LoyaltyAddOnPanel (D-149)', () => {
+  const period = {
+    id: 'p1',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    lastDay: '2026-11-30',
+    stoppedOn: null,
+    priceVersionNumber: 2,
+    amount: 99,
+    currency: 'SAR',
+    notes: 'شهر تجربة',
+    recordedAt: '2026-11-01T08:00:00Z',
+  };
+  const ok = { data: {}, response: new Response(null) };
+
+  it('switches the add-on on until a date, with a note, at the price in force', async () => {
+    api.POST.mockResolvedValue(ok);
+    renderWithIntl(
+      <LoyaltyAddOnPanel
+        shopId="s1"
+        addOn={{ active: false, startDate: null, endDate: null, daysRemaining: 0, periods: [] }}
+        price={price('a1', 1, 99, '2026-11-01')}
+        today="2026-11-19"
+        canManage
+      />,
+    );
+    expect(screen.getByText('غير مفعّلة')).toBeInTheDocument();
+    expect(screen.getByText(/السعر الحالي: ٩٩/)).toBeInTheDocument();
+    const end = screen.getByLabelText('تنتهي في');
+    expect(end).toHaveAttribute('min', '2026-11-19');
+    await userEvent.type(end, '2026-12-31');
+    await userEvent.type(screen.getByLabelText(/ملاحظات داخلية/), 'باقة الاحترافية');
+    await userEvent.click(screen.getByRole('button', { name: 'تفعيل الإضافة' }));
+    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(1));
+    expect(api.POST.mock.calls[0]).toEqual([
+      '/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on',
+      { params: { path: { shopId: 's1' } }, body: { endDate: '2026-12-31', notes: 'باقة الاحترافية' } },
+    ]);
+  });
+
+  it('extends after the current end, lists the periods, and switches off after a confirmation', async () => {
+    api.POST.mockResolvedValue(ok);
+    renderWithIntl(
+      <LoyaltyAddOnPanel
+        shopId="s1"
+        addOn={{
+          active: true,
+          startDate: '2026-11-01',
+          endDate: '2026-11-30',
+          daysRemaining: 12,
+          periods: [period],
+        }}
+        price={undefined}
+        today="2026-11-19"
+        canManage
+      />,
+    );
+    expect(screen.getByLabelText('تنتهي في')).toHaveAttribute('min', '2026-12-01');
+    expect(screen.getByRole('button', { name: 'تمديد الإضافة' })).toBeInTheDocument();
+    // Without the SuperAdmin's price permission no price line is shown; each period keeps its recorded price.
+    expect(screen.queryByText(/السعر الحالي/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('loyalty-add-on-periods')).toHaveTextContent('الإصدار ٢');
+    expect(screen.getByTestId('loyalty-add-on-periods')).toHaveTextContent('شهر تجربة');
+
+    await userEvent.click(screen.getByRole('button', { name: 'إيقاف الإضافة' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('وتبقى نقاط العملاء محفوظة');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'إيقاف الإضافة' }));
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on/stop', {
+        params: { path: { shopId: 's1' } },
+      }),
+    );
+  });
+
+  it('shows the add-on without controls to an admin who cannot switch it', () => {
+    renderWithIntl(
+      <LoyaltyAddOnPanel
+        shopId="s1"
+        addOn={{
+          active: true,
+          startDate: '2026-11-01',
+          endDate: '2026-11-30',
+          daysRemaining: 12,
+          periods: [period],
+        }}
+        price={undefined}
+        today="2026-11-19"
+        canManage={false}
+      />,
+    );
+    expect(screen.queryByTestId('loyalty-add-on-form')).not.toBeInTheDocument();
+    expect(screen.getByText(/مفعّلة حتى/)).toBeInTheDocument();
   });
 });
 

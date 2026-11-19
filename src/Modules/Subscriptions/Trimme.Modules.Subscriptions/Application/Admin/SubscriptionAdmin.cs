@@ -85,6 +85,20 @@ internal static class SubscriptionAdminReader
             .SingleOrDefaultAsync(s => s.ShopId == shopId, cancellationToken);
 
     public static async Task<AdminShopSubscriptionResponse> ResponseAsync(
+        TrimmeDbContext db, SubscriptionExtras extras, PlatformSettingsSnapshot settings, DateOnly today, ShopSummary shop, ShopSubscription? subscription,
+        CancellationToken cancellationToken)
+    {
+        var response = await BaseResponseAsync(db, settings, today, shop, subscription, cancellationToken);
+
+        // The loyalty add-on and this month's WhatsApp usage against the plan's allowance (D-149).
+        return response with
+        {
+            LoyaltyAddOn = await extras.AddOnAsync(shop.Id, today, cancellationToken),
+            MessageUsage = await extras.WhatsAppAsync(shop, subscription, today, cancellationToken),
+        };
+    }
+
+    private static async Task<AdminShopSubscriptionResponse> BaseResponseAsync(
         TrimmeDbContext db, PlatformSettingsSnapshot settings, DateOnly today, ShopSummary shop, ShopSubscription? subscription, CancellationToken cancellationToken)
     {
         var status = SubscriptionView.Status(subscription, today, settings);
@@ -240,7 +254,7 @@ internal sealed class ListSubscriptionsHandler(TrimmeDbContext db, IAdminDataSco
     }
 }
 
-internal sealed class GetShopSubscriptionHandler(TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, TimeProvider clock)
+internal sealed class GetShopSubscriptionHandler(TrimmeDbContext db, SubscriptionExtras extras, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, TimeProvider clock)
     : IQueryHandler<GetShopSubscriptionQuery, Result<AdminShopSubscriptionResponse>>
 {
     public async Task<Result<AdminShopSubscriptionResponse>> Handle(GetShopSubscriptionQuery query, CancellationToken cancellationToken)
@@ -254,12 +268,12 @@ internal sealed class GetShopSubscriptionHandler(TrimmeDbContext db, IAdminDataS
 
         var platform = await settings.GetAsync(cancellationToken);
         var subscription = await SubscriptionAdminReader.FindAsync(db, shopId, cancellationToken);
-        return await SubscriptionAdminReader.ResponseAsync(db, platform, platform.LocalDate(clock.GetUtcNow()), shop, subscription, cancellationToken);
+        return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, platform.LocalDate(clock.GetUtcNow()), shop, subscription, cancellationToken);
     }
 }
 
 internal sealed class AssignSubscriptionHandler(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
+    TrimmeDbContext db, SubscriptionExtras extras, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
     IAuditLog audit, TimeProvider clock)
     : ICommandHandler<AssignSubscriptionCommand, Result<AdminShopSubscriptionResponse>>
 {
@@ -311,7 +325,7 @@ internal sealed class AssignSubscriptionHandler(
             "subscription.assigned", "ShopSubscription", subscription.Id.ToString(), shopId,
             SubscriptionAdminReader.PeriodSummary(period, VersionOf(plan, period)) + SubscriptionAdminReader.PricingSummary(period), custom?.Reason));
         await db.SaveChangesAsync(cancellationToken);
-        return await SubscriptionAdminReader.ResponseAsync(db, platform, today, shop, subscription, cancellationToken);
+        return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }
 
     private static string? Trim(string? notes) => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
@@ -321,7 +335,7 @@ internal sealed class AssignSubscriptionHandler(
 }
 
 internal sealed class RenewSubscriptionHandler(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
+    TrimmeDbContext db, SubscriptionExtras extras, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IPermissionResolver permissions,
     IAuditLog audit, TimeProvider clock)
     : ICommandHandler<RenewSubscriptionCommand, Result<AdminShopSubscriptionResponse>>
 {
@@ -376,12 +390,12 @@ internal sealed class RenewSubscriptionHandler(
             SubscriptionAdminReader.PeriodSummary(renewed.Value, AssignSubscriptionHandler.VersionOf(plan, renewed.Value)) +
             SubscriptionAdminReader.PricingSummary(renewed.Value), custom?.Reason));
         await db.SaveChangesAsync(cancellationToken);
-        return await SubscriptionAdminReader.ResponseAsync(db, platform, today, shop, subscription, cancellationToken);
+        return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }
 }
 
 internal sealed class OverrideSubscriptionHandler(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IAuditLog audit, TimeProvider clock)
+    TrimmeDbContext db, SubscriptionExtras extras, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, ICurrentUser user, IAuditLog audit, TimeProvider clock)
     : ICommandHandler<OverrideSubscriptionCommand, Result<AdminShopSubscriptionResponse>>
 {
     public async Task<Result<AdminShopSubscriptionResponse>> Handle(OverrideSubscriptionCommand command, CancellationToken cancellationToken)
@@ -426,7 +440,7 @@ internal sealed class OverrideSubscriptionHandler(
 
         audit.Record(new AuditRecord("subscription.overridden", "ShopSubscription", subscription.Id.ToString(), shopId, $"Override: {string.Join("; ", changes)}", reason));
         await db.SaveChangesAsync(cancellationToken);
-        return await SubscriptionAdminReader.ResponseAsync(db, platform, today, shop, subscription, cancellationToken);
+        return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, today, shop, subscription, cancellationToken);
     }
 }
 
@@ -446,7 +460,7 @@ internal sealed class ReinstateSubscriptionHandler(SubscriptionSuspension suspen
 
 /// <summary>Suspend (with a reason) or reinstate; registered by the module.</summary>
 internal sealed class SubscriptionSuspension(
-    TrimmeDbContext db, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, IAuditLog audit, TimeProvider clock)
+    TrimmeDbContext db, SubscriptionExtras extras, IAdminDataScope scope, IShopDirectory shops, IPlatformSettings settings, IAuditLog audit, TimeProvider clock)
 {
     public async Task<Result<AdminShopSubscriptionResponse>> ChangeAsync(Guid id, uint version, string? suspendReason, CancellationToken cancellationToken)
     {
@@ -478,6 +492,6 @@ internal sealed class SubscriptionSuspension(
         await SubscriptionAdminReader.SyncCoverageAsync(db, subscription, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         var platform = await settings.GetAsync(cancellationToken);
-        return await SubscriptionAdminReader.ResponseAsync(db, platform, platform.LocalDate(now), shop, subscription, cancellationToken);
+        return await SubscriptionAdminReader.ResponseAsync(db, extras, platform, platform.LocalDate(now), shop, subscription, cancellationToken);
     }
 }

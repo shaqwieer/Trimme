@@ -97,3 +97,21 @@ internal sealed class StaffDirectory(TrimmeDbContext db) : IStaffDirectory
             .Distinct()
             .ToListAsync(cancellationToken);
 }
+
+/// <summary>
+/// <see cref="BuildingBlocks.Application.Loyalty.ILoyaltyMemberKeys"/> (D-149): the account's mobile, decrypted only to
+/// compute its loyalty member key; the number itself never leaves this class.
+/// </summary>
+internal sealed class LoyaltyMemberKeys(TrimmeDbContext db, IPersonalDataProtector protector) : BuildingBlocks.Application.Loyalty.ILoyaltyMemberKeys
+{
+    public async Task<string?> ForCustomerAsync(Guid customerId, CancellationToken cancellationToken)
+    {
+        var stored = await db.Set<ApplicationUser>().AsNoTracking()
+            .Where(u => u.Id == customerId && u.UserType == UserType.Customer)
+            .Select(u => u.ProtectedPhone)
+            .SingleOrDefaultAsync(cancellationToken);
+        return stored is null
+            ? null
+            : BuildingBlocks.Application.Loyalty.LoyaltyMembers.KeyOf(protector, protector.Unprotect(stored, PersonalDataPurposes.MobileNumber));
+    }
+}

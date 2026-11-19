@@ -1,18 +1,19 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-19 (Session 28, third request: the owner's dashboard, slices 1–3 of D-149 (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); slices 4–5 in progress; before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
+- **Updated:** 2026-11-19 (Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
-  - Session 28, third request (D-149 slices 1–3): **committed locally, not pushed, not deployed.** It adds migration 27 `OwnerSettings`; deploying needs a database backup first, then api and web built together, `run --rm migrate`, `up -d`.
+  - Session 28, third request (D-149 slices 1–3, then slices 4–5 as D-150): **two local commits, not pushed, not deployed.** They add migrations 27 `OwnerSettings` and 28 `LoyaltyAddOnAndPlanMessages`. Deploying needs a database backup first, then api and web built together, `run --rm migrate`, `up -d`, then the admin data steps below.
   - Session 28 (D-147 and D-148): pushed (`972fcee`) and **deployed to groomhere.sa on 2026-11-18** at the user's request, after a database backup (`/root/backups/trimme-before-d147-d148-20261118-234810.sql.gz`). Migrations `BarberOperations` and `CustomerPages` applied (26). The cancellation window there is now 0. All five shops have `is_demo` false: no «تجريبي» switch has been turned on. The run was `/root/deploy-d147-d148.sh`; smoke from the VPS: pages 200, an unknown shop 404, 5 category tabs, the Riyal sign, «حتى يبدأ الموعد», 12 privacy sections.
   - Session 27 (D-146): pushed (`07c1151`) and **deployed to groomhere.sa on 2026-11-18** after a database backup (`/root/backups/trimme-before-d146-20261118-174737.sql.gz`); no migration (24); after `migrate` the owner role has `Shop.Barbers.Manage` and no `Shop.Bookings.CreateWalkIn`; smoke 200, 0 API errors. Then, at the user's request, a data cleanup (backup `/root/backups/trimme-before-cleanup-d146-20261118-175504.sql.gz`, `.env.bak-cleanup-d146-20261118-175504`): the 5 demo barbers deleted with all their history (all 25 bookings, 6 reviews and the ratings, schedules, service assignments, 3 barber QR codes with 215 scans); the 3 demo customers deleted; «faisal alhazzaa» (+966 53 017 8784) and «Sulaiman aa» kept (their bookings were with demo barbers and went with them); sign-in emails now `admin@groomhere.sa`, `alasala@groomhere.sa`, `barberhouse@groomhere.sa` (passwords unchanged; `TRIMME_BOOTSTRAP_ADMIN_EMAIL` in `.env` follows). The shops have **no barbers** until the owners add them. Never re-run the demo seed there: it would bring the demo barbers, customers and old-email owners back.
   - Session 26 (D-144) is pushed and deployed with D-145 (below).
   - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
-- **Working tree:** clean after the D-149 slices 1–3 commit; slices 4–5 continue on top.
+- **Working tree:** clean after the D-150 commit (D-149 slices 4–5).
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 28, third request, slices 4–5: api and web rebuilt from the tree (no `down -v`): `migrate` up to date at 28 (`LoyaltyAddOnAndPlanMessages`); seed not re-run; codes **on**. No shop has the loyalty add-on locally.
   - Session 28, third request, rebuilt api and web from its tree (no `down -v`): `migrate` up to date at 27 (`OwnerSettings`), seed ran (al-asala 5 sections, barber-house 4); codes **on**.
   - Session 28, second request, rebuilt api and web from its tree (`up -d --build`, no `down -v`): migrate applied `CustomerPages` (26 migrations), seed ran; codes **on**. The local cancellation window is now 0.
   - Session 28 rebuilt api and web from its tree (`up -d --build`, no `down -v`): migrate applied `BarberOperations` (25 migrations), seed ran; codes **on**. E2E runs added phone bookings on the shared volume.
@@ -26,6 +27,31 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 28, third request, slices 4–5: loyalty as a paid add-on and the plans' WhatsApp allowance (D-150)
+- **The request:** the client's 6-2 (loyalty) and 6-5 (plans), with the user's answers. Details are in D-150 and `phases/after-17-d149-owner-settings-loyalty-plans.md`.
+- **What was built (one migration, `LoyaltyAddOnAndPlanMessages`, tables and columns only):**
+  - **Backend**, by the same forked agent, reviewed and re-verified here. Two changes on top: the owner's subscription page leaves out the admin's notes, and an amount off is titled «خصم ٥٠ ⃁».
+  - **Web:**
+    - the customer's cards and the shop page's card (rules in words, «+N», the history; the points card lazy-loaded);
+    - «استخدم مكافأتي» on the review step;
+    - the walk-in lookup and reward;
+    - the owner's «برنامج الولاء» settings tab, which also replaces the admin's programme form;
+    - the admin's add-on panel and the month's WhatsApp use on the subscription tab, both also on the owner's subscription page;
+    - the plan form's monthly WhatsApp field and the add-on's price versions on the plans page;
+    - the two notices.
+  - **Fixed while verifying:** a late booking's second line on the owner's dashboard had too little contrast.
+- **Tell the user and client:**
+  - **A visit that uses a reward earns no points** (D-132's rule; the client didn't say). It is one condition to flip.
+  - **Old D-132 stamps are not converted.** Shops that ran a D-132 programme stop earning until the add-on is on and rules are set; their members get first-visit points again; D-132 coupons stay usable.
+- **Admin data at deploy time (not migrated or seeded):**
+  - create «الاحترافية» (489 SAR a month, monthly WhatsApp 0) and «الاحترافية بلس» (639, monthly WhatsApp 500);
+  - hide the half-year and yearly plans from new shops;
+  - set the loyalty add-on's price on the plans page, then switch it on per shop;
+  - check the enforcement setting on groomhere.sa;
+  - ask which shops are demo.
+  - Counting the shops with a D-132 programme on production needs the user's go.
+- **Evidence:** in the plan file.
+
 ## Session 28, third request: the owner's dashboard (D-149, slices 1–3)
 - **The request** (from the user: two screenshots of the client's section 6, and a pasted list of five owner-dashboard changes). The items, the answers and the five slices are in `phases/after-17-d149-owner-settings-loyalty-plans.md` and D-149.
 - **The user's answers (AskUserQuestion):** each shop's own sections (search category filter removed); a package keeps its set length, tiles show the standard one, the barber's own length applies once chosen; «الاحترافية» no WhatsApp, «الاحترافية بلس» 500 a month then paused; half-year and yearly hidden from new shops (admin data).
@@ -37,7 +63,7 @@
   - Every shop is now 14 days ahead; owners can change it in «إعدادات الحجز».
   - Existing shops get sections made from the categories their services used; owners can rename, reorder or delete them.
   - Shop type is now fixed to a men's barbershop for every shop.
-- **Next:** slices 4 (loyalty add-on) and 5 (plans with a WhatsApp allowance): backend to the same forked agent on top of this commit, then the web. The 489/639 plans and hiding half-year/yearly are admin data at deploy time.
+- **Then:** slices 4 and 5 (D-150, above).
 - **Evidence:** in the plan file.
 
 ## Session 28, second request: the customer's pages (D-148)
@@ -578,6 +604,7 @@ The rest is recorded in DV-C11 and DV-T14.
 | k6 smoke; Lighthouse | Passed thresholds; recorded in `docs/performance.md` |
 
 ## Database and migrations
+- Session 28 (D-150): `20261119092434_LoyaltyAddOnAndPlanMessages` adds the add-on prices and periods (and its first and last day on the coverage row), the plan's `monthly_whats_app_messages`, the loyalty settings, accounts, entries and redemptions, the monthly WhatsApp usage and the dispatch's allowance month, and a booking's redemption and discount. It changes no data; existing plans stay unlimited. Applied on the local compose volume and from empty in the integration tests; **not on groomhere.sa**.
 - Session 28 (D-149): `20261119070810_OwnerSettings` adds the shop booking overrides and `buffer_minutes`, professionals' `languages`, a barber assignment's `duration_minutes`, `buffer_minutes` and `blocked_until` on bookings and postponement offers (existing rows: `blocked_until = ends_at`), rebuilds `during`, the exclusion constraint, the two hold functions and the booking trigger on `[starts_at, blocked_until)`, creates `service_sections` from each shop's used categories and places the services, sets every shop to `Barbershop` and the platform's furthest day to 14. Applied on the local compose volume and from empty in the integration tests (with a `Down` round trip); **not on groomhere.sa**.
 - Session 28 (D-148): `20261118204915_CustomerPages` adds `shops.is_demo` (default false), widens `bookings.reference` from `char(8)` to `varchar(12)`, and sets `platform_settings.cancellation_cutoff_minutes` to 0. Applied on groomhere.sa (2026-11-18), the local compose volume, and from empty in the integration tests.
 - Session 28 (D-147): `BarberOperations` (additive). Applied on groomhere.sa (2026-11-18), locally, and in the integration tests.

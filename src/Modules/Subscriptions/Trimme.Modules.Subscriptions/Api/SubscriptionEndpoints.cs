@@ -11,7 +11,10 @@ using Trimme.Modules.Subscriptions.Domain;
 
 namespace Trimme.Modules.Subscriptions.Api;
 
-/// <summary>A new plan (Draft). <c>InitialPrice</c>, when given, becomes price version 1 from today.</summary>
+/// <summary>
+/// A new plan (Draft). <c>InitialPrice</c>, when given, becomes price version 1 from today. <c>MonthlyWhatsAppMessages</c>
+/// (D-149) is the customer WhatsApp messages per calendar month: null unlimited, 0 none.
+/// </summary>
 public sealed record CreatePlanRequest(
     string NameAr,
     string NameEn,
@@ -25,7 +28,8 @@ public sealed record CreatePlanRequest(
     int? TrialDays,
     int? GraceDays,
     bool AvailableToNewShops,
-    decimal? InitialPrice);
+    decimal? InitialPrice,
+    int? MonthlyWhatsAppMessages = null);
 
 /// <summary>Edits a plan's details; prices change only through a new price version.</summary>
 public sealed record UpdatePlanRequest(
@@ -41,7 +45,8 @@ public sealed record UpdatePlanRequest(
     int? TrialDays,
     int? GraceDays,
     bool AvailableToNewShops,
-    uint Version);
+    uint Version,
+    int? MonthlyWhatsAppMessages = null);
 
 /// <summary>Every non-archived plan, in the new order.</summary>
 public sealed record PlanOrderRequest(IReadOnlyList<Guid> OrderedIds);
@@ -70,6 +75,12 @@ public sealed record SuspendSubscriptionRequest(string Reason, uint Version);
 
 public sealed record ReinstateSubscriptionRequest(uint Version);
 
+/// <summary>Switches the shop's loyalty add-on on until <c>EndDate</c> (from today, or after the period in force), D-149.</summary>
+public sealed record SwitchOnLoyaltyAddOnRequest(DateOnly EndDate, string? Notes);
+
+/// <summary>A new add-on price version in the platform currency, effective from today or a later date (SuperAdmin, D-149).</summary>
+public sealed record AddLoyaltyAddOnPriceRequest(decimal Amount, DateOnly EffectiveFrom);
+
 internal static class SubscriptionEndpoints
 {
     // Identity owns the permission catalogue; the endpoint matrix test fails if a code is not in it.
@@ -80,6 +91,7 @@ internal static class SubscriptionEndpoints
     private const string PlansManage = "SuperAdmin.SubscriptionPlans.Manage";
     private const string Override = "SuperAdmin.Subscriptions.Override";
     private const string ShopRead = "Shop.Subscription.Read";
+    private const string LoyaltyManage = "Admin.Loyalty.Manage";
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -91,6 +103,18 @@ internal static class SubscriptionEndpoints
             .RequirePermission(View).WithTags("Admin: subscriptions")
             .WithName("ListSubscriptions").WithSummary("Shop subscriptions by status (most urgent end date first), with counts over every shop.")
             .Produces<AdminSubscriptionListResponse>();
+
+        var addOnPrices = api.MapGroup("/admin/loyalty-add-on/prices").WithTags("Admin: subscriptions");
+        addOnPrices.MapGet("/", async (IDispatcher d, CancellationToken ct) => TypedResults.Ok(await d.Send(new ListLoyaltyAddOnPricesQuery(), ct)))
+            .RequirePermission(View)
+            .WithName("ListLoyaltyAddOnPrices").WithSummary("The loyalty add-on's price versions (D-149): the one in force, the next one and the history.")
+            .Produces<LoyaltyAddOnPricesResponse>();
+        addOnPrices.MapPost("/", async (AddLoyaltyAddOnPriceRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new AddLoyaltyAddOnPriceCommand(r.Amount, r.EffectiveFrom), ct)).ToHttpResult())
+            .RequirePermission(PlansManage)
+            .WithName("AddLoyaltyAddOnPrice")
+            .WithSummary("SuperAdmin adds a loyalty add-on price version from a date (today or later); periods keep the version they started on.")
+            .Produces<LoyaltyAddOnPricesResponse>().ProducesProblem(StatusCodes.Status400BadRequest);
 
         api.MapGet("/shop/subscription", async (IDispatcher d, CancellationToken ct) =>
                 await d.Send(new GetMySubscriptionQuery(), ct) is { } mine ? TypedResults.Ok(mine) : SubscriptionErrors.NoSubscription().ToProblem())
@@ -113,7 +137,7 @@ internal static class SubscriptionEndpoints
         group.MapPost("/", async (CreatePlanRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new CreatePlanCommand(
                     r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.DescriptionAr, r.DescriptionEn, r.Features, r.MaxProfessionals, r.MaxServices,
-                    r.IntervalUnit, r.IntervalCount, r.TrialDays, r.GraceDays, r.AvailableToNewShops, r.InitialPrice), ct))
+                    r.IntervalUnit, r.IntervalCount, r.TrialDays, r.GraceDays, r.AvailableToNewShops, r.InitialPrice, r.MonthlyWhatsAppMessages), ct))
                     .ToHttpResult(p => TypedResults.Created($"/api/v1/admin/subscription-plans/{p.Id}", p)))
             .RequirePermission(PlansManage)
             .WithName("CreateSubscriptionPlan").WithSummary("Creates a draft plan (SuperAdmin).")
@@ -121,7 +145,7 @@ internal static class SubscriptionEndpoints
         group.MapPut("/{planId:guid}", async (Guid planId, UpdatePlanRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new UpdatePlanCommand(
                     planId, r.NameAr ?? string.Empty, r.NameEn ?? string.Empty, r.DescriptionAr, r.DescriptionEn, r.Features, r.MaxProfessionals, r.MaxServices,
-                    r.IntervalUnit, r.IntervalCount, r.TrialDays, r.GraceDays, r.AvailableToNewShops, r.Version), ct)).ToHttpResult())
+                    r.IntervalUnit, r.IntervalCount, r.TrialDays, r.GraceDays, r.AvailableToNewShops, r.Version, r.MonthlyWhatsAppMessages), ct)).ToHttpResult())
             .RequirePermission(PlansManage)
             .WithName("UpdateSubscriptionPlan").WithSummary("Edits a plan's details (SuperAdmin; optimistic concurrency). Existing subscriptions keep their snapshots.")
             .Produces<PlanResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
@@ -186,6 +210,19 @@ internal static class SubscriptionEndpoints
             .RequirePermission(Suspend)
             .WithName("SuspendShopSubscription").WithSummary("Suspends the subscription (reason required). Existing bookings are not touched.")
             .Produces<AdminShopSubscriptionResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        group.MapPost("/loyalty-add-on", async (Guid shopId, SwitchOnLoyaltyAddOnRequest r, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new SwitchOnLoyaltyAddOnCommand(shopId, r.EndDate, r.Notes), ct)).ToHttpResult())
+            .RequirePermission(LoyaltyManage)
+            .WithName("SwitchOnLoyaltyAddOn")
+            .WithSummary("Switches the shop's loyalty add-on on until an end date, at the add-on price in force on its start (D-149; audited).")
+            .Produces<LoyaltyAddOnResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+        group.MapPost("/loyalty-add-on/stop", async (Guid shopId, IDispatcher d, CancellationToken ct) =>
+                (await d.Send(new StopLoyaltyAddOnCommand(shopId), ct)).ToHttpResult())
+            .RequirePermission(LoyaltyManage)
+            .WithName("StopLoyaltyAddOn")
+            .WithSummary("Switches the shop's loyalty add-on off from today; customers keep their points (D-149; audited).")
+            .Produces<LoyaltyAddOnResponse>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
         group.MapPost("/reinstate", async (Guid shopId, ReinstateSubscriptionRequest r, IDispatcher d, CancellationToken ct) =>
                 (await d.Send(new ReinstateSubscriptionCommand(shopId, r.Version), ct)).ToHttpResult())
             .RequirePermission(Suspend)

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Trimme.BuildingBlocks.Application.Loyalty;
 using Trimme.BuildingBlocks.Application.Scheduling;
 using Trimme.BuildingBlocks.Application.Tenancy;
 using Trimme.BuildingBlocks.Domain.Results;
@@ -27,7 +28,11 @@ public sealed record BookingProfessionalResponse(Guid Id, string NameAr, string 
 public sealed record BookingShopResponse(Guid Id, string Slug, string NameAr, string NameEn);
 
 /// <summary>The loyalty reward chosen for the booking (D-132): the shop applies it at the visit.</summary>
-public sealed record BookingLoyaltyRewardResponse(Guid Id, string TitleAr, string? TitleEn);
+/// <summary>
+/// The loyalty reward used on the booking: a D-132 coupon (no <c>Discount</c>: the shop applies it at the visit) or a points
+/// reward (D-149), whose <c>Discount</c> is already taken off the amount due.
+/// </summary>
+public sealed record BookingLoyaltyRewardResponse(Guid Id, string TitleAr, string? TitleEn, decimal? Discount = null);
 
 public sealed record BookingHistoryResponse(
     BookingEventKind Kind,
@@ -120,7 +125,8 @@ public sealed record ShopBookingResponse(
     bool ClosedLate = false,
     string? ClosedBy = null,
     string? CustomerPhone = null,
-    PostponementOfferResponse? Postponement = null)
+    PostponementOfferResponse? Postponement = null,
+    decimal? AmountDue = null)
 {
     /// <summary>Never print the number (records list every member by default).</summary>
     public override string ToString() => $"{nameof(ShopBookingResponse)} {{ Id = {Id}, Status = {Status} }}";
@@ -163,7 +169,8 @@ internal sealed record BookingEvent(
     string ActorType,
     Guid? PreviousProfessionalId = null,
     Guid? ActorId = null,
-    DateTimeOffset? OfferedStartsAt = null);
+    DateTimeOffset? OfferedStartsAt = null,
+    string? ActorName = null);
 
 internal static class BookingEvents
 {
@@ -193,7 +200,7 @@ internal static class BookingEvents
         db.Add(OutboxMessage.Create(type, new BookingEvent(
             booking.Id.Value, booking.ShopId.Value, booking.ProfessionalId.Value, booking.CustomerId, booking.StartsAt, booking.EndsAt,
             booking.Status.ToString(), booking.Channel.ToString(), last.PreviousStartsAt, last.ActorType.ToString(), last.PreviousProfessionalId, last.ActorId,
-            offeredStartsAt), now));
+            offeredStartsAt, last.ActorType == ActorType.Customer ? null : last.ActorName), now));
     }
 
     public static PostponementOfferResponse Offer(PostponementOffer offer, Booking booking, DateTimeOffset now) =>
@@ -229,7 +236,7 @@ internal static class BookingMapping
         Booking b, DateTimeOffset now, bool outsideSchedule, CustomerVisit? visit = null, IReadOnlyList<BookingStatus>? allowed = null) =>
         new(b.Id.Value, b.Reference, b.CustomerName, b.Channel, b.QrLinkId is not null, Professional(b), Item(b), b.StartsAt, b.EndsAt, b.Status, b.CustomerNote,
             b.CancellationReason, allowed ?? b.AllowedShopTransitions(now), outsideSchedule && b.IsActive, LoyaltyReward(b), visit, b.Version,
-            b.ActualStartAt, b.CompletedAt, b.IsOverdue(now), b.CancelledLate, b.ClosedLate, b.ClosingEntry?.ActorName);
+            b.ActualStartAt, b.CompletedAt, b.IsOverdue(now), b.CancelledLate, b.ClosedLate, b.ClosingEntry?.ActorName, AmountDue: b.AmountDue);
 
     public static CustomerBookingResponse ToCustomer(Booking b, ShopSummary? shop, CustomerBookingView view)
     {
@@ -249,7 +256,15 @@ internal static class BookingMapping
     }
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>
-        b.LoyaltyRewardId is { } id ? new(id, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn) : null;
+        b.LoyaltyRewardId is { } id
+            ? new(id, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn)
+            : b.LoyaltyRedemptionId is { } redemption ? new(redemption, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn, b.LoyaltyDiscount) : null;
+
+    /// <summary>The booked services and the price each counts for, for a free-service reward (D-149).</summary>
+    public static IReadOnlyList<BookedServicePrice> ServicePrices(BookableOffer offer) =>
+        offer.Items.Count == 0
+            ? [new BookedServicePrice(offer.Id, offer.Price)]
+            : [.. offer.Items.Where(i => i.Price is not null).Select(i => new BookedServicePrice(i.ServiceId, i.Price!.Value))];
 
     public static BookedItem Snapshot(BookableOffer offer) =>
         new(offer.IsPackage ? null : offer.Id, offer.IsPackage ? offer.Id : null, offer.NameAr, offer.NameEn, offer.Price, offer.Currency,

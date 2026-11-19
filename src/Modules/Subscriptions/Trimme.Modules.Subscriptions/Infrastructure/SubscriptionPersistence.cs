@@ -130,3 +130,37 @@ internal sealed class SubscriptionCoverageConfiguration : IEntityTypeConfigurati
         builder.HasIndex(c => c.EndDate);
     }
 }
+
+internal sealed class LoyaltyAddOnPriceConfiguration : IEntityTypeConfiguration<LoyaltyAddOnPrice>
+{
+    public void Configure(EntityTypeBuilder<LoyaltyAddOnPrice> builder)
+    {
+        builder.ToTable("loyalty_add_on_prices", t => t.HasCheckConstraint("ck_loyalty_add_on_prices_amount", "amount >= 0"));
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Amount).HasPrecision(12, 2);
+        builder.Property(p => p.Currency).HasMaxLength(3).IsFixedLength();
+
+        // One version per date and a gap-free version sequence, even under concurrent writes (as plan prices).
+        builder.HasIndex(p => p.EffectiveFrom).IsUnique();
+        builder.HasIndex(p => p.VersionNumber).IsUnique();
+    }
+}
+
+internal sealed class LoyaltyAddOnPeriodConfiguration : IEntityTypeConfiguration<LoyaltyAddOnPeriod>
+{
+    public void Configure(EntityTypeBuilder<LoyaltyAddOnPeriod> builder)
+    {
+        builder.ToTable("loyalty_add_on_periods", t =>
+        {
+            t.HasCheckConstraint("ck_loyalty_add_on_periods_dates", "end_date >= start_date");
+            t.HasCheckConstraint("ck_loyalty_add_on_periods_amount", "amount >= 0");
+        });
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Amount).HasPrecision(12, 2);
+        builder.Property(p => p.Currency).HasMaxLength(3).IsFixedLength();
+        builder.Property(p => p.Notes).HasMaxLength(LoyaltyAddOnPeriod.MaxNotesLength);
+        builder.HasOne<LoyaltyAddOnPrice>().WithMany().HasForeignKey(p => p.PriceId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(p => new { p.ShopId, p.StartDate });
+        builder.Ignore(p => p.LastDay);
+    }
+}

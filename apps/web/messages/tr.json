@@ -550,7 +550,7 @@
     "qr_already_active": "Kod zaten aktif.",
     "qr_already_inactive": "Kod zaten kapalı.",
     "invitation_role_invalid": "Bu rol, davet edilen hesap türüne uygun değil.",
-    "loyalty_reward_unavailable": "Bu kupon kullanılamıyor: kullanılmış, süresi dolmuş ya da başka bir salona ait.",
+    "loyalty_reward_unavailable": "Bu ödül şu an kullanılamıyor: kullanılmış, süresi dolmuş ya da puan yetersiz.",
     "auth_password_change_required": "Geçici şifrenin yerine yeni bir şifre seçin.",
     "auth_password_change_not_required": "Bu şifre geçici değil. Doğrudan bu şifreyle giriş yapın.",
     "geo_map_link_invalid": "Bu bir Google Haritalar bağlantısı değil.",
@@ -575,7 +575,13 @@
     "booking_postpone_same_time": "Bu, randevunun kendi saati.",
     "schedule_one_off_break_is_barbers": "Tek günlük molayı berber kendisi koyar. Dükkân sahibi yalnızca haftalık molalar ekler.",
     "booking_service_in_package": "Bu hizmet seçilen pakette zaten var.",
-    "service_section_not_found": "Bu bölüm artık yok. Sayfayı yenileyin."
+    "service_section_not_found": "Bu bölüm artık yok. Sayfayı yenileyin.",
+    "loyalty_reward_not_with_package": "Sadakat ödülü paketlerle birlikte kullanılamaz.",
+    "loyalty_reward_service_not_booked": "Ödül ücretsiz bir hizmet; önce randevuya ekleyin.",
+    "loyalty_not_active": "Bu salonun sadakat programı şu an açık değil.",
+    "loyalty_add_on_no_subscription": "Aboneliği olmayan bir dükkân için eklenti açılamaz.",
+    "loyalty_add_on_not_active": "Eklenti bu dükkân için açık değil.",
+    "loyalty_add_on_no_price": "Önce abonelik paketleri sayfasından sadakat eklentisi fiyatını belirleyin."
   },
   "shopStatus": {
     "Draft": "Taslak",
@@ -917,14 +923,16 @@
       "label": "Ayar bölümleri",
       "profile": "Salon profili",
       "location": "Konum",
-      "booking": "Randevu ayarları"
+      "booking": "Randevu ayarları",
+      "loyalty": "Sadakat"
     },
     "profile": "Salon profili",
     "images": "Salon görselleri",
     "location": "Salon konumu",
     "unavailableTitle": "Ayarlar şu anda kullanılamıyor",
     "unavailableBody": "Salon askıya alındı. Platform yöneticisiyle iletişime geçin.",
-    "booking": "Randevu ayarları"
+    "booking": "Randevu ayarları",
+    "loyalty": "Sadakat programı"
   },
   "catalog": {
     "currency": "SAR",
@@ -1174,7 +1182,8 @@
       "status": "Durum",
       "newShops": "Yeni salonlar",
       "subscriptions": "Salonlar",
-      "order": "Sıra"
+      "order": "Sıra",
+      "messages": "WhatsApp / ay"
     },
     "upcoming": "{date} tarihinden itibaren {price}",
     "noPrice": "Fiyat yok",
@@ -1221,7 +1230,9 @@
       "initialPriceHelper": "Bugünden itibaren fiyat sürümü 1 olur. Daha sonra da ekleyebilirsiniz.",
       "create": "Plan oluştur",
       "save": "Değişiklikleri kaydet",
-      "saved": "Değişiklikler kaydedildi."
+      "saved": "Değişiklikler kaydedildi.",
+      "monthlyWhatsAppMessages": "Aylık müşteri WhatsApp mesajı",
+      "monthlyWhatsAppMessagesHelper": "Sınırsız için boş bırakın, müşterilere WhatsApp mesajı gönderilmemesi için 0 yazın. Berber mesajları ve giriş kodları sayılmaz."
     },
     "detail": {
       "back": "Abonelik planları",
@@ -1246,6 +1257,13 @@
       "amount": "Yeni fiyat (SAR)",
       "effectiveFrom": "Geçerlilik başlangıcı",
       "priceAdded": "Fiyat sürümü eklendi."
+    },
+    "messagesUnlimited": "Sınırsız",
+    "messagesNone": "Yok",
+    "messagesCount": "{count, number}",
+    "addOn": {
+      "title": "Sadakat eklentisi fiyatı",
+      "body": "Geçerli fiyat, bir yöneticinin bir dükkân için açtığı her dönemle kaydedilir. Sürümler düzenlenmez veya silinmez; her biri kendi tarihinde veya sonrasında başlayan dönemlere uygulanır."
     }
   },
   "adminSubscriptions": {
@@ -1340,7 +1358,30 @@
       "customPlanPrice": "Bir standart dönem için plan fiyatı: {price}",
       "customEntry": "Süper Yönetici özel fiyatı ({reason}; plan fiyatı {standard})"
     },
-    "manageLabel": "{name} için aboneliği yönet"
+    "manageLabel": "{name} için aboneliği yönet",
+    "addOn": {
+      "title": "Sadakat eklentisi",
+      "intro": "Ücretli bir eklenti: açık olduğu sürece dükkânın müşterileri puan toplar ve ödül kullanır. Sona erdiğinde toplama ve kullanma durur, puanlar saklanır.",
+      "active": "{date} tarihine kadar açık",
+      "inactive": "Kapalı",
+      "price": "Güncel fiyat: {price}",
+      "noPrice": "Henüz eklenti fiyatı yok. Süper yönetici abonelik paketleri sayfasında belirler.",
+      "endDate": "Bitiş tarihi",
+      "endDateHelper": "Bugün başlar; açıksa mevcut dönem bittikten sonra başlar.",
+      "notes": "İç notlar (isteğe bağlı)",
+      "switchOn": "Eklentiyi aç",
+      "extend": "Uzat",
+      "switched": "Eklenti dönemi kaydedildi.",
+      "stop": "Eklentiyi kapat",
+      "stopTitle": "Sadakat eklentisi kapatılsın mı?",
+      "stopBody": "Puan toplama ve ödül kullanma bugün durur; müşterilerin puanları saklanır ve yeniden açıldığında geri gelir.",
+      "stopped": "Eklenti kapatıldı.",
+      "periods": "Eklenti dönemleri",
+      "period": "{start} – {end}",
+      "periodPrice": "{price} — sürüm {version}",
+      "stoppedOn": "{date} tarihinde kapatıldı",
+      "noPeriods": "Eklenti bu dükkân için hiç açılmadı."
+    }
   },
   "barberLogins": {
     "title": "Berberler",
@@ -1414,7 +1455,16 @@
     "historyTitle": "Yenileme geçmişi",
     "historyEmpty": "Henüz dönem yok.",
     "historyItem": "{start} – {end}",
-    "historyPlan": "{plan} · {price}"
+    "historyPlan": "{plan} · {price}",
+    "addOn": {
+      "title": "Sadakat programı",
+      "active": "{date} tarihine kadar açık",
+      "inactive": "Kapalı. Sadakat, platform ekibinin sizinle anlaşarak açtığı ücretli bir eklentidir.",
+      "ended": "{date} tarihinde sona erdi. Müşterilerinizin puanları saklanır ve yenilendiğinde geri gelir.",
+      "rules": "Puan kuralları",
+      "history": "Eklenti dönemleri",
+      "period": "{start} – {end}"
+    }
   },
   "platformSettings": {
     "title": "Platform ayarları",
@@ -2685,7 +2735,16 @@
       "pickServiceFirst": "Önce hizmetleri seçin.",
       "pickProfessionalFirst": "Önce berberi seçin.",
       "you": "(siz)",
-      "submitPhone": "Randevuyu kaydet"
+      "submitPhone": "Randevuyu kaydet",
+      "loyalty": {
+        "ready": "Müşterinin hazır bir ödülü var: {reward}",
+        "use": "Müşterinin ödülünü kullan",
+        "notWithPackage": "Ödül paketlerle birlikte kullanılamaz.",
+        "needsService": "Ödülü kullanmak için “{service}” ekleyin.",
+        "hint": "Puanlar hizmet bittiğinde düşülür, randevu iptal edilirse geri verilir.",
+        "discount": "Ödül indirimi",
+        "due": "Ödenecek tutar"
+      }
     },
     "calendar": {
       "title": "Günlük ve haftalık takvim",
@@ -3247,14 +3306,16 @@
         "booking_cancelled_by_barber": "{professional}, {customer} adlı müşterinin {date} saat {time} tarihli randevusunu iptal etti ({item})",
         "booking_professional_changed": "{customer} adlı müşterinin randevusu artık {previousProfessional} yerine {professional} ile: {date} saat {time}",
         "booking_postponement_offered": "Bir berber {customer} için yeni saat önerdi: {offeredDate} {offeredTime}",
-        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı"
+        "booking_postponement_declined": "{customer} yeni saati reddetti; randevu {date} {time} saatinde kaldı",
+        "whatsapp_allowance_reached": "{allowance, plural, =0 {Paketinizde müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.} other {Bu ayın WhatsApp sınırına ulaştınız ({allowance}). Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.}}"
       },
       "customer": {
         "booking_confirmed": "{shop} randevunuzu onayladı: {item}, {date} saat {time}",
         "booking_rescheduled": "{shop} salonundaki randevunuz taşındı: {date} saat {time}",
         "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi",
         "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz",
-        "booking_postponement_offered": "{shop} randevunuz için yeni bir saat öneriyor: {date} {time} yerine {offeredDate} {offeredTime}. Randevu sayfasından kabul edin veya reddedin"
+        "booking_postponement_offered": "{shop} randevunuz için yeni bir saat öneriyor: {date} {time} yerine {offeredDate} {offeredTime}. Randevu sayfasından kabul edin veya reddedin",
+        "loyalty_visit_completed": "{shop} ziyaretiniz tamamlandı{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}"
       },
       "barber": {
         "booking_created": "{customer} için yeni randevu: {item}, {date} saat {time}",
@@ -3608,67 +3669,111 @@
   },
   "loyalty": {
     "title": "Sadakat kartları",
-    "intro": "Sadakat programı olan bir salonda Groom Here üzerinden tamamladığınız her randevu kartınızdaki bir daireyi yeşile boyar. Kart dolduğunda aynı salondaki bir sonraki randevunuzda seçebileceğiniz bir kupon kazanırsınız.",
+    "intro": "Sadakat programı olan bir salonda tamamlanan her ziyaretten puan kazanırsınız; puanlar cep telefonu numaranıza işlenir. Kart dolduğunda aynı salondaki bir sonraki randevunuzda seçebileceğiniz bir ödül kazanırsınız.",
     "programTitle": "Sadakat programı",
-    "offer": "{visits, plural, one {{visitsText} ziyaret} other {{visitsText} ziyaret}} tamamlayın, kazanın: {reward}",
-    "offerCircles": "{visits, plural, one {{visitsText} daire} other {{visitsText} daire}} toplayın, kazanın: {reward}",
-    "firstVisit": "{count, plural, one {İlk ziyaretiniz {countText} daire doldurur} other {İlk ziyaretiniz {countText} daire doldurur}}, sonra her ziyaret bir daire.",
-    "anyProfessional": "Salondaki herhangi bir uzmanla yaptığınız ziyaretler sayılır.",
-    "stampsLabel": "{requiredText} daireden {filledText} tanesi dolu",
-    "remaining": "{left, plural, one {Kupona {leftText} ziyaret kaldı} other {Kupona {leftText} ziyaret kaldı}}",
-    "useWhenBooking": "Kuponu bu salondaki bir sonraki randevunuzun onay adımında seçin.",
-    "signIn": "Ziyaretlerinizi takip etmek için giriş yapın",
+    "anyProfessional": "Puanlar hizmet bittiğinde, salondaki herhangi bir uzmanla eklenir.",
+    "stampsLabel": "Karttaki puanlar: {filledText} / {requiredText}",
+    "signIn": "Puanlarınızı takip etmek için giriş yapın",
     "code": "Kupon kodu:",
     "expires": "{date} tarihine kadar geçerli",
     "noExpiry": "Son kullanma tarihi yok",
     "ready": "Kullanıma hazır",
     "held": "Yaklaşan randevunuz için ayrıldı",
     "viewBooking": "Randevuyu görüntüle",
-    "programEnded": "Salon sadakat programını durdurdu; kazandığınız kuponlar hâlâ geçerli.",
-    "bookToUse": "Randevu alın ve kuponu kullanın",
     "empty": {
       "title": "Henüz sadakat kartınız yok",
       "body": "Sadakat programı olan bir salonda randevunuzu tamamladığınızda kartınız burada görünür.",
       "cta": "Salonlara göz atın"
     },
-    "wizard": {
-      "title": "Sadakat kuponu",
-      "use": "Kuponu kullan: {reward}",
-      "none": "Şimdi kullanmak istemiyorum",
-      "hint": "Salon kuponu ziyaretinizde uygular; gösterilen tutar kupon öncesidir."
+    "applied": "Sadakat ödülü: {reward}",
+    "chip": "Ödül",
+    "points": "{count, plural, =0 {puan yok} one {# puan} other {# puan}}",
+    "days": "{count, plural, one {# gün} other {# gün}}",
+    "rules": {
+      "earn": "İlk ziyaretiniz için {first}, sonraki her ziyaret için {visit}.",
+      "earnSame": "Her ziyaret için {visit}.",
+      "reward": "{count, plural, one {# puan} other {# puan}} toplayın, {reward} kazanın.",
+      "None": "Puanlarınızın süresi dolmaz.",
+      "Wipe": "Ziyaretsiz {days} geçerse puanlar silinir.",
+      "DecayPerPeriod": "Ziyaretsiz geçen her {days} için bir puan düşer."
     },
-    "applied": "Sadakat kuponu: {reward}",
-    "chip": "Kupon",
-    "admin": {
+    "reward": {
+      "FreeService": "ücretsiz {service}",
+      "AmountOff": "{amount} indirim"
+    },
+    "card": {
+      "progress": "Kartta {current} / {needed}",
+      "ready": "{count, plural, one {# ödül hazır} other {# ödül hazır}}",
+      "extra": "+{count}",
+      "extraLabel": "ve sonraki kartta {points}",
+      "toNext": "Ödülünüze {points} kaldı",
+      "toNextMore": "Sonraki ödülünüze {points} kaldı",
+      "held": "{count, plural, one {# ödül yaklaşan randevu için ayrıldı} other {# ödül yaklaşan randevular için ayrıldı}}",
+      "paused": "Bu salonda sadakat programı şu an durduruldu. Puanlarınız saklanır ve yeniden başladığında geri gelir.",
+      "useWhenBooking": "Bu salondaki bir sonraki randevunuzun onay adımında “Ödülümü kullan”ı seçin.",
+      "bookToUse": "Randevu al ve ödülünü kullan"
+    },
+    "history": {
+      "title": "Puan geçmişi",
+      "Earned": "{barber} ile ziyaret",
+      "EarnedNoBarber": "Ziyaret",
+      "Redeemed": "Ödül kullanıldı",
+      "Wiped": "Ziyaret olmadığı için puanlar silindi",
+      "Decayed": "Ziyaret olmadığı için düşüldü"
+    },
+    "coupons": "Önceki kuponlar",
+    "wizard": {
+      "title": "Sadakat ödülü",
+      "usePoints": "Ödülümü kullan: {reward}",
+      "useCoupon": "Kuponu kullan: {reward}",
+      "none": "Şimdi kullanmak istemiyorum",
+      "notWithPackage": "Ödül paketlerle birlikte kullanılamaz.",
+      "needsService": "Ödülü kullanmak için randevunuza “{service}” ekleyin.",
+      "pointsHint": "Puanlar hizmet bittiğinde düşülür, randevu iptal edilirse geri verilir.",
+      "couponHint": "Salon kuponu ziyaretinizde uygular; gösterilen tutar kupon öncesidir.",
+      "discount": "Ödül indirimi",
+      "due": "Ödenecek tutar"
+    },
+    "due": "Ödül sonrası ödenecek: {amount}",
+    "rulesForm": {
       "title": "Sadakat programı",
-      "intro": "Salonla anlaşılarak belirlenir. Salonun herhangi bir uzmanıyla tamamlanan her çevrim içi randevu müşterinin kartındaki bir daireyi doldurur; dolan kart, müşterinin randevu alırken seçtiği ve salonun ziyarette uyguladığı bir kupon kazandırır.",
-      "active": "Program açık",
-      "requiredVisits": "Ödül için gereken ziyaret sayısı",
-      "firstVisitStamps": "İlk ziyaret puanı",
-      "firstVisitHint": "Müşterinin salondaki ilk tamamlanan ziyaretinin dolduracağı daire sayısı; sonraki her ziyaret bir daire doldurur. Ek puan vermemek için 1 girin. {min} ile {max} arası",
-      "rewardKind": "Ödül türü",
-      "kinds": {
+      "intro": "Puanlar yalnızca ziyaret “Hizmet bitti” olarak kapatıldığında, kapatan berberin adıyla eklenir. Puanlar müşterinin cep numarasına işlenir; çevrimiçi, kapıdan ve telefonla ziyaretler tek kartta toplanır.",
+      "addOnOff": "Sadakat, dükkânınız için kapalı olan ücretli bir eklentidir. Kuralları şimdi ayarlayabilirsiniz; platform ekibi açtığında müşterileriniz puan toplamaya başlar.",
+      "addOnOffAdmin": "Eklenti bu dükkân için kapalı; müşterileri şu an puan toplamıyor. Abonelik sekmesinden açın.",
+      "addOnOn": "Eklenti açık: müşteriler puan topluyor ve ödüllerini kullanıyor.",
+      "notSet": "Henüz puan kuralı ayarlanmadı.",
+      "firstVisitPoints": "İlk ziyaret puanı",
+      "visitPoints": "Sonraki her ziyaretin puanı",
+      "pointsForReward": "Ödül için gereken puan",
+      "range": "{min} – {max}",
+      "reward": "Ödül",
+      "rewardTypes": {
         "FreeService": "Ücretsiz hizmet",
-        "Discount": "Yüzde indirim"
+        "AmountOff": "Sabit tutar indirimi"
       },
-      "discountPercent": "İndirim (%)",
-      "rewardTitleAr": "Ödülün Arapça adı",
-      "rewardTitleArHint": "Örneğin: حلاقة مجانية",
-      "rewardTitleEn": "Ödülün İngilizce adı (isteğe bağlı)",
-      "validityDays": "Kupon geçerliliği, gün (isteğe bağlı)",
-      "validityHint": "Süresiz kupon için boş bırakın ya da {min}–{max} gün girin",
-      "range": "{min} ile {max} arası",
-      "save": "Programı kaydet",
-      "saved": "Sadakat programı kaydedildi.",
-      "readOnly": "Sadakat programını değiştirme yetkiniz yok.",
-      "notSet": "Bu salon için henüz sadakat programı belirlenmedi.",
+      "rewardService": "Ücretsiz hizmet",
+      "chooseService": "Bir hizmet seçin",
+      "rewardAmount": "İndirim tutarı (SAR)",
+      "inactivity": "Müşteri gelmeyi bırakırsa",
+      "inactivityRules": {
+        "None": "Puanlar korunur",
+        "Wipe": "Kart bir süre sonra silinir",
+        "DecayPerPeriod": "Her dönem bir puan düşer"
+      },
+      "inactivityDays": "Süre (gün)",
+      "inactivityHelper": "Son ziyaretten itibaren, {min} – {max}",
+      "preview": "Müşterilerinizin gördüğü",
+      "save": "Kuralları kaydet",
+      "saved": "Puan kuralları kaydedildi.",
+      "readOnly": "Puan kurallarını dükkân sahibi belirler.",
+      "readOnlyAdmin": "Sadakat programını değiştiremezsiniz.",
       "stats": {
         "title": "Kullanım",
-        "members": "Ziyareti olan müşteriler",
-        "openStamps": "Açık kartlardaki dolu daireler",
-        "issued": "Verilen kuponlar",
-        "available": "Kullanılabilir veya ayrılmış kuponlar",
-        "redeemed": "Kullanılan kuponlar"
+        "members": "Puanı olan müşteriler",
+        "pointsEarned": "Verilen puanlar",
+        "rewardsReady": "Hazır ödüller",
+        "rewardsHeld": "Randevular için ayrılan ödüller",
+        "rewardsRedeemed": "Kullanılan ödüller"
       }
     }
   },
@@ -3763,8 +3868,8 @@
     },
     "loyalty": {
       "title": "Sadakat",
-      "summary": "Verilen damga: {stamps} · kullanılan ödül: {redemptions}",
-      "byActor": "{stamps} damga · {redemptions} ödül"
+      "summary": "Verilen puanlar: {stamps} — kullanılan ödüller: {redemptions}",
+      "byActor": "{stamps} puan — {redemptions} ödül"
     },
     "visitsTitle": "Randevular",
     "noVisits": "Bu dönemde randevu yok.",
@@ -3821,5 +3926,16 @@
     "bn": "Bengalce",
     "tl": "Filipince",
     "tr": "Türkçe"
+  },
+  "messageUsage": {
+    "title": "Müşterilere WhatsApp mesajları",
+    "month": "{month}",
+    "of": "{used} / {allowance}",
+    "sent": "{used, plural, =0 {Bu ay henüz mesaj gönderilmedi} one {Bu ay # mesaj gönderildi} other {Bu ay # mesaj gönderildi}}",
+    "unlimited": "Mevcut pakette mesajlar sınırsızdır.",
+    "none": "Mevcut pakette müşterilere WhatsApp mesajı yok. Bildirimleri uygulamada alırlar.",
+    "reached": "Bu ayın sınırına ulaştınız. Bildirimler uygulamada devam eder, WhatsApp mesajları gelecek ayın başında yeniden başlar.",
+    "note": "Yalnızca müşterilere giden mesajlar sayılır; berber mesajları ve giriş kodları sayılmaz.",
+    "progress": "Bu ayın mesajlarının %{percent} kadarı kullanıldı"
   }
 }

@@ -236,6 +236,21 @@ const OFFERS: WalkInOffer[] = [
   },
 ];
 
+/** The barber's reward lookup (D-149) answers by path; anything else is the walk-in booking. */
+const noReward = {
+  rewardReady: false,
+  rewardType: null,
+  rewardServiceId: null,
+  rewardAmount: null,
+  titleAr: null,
+  titleEn: null,
+};
+const posts = (booking: unknown, lookup: unknown = noReward) =>
+  api.POST.mockImplementation(async (path: string) =>
+    path.endsWith('/loyalty/lookup') ? ok(lookup) : booking,
+  );
+const walkInCalls = () => api.POST.mock.calls.filter(([path]) => path === '/api/v1/shop/bookings/walk-in');
+
 const options = {
   date: '2026-10-08',
   timeZone: 'Asia/Riyadh',
@@ -351,7 +366,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
   it('takes the mobile for the platform only, starts now with the free professional, and sends an idempotent walk-in', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(options));
-    api.POST.mockResolvedValue(ok({ id: 'w1', reference: 'TR-1001', version: 1 }, 201));
+    posts(ok({ id: 'w1', reference: 'TR-1001', version: 1 }, 201));
     const { container } = renderWithQuery(
       <WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />,
     );
@@ -377,7 +392,11 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
 
     expect(await screen.findByText('سُجل الحجز الحضوري')).toBeInTheDocument();
     expect(container).not.toHaveTextContent(/551|٥٥١/);
-    const [, init] = api.POST.mock.calls[0]!;
+    // The complete number was checked for a loyalty reward (D-149), in the body, never the URL; none was ready.
+    expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/loyalty/lookup', {
+      body: { phone: '+966551234567' },
+    });
+    const [, init] = walkInCalls()[0]!;
     expect(init.body).toEqual({
       serviceId: null,
       serviceIds: ['s1'],
@@ -388,6 +407,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
       customerPhone: '+966551234567',
       note: null,
       channel: 'WalkIn',
+      useLoyaltyReward: false,
     });
     expect(init.params.header['Idempotency-Key']).toMatch(/[0-9a-f-]{32,36}/);
 
@@ -397,8 +417,62 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     await user.click(screen.getByRole('radio', { name: /ابدأ الآن/ }));
     await user.type(screen.getByLabelText('اسم العميل'), 'م');
     await user.click(screen.getByRole('button', { name: 'تسجيل الحجز' }));
-    await waitFor(() => expect(api.POST).toHaveBeenCalledTimes(2));
-    expect(api.POST.mock.calls[1]![1].body).toMatchObject({ customerName: 'م', customerPhone: null });
+    await waitFor(() => expect(walkInCalls()).toHaveLength(2));
+    expect(walkInCalls()[1]![1].body).toMatchObject({ customerName: 'م', customerPhone: null });
+  });
+
+  it('offers the typed number’s ready reward, takes it off the total, and sends it with the walk-in (D-149)', async () => {
+    const user = userEvent.setup();
+    api.GET.mockResolvedValue(ok(options));
+    posts(ok({ id: 'w4', reference: 'GH-4K7QR', version: 1 }, 201), {
+      rewardReady: true,
+      rewardType: 'AmountOff',
+      rewardServiceId: null,
+      rewardAmount: 20,
+      titleAr: 'خصم ٢٠ ⃁',
+      titleEn: 'SAR 20 off',
+    });
+    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+
+    await user.click(await screen.findByRole('radio', { name: /سلطان الحربي/ }));
+    await user.type(screen.getByLabelText('اسم العميل'), 'سعود');
+    await user.type(screen.getByLabelText(/جوال العميل/), '0551234567');
+    const reward = await screen.findByTestId('walk-in-reward');
+    expect(reward).toHaveTextContent('لدى العميل مكافأة جاهزة: خصم ٢٠ ⃁');
+    await user.click(within(reward).getByRole('checkbox', { name: /استخدم مكافأة العميل/ }));
+    expect(screen.getByText('خصم المكافأة').closest('div')).toHaveTextContent('−٢٠ ⃁');
+    expect(screen.getByText('المبلغ المستحق').closest('div')).toHaveTextContent('٤٠ ⃁');
+
+    // Another number drops the reward: it belonged to the number typed before.
+    await user.clear(screen.getByLabelText(/جوال العميل/));
+    expect(screen.queryByTestId('walk-in-reward')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/جوال العميل/), '0551234567');
+    await user.click(await screen.findByRole('checkbox', { name: /استخدم مكافأة العميل/ }));
+    await user.click(screen.getByRole('button', { name: 'تسجيل الحجز' }));
+    await waitFor(() => expect(walkInCalls()).toHaveLength(1));
+    expect(walkInCalls()[0]![1].body).toMatchObject({
+      customerPhone: '+966551234567',
+      useLoyaltyReward: true,
+    });
+  });
+
+  it('never offers the reward with a package (D-149)', async () => {
+    const user = userEvent.setup();
+    api.GET.mockResolvedValue(ok(options));
+    posts(ok({ id: 'w5', reference: 'GH-4K7QS', version: 1 }, 201), {
+      rewardReady: true,
+      rewardType: 'AmountOff',
+      rewardServiceId: null,
+      rewardAmount: 20,
+      titleAr: null,
+      titleEn: null,
+    });
+    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    await user.click(screen.getByRole('checkbox', { name: /باقة شعر ولحية/ }));
+    await user.type(screen.getByLabelText(/جوال العميل/), '0551234567');
+    const reward = await screen.findByTestId('walk-in-reward');
+    expect(within(reward).getByRole('checkbox', { name: /استخدم مكافأة العميل/ })).toBeDisabled();
+    expect(reward).toHaveTextContent('لا تُستخدم المكافأة مع الباقات.');
   });
 
   it('lists a busy professional by their next free time, and a taken time sends the desk back to fresh times', async () => {

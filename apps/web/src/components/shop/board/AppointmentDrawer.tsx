@@ -283,7 +283,16 @@ export function AppointmentDrawer({
                 title={tLoyalty('applied', {
                   reward: localizedName(locale, booking.loyaltyReward.titleAr, booking.loyaltyReward.titleEn),
                 })}
-              />
+              >
+                {/* A points reward (D-149) is already taken off what the customer pays. */}
+                {booking.loyaltyReward.discount != null && booking.amountDue != null && (
+                  <p data-testid="drawer-amount-due">
+                    {tLoyalty('due', {
+                      amount: formatPrice(booking.amountDue, locale, booking.item.currency),
+                    })}
+                  </p>
+                )}
+              </InlineAlert>
             )}
             <dl className="flex flex-col divide-y divide-border-row">
               {(

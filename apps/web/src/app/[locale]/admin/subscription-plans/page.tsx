@@ -1,16 +1,17 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { AdminFrame } from '@/components/admin/AdminFrame';
-import { PlanOrderButtons } from '@/components/subscriptions/PlanAdmin';
+import { PlanOrderButtons, PlanPriceForm } from '@/components/subscriptions/PlanAdmin';
 import { PlanStatusBadge } from '@/components/subscriptions/PlanStatusBadge';
 import { longDate } from '@/components/subscriptions/periods';
 import { ButtonLink } from '@/components/ui/Button';
-import { ResponsiveTable } from '@/components/ui/data';
+import { ResponsiveTable, Timeline } from '@/components/ui/data';
 import { EmptyState, ErrorState } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
-import { formatPrice } from '@/lib/i18n/format';
+import { formatNumber, formatPrice } from '@/lib/i18n/format';
+import { todayLocal } from '@/lib/i18n/localDate';
 import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -36,8 +37,12 @@ export default async function SubscriptionPlansPage({
     >
       {async () => {
         const api = await getServerApi();
-        const { data: plans } = await api.GET('/api/v1/admin/subscription-plans');
+        const [{ data: plans }, { data: addOnPrices }] = await Promise.all([
+          api.GET('/api/v1/admin/subscription-plans'),
+          api.GET('/api/v1/admin/loyalty-add-on/prices'),
+        ]);
         if (!plans) return <ErrorState />;
+        const today = todayLocal();
         const orderable = plans.filter((p) => p.status !== 'Archived').map((p) => p.id);
 
         return (
@@ -106,6 +111,16 @@ export default async function SubscriptionPlansPage({
                     cell: (row) => (row.availableToNewShops ? t('offered') : t('notOffered')),
                   },
                   {
+                    key: 'messages',
+                    header: t('columns.messages'),
+                    cell: (row) =>
+                      row.monthlyWhatsAppMessages == null
+                        ? t('messagesUnlimited')
+                        : row.monthlyWhatsAppMessages === 0
+                          ? t('messagesNone')
+                          : formatNumber(row.monthlyWhatsAppMessages, lang),
+                  },
+                  {
                     key: 'subscriptions',
                     header: t('columns.subscriptions'),
                     cell: (row) => row.subscriptionCount,
@@ -124,6 +139,42 @@ export default async function SubscriptionPlansPage({
                   },
                 ]}
               />
+            )}
+            {addOnPrices && (
+              <section
+                className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-e1"
+                aria-labelledby="add-on-prices"
+                data-testid="add-on-prices"
+              >
+                <h2 id="add-on-prices" className="text-h3 font-bold text-navy-900">
+                  {t('addOn.title')}
+                </h2>
+                <p className="text-caption text-text-secondary">{t('addOn.body')}</p>
+                {addOnPrices.prices.length === 0 ? (
+                  <p className="text-caption text-text-secondary">{t('detail.noPrices')}</p>
+                ) : (
+                  <Timeline
+                    items={addOnPrices.prices.map((price) => {
+                      const state =
+                        price.id === addOnPrices.current?.id
+                          ? 'current'
+                          : price.effectiveFrom > today
+                            ? 'scheduled'
+                            : 'past';
+                      return {
+                        id: price.id,
+                        tone: state === 'current' ? 'success' : state === 'scheduled' ? 'warning' : 'neutral',
+                        title: t('detail.version', {
+                          number: price.versionNumber,
+                          price: formatPrice(price.amount, lang, price.currency),
+                        }),
+                        meta: `${t('detail.effective', { date: longDate(price.effectiveFrom, lang) })} — ${t(`detail.${state}`)}`,
+                      };
+                    })}
+                  />
+                )}
+                <PlanPriceForm today={today} />
+              </section>
             )}
           </div>
         );

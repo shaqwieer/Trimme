@@ -37,6 +37,7 @@ export default async function ShopSettingsPage({ params }: PageProps<'/[locale]/
                 { href: '/shop/settings', label: t('tabs.profile'), active: true },
                 { href: '/shop/settings/location', label: t('tabs.location'), active: false },
                 { href: '/shop/settings/booking', label: t('tabs.booking'), active: false },
+                { href: '/shop/settings/loyalty', label: t('tabs.loyalty'), active: false },
               ]}
             />
             <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-e1">

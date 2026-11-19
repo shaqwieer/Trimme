@@ -10,7 +10,7 @@ import { asLocale } from '@/i18n/routing';
 import { dataOrNull, getPublicApi } from '@/lib/api/public';
 import { getServerApi } from '@/lib/api/server';
 import { getMe } from '@/lib/auth/server';
-import type { WizardOffer } from '@/lib/booking/wizard';
+import type { WizardOffer, WizardPointsReward } from '@/lib/booking/wizard';
 import { getPublicShop } from '@/lib/discovery/shop-data';
 import { localizedName } from '@/lib/i18n/localized';
 import { NO_INDEX } from '@/lib/seo/site';
@@ -89,15 +89,27 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
   ];
 
   const viewer: WizardViewer = !me ? 'guest' : me.userType === 'Customer' ? 'customer' : 'staff';
-  // The customer's usable loyalty coupons at this shop (D-132), offered on the review step.
-  const rewards: WizardReward[] =
+  // The customer's loyalty at this shop, offered on the review step: a full points card while the shop's add-on is on
+  // (D-149, «استخدم مكافأتي») and any D-132 coupon still usable.
+  const card =
     viewer === 'customer'
-      ? ((
-          await (await getServerApi()).GET('/api/v1/me/loyalty/shops/{slug}', { params: { path: { slug } } })
-        ).data?.rewards
-          .filter((r) => r.status === 'Available')
-          .map((r) => ({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn ?? null })) ?? [])
-      : [];
+      ? (await (await getServerApi()).GET('/api/v1/me/loyalty/shops/{slug}', { params: { path: { slug } } }))
+          .data
+      : undefined;
+  const rewards: WizardReward[] =
+    card?.coupons
+      .filter((r) => r.status === 'Available')
+      .map((r) => ({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn ?? null })) ?? [];
+  const pointsReward: WizardPointsReward | null =
+    card?.active && card.rewardsReady > 0 && card.rules
+      ? {
+          rewardType: card.rules.rewardType,
+          rewardServiceId: card.rules.rewardServiceId,
+          rewardServiceNameAr: card.rules.rewardServiceNameAr,
+          rewardServiceNameEn: card.rules.rewardServiceNameEn,
+          rewardAmount: card.rules.rewardAmount,
+        }
+      : null;
   const area = [shop.location?.district, shop.location?.city]
     .filter(Boolean)
     .join(locale === 'ar' ? '، ' : ', ');
@@ -129,6 +141,7 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
             }))}
             viewer={viewer}
             rewards={rewards}
+            pointsReward={pointsReward}
             sections={sections.map((c) => ({ id: c.id, nameAr: c.nameAr, nameEn: c.nameEn ?? null }))}
           />
         </Suspense>

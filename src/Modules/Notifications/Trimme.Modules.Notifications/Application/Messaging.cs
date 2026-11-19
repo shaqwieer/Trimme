@@ -46,8 +46,18 @@ public static class WhatsAppErrors
     /// </summary>
     public const string RecipientNotAllowed = "whatsapp.recipient_not_allowed";
 
+    /// <summary>
+    /// The shop's plan has no WhatsApp messages left this month (D-149): the message is not sent, the in-app notice still
+    /// is. Kept in the log as failed, but not a delivery failure: admins are not alerted.
+    /// </summary>
+    public const string AllowanceReached = "whatsapp.allowance_reached";
+
     public static bool IsRecipientNotAllowed(string? error) =>
         error is not null && error.StartsWith(RecipientNotAllowed, StringComparison.Ordinal);
+
+    /// <summary>A refusal that says nothing about the number or the provider: the allowlist (D-140) or the allowance (D-149).</summary>
+    public static bool IsNotADeliveryFailure(string? error) =>
+        IsRecipientNotAllowed(error) || (error is not null && error.StartsWith(AllowanceReached, StringComparison.Ordinal));
 }
 
 /// <summary>Where the web app lives, for manage-booking and shop links in messages. Bound from <c>Web</c>.</summary>

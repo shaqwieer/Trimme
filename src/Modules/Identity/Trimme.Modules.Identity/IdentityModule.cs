@@ -62,6 +62,7 @@ public sealed class IdentityModule : ModuleBase
         services.AddScoped<IPermissionResolver, PermissionResolver>();
         services.AddScoped<ICustomerDirectory, CustomerDirectory>();
         services.AddScoped<BuildingBlocks.Application.Notifications.ICustomerContactReader, CustomerContactReader>();
+        services.AddScoped<BuildingBlocks.Application.Loyalty.ILoyaltyMemberKeys, LoyaltyMemberKeys>();
         services.AddScoped<BuildingBlocks.Application.Notifications.ICustomerNumberCheck, CustomerNumberCheck>();
         services.AddScoped<BuildingBlocks.Application.Notifications.IStaffDirectory, StaffDirectory>();
         services.AddScoped<BuildingBlocks.Application.Reporting.ICustomerStatistics, CustomerStatistics>();

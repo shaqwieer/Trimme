@@ -102,6 +102,15 @@ export function formatMonthShort(
   }).format(toDate(value));
 }
 
+/** A calendar month, from its first day ("2026-11-01"): "نوفمبر ٢٠٢٦" (ar) — "November 2026" (en). */
+export function formatMonthYear(firstDay: string, locale: AppLocale): string {
+  return new Intl.DateTimeFormat(TIME_LOCALE[locale], {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${firstDay.slice(0, 10)}T12:00:00Z`));
+}
+
 /** Day-of-month number for calendar cells — a quantity, so always Latin digits (design 3650–3668). */
 export function formatDayNumber(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
   return new Intl.DateTimeFormat(QUANTITY_LOCALE[locale], { day: 'numeric', timeZone }).format(toDate(value));

@@ -34,6 +34,7 @@ internal sealed class SendDispatchJob(
     IJobScheduler jobs,
     INotificationCenter center,
     IProfessionalContactReader professionals,
+    WhatsAppAllowanceGate allowance,
     ISystemDataScope scope,
     TimeProvider clock)
 {
@@ -50,17 +51,24 @@ internal sealed class SendDispatchJob(
             return;
         }
 
-        var retry = await sender.AttemptAsync(dispatch, cancellationToken);
-        if (retry)
+        // A customer message needs a slot of the shop's monthly WhatsApp allowance (D-149); without one it is not sent.
+        bool passed;
+        using (scope.Begin())
+        {
+            passed = await allowance.PassAsync(dispatch, cancellationToken);
+        }
+
+        if (passed && await sender.AttemptAsync(dispatch, cancellationToken))
         {
             dispatch.AssignJob(jobs.Schedule<SendDispatchJob>(
                 job => job.RunAsync(dispatchId, CancellationToken.None), clock.GetUtcNow() + DispatchSender.Backoff(dispatch.Attempts)));
         }
 
-        // Refused by the allowlist (D-140): kept in the log as failed, but not a delivery failure.
-        var notAllowed = dispatch.Status == DispatchStatus.Failed && WhatsAppErrors.IsRecipientNotAllowed(dispatch.LastError);
+        // Refused by the allowlist (D-140) or the allowance (D-149): kept in the log as failed, but not a delivery failure.
+        var notAllowed = dispatch.Status == DispatchStatus.Failed && WhatsAppErrors.IsNotADeliveryFailure(dispatch.LastError);
         using (scope.Begin())
         {
+            await allowance.ReleaseIfUnsentAsync(dispatch, cancellationToken);
             if (dispatch is { Audience: MessageAudience.Professional, RecipientId: { } professionalId, Kind: not DispatchKind.Test }
                 && dispatch.Status is DispatchStatus.Delivered or DispatchStatus.Failed
                 && !notAllowed)

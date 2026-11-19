@@ -3,65 +3,54 @@ import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import type { components } from '@/lib/api/schema';
-import { type AppLocale, formatDate, formatNumber } from '@/lib/i18n/format';
+import { type AppLocale, formatDate, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
-import { LoyaltyStamps } from './LoyaltyStamps';
 
-type Program = components['schemas']['LoyaltyProgramResponse'];
+type Rules = components['schemas']['LoyaltyRulesResponse'];
 type Reward = components['schemas']['MyLoyaltyRewardResponse'];
+export type LoyaltyRewardTerms = Pick<
+  Rules,
+  'rewardType' | 'rewardServiceNameAr' | 'rewardServiceNameEn' | 'rewardAmount'
+>;
 
-/**
- * "Complete 6 visits and get a free haircut": the programme's offer in one line (D-132). With a first-visit bonus
- * (D-133) a card is no longer one visit per circle, so it counts circles and says what the first visit fills.
- */
-export function LoyaltyOffer({ program }: { program: Program }) {
-  const t = useTranslations('loyalty');
+/** The reward in the reader's language (D-149): «حلاقة مجاناً», or «خصم ٥٠ ⃁» written as the app writes prices. */
+export function useLoyaltyRewardName() {
+  const t = useTranslations('loyalty.reward');
   const locale = useLocale() as AppLocale;
-  const bonus = program.firstVisitStamps > 1;
-  return (
-    <>
-      <p className="text-label font-bold text-navy-900">
-        {t(bonus ? 'offerCircles' : 'offer', {
-          visits: program.requiredVisits,
-          visitsText: formatNumber(program.requiredVisits, locale),
-          reward: localizedName(locale, program.rewardTitleAr, program.rewardTitleEn),
-        })}
-      </p>
-      {bonus && (
-        <p className="text-helper font-bold text-success-700" data-testid="loyalty-first-visit">
-          {t('firstVisit', {
-            count: program.firstVisitStamps,
-            countText: formatNumber(program.firstVisitStamps, locale),
-          })}
-        </p>
-      )}
-    </>
-  );
+  return (reward: LoyaltyRewardTerms) =>
+    reward.rewardType === 'FreeService'
+      ? t('FreeService', {
+          service: localizedName(locale, reward.rewardServiceNameAr ?? '', reward.rewardServiceNameEn),
+        })
+      : t('AmountOff', { amount: formatPrice(reward.rewardAmount ?? 0, locale) });
 }
 
 /**
- * The circles and what is left before the coupon. Once a circle is filled every visit fills one, so the visits left
- * are the empty circles. An empty card with a first-visit bonus (D-133) may be a newcomer's, whose first visit fills
- * several, so the count is left to the offer's first-visit line.
+ * The shop's points rules in words (D-149): «اجمع ١٠ نقاط واحصل على حلاقة مجاناً», then the points per visit and what
+ * happens without visits. The same text everywhere the rules are shown, and in the owner's preview.
  */
-export function LoyaltyProgress({ program, stamps }: { program: Program; stamps: number }) {
+export function LoyaltyRulesText({ rules }: { rules: Rules }) {
   const t = useTranslations('loyalty');
-  const locale = useLocale() as AppLocale;
-  const left = Math.max(program.requiredVisits - stamps, 0);
-  const unknown = stamps === 0 && program.firstVisitStamps > 1;
+  const rewardName = useLoyaltyRewardName();
+  const points = (count: number) => t('points', { count });
   return (
-    <div className="flex flex-col gap-2">
-      <LoyaltyStamps required={program.requiredVisits} stamps={stamps} />
-      {left > 0 && !unknown && (
-        <p className="text-helper text-text-secondary">
-          {t('remaining', { left, leftText: formatNumber(left, locale) })}
-        </p>
-      )}
+    <div className="flex flex-col gap-1" data-testid="loyalty-rules">
+      <p className="text-label font-bold text-navy-900">
+        {t('rules.reward', { count: rules.pointsForReward, reward: rewardName(rules) })}
+      </p>
+      <p className="text-helper text-text-secondary">
+        {rules.firstVisitPoints === rules.visitPoints
+          ? t('rules.earnSame', { visit: points(rules.visitPoints) })
+          : t('rules.earn', { first: points(rules.firstVisitPoints), visit: points(rules.visitPoints) })}{' '}
+        {rules.inactivityRule === 'None' || !rules.inactivityDays
+          ? t('rules.None')
+          : t(`rules.${rules.inactivityRule}`, { days: t('days', { count: rules.inactivityDays }) })}
+      </p>
     </div>
   );
 }
 
-/** One earned coupon: what it gives, its code, until when, and the booking it is reserved for. */
+/** One D-132 coupon still usable (earned before the points programme): what it gives, its code, until when, its booking. */
 export function LoyaltyRewardRow({ reward }: { reward: Reward }) {
   const t = useTranslations('loyalty');
   const locale = useLocale() as AppLocale;

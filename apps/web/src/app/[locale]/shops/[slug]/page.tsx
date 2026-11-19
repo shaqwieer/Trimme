@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import { LoyaltyRulesText } from '@/components/loyalty/LoyaltyParts';
 import { ShopLoyaltyCard } from '@/components/loyalty/ShopLoyaltyCard';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PublicShell } from '@/components/shell/PublicShell';
@@ -151,6 +152,7 @@ export default async function ShopPage({ params, searchParams }: PageProps<'/[lo
   const tab = typeof query.tab === 'string' ? query.tab : 'services';
   const reviewsPage = Math.max(1, Number(typeof query.reviewsPage === 'string' ? query.reviewsPage : 1) || 1);
   const t = await getTranslations({ locale, namespace: 'shopPage' });
+  const tLoyalty = await getTranslations({ locale, namespace: 'loyalty' });
   const api = await getPublicApi();
   const signedIn = await mayBeSignedIn();
   const path = { params: { path: { slug: shop.slug } } };
@@ -348,8 +350,17 @@ ${url}`)}`}
             </section>
           )}
 
-          {loyalty?.program && (
-            <ShopLoyaltyCard slug={shop.slug} program={loyalty.program} mayBeSignedIn={signedIn} />
+          {loyalty?.active && loyalty.rules && (
+            <ShopLoyaltyCard slug={shop.slug} rules={loyalty.rules} mayBeSignedIn={signedIn}>
+              <div className="flex items-center gap-2">
+                <Icon name="tag" className="size-5 text-success-700" />
+                <h2 id="loyalty-heading" className="text-h3 font-bold text-navy-900">
+                  {tLoyalty('programTitle')}
+                </h2>
+              </div>
+              <LoyaltyRulesText rules={loyalty.rules} />
+              <p className="text-helper text-text-secondary">{tLoyalty('anyProfessional')}</p>
+            </ShopLoyaltyCard>
           )}
 
           <ShopTabs

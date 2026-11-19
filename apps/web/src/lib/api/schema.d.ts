@@ -523,7 +523,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A published shop's loyalty offer (visits needed and the reward), or a null programme when it runs none. */
+        /** Whether a published shop runs loyalty now (its paid add-on is in force) and its rules (D-149). No customer data. */
         get: operations["GetPublicShopLoyalty"];
         put?: never;
         post?: never;
@@ -540,7 +540,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The customer's loyalty at each shop where they have stamps or rewards: the programme, the stamps on the open card and the usable or held rewards. */
+        /** The customer's cards across shops, by their account's mobile (D-149): points, rewards ready, the card being filled, history; and D-132 coupons. */
         get: operations["ListMyLoyalty"];
         put?: never;
         post?: never;
@@ -557,7 +557,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The customer's loyalty at one published shop (the booking page offers its usable rewards). */
+        /** The customer's card at one published shop (the booking page offers «استخدم مكافأتي» when a reward is ready). */
         get: operations["GetMyShopLoyalty"];
         put?: never;
         post?: never;
@@ -574,10 +574,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The shop's loyalty programme as the platform set it (read-only) and how it is used. */
+        /** The shop's loyalty: whether the add-on is in force, the rules and (for the owner) how they are used. */
         get: operations["GetShopLoyalty"];
-        put?: never;
+        /** The owner sets the loyalty rules: points per visit, the reward and what happens without visits (D-149; versioned; audited). */
+        put: operations["SaveShopLoyaltyRules"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shop/loyalty/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** For a walk-in or phone booking: whether the typed number has a reward ready here, and what it is. Nothing else. */
+        post: operations["LookupLoyaltyReward"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3573,9 +3591,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A shop's loyalty programme (null before it is first set) and its use. */
+        /** A shop's loyalty: whether the add-on is in force, the rules (null before they are set) and their use. */
         get: operations["AdminGetShopLoyalty"];
-        /** Creates or replaces a shop's loyalty terms, agreed with the shop (versioned; audited). */
+        /** Sets a shop's loyalty rules on its behalf (D-149; versioned; audited). */
         put: operations["AdminSaveShopLoyalty"];
         post?: never;
         delete?: never;
@@ -3844,6 +3862,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switches the shop's loyalty add-on on until an end date, at the add-on price in force on its start (D-149; audited). */
+        post: operations["SwitchOnLoyaltyAddOn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/subscription/loyalty-add-on/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switches the shop's loyalty add-on off from today; customers keep their points (D-149; audited). */
+        post: operations["StopLoyaltyAddOn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/shops/{shopId}/subscription/reinstate": {
         parameters: {
             query?: never;
@@ -3855,6 +3907,24 @@ export interface paths {
         put?: never;
         /** Lifts a suspension. */
         post: operations["ReinstateShopSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/loyalty-add-on/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The loyalty add-on's price versions (D-149): the one in force, the next one and the history. */
+        get: operations["ListLoyaltyAddOnPrices"];
+        put?: never;
+        /** SuperAdmin adds a loyalty add-on price version from a date (today or later); periods keep the version they started on. */
+        post: operations["AddLoyaltyAddOnPrice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4238,6 +4308,13 @@ export interface components {
             serviceId: string;
             /** Format: uint32 */
             version: number;
+        };
+        /** @description A new add-on price version in the platform currency, effective from today or a later date (SuperAdmin, D-149). */
+        AddLoyaltyAddOnPriceRequest: {
+            /** Format: double */
+            amount: number;
+            /** Format: date */
+            effectiveFrom: string;
         };
         /** @description A new price version in the platform currency, effective from today or a later date. */
         AddPlanPriceRequest: {
@@ -4651,9 +4728,13 @@ export interface components {
             /** @default false */
             isDemo: boolean;
         };
-        /** @description A shop's programme as the admin edits it (null before the first save; send `Version` back) and its use. */
+        /**
+         * @description A shop's loyalty as the admin sees it (D-149): whether the paid add-on is in force (switched on or off on the shop's
+         *     subscription tab), the owner's rules (null before the first save; send `Version` back) and their use.
+         */
         AdminShopLoyaltyResponse: {
-            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            addOnActive: boolean;
+            rules: null | components["schemas"]["LoyaltyRulesResponse"];
             /** Format: uint32 */
             version: null | number;
             stats: components["schemas"]["LoyaltyStatsResponse"];
@@ -4714,6 +4795,8 @@ export interface components {
             overrides: components["schemas"]["SubscriptionOverrideResponse"][];
             /** Format: uint32 */
             version: null | number;
+            loyaltyAddOn?: null | components["schemas"]["LoyaltyAddOnResponse"];
+            messageUsage?: null | components["schemas"]["WhatsAppUsageResponse"];
         };
         AdminSubscriptionListItem: {
             /** Format: uuid */
@@ -4995,6 +5078,8 @@ export interface components {
             id: string;
             titleAr: string;
             titleEn: null | string;
+            /** Format: double */
+            discount?: null | number;
         };
         BookingNoteRequest: {
             text: string;
@@ -5200,8 +5285,10 @@ export interface components {
         /**
          * @description A customer's online booking of a published service, several services booked together (`ServiceIds`, one
          *     professional back to back) or a package: services or a package, never both. Without a professional the server picks a
-         *     free one (D-012). The start must be one of the offered slots. `LoyaltyRewardId` uses one of the customer's
-         *     rewards at this shop (D-132); a reward that is not usable is 422 `loyalty.reward_unavailable`.
+         *     free one (D-012). The start must be one of the offered slots. `UseLoyaltyReward` («استخدم مكافأتي», D-149) uses a
+         *     ready points reward at this shop: one per booking, never with a package; the discount comes off the amount due.
+         *     `LoyaltyRewardId` uses one of the customer's D-132 coupons instead; a reward that is not usable is 422
+         *     `loyalty.reward_unavailable`.
          */
         CreateBookingRequest: {
             shopSlug: string;
@@ -5217,8 +5304,13 @@ export interface components {
             serviceIds?: null | string[];
             /** Format: uuid */
             loyaltyRewardId?: null | string;
+            /** @default false */
+            useLoyaltyReward: boolean;
         };
-        /** @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. */
+        /**
+         * @description A new plan (Draft). `InitialPrice`, when given, becomes price version 1 from today. `MonthlyWhatsAppMessages`
+         *     (D-149) is the customer WhatsApp messages per calendar month: null unlimited, 0 none.
+         */
         CreatePlanRequest: {
             nameAr: string;
             nameEn: string;
@@ -5239,6 +5331,8 @@ export interface components {
             availableToNewShops: boolean;
             /** Format: double */
             initialPrice: null | number;
+            /** Format: int32 */
+            monthlyWhatsAppMessages?: null | number;
         };
         /** @description The one shop is chosen here, at creation, and can never be changed afterwards (D-011). */
         CreateProfessionalRequest: {
@@ -5651,6 +5745,60 @@ export interface components {
          * @enum {unknown}
          */
         LocationSource: "Manual" | "Geocoded" | "Device";
+        /** @description One recorded loyalty add-on period (D-149), with the add-on price version it was recorded with. */
+        LoyaltyAddOnPeriodResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: date */
+            lastDay: string;
+            /** Format: date */
+            stoppedOn: null | string;
+            /** Format: int32 */
+            priceVersionNumber: number;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            notes: null | string;
+            /** Format: date-time */
+            recordedAt: string;
+        };
+        LoyaltyAddOnPriceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            versionNumber: number;
+            /** Format: double */
+            amount: number;
+            currency: string;
+            /** Format: date */
+            effectiveFrom: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description The add-on's price versions (newest first), the one in force today and the next scheduled one. */
+        LoyaltyAddOnPricesResponse: {
+            current: null | components["schemas"]["LoyaltyAddOnPriceResponse"];
+            upcoming: null | components["schemas"]["LoyaltyAddOnPriceResponse"];
+            prices: components["schemas"]["LoyaltyAddOnPriceResponse"][];
+        };
+        /**
+         * @description The shop's loyalty add-on (D-149): whether it is in force today, its first and last day, the days left, and every
+         *     period recorded (newest first). Customers earn and redeem points only while it is in force; points are kept after.
+         */
+        LoyaltyAddOnResponse: {
+            active: boolean;
+            /** Format: date */
+            startDate: null | string;
+            /** Format: date */
+            endDate: null | string;
+            /** Format: int32 */
+            daysRemaining: number;
+            periods: components["schemas"]["LoyaltyAddOnPeriodResponse"][];
+        };
         /** @description Who closed the visits that stamped loyalty circles or used rewards, by name. */
         LoyaltyByActorResponse: {
             name: string;
@@ -5659,23 +5807,41 @@ export interface components {
             /** Format: int32 */
             redemptions: number;
         };
+        /** @enum {unknown} */
+        LoyaltyEntryKind: "Earned" | "Redeemed" | "Wiped" | "Decayed";
+        /** @description A line of the card's history: points earned at a visit (with the barber who closed it), a reward used, or points lost without visits. */
+        LoyaltyHistoryEntryResponse: {
+            /** Format: date-time */
+            at: string;
+            kind: components["schemas"]["LoyaltyEntryKind"];
+            /** Format: int32 */
+            points: number;
+            /** Format: uuid */
+            bookingId: null | string;
+            barberName: null | string;
+        };
         /**
-         * @description A shop's loyalty terms (D-132): after `RequiredVisits` circles, the reward named by the title. The first visit
-         *     fills `FirstVisitStamps` circles (1 when there is no welcome bonus, D-133), every later visit one.
+         * @description What happens to points without visits (D-149), counted from the last visit at the shop.
+         * @enum {unknown}
          */
-        LoyaltyProgramResponse: {
-            isActive: boolean;
-            /** Format: int32 */
-            requiredVisits: number;
-            /** Format: int32 */
-            firstVisitStamps: number;
-            rewardKind: components["schemas"]["LoyaltyRewardKind"];
-            /** Format: int32 */
-            discountPercent: null | number;
-            rewardTitleAr: string;
-            rewardTitleEn: null | string;
-            /** Format: int32 */
-            rewardValidityDays: null | number;
+        LoyaltyInactivityRule: "None" | "Wipe" | "DecayPerPeriod";
+        /** @description The mobile typed for a walk-in or phone booking (sent in the body, so it never appears in a URL or a log). */
+        LoyaltyLookupRequest: {
+            phone: string;
+        };
+        /**
+         * @description Whether the number typed for a walk-in or phone booking has a reward ready at the shop, and what it is (D-149). Nothing
+         *     else about the customer: no points, no history, no name.
+         */
+        LoyaltyLookupResponse: {
+            rewardReady: boolean;
+            rewardType: null | components["schemas"]["LoyaltyRewardType"];
+            /** Format: uuid */
+            rewardServiceId: null | string;
+            /** Format: double */
+            rewardAmount: null | number;
+            titleAr: null | string;
+            titleEn: null | string;
         };
         LoyaltyReportResponse: {
             /** Format: int32 */
@@ -5691,6 +5857,35 @@ export interface components {
         LoyaltyRewardKind: "FreeService" | "Discount";
         /** @enum {unknown} */
         LoyaltyRewardStatus: "Available" | "Held" | "Redeemed";
+        /**
+         * @description What a reward gives (D-149): one of the shop's services free, or a fixed amount off.
+         * @enum {unknown}
+         */
+        LoyaltyRewardType: "FreeService" | "AmountOff";
+        /**
+         * @description A shop's loyalty rules (D-149): `FirstVisitPoints` for the first visit and `VisitPoints` for each later one;
+         *     a reward every `PointsForReward`: a service free (`RewardServiceId`, with its names) or `RewardAmount`
+         *     SAR off; and without visits, nothing (`None`), a wipe after `InactivityDays`, or one point off per period of
+         *     `InactivityDays`.
+         */
+        LoyaltyRulesResponse: {
+            /** Format: int32 */
+            firstVisitPoints: number;
+            /** Format: int32 */
+            visitPoints: number;
+            /** Format: int32 */
+            pointsForReward: number;
+            rewardType: components["schemas"]["LoyaltyRewardType"];
+            /** Format: uuid */
+            rewardServiceId: null | string;
+            rewardServiceNameAr: null | string;
+            rewardServiceNameEn: null | string;
+            /** Format: double */
+            rewardAmount: null | number;
+            inactivityRule: components["schemas"]["LoyaltyInactivityRule"];
+            /** Format: int32 */
+            inactivityDays: null | number;
+        };
         LoyaltyShopResponse: {
             /** Format: uuid */
             id: string;
@@ -5698,18 +5893,21 @@ export interface components {
             nameAr: string;
             nameEn: string;
         };
-        /** @description How the programme is used at one shop: customers with a stamp, stamps on open cards, and rewards by state. */
+        /**
+         * @description How the programme is used at one shop: members (numbers with a card), the rewards ready on their cards, held for
+         *     upcoming bookings and used, and the points earned so far.
+         */
         LoyaltyStatsResponse: {
             /** Format: int32 */
             members: number;
             /** Format: int32 */
-            openStamps: number;
+            rewardsReady: number;
             /** Format: int32 */
-            rewardsIssued: number;
-            /** Format: int32 */
-            rewardsAvailable: number;
+            rewardsHeld: number;
             /** Format: int32 */
             rewardsRedeemed: number;
+            /** Format: int32 */
+            pointsEarned: number;
         };
         /**
          * @description The point and address a pasted Google Maps link names (D-144): the coordinates come from the link itself; the
@@ -5789,7 +5987,7 @@ export interface components {
         MyLoyaltyResponse: {
             items: components["schemas"]["MyShopLoyaltyResponse"][];
         };
-        /** @description A reward as its customer sees it: available (until `ExpiresAt`) or held for `BookingId`. */
+        /** @description A D-132 coupon as its customer sees it: available (until `ExpiresAt`) or held for `BookingId`. */
         MyLoyaltyRewardResponse: {
             /** Format: uuid */
             id: string;
@@ -5821,15 +6019,27 @@ export interface components {
             createdAt: string;
         };
         /**
-         * @description The customer's card at one shop: the active programme (null when the shop has none now), the stamps on the open card
-         *     and the rewards they can still use or have chosen for an upcoming booking.
+         * @description The customer's card at one shop (D-149), keyed by their account's mobile: whether the shop runs loyalty now and its
+         *     rules; the available points, the full cards ready to use (`RewardsReady`), the points on the card being filled
+         *     (`CurrentCard`: 8 points for a reward of 6 is 1 ready and 2 here, «+٢») and how many are left
+         *     (`PointsToNext`); rewards held for upcoming bookings; the history (newest first); and D-132 coupons still usable.
          */
         MyShopLoyaltyResponse: {
             shop: components["schemas"]["LoyaltyShopResponse"];
-            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            active: boolean;
+            rules: null | components["schemas"]["LoyaltyRulesResponse"];
             /** Format: int32 */
-            stamps: number;
-            rewards: components["schemas"]["MyLoyaltyRewardResponse"][];
+            points: number;
+            /** Format: int32 */
+            rewardsReady: number;
+            /** Format: int32 */
+            currentCard: number;
+            /** Format: int32 */
+            pointsToNext: number;
+            /** Format: int32 */
+            rewardsHeld: number;
+            history: components["schemas"]["LoyaltyHistoryEntryResponse"][];
+            coupons: components["schemas"]["MyLoyaltyRewardResponse"][];
         };
         /** @description A bookable start: the instant and its local time (`HH:mm`, shop time zone). */
         NextSlotResponse: {
@@ -6155,6 +6365,8 @@ export interface components {
             subscriptionCount: number;
             /** Format: uint32 */
             version: number;
+            /** Format: int32 */
+            monthlyWhatsAppMessages?: null | number;
         };
         /**
          * @description Draft (being prepared) → Published (offered) → Inactive (not offered, may return) → Archived (final).
@@ -6365,9 +6577,10 @@ export interface components {
         };
         /** @enum {unknown} */
         ProfessionalStatus: "Active" | "Disabled";
-        /** @description A published shop's loyalty offer, shown on its page; `Program` is null when it has none running. */
+        /** @description A published shop's loyalty offer (D-149), shown on its page: whether it runs now and its rules. No customer data. */
         PublicLoyaltyResponse: {
-            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            active: boolean;
+            rules: null | components["schemas"]["LoyaltyRulesResponse"];
         };
         PublicPackageItemResponse: {
             /** Format: uuid */
@@ -6945,24 +7158,26 @@ export interface components {
             content: components["schemas"]["JsonElement"];
         };
         /**
-         * @description A shop's loyalty terms (D-132). `RewardTitleAr` is what the customer gets («حلاقة مجانية»); a discount needs
-         *     `DiscountPercent` 1–100. `RewardValidityDays` (7–365) limits how long a reward stays usable; null keeps it.
-         *     `FirstVisitStamps` (D-133) is how many circles the first visit fills, from 1 to `RequiredVisits` − 1; null
-         *     means 1. Send the `Version` read, except for the first save.
+         * @description A shop's loyalty rules (D-149): `FirstVisitPoints` and `VisitPoints` (1–100), `PointsForReward` (2–1,000);
+         *     the reward: `FreeService` with `RewardServiceId` (one of the shop's services) or `AmountOff` with
+         *     `RewardAmount` (5–1,000 SAR); without visits: `None`, `Wipe` or `DecayPerPeriod`, with
+         *     `InactivityDays` (7–730). Send the `Version` read, except for the first save.
          */
-        SaveLoyaltyProgramRequest: {
-            isActive: boolean;
+        SaveLoyaltyRulesRequest: {
             /** Format: int32 */
-            requiredVisits: number;
+            firstVisitPoints: number;
             /** Format: int32 */
-            firstVisitStamps: null | number;
-            rewardKind: components["schemas"]["LoyaltyRewardKind"];
+            visitPoints: number;
             /** Format: int32 */
-            discountPercent: null | number;
-            rewardTitleAr: null | string;
-            rewardTitleEn: null | string;
+            pointsForReward: number;
+            rewardType: components["schemas"]["LoyaltyRewardType"];
+            /** Format: uuid */
+            rewardServiceId: null | string;
+            /** Format: double */
+            rewardAmount: null | number;
+            inactivityRule: components["schemas"]["LoyaltyInactivityRule"];
             /** Format: int32 */
-            rewardValidityDays: null | number;
+            inactivityDays: null | number;
             /** Format: uint32 */
             version: null | number;
         };
@@ -7166,6 +7381,8 @@ export interface components {
             closedBy?: null | string;
             customerPhone?: null | string;
             postponement?: null | components["schemas"]["PostponementOfferResponse"];
+            /** Format: double */
+            amountDue?: null | number;
         };
         ShopBookingSettingsRequest: {
             requireManualConfirmation: boolean;
@@ -7263,11 +7480,14 @@ export interface components {
             confirmedAt: string;
         };
         /**
-         * @description The shop's own programme (read-only: the platform sets it, D-132) and how it is used; null programme when none. A
-         *     barber reads the terms but not the figures (D-147: «ما يشوف إحصائيات»): `Stats` is null for them.
+         * @description The shop's own loyalty (D-149): whether the paid add-on is in force, the rules and their version, and how they are used.
+         *     A barber reads the rules but not the figures (D-147: «ما يشوف إحصائيات»): `Stats` is null for them.
          */
         ShopLoyaltyResponse: {
-            program: null | components["schemas"]["LoyaltyProgramResponse"];
+            addOnActive: boolean;
+            rules: null | components["schemas"]["LoyaltyRulesResponse"];
+            /** Format: uint32 */
+            version: null | number;
             stats: null | components["schemas"]["LoyaltyStatsResponse"];
         };
         /** @description One switch: an audience and event, whether it is on, and the Arabic message it sends (Meta name and active text). */
@@ -7607,6 +7827,8 @@ export interface components {
             expiringSoonThresholdDays: number;
             hiddenFromDiscovery: boolean;
             renewals: components["schemas"]["ShopRenewalResponse"][];
+            loyaltyAddOn?: null | components["schemas"]["LoyaltyAddOnResponse"];
+            messageUsage?: null | components["schemas"]["WhatsAppUsageResponse"];
         };
         /** @description A shop account an admin created with a temporary password (D-139). The password is never returned. */
         ShopUserResponse: {
@@ -7740,6 +7962,12 @@ export interface components {
             reason: string;
             /** Format: uint32 */
             version: number;
+        };
+        /** @description Switches the shop's loyalty add-on on until `EndDate` (from today, or after the period in force), D-149. */
+        SwitchOnLoyaltyAddOnRequest: {
+            /** Format: date */
+            endDate: string;
+            notes: null | string;
         };
         TemplateButton: {
             label: string;
@@ -7954,6 +8182,8 @@ export interface components {
             availableToNewShops: boolean;
             /** Format: uint32 */
             version: number;
+            /** Format: int32 */
+            monthlyWhatsAppMessages?: null | number;
         };
         /** @description The editable platform settings; a stale `Version` answers 409. */
         UpdatePlatformSettingsRequest: {
@@ -8124,6 +8354,20 @@ export interface components {
             note: null | string;
             serviceIds?: null | string[];
             channel?: components["schemas"]["BookingChannel"];
+            /** @default false */
+            useLoyaltyReward: boolean;
+        };
+        /**
+         * @description WhatsApp messages to the shop's customers this calendar month (D-149, shop time zone): how many were handed to the
+         *     provider, and the plan's allowance (null = unlimited, 0 = none).
+         */
+        WhatsAppUsageResponse: {
+            /** Format: date */
+            month: string;
+            /** Format: int32 */
+            used: number;
+            /** Format: int32 */
+            allowance: null | number;
         };
         /**
          * @description Delivery state of the WhatsApp number, set by the notification worker (Phase 15).
@@ -9349,6 +9593,81 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveShopLoyaltyRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveLoyaltyRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopLoyaltyResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    LookupLoyaltyReward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoyaltyLookupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoyaltyLookupResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17727,7 +18046,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SaveLoyaltyProgramRequest"];
+                "application/json": components["schemas"]["SaveLoyaltyRulesRequest"];
             };
         };
         responses: {
@@ -18499,6 +18818,108 @@ export interface operations {
             };
         };
     };
+    SwitchOnLoyaltyAddOn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwitchOnLoyaltyAddOnRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoyaltyAddOnResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    StopLoyaltyAddOn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoyaltyAddOnResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     ReinstateShopSubscription: {
         parameters: {
             query?: never;
@@ -18534,6 +18955,59 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListLoyaltyAddOnPrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoyaltyAddOnPricesResponse"];
+                };
+            };
+        };
+    };
+    AddLoyaltyAddOnPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddLoyaltyAddOnPriceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoyaltyAddOnPricesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

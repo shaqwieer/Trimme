@@ -466,10 +466,25 @@ public sealed class SubscriptionCoverage : IPublicContent
 
     public bool IsSuspended { get; private set; }
 
+    /// <summary>
+    /// The loyalty add-on in force (D-149): its first and last day (null when it never ran). Read for any shop without a
+    /// tenant scope, like the end date: whether customers earn and redeem points, and which shops can hold loyalty cards.
+    /// </summary>
+    public DateOnly? LoyaltyAddOnStart { get; private set; }
+
+    public DateOnly? LoyaltyAddOnEnd { get; private set; }
+
     public void CopyFrom(ShopSubscription subscription)
     {
         ArgumentNullException.ThrowIfNull(subscription);
         EndDate = subscription.EndDate;
         IsSuspended = subscription.IsSuspended;
+    }
+
+    /// <summary>Written only with the shop's add-on periods, in the same unit of work.</summary>
+    public void SetLoyaltyAddOn(DateOnly start, DateOnly end)
+    {
+        LoyaltyAddOnStart = start;
+        LoyaltyAddOnEnd = end;
     }
 }

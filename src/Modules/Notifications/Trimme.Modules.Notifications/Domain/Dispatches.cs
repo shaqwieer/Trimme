@@ -135,6 +135,24 @@ public sealed class WhatsAppDispatch : Entity<DispatchId>
 
     public DateTimeOffset? FailedAt { get; private set; }
 
+    /// <summary>
+    /// The month whose WhatsApp allowance this message took a slot of (D-149), set before the first attempt so retries do
+    /// not take another; given back if the message ends without ever reaching the provider.
+    /// </summary>
+    public DateOnly? AllowanceMonth { get; private set; }
+
+    /// <summary>A message to a shop's customer counts against the shop's monthly allowance (D-149); staff messages and tests do not.</summary>
+    public bool CountsAgainstAllowance => Audience == MessageAudience.Customer && Kind != DispatchKind.Test && ShopId is not null;
+
+    public void ReserveAllowance(DateOnly month) => AllowanceMonth ??= month;
+
+    public DateOnly? ReleaseAllowance()
+    {
+        var month = AllowanceMonth;
+        AllowanceMonth = null;
+        return month;
+    }
+
     public static WhatsAppDispatch Create(
         DispatchKind kind,
         string dedupeKey,

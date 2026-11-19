@@ -550,7 +550,7 @@
     "qr_already_active": "The code is already active.",
     "qr_already_inactive": "The code is already switched off.",
     "invitation_role_invalid": "That role does not fit the kind of account being invited.",
-    "loyalty_reward_unavailable": "This coupon isn’t available: it was used, has expired or belongs to another salon.",
+    "loyalty_reward_unavailable": "This reward isn’t available now: it was used, it expired, or there aren’t enough points.",
     "auth_password_change_required": "Choose a new password to replace the temporary one.",
     "auth_password_change_not_required": "This password isn’t temporary. Sign in with it directly.",
     "geo_map_link_invalid": "This is not a Google Maps link.",
@@ -575,7 +575,13 @@
     "booking_postpone_same_time": "That is the booking’s own time.",
     "schedule_one_off_break_is_barbers": "A break on one day is set by the barber. The owner adds weekly breaks only.",
     "booking_service_in_package": "This service is already in the chosen package.",
-    "service_section_not_found": "This section no longer exists. Reload the page."
+    "service_section_not_found": "This section no longer exists. Reload the page.",
+    "loyalty_reward_not_with_package": "A loyalty reward can’t be used with a package.",
+    "loyalty_reward_service_not_booked": "The reward is a free service; add it to the booking first.",
+    "loyalty_not_active": "This salon’s loyalty programme isn’t on right now.",
+    "loyalty_add_on_no_subscription": "The add-on can’t be switched on for a shop without a subscription.",
+    "loyalty_add_on_not_active": "The add-on isn’t on for this shop.",
+    "loyalty_add_on_no_price": "Set the loyalty add-on price first, on the subscription plans page."
   },
   "shopStatus": {
     "Draft": "Draft",
@@ -917,14 +923,16 @@
       "label": "Settings sections",
       "profile": "Shop profile",
       "location": "Location",
-      "booking": "Booking settings"
+      "booking": "Booking settings",
+      "loyalty": "Loyalty"
     },
     "profile": "Shop profile",
     "images": "Shop images",
     "location": "Shop location",
     "unavailableTitle": "Settings are not available right now",
     "unavailableBody": "The shop is suspended. Contact the platform admin.",
-    "booking": "Booking settings"
+    "booking": "Booking settings",
+    "loyalty": "Loyalty programme"
   },
   "catalog": {
     "currency": "SAR",
@@ -1174,7 +1182,8 @@
       "status": "Status",
       "newShops": "New shops",
       "subscriptions": "Shops",
-      "order": "Order"
+      "order": "Order",
+      "messages": "WhatsApp / month"
     },
     "upcoming": "{price} from {date}",
     "noPrice": "No price",
@@ -1221,7 +1230,9 @@
       "initialPriceHelper": "Becomes price version 1 from today. You can also add it later.",
       "create": "Create plan",
       "save": "Save changes",
-      "saved": "Changes saved."
+      "saved": "Changes saved.",
+      "monthlyWhatsAppMessages": "WhatsApp messages to customers per month",
+      "monthlyWhatsAppMessagesHelper": "Leave empty for unlimited, or 0 for no WhatsApp messages to customers. Barbers’ messages and sign-in codes don’t count."
     },
     "detail": {
       "back": "Subscription plans",
@@ -1246,6 +1257,13 @@
       "amount": "New price (SAR)",
       "effectiveFrom": "Effective from",
       "priceAdded": "Price version added."
+    },
+    "messagesUnlimited": "Unlimited",
+    "messagesNone": "None",
+    "messagesCount": "{count, number}",
+    "addOn": {
+      "title": "Loyalty add-on price",
+      "body": "The price in force is recorded with each period an admin switches on for a shop. Versions are never edited or deleted; each applies to periods starting on or after its date."
     }
   },
   "adminSubscriptions": {
@@ -1340,7 +1358,30 @@
       "customPlanPrice": "Plan price for one standard period: {price}",
       "customEntry": "SuperAdmin custom price ({reason}; plan price {standard})"
     },
-    "manageLabel": "Manage the subscription of {name}"
+    "manageLabel": "Manage the subscription of {name}",
+    "addOn": {
+      "title": "Loyalty add-on",
+      "intro": "A paid add-on: the shop’s customers collect points and use rewards while it is on. When it ends, collecting and using stop and the points are kept.",
+      "active": "On until {date}",
+      "inactive": "Off",
+      "price": "Current price: {price}",
+      "noPrice": "No add-on price is set yet. The super admin sets it on the subscription plans page.",
+      "endDate": "Ends on",
+      "endDateHelper": "Starts today, or after the current period ends if it is on.",
+      "notes": "Internal notes (optional)",
+      "switchOn": "Switch on",
+      "extend": "Extend",
+      "switched": "The add-on period is saved.",
+      "stop": "Switch off",
+      "stopTitle": "Switch off the loyalty add-on?",
+      "stopBody": "Collecting points and using rewards stop today; customers’ points are kept and come back when it is switched on again.",
+      "stopped": "The add-on is switched off.",
+      "periods": "Add-on periods",
+      "period": "{start} – {end}",
+      "periodPrice": "{price} — version {version}",
+      "stoppedOn": "Switched off on {date}",
+      "noPeriods": "The add-on has never been on for this shop."
+    }
   },
   "barberLogins": {
     "title": "Barbers",
@@ -1414,7 +1455,16 @@
     "historyTitle": "Renewal history",
     "historyEmpty": "No periods yet.",
     "historyItem": "{start} – {end}",
-    "historyPlan": "{plan} · {price}"
+    "historyPlan": "{plan} · {price}",
+    "addOn": {
+      "title": "Loyalty programme",
+      "active": "On until {date}",
+      "inactive": "Off. Loyalty is a paid add-on the platform team switches on by agreement with you.",
+      "ended": "Ended on {date}. Your customers’ points are kept and come back when it is renewed.",
+      "rules": "Points rules",
+      "history": "Add-on periods",
+      "period": "{start} – {end}"
+    }
   },
   "platformSettings": {
     "title": "Platform settings",
@@ -2685,7 +2735,16 @@
       "pickServiceFirst": "Choose the services first.",
       "pickProfessionalFirst": "Choose the barber first.",
       "you": "(you)",
-      "submitPhone": "Book the appointment"
+      "submitPhone": "Book the appointment",
+      "loyalty": {
+        "ready": "The customer has a reward ready: {reward}",
+        "use": "Use the customer’s reward",
+        "notWithPackage": "A reward can’t be used with a package.",
+        "needsService": "Add “{service}” to use the reward.",
+        "hint": "The points are taken when the service ends, and come back if the appointment is cancelled.",
+        "discount": "Reward discount",
+        "due": "Amount due"
+      }
     },
     "calendar": {
       "title": "Day & week calendar",
@@ -3247,14 +3306,16 @@
         "booking_cancelled_by_barber": "{professional} cancelled {customer}'s booking on {date} at {time} ({item})",
         "booking_professional_changed": "{customer}'s booking went from {previousProfessional} to {professional}, {date} at {time}",
         "booking_postponement_offered": "A barber offered {customer} a new time: {offeredDate} at {offeredTime}",
-        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}"
+        "booking_postponement_declined": "{customer} declined the new time; the booking stays on {date} at {time}",
+        "whatsapp_allowance_reached": "{allowance, plural, =0 {Your plan has no WhatsApp messages to customers. They get their notices in the app.} other {You’ve reached this month’s WhatsApp limit ({allowance}). Notices continue in the app, and WhatsApp messages resume at the start of next month.}}"
       },
       "customer": {
         "booking_confirmed": "{shop} confirmed your booking: {item} on {date} at {time}",
         "booking_rescheduled": "Your booking at {shop} was moved to {date} at {time}",
         "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled",
         "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts",
-        "booking_postponement_offered": "{shop} suggests a new time for your booking: {offeredDate} at {offeredTime} instead of {date} at {time}. Accept or decline it on the booking page"
+        "booking_postponement_offered": "{shop} suggests a new time for your booking: {offeredDate} at {offeredTime} instead of {date} at {time}. Accept or decline it on the booking page",
+        "loyalty_visit_completed": "Your visit at {shop} is done{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}"
       },
       "barber": {
         "booking_created": "New booking for {customer}: {item} on {date} at {time}",
@@ -3608,67 +3669,111 @@
   },
   "loyalty": {
     "title": "Loyalty cards",
-    "intro": "Every appointment you complete through Groom Here at a salon with a loyalty programme fills a green circle on your card. A full card gives you a coupon to choose on your next booking at the same salon.",
+    "intro": "You collect points for every visit that ends at a salon with a loyalty programme, counted on your mobile number. A full card gives you a reward to choose on your next booking at the same salon.",
     "programTitle": "Loyalty programme",
-    "offer": "Complete {visits, plural, one {{visitsText} visit} other {{visitsText} visits}} and get: {reward}",
-    "offerCircles": "Collect {visits, plural, one {{visitsText} circle} other {{visitsText} circles}} and get: {reward}",
-    "firstVisit": "{count, plural, one {Your first visit fills {countText} circle} other {Your first visit fills {countText} circles}}, then one circle per visit.",
-    "anyProfessional": "Visits with any specialist at the salon count.",
-    "stampsLabel": "{filledText} of {requiredText} circles filled",
-    "remaining": "{left, plural, one {{leftText} more visit} other {{leftText} more visits}} to your coupon",
-    "useWhenBooking": "Choose the coupon on the confirm step of your next booking at this salon.",
-    "signIn": "Sign in to track your visits",
+    "anyProfessional": "Points are added when the service ends, with any specialist at the salon.",
+    "stampsLabel": "Points on the card: {filledText} of {requiredText}",
+    "signIn": "Sign in to track your points",
     "code": "Coupon code:",
     "expires": "Valid until {date}",
     "noExpiry": "No expiry date",
     "ready": "Ready to use",
     "held": "Reserved for your upcoming appointment",
     "viewBooking": "View appointment",
-    "programEnded": "The salon has stopped its loyalty programme; coupons you earned are still valid.",
-    "bookToUse": "Book and use the coupon",
     "empty": {
       "title": "No loyalty cards yet",
       "body": "When you complete an appointment at a salon with a loyalty programme, your card appears here.",
       "cta": "Browse salons"
     },
-    "wizard": {
-      "title": "Loyalty coupon",
-      "use": "Use the coupon: {reward}",
-      "none": "Don’t use it now",
-      "hint": "The salon applies it at your visit; the amount shown is before it."
+    "applied": "Loyalty reward: {reward}",
+    "chip": "Reward",
+    "points": "{count, plural, =0 {no points} one {# point} other {# points}}",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "rules": {
+      "earn": "{first} for your first visit, then {visit} for each visit.",
+      "earnSame": "{visit} for each visit.",
+      "reward": "Collect {count, plural, one {# point} other {# points}} and get {reward}.",
+      "None": "Your points don’t expire.",
+      "Wipe": "Points are cleared after {days} without a visit.",
+      "DecayPerPeriod": "One point is taken off for every {days} without a visit."
     },
-    "applied": "Loyalty coupon: {reward}",
-    "chip": "Coupon",
-    "admin": {
+    "reward": {
+      "FreeService": "{service} free",
+      "AmountOff": "{amount} off"
+    },
+    "card": {
+      "progress": "{current} of {needed} on the card",
+      "ready": "{count, plural, one {# reward ready} other {# rewards ready}}",
+      "extra": "+{count}",
+      "extraLabel": "and {points} on the next card",
+      "toNext": "{points} to your reward",
+      "toNextMore": "{points} to your next reward",
+      "held": "{count, plural, one {# reward held for an upcoming appointment} other {# rewards held for upcoming appointments}}",
+      "paused": "The loyalty programme is paused at this salon. Your points are kept and come back when it restarts.",
+      "useWhenBooking": "Choose “Use my reward” on the confirm step of your next booking at this salon.",
+      "bookToUse": "Book and use your reward"
+    },
+    "history": {
+      "title": "Points history",
+      "Earned": "Visit with {barber}",
+      "EarnedNoBarber": "Visit",
+      "Redeemed": "Reward used",
+      "Wiped": "Points cleared for no visits",
+      "Decayed": "Taken off for no visits"
+    },
+    "coupons": "Earlier coupons",
+    "wizard": {
+      "title": "Loyalty reward",
+      "usePoints": "Use my reward: {reward}",
+      "useCoupon": "Use the coupon: {reward}",
+      "none": "Don’t use it now",
+      "notWithPackage": "A reward can’t be used with a package.",
+      "needsService": "Add “{service}” to your booking to use the reward.",
+      "pointsHint": "The points are taken when the service ends, and come back if the appointment is cancelled.",
+      "couponHint": "The salon applies it at your visit; the amount shown is before it.",
+      "discount": "Reward discount",
+      "due": "Amount due"
+    },
+    "due": "Due after the reward: {amount}",
+    "rulesForm": {
       "title": "Loyalty programme",
-      "intro": "Agreed with the salon. Every completed online appointment with any of the salon’s specialists fills a circle on the customer’s card; a full card gives a coupon they choose when booking and the salon applies at the visit.",
-      "active": "Programme on",
-      "requiredVisits": "Visits needed for the reward",
-      "firstVisitStamps": "First-visit points",
-      "firstVisitHint": "How many circles the customer's first completed visit at the salon fills; every later visit fills one. Enter 1 for no bonus. {min} to {max}",
-      "rewardKind": "Reward type",
-      "kinds": {
-        "FreeService": "Free service",
-        "Discount": "Percentage discount"
-      },
-      "discountPercent": "Discount (%)",
-      "rewardTitleAr": "Reward name in Arabic",
-      "rewardTitleArHint": "For example: حلاقة مجانية",
-      "rewardTitleEn": "Reward name in English (optional)",
-      "validityDays": "Coupon validity in days (optional)",
-      "validityHint": "Leave empty for a coupon that never expires, or {min} to {max} days",
+      "intro": "Points are added only when a visit is closed as “Service finished”, with the name of the barber who closed it. Points follow the customer’s mobile number, so online, walk-in and phone visits fill one card.",
+      "addOnOff": "Loyalty is a paid add-on that is off for your shop. You can set the rules now; customers start collecting points once the platform team switches it on.",
+      "addOnOffAdmin": "The add-on is off for this shop, so its customers don’t collect points now. Switch it on from the Subscription tab.",
+      "addOnOn": "The add-on is on: customers collect points and use their rewards.",
+      "notSet": "No points rules are set yet.",
+      "firstVisitPoints": "First-visit points",
+      "visitPoints": "Points for each later visit",
+      "pointsForReward": "Points needed for the reward",
       "range": "{min} to {max}",
-      "save": "Save programme",
-      "saved": "The loyalty programme is saved.",
-      "readOnly": "You can’t change the loyalty programme.",
-      "notSet": "No loyalty programme is set for this salon yet.",
+      "reward": "Reward",
+      "rewardTypes": {
+        "FreeService": "A free service",
+        "AmountOff": "A fixed amount off"
+      },
+      "rewardService": "Free service",
+      "chooseService": "Choose a service",
+      "rewardAmount": "Amount off (SAR)",
+      "inactivity": "When a customer stops visiting",
+      "inactivityRules": {
+        "None": "Points are kept",
+        "Wipe": "The card is cleared after a while",
+        "DecayPerPeriod": "One point is taken off per period"
+      },
+      "inactivityDays": "Period in days",
+      "inactivityHelper": "Counted from the last visit, {min} to {max}",
+      "preview": "What your customers see",
+      "save": "Save rules",
+      "saved": "The points rules are saved.",
+      "readOnly": "The shop owner sets the points rules.",
+      "readOnlyAdmin": "You can’t change the loyalty programme.",
       "stats": {
         "title": "Use",
-        "members": "Customers with visits",
-        "openStamps": "Filled circles on open cards",
-        "issued": "Coupons issued",
-        "available": "Coupons available or reserved",
-        "redeemed": "Coupons used"
+        "members": "Customers with points",
+        "pointsEarned": "Points given",
+        "rewardsReady": "Rewards ready",
+        "rewardsHeld": "Rewards held for appointments",
+        "rewardsRedeemed": "Rewards used"
       }
     }
   },
@@ -3763,8 +3868,8 @@
     },
     "loyalty": {
       "title": "Loyalty",
-      "summary": "Stamps given: {stamps} · rewards used: {redemptions}",
-      "byActor": "{stamps} stamps · {redemptions} rewards"
+      "summary": "Points given: {stamps} — rewards used: {redemptions}",
+      "byActor": "{stamps} points — {redemptions} rewards"
     },
     "visitsTitle": "Bookings",
     "noVisits": "No bookings in this period.",
@@ -3821,5 +3926,16 @@
     "bn": "Bengali",
     "tl": "Filipino",
     "tr": "Turkish"
+  },
+  "messageUsage": {
+    "title": "WhatsApp messages to customers",
+    "month": "{month}",
+    "of": "{used} of {allowance}",
+    "sent": "{used, plural, =0 {No messages sent yet this month} one {# message sent this month} other {# messages sent this month}}",
+    "unlimited": "Messages are unlimited on the current plan.",
+    "none": "The current plan has no WhatsApp messages to customers. They get their notices in the app.",
+    "reached": "You’ve reached this month’s limit. Notices continue in the app, and WhatsApp messages resume at the start of next month.",
+    "note": "Only messages to customers count; barbers’ messages and sign-in codes don’t.",
+    "progress": "{percent}% of this month’s messages used"
   }
 }

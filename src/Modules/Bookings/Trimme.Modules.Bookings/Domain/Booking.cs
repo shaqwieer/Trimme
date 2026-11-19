@@ -388,6 +388,15 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
     public string? LoyaltyRewardTitleEn { get; private set; }
 
+    /// <summary>
+    /// The points reward used on this booking (D-149, «استخدم مكافأتي»): its redemption, held at booking, used when the visit
+    /// is completed and given back on a cancellation or a no-show. Set once, when the booking is made.
+    /// </summary>
+    public Guid? LoyaltyRedemptionId { get; private set; }
+
+    /// <summary>What the points reward takes off the price (the amount, or the free service's price); 0 without one.</summary>
+    public decimal LoyaltyDiscount { get; private set; }
+
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     public uint Version { get; private set; }
@@ -473,6 +482,24 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         LoyaltyRewardId = rewardId;
         LoyaltyRewardTitleAr = titleAr;
         LoyaltyRewardTitleEn = titleEn;
+    }
+
+    /// <summary>
+    /// A points reward (D-149): one per booking, never with a package. The amount due drops by its discount; the price stays
+    /// the booked one.
+    /// </summary>
+    public void UsePointsReward(Guid redemptionId, string titleAr, string? titleEn, decimal discount)
+    {
+        if (LoyaltyRewardId is not null || LoyaltyRedemptionId is not null || PackageId is not null)
+        {
+            throw new InvalidOperationException("One reward per booking, and none on a package.");
+        }
+
+        LoyaltyRedemptionId = redemptionId;
+        LoyaltyRewardTitleAr = titleAr;
+        LoyaltyRewardTitleEn = titleEn;
+        LoyaltyDiscount = Math.Clamp(discount, 0m, Price);
+        AmountDue = Price - LoyaltyDiscount;
     }
 
     public bool IsActive => BookingRules.IsActive(Status);
@@ -698,7 +725,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         });
         PackageItems = items;
         Price += price;
-        AmountDue = Price;
+        AmountDue = Math.Max(Price - LoyaltyDiscount, 0m);
         DurationMinutes += minutes;
         SetEnd(EndsAt.AddMinutes(minutes));
         Rename(PackageId is null ? null : service, null);
@@ -747,7 +774,7 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
 
         List<BookedPackageItem> items = [.. PackageItems.Where(i => i != item)];
         Price -= price;
-        AmountDue = Price;
+        AmountDue = Math.Max(Price - LoyaltyDiscount, 0m);
         DurationMinutes -= minutes;
         SetEnd(EndsAt.AddMinutes(-minutes));
         if (PackageId is null)

@@ -2,6 +2,8 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Trimme.BuildingBlocks.Domain.Tenancy;
+using Trimme.BuildingBlocks.Infrastructure.Persistence;
 using Trimme.Modules.Notifications.Domain;
 
 namespace Trimme.Modules.Notifications.Infrastructure;
@@ -150,4 +152,25 @@ internal sealed class UserNotificationConfiguration : IEntityTypeConfiguration<U
         builder.HasIndex(n => new { n.UserId, n.CreatedAt });
         builder.HasIndex(n => n.UserId).HasFilter("read_at IS NULL").HasDatabaseName("ix_user_notifications_unread");
     }
+}
+
+internal sealed class WhatsAppUsageMonthConfiguration : IEntityTypeConfiguration<WhatsAppUsageMonth>
+{
+    public const string Table = "whatsapp_usage";
+
+    public void Configure(EntityTypeBuilder<WhatsAppUsageMonth> builder)
+    {
+        builder.ToTable(Table, t => t.HasCheckConstraint("ck_whatsapp_usage_used", "used >= 0"));
+        builder.HasKey(u => new { u.ShopId, u.Month });
+    }
+}
+
+/// <summary><see cref="BuildingBlocks.Application.Notifications.IWhatsAppUsage"/> (D-149), through the caller's scope.</summary>
+internal sealed class WhatsAppUsageReader(TrimmeDbContext db) : BuildingBlocks.Application.Notifications.IWhatsAppUsage
+{
+    public async Task<int> UsedAsync(ShopId shopId, DateOnly month, CancellationToken cancellationToken) =>
+        await db.Set<WhatsAppUsageMonth>().AsNoTracking()
+            .Where(u => u.ShopId == shopId && u.Month == month)
+            .Select(u => u.Used)
+            .SingleOrDefaultAsync(cancellationToken);
 }

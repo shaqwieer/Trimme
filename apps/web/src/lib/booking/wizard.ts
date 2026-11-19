@@ -164,6 +164,38 @@ export function durationFor(items: WizardOffer[], pro: string): number {
   }, 0);
 }
 
+/** A loyalty points reward the customer has ready at this shop (D-149): what it gives. */
+export type WizardPointsReward = {
+  rewardType: 'FreeService' | 'AmountOff';
+  rewardServiceId: string | null;
+  rewardServiceNameAr: string | null;
+  rewardServiceNameEn: string | null;
+  rewardAmount: number | null;
+};
+
+/** Whether the reward fits the chosen items and what it takes off, or why it does not fit. */
+export type RewardFit = { usable: true; discount: number } | { usable: false; reason: 'package' | 'service' };
+
+/**
+ * The server's rule for a points reward on a booking (D-149), shown before sending: never with a package; an amount off
+ * never more than the price; a free service only when the booking includes it, taking off that service's price.
+ */
+export function rewardFit(
+  items: readonly { kind: 'service' | 'package'; id: string; price: number }[],
+  price: number,
+  reward: Pick<WizardPointsReward, 'rewardType' | 'rewardServiceId' | 'rewardAmount'>,
+): RewardFit {
+  if (items.some((item) => item.kind === 'package')) return { usable: false, reason: 'package' };
+  const total = Math.max(price, 0);
+  if (reward.rewardType === 'AmountOff') {
+    return { usable: true, discount: Math.min(reward.rewardAmount ?? 0, total) };
+  }
+  const free = items.find((item) => item.kind === 'service' && item.id === reward.rewardServiceId);
+  return free
+    ? { usable: true, discount: Math.min(free.price, total) }
+    : { usable: false, reason: 'service' };
+}
+
 /**
  * The selection with these items. The professional stays when they do all of them, or while nothing is chosen (else
  * "any"); the date and time stay too, and the availability answers say whether they still fit (D-125).

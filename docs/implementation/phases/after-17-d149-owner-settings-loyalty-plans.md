@@ -1,6 +1,6 @@
 # After Phase 17 — D-149: the owner's dashboard (sections, barbers, booking settings), the paid loyalty add-on, expiry, plans
 
-**Status:** [~] (Session 28, 2026-11-19) · requested by the user after D-148 · decision: D-149
+**Status:** [x] (Session 28, 2026-11-19) · requested by the user after D-148 · decisions: D-149 (slices 1–3), D-150 (slices 4–5)
 
 ## The request (user, Session 28: two screenshots of section 6, and a pasted list of five owner-dashboard changes)
 - **Owner 1. Packages and service sections.**
@@ -69,9 +69,9 @@
 - [x] Slice 1
 - [x] Slice 2
 - [x] Slice 3 (slices 1–3 share the backend migration `OwnerSettings`, so they were verified and committed together)
-- [ ] Slice 4
-- [ ] Slice 5
-- [ ] Docs: D-149, TRACEABILITY, deviations, STATUS, handoff
+- [x] Slice 4
+- [x] Slice 5 (slices 4–5 share the backend migration `LoyaltyAddOnAndPlanMessages`, so they were verified and committed together)
+- [x] Docs: D-149, D-150, TRACEABILITY (R-LOY-03…09, R-SUB-07…08), DV-A38, STATUS, MASTER_PLAN, handoff
 
 ## What was built (slices 1–3)
 - **Backend** (a forked agent, reviewed): migration `OwnerSettings` (27 migrations); per-shop booking settings (`GET/PUT /shop/booking-settings`, `/admin/shops/{id}/booking-settings`); cleaning time through `blocked_until` in the engine, the exclusion constraint and the hold triggers; a barber's own length per service (`services: [{serviceId, durationMinutes}]`, `ownDurationMinutes`, `professionalDurations` on public services); languages; the owner's barber with an optional English name; shop sections (owner, admin and public endpoints; `sectionId` on services); shop type fixed; dates default to the shop's furthest day (cap 90).
@@ -94,3 +94,49 @@
   - after the fixes and a web rebuild: `services.spec` and the whole route audit (every project, including `/shop/settings/booking`, `/admin/shops/{id}?tab=services` and `?tab=booking`) 23/23 passed;
   - `shop-barbers.spec` («Barber's mobile», Urdu) and `shops-professionals.spec` (no «Shop type») passed in the full run.
 - **Manual (local stack):** `lamsat-al-rajul` (subscription ended 2026-11-03) answers 404 «المحل غير متاح حالياً» on its page and booking page; al-asala renders with its section tabs.
+
+## What was built (slices 4–5, decision D-150)
+- **Backend** (the same forked agent, reviewed):
+  - migration `LoyaltyAddOnAndPlanMessages` (28 migrations; tables and columns only, no data changed);
+  - the loyalty add-on in Subscriptions: versioned prices and periods;
+  - points per mobile-number hash in Loyalty (settings, accounts, entries, redemptions), with earning at «انتهت الخدمة», overflow, inactivity rules, hold/use/return, the barber's lookup, «خلصت زيارتك», and customer and public endpoints;
+  - `useLoyaltyReward` on bookings and walk-ins, with `amountDue` and the discount;
+  - the plan's `monthlyWhatsAppMessages`, the allowance gate at dispatch, the owner's monthly notice, and `messageUsage` on both subscription pages.
+- **Changed on top of the agent's work:**
+  - the owner's subscription response leaves out the admin's notes on add-on periods (asserted in `LoyaltyTests`);
+  - an amount-off reward is titled the way the app writes prices («خصم ٥٠ ⃁»; `LoyaltyBalanceTests` ×2).
+- **Web:**
+  - the loyalty parts: the rules in words, a points card with «+N» and a bar beyond 12 points, the history, the stats;
+  - `/account/loyalty` and the shop page's card (heading and rules on the server, the points card lazy);
+  - «استخدم مكافأتي» in the wizard (`rewardFit`, the discount and the amount due);
+  - the walk-in lookup and reward;
+  - `LoyaltyRulesForm` on «إعدادات المحل» › «برنامج الولاء» and on the admin's loyalty tab (replaces `LoyaltyProgramForm`);
+  - `LoyaltyAddOnPanel` and `MessageUsage` on the admin's subscription tab, and both on the owner's subscription page;
+  - the plan form's monthly WhatsApp field, the plan list's column, and the add-on's price versions on the plans page;
+  - the two notices (`loyalty.visit_completed`, `whatsapp.allowance_reached`);
+  - the reward discount on the customer's booking page and in the barber's drawer;
+  - the reports' words: points rather than stamps.
+- **Fixed while verifying:** a late booking's second line on the owner's dashboard was below 4.5:1 on the red card.
+
+## Evidence (slices 4–5)
+- **.NET** (re-run here, not only the agent's report):
+  - Release build: 0 warnings.
+  - `has-pending-model-changes`: none.
+  - unit 498/498 (500/500 after the two title tests); architecture 69/69.
+  - full integration 270/270 (264 before; `LoyaltyTests` 7 replaces D-132's 3, and `WhatsAppAllowanceTests` adds 2).
+  - After the notes and title changes: `LoyaltyTests` and `SubscriptionTests` 15/15, then `LoyaltyTests` 7/7.
+- **Review:**
+  - no test removed or skipped;
+  - the only guard change registers the barber's lookup in `BarberScopeTests`;
+  - a refused message raises no admin alert (`IsNotADeliveryFailure`);
+  - no number or member key in the payloads the shop reads (`LoyaltyTests`).
+- **Web:**
+  - lint, typecheck, format and `openapi:check` pass;
+  - `pnpm test`: 61 files, 570 tests. New: `LoyaltyRulesForm` ×3, `loyalty.test.tsx` rewritten (9), the wizard's points reward ×2, `rewardFit` ×3, the walk-in reward ×2, the plan's allowance, `MessageUsage` ×2, `LoyaltyAddOnPanel` ×3, the two notices' wordings;
+  - `pnpm build` and `bundle-budget.mjs`: 90 routes within budget, none raised. The public shop page is 219.6 / 220 KB (heading and rules on the server, the points card with `React.lazy`), the booking 237.1 / 260, the admin shop page 332.8 / 335.
+- **E2E** on the rebuilt local stack (`migrate` up to date at 28; api and web healthy):
+  - the full run was **stopped by the host for low memory** at 91 passed and 22 failed;
+  - 21 of the failures are the crash itself («Target crashed», «worker process exited unexpectedly»): the whole route audit and one WhatsApp flow;
+  - the one assertion failure is the late booking's contrast, now fixed (web image not yet rebuilt).
+  - **re-run** (the user chose the affected specs, 3 workers) after rebuilding the web image with the fix: `routes.spec` in both the light and the dark project, `shop-dashboard` and `whatsapp-notifications`, **23/23 passed**. The route audit covers every role, including `/shop/settings/loyalty`, `/admin/shops/{id}?tab=subscription` and `?tab=loyalty`, `/account/loyalty`, `/shop/subscription` and `/admin/subscription-plans`.
+  - Not re-run after the kill: the smoke and flow specs that had already passed in the stopped run (91 passed there).

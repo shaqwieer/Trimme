@@ -550,7 +550,7 @@
     "qr_already_active": "الرمز فعّال بالفعل.",
     "qr_already_inactive": "الرمز موقوف بالفعل.",
     "invitation_role_invalid": "هذا الدور لا يناسب نوع الحساب المدعو.",
-    "loyalty_reward_unavailable": "هذا الكوبون غير متاح: استُخدم أو انتهت صلاحيته أو يخص صالوناً آخر.",
+    "loyalty_reward_unavailable": "هذه المكافأة غير متاحة الآن: استُخدمت أو انتهت صلاحيتها أو لم تعد النقاط كافية.",
     "auth_password_change_required": "اختر كلمة مرور جديدة بدل المؤقتة.",
     "auth_password_change_not_required": "كلمة المرور هذه ليست مؤقتة. سجّل الدخول بها مباشرة.",
     "geo_map_link_invalid": "هذا ليس رابطاً من خرائط Google.",
@@ -575,7 +575,13 @@
     "booking_postpone_same_time": "هذا هو موعد الحجز نفسه.",
     "schedule_one_off_break_is_barbers": "البريك ليوم واحد يحطه الحلاق بنفسه. صاحب المحل يضيف البريكات الأسبوعية فقط.",
     "booking_service_in_package": "هذه الخدمة موجودة في الباقة المختارة.",
-    "service_section_not_found": "هذا القسم لم يعد موجوداً. حدّث الصفحة."
+    "service_section_not_found": "هذا القسم لم يعد موجوداً. حدّث الصفحة.",
+    "loyalty_reward_not_with_package": "لا تُستخدم مكافأة الولاء مع الباقات.",
+    "loyalty_reward_service_not_booked": "المكافأة خدمة مجانية، فأضفها إلى الحجز أولاً.",
+    "loyalty_not_active": "برنامج الولاء غير مفعّل في هذا الصالون حالياً.",
+    "loyalty_add_on_no_subscription": "لا يمكن تفعيل الإضافة لمحل بلا اشتراك.",
+    "loyalty_add_on_not_active": "الإضافة غير مفعّلة لهذا المحل.",
+    "loyalty_add_on_no_price": "حدّد سعر إضافة برنامج الولاء أولاً من صفحة باقات الاشتراك."
   },
   "shopStatus": {
     "Draft": "مسودة",
@@ -917,14 +923,16 @@
       "label": "أقسام الإعدادات",
       "profile": "ملف المحل",
       "location": "الموقع",
-      "booking": "إعدادات الحجز"
+      "booking": "إعدادات الحجز",
+      "loyalty": "برنامج الولاء"
     },
     "profile": "ملف المحل",
     "images": "صور المحل",
     "location": "موقع المحل",
     "unavailableTitle": "الإعدادات غير متاحة الآن",
     "unavailableBody": "المحل موقوف مؤقتاً. تواصل مع إدارة المنصة.",
-    "booking": "إعدادات الحجز"
+    "booking": "إعدادات الحجز",
+    "loyalty": "برنامج الولاء"
   },
   "catalog": {
     "currency": "⃁",
@@ -1174,7 +1182,8 @@
       "status": "الحالة",
       "newShops": "المحلات الجديدة",
       "subscriptions": "المحلات",
-      "order": "الترتيب"
+      "order": "الترتيب",
+      "messages": "واتساب شهرياً"
     },
     "upcoming": "{price} اعتباراً من {date}",
     "noPrice": "بلا سعر",
@@ -1221,7 +1230,9 @@
       "initialPriceHelper": "يصبح إصدار السعر ١ اعتباراً من اليوم. ويمكنك إضافته لاحقاً.",
       "create": "إنشاء الباقة",
       "save": "حفظ التغييرات",
-      "saved": "حُفظت التغييرات."
+      "saved": "حُفظت التغييرات.",
+      "monthlyWhatsAppMessages": "رسائل واتساب للعملاء شهرياً",
+      "monthlyWhatsAppMessagesHelper": "اتركه فارغاً لرسائل غير محدودة، أو ٠ لعدم إرسال رسائل واتساب للعملاء. لا تُحسب رسائل الحلاقين ورموز الدخول."
     },
     "detail": {
       "back": "باقات الاشتراك",
@@ -1246,6 +1257,13 @@
       "amount": "السعر الجديد (⃁)",
       "effectiveFrom": "يسري من",
       "priceAdded": "أُضيف إصدار السعر."
+    },
+    "messagesUnlimited": "غير محدودة",
+    "messagesNone": "لا يوجد",
+    "messagesCount": "{count, number, arab}",
+    "addOn": {
+      "title": "سعر إضافة برنامج الولاء",
+      "body": "يُسجَّل السعر الساري مع كل مدة يفعّلها المسؤول لمحل. لا تُعدَّل الإصدارات ولا تُحذف، ويسري كل إصدار على المدد التي تبدأ في تاريخه أو بعده."
     }
   },
   "adminSubscriptions": {
@@ -1340,6 +1358,29 @@
       "customReason": "سبب المدة المخصصة",
       "customPlanPrice": "سعر الباقة لمدة قياسية واحدة: {price}",
       "customEntry": "سعر مخصص من المدير العام ({reason}؛ سعر الباقة {standard})"
+    },
+    "addOn": {
+      "title": "إضافة برنامج الولاء",
+      "intro": "إضافة مدفوعة: يجمع عملاء المحل النقاط ويستخدمون مكافآتهم ما دامت مفعّلة. عند انتهائها يتوقف الجمع والاستخدام وتبقى النقاط محفوظة.",
+      "active": "مفعّلة حتى {date}",
+      "inactive": "غير مفعّلة",
+      "price": "السعر الحالي: {price}",
+      "noPrice": "لم يُحدَّد سعر للإضافة بعد. يحدده المشرف العام في صفحة باقات الاشتراك.",
+      "endDate": "تنتهي في",
+      "endDateHelper": "تبدأ من اليوم، أو بعد نهاية المدة الحالية إن كانت مفعّلة.",
+      "notes": "ملاحظات داخلية (اختياري)",
+      "switchOn": "تفعيل الإضافة",
+      "extend": "تمديد الإضافة",
+      "switched": "حُفظت مدة الإضافة.",
+      "stop": "إيقاف الإضافة",
+      "stopTitle": "إيقاف إضافة برنامج الولاء؟",
+      "stopBody": "يتوقف جمع النقاط واستخدام المكافآت من اليوم، وتبقى نقاط العملاء محفوظة وتعود عند التفعيل.",
+      "stopped": "أُوقفت الإضافة.",
+      "periods": "مدد الإضافة",
+      "period": "{start} – {end}",
+      "periodPrice": "{price} — الإصدار {version, number, arab}",
+      "stoppedOn": "أُوقفت في {date}",
+      "noPeriods": "لم تُفعَّل الإضافة لهذا المحل بعد."
     }
   },
   "barberLogins": {
@@ -1414,7 +1455,16 @@
     "historyTitle": "سجل التجديد",
     "historyEmpty": "لا توجد مدد بعد.",
     "historyItem": "{start} – {end}",
-    "historyPlan": "{plan} — {price}"
+    "historyPlan": "{plan} — {price}",
+    "addOn": {
+      "title": "برنامج الولاء",
+      "active": "مفعّل حتى {date}",
+      "inactive": "غير مفعّل. برنامج الولاء إضافة مدفوعة يفعّلها فريق المنصة بالاتفاق معك.",
+      "ended": "انتهى في {date}. نقاط عملائك محفوظة وتعود عند التجديد.",
+      "rules": "قواعد النقاط",
+      "history": "مدد الإضافة",
+      "period": "{start} – {end}"
+    }
   },
   "platformSettings": {
     "title": "إعدادات المنصة",
@@ -2685,7 +2735,16 @@
       "pickServiceFirst": "اختر الخدمات أولاً.",
       "pickProfessionalFirst": "اختر الحلاق أولاً.",
       "you": "(أنت)",
-      "submitPhone": "تسجيل الموعد"
+      "submitPhone": "تسجيل الموعد",
+      "loyalty": {
+        "ready": "لدى العميل مكافأة جاهزة: {reward}",
+        "use": "استخدم مكافأة العميل",
+        "notWithPackage": "لا تُستخدم المكافأة مع الباقات.",
+        "needsService": "أضف «{service}» لتستخدم المكافأة.",
+        "hint": "تُخصم النقاط عند انتهاء الخدمة، وتعود إذا أُلغي الموعد.",
+        "discount": "خصم المكافأة",
+        "due": "المبلغ المستحق"
+      }
     },
     "calendar": {
       "title": "تقويم اليوم والأسبوع",
@@ -3247,14 +3306,16 @@
         "booking_cancelled_by_barber": "ألغى {professional} حجز {customer} يوم {date} الساعة {time} ({item})",
         "booking_professional_changed": "نُقل حجز {customer} من {previousProfessional} إلى {professional}، يوم {date} الساعة {time}",
         "booking_postponement_offered": "عرض الحلاق على {customer} تأجيل حجزه إلى {offeredDate} الساعة {offeredTime}",
-        "booking_postponement_declined": "رفض {customer} تأجيل حجزه، وبقي في موعده {date} الساعة {time}"
+        "booking_postponement_declined": "رفض {customer} تأجيل حجزه، وبقي في موعده {date} الساعة {time}",
+        "whatsapp_allowance_reached": "{allowance, plural, =0 {باقتكم لا تشمل رسائل واتساب للعملاء. تصل إشعاراتهم داخل التطبيق.} other {وصلتم إلى حد رسائل واتساب لهذا الشهر ({allowance, number, arab}). تستمر الإشعارات داخل التطبيق، وتعود رسائل واتساب أول الشهر القادم.}}"
       },
       "customer": {
         "booking_confirmed": "أكّد {shop} حجزك: {item} يوم {date} الساعة {time}",
         "booking_rescheduled": "تم تعديل موعدك في {shop} إلى {date} الساعة {time}",
         "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}",
         "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ",
-        "booking_postponement_offered": "يقترح {shop} موعداً جديداً لحجزك: {offeredDate} الساعة {offeredTime} بدلاً من {date} الساعة {time}. اقبله أو ارفضه من صفحة الحجز"
+        "booking_postponement_offered": "يقترح {shop} موعداً جديداً لحجزك: {offeredDate} الساعة {offeredTime} بدلاً من {date} الساعة {time}. اقبله أو ارفضه من صفحة الحجز",
+        "loyalty_visit_completed": "خلصت زيارتك في {shop}{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}"
       },
       "barber": {
         "booking_created": "حجز جديد لـ {customer}: {item} يوم {date} الساعة {time}",
@@ -3608,67 +3669,111 @@
   },
   "loyalty": {
     "title": "بطاقات الولاء",
-    "intro": "كل موعد تكمله عبر Groom Here في صالون يقدّم برنامج الولاء يملأ دائرة خضراء في بطاقتك. عند اكتمال البطاقة تحصل على كوبون تختاره عند حجزك القادم في الصالون نفسه.",
+    "intro": "تجمع نقاطاً مع كل زيارة تنتهي في صالون يقدّم برنامج الولاء، وتُحسب النقاط على رقم جوالك. عند اكتمال البطاقة تحصل على مكافأة تختارها عند حجزك القادم في الصالون نفسه.",
     "programTitle": "برنامج الولاء",
-    "offer": "أكمل {visits, plural, one {زيارة واحدة} two {زيارتين} few {{visitsText} زيارات} many {{visitsText} زيارة} other {{visitsText} زيارة}} واحصل على: {reward}",
-    "offerCircles": "اجمع {visits, plural, one {دائرة واحدة} two {دائرتين} few {{visitsText} دوائر} many {{visitsText} دائرة} other {{visitsText} دائرة}} واحصل على: {reward}",
-    "firstVisit": "{count, plural, one {أول زيارة لك تملأ دائرة واحدة} two {أول زيارة لك تملأ دائرتين} few {أول زيارة لك تملأ {countText} دوائر} many {أول زيارة لك تملأ {countText} دائرة} other {أول زيارة لك تملأ {countText} دائرة}}، ثم دائرة مع كل زيارة.",
-    "anyProfessional": "تُحتسب زياراتك عند أي مختص في الصالون.",
-    "stampsLabel": "الدوائر المكتملة: {filledText} من {requiredText}",
-    "remaining": "{left, plural, one {باقي زيارة واحدة} two {باقي زيارتان} few {باقي {leftText} زيارات} many {باقي {leftText} زيارة} other {باقي {leftText} زيارة}} للحصول على الكوبون",
-    "useWhenBooking": "اختر الكوبون في خطوة التأكيد عند حجزك القادم في هذا الصالون.",
-    "signIn": "سجّل دخولك لتتابع زياراتك",
+    "anyProfessional": "تُضاف النقاط عند انتهاء الخدمة، مع أي مختص في الصالون.",
+    "stampsLabel": "النقاط على البطاقة: {filledText} من {requiredText}",
+    "signIn": "سجّل دخولك لتتابع نقاطك",
     "code": "رمز الكوبون:",
     "expires": "صالح حتى {date}",
     "noExpiry": "بلا تاريخ انتهاء",
     "ready": "جاهز للاستخدام",
     "held": "محجوز لموعدك القادم",
     "viewBooking": "عرض الموعد",
-    "programEnded": "أوقف الصالون برنامج الولاء، وكوبوناتك المكتسبة ما زالت صالحة.",
-    "bookToUse": "احجز واستخدم الكوبون",
     "empty": {
       "title": "لا توجد بطاقات ولاء بعد",
       "body": "عندما تكمل موعداً في صالون يقدّم برنامج الولاء ستظهر بطاقتك هنا.",
       "cta": "تصفح الصالونات"
     },
-    "wizard": {
-      "title": "كوبون الولاء",
-      "use": "استخدم الكوبون: {reward}",
-      "none": "لا أريد استخدامه الآن",
-      "hint": "يطبّقه الصالون عند زيارتك، والمبلغ المعروض قبل تطبيقه."
+    "applied": "مكافأة الولاء: {reward}",
+    "chip": "مكافأة",
+    "points": "{count, plural, zero {لا نقاط} one {نقطة واحدة} two {نقطتان} few {{count, number, arab} نقاط} many {{count, number, arab} نقطة} other {{count, number, arab} نقطة}}",
+    "days": "{count, plural, one {يوم واحد} two {يومان} few {{count, number, arab} أيام} many {{count, number, arab} يوماً} other {{count, number, arab} يوم}}",
+    "rules": {
+      "earn": "لأول زيارة {first}، ولكل زيارة بعدها {visit}.",
+      "earnSame": "لكل زيارة {visit}.",
+      "reward": "{count, plural, one {اجمع نقطة واحدة} two {اجمع نقطتين} few {اجمع {count, number, arab} نقاط} many {اجمع {count, number, arab} نقطة} other {اجمع {count, number, arab} نقطة}} واحصل على {reward}.",
+      "None": "لا تنتهي نقاطك.",
+      "Wipe": "تُمسح النقاط إذا مرّ {days} دون زيارة.",
+      "DecayPerPeriod": "تنقص نقطة واحدة عن كل {days} تمرّ دون زيارة."
     },
-    "applied": "كوبون الولاء: {reward}",
-    "chip": "كوبون",
-    "admin": {
+    "reward": {
+      "FreeService": "{service} مجاناً",
+      "AmountOff": "خصم {amount}"
+    },
+    "card": {
+      "progress": "على البطاقة {current, number, arab} من {needed, number, arab}",
+      "ready": "{count, plural, one {مكافأة جاهزة} two {مكافأتان جاهزتان} few {{count, number, arab} مكافآت جاهزة} many {{count, number, arab} مكافأة جاهزة} other {{count, number, arab} مكافأة جاهزة}}",
+      "extra": "+{count, number, arab}",
+      "extraLabel": "و{points} على البطاقة التالية",
+      "toNext": "باقي {points} للمكافأة",
+      "toNextMore": "باقي {points} للمكافأة التالية",
+      "held": "{count, plural, one {مكافأة محجوزة لموعد قادم} two {مكافأتان محجوزتان لموعدين قادمين} few {{count, number, arab} مكافآت محجوزة لمواعيد قادمة} many {{count, number, arab} مكافأة محجوزة لمواعيد قادمة} other {{count, number, arab} مكافأة محجوزة لمواعيد قادمة}}",
+      "paused": "برنامج الولاء متوقف حالياً في هذا الصالون. نقاطك محفوظة وتعود عند تفعيله.",
+      "useWhenBooking": "اختر «استخدم مكافأتي» في خطوة التأكيد عند حجزك القادم في هذا الصالون.",
+      "bookToUse": "احجز واستخدم مكافأتك"
+    },
+    "history": {
+      "title": "سجل النقاط",
+      "Earned": "زيارة مع {barber}",
+      "EarnedNoBarber": "زيارة",
+      "Redeemed": "استخدمت مكافأة",
+      "Wiped": "مُسحت النقاط لعدم الزيارة",
+      "Decayed": "نقصت لعدم الزيارة"
+    },
+    "coupons": "كوبونات سابقة",
+    "wizard": {
+      "title": "مكافأة الولاء",
+      "usePoints": "استخدم مكافأتي: {reward}",
+      "useCoupon": "استخدم الكوبون: {reward}",
+      "none": "لا أريد استخدامها الآن",
+      "notWithPackage": "لا تُستخدم المكافأة مع الباقات.",
+      "needsService": "أضف «{service}» إلى حجزك لتستخدم المكافأة.",
+      "pointsHint": "تُخصم النقاط عند انتهاء الخدمة، وتعود إليك إذا أُلغي الموعد.",
+      "couponHint": "يطبّقه الصالون عند زيارتك، والمبلغ المعروض قبل تطبيقه.",
+      "discount": "خصم المكافأة",
+      "due": "المبلغ المستحق"
+    },
+    "due": "المستحق بعد خصم المكافأة: {amount}",
+    "rulesForm": {
       "title": "برنامج الولاء",
-      "intro": "يُحدَّد بالاتفاق مع الصالون. كل موعد إلكتروني مكتمل عند أي مختص في الصالون يملأ دائرة في بطاقة العميل، واكتمال البطاقة يمنحه كوبوناً يختاره عند الحجز ويطبّقه الصالون عند الزيارة.",
-      "active": "البرنامج مفعّل",
-      "requiredVisits": "عدد الزيارات للحصول على المكافأة",
-      "firstVisitStamps": "نقاط أول زيارة",
-      "firstVisitHint": "كم دائرة تمتلئ في بطاقة العميل عند أول زيارة مكتملة له في الصالون، ثم دائرة واحدة مع كل زيارة. اكتب ١ لعدم منح نقاط إضافية. من {min} إلى {max}",
-      "rewardKind": "نوع المكافأة",
-      "kinds": {
-        "FreeService": "خدمة مجانية",
-        "Discount": "خصم بنسبة"
-      },
-      "discountPercent": "نسبة الخصم (٪)",
-      "rewardTitleAr": "اسم المكافأة بالعربية",
-      "rewardTitleArHint": "مثل: حلاقة مجانية، أو خصم ٢٠٪",
-      "rewardTitleEn": "اسم المكافأة بالإنجليزية (اختياري)",
-      "validityDays": "صلاحية الكوبون بالأيام (اختياري)",
-      "validityHint": "اتركه فارغاً ليبقى الكوبون صالحاً دائماً، أو من {min} إلى {max} يوماً",
+      "intro": "تُضاف النقاط فقط عند «انتهت الخدمة»، ويُسجَّل اسم الحلاق الذي أنهاها. تُحسب النقاط على رقم جوال العميل، فتجتمع زياراته الإلكترونية والحضورية والهاتفية في بطاقة واحدة.",
+      "addOnOff": "برنامج الولاء إضافة مدفوعة غير مفعّلة لمحلك. يمكنك ضبط القواعد الآن، ويبدأ عملاؤك بجمع النقاط عند تفعيلها من فريق المنصة.",
+      "addOnOffAdmin": "الإضافة غير مفعّلة لهذا المحل، فلا يجمع عملاؤه النقاط الآن. فعّلها من تبويب الاشتراك.",
+      "addOnOn": "الإضافة مفعّلة: يجمع العملاء النقاط ويستخدمون مكافآتهم.",
+      "notSet": "لم تُضبط قواعد النقاط بعد.",
+      "firstVisitPoints": "نقاط أول زيارة",
+      "visitPoints": "نقاط كل زيارة بعدها",
+      "pointsForReward": "النقاط المطلوبة للمكافأة",
       "range": "من {min} إلى {max}",
-      "save": "حفظ البرنامج",
-      "saved": "تم حفظ برنامج الولاء.",
-      "readOnly": "لا تملك صلاحية تعديل برنامج الولاء.",
-      "notSet": "لم يُضبط برنامج ولاء لهذا الصالون بعد.",
+      "reward": "المكافأة",
+      "rewardTypes": {
+        "FreeService": "خدمة مجانية",
+        "AmountOff": "خصم بمبلغ ثابت"
+      },
+      "rewardService": "الخدمة المجانية",
+      "chooseService": "اختر خدمة",
+      "rewardAmount": "مبلغ الخصم (⃁)",
+      "inactivity": "إذا انقطع العميل عن الزيارة",
+      "inactivityRules": {
+        "None": "تبقى النقاط كما هي",
+        "Wipe": "تُمسح البطاقة بعد مدة",
+        "DecayPerPeriod": "تنقص نقطة واحدة عن كل مدة"
+      },
+      "inactivityDays": "المدة بالأيام",
+      "inactivityHelper": "تُحسب من آخر زيارة، من {min} إلى {max}",
+      "preview": "هكذا يراها عملاؤك",
+      "save": "حفظ القواعد",
+      "saved": "حُفظت قواعد النقاط.",
+      "readOnly": "يضبط صاحب المحل قواعد النقاط.",
+      "readOnlyAdmin": "لا تملك صلاحية تعديل برنامج الولاء.",
       "stats": {
         "title": "الاستخدام",
-        "members": "عملاء لديهم زيارات",
-        "openStamps": "دوائر مكتملة في بطاقات مفتوحة",
-        "issued": "كوبونات صدرت",
-        "available": "كوبونات متاحة أو محجوزة",
-        "redeemed": "كوبونات استُخدمت"
+        "members": "عملاء لديهم نقاط",
+        "pointsEarned": "نقاط مُنحت",
+        "rewardsReady": "مكافآت جاهزة",
+        "rewardsHeld": "مكافآت محجوزة لمواعيد",
+        "rewardsRedeemed": "مكافآت استُخدمت"
       }
     }
   },
@@ -3763,8 +3868,8 @@
     },
     "loyalty": {
       "title": "الولاء",
-      "summary": "أختام أُعطيت: {stamps} — مكافآت استُخدمت: {redemptions}",
-      "byActor": "أختام {stamps} — مكافآت {redemptions}"
+      "summary": "نقاط أُعطيت: {stamps} — مكافآت استُخدمت: {redemptions}",
+      "byActor": "نقاط {stamps} — مكافآت {redemptions}"
     },
     "visitsTitle": "الحجوزات",
     "noVisits": "لا حجوزات في هذه الفترة.",
@@ -3821,5 +3926,16 @@
     "bn": "البنغالية",
     "tl": "الفلبينية",
     "tr": "التركية"
+  },
+  "messageUsage": {
+    "title": "رسائل واتساب للعملاء",
+    "month": "شهر {month}",
+    "of": "{used, number, arab} من {allowance, number, arab}",
+    "sent": "{used, plural, =0 {لم تُرسل رسائل بعد هذا الشهر} one {أُرسلت رسالة واحدة هذا الشهر} two {أُرسلت رسالتان هذا الشهر} few {أُرسلت {used, number, arab} رسائل هذا الشهر} many {أُرسلت {used, number, arab} رسالة هذا الشهر} other {أُرسلت {used, number, arab} رسالة هذا الشهر}}",
+    "unlimited": "الرسائل غير محدودة في الباقة الحالية.",
+    "none": "الباقة الحالية لا تشمل رسائل واتساب للعملاء. تصل إشعاراتهم داخل التطبيق.",
+    "reached": "وصلتم إلى حد هذا الشهر. تستمر الإشعارات داخل التطبيق، وتعود رسائل واتساب أول الشهر القادم.",
+    "note": "تُحسب الرسائل المرسلة إلى العملاء فقط، ولا تُحسب رسائل الحلاقين ورموز الدخول.",
+    "progress": "استُخدم {percent, number, arab}٪ من رسائل الشهر"
   }
 }

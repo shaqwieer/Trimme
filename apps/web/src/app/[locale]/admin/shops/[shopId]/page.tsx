@@ -3,7 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { AdminFrame } from '@/components/admin/AdminFrame';
 import { EditablePolicyForm } from '@/components/admin/EditablePolicyForm';
-import { LoyaltyProgramForm } from '@/components/admin/LoyaltyProgramForm';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
 import { DemoShopSwitch } from '@/components/admin/DemoShopSwitch';
@@ -16,6 +15,8 @@ import { BookingSettingsForm } from '@/components/shops/BookingSettingsForm';
 import { ShopImagesEditor } from '@/components/shops/ShopImagesEditor';
 import { ShopLocationEditor } from '@/components/shops/ShopLocationEditor';
 import { ShopProfileEditor } from '@/components/shops/ShopProfileEditor';
+import { LoyaltyStatsGrid } from '@/components/loyalty/LoyaltyHistory';
+import { LoyaltyRulesForm } from '@/components/loyalty/LoyaltyRulesForm';
 import { ShopSubscriptionTab } from '@/components/subscriptions/ShopSubscriptionTab';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -27,7 +28,7 @@ import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
 import { getServerApi } from '@/lib/api/server';
 import { firstParam } from '@/lib/auth/paths';
-import { formatDate, formatDurationMinutes, formatNumber, formatPrice } from '@/lib/i18n/format';
+import { formatDate, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -163,37 +164,27 @@ export default async function AdminShopPage({
             <ErrorState />
           );
         } else if (tab === 'loyalty') {
-          const { data: loyalty } = await api.GET('/api/v1/admin/shops/{shopId}/loyalty', {
-            params: { path: { shopId: shop.id } },
-          });
-          const tl = await getTranslations({ locale: lang, namespace: 'loyalty.admin' });
+          const [{ data: loyalty }, { data: services }] = await Promise.all([
+            api.GET('/api/v1/admin/shops/{shopId}/loyalty', { params: { path: { shopId: shop.id } } }),
+            api.GET('/api/v1/admin/services', { params: { query: { shopId: shop.id, pageSize: 100 } } }),
+          ]);
+          const tl = await getTranslations({ locale: lang, namespace: 'loyalty.rulesForm' });
           content = loyalty ? (
             <>
               <Card title={tl('title')} testId="shop-loyalty-card">
-                <p className="text-caption text-text-secondary">{tl('intro')}</p>
-                <LoyaltyProgramForm
-                  shopId={shop.id}
-                  loyalty={loyalty}
+                <LoyaltyRulesForm
+                  scope={{ kind: 'admin', shopId: shop.id }}
+                  rules={loyalty.rules}
+                  version={loyalty.version}
+                  addOnActive={loyalty.addOnActive}
+                  services={(services?.items ?? [])
+                    .filter((s) => !s.isArchived)
+                    .map((s) => ({ id: s.id, nameAr: s.nameAr, nameEn: s.nameEn }))}
                   canEdit={me.permissions.includes('Admin.Loyalty.Manage')}
                 />
               </Card>
               <Card title={tl('stats.title')}>
-                <dl className="grid gap-3 text-caption sm:grid-cols-5">
-                  {(
-                    [
-                      ['members', loyalty.stats.members],
-                      ['openStamps', loyalty.stats.openStamps],
-                      ['issued', loyalty.stats.rewardsIssued],
-                      ['available', loyalty.stats.rewardsAvailable],
-                      ['redeemed', loyalty.stats.rewardsRedeemed],
-                    ] as const
-                  ).map(([key, value]) => (
-                    <div key={key}>
-                      <dt className="text-helper text-text-tertiary">{tl(`stats.${key}`)}</dt>
-                      <dd className="text-h3 font-bold text-text-primary">{formatNumber(value, lang)}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <LoyaltyStatsGrid stats={loyalty.stats} />
               </Card>
             </>
           ) : (

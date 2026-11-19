@@ -1,4 +1,6 @@
+import { createTranslator } from 'next-intl';
 import { describe, expect, it } from 'vitest';
+import { MESSAGE_FORMATS } from '@/i18n/formats';
 import ar from '../../../messages/ar.json';
 import en from '../../../messages/en.json';
 import { type Notice, noticeHref, noticeKey, noticeValues } from './notices';
@@ -71,6 +73,8 @@ describe('notices', () => {
       ['shop', 'subscription.expired'],
       ['shop', 'admin.message'],
       ['shop', 'booking.professional_changed'],
+      ['shop', 'whatsapp.allowance_reached'],
+      ['customer', 'loyalty.visit_completed'],
       ['customer', 'booking.confirmed'],
       ['customer', 'booking.rescheduled'],
       ['customer', 'booking.cancelled'],
@@ -96,6 +100,64 @@ describe('notices', () => {
       expect(typeof lookup(ar, path), path).toBe('string');
       expect(typeof lookup(en, path), path).toBe('string');
     }
+  });
+
+  it('words «خلصت زيارتك» with the points the visit added and what is left, and leads to the cards (D-149)', () => {
+    const t = createTranslator({
+      locale: 'ar',
+      messages: ar,
+      formats: MESSAGE_FORMATS,
+      namespace: 'notifications.kinds',
+    });
+    const visit = (pointsEarned: string, pointsToNext: string, rewardsReady: string): Notice => ({
+      id: 'n9',
+      kind: 'loyalty.visit_completed',
+      parameters: {
+        shopNameAr: 'صالون الأصالة',
+        shopNameEn: 'Al Asala',
+        pointsEarned,
+        pointsToNext,
+        rewardsReady,
+      },
+      bookingId: 'b1',
+      createdAt: '2026-11-19T09:00:00Z',
+      readAt: null,
+    });
+    const say = (notice: Notice) =>
+      t(noticeKey('customer', notice.kind) as 'generic', noticeValues(notice, 'ar'));
+    expect(say(visit('2', '2', '0'))).toBe(
+      'خلصت زيارتك في صالون الأصالة، وأضفنا نقطتين إلى بطاقتك. باقي نقطتان للمكافأة.',
+    );
+    expect(say(visit('3', '5', '1'))).toBe(
+      'خلصت زيارتك في صالون الأصالة، وأضفنا ٣ نقاط إلى بطاقتك. مكافأتك جاهزة، استخدمها في حجزك القادم.',
+    );
+    // A visit that used a reward adds no points.
+    expect(say(visit('0', '6', '0'))).toBe('خلصت زيارتك في صالون الأصالة. باقي ٦ نقاط للمكافأة.');
+    expect(noticeHref('customer', visit('2', '2', '0'))).toBe('/account/loyalty');
+  });
+
+  it('tells the owner when the month’s WhatsApp messages are used up, or that the plan has none (D-149)', () => {
+    const t = createTranslator({
+      locale: 'ar',
+      messages: ar,
+      formats: MESSAGE_FORMATS,
+      namespace: 'notifications.kinds',
+    });
+    const reached = (allowance: string): Notice => ({
+      id: 'n10',
+      kind: 'whatsapp.allowance_reached',
+      parameters: { allowance, month: '2026-11' },
+      bookingId: null,
+      createdAt: '2026-11-19T09:00:00Z',
+      readAt: null,
+    });
+    const say = (notice: Notice) =>
+      t(noticeKey('shop', notice.kind) as 'generic', noticeValues(notice, 'ar'));
+    expect(say(reached('500'))).toBe(
+      'وصلتم إلى حد رسائل واتساب لهذا الشهر (٥٠٠). تستمر الإشعارات داخل التطبيق، وتعود رسائل واتساب أول الشهر القادم.',
+    );
+    expect(say(reached('0'))).toBe('باقتكم لا تشمل رسائل واتساب للعملاء. تصل إشعاراتهم داخل التطبيق.');
+    expect(noticeHref('shop', reached('500'))).toBe('/shop/subscription');
   });
 
   it('formats names in the reader language and times with the clock digit rule', () => {

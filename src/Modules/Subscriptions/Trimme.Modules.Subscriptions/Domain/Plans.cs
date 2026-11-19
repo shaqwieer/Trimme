@@ -55,7 +55,8 @@ public sealed record PlanDetails(
     int IntervalCount,
     int? TrialDays,
     int? GraceDays,
-    bool AvailableToNewShops);
+    bool AvailableToNewShops,
+    int? MonthlyWhatsAppMessages = null);
 
 /// <summary>
 /// A subscription plan of the platform (spec §7, §15), managed by SuperAdmin only and entirely data-driven: nothing
@@ -110,6 +111,12 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
     public int? GraceDays { get; private set; }
 
     public bool AvailableToNewShops { get; private set; }
+
+    /// <summary>
+    /// WhatsApp messages to the shop's customers per calendar month (D-149): null is unlimited, 0 none (in-app notices
+    /// only). Staff messages and sign-in codes are not counted.
+    /// </summary>
+    public int? MonthlyWhatsAppMessages { get; private set; }
 
     public PlanStatus Status { get; private set; }
 
@@ -247,6 +254,7 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
         TrialDays = details.TrialDays;
         GraceDays = details.GraceDays;
         AvailableToNewShops = details.AvailableToNewShops;
+        MonthlyWhatsAppMessages = details.MonthlyWhatsAppMessages;
     }
 
     private static Error? Validate(PlanDetails details)
@@ -260,6 +268,11 @@ public sealed class SubscriptionPlan : AggregateRoot<SubscriptionPlanId>, IConcu
         if (details.Features.Count > MaxFeatures || details.Features.Any(f => string.IsNullOrWhiteSpace(f.Ar) || string.IsNullOrWhiteSpace(f.En)))
         {
             return PlanErrors.Field("features", "validation.invalid");
+        }
+
+        if (details.MonthlyWhatsAppMessages is < 0 or > PlanLimits.MaxMonthlyWhatsAppMessages)
+        {
+            return PlanErrors.Field("monthlyWhatsAppMessages", "validation.out_of_range");
         }
 
         return details.MaxProfessionals is < 1 || details.MaxServices is < 1 || details.TrialDays is < 0 or > 365 || details.GraceDays is < 0 or > 365
@@ -305,6 +318,11 @@ public sealed class PlanPrice : Entity<PlanPriceId>
     public Guid? CreatedBy { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
+}
+
+public static class PlanLimits
+{
+    public const int MaxMonthlyWhatsAppMessages = 1_000_000;
 }
 
 public static class PlanPricing

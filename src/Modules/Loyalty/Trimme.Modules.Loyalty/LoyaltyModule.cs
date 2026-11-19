@@ -12,9 +12,9 @@ using Trimme.Modules.Loyalty.Jobs;
 namespace Trimme.Modules.Loyalty;
 
 /// <summary>
-/// Loyalty module (schema <c>loyalty</c>, D-132): a shop's stamp card. The platform admin sets each shop's terms; completed
-/// online bookings earn stamps; a full card becomes a reward the customer chooses when booking, and the shop applies it at
-/// the visit.
+/// Loyalty module (schema <c>loyalty</c>): points per mobile number per shop (D-149), while the shop's paid add-on is in
+/// force. The owner sets the rules; completed visits earn points; a full card is a reward the customer (or the barber, for a
+/// walk-in's number) uses when booking. D-132 coupons already issued stay usable until they expire.
 /// </summary>
 public sealed class LoyaltyModule : ModuleBase
 {
@@ -28,6 +28,8 @@ public sealed class LoyaltyModule : ModuleBase
         services.AddScoped<ILoyaltyRewardHolder, LoyaltyRewardHolder>();
         services.AddScoped<ILoyaltyReportSource, Application.Shop.LoyaltyReportSource>();
         services.AddScoped<CustomerLoyaltyReader>();
+        services.AddScoped<Application.LoyaltyLedger>();
+        services.AddScoped<Application.LoyaltyRulesStore>();
         services.AddScoped<IOutboxConsumer, LoyaltyBookingConsumer>();
     }
 

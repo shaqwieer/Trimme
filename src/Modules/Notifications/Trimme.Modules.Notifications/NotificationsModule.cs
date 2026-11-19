@@ -65,6 +65,8 @@ public sealed class NotificationsModule : ModuleBase
         services.AddScoped<INotificationCenter, NotificationCenter>();
         services.AddScoped<IOutboxConsumer, BookingNotificationsConsumer>();
         services.AddScoped<SendDispatchJob>();
+        services.AddScoped<WhatsAppAllowanceGate>();
+        services.AddScoped<BuildingBlocks.Application.Notifications.IWhatsAppUsage, WhatsAppUsageReader>();
         services.AddScoped<BookingReminderJob>();
         services.AddScoped<ProfessionalDeliveryJob>();
         services.AddRecurringJob<NotificationSweepJob>("notifications-sweep", "*/5 * * * *");

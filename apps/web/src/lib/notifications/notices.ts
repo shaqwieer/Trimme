@@ -37,6 +37,8 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'subscription.expiring',
     'subscription.expired',
     'admin.message',
+    // The plan's WhatsApp messages for the month are used up (D-149): notices continue in the app.
+    'whatsapp.allowance_reached',
   ],
   customer: [
     'booking.confirmed',
@@ -45,6 +47,8 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'booking.professional_changed',
     // The barber offers a new time (D-147): the customer accepts or declines it on the booking's page.
     'booking.postponement_offered',
+    // «خلصت زيارتك» (D-149): the points the visit added and what is left to the reward.
+    'loyalty.visit_completed',
   ],
   barber: BOOKING_KINDS,
   admin: [
@@ -99,6 +103,10 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     event: p.event ?? '',
     audience: p.audience ?? '',
     message: p.message ?? '',
+    earned: Number(p.pointsEarned ?? 0),
+    toNext: Number(p.pointsToNext ?? 0),
+    ready: Number(p.rewardsReady ?? 0),
+    allowance: Number(p.allowance ?? 0),
   };
 }
 
@@ -107,11 +115,13 @@ export function noticeHref(audience: NoticeAudience, notice: Notice): string | u
   const p = notice.parameters as Record<string, string | undefined>;
   switch (audience) {
     case 'shop':
-      if (notice.kind.startsWith('subscription.')) return '/shop/subscription';
+      if (notice.kind.startsWith('subscription.') || notice.kind === 'whatsapp.allowance_reached')
+        return '/shop/subscription';
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'barber':
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'customer':
+      if (notice.kind === 'loyalty.visit_completed') return '/account/loyalty';
       return notice.bookingId ? `/account/bookings/${notice.bookingId}` : undefined;
     case 'admin':
       if (notice.kind === 'whatsapp.dispatch_failed') return '/admin/whatsapp/dispatches?status=Failed';

@@ -51,6 +51,8 @@ export const planSchema = z
     intervalCount: z.string(),
     maxProfessionals: optionalWhole(1, 10_000),
     maxServices: optionalWhole(1, 10_000),
+    // WhatsApp messages to customers per calendar month (D-149): empty = unlimited, 0 = none.
+    monthlyWhatsAppMessages: optionalWhole(0, 1_000_000),
     trialDays: optionalWhole(0, 365),
     graceDays: optionalWhole(0, 365),
     availableToNewShops: z.boolean(),
@@ -74,6 +76,7 @@ const FIELDS = [
   'intervalCount',
   'maxProfessionals',
   'maxServices',
+  'monthlyWhatsAppMessages',
   'trialDays',
   'graceDays',
   'initialPrice',
@@ -107,6 +110,8 @@ export function PlanForm({ plan }: { plan?: Plan }) {
       intervalCount: String(plan?.intervalCount ?? 1),
       maxProfessionals: plan?.maxProfessionals != null ? String(plan.maxProfessionals) : '',
       maxServices: plan?.maxServices != null ? String(plan.maxServices) : '',
+      monthlyWhatsAppMessages:
+        plan?.monthlyWhatsAppMessages != null ? String(plan.monthlyWhatsAppMessages) : '',
       trialDays: plan?.trialDays != null ? String(plan.trialDays) : '',
       graceDays: plan?.graceDays != null ? String(plan.graceDays) : '',
       availableToNewShops: plan?.availableToNewShops ?? true,
@@ -127,6 +132,7 @@ export function PlanForm({ plan }: { plan?: Plan }) {
       features: values.features.map((f) => ({ ar: f.ar.trim(), en: f.en.trim() })),
       maxProfessionals: wholeOrNull(values.maxProfessionals),
       maxServices: wholeOrNull(values.maxServices),
+      monthlyWhatsAppMessages: wholeOrNull(values.monthlyWhatsAppMessages),
       intervalUnit: values.intervalUnit,
       intervalCount: Number(values.intervalCount),
       trialDays: wholeOrNull(values.trialDays),
@@ -225,6 +231,15 @@ export function PlanForm({ plan }: { plan?: Plan }) {
           name="maxServices"
           label={t('maxServices')}
           helper={t('limitHelper')}
+          dir="ltr"
+          inputMode="numeric"
+          optional
+        />
+        <FormTextField
+          control={form.control}
+          name="monthlyWhatsAppMessages"
+          label={t('monthlyWhatsAppMessages')}
+          helper={t('monthlyWhatsAppMessagesHelper')}
           dir="ltr"
           inputMode="numeric"
           optional

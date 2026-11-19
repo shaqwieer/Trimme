@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { LoyaltyOffer, LoyaltyProgress, LoyaltyRewardRow } from '@/components/loyalty/LoyaltyParts';
+import { LoyaltyHistory } from '@/components/loyalty/LoyaltyHistory';
+import { LoyaltyRewardRow, LoyaltyRulesText } from '@/components/loyalty/LoyaltyParts';
+import { LoyaltyPointsCard } from '@/components/loyalty/LoyaltyPointsCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { EmptyState, PermissionDenied } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
@@ -19,8 +21,10 @@ export async function generateMetadata({
 }
 
 /**
- * The customer's loyalty cards (D-132): one card per salon where they have visits or a coupon. Each completed visit
- * fills a green circle; a full card becomes a coupon, chosen on the confirm step of the next booking at that salon.
+ * The customer's loyalty cards (D-149): one per salon where their mobile number has points, history or a coupon. Each
+ * visit that ends adds points; a full card is a reward chosen on the confirm step of the next booking there, and the
+ * points beyond it show as «+٢» on the next card. While a salon's programme is paused the points are kept. D-132 coupons
+ * earned before stay listed until used or expired.
  */
 export default async function LoyaltyPage({ params }: PageProps<'/[locale]/account/loyalty'>) {
   const { locale: raw } = await params;
@@ -53,41 +57,48 @@ export default async function LoyaltyPage({ params }: PageProps<'/[locale]/accou
         />
       ) : (
         <ul className="flex flex-col gap-4">
-          {data.items.map((card) => (
-            <li
-              key={card.shop.id}
-              className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-e1"
-              data-testid="loyalty-card"
-            >
-              <Link
-                href={`/shops/${card.shop.slug}`}
-                className="text-label font-bold text-text-primary hover:underline"
+          {data.items.map((card) => {
+            const coupons = card.coupons.filter((c) => c.status !== 'Redeemed');
+            const canUse =
+              (card.active && card.rewardsReady > 0) || coupons.some((c) => c.status === 'Available');
+            return (
+              <li
+                key={card.shop.id}
+                className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-e1"
+                data-testid="loyalty-card"
+                data-active={card.active}
               >
-                {localizedName(locale, card.shop.nameAr, card.shop.nameEn)}
-              </Link>
-              {card.program ? (
-                <>
-                  <LoyaltyOffer program={card.program} />
-                  <LoyaltyProgress program={card.program} stamps={card.stamps} />
-                </>
-              ) : (
-                <p className="text-helper text-text-secondary">{t('programEnded')}</p>
-              )}
-              {card.rewards.map((reward) => (
-                <LoyaltyRewardRow key={reward.id} reward={reward} />
-              ))}
-              {card.rewards.some((r) => r.status === 'Available') && (
-                <ButtonLink
-                  href={bookHref(card.shop.slug)}
-                  variant="primary"
-                  size="md"
-                  className="self-start"
+                <Link
+                  href={`/shops/${card.shop.slug}`}
+                  className="text-label font-bold text-text-primary hover:underline"
                 >
-                  {t('bookToUse')}
-                </ButtonLink>
-              )}
-            </li>
-          ))}
+                  {localizedName(locale, card.shop.nameAr, card.shop.nameEn)}
+                </Link>
+                {card.rules && <LoyaltyRulesText rules={card.rules} />}
+                {!card.active && <p className="text-helper text-text-secondary">{t('card.paused')}</p>}
+                {card.rules && <LoyaltyPointsCard card={card} rules={card.rules} />}
+                {coupons.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-helper font-bold text-text-secondary">{t('coupons')}</p>
+                    {coupons.map((reward) => (
+                      <LoyaltyRewardRow key={reward.id} reward={reward} />
+                    ))}
+                  </div>
+                )}
+                <LoyaltyHistory history={card.history} />
+                {canUse && (
+                  <ButtonLink
+                    href={bookHref(card.shop.slug)}
+                    variant="primary"
+                    size="md"
+                    className="self-start"
+                  >
+                    {t('card.bookToUse')}
+                  </ButtonLink>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

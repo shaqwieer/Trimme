@@ -31,7 +31,8 @@ public sealed record PlanResponse(
     PlanPriceResponse? UpcomingPrice,
     IReadOnlyList<PlanPriceResponse> Prices,
     int SubscriptionCount,
-    uint Version);
+    uint Version,
+    int? MonthlyWhatsAppMessages = null);
 
 /// <summary>One recorded period with the plan name and price as they were charged (never recomputed).</summary>
 public sealed record SubscriptionPeriodResponse(
@@ -87,7 +88,9 @@ public sealed record AdminShopSubscriptionResponse(
     int ExpiringSoonThresholdDays,
     IReadOnlyList<SubscriptionPeriodResponse> Periods,
     IReadOnlyList<SubscriptionOverrideResponse> Overrides,
-    uint? Version);
+    uint? Version,
+    LoyaltyAddOnResponse? LoyaltyAddOn = null,
+    WhatsAppUsageResponse? MessageUsage = null);
 
 public sealed record AdminSubscriptionListItem(
     Guid ShopId,
@@ -130,7 +133,9 @@ public sealed record ShopSubscriptionResponse(
     int ElapsedPercent,
     int ExpiringSoonThresholdDays,
     bool HiddenFromDiscovery,
-    IReadOnlyList<ShopRenewalResponse> Renewals);
+    IReadOnlyList<ShopRenewalResponse> Renewals,
+    LoyaltyAddOnResponse? LoyaltyAddOn = null,
+    WhatsAppUsageResponse? MessageUsage = null);
 
 internal static class SubscriptionView
 {
@@ -156,7 +161,8 @@ internal static class SubscriptionView
         plan.Prices.Where(p => p.EffectiveFrom > today).OrderBy(p => p.EffectiveFrom).FirstOrDefault() is { } next ? Price(next) : null,
         [.. plan.Prices.OrderByDescending(p => p.EffectiveFrom).Select(Price)],
         subscriptionCount,
-        plan.Version);
+        plan.Version,
+        plan.MonthlyWhatsAppMessages);
 
     public static SubscriptionStatus Status(ShopSubscription? subscription, DateOnly today, PlatformSettingsSnapshot settings) =>
         subscription is null

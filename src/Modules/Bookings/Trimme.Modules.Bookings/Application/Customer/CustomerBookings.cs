@@ -30,7 +30,7 @@ public enum BookingsTab
 /// <summary><c>QrVisitId</c> is the scan in the browser's attribution cookie, if any (R-QR-02); it never makes the booking fail.</summary>
 internal sealed record CreateOnlineBookingCommand(
     string ShopSlug, Guid? ServiceId, Guid? PackageId, Guid? ProfessionalId, DateTimeOffset StartsAt, string? Note, string IdempotencyKey,
-    Guid? QrVisitId = null, IReadOnlyList<Guid>? ServiceIds = null, Guid? LoyaltyRewardId = null)
+    Guid? QrVisitId = null, IReadOnlyList<Guid>? ServiceIds = null, Guid? LoyaltyRewardId = null, bool UseLoyaltyReward = false)
     : ICommand<Result<CustomerBookingResult>>;
 
 internal sealed record RescheduleMyBookingCommand(Guid BookingId, DateTimeOffset StartsAt, Guid? ProfessionalId, uint Version, string IdempotencyKey)
@@ -168,6 +168,17 @@ internal sealed class CreateOnlineBookingHandler(
             return tooLong;
         }
 
+        // One reward per booking, never on a package (D-149).
+        if (command.UseLoyaltyReward && command.LoyaltyRewardId is not null)
+        {
+            return LoyaltyRewardErrors.OnePerBooking();
+        }
+
+        if (command.UseLoyaltyReward && command.PackageId is not null)
+        {
+            return LoyaltyRewardErrors.NotWithPackage();
+        }
+
         // The attribution cookie is not part of the request's identity: a retry whose cookie changed still replays.
         var hash = IdempotencyRecord.Hash(command with { IdempotencyKey = string.Empty, QrVisitId = null });
         if (await ReplayAsync(customerId, command.IdempotencyKey, hash, cancellationToken) is { } replayed)
@@ -199,6 +210,8 @@ internal sealed class CreateOnlineBookingHandler(
         // The recheck (R-BKG-03): the same rules as the slot list, read inside this transaction.
         BookableOffer? offer;
         BookedProfessional? chosen;
+        HeldPointsReward? pointsReward = null;
+        var bookingId = EntityId.New<BookingId>();
         using (scope.Begin(shop.Id))
         {
             var gate = await bookability.GetAsync(shop.Id, cancellationToken);
@@ -253,12 +266,26 @@ internal sealed class CreateOnlineBookingHandler(
             var dayStart = new DateTimeOffset(localDay.ToDateTime(TimeOnly.MinValue), zone.GetUtcOffset(localDay.ToDateTime(TimeOnly.MinValue))).ToUniversalTime();
             var picked = staff[await picker.PickAsync(shop.Id, free, dayStart, dayStart.AddDays(1), cancellationToken)];
             chosen = new BookedProfessional(picked.Id, picked.NameAr, picked.NameEn);
+
+            // «استخدم مكافأتي» (D-149): a ready reward of the customer's points at the shop is held with the booking.
+            if (command.UseLoyaltyReward)
+            {
+                var booked = offer.For(chosen.Id);
+                var held = await loyalty.HoldPointsRewardAsync(
+                    new PointsRewardHold(shop.Id, bookingId.Value, customerId, null, booked.Price, BookingMapping.ServicePrices(booked), support.Now), cancellationToken);
+                if (held.IsFailure)
+                {
+                    return held.Error;
+                }
+
+                pointsReward = held.Value;
+            }
         }
 
         var now = support.Now;
         var rules = await support.RulesAsync(shop, cancellationToken);
         var booking = Booking.CreateOnline(
-            EntityId.New<BookingId>(), shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer, chosen.Id), command.StartsAt,
+            bookingId, shop.Id, customerId, customerName, chosen, BookingMapping.Snapshot(offer, chosen.Id), command.StartsAt,
             shop.RequireManualConfirmation, command.Note, now, scan is null ? null : (new QrCodeLinkId(scan.LinkId), scan.VisitId), rules.BufferMinutes);
 
         // A loyalty reward the customer chose is held in the same transaction, so it is used by this booking or not at all (D-132).
@@ -271,6 +298,11 @@ internal sealed class CreateOnlineBookingHandler(
             }
 
             booking.UseLoyaltyReward(held.Value.RewardId, held.Value.TitleAr, held.Value.TitleEn);
+        }
+
+        if (pointsReward is not null)
+        {
+            booking.UsePointsReward(pointsReward.RedemptionId, pointsReward.TitleAr, pointsReward.TitleEn, pointsReward.Discount);
         }
 
         db.Add(booking);

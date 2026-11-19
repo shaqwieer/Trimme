@@ -1,27 +1,44 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
-import { LoyaltyOffer, LoyaltyProgress, LoyaltyRewardRow } from './LoyaltyParts';
+import { LoyaltyHistory } from './LoyaltyHistory';
+import { LoyaltyRewardRow, LoyaltyRulesText } from './LoyaltyParts';
+import { LoyaltyPointsCard } from './LoyaltyPointsCard';
 import { LoyaltyStamps } from './LoyaltyStamps';
 
-const program = {
-  isActive: true,
-  requiredVisits: 6,
-  firstVisitStamps: 1,
-  rewardKind: 'FreeService' as const,
-  discountPercent: null,
-  rewardTitleAr: 'حلاقة مجانية',
-  rewardTitleEn: 'Free haircut',
-  rewardValidityDays: null,
+const rules = {
+  firstVisitPoints: 2,
+  visitPoints: 1,
+  pointsForReward: 6,
+  rewardType: 'FreeService' as const,
+  rewardServiceId: 'svc-hair',
+  rewardServiceNameAr: 'حلاقة',
+  rewardServiceNameEn: 'Haircut',
+  rewardAmount: null,
+  inactivityRule: 'Wipe' as const,
+  inactivityDays: 90,
 };
 
-describe('loyalty card (D-132)', () => {
-  it('fills one green circle per completed visit and leaves the rest empty', async () => {
+const card = (points: number, extra: Partial<Record<string, unknown>> = {}) => ({
+  points,
+  rewardsReady: Math.floor(points / 6),
+  currentCard: points % 6,
+  pointsToNext: 6 - (points % 6),
+  rewardsHeld: 0,
+  history: [
+    { at: '2026-11-10T10:00:00Z', kind: 'Earned' as const, points: 2, bookingId: 'b1', barberName: 'فيصل' },
+  ],
+  ...extra,
+});
+
+describe('loyalty card (D-149)', () => {
+  it('fills one green circle per point and leaves the rest empty', async () => {
     const { container } = renderWithIntl(<LoyaltyStamps required={6} stamps={2} />);
-    const card = screen.getByTestId('loyalty-stamps');
-    expect(card).toHaveAttribute('role', 'img');
-    expect(card.getAttribute('aria-label')).toContain('٢');
+    const stamps = screen.getByTestId('loyalty-stamps');
+    expect(stamps).toHaveAttribute('role', 'img');
+    expect(stamps.getAttribute('aria-label')).toContain('٢');
     expect(container.querySelectorAll('[data-stamp="filled"]')).toHaveLength(2);
     expect(container.querySelectorAll('[data-stamp="empty"]')).toHaveLength(4);
     await expectNoAxeViolations(container);
@@ -33,40 +50,84 @@ describe('loyalty card (D-132)', () => {
     expect(container.querySelectorAll('[data-stamp="empty"]')).toHaveLength(0);
   });
 
-  it('states the offer and what is left, in each language', () => {
-    renderWithIntl(
-      <>
-        <LoyaltyOffer program={program} />
-        <LoyaltyProgress program={program} stamps={4} />
-      </>,
-    );
-    expect(screen.getByText(/حلاقة مجانية/)).toBeInTheDocument();
-    expect(screen.getByText(/باقي زيارتان/)).toBeInTheDocument();
-    expect(screen.queryByTestId('loyalty-first-visit')).not.toBeInTheDocument();
+  it('states the rules in words: the reward, the points per visit and what happens without visits', () => {
+    renderWithIntl(<LoyaltyRulesText rules={rules} />);
+    const text = screen.getByTestId('loyalty-rules');
+    expect(text).toHaveTextContent('اجمع ٦ نقاط واحصل على حلاقة مجاناً.');
+    expect(text).toHaveTextContent('لأول زيارة نقطتان، ولكل زيارة بعدها نقطة واحدة.');
+    expect(text).toHaveTextContent('تُمسح النقاط إذا مرّ ٩٠ يوماً دون زيارة.');
   });
 
-  it('with a first-visit bonus, counts circles and says what the first visit fills (D-133)', () => {
-    const bonus = { ...program, firstVisitStamps: 3 };
-    const { unmount } = renderWithIntl(
-      <>
-        <LoyaltyOffer program={bonus} />
-        <LoyaltyProgress program={bonus} stamps={0} />
-      </>,
+  it('writes an amount off as the app writes prices, and the same points per visit once', () => {
+    renderWithIntl(
+      <LoyaltyRulesText
+        rules={{
+          ...rules,
+          firstVisitPoints: 1,
+          rewardType: 'AmountOff',
+          rewardAmount: 50,
+          inactivityRule: 'None',
+        }}
+      />,
     );
-    expect(screen.getByText(/^اجمع .* دوائر واحصل على: حلاقة مجانية$/)).toBeInTheDocument();
-    expect(screen.getByTestId('loyalty-first-visit')).toHaveTextContent(
-      /أول زيارة لك تملأ .* دوائر، ثم دائرة مع كل زيارة/,
-    );
-    // An empty card may be a newcomer's, whose first visit fills three: no visit count is guessed.
-    expect(screen.queryByText(/باقي/)).not.toBeInTheDocument();
+    const text = screen.getByTestId('loyalty-rules');
+    expect(text).toHaveTextContent('واحصل على خصم ٥٠ ⃁.');
+    expect(text).toHaveTextContent('لكل زيارة نقطة واحدة. لا تنتهي نقاطك.');
+  });
+
+  it('a full card does not stop: the card stays full, the points beyond it show as «+٢»', async () => {
+    const { container } = renderWithIntl(<LoyaltyPointsCard card={card(8)} rules={rules} />);
+    expect(container.querySelectorAll('[data-stamp="filled"]')).toHaveLength(6);
+    expect(screen.getByTestId('loyalty-extra')).toHaveTextContent('+٢');
+    expect(screen.getByTestId('loyalty-extra')).toHaveTextContent('ونقطتان على البطاقة التالية');
+    expect(screen.getByTestId('loyalty-ready')).toHaveTextContent('مكافأة جاهزة — حلاقة مجاناً');
+    expect(screen.getByText('باقي ٤ نقاط للمكافأة التالية')).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+  });
+
+  it('before a reward, counts what is left; a newcomer’s empty card guesses nothing', () => {
+    const { unmount } = renderWithIntl(<LoyaltyPointsCard card={card(4)} rules={rules} />);
+    expect(screen.queryByTestId('loyalty-extra')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('loyalty-ready')).not.toBeInTheDocument();
+    expect(screen.getByText('باقي نقطتان للمكافأة')).toBeInTheDocument();
     unmount();
 
-    renderWithIntl(<LoyaltyProgress program={bonus} stamps={3} />, { locale: 'en' });
-    expect(screen.getByText('3 more visits to your coupon')).toBeInTheDocument();
-    expect(screen.getByRole('img')).toHaveAccessibleName('3 of 6 circles filled');
+    renderWithIntl(<LoyaltyPointsCard card={card(0, { history: [] })} rules={rules} />);
+    expect(screen.queryByText(/باقي/)).not.toBeInTheDocument();
   });
 
-  it('uses the English title in Turkish and names the coupon code', () => {
+  it('draws a long card as a bar, and says in English what is held', () => {
+    renderWithIntl(
+      <LoyaltyPointsCard
+        card={{ points: 30, rewardsReady: 0, currentCard: 30, pointsToNext: 70, rewardsHeld: 1, history: [] }}
+        rules={{ ...rules, pointsForReward: 100 }}
+      />,
+      { locale: 'en' },
+    );
+    expect(screen.getByRole('progressbar')).toHaveAccessibleName('30 of 100 on the card');
+    expect(screen.getByText('70 points to your reward')).toBeInTheDocument();
+    expect(screen.getByText('1 reward held for an upcoming appointment')).toBeInTheDocument();
+  });
+
+  it('lists the history with the barber who closed each visit', async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <LoyaltyHistory
+        history={[
+          { at: '2026-11-12T10:00:00Z', kind: 'Redeemed', points: -6, bookingId: 'b2', barberName: null },
+          { at: '2026-11-10T10:00:00Z', kind: 'Earned', points: 2, bookingId: 'b1', barberName: 'فيصل' },
+        ]}
+      />,
+    );
+    await user.click(screen.getByText('سجل النقاط'));
+    const items = within(screen.getByTestId('loyalty-history')).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('استخدمت مكافأة');
+    expect(items[0]).toHaveTextContent('−٦');
+    expect(items[1]).toHaveTextContent('زيارة مع فيصل');
+    expect(items[1]).toHaveTextContent('+٢');
+  });
+
+  it('uses the English title in Turkish and names a D-132 coupon’s code', () => {
     renderWithIntl(
       <LoyaltyRewardRow
         reward={{

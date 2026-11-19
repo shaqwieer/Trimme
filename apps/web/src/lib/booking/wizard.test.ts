@@ -15,6 +15,7 @@ import {
   readWizardQuery,
   resolveStart,
   restoreSelection,
+  rewardFit,
   selectionFrom,
   toggleItem,
   wizardNotice,
@@ -324,5 +325,28 @@ describe('durationFor (D-149)', () => {
   it('uses the standard lengths for «أي مختص», and a package keeps the length the owner set', () => {
     expect(durationFor([cut], ANY_PROFESSIONAL)).toBe(30);
     expect(durationFor([pkg, beard], 'mohamed')).toBe(60);
+  });
+});
+
+describe('rewardFit (D-149)', () => {
+  const amountOff = { rewardType: 'AmountOff' as const, rewardServiceId: null, rewardAmount: 20 };
+  const freeBeard = { rewardType: 'FreeService' as const, rewardServiceId: 'beard', rewardAmount: null };
+  const hair = { kind: 'service' as const, id: 'hair', price: 60 };
+  const beard = { kind: 'service' as const, id: 'beard', price: 25 };
+
+  it('takes an amount off, never more than the price', () => {
+    expect(rewardFit([hair], 60, amountOff)).toEqual({ usable: true, discount: 20 });
+    expect(rewardFit([{ ...hair, price: 15 }], 15, amountOff)).toEqual({ usable: true, discount: 15 });
+  });
+
+  it('makes a service free only when the booking includes it', () => {
+    expect(rewardFit([hair, beard], 85, freeBeard)).toEqual({ usable: true, discount: 25 });
+    expect(rewardFit([hair], 60, freeBeard)).toEqual({ usable: false, reason: 'service' });
+  });
+
+  it('never goes with a package', () => {
+    const pkg = { kind: 'package' as const, id: 'pkg', price: 110 };
+    expect(rewardFit([pkg], 110, amountOff)).toEqual({ usable: false, reason: 'package' });
+    expect(rewardFit([pkg, beard], 135, freeBeard)).toEqual({ usable: false, reason: 'package' });
   });
 });

@@ -43,6 +43,7 @@ public sealed class BarberScopeTests(PostgresFixture postgres)
         ["GET /api/v1/shop/dashboard/overview"] = Scoped + ", with no figures (D-147)",
         ["GET /api/v1/shop/calendar"] = Scoped,
         ["GET /api/v1/shop/availability/walk-in"] = "the shop's barbers who do it, to book a free colleague (D-147 exception 3); no customer data",
+        ["POST /api/v1/shop/loyalty/lookup"] = "whether the number typed for a walk-in or phone booking has a loyalty reward ready, and what it is; nothing else (D-149)",
 
         // Shop-wide by design (D-147): what any barber of the shop may act on, and the shop's temporary online pause.
         ["GET /api/v1/shop/bookings/attention"] = "the shop's pending and red bookings, any barber's (D-147 exceptions 1 and 2)",

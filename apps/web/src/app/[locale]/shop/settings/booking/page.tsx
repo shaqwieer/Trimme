@@ -38,6 +38,7 @@ export default async function ShopBookingSettingsPage({
                 { href: '/shop/settings', label: t('tabs.profile'), active: false },
                 { href: '/shop/settings/location', label: t('tabs.location'), active: false },
                 { href: '/shop/settings/booking', label: t('tabs.booking'), active: true },
+                { href: '/shop/settings/loyalty', label: t('tabs.loyalty'), active: false },
               ]}
             />
             <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-e1">

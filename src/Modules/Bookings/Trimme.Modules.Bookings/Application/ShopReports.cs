@@ -184,10 +184,13 @@ internal sealed class GetShopReportHandler(
         return new ReportVisitResponse(
             b.Id.Value, b.Reference, b.ProfessionalId.Value, b.ProfessionalNameAr, b.ProfessionalNameEn, b.CustomerName, b.ItemNameAr, b.ItemNameEn,
             b.Channel, b.Status, b.StartsAt, started, finished, minutes, minutes < ShortMinutes, b.ClosedLate, b.ClosingEntry?.ActorName, b.CancelledLate,
-            b.IsOverdue(now), ExpectedIncome(b, terms), b.LoyaltyRewardId is not null);
+            b.IsOverdue(now), ExpectedIncome(b, terms), b.LoyaltyRewardId is not null || b.LoyaltyRedemptionId is not null);
     }
 
-    /// <summary>The booked price of a completed visit; a loyalty reward used on it takes off its value (a free service: all of it).</summary>
+    /// <summary>
+    /// The amount due of a completed visit: a points reward (D-149) is already taken off it; a D-132 coupon takes off its
+    /// value (a free service: all of it).
+    /// </summary>
     private static decimal ExpectedIncome(Booking b, IReadOnlyDictionary<Guid, LoyaltyRewardTerms> terms)
     {
         if (b.Status != BookingStatus.Completed)

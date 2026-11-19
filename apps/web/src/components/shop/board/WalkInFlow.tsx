@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useRef, useState } from 'react';
+import { useLoyaltyRewardName } from '@/components/loyalty/LoyaltyParts';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { isValidSaudiMobile, toE164 } from '@/components/ui/digits';
@@ -12,8 +13,9 @@ import { EmptyState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
+import type { components } from '@/lib/api/schema';
 import { endOf } from '@/lib/booking/format';
-import { keyFor, type KeyedIntent, newIdempotencyKey } from '@/lib/booking/wizard';
+import { keyFor, type KeyedIntent, newIdempotencyKey, rewardFit } from '@/lib/booking/wizard';
 import { type AppLocale, formatDurationMinutes, formatPrice, formatTime } from '@/lib/i18n/format';
 import { localizedName } from '@/lib/i18n/localized';
 import { BOARD_KEY } from './boardKey';
@@ -31,6 +33,9 @@ export type WalkInOffer = {
 };
 
 type Kind = 'WalkIn' | 'Phone';
+
+/** What the barber's lookup says about the typed number (D-149): a reward ready and what it is, nothing else. */
+type RewardLookup = components['schemas']['LoyaltyLookupResponse'];
 
 const NOW = 'now';
 const NAME_MAX = 120;
@@ -68,6 +73,7 @@ export function WalkInFlow({
   const tv = useTranslations('validation');
   const locale = useLocale() as AppLocale;
   const apiMessage = useApiErrorMessage();
+  const rewardName = useLoyaltyRewardName();
   const queryClient = useQueryClient();
   const [kind, setKind] = useState<Kind>(initialDate && initialDate !== today ? 'Phone' : 'WalkIn');
   const [serviceIds, setServiceIds] = useState<string[]>(() => {
@@ -83,6 +89,9 @@ export function WalkInFlow({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneTouched, setPhoneTouched] = useState(false);
+  // The typed number's loyalty reward (D-149), looked up once the number is complete; dropped when it changes.
+  const [lookup, setLookup] = useState<{ phone: string; result: RewardLookup } | null>(null);
+  const [useReward, setUseReward] = useState(false);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
@@ -126,6 +135,17 @@ export function WalkInFlow({
   const nameError =
     name.trim().length === 0 ? undefined : name.trim().length > NAME_MAX ? t('nameTooLong') : undefined;
   const phoneValid = phone === '' || isValidSaudiMobile(phone);
+  // A reward the typed number has ready (D-149): never with a package; a free service once it is chosen.
+  const readyReward = lookup && lookup.phone === phone && lookup.result.rewardReady ? lookup.result : null;
+  const rewardTerms = readyReward && {
+    rewardType: readyReward.rewardType ?? 'AmountOff',
+    rewardServiceId: readyReward.rewardServiceId,
+    rewardServiceNameAr: readyReward.titleAr,
+    rewardServiceNameEn: readyReward.titleEn,
+    rewardAmount: readyReward.rewardAmount,
+  };
+  const fit = rewardTerms ? rewardFit(chosen, price, rewardTerms) : null;
+  const discount = useReward && fit?.usable ? fit.discount : undefined;
   const phoneError = phoneTouched && !phoneValid ? tv('phoneInvalid') : undefined;
   const ready = Boolean(
     chosen.length > 0 && professional && startsAt && name.trim() && !nameError && phoneValid,
@@ -178,6 +198,17 @@ export function WalkInFlow({
     resetTime();
   };
 
+  const checkReward = async (national: string) => {
+    const e164 = toE164(national);
+    if (!e164) return;
+    try {
+      const { data } = await browserApi.POST('/api/v1/shop/loyalty/lookup', { body: { phone: e164 } });
+      if (data) setLookup({ phone: national, result: data });
+    } catch {
+      // No lookup, no reward offered: the booking goes ahead without one.
+    }
+  };
+
   const submit = async () => {
     if (chosen.length === 0 || !professional || !startsAt) return;
     setError(undefined);
@@ -192,6 +223,7 @@ export function WalkInFlow({
       customerPhone: phone ? toE164(phone) : null,
       note: note.trim() || null,
       channel: kind,
+      useLoyaltyReward: discount !== undefined,
     };
     keyed.current = keyFor(
       keyed.current,
@@ -199,7 +231,7 @@ export function WalkInFlow({
         offerId: offerKey,
         pro: professional.id,
         startsAt: `${kind}|${start}`,
-        note: `${name.trim()}|${phone}|${note.trim()}`,
+        note: `${name.trim()}|${phone}|${note.trim()}|${discount !== undefined}`,
       },
       newIdempotencyKey,
     );
@@ -213,6 +245,8 @@ export function WalkInFlow({
       setCreated({ id: booking.id, reference: booking.reference, kind });
       setPhone('');
       setPhoneTouched(false);
+      setLookup(null);
+      setUseReward(false);
       await queryClient.invalidateQueries({ queryKey: [BOARD_KEY] });
     } catch (failure) {
       if (failure instanceof ApiError && failure.errorCode === 'booking.slot_unavailable') {
@@ -495,9 +529,47 @@ export function WalkInFlow({
               autoComplete="off"
               value={phone}
               error={phoneError}
-              onValueChange={(national) => setPhone(national)}
+              onValueChange={(national) => {
+                setPhone(national);
+                setUseReward(false);
+                if (isValidSaudiMobile(national)) void checkReward(national);
+              }}
               onBlur={() => setPhoneTouched(true)}
             />
+            {rewardTerms && fit && (
+              <div
+                className="flex flex-col gap-2 rounded-card border border-success-500/40 bg-success-50 p-3"
+                data-testid="walk-in-reward"
+              >
+                <p className="flex items-center gap-1.5 text-label font-bold text-success-700">
+                  <Icon name="tag" className="size-4 shrink-0" />
+                  {t('loyalty.ready', { reward: rewardName(rewardTerms) })}
+                </p>
+                <CheckboxCard
+                  checked={discount !== undefined}
+                  disabled={!fit.usable}
+                  onChange={(e) => setUseReward(e.target.checked)}
+                >
+                  <span className="flex flex-col gap-0.5">
+                    <span>{t('loyalty.use')}</span>
+                    {!fit.usable && (
+                      <span className="text-helper text-text-secondary">
+                        {fit.reason === 'package'
+                          ? t('loyalty.notWithPackage')
+                          : t('loyalty.needsService', {
+                              service: localizedName(
+                                locale,
+                                rewardTerms.rewardServiceNameAr ?? '',
+                                rewardTerms.rewardServiceNameEn,
+                              ),
+                            })}
+                      </span>
+                    )}
+                  </span>
+                </CheckboxCard>
+                <p className="text-helper text-text-secondary">{t('loyalty.hint')}</p>
+              </div>
+            )}
             <TextareaField
               label={t('note')}
               optional
@@ -537,6 +609,12 @@ export function WalkInFlow({
               startsAt && duration > 0 ? formatTime(endOf(startsAt, duration), locale, timeZone) : '—',
             ],
             [t('summary.total'), chosen.length > 0 ? formatPrice(price, locale, currency) : '—'],
+            ...(discount !== undefined
+              ? [
+                  [t('loyalty.discount'), `−${formatPrice(discount, locale, currency)}`],
+                  [t('loyalty.due'), formatPrice(price - discount, locale, currency)],
+                ]
+              : []),
           ].map(([label, value]) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2">
               <dt className="text-text-secondary">{label}</dt>

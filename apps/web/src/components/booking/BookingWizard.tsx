@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { type CatalogSection, ServiceCatalog } from '@/components/booking/ServiceCatalog';
+import { useLoyaltyRewardName } from '@/components/loyalty/LoyaltyParts';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button, IconButton } from '@/components/ui/Button';
 import { BookingProgress, DateStrip, HourMinutePicker } from '@/components/ui/booking';
@@ -35,12 +36,14 @@ import {
   readWizardQuery,
   resolveStart,
   restoreSelection,
+  rewardFit,
   selectionFrom,
   toggleItem,
   WIZARD_STEPS,
   type WizardNotice,
   wizardNotice,
   type WizardOffer,
+  type WizardPointsReward,
   type WizardSelection,
   type WizardStep,
   wizardPath,
@@ -75,8 +78,11 @@ export type WizardPro = {
 /** Who is looking: a guest confirms after signing in (D-096); staff accounts cannot book. */
 export type WizardViewer = 'guest' | 'customer' | 'staff';
 
-/** A loyalty coupon the customer can use at this shop (D-132), offered on the review step. */
+/** A D-132 loyalty coupon the customer can still use at this shop, offered on the review step. */
 export type WizardReward = { id: string; titleAr: string; titleEn: string | null };
+
+/** The review step's reward choice: none, the points reward (D-149), or a D-132 coupon's id. */
+const POINTS_REWARD = 'points';
 
 const NOTE_MAX = 500;
 
@@ -145,6 +151,7 @@ export function BookingWizard({
   professionals,
   viewer,
   rewards = [],
+  pointsReward = null,
   sections = [],
 }: {
   shop: WizardShop;
@@ -152,11 +159,14 @@ export function BookingWizard({
   professionals: WizardPro[];
   viewer: WizardViewer;
   rewards?: WizardReward[];
+  /** A full points card ready to use here (D-149, «استخدم مكافأتي»), or null. */
+  pointsReward?: WizardPointsReward | null;
   /** The shop's own sections, in the owner's order: the service step's tabs (D-148, D-149). */
   sections?: CatalogSection[];
 }) {
   const t = useTranslations('booking');
   const tl = useTranslations('loyalty.wizard');
+  const rewardName = useLoyaltyRewardName();
   const locale = useLocale() as AppLocale;
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -174,6 +184,15 @@ export function BookingWizard({
   const notice = wizardNotice(query);
   const [note, setNote] = useState('');
   const [rewardId, setRewardId] = useState('');
+  // The points reward fits only some choices (D-149): never with a package, a free service only once it is chosen. A
+  // choice that stopped fitting (the services changed) falls back to none.
+  const fit =
+    viewer === 'customer' && pointsReward && offer ? rewardFit(items, offer.price, pointsReward) : null;
+  const discount = rewardId === POINTS_REWARD && fit?.usable ? fit.discount : undefined;
+  const usingPoints = discount !== undefined;
+  const discountLabel =
+    discount !== undefined && offer ? `−${formatPrice(discount, locale, offer.currency)}` : '';
+  const choice = rewardId === POINTS_REWARD && !usingPoints ? '' : rewardId;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const keyed = useRef<KeyedIntent | undefined>(undefined);
@@ -364,7 +383,7 @@ export function BookingWizard({
     const trimmed = note.trim();
     keyed.current = keyFor(
       keyed.current,
-      { offerId: itemsKey, pro, startsAt, note: trimmed, rewardId },
+      { offerId: itemsKey, pro, startsAt, note: trimmed, rewardId: choice },
       newIdempotencyKey,
     );
     const target = offerQuery(items, pro);
@@ -381,7 +400,9 @@ export function BookingWizard({
             professionalId: target.professionalId ?? null,
             startsAt,
             note: trimmed || null,
-            loyaltyRewardId: rewardId || null,
+            // One reward per booking (D-149): the points reward, or a D-132 coupon.
+            useLoyaltyReward: usingPoints,
+            loyaltyRewardId: choice && choice !== POINTS_REWARD ? choice : null,
           },
         }),
       );
@@ -739,38 +760,99 @@ export function BookingWizard({
                 value={formatDurationMinutes(duration, locale)}
               />
             </dl>
-            <div className="flex items-center justify-between rounded-card bg-bg-subtle px-4 py-3">
-              <span className="text-label font-bold text-text-strong">{t('summary.total')}</span>
-              <span className="font-latin text-[1.125rem] font-extrabold text-navy-900">
-                {formatPrice(offer.price, locale, offer.currency)}
-              </span>
+            <div
+              className="flex flex-col gap-1.5 rounded-card bg-bg-subtle px-4 py-3"
+              data-testid="booking-total"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-label font-bold text-text-strong">{t('summary.total')}</span>
+                <span
+                  className={
+                    usingPoints
+                      ? 'font-latin text-label font-bold text-text-secondary line-through'
+                      : 'font-latin text-[1.125rem] font-extrabold text-navy-900'
+                  }
+                >
+                  {formatPrice(offer.price, locale, offer.currency)}
+                </span>
+              </div>
+              {discount !== undefined && (
+                <>
+                  <div className="flex items-center justify-between text-label text-success-700">
+                    <span>{tl('discount')}</span>
+                    <span className="font-latin font-bold" data-testid="loyalty-discount">
+                      {discountLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-label font-bold text-text-strong">{tl('due')}</span>
+                    <span
+                      className="font-latin text-[1.125rem] font-extrabold text-navy-900"
+                      data-testid="loyalty-due"
+                    >
+                      {formatPrice(offer.price - discount, locale, offer.currency)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
-            {viewer === 'customer' && rewards.length > 0 && (
+            {viewer === 'customer' && (rewards.length > 0 || pointsReward) && (
               <fieldset className="flex flex-col gap-2" data-testid="loyalty-picker">
                 <legend className="mb-1 flex items-center gap-2 text-label font-bold text-success-700">
                   <Icon name="tag" className="size-4" />
                   {tl('title')}
                 </legend>
+                {pointsReward && fit && (
+                  <RadioCard
+                    name="loyaltyReward"
+                    value={POINTS_REWARD}
+                    checked={choice === POINTS_REWARD}
+                    disabled={!fit.usable}
+                    onChange={() => setRewardId(POINTS_REWARD)}
+                    data-testid="use-my-reward"
+                  >
+                    <span className="flex flex-col gap-0.5">
+                      <span>{tl('usePoints', { reward: rewardName(pointsReward) })}</span>
+                      {!fit.usable && (
+                        <span className="text-helper text-text-secondary">
+                          {fit.reason === 'package'
+                            ? tl('notWithPackage')
+                            : tl('needsService', {
+                                service: localizedName(
+                                  locale,
+                                  pointsReward.rewardServiceNameAr ?? '',
+                                  pointsReward.rewardServiceNameEn,
+                                ),
+                              })}
+                        </span>
+                      )}
+                    </span>
+                  </RadioCard>
+                )}
                 {rewards.map((reward) => (
                   <RadioCard
                     key={reward.id}
                     name="loyaltyReward"
                     value={reward.id}
-                    checked={rewardId === reward.id}
+                    checked={choice === reward.id}
                     onChange={() => setRewardId(reward.id)}
                   >
-                    {tl('use', { reward: localizedName(locale, reward.titleAr, reward.titleEn) })}
+                    {tl('useCoupon', { reward: localizedName(locale, reward.titleAr, reward.titleEn) })}
                   </RadioCard>
                 ))}
                 <RadioCard
                   name="loyaltyReward"
                   value=""
-                  checked={rewardId === ''}
+                  checked={choice === ''}
                   onChange={() => setRewardId('')}
                 >
                   {tl('none')}
                 </RadioCard>
-                <p className="text-helper text-text-secondary">{tl('hint')}</p>
+                <p className="text-helper text-text-secondary">
+                  {(choice !== '' && choice !== POINTS_REWARD) || !pointsReward
+                    ? tl('couponHint')
+                    : tl('pointsHint')}
+                </p>
               </fieldset>
             )}
             <TextareaField

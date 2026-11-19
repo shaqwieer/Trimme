@@ -215,6 +215,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
       professionalId: null,
       startsAt: '2026-10-01T07:30:00Z',
       note: 'تدريج',
+      useLoyaltyReward: false,
       loyaltyRewardId: null,
     });
   }, 15_000);
@@ -238,13 +239,113 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     );
 
     const picker = await screen.findByTestId('loyalty-picker');
-    expect(within(picker).getByRole('radio', { name: /لا أريد استخدامه الآن/ })).toBeChecked();
+    expect(within(picker).getByRole('radio', { name: /لا أريد استخدامها الآن/ })).toBeChecked();
     await user.click(within(picker).getByRole('radio', { name: /استخدم الكوبون: حلاقة مجانية/ }));
     const confirm = screen.getByRole('button', { name: 'تأكيد الحجز' });
     await waitFor(() => expect(confirm).toBeEnabled());
     await user.click(confirm);
     await waitFor(() => expect(api.POST).toHaveBeenCalled());
-    expect(api.POST.mock.calls[0]![1].body.loyaltyRewardId).toBe('reward-1');
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({
+      loyaltyRewardId: 'reward-1',
+      useLoyaltyReward: false,
+    });
+  });
+
+  it('«استخدم مكافأتي»: the points reward comes off the total, one reward per booking (D-149)', async () => {
+    const user = userEvent.setup();
+    availability();
+    api.POST.mockResolvedValue(ok({ id: 'booking-1', status: 'Confirmed' }, 201));
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+        rewards={[{ id: 'reward-1', titleAr: 'حلاقة مجانية', titleEn: 'Free haircut' }]}
+        pointsReward={{
+          rewardType: 'AmountOff',
+          rewardServiceId: null,
+          rewardServiceNameAr: null,
+          rewardServiceNameEn: null,
+          rewardAmount: 20,
+        }}
+      />,
+    );
+
+    const picker = await screen.findByTestId('loyalty-picker');
+    expect(screen.queryByTestId('loyalty-discount')).not.toBeInTheDocument();
+    await user.click(within(picker).getByRole('radio', { name: /استخدم مكافأتي: خصم ٢٠ ⃁/ }));
+    expect(screen.getByTestId('loyalty-discount')).toHaveTextContent('−٢٠ ⃁');
+    expect(screen.getByTestId('loyalty-due')).toHaveTextContent('٦٥ ⃁');
+    expect(picker).toHaveTextContent('تُخصم النقاط عند انتهاء الخدمة، وتعود إليك إذا أُلغي الموعد.');
+
+    const confirm = screen.getByRole('button', { name: 'تأكيد الحجز' });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
+    await waitFor(() => expect(api.POST).toHaveBeenCalled());
+    // The points reward, not the coupon: the API refuses both together.
+    expect(api.POST.mock.calls[0]![1].body).toMatchObject({ useLoyaltyReward: true, loyaltyRewardId: null });
+  });
+
+  it('a free-service reward waits for that service, and no reward goes with a package (D-149)', async () => {
+    availability();
+    const freeBeard = {
+      rewardType: 'FreeService' as const,
+      rewardServiceId: 'svc-beard',
+      rewardServiceNameAr: 'تهذيب اللحية',
+      rewardServiceNameEn: 'Beard trim',
+      rewardAmount: null,
+    };
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    const { unmount } = renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+        pointsReward={freeBeard}
+      />,
+    );
+    const option = await screen.findByRole('radio', { name: /استخدم مكافأتي: تهذيب اللحية مجاناً/ });
+    expect(option).toBeDisabled();
+    expect(screen.getByTestId('loyalty-picker')).toHaveTextContent(
+      'أضف «تهذيب اللحية» إلى حجزك لتستخدم المكافأة.',
+    );
+    unmount();
+
+    const PACKAGE: WizardOffer = {
+      ...SERVICE,
+      kind: 'package',
+      id: 'pkg-1',
+      nameAr: 'باقة',
+      price: 110,
+      itemIds: ['svc-1'],
+    };
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?package=pkg-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE, PACKAGE]}
+        professionals={PROS}
+        viewer="customer"
+        pointsReward={{ ...freeBeard, rewardType: 'AmountOff', rewardServiceId: null, rewardAmount: 20 }}
+      />,
+    );
+    expect(await screen.findByRole('radio', { name: /استخدم مكافأتي/ })).toBeDisabled();
+    expect(screen.getByTestId('loyalty-picker')).toHaveTextContent('لا تُستخدم المكافأة مع الباقات.');
   });
 
   it("from a barber's page or QR code: only their services, then straight to the day and time (D-133)", async () => {
