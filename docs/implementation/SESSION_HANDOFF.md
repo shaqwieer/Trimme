@@ -1,7 +1,16 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-19 (Session 30: the client's 12 cards (D-155), verified and committed locally on `main`, not pushed or deployed. Before it, Session 29: the client's iPhone test (D-152), built in its own worktree and rebased onto D-151 (`abc6706`) for a fast-forward of `main`. Before it, D-151 verified and committed by trimme-8b after its own session ended; D-155 (the client's next file: always confirmed, one active booking, the barber's direct change, plans with features and win-back, pausing for the owner and admin, «غير متوفر اليوم» and smaller fixes) planned in `phases/after-17-d155-auto-confirm-plans-absence.md`; D-152 on its own branch. Before it, Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
+- **Updated:** 2026-11-19 (Session 31: D-151 to D-155 pushed (`64c97fa`) and **deployed to groomhere.sa** (32 migrations), and the two new Meta templates submitted (PENDING). Before it, Session 30: the client's 12 cards (D-155), verified and committed on `main`. Before it, Session 29: the client's iPhone test (D-152), built in its own worktree and rebased onto D-151 (`abc6706`) for a fast-forward of `main`. Before it, D-151 verified and committed by trimme-8b after its own session ended; D-155 (the client's next file: always confirmed, one active booking, the barber's direct change, plans with features and win-back, pausing for the owner and admin, «غير متوفر اليوم» and smaller fixes) planned in `phases/after-17-d155-auto-confirm-plans-absence.md`; D-152 on its own branch. Before it, Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
+  - Session 31: D-151, D-152, D-153, D-154 and D-155 were pushed (`0f5d64b..64c97fa`) and **deployed to groomhere.sa on 2026-11-19** at the user's request. The D-152 worktree branch was already in `main`, so there was nothing to merge.
+    - **Run:** `/root/deploy-d151-d155.sh`.
+      - The pre-check found 0 loyalty add-on periods and prices.
+      - Backup: `/root/backups/trimme-before-d151-d155-20261119-214048.sql.gz`.
+      - `migrate`: **32 migrations**. The QR backfill gave both active barbers a code.
+      - There were 0 Pending bookings. 1 postponement offer and 1 WhatsApp-usage row were removed.
+    - **Smoke:** api and web healthy, 6 pages 200, 0 API errors.
+    - **Meta:** `trimme_customer_booking_cancelled_by_shop` (UTILITY) and `trimme_customer_win_back` (MARKETING), ar and en, are **PENDING**. They were submitted from `/root/meta-templates-d155.json` via `/root/wa-sync-d155`. The other 22 are APPROVED, and `trimme_sign_in_code` was not resubmitted.
+    - **Not done (admin data):** SuperAdmin ticks loyalty and win-back on the plans. All three are off. Turn win-back on only after its template is APPROVED. Check approvals with `--status` (see the D-155 phase file).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
   - Session 25 (D-143) is pushed (`0bd8fcb`) and deployed to groomhere.sa on 2026-11-13 (no migration). Codes are off there.
@@ -67,12 +76,10 @@
   - E2E on a fresh stack, every project at one worker: 108 passed; the 5 that failed (4 admin audits on a missing placeholder label, 1 legal-page timing flake) then passed.
   - Full detail is in the phase file.
 - **Next:**
-  - Push or deploy only when the user asks. The deploy needs:
-    - a backup;
-    - a check that production has no loyalty add-on period;
+  - Deployed in Session 31 (see Branch). The backup, the add-on check and the Meta submissions are done. Still open:
     - SuperAdmin ticking the plans' loyalty and win-back, since all start off;
-    - submitting `trimme_customer_booking_cancelled_by_shop` (UTILITY) and `trimme_customer_win_back` (MARKETING) to Meta.
-  - After `migrate`, barbers lose the pause and paused shops become listed.
+    - Meta's approval of the two new templates.
+  - After `migrate`, barbers lose the pause and paused shops become listed (production had none).
   - The client may want a disabled «غير متوفر اليوم» card to stay bookable for later days; today it is disabled for the whole day, as asked (a barber preselected by link stays selectable).
   - I4-4-1 is partly met on WhatsApp: the change message shows the new time only (the bell has old and new); the old time needs a changed Meta template, like D-152's 3-3.
 

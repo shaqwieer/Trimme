@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-19 (Session 30: the client's 12 cards (D-155), committed locally, not pushed or deployed. Before it, Session 29: the client's iPhone test — Safari's bar, sideways pages, the reward's price, «مواعيدي», the customer's cards, WhatsApp amounts, the completed visit's notice, rating tags, the barbers' welcome (D-152), rebased on D-151. Before it, D-151 verified and committed — the barber's day screen, «حسابي», reasons, reports cards, services tiles. Before it, Session 28, third request, slices 4–5: loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150). Before it, slices 1–3: the owner's dashboard — the shop's own sections, a barber's own length per service, languages and adding by mobile, the shop's own booking settings with a cleaning time, fixed shop type, service status wording, a 14-day horizon and the unavailable page for an expired shop (D-149); Before it, Session 28, second request: the customer's pages — category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts (D-148). Before it, Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
+- **Updated:** 2026-11-19 (Session 31: D-151 to D-155 pushed (`64c97fa`) and deployed to groomhere.sa (32 migrations); the two new Meta templates submitted. Before it, Session 30: the client's 12 cards (D-155). Before it, Session 29: the client's iPhone test — Safari's bar, sideways pages, the reward's price, «مواعيدي», the customer's cards, WhatsApp amounts, the completed visit's notice, rating tags, the barbers' welcome (D-152), rebased on D-151. Before it, D-151 verified and committed — the barber's day screen, «حسابي», reasons, reports cards, services tiles. Before it, Session 28, third request, slices 4–5: loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150). Before it, slices 1–3: the owner's dashboard — the shop's own sections, a barber's own length per service, languages and adding by mobile, the shop's own booking settings with a cleaning time, fixed shop type, service status wording, a 14-day horizon and the unavailable page for an expired shop (D-149); Before it, Session 28, second request: the customer's pages — category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts (D-148). Before it, Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -139,7 +139,7 @@
     - One in-app notice after «انتهت الخدمة» with «قيّم زيارتك» and the points; no WhatsApp.
   - **Not here:** 2-7 and 3-7 are D-151's. 3-2 and 3-3 (new Meta templates) are deferred. The lead-time value is the user's.
   - Gates and evidence are in `phases/after-17-d152-client-iphone-review.md`.
-- **Session 30 (D-155), at the user's request: the client's 12 cards.** Committed locally; not pushed or deployed.
+- **Session 30 (D-155), at the user's request: the client's 12 cards.** Pushed (`64c97fa`) and **deployed to groomhere.sa on 2026-11-19** with D-151 to D-154 (Session 31; details below).
   - **Booking:**
     - every online booking is confirmed at once;
     - one upcoming booking per customer across the shops, with «عندك حجز قادم» and «عرض الحجز»;
@@ -165,6 +165,20 @@
     - SuperAdmin ticking the plans' features;
     - two new Meta templates (one MARKETING).
   - Gates and evidence are in `phases/after-17-d155-auto-confirm-plans-absence.md`.
+- **Session 31, at the user's request: push and deploy D-151 to D-155, and resync the WhatsApp templates.**
+  - Nothing to merge: the D-152 worktree branch was already in `main`, and the tree was clean (`.claude/` stays untracked).
+  - Pushed `0f5d64b..64c97fa` and **deployed to groomhere.sa on 2026-11-19** with `/root/deploy-d151-d155.sh`.
+    - The pre-check found no loyalty add-on periods or prices. The backup is `/root/backups/trimme-before-d151-d155-20261119-214048.sql.gz` (148 KB).
+    - `migrate` reports 32 migrations, and the barber QR backfill ran as a synchronizer: both active barbers have a code.
+    - No booking was waiting for confirmation. The migration cleared 1 postponement offer and 1 WhatsApp-usage row; no shop was paused.
+    - api and web are healthy. `/ar`, `/en`, `/ar/shops`, al-asala's page, its booking page and the staff sign-in all return 200. There were 0 API errors after start.
+  - **Meta templates:**
+    - `trimme_customer_booking_cancelled_by_shop` (UTILITY) and `trimme_customer_win_back` (MARKETING), ar and en, were submitted from a catalogue filtered to those four entries. All four are **PENDING**.
+    - The other 22 entries are unchanged and APPROVED. `trimme_customer_booking_confirmed` ar changed only in its example amount.
+    - `trimme_sign_in_code` is absent and was not resubmitted.
+  - **Still open (admin data):**
+    - All three plans have loyalty and win-back off until SuperAdmin ticks them. Turn on win-back only after `trimme_customer_win_back` is APPROVED.
+    - Until `cancelled_by_shop` is approved, a shop's cancellation reaches the customer in the bell only.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

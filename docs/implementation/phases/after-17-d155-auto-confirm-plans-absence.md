@@ -259,3 +259,21 @@ Numbers missing from the cards (1-5, 3-1 to 3-4, 5-2, 5-3 of the main file) were
   - the win-back job against real customers;
   - an iPhone pass;
   - production data (the add-on check before migrating).
+
+## Deployment (Session 31, 2026-11-19)
+- Pushed `0f5d64b..64c97fa`, together with D-151 to D-154, and deployed to groomhere.sa with `/root/deploy-d151-d155.sh`.
+- **Pre-check (read-only), confirmed from the backup:**
+  - `loyalty_add_on_periods` 0 and `loyalty_add_on_prices` 0, so nothing was lost when the tables were dropped;
+  - 0 Pending bookings;
+  - 1 postponement offer and 1 `whatsapp_usage` row, both removed by the migration;
+  - 0 shop pauses.
+- **Backup:** `/root/backups/trimme-before-d151-d155-20261119-214048.sql.gz` (148,248 bytes; `gzip -t` OK).
+- **Migrate:** «Database is up to date (32 migrations applied in total)», 5 synchronizers. Both active barbers have a QR code.
+- **Plans:** Monthly, Semi-annual and Annual are all `includes_loyalty=false` and `win_back_enabled=false`. SuperAdmin ticks them.
+- **Smoke from the VPS:**
+  - api healthy and web healthy;
+  - 200 on `/ar`, `/en`, `/ar/shops`, `/ar/shops/al-asala`, `/ar/shops/al-asala/book` and `/ar/auth/staff/sign-in`;
+  - 0 API log lines with fail, error, exception or crit.
+- **Meta:**
+  - submitted `trimme_customer_booking_cancelled_by_shop` ar/en (UTILITY) and `trimme_customer_win_back` ar/en (MARKETING) from a catalogue filtered to those four. All four are **PENDING**.
+  - The other 22 are APPROVED. `trimme_sign_in_code` is missing and was not resubmitted.
