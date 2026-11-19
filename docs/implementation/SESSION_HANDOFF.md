@@ -118,18 +118,18 @@
   - Web: format, lint, typecheck and OpenAPI clean; 576/576.
   - E2E at one worker: the route audit 25/25 in light and dark; `services`, `shop-schedule` and `shop-dashboard` pass.
 - **Local stack:** api and web built from this tree. The database is at 30 migrations, including D-152's `ShopShortName`, applied from that branch.
-- **Committed locally, not pushed or deployed.**
+- **Pushed and deployed to groomhere.sa on 2026-11-19 with D-155 (`64c97fa`).**
 
 ## Session 28, after the deploy: the most booked services on the admin home (D-154)
 - **What changed:** «الخدمات الأكثر حجزاً» lists the five most booked services and packages with their shops («قص وتصفيف · باربر هاوس»), replacing the platform-category ranking.
 - **API:** `popularCategories` became `popularServices`; the reporting port is now `IBookedOfferLookup`.
-- **Committed locally, not pushed or deployed.** Built and verified in its own worktree, and committed as a patch to the index, while D-151 and D-152 were in progress in other sessions.
+- **Pushed and deployed to groomhere.sa on 2026-11-19 with D-155 (`64c97fa`).** Built and verified in its own worktree, and committed as a patch to the index, while D-151 and D-152 were in progress in other sessions.
 
 ## Session 28, after the deploy: the two items D-149 left (D-153)
 - **What changed:**
   - the walk-in form shows each barber's own length on their card, and the chosen barber's length in the total and the end time;
   - the admin's platform categories page, tab and editor are removed. The categories stay in the data, the API and the admin home's «الأكثر حجزاً».
-- **Committed locally, not pushed or deployed.**
+- **Pushed and deployed to groomhere.sa on 2026-11-19 with D-155 (`64c97fa`).**
 - **Shared tree:** two other sessions worked in this repository at the same time, holding D-151 (`trimme-30`: the client's comparison pages) and D-152 (`trimme-d5`: iPhone review). D-153 was verified in its own worktree and committed alone; their uncommitted work was left in place.
 
 ## Session 28, third request, slices 4–5: loyalty as a paid add-on and the plans' WhatsApp allowance (D-150)

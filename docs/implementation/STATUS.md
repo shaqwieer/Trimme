@@ -105,15 +105,15 @@
   - **Small items:** service status badge and button wording; the shop type fixed to a men's barbershop; «المحل غير متاح حالياً» for a shop its subscription hides.
   - Migration 27 `OwnerSettings` (sections from each shop's categories, every shop a barbershop, 14 days, bookings held until their end). Gates in `phases/after-17-d149-owner-settings-loyalty-plans.md`.
   - **Slices 1–5 pushed (`87307ec`) and deployed to groomhere.sa on 2026-11-19** after a database backup (28 migrations there now); the admin data steps (plans, add-on price) are not done yet.
-  - **D-154 (committed locally, not deployed):** the admin home ranks the most booked services and packages, each with its shop, instead of platform categories.
-  - **D-153 (after the deploy, committed locally, not deployed):** the walk-in form shows each barber's own length; the admin's platform categories page, tab and editor are removed (the data stays).
-  - **D-151 (Session 29, committed locally, not deployed):** the barber's day screen (`/shop` and «المواعيد»: quick buttons, the red «حجوزات تحتاج إقفال» on top, one day at a time with «جدولي» / «الكل» / each colleague, read-only); red at the booked end and «وصل» for any barber on a red booking; «حسابي» for shop users (rename, Hijri display, language, delete a barber's login); «بريكاتي» over working hours only; ready cancellation reasons and their report counts; reports as cards on a phone; the owner's services as tiles by section with − and +; the add-service list with lengths, prices and greyed services that don't fit; the loyalty rules form's steppers, expiry presets and range messages. Migration 29 `BarberDayAndAccount` (`cancellation_reason_code`). Gates in `phases/after-17-d151-barber-day-account-services.md`.
+  - **D-154 (deployed to groomhere.sa on 2026-11-19 with D-155):** the admin home ranks the most booked services and packages, each with its shop, instead of platform categories.
+  - **D-153 (deployed to groomhere.sa on 2026-11-19 with D-155):** the walk-in form shows each barber's own length; the admin's platform categories page, tab and editor are removed (the data stays).
+  - **D-151 (Session 29; deployed to groomhere.sa on 2026-11-19 with D-155):** the barber's day screen (`/shop` and «المواعيد»: quick buttons, the red «حجوزات تحتاج إقفال» on top, one day at a time with «جدولي» / «الكل» / each colleague, read-only); red at the booked end and «وصل» for any barber on a red booking; «حسابي» for shop users (rename, Hijri display, language, delete a barber's login); «بريكاتي» over working hours only; ready cancellation reasons and their report counts; reports as cards on a phone; the owner's services as tiles by section with − and +; the add-service list with lengths, prices and greyed services that don't fit; the loyalty rules form's steppers, expiry presets and range messages. Migration 29 `BarberDayAndAccount` (`cancellation_reason_code`). Gates in `phases/after-17-d151-barber-day-account-services.md`.
   - **Slices 4–5 (D-150):**
     - **Loyalty as a paid add-on:** SuperAdmin prices it in versions; the admin switches it on until a date or off; earning and redeeming stop when it ends and points are kept.
     - **Points per mobile number per shop** (keyed hash only): the owner's rules (first visit, later visits, points for a reward, a free service or 5–1,000 SAR off, wipe or decay without visits); points only at «انتهت الخدمة» with the barber's name; «+٢» beyond a full card; «استخدم مكافأتي» at booking (one per booking, never with a package; held, used at completion, returned on a cancellation or no-show); walk-in redemption through the barber's lookup; «خلصت زيارتك» in the app.
     - **The plans' monthly WhatsApp allowance:** empty is unlimited, 0 is none, 500 a month; enforced before the provider with an atomic slot; the owner told once a month; the month's use on both subscription pages.
     - Migration 28 `LoyaltyAddOnAndPlanMessages` (tables and columns only). The 489/639 plans, hiding half-year/yearly, the add-on price and which shops get it are admin data at deploy time.
-- **Session 29 (D-152), at the user's request: the client's iPhone test.** Built in its own worktree, on top of D-154, while D-151 is being built in another session. Committed locally; not pushed or deployed.
+- **Session 29 (D-152), at the user's request: the client's iPhone test.** Built in its own worktree, on top of D-154, while D-151 is being built in another session. Deployed to groomhere.sa on 2026-11-19 with D-155 (`64c97fa`).
   - **iPhone:**
     - `viewport-fit=cover` with safe-area padding on every bottom bar and sticky footer, so Safari's toolbar no longer covers them.
     - Text fields at 16 px on iOS only, so Safari no longer zooms in and pans pages sideways; sideways overflow is clipped as a backstop.
@@ -178,7 +178,7 @@
     - `trimme_sign_in_code` is absent and was not resubmitted.
   - **Still open (admin data):**
     - All three plans have loyalty and win-back off until SuperAdmin ticks them. Turn on win-back only after `trimme_customer_win_back` is APPROVED.
-    - Until `cancelled_by_shop` is approved, a shop's cancellation reaches the customer in the bell only.
+    - Until `cancelled_by_shop` is approved, its WhatsApp fails at once (Meta answers 4xx, a permanent failure, no retry) and the customer has the bell copy only. An admin can retry a failed send from the WhatsApp log after approval.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

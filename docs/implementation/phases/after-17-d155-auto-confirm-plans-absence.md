@@ -277,3 +277,5 @@ Numbers missing from the cards (1-5, 3-1 to 3-4, 5-2, 5-3 of the main file) were
 - **Meta:**
   - submitted `trimme_customer_booking_cancelled_by_shop` ar/en (UTILITY) and `trimme_customer_win_back` ar/en (MARKETING) from a catalogue filtered to those four. All four are **PENDING**.
   - The other 22 are APPROVED. `trimme_sign_in_code` is missing and was not resubmitted.
+  - **The database slots:** `migrate` created `BookingCancelledByShop` and `WinBack` (ar, en) in `notifications.whatsapp_templates`, as a read-only query on production confirmed.
+  - **While a template is PENDING:** Meta answers 4xx, which `MetaCloudApiProvider` treats as permanent. The send is marked Failed with no automatic retry, and the customer has the bell copy only. An admin can retry it from the WhatsApp log once the template is approved.
