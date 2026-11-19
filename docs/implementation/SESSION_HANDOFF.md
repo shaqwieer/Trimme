@@ -43,6 +43,17 @@
 - **Tell the user and client:**
   - **A visit that uses a reward earns no points** (D-132's rule; the client didn't say). It is one condition to flip.
   - **Old D-132 stamps are not converted.** Shops that ran a D-132 programme stop earning until the add-on is on and rules are set; their members get first-visit points again; D-132 coupons stay usable.
+- **Coverage note:** no local shop has the add-on on. So the route audit saw only the «off» states, an inactive add-on and empty cards. These are covered by component tests and the API integration tests, never by a browser against the real API:
+  - the points card with «+N»;
+  - the review step's discount and amount due;
+  - the walk-in reward;
+  - an active add-on.
+  - A short local walk would cover them: price the add-on, switch al-asala on, set rules, have a barber close a visit.
+- **On production at deploy, before any admin step:**
+  - shops on a D-132 programme stop earning;
+  - D-132 coupons stay usable and listed on «بطاقات الولاء» and the review step; a shop page shows its loyalty card only while the add-on is on;
+  - existing plans stay unlimited for WhatsApp.
+  - Once a shop is on a plan with allowance 0 («الاحترافية»), its customers get no WhatsApp at all (confirmations and reminders included, in-app only), and the owner gets the «لا تشمل» notice once a month.
 - **Admin data at deploy time (not migrated or seeded):**
   - create «الاحترافية» (489 SAR a month, monthly WhatsApp 0) and «الاحترافية بلس» (639, monthly WhatsApp 500);
   - hide the half-year and yearly plans from new shops;
