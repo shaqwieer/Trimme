@@ -25,10 +25,17 @@ internal sealed record LoyaltyBookingEvent(
 /// the shop's loyalty add-on is in force, the visit earns the first-visit or the later-visit points, recorded with the
 /// barber who closed it. Points are never earned on booking, arrival or a no-show. A visit that used a reward earns none
 /// (as under D-132). The member is the online account's mobile or the number typed into a walk-in or phone booking; a
-/// booking with no number earns nothing. The signed-in customer is told «خلصت زيارتك» in-app with the points.</item>
+/// booking with no number earns nothing.</item>
 /// <item>Cancelled (by anyone) or a no-show: a reward held for the booking goes back to the card.</item>
 /// <item>A D-132 coupon held for the booking is redeemed or released the same way; no new stamps are given.</item>
 /// </list>
+/// <para>
+/// D-152 (the client's 3-4): every completed visit of a signed-in customer gets one in-app notice,
+/// <see cref="VisitNoticeKind"/> («شكراً لزيارتك… قيّم زيارتك»), with the points when the shop's loyalty is on. It is sent
+/// here, after the points are settled, so it is one notice per visit and never a WhatsApp message (no cost). Walk-in and
+/// phone bookings have no account and get nothing. It replaces D-150's <c>loyalty.visit_completed</c>, which is no longer
+/// sent (notices already in inboxes keep their kind).
+/// </para>
 /// </summary>
 internal sealed class LoyaltyBookingConsumer(
     TrimmeDbContext db,
@@ -43,8 +50,13 @@ internal sealed class LoyaltyBookingConsumer(
 {
     public const string ConsumerName = "loyalty.booking";
 
-    /// <summary>The in-app notice after a completed visit («خلصت زيارتك»).</summary>
-    public const string VisitNoticeKind = "loyalty.visit_completed";
+    /// <summary>
+    /// The in-app notice after a completed visit (D-152): the shop's names and slug always; the points parameters
+    /// (<c>pointsEarned</c>, <c>points</c>, <c>currentCard</c>, <c>pointsForReward</c>, <c>pointsToNext</c>,
+    /// <c>rewardsReady</c>) only while the shop's loyalty add-on is on with its rules set. The notice's booking id leads to
+    /// «قيّم زيارتك».
+    /// </summary>
+    public const string VisitNoticeKind = "booking.completed";
 
     public string Name => ConsumerName;
 
@@ -80,12 +92,14 @@ internal sealed class LoyaltyBookingConsumer(
         var memberKey = redemption?.MemberKey ?? await MemberKeyAsync(change, cancellationToken);
         if (memberKey is null)
         {
+            await ThankAsync(change, context, null, cancellationToken);
             return;
         }
 
         var active = await addOn.IsActiveAsync(shopId, cancellationToken);
         if (!active && redemption is not { Status: LoyaltyRedemptionStatus.Held })
         {
+            await ThankAsync(change, context, null, cancellationToken);
             return;
         }
 
@@ -124,13 +138,14 @@ internal sealed class LoyaltyBookingConsumer(
         // Any completed visit starts the inactivity clock again.
         account.Visit(earned, now);
 
-        if (change.CustomerId is { } customerId && active && settings is not null)
-        {
-            var card = LoyaltyBalance.Card(Math.Max(account.Points - heldElsewhere, 0), settings.PointsForReward);
-            await TellCustomerAsync(customerId, shopId, change.BookingId, earned, card, settings, cancellationToken);
-            context.AfterCommit(ct => center.PushPendingAsync(ct));
-        }
+        var points = active && settings is not null
+            ? new VisitPoints(earned, LoyaltyBalance.Card(Math.Max(account.Points - heldElsewhere, 0), settings.PointsForReward), settings)
+            : null;
+        await ThankAsync(change, context, points, cancellationToken);
     }
+
+    /// <summary>What the visit did to the card, for the notice: the points it added and the card after it.</summary>
+    private sealed record VisitPoints(int Earned, LoyaltyCardState Card, LoyaltySettings Settings);
 
     /// <summary>The member of the booking: the online account's mobile, or the walk-in's typed number; null without one.</summary>
     private async Task<string?> MemberKeyAsync(LoyaltyBookingEvent change, CancellationToken cancellationToken)
@@ -145,25 +160,35 @@ internal sealed class LoyaltyBookingConsumer(
             : null;
     }
 
-    private async Task TellCustomerAsync(
-        Guid customerId, ShopId shopId, Guid bookingId, int earned, LoyaltyCardState card, LoyaltySettings settings, CancellationToken cancellationToken)
+    /// <summary>
+    /// «شكراً لزيارتك» (D-152): the signed-in customer of a completed visit is thanked in-app, asked to rate it, and told the
+    /// points when there are any. One per booking (the dedupe key); nothing for a booking without an account.
+    /// </summary>
+    private async Task ThankAsync(LoyaltyBookingEvent change, OutboxConsumerContext context, VisitPoints? points, CancellationToken cancellationToken)
     {
-        var shop = await shops.FindAsync(shopId, cancellationToken);
-        await center.NotifyUserAsync(customerId, new InAppNotice(
-            VisitNoticeKind,
-            $"loyalty:{bookingId:N}",
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["shopNameAr"] = shop?.NameAr ?? string.Empty,
-                ["shopNameEn"] = string.IsNullOrWhiteSpace(shop?.NameEn) ? shop?.NameAr ?? string.Empty : shop.NameEn,
-                ["shopSlug"] = shop?.Slug ?? string.Empty,
-                ["pointsEarned"] = earned.ToString(CultureInfo.InvariantCulture),
-                ["points"] = card.Points.ToString(CultureInfo.InvariantCulture),
-                ["currentCard"] = card.CurrentCard.ToString(CultureInfo.InvariantCulture),
-                ["pointsForReward"] = settings.PointsForReward.ToString(CultureInfo.InvariantCulture),
-                ["pointsToNext"] = card.PointsToNext.ToString(CultureInfo.InvariantCulture),
-                ["rewardsReady"] = card.RewardsReady.ToString(CultureInfo.InvariantCulture),
-            },
-            bookingId), cancellationToken);
+        if (change.CustomerId is not { } customerId)
+        {
+            return;
+        }
+
+        var shop = await shops.FindAsync(new ShopId(change.ShopId), cancellationToken);
+        var parameters = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["shopNameAr"] = shop?.NameAr ?? string.Empty,
+            ["shopNameEn"] = string.IsNullOrWhiteSpace(shop?.NameEn) ? shop?.NameAr ?? string.Empty : shop.NameEn,
+            ["shopSlug"] = shop?.Slug ?? string.Empty,
+        };
+        if (points is { } visit)
+        {
+            parameters["pointsEarned"] = visit.Earned.ToString(CultureInfo.InvariantCulture);
+            parameters["points"] = visit.Card.Points.ToString(CultureInfo.InvariantCulture);
+            parameters["currentCard"] = visit.Card.CurrentCard.ToString(CultureInfo.InvariantCulture);
+            parameters["pointsForReward"] = visit.Settings.PointsForReward.ToString(CultureInfo.InvariantCulture);
+            parameters["pointsToNext"] = visit.Card.PointsToNext.ToString(CultureInfo.InvariantCulture);
+            parameters["rewardsReady"] = visit.Card.RewardsReady.ToString(CultureInfo.InvariantCulture);
+        }
+
+        await center.NotifyUserAsync(customerId, new InAppNotice(VisitNoticeKind, $"visit:{change.BookingId:N}", parameters, change.BookingId), cancellationToken);
+        context.AfterCommit(ct => center.PushPendingAsync(ct));
     }
 }

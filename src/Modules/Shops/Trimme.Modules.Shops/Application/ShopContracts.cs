@@ -35,6 +35,11 @@ public interface IShopProfileFields
     string? PublicPhone { get; }
 
     IReadOnlyList<ShopAmenity>? Amenities { get; }
+
+    /// <summary>The short name (D-152), optional; empty clears it.</summary>
+    string? ShortNameAr { get; }
+
+    string? ShortNameEn { get; }
 }
 
 /// <summary>A confirmed map point and its address. Source: pin/typed coordinates, a search result, or the device position.</summary>
@@ -64,6 +69,8 @@ internal sealed class ShopProfileRules<T> : AbstractValidator<T>
             .MaximumLength(Shop.MaxNameLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.NameEn).Must(n => !string.IsNullOrWhiteSpace(n)).WithErrorCode("validation.required")
             .MaximumLength(Shop.MaxNameLength).WithErrorCode("validation.too_long");
+        RuleFor(p => p.ShortNameAr).Must(n => n is null || n.Trim().Length <= Shop.MaxShortNameLength).WithErrorCode("validation.too_long");
+        RuleFor(p => p.ShortNameEn).Must(n => n is null || n.Trim().Length <= Shop.MaxShortNameLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.DescriptionAr).MaximumLength(Shop.MaxDescriptionLength).WithErrorCode("validation.too_long");
         RuleFor(p => p.DescriptionEn).MaximumLength(Shop.MaxDescriptionLength).WithErrorCode("validation.too_long");
         // The platform is for men's barbershops only (D-149): «صالون تجميل» and «للجميع» are no longer offered.
@@ -96,7 +103,8 @@ internal static class ShopInputMapping
     public static ShopProfile ToProfile(IShopProfileFields input)
     {
         var phone = PhoneNumber.TryParse(input.PublicPhone, out var parsed) ? parsed.E164 : null;
-        return ShopProfile.Create(input.NameAr, input.NameEn, input.DescriptionAr, input.DescriptionEn, input.Category, phone, input.Amenities);
+        return ShopProfile.Create(
+            input.NameAr, input.NameEn, input.DescriptionAr, input.DescriptionEn, input.Category, phone, input.Amenities, input.ShortNameAr, input.ShortNameEn);
     }
 
     public static BuildingBlocks.Domain.Results.Result<ShopLocation> ToLocation(IShopLocationFields input, DateTimeOffset now, Guid? confirmedBy) =>

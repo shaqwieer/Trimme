@@ -97,7 +97,7 @@ public static class MessageComposer
             [Placeholders.BookingTime] = MessageFormat.Time(booking.StartsAt, shop.TimeZone, locale),
             [Placeholders.TimeRemaining] = MessageFormat.Minutes(reminderMinutes, locale),
             [Placeholders.Duration] = MessageFormat.Minutes(booking.DurationMinutes, locale),
-            [Placeholders.Amount] = MessageFormat.Amount(booking.Price, booking.Currency, locale),
+            [Placeholders.Amount] = MessageFormat.Amount(booking.AmountDue, booking.Currency, locale),
             [Placeholders.Address] = shop.Address ?? string.Empty,
             [Placeholders.BookingReference] = booking.Reference,
         };

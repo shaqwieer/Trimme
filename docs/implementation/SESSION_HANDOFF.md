@@ -1,6 +1,6 @@
 # TRIMME Session Handoff
 
-- **Updated:** 2026-11-19 (Session 29: D-151 verified and committed by trimme-8b after its own session ended; D-155 (the client's next file: always confirmed, one active booking, the barber's direct change, plans with features and win-back, pausing for the owner and admin, «غير متوفر اليوم» and smaller fixes) planned in `phases/after-17-d155-auto-confirm-plans-absence.md`; D-152 on its own branch. Before it, Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
+- **Updated:** 2026-11-19 (Session 29: the client's iPhone test (D-152), built in its own worktree and rebased onto D-151 (`abc6706`) for a fast-forward of `main`. Before it, D-151 verified and committed by trimme-8b after its own session ended; D-155 (the client's next file: always confirmed, one active booking, the barber's direct change, plans with features and win-back, pausing for the owner and admin, «غير متوفر اليوم» and smaller fixes) planned in `phases/after-17-d155-auto-confirm-plans-absence.md`; D-152 on its own branch. Before it, Session 28, third request: slices 4–5 of D-149 — loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150); before them, slices 1–3: the owner's dashboard (sections, a barber's own lengths, languages, adding by mobile, booking settings with a cleaning time, fixed shop type, status wording, 14 days, the unavailable page); before it, Session 28, second request: the customer's pages (D-148); before it, Session 28: the owner watches, the barbers operate; walk-in and phone bookings; red bookings; a booking's services; postponement offers; reports and the owner's packages (D-147); before it, Session 27: the owner adds and edits barbers (D-146); Session 26: barber accounts replace the desk (D-145) and the client's review (D-144); after Phase 17)
 - **Branch:** `main`, tracking `origin/main` (https://github.com/shaqwieer/Trimme.git).
   - Sessions 21 and 22 are pushed (`206d0a1`) and deployed to groomhere.sa on 2026-11-05.
   - Session 24 (D-142) is pushed (`b6e02c5`) and deployed to groomhere.sa on 2026-11-09 (with its migration).
@@ -15,8 +15,9 @@
   - Session 26 (D-144) is pushed and deployed with D-145 (below).
   - Session 26, second request (D-145): pushed (`fd512e0`) and **deployed to groomhere.sa on 2026-11-14** together with D-144, after a database backup (`/root/backups/trimme-before-d144-d145-20261114-145938.sql.gz`); 24 migrations there now. The 2 demo desk accounts were disabled; owners untouched; home, team sign-in and shop pages 200; codes still off. `trimme_customer_booking_professional_changed` (ar, en) submitted to Meta the same day: **PENDING** review. Deployed in one step (the user chose it), not the two-step option.
   - Session 23 (D-141) is pushed (`6abf98a`) and deployed to groomhere.sa on 2026-11-07, web image only. The VPS `.env` holds `TRIMME_FACEBOOK_DOMAIN_VERIFICATION`, and `compose.yml` maps it to web (backup `compose.yml.bak-d141`). The local web container was rebuilt with the token too.
-- **Working tree:** D-151 committed. D-152 (the client's iPhone test) lives on branch `worktree-d152-client-iphone-review` (worktree `.claude/worktrees/d152-client-iphone-review`, session trimme-d5), not merged: merge it after D-151 and keep both migrations (`BarberDayAndAccount`, `ShopShortName`). D-155 is in progress in the main checkout.
+- **Working tree:** D-151 committed (`abc6706`). D-152 (the client's iPhone test) was built on branch `worktree-d152-client-iphone-review` (worktree `.claude/worktrees/d152-client-iphone-review`, session trimme-d5), rebased onto D-151 with both migrations kept (`BarberDayAndAccount`, `ShopShortName`) and its gates re-run, then fast-forwarded into `main` by the session holding the main checkout. D-155 is in progress in the main checkout.
 - **Local stack: running, all in compose.** Ports: web 3300, API 8080, DB 5434, Mailpit 8325.
+  - Session 29 (D-152): api and web rebuilt from the D-152 worktree (`docker compose -p trimme -f infra/docker-compose.yml build api web`, `run --rm migrate`, `up -d --no-deps api web`; no `down -v`, no seed). The database holds 30 migrations: D-151's `BarberDayAndAccount`, already applied by `trimme-30`'s build, and D-152's `ShopShortName`. Codes **on**. Rebuild from your own tree before the next E2E.
   - Session 28, third request, slices 4–5: api and web rebuilt from the tree (no `down -v`): `migrate` up to date at 28 (`LoyaltyAddOnAndPlanMessages`); seed not re-run; codes **on**. No shop has the loyalty add-on locally.
   - Session 28, third request, rebuilt api and web from its tree (no `down -v`): `migrate` up to date at 27 (`OwnerSettings`), seed ran (al-asala 5 sections, barber-house 4); codes **on**.
   - Session 28, second request, rebuilt api and web from its tree (`up -d --build`, no `down -v`): migrate applied `CustomerPages` (26 migrations), seed ran; codes **on**. The local cancellation window is now 0.
@@ -30,6 +31,33 @@
   - Start with `TRIMME_WEB_PORT=3300 TRIMME_MAILPIT_PORT=8325 TRIMME_SITE_URL=http://localhost:3300`.
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
+
+## Session 29: the client's iPhone test (D-152)
+- **The request:** the client's file after the update file: 20 items (ضروري / مهم / تحسين), tested as a customer on an iPhone in Safari. Item statuses, answers and evidence are in `phases/after-17-d152-client-iphone-review.md`; the details are in D-152.
+- **Built:**
+  - **iPhone:** Safari's bar no longer covers the bottom bars (`viewport-fit=cover` with safe-area padding). Pages no longer shift sideways: on iOS, text fields are 16 px so Safari doesn't zoom, and sideways overflow is clipped.
+  - **A time that became too close:** «الوقت صار قريب مرة» (`booking.slot_too_soon`), with the nearest times offered on the review itself.
+  - **The reward's price:** «مجانية» on the free service's line, and totals and footer net of the reward. Old D-132 coupons lower the amount due too (the user's answer); reports count each once.
+  - **«مواعيدي»:** «إلغاء الموعد» on each card (it opens the dialog on the booking's page), «تغيير الموعد», the booking's own status («مؤكد» until closed), and no pager for one page.
+  - **The customer's cards:** no coupon code; the badge under the title; the card stays after a reward is used, with «استخدمت: …»; the card's link ticks the reward.
+  - **The drawer:** no «رقم العميل غير متاح».
+  - **WhatsApp:** amounts are «٦٠ ريال», the amount due.
+  - **After «انتهت الخدمة»:** one in-app `booking.completed` notice with «قيّم زيارتك» and the points.
+  - **Rating tags** on the shop and barber pages.
+  - **«أهلاً محمد، نورتنا»,** with a new «اسم مختصر» (migration 29 `ShopShortName`).
+- **Not built:**
+  - **2-7 and 3-7 are covered by D-151** (confirmed by `trimme-8b`). At the merge, carry D-152's welcome line into D-151's barber day screen on `/shop`:
+    - 2-7: colleagues' bookings today, the red block on the barber's home, and buttons under the late card's text;
+    - 3-7: `LoyaltyRulesForm` rejects Arabic-Indic digits.
+  - **3-2 and 3-3 are deferred by the user:** a button and the source on the barber's WhatsApp, and old and new times on the reschedule message. They need new Meta templates.
+  - **1-2's lead-time value** is the user's: no default or data change.
+- **For the user to check on a real iPhone (Safari, bar showing):**
+  - the bottom bars sit above Safari's toolbar on the customer, barber, owner and admin pages;
+  - no page pans sideways after typing in a field;
+  - the sticky headers stay clear of the status bar.
+  Playwright cannot show Safari's toolbar or iOS's zoom on focus.
+- **Bundle:** making the «مواعيدي» card import the cancel dialog made Turbopack regroup a shared chunk (+12.5 KB on every page that has toasts). The card links to `?cancel=1` instead, and sizes are back to `main`'s. The budgets are unchanged after the rebase on D-151, which gives the barber edit page its own budget.
+- **Deploying later (when asked):** a migration, so back up first; `git pull`, build api and web, `run --rm migrate`, `up -d`. No WhatsApp template changes.
 
 ## Session 29: D-151 verified and committed (the barber's day screen, «حسابي», reasons, reports cards, services tiles)
 - **The request and the build** are D-151's own (`phases/after-17-d151-barber-day-account-services.md`). Its session (trimme-30) ended during E2E, out of memory. This session (trimme-8b) ran the remaining gates on the same tree, at the user's choice («finish and commit D-151 first»).

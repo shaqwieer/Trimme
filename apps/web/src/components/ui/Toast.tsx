@@ -65,7 +65,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <section
         aria-label={t('region')}
-        className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--layout-bottom-nav-height)+1rem)] z-60 mx-auto flex max-w-[440px] flex-col gap-2 lg:bottom-6"
+        className="pointer-events-none fixed inset-x-4 bottom-[calc(var(--layout-bottom-nav-height)+1rem+env(safe-area-inset-bottom))] z-60 mx-auto flex max-w-[440px] flex-col gap-2 lg:bottom-6"
       >
         <div role="status" aria-live="polite" className="flex flex-col gap-2">
           {polite.map((toast) => (

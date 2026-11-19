@@ -16,7 +16,8 @@ public interface IBookingNotificationSource
 /// The booking snapshot a message is rendered from. No contact data by construction: recipients are resolved separately
 /// through <see cref="ICustomerContactReader"/> and <see cref="IProfessionalContactReader"/>. <c>Status</c> is the booking
 /// status name (<c>Pending</c>, <c>Confirmed</c>, <c>Arrived</c>, <c>Completed</c>, <c>CancelledByCustomer</c>,
-/// <c>CancelledByShop</c>, <c>NoShow</c>); <c>Channel</c> is <c>Online</c> or <c>WalkIn</c>.
+/// <c>CancelledByShop</c>, <c>NoShow</c>); <c>Channel</c> is <c>Online</c> or <c>WalkIn</c>. <c>AmountDue</c> is what the
+/// customer pays at the shop, net of a loyalty reward (D-152: the message's amount, not the booked price).
 /// </summary>
 public sealed record NotifiableBooking(
     Guid Id,
@@ -29,7 +30,7 @@ public sealed record NotifiableBooking(
     string ProfessionalNameEn,
     string ItemNameAr,
     string? ItemNameEn,
-    decimal Price,
+    decimal AmountDue,
     string Currency,
     int DurationMinutes,
     DateTimeOffset StartsAt,

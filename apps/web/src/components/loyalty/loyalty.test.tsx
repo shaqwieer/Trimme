@@ -127,7 +127,31 @@ describe('loyalty card (D-149)', () => {
     expect(items[1]).toHaveTextContent('+٢');
   });
 
-  it('uses the English title in Turkish and names a D-132 coupon’s code', () => {
+  it('names a used reward, keeps the last one in sight and shows no figure for a coupon (D-152, 2-5)', () => {
+    renderWithIntl(
+      <LoyaltyHistory
+        history={[
+          {
+            at: '2026-11-19T10:00:00Z',
+            kind: 'Redeemed',
+            points: 0,
+            bookingId: 'b3',
+            barberName: null,
+            rewardTitleAr: 'حلاقة شعر مجانية',
+            rewardTitleEn: 'Free haircut',
+          },
+          { at: '2026-11-10T10:00:00Z', kind: 'Earned', points: 1, bookingId: 'b1', barberName: 'سعد' },
+        ]}
+      />,
+    );
+    expect(screen.getByTestId('loyalty-last-used')).toHaveTextContent('استخدمت: حلاقة شعر مجانية — ');
+    expect(screen.getByTestId('loyalty-last-used')).toHaveTextContent('١٩ نوفمبر');
+    const items = within(screen.getByTestId('loyalty-history')).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('استخدمت: حلاقة شعر مجانية');
+    expect(items[0]).not.toHaveTextContent(/[+−]/);
+  });
+
+  it('uses the English title in Turkish and never shows a D-132 coupon’s code (D-152, 2-6)', () => {
     renderWithIntl(
       <LoyaltyRewardRow
         reward={{
@@ -146,7 +170,36 @@ describe('loyalty card (D-149)', () => {
       { locale: 'tr' },
     );
     expect(screen.getByText('Free haircut')).toBeInTheDocument();
-    expect(screen.getByText('ABCD2345')).toHaveAttribute('dir', 'ltr');
+    expect(screen.queryByText('ABCD2345')).not.toBeInTheDocument();
     expect(screen.getByText('Kullanıma hazır')).toBeInTheDocument();
+  });
+
+  it('puts a held coupon’s badge and booking link under its title (D-152, 2-4)', () => {
+    renderWithIntl(
+      <LoyaltyRewardRow
+        reward={{
+          id: 'r2',
+          code: 'NYGBSGKG',
+          kind: 'FreeService',
+          discountPercent: null,
+          titleAr: 'حلاقة شعر مجانية',
+          titleEn: 'Free haircut',
+          status: 'Held',
+          issuedAt: '2026-10-19T10:00:00Z',
+          expiresAt: null,
+          bookingId: 'b9',
+        }}
+      />,
+    );
+    const row = screen.getByTestId('loyalty-reward');
+    expect(row).not.toHaveTextContent('NYGBSGKG');
+    const title = screen.getByText('حلاقة شعر مجانية');
+    const badge = screen.getByText('محجوز لموعدك القادم');
+    // The badge is in the text column, after the title, not beside it.
+    expect(title.parentElement).toContainElement(badge);
+    expect(screen.getByRole('link', { name: 'عرض الموعد' })).toHaveAttribute(
+      'href',
+      '/ar/account/bookings/b9',
+    );
   });
 });

@@ -530,7 +530,8 @@ public sealed class BookingTests(PostgresFixture postgres)
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.ProB, At(Target, 10), ct), HttpStatusCode.NotFound, "professional.not_found", ct);
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 10, 2), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
         await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 22), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
-        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, DateTimeOffset.UtcNow.AddMinutes(10), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        // Inside the hour's notice: «الوقت صار قريب مرة», not taken (D-152).
+        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, DateTimeOffset.UtcNow.AddMinutes(10), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct);
         // Text over its limit is a field error, never a database error.
         var longNote = new string('x', 501);
         await FailsAsync(noura.SendAsync(HttpMethod.Post, "/api/v1/bookings", new { shopSlug = w.SlugA, serviceId = w.Haircut, startsAt = At(Target, 10), note = longNote }, ct, headers: Key()),

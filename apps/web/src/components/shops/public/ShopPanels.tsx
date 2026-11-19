@@ -168,6 +168,7 @@ export { NextTime };
 
 function ReviewItem({ review }: { review: PublicReview }) {
   const locale = useLocale() as AppLocale;
+  const tTags = useTranslations('review.tags');
   return (
     <li className="flex flex-col gap-2 rounded-card border border-border bg-surface p-4 shadow-e1">
       <div className="flex items-center gap-3">
@@ -190,6 +191,16 @@ function ReviewItem({ review }: { review: PublicReview }) {
           {review.comment}
         </p>
       )}
+      {/* What the customer picked in «ما الذي أعجبك؟» (D-152, the client's 3-6). */}
+      {review.tags.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5" data-testid="review-tags">
+          {review.tags.map((tag) => (
+            <li key={tag}>
+              <TagChip>{tTags(tag)}</TagChip>
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }
@@ -205,6 +216,7 @@ export function ReviewsPanel({
   showNote?: boolean;
 }) {
   const t = useTranslations('reviewsList');
+  const tTags = useTranslations('review.tags');
   const locale = useLocale() as AppLocale;
   if (!reviews || reviews.summary.count === 0) {
     return <EmptyState icon="star" title={t('empty.title')} body={t('empty.body')} />;
@@ -220,6 +232,16 @@ export function ReviewsPanel({
           <span className="text-helper text-text-secondary">{t('basedOn', { count: reviews.summary.count })}</span>
         </div>
         <RatingDistribution counts={{ 1: one, 2: two, 3: three, 4: four, 5: five }} />
+        {/* The most picked «ما الذي أعجبك؟» answers (D-152, 3-6): «٨ أشادوا بجودة الحلاقة». */}
+        {reviews.summary.tags.length > 0 && (
+          <ul className="flex flex-wrap gap-2 sm:col-span-2" data-testid="review-tag-summary">
+            {reviews.summary.tags.slice(0, 3).map(({ tag, count }) => (
+              <li key={tag}>
+                <TagChip className="text-label font-bold">{t('praised', { count, tag: tTags(tag) })}</TagChip>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       {showNote && <p className="text-helper text-text-tertiary">{t('note')}</p>}
       <ul className="flex flex-col gap-3">

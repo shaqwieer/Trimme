@@ -15,6 +15,9 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
 {
     public const string DefaultTimeZone = "Asia/Riyadh";
     public const int MaxNameLength = 120;
+
+    /// <summary>The short name's length (D-152): «الأصالة», not «صالون الأصالة للحلاقة».</summary>
+    public const int MaxShortNameLength = 40;
     public const int MaxDescriptionLength = 1000;
     public const int MaxGalleryImages = 12;
 
@@ -53,6 +56,15 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
     public string NameAr { get; private set; }
 
     public string NameEn { get; private set; }
+
+    /// <summary>
+    /// The shop's short name (D-152, the client's 3-8: «الأصالة» without «صالون»), shown beside the welcome on the shop's
+    /// own screens. Optional: without it the full name is shown. The owner may always change it, whatever the admin's
+    /// policy for the name.
+    /// </summary>
+    public string? ShortNameAr { get; private set; }
+
+    public string? ShortNameEn { get; private set; }
 
     public string? DescriptionAr { get; private set; }
 
@@ -148,7 +160,8 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
         return Result.Success();
     }
 
-    public bool IsEditableByShop(ShopProfileField field) => EditableFields.Contains(field);
+    /// <summary>Whether the shop may change <paramref name="field"/>: the admin's policy, and always its short name (D-152).</summary>
+    public bool IsEditableByShop(ShopProfileField field) => field == ShopProfileField.ShortName || EditableFields.Contains(field);
 
     /// <summary>The profile fields whose value <paramref name="profile"/> would change.</summary>
     public IReadOnlyList<ShopProfileField> ChangedFields(ShopProfile profile)
@@ -158,6 +171,11 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
         if (profile.NameAr != NameAr || profile.NameEn != NameEn)
         {
             changed.Add(ShopProfileField.Name);
+        }
+
+        if (profile.ShortNameAr != ShortNameAr || profile.ShortNameEn != ShortNameEn)
+        {
+            changed.Add(ShopProfileField.ShortName);
         }
 
         if (profile.DescriptionAr != DescriptionAr || profile.DescriptionEn != DescriptionEn)
@@ -189,6 +207,8 @@ public sealed partial class Shop : AggregateRoot<ShopId>, ITenantRoot, IConcurre
         var changed = ChangedFields(profile);
         NameAr = profile.NameAr;
         NameEn = profile.NameEn;
+        ShortNameAr = profile.ShortNameAr;
+        ShortNameEn = profile.ShortNameEn;
         DescriptionAr = profile.DescriptionAr;
         DescriptionEn = profile.DescriptionEn;
         Category = profile.Category;
@@ -369,6 +389,9 @@ public enum ShopProfileField
     Cover,
     Gallery,
     Location,
+
+    /// <summary>The short name (D-152): always the shop's to change (<see cref="Shop.IsEditableByShop"/>).</summary>
+    ShortName,
 }
 
 /// <summary>The editable text part of a shop profile, normalized (trimmed, empty → null, phone in E.164).</summary>
@@ -379,7 +402,9 @@ public sealed record ShopProfile(
     string? DescriptionEn,
     ShopCategory Category,
     string? PublicPhone,
-    IReadOnlyList<ShopAmenity> Amenities)
+    IReadOnlyList<ShopAmenity> Amenities,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null)
 {
     public static ShopProfile Create(
         string nameAr,
@@ -388,7 +413,9 @@ public sealed record ShopProfile(
         string? descriptionEn,
         ShopCategory category,
         string? publicPhoneE164,
-        IEnumerable<ShopAmenity>? amenities) =>
+        IEnumerable<ShopAmenity>? amenities,
+        string? shortNameAr = null,
+        string? shortNameEn = null) =>
         new(
             nameAr.Trim(),
             nameEn.Trim(),
@@ -396,7 +423,9 @@ public sealed record ShopProfile(
             Clean(descriptionEn),
             category,
             publicPhoneE164,
-            [.. (amenities ?? []).Distinct().Order()]);
+            [.. (amenities ?? []).Distinct().Order()],
+            Clean(shortNameAr),
+            Clean(shortNameEn));
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

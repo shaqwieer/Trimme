@@ -112,4 +112,20 @@ public sealed class LoyaltyBalanceTests
             first, visit, reward, Enum.Parse<LoyaltyRewardType>(type), null, amount is null ? null : (decimal)amount.Value, Enum.Parse<LoyaltyInactivityRule>(rule), days));
         error.ShouldNotBeNull().FieldErrors.ShouldNotBeNull().Keys.ShouldContain(field);
     }
+
+    /// <summary>D-152 (the client's 1-3): an old D-132 coupon now comes off the price: a free service all of it, a percent its share.</summary>
+    [Theory]
+    [InlineData("FreeService", null, 60.0, 60.0)]
+    [InlineData("FreeService", null, 0.0, 0.0)]
+    [InlineData("Discount", 25, 60.0, 15.0)]
+    [InlineData("Discount", 15, 85.0, 12.75)]
+    [InlineData("Discount", 33, 10.0, 3.3)]
+    [InlineData("Discount", 100, 85.0, 85.0)]
+    public void AnOldCoupon_TakesItsValueOffThePrice(string kind, int? percent, double price, double discount)
+    {
+        var program = LoyaltyProgram.Create(
+            new LoyaltyProgramId(Guid.CreateVersion7()), Shop, new LoyaltyTerms(true, 4, Enum.Parse<LoyaltyRewardKind>(kind), percent, "مكافأة", null, null), Visit).Value;
+        var coupon = LoyaltyReward.Issue(new LoyaltyRewardId(Guid.CreateVersion7()), program, Guid.CreateVersion7(), LoyaltyCard.NewCode(), Visit);
+        coupon.DiscountOn((decimal)price).ShouldBe((decimal)discount);
+    }
 }

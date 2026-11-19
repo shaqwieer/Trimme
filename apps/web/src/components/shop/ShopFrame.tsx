@@ -19,7 +19,11 @@ type ShopFrameProps = {
   path: string;
   /** The page heading, or one chosen by the signed-in user's permissions (the desk and the owner see different pages). */
   title: string | ((me: Me) => string);
-  children: (me: Me, shop: { status: string; name: string; timeZone: string }) => ReactNode;
+  /** `shortName` is the shop's «اسم مختصر» (D-152), or its full name when it has none. */
+  children: (
+    me: Me,
+    shop: { status: string; name: string; shortName: string; timeZone: string },
+  ) => ReactNode;
 };
 
 /**
@@ -46,6 +50,10 @@ export async function ShopFrame({ locale, path, title: titleFor, children }: Sho
     readDisplayCalendar(),
   ]);
   const name = shop ? localizedName(asLocale(locale), shop.nameAr, shop.nameEn) : '';
+  const shortName =
+    (shop?.shortNameAr || shop?.shortNameEn
+      ? localizedName(asLocale(locale), shop.shortNameAr ?? '', shop.shortNameEn)
+      : '') || name;
   const status = shop?.status ?? 'Suspended';
   const operable = Boolean(shop) && status !== 'Suspended';
   const live = operable && me.permissions.includes('Shop.Bookings.Read');
@@ -55,7 +63,7 @@ export async function ShopFrame({ locale, path, title: titleFor, children }: Sho
       <SessionExpiryRedirect />
       <div className="flex flex-col gap-5">
         {operable && <ShopBanners paused={pause?.paused ?? false} subscription={subscription} />}
-        {children(me, { status, name, timeZone: shop?.timeZone ?? 'Asia/Riyadh' })}
+        {children(me, { status, name, shortName, timeZone: shop?.timeZone ?? 'Asia/Riyadh' })}
       </div>
     </>
   );

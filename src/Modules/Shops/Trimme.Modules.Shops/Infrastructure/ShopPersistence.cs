@@ -18,6 +18,8 @@ internal sealed class ShopConfiguration : IEntityTypeConfiguration<Shop>
         builder.HasIndex(s => s.Slug).IsUnique();
         builder.Property(s => s.NameAr).HasMaxLength(Shop.MaxNameLength);
         builder.Property(s => s.NameEn).HasMaxLength(Shop.MaxNameLength);
+        builder.Property(s => s.ShortNameAr).HasMaxLength(Shop.MaxShortNameLength);
+        builder.Property(s => s.ShortNameEn).HasMaxLength(Shop.MaxShortNameLength);
         builder.Property(s => s.DescriptionAr).HasMaxLength(Shop.MaxDescriptionLength);
         builder.Property(s => s.DescriptionEn).HasMaxLength(Shop.MaxDescriptionLength);
         builder.Property(s => s.Category).HasConversion<string>().HasMaxLength(20);

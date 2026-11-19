@@ -128,7 +128,7 @@ internal sealed class BookingNotificationSource(TrimmeDbContext db) : IBookingNo
             ? null
             : new NotifiableBooking(
                 b.Id.Value, b.ShopId, b.CustomerId, b.CustomerName, b.Reference, b.ProfessionalId, b.ProfessionalNameAr, b.ProfessionalNameEn,
-                b.ItemNameAr, b.ItemNameEn, b.Price, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString());
+                b.ItemNameAr, b.ItemNameEn, b.AmountDue, b.Currency, b.DurationMinutes, b.StartsAt, b.EndsAt, b.Status.ToString(), b.Channel.ToString());
     }
 }
 

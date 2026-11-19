@@ -8,6 +8,7 @@ import { LiveRefresh } from '@/components/shop/live/OperationsLive';
 import { ShopFrame } from '@/components/shop/ShopFrame';
 import { BarChart } from '@/components/ui/charts';
 import { KpiTile } from '@/components/ui/cards';
+import { Icon } from '@/components/ui/icons';
 import { EmptyState, ErrorState, InlineAlert, SkeletonList } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
 import { asLocale } from '@/i18n/routing';
@@ -34,13 +35,22 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
   return (
     <ShopFrame locale={locale} path="/shop" title={tHome('title')}>
       {async (me, shop) => {
+        // D-152 (the client's 3-8, Faisal's request): a welcome with the user's first name instead of the shop's name,
+        // then the shop's icon and its short name («الأصالة»), or its full name when it has none.
+        const firstName = me.displayName?.trim().split(/\s+/)[0] ?? '';
         const identity = (
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-h2 font-bold text-navy-900" data-testid="shop-name">
-              {shop.name}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-h2 font-bold text-navy-900" data-testid="shop-welcome">
+              {tHome('welcome', { name: firstName || 'none' })}
             </h2>
-            <span className="sr-only">{tHome('statusLabel')}</span>
-            <ShopStatusBadge status={shop.status as 'Active' | 'Draft' | 'Suspended'} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Icon name="store" className="size-4 shrink-0 text-brand-700" />
+              <p className="text-label font-bold text-text-strong" data-testid="shop-name">
+                {shop.shortName}
+              </p>
+              <span className="sr-only">{tHome('statusLabel')}</span>
+              <ShopStatusBadge status={shop.status as 'Active' | 'Draft' | 'Suspended'} />
+            </div>
           </div>
         );
         if (shop.status === 'Suspended') {

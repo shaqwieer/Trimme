@@ -194,14 +194,14 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     await page.goto('/ar/account/bookings');
     const card = page.getByTestId('booking-card').filter({ has: page.locator(`a[href="${bookingPath}"]`) });
     await expect(card).toContainText('باربر هاوس');
-    await expect(card.getByRole('link', { name: 'إعادة جدولة' })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'تغيير الموعد' })).toBeVisible();
     await expectNoSeriousAxe(page, 'bookings list');
 
     // Reschedule: the current time stays booked until the new one is confirmed (D-089).
-    await card.getByRole('link', { name: 'إعادة جدولة' }).click();
+    await card.getByRole('link', { name: 'تغيير الموعد' }).click();
     await expect(page.getByText(/سيبقى محجوزاً حتى تؤكد الموعد الجديد/)).toBeVisible();
     // The same screens as booking (D-144): days, the hour, its minutes, then a review of the old and new times.
-    await expect(page.getByTestId('reschedule-title')).toHaveText('إعادة الجدولة');
+    await expect(page.getByTestId('reschedule-title')).toHaveText('تغيير الموعد');
     await pickDate(page, 'reschedule-date', 4);
     const moved = await pickSlot(page, 'reschedule-time', 1);
     await expectNoSeriousAxe(page, 'reschedule');
@@ -249,11 +249,14 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     const results = [await outcome(first), await outcome(second)];
     expect([...results].sort()).toEqual(['booked', 'taken']);
 
-    // The loser is back on fresh times, without the taken one selected; the winner cancels to keep reruns free.
+    // The loser stays on the review with the nearest free times offered there (D-152, the client's 1-2), never the taken
+    // one; the winner cancels to keep reruns free.
     const loser = results[0] === 'taken' ? first : second;
     const winner = results[0] === 'booked' ? first : second;
-    await expect(loser.getByTestId('wizard-title')).toHaveText('اختر اليوم والوقت');
-    await expect(loser).not.toHaveURL(/time=/);
+    await expect(loser.getByTestId('wizard-title')).toHaveText('مراجعة الحجز');
+    const conflict = loser.getByTestId('booking-conflict');
+    await expect(conflict).toHaveAttribute('data-kind', 'taken');
+    await expect(conflict.getByRole('button').first()).toBeVisible();
     await expectNoSeriousAxe(loser, 'conflict');
     await cancelFromDetail(winner);
     await Promise.all(contexts.map((c) => c.close()));

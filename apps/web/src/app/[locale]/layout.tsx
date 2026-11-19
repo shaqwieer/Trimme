@@ -107,6 +107,10 @@ export async function generateViewport(): Promise<Viewport> {
     colorScheme: colorScheme(preference),
     width: 'device-width',
     initialScale: 1,
+    // D-152 (the client's 1-1): without `cover`, iOS Safari reports every `env(safe-area-inset-*)` as 0, so the bottom
+    // bars' safe-area padding did nothing and Safari's toolbar covered them. The bars and sticky footers pad by the
+    // inset; the body pads the sides for landscape.
+    viewportFit: 'cover',
   };
 }
 

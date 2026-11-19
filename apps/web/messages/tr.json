@@ -448,6 +448,7 @@
   },
   "shopHome": {
     "title": "Genel bakış",
+    "welcome": "{name, select, none {Tekrar hoş geldiniz} other {Tekrar hoş geldiniz, {name}}}",
     "body": "Salon paneli kullanıma açıldığında bugünkü randevular ve salonunuzun göstergeleri burada görünecek.",
     "statusLabel": "Salon durumu",
     "draftTitle": "Salonunuz kuruluyor",
@@ -511,6 +512,7 @@
     "availability_offer_not_online_bookable": "Bu hizmet için çevrimiçi randevu alınamaz.",
     "availability_professional_not_eligible": "Bu uzman bu hizmeti sunmuyor.",
     "booking_slot_unavailable": "Bu saat az önce alındı. Başka bir saat seçin.",
+    "booking_slot_too_soon": "Bu saat artık çok yakın. En yakın boş saatlerden birini seçin.",
     "booking_not_found": "Randevu bulunamadı.",
     "booking_cancellation_cutoff_passed": "Çevrimiçi değişiklik süresi doldu. Groom Here ekibiyle iletişime geçin.",
     "booking_not_reschedulable": "Bu randevu şu anda değiştirilemez.",
@@ -750,6 +752,9 @@
   "shopProfile": {
     "nameAr": "Arapça salon adı",
     "nameEn": "İngilizce salon adı",
+    "shortNameAr": "Arapça kısa ad",
+    "shortNameEn": "İngilizce kısa ad",
+    "shortNameHelper": "Berberlerin karşılama satırında görünür, örneğin “Al Asala”. Boş bırakılırsa tam ad görünür.",
     "descriptionAr": "Arapça açıklama",
     "descriptionEn": "İngilizce açıklama",
     "category": "Salon türü",
@@ -2013,7 +2018,8 @@
       "body": "Değerlendirmeler ilk tamamlanan ziyaretten sonra görünür."
     },
     "pages": "Değerlendirme sayfaları",
-    "note": "Değerlendirmeler ziyaretini tamamlamış müşterilerden gelir ve yalnızca ilk adlarıyla gösterilir."
+    "note": "Değerlendirmeler ziyaretini tamamlamış müşterilerden gelir ve yalnızca ilk adlarıyla gösterilir.",
+    "praised": "{count, plural, other {# kişi beğendi: {tag}}}"
   },
   "legal": {
     "terms": {
@@ -2227,7 +2233,20 @@
       "inPackage": "“{service}” seçtiğiniz “{package}” içinde zaten var.",
       "dropped": "{services} çıkarıldı: “{package}” içinde."
     },
-    "noCommonProfessionalFor": "“{service}” hizmetini diğer hizmetlerinizle birlikte yapan tek bir uzman yok. Çıkarın ya da başka bir saate alın."
+    "noCommonProfessionalFor": "“{service}” hizmetini diğer hizmetlerinizle birlikte yapan tek bir uzman yok. Çıkarın ya da başka bir saate alın.",
+    "conflicts": {
+      "label": "Şu an en yakın boş saatler",
+      "tooSoon": {
+        "title": "Bu saat artık çok yakın",
+        "body": "Şu an en yakın saatler bunlar. Birini seçin."
+      },
+      "taken": {
+        "title": "Bu saat az önce alındı",
+        "body": "Başka bir müşteri önce aldı. Şu an en yakın saatler bunlar. Birini seçin."
+      },
+      "loading": "Saatler yenileniyor…",
+      "otherDay": "Başka bir gün seçin"
+    }
   },
   "bookings": {
     "title": "Randevularım",
@@ -2320,6 +2339,7 @@
       "confirm": "Yeni saati onayla",
       "loading": "Saatler yükleniyor…",
       "taken": "Bu saat az önce alındı — yenilenen saatlerden başka birini seçin.",
+      "tooSoon": "Bu saat artık çok yakın. Yenilenen saatlerden başka birini seçin.",
       "notAllowed": "Bu randevu şu anda Groom Here üzerinden değiştirilemez.",
       "backToBooking": "Randevuya dön",
       "reviewTitle": "Yeni saati gözden geçirin",
@@ -2336,8 +2356,7 @@
       "decline": "Reddet",
       "accepted": "Randevunuz yeni saate taşındı.",
       "declined": "Yeni saati reddettiniz; randevunuz saatinde kaldı."
-    },
-    "awaitingShop": "Dükkânın onayı bekleniyor"
+    }
   },
   "review": {
     "title": "Ziyareti değerlendir",
@@ -2479,10 +2498,6 @@
         "WalkIn": "Randevusuz müşteri",
         "Qr": "QR kod",
         "Phone": "Telefonla"
-      },
-      "noPhone": {
-        "title": "Müşterinin numarası mevcut değil",
-        "body": "Müşteriye platformun WhatsApp hattı üzerinden otomatik olarak mesaj gönderilir; numarası salona asla gösterilmez."
       },
       "changeStatus": "Durumu değiştir",
       "actions": {
@@ -3323,7 +3338,8 @@
         "booking_cancelled": "{shop} salonundaki {date} saat {time} tarihli randevunuz iptal edildi",
         "booking_professional_changed": "{shop} salonundaki randevunuz aynı saatte {professional} adlı berbere verildi ({date} saat {time}). Başlayana kadar değiştirebilir veya iptal edebilirsiniz",
         "booking_postponement_offered": "{shop} randevunuz için yeni bir saat öneriyor: {date} {time} yerine {offeredDate} {offeredTime}. Randevu sayfasından kabul edin veya reddedin",
-        "loyalty_visit_completed": "{shop} ziyaretiniz tamamlandı{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}"
+        "loyalty_visit_completed": "{shop} ziyaretiniz tamamlandı{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}",
+        "booking_completed": "{shop} ziyaretiniz için teşekkürler{loyalty, select, on {{earned, plural, =0 {} other {, kartınıza # puan ekledik}}. {ready, plural, =0 {Ödülünüze {toNext} puan kaldı.} other {Ödülünüz hazır — bir sonraki randevunuzda kullanın.}}} other {.}} Ziyaretinizi değerlendirin, başkalarına yol gösterin."
       },
       "barber": {
         "booking_created": "{customer} için yeni randevu: {item}, {date} saat {time}",
@@ -3682,7 +3698,6 @@
     "anyProfessional": "Puanlar hizmet bittiğinde, salondaki herhangi bir uzmanla eklenir.",
     "stampsLabel": "Karttaki puanlar: {filledText} / {requiredText}",
     "signIn": "Puanlarınızı takip etmek için giriş yapın",
-    "code": "Kupon kodu:",
     "expires": "{date} tarihine kadar geçerli",
     "noExpiry": "Son kullanma tarihi yok",
     "ready": "Kullanıma hazır",
@@ -3726,6 +3741,7 @@
       "Earned": "{barber} ile ziyaret",
       "EarnedNoBarber": "Ziyaret",
       "Redeemed": "Ödül kullanıldı",
+      "used": "Kullanıldı: {reward}",
       "Wiped": "Ziyaret olmadığı için puanlar silindi",
       "Decayed": "Ziyaret olmadığı için düşüldü"
     },
@@ -3738,9 +3754,9 @@
       "notWithPackage": "Ödül paketlerle birlikte kullanılamaz.",
       "needsService": "Ödülü kullanmak için randevunuza “{service}” ekleyin.",
       "pointsHint": "Puanlar hizmet bittiğinde düşülür, randevu iptal edilirse geri verilir.",
-      "couponHint": "Salon kuponu ziyaretinizde uygular; gösterilen tutar kupon öncesidir.",
+      "couponHint": "Kupon hizmet bittiğinde kullanılır, randevu iptal edilirse geri verilir.",
       "discount": "Ödül indirimi",
-      "due": "Ödenecek tutar"
+      "free": "Ücretsiz"
     },
     "due": "Ödül sonrası ödenecek: {amount}",
     "rulesForm": {

@@ -59,8 +59,21 @@ export default async function LoyaltyPage({ params }: PageProps<'/[locale]/accou
         <ul className="flex flex-col gap-4">
           {data.items.map((card) => {
             const coupons = card.coupons.filter((c) => c.status !== 'Redeemed');
-            const canUse =
-              (card.active && card.rewardsReady > 0) || coupons.some((c) => c.status === 'Available');
+            const pointsReady = card.active && card.rewardsReady > 0;
+            const usable = coupons.find((c) => c.status === 'Available');
+            // D-152 (the client's 3-5): the wizard opens with the reward ticked and, for a free service, that service
+            // chosen; the points reward first, else the first usable D-132 coupon.
+            const useHref = pointsReady
+              ? bookHref(card.shop.slug, {
+                  service:
+                    card.rules?.rewardType === 'FreeService'
+                      ? (card.rules.rewardServiceId ?? undefined)
+                      : undefined,
+                  reward: 'points',
+                })
+              : usable
+                ? bookHref(card.shop.slug, { reward: usable.id })
+                : undefined;
             return (
               <li
                 key={card.shop.id}
@@ -86,13 +99,8 @@ export default async function LoyaltyPage({ params }: PageProps<'/[locale]/accou
                   </div>
                 )}
                 <LoyaltyHistory history={card.history} />
-                {canUse && (
-                  <ButtonLink
-                    href={bookHref(card.shop.slug)}
-                    variant="primary"
-                    size="md"
-                    className="self-start"
-                  >
+                {useHref && (
+                  <ButtonLink href={useHref} variant="primary" size="md" className="self-start">
                     {t('card.bookToUse')}
                   </ButtonLink>
                 )}

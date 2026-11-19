@@ -147,7 +147,7 @@ internal sealed class LoyaltyRewardHolder(
     TrimmeDbContext db, ICurrentCustomer customer, LoyaltyLedger ledger, ILoyaltyAddOnStatus addOn, ILoyaltyMemberKeys keys, IPersonalDataProtector protector)
     : ILoyaltyRewardHolder
 {
-    public async Task<Result<HeldLoyaltyReward>> HoldAsync(Guid rewardId, ShopId shopId, Guid bookingId, DateTimeOffset now, CancellationToken cancellationToken)
+    public async Task<Result<HeldLoyaltyReward>> HoldAsync(Guid rewardId, ShopId shopId, Guid bookingId, decimal price, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var id = new LoyaltyRewardId(rewardId);
         if (customer.CustomerId is not { } customerId
@@ -157,7 +157,7 @@ internal sealed class LoyaltyRewardHolder(
         }
 
         var held = reward.Hold(bookingId, now);
-        return held.IsFailure ? held.Error : new HeldLoyaltyReward(reward.Id.Value, reward.TitleAr, reward.TitleEn);
+        return held.IsFailure ? held.Error : new HeldLoyaltyReward(reward.Id.Value, reward.TitleAr, reward.TitleEn, reward.DiscountOn(price));
     }
 
     public async Task<Result<HeldPointsReward>> HoldPointsRewardAsync(PointsRewardHold request, CancellationToken cancellationToken)

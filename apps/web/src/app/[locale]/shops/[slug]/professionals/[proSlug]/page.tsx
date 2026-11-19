@@ -246,7 +246,7 @@ export default async function ProfessionalPage({
         </section>
       </article>
       {shop.listedInDiscovery && (
-        <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur-md">
+        <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
           <div className="mx-auto max-w-[720px] px-4 py-3 md:px-6">
             <ButtonLink href={bookHref(pro.shopSlug, { pro: pro.id })} variant="primary" size="lg" fullWidth>
               {t('book', { name: name.split(' ')[0] ?? name })}

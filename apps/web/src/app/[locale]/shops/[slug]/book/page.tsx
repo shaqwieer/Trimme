@@ -99,7 +99,13 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
   const rewards: WizardReward[] =
     card?.coupons
       .filter((r) => r.status === 'Available')
-      .map((r) => ({ id: r.id, titleAr: r.titleAr, titleEn: r.titleEn ?? null })) ?? [];
+      .map((r) => ({
+        id: r.id,
+        titleAr: r.titleAr,
+        titleEn: r.titleEn ?? null,
+        kind: r.kind,
+        discountPercent: r.discountPercent ?? null,
+      })) ?? [];
   const pointsReward: WizardPointsReward | null =
     card?.active && card.rewardsReady > 0 && card.rules
       ? {

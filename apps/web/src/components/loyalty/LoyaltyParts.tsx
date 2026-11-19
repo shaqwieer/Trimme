@@ -50,52 +50,53 @@ export function LoyaltyRulesText({ rules }: { rules: Rules }) {
   );
 }
 
-/** One D-132 coupon still usable (earned before the points programme): what it gives, its code, until when, its booking. */
+/**
+ * One D-132 coupon still usable (earned before the points programme): what it gives, until when, and its booking.
+ * D-152 (the client's 2-4 and 2-6): no code on the customer's screen, since the reward travels with the booking and the
+ * barber never types it; the badge and «عرض الموعد» sit under the text, so a narrow card keeps the title on one line.
+ */
 export function LoyaltyRewardRow({ reward }: { reward: Reward }) {
   const t = useTranslations('loyalty');
   const locale = useLocale() as AppLocale;
   const held = reward.status === 'Held';
   return (
     <div
-      className="flex flex-wrap items-center gap-3 rounded-card border border-success-500/40 bg-success-50 p-3"
+      className="flex items-start gap-3 rounded-card border border-success-500/40 bg-success-50 p-3"
       data-testid="loyalty-reward"
       data-status={reward.status}
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-500 text-on-navy">
         <Icon name="tag" className="size-5" />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="text-label font-bold text-success-700">
           {localizedName(locale, reward.titleAr, reward.titleEn)}
         </p>
         <p className="text-helper text-text-secondary">
-          {t('code')}{' '}
-          <bdi dir="ltr" className="font-mono font-bold tracking-wider text-text-primary">
-            {reward.code}
-          </bdi>
-          {' — '}
           {reward.expiresAt
             ? t('expires', {
                 date: formatDate(reward.expiresAt, locale, { withYear: true, withWeekday: false }),
               })
             : t('noExpiry')}
         </p>
-      </div>
-      {held ? (
-        <div className="flex items-center gap-2">
-          <Badge tone="info">{t('held')}</Badge>
-          {reward.bookingId && (
-            <Link
-              href={`/account/bookings/${reward.bookingId}`}
-              className="inline-flex min-h-11 items-center text-helper font-bold text-text-link hover:underline"
-            >
-              {t('viewBooking')}
-            </Link>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {held ? (
+            <>
+              <Badge tone="info">{t('held')}</Badge>
+              {reward.bookingId && (
+                <Link
+                  href={`/account/bookings/${reward.bookingId}`}
+                  className="inline-flex min-h-11 items-center text-helper font-bold text-text-link hover:underline"
+                >
+                  {t('viewBooking')}
+                </Link>
+              )}
+            </>
+          ) : (
+            <Badge tone="success">{t('ready')}</Badge>
           )}
         </div>
-      ) : (
-        <Badge tone="success">{t('ready')}</Badge>
-      )}
+      </div>
     </div>
   );
 }

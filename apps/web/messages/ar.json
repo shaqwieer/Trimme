@@ -448,6 +448,7 @@
   },
   "shopHome": {
     "title": "النظرة التشغيلية",
+    "welcome": "{name, select, none {أهلاً بك، نورتنا} other {أهلاً {name}، نورتنا}}",
     "body": "ستظهر مواعيد اليوم ومؤشرات محلك هنا عند تفعيل لوحة المحل.",
     "statusLabel": "حالة المحل",
     "draftTitle": "المحل قيد الإعداد",
@@ -511,6 +512,7 @@
     "availability_offer_not_online_bookable": "لا يمكن حجز هذه الخدمة إلكترونياً.",
     "availability_professional_not_eligible": "هذا المختص لا يقدم هذه الخدمة.",
     "booking_slot_unavailable": "حُجز هذا الوقت للتو. اختر وقتاً آخر.",
+    "booking_slot_too_soon": "الوقت صار قريب مرة. اختر من أقرب الأوقات المتاحة الحين.",
     "booking_not_found": "الموعد غير موجود.",
     "booking_cancellation_cutoff_passed": "انتهت مهلة الإلغاء والتعديل عبر Groom Here. تواصل مع فريق Groom Here.",
     "booking_not_reschedulable": "لا يمكن تغيير هذا الموعد الآن.",
@@ -750,6 +752,9 @@
   "shopProfile": {
     "nameAr": "اسم المحل بالعربية",
     "nameEn": "اسم المحل بالإنجليزية",
+    "shortNameAr": "الاسم المختصر بالعربية",
+    "shortNameEn": "الاسم المختصر بالإنجليزية",
+    "shortNameHelper": "يظهر في ترحيب الحلاقين، مثل «الأصالة». إذا تركته فارغاً يظهر الاسم كاملاً.",
     "descriptionAr": "الوصف بالعربية",
     "descriptionEn": "الوصف بالإنجليزية",
     "category": "نوع المحل",
@@ -2013,7 +2018,8 @@
       "body": "تظهر التقييمات بعد أول زيارة مكتملة."
     },
     "pages": "صفحات التقييمات",
-    "note": "التقييمات من عملاء أكملوا زيارتهم، وتظهر باسمهم الأول فقط."
+    "note": "التقييمات من عملاء أكملوا زيارتهم، وتظهر باسمهم الأول فقط.",
+    "praised": "{count, plural, one {عميل أشاد بـ{tag}} two {عميلان أشادا بـ{tag}} other {{count, number, arab} أشادوا بـ{tag}}}"
   },
   "legal": {
     "terms": {
@@ -2227,7 +2233,20 @@
       "inPackage": "«{service}» موجودة في «{package}» اللي اخترتها، ما تحتاج تضيفها.",
       "dropped": "شلنا {services} لأنها داخل «{package}»."
     },
-    "noCommonProfessionalFor": "ما فيه مختص واحد يسوي «{service}» مع باقي خدماتك. شيلها أو احجزها بموعد ثاني."
+    "noCommonProfessionalFor": "ما فيه مختص واحد يسوي «{service}» مع باقي خدماتك. شيلها أو احجزها بموعد ثاني.",
+    "conflicts": {
+      "label": "أقرب الأوقات المتاحة الآن",
+      "tooSoon": {
+        "title": "الوقت صار قريب مرة",
+        "body": "هذي أقرب الأوقات الحين، اختر واحداً منها."
+      },
+      "taken": {
+        "title": "حُجز هذا الوقت للتو",
+        "body": "سبقك عميل آخر إليه. هذي أقرب الأوقات الحين، اختر واحداً منها."
+      },
+      "loading": "نحدّث الأوقات…",
+      "otherDay": "اختر يوماً آخر"
+    }
   },
   "bookings": {
     "title": "مواعيدي",
@@ -2246,7 +2265,7 @@
     "actions": {
       "details": "التفاصيل",
       "detailsLabel": "تفاصيل موعد {service}",
-      "reschedule": "إعادة جدولة",
+      "reschedule": "تغيير الموعد",
       "review": "قيّم الزيارة",
       "rated": "تم التقييم ★ {rating}",
       "rebook": "إعادة الحجز"
@@ -2309,7 +2328,7 @@
       "keep": "إبقاء الموعد"
     },
     "reschedule": {
-      "title": "إعادة الجدولة",
+      "title": "تغيير الموعد",
       "currentTitle": "موعدك الحالي باقٍ حتى تؤكد الجديد",
       "current": "موعدك الحالي: {when}. سيبقى محجوزاً حتى تؤكد الموعد الجديد.",
       "blocked": "لا يستقبل الصالون تعديلات إلكترونية الآن.",
@@ -2320,6 +2339,7 @@
       "confirm": "تأكيد الموعد الجديد",
       "loading": "جارٍ تحميل الأوقات…",
       "taken": "حُجز هذا الوقت للتو — اختر وقتاً آخر من الأوقات المحدّثة.",
+      "tooSoon": "صار هذا الوقت قريباً جداً — اختر وقتاً آخر من الأوقات المحدّثة.",
       "notAllowed": "لا يمكن تغيير هذا الموعد عبر Groom Here الآن.",
       "backToBooking": "العودة إلى الموعد",
       "reviewTitle": "مراجعة الموعد الجديد",
@@ -2336,8 +2356,7 @@
       "decline": "رفض",
       "accepted": "تم نقل حجزك إلى الموعد الجديد.",
       "declined": "رفضت الموعد الجديد، وبقي حجزك في موعده."
-    },
-    "awaitingShop": "بانتظار تأكيد المحل"
+    }
   },
   "review": {
     "title": "تقييم الزيارة",
@@ -2479,10 +2498,6 @@
         "WalkIn": "حضوري",
         "Qr": "رمز QR",
         "Phone": "بالتلفون"
-      },
-      "noPhone": {
-        "title": "رقم العميل غير متاح",
-        "body": "تتم مراسلة العميل تلقائياً عبر واتساب المنصة، ولا يظهر رقمه للمحل."
       },
       "changeStatus": "تغيير الحالة",
       "actions": {
@@ -3323,7 +3338,8 @@
         "booking_cancelled": "تم إلغاء حجزك في {shop} يوم {date} الساعة {time}",
         "booking_professional_changed": "نُقل حجزك في {shop} إلى {professional} في نفس الموعد ({date} الساعة {time}). يمكنك تغييره أو إلغاؤه حتى يبدأ",
         "booking_postponement_offered": "يقترح {shop} موعداً جديداً لحجزك: {offeredDate} الساعة {offeredTime} بدلاً من {date} الساعة {time}. اقبله أو ارفضه من صفحة الحجز",
-        "loyalty_visit_completed": "خلصت زيارتك في {shop}{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}"
+        "loyalty_visit_completed": "خلصت زيارتك في {shop}{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}",
+        "booking_completed": "شكراً لزيارتك في {shop}{loyalty, select, on {{earned, plural, =0 {} one {، وأضفنا نقطة واحدة إلى بطاقتك} two {، وأضفنا نقطتين إلى بطاقتك} few {، وأضفنا {earned, number, arab} نقاط إلى بطاقتك} many {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك} other {، وأضفنا {earned, number, arab} نقطة إلى بطاقتك}}. {ready, plural, =0 {باقي {toNext, plural, one {نقطة واحدة} two {نقطتان} few {{toNext, number, arab} نقاط} many {{toNext, number, arab} نقطة} other {{toNext, number, arab} نقطة}} للمكافأة.} other {مكافأتك جاهزة، استخدمها في حجزك القادم.}}} other {.}} قيّم زيارتك ليستفيد غيرك من تجربتك."
       },
       "barber": {
         "booking_created": "حجز جديد لـ {customer}: {item} يوم {date} الساعة {time}",
@@ -3682,7 +3698,6 @@
     "anyProfessional": "تُضاف النقاط عند انتهاء الخدمة، مع أي مختص في الصالون.",
     "stampsLabel": "النقاط على البطاقة: {filledText} من {requiredText}",
     "signIn": "سجّل دخولك لتتابع نقاطك",
-    "code": "رمز الكوبون:",
     "expires": "صالح حتى {date}",
     "noExpiry": "بلا تاريخ انتهاء",
     "ready": "جاهز للاستخدام",
@@ -3726,6 +3741,7 @@
       "Earned": "زيارة مع {barber}",
       "EarnedNoBarber": "زيارة",
       "Redeemed": "استخدمت مكافأة",
+      "used": "استخدمت: {reward}",
       "Wiped": "مُسحت النقاط لعدم الزيارة",
       "Decayed": "نقصت لعدم الزيارة"
     },
@@ -3738,9 +3754,9 @@
       "notWithPackage": "لا تُستخدم المكافأة مع الباقات.",
       "needsService": "أضف «{service}» إلى حجزك لتستخدم المكافأة.",
       "pointsHint": "تُخصم النقاط عند انتهاء الخدمة، وتعود إليك إذا أُلغي الموعد.",
-      "couponHint": "يطبّقه الصالون عند زيارتك، والمبلغ المعروض قبل تطبيقه.",
+      "couponHint": "يُستخدم الكوبون عند انتهاء الخدمة، ويعود إليك إذا أُلغي الموعد.",
       "discount": "خصم المكافأة",
-      "due": "المبلغ المستحق"
+      "free": "مجانية"
     },
     "due": "المستحق بعد خصم المكافأة: {amount}",
     "rulesForm": {

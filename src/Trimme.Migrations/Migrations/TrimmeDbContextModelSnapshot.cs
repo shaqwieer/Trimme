@@ -3818,6 +3818,16 @@ namespace Trimme.Migrations.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("require_manual_confirmation");
 
+                    b.Property<string>("ShortNameAr")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("short_name_ar");
+
+                    b.Property<string>("ShortNameEn")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("short_name_en");
+
                     b.Property<int?>("SlotStepMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("slot_step_minutes");

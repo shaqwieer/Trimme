@@ -171,7 +171,7 @@ export function FilterSheet({
           />
         </div>
       </div>
-      <div className="sticky bottom-0 flex gap-3 border-t border-border bg-surface px-5 py-4">
+      <div className="sticky bottom-0 flex gap-3 border-t border-border bg-surface px-5 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <Button type="button" variant="outline" size="lg" onClick={clear}>
           {t('clear')}
         </Button>

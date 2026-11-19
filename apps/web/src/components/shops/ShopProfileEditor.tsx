@@ -31,6 +31,9 @@ const optionalText = (max: number) =>
 const schema = z.object({
   nameAr: requiredText(120),
   nameEn: requiredText(120),
+  // «اسم مختصر» (D-152, the client's 3-8): what the barbers' welcome shows, «الأصالة» for «صالون الأصالة للحلاقة».
+  shortNameAr: optionalText(40),
+  shortNameEn: optionalText(40),
   descriptionAr: optionalText(1000),
   descriptionEn: optionalText(1000),
   // Fixed to «حلاقة رجالية»: the platform is for men (D-149, the owner's item 4).
@@ -48,6 +51,8 @@ const schema = z.object({
 const FIELDS = [
   'nameAr',
   'nameEn',
+  'shortNameAr',
+  'shortNameEn',
   'descriptionAr',
   'descriptionEn',
   'category',
@@ -93,6 +98,8 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
     defaultValues: {
       nameAr: profile.nameAr,
       nameEn: profile.nameEn,
+      shortNameAr: profile.shortNameAr ?? '',
+      shortNameEn: profile.shortNameEn ?? '',
       descriptionAr: profile.descriptionAr ?? '',
       descriptionEn: profile.descriptionEn ?? '',
       category: 'Barbershop',
@@ -110,6 +117,9 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
         {
           nameAr: values.nameAr,
           nameEn: values.nameEn,
+          // Always sent: the API reads a missing short name as cleared.
+          shortNameAr: values.shortNameAr || null,
+          shortNameEn: values.shortNameEn || null,
           descriptionAr: values.descriptionAr || null,
           descriptionEn: values.descriptionEn || null,
           category: values.category as ShopProfileData['category'],
@@ -155,6 +165,24 @@ export function ShopProfileEditor({ mode, profile, canEdit }: ShopProfileEditorP
           dir="ltr"
           disabled={!editable('Name')}
           helper={lock('Name')}
+        />
+        {/* The shop always edits its short name, whatever the admin's policy (D-152). */}
+        <FormTextField
+          control={form.control}
+          name="shortNameAr"
+          label={t('shortNameAr')}
+          dir="rtl"
+          maxLength={40}
+          disabled={!canEdit}
+          helper={t('shortNameHelper')}
+        />
+        <FormTextField
+          control={form.control}
+          name="shortNameEn"
+          label={t('shortNameEn')}
+          dir="ltr"
+          maxLength={40}
+          disabled={!canEdit}
         />
         <FormTextareaField
           control={form.control}

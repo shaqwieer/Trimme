@@ -122,7 +122,7 @@ async function BookBar({ slug, locale }: { slug: string; locale: AppLocale }) {
   ]);
   const accepts = status?.acceptsOnlineBookings ?? false;
   return (
-    <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur-md">
+    <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
       <div className="mx-auto flex max-w-[960px] items-center justify-center px-4 py-3 md:px-6">
         {accepts ? (
           <ButtonLink href={bookHref(slug)} variant="primary" size="lg" className="w-full max-w-[420px]">

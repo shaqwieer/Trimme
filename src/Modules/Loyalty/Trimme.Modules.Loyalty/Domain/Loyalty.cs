@@ -235,7 +235,8 @@ public sealed class LoyaltyStamp : Entity<LoyaltyStampId>, ICustomerOwned
 /// <summary>
 /// A reward a customer earned at a shop (D-132), with the programme's terms snapshotted, so later edits never change it.
 /// The customer chooses it when booking (it is then held for that booking); it is redeemed when the shop completes the
-/// booking, and released if the booking is cancelled or a no-show. The shop applies it at the visit: prices are unchanged.
+/// booking, and released if the booking is cancelled or a no-show. Since D-152 (the client's 1-3) its value comes off the
+/// booking's amount due when it is held (<see cref="DiscountOn"/>); before that, the shop applied it at the visit.
 /// </summary>
 public sealed class LoyaltyReward : AggregateRoot<LoyaltyRewardId>, ICustomerOwned, IConcurrencyVersioned
 {
@@ -296,6 +297,18 @@ public sealed class LoyaltyReward : AggregateRoot<LoyaltyRewardId>, ICustomerOwn
     }
 
     public bool IsUsable(DateTimeOffset now) => Status == LoyaltyRewardStatus.Available && (ExpiresAt is null || now < ExpiresAt);
+
+    /// <summary>
+    /// What the coupon takes off a booking of <paramref name="price"/> (D-152): a free service, all of it (these coupons name
+    /// no service, so the visit is free, as the reports always counted it); a discount, its percent, to the halala.
+    /// </summary>
+    public decimal DiscountOn(decimal price)
+    {
+        var basis = Math.Max(price, 0m);
+        return Kind == LoyaltyRewardKind.FreeService
+            ? basis
+            : decimal.Round(basis * Math.Clamp(DiscountPercent ?? 0, 0, 100) / 100m, 2, MidpointRounding.AwayFromZero);
+    }
 
     public Result Hold(Guid bookingId, DateTimeOffset now)
     {

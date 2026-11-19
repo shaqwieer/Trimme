@@ -8,6 +8,7 @@ import type { WizardOffer } from '@/lib/booking/wizard';
 import { addDays, formatLocalDate, todayLocal } from '@/lib/i18n/localDate';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
+import { BookingListItem, type CustomerBooking } from './BookingCards';
 import { CancelBookingButton, PostponementOfferCard } from './BookingDetailClient';
 import { BookingPolicy, CreatedBanner } from './BookingDetailParts';
 import { HourMinutePicker } from '@/components/ui/booking';
@@ -234,13 +235,28 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
         offers={[SERVICE]}
         professionals={PROS}
         viewer="customer"
-        rewards={[{ id: 'reward-1', titleAr: 'حلاقة مجانية', titleEn: 'Free haircut' }]}
+        rewards={[
+          {
+            id: 'reward-1',
+            titleAr: 'حلاقة مجانية',
+            titleEn: 'Free haircut',
+            kind: 'FreeService',
+            discountPercent: null,
+          },
+        ]}
       />,
     );
 
     const picker = await screen.findByTestId('loyalty-picker');
     expect(within(picker).getByRole('radio', { name: /لا أريد استخدامها الآن/ })).toBeChecked();
     await user.click(within(picker).getByRole('radio', { name: /استخدم الكوبون: حلاقة مجانية/ }));
+    // D-152 (the user's answer): an old free-service coupon makes the booking free, in the total and the footer.
+    expect(screen.getByTestId('loyalty-due')).toHaveTextContent('٨٥ ⃁');
+    expect(screen.getByTestId('loyalty-due').lastElementChild).toHaveTextContent('٠ ⃁');
+    expect(screen.getByTestId('wizard-footer-price')).toHaveTextContent('٠ ⃁');
+    // The hint no longer says the shop applies it at the visit (the client's 1-3 screenshot).
+    expect(picker).toHaveTextContent('يُستخدم الكوبون عند انتهاء الخدمة، ويعود إليك إذا أُلغي الموعد.');
+    expect(picker).not.toHaveTextContent('يطبّقه الصالون');
     const confirm = screen.getByRole('button', { name: 'تأكيد الحجز' });
     await waitFor(() => expect(confirm).toBeEnabled());
     await user.click(confirm);
@@ -266,7 +282,15 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
         offers={[SERVICE]}
         professionals={PROS}
         viewer="customer"
-        rewards={[{ id: 'reward-1', titleAr: 'حلاقة مجانية', titleEn: 'Free haircut' }]}
+        rewards={[
+          {
+            id: 'reward-1',
+            titleAr: 'حلاقة مجانية',
+            titleEn: 'Free haircut',
+            kind: 'FreeService',
+            discountPercent: null,
+          },
+        ]}
         pointsReward={{
           rewardType: 'AmountOff',
           rewardServiceId: null,
@@ -397,7 +421,7 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر المختص');
   });
 
-  it('sends a time taken meanwhile back to fresh slots with the "just taken" notice, and keeps the key on a plain retry', async () => {
+  it('keeps a time taken meanwhile on the review and offers the nearest times there, keeping the key on a plain retry (D-152)', async () => {
     const user = userEvent.setup();
     availability();
     window.history.replaceState(
@@ -416,14 +440,71 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'تأكيد الحجز' }));
 
-    await waitFor(() => expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر اليوم والوقت'));
-    expect(screen.getByText('حُجز هذا الوقت للتو')).toBeInTheDocument();
-    expect(window.location.search).toContain('notice=conflict');
-    expect(window.location.search).not.toContain('time=');
+    const panel = await screen.findByTestId('booking-conflict');
+    expect(panel).toHaveAttribute('data-kind', 'taken');
+    expect(within(panel).getByText('حُجز هذا الوقت للتو')).toBeInTheDocument();
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('مراجعة الحجز');
     const keys = api.POST.mock.calls.map(([, init]) => init.params.header['Idempotency-Key']);
     expect(keys[0]).toBe(keys[1]);
-    // The slots are asked for again.
+    // The slots are asked for again, and one tap takes another time without leaving the review.
     expect(api.GET.mock.calls.filter(([path]) => String(path).endsWith('/slots')).length).toBeGreaterThan(1);
+    await user.click(await within(panel).findByRole('button', { name: /١٠:٣٠/ }));
+    await waitFor(() => expect(screen.queryByTestId('booking-conflict')).not.toBeInTheDocument());
+    expect(window.location.search).toContain('time=10%3A30');
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('مراجعة الحجز');
+  });
+
+  it('says when a time became too close instead of blaming another customer (D-152, 1-2)', async () => {
+    const user = userEvent.setup();
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00`,
+    );
+    api.POST.mockResolvedValueOnce(fail(409, 'booking.slot_too_soon'));
+    renderWizard(<BookingWizard shop={SHOP} offers={[SERVICE]} professionals={PROS} viewer="customer" />);
+
+    const confirm = await screen.findByRole('button', { name: 'تأكيد الحجز' });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await user.click(confirm);
+    const panel = await screen.findByTestId('booking-conflict');
+    expect(panel).toHaveAttribute('data-kind', 'tooSoon');
+    expect(panel).toHaveTextContent('الوقت صار قريب مرة');
+    expect(panel).not.toHaveTextContent('سبقك عميل آخر');
+  });
+
+  it('opens with the points reward ticked from the loyalty card, its service free on its own line (D-152, 3-5 and 1-3)', async () => {
+    availability();
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/barber-house/book?service=svc-1&pro=omar&date=${D1}&time=10:00&reward=points`,
+    );
+    renderWizard(
+      <BookingWizard
+        shop={SHOP}
+        offers={[SERVICE]}
+        professionals={PROS}
+        viewer="customer"
+        pointsReward={{
+          rewardType: 'FreeService',
+          rewardServiceId: 'svc-1',
+          rewardServiceNameAr: 'قص وتصفيف',
+          rewardServiceNameEn: 'Cut and style',
+          rewardAmount: null,
+        }}
+      />,
+    );
+
+    const picker = await screen.findByTestId('loyalty-picker');
+    expect(within(picker).getByRole('radio', { name: /استخدم مكافأتي/ })).toBeChecked();
+    const line = within(screen.getByTestId('booking-lines')).getByTestId('free-line');
+    expect(line).toHaveTextContent('٨٥ ⃁');
+    expect(line).toHaveTextContent('مجانية');
+    expect(screen.queryByTestId('loyalty-discount')).not.toBeInTheDocument();
+    expect(screen.getByTestId('loyalty-due').lastElementChild).toHaveTextContent('٠ ⃁');
+    expect(screen.getByTestId('wizard-footer-price')).toHaveTextContent('٠ ⃁');
   });
 
   it('checks a time from the URL against fresh slots and says when it is gone', async () => {
@@ -752,6 +833,52 @@ describe('CancelBookingButton (c-rate cancel sheet, D-015)', () => {
     });
   });
 
+  it('offers «إلغاء الموعد» on a «مواعيدي» card beside «تغيير الموعد», in its style, opening the cancel dialog (D-152, 2-2)', () => {
+    const later = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    renderWithIntl(
+      <ul>
+        <BookingListItem
+          booking={
+            {
+              id: 'b2',
+              reference: 'GH-ABCDE',
+              shop: { id: 's1', slug: 'barber-house', nameAr: 'باربر هاوس', nameEn: 'Barber House' },
+              professional: { id: 'omar', nameAr: 'عمر', nameEn: 'Omar' },
+              item: {
+                nameAr: 'قص وتصفيف',
+                nameEn: 'Cut and style',
+                serviceId: 'svc-1',
+                packageId: null,
+                packageItems: [],
+              },
+              startsAt: later,
+              endsAt: later,
+              status: 'Confirmed',
+              allowedActions: ['Reschedule', 'Cancel'],
+              reviewRating: null,
+              version: 4,
+            } as unknown as CustomerBooking
+          }
+        />
+      </ul>,
+    );
+    const card = screen.getByTestId('booking-card');
+    const change = within(card).getByRole('link', { name: 'تغيير الموعد' });
+    const cancel = within(card).getByRole('link', { name: 'إلغاء الموعد' });
+    expect(cancel.className).toBe(change.className);
+    expect(cancel).toHaveAttribute('href', '/account/bookings/b2?cancel=1');
+  });
+
+  it('opens the cancel dialog at once from the card’s link, and closing it forgets the link (D-152)', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/ar/account/bookings/b1?cancel=1');
+    renderWithIntl(<CancelBookingButton bookingId="b1" version={7} when="اليوم" openAtStart />);
+    const dialog = screen.getByRole('dialog', { name: /إلغاء موعد اليوم/ });
+    await user.click(within(dialog).getByRole('button', { name: 'إبقاء الموعد' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(window.location.search).toBe('');
+  });
+
   it('shows the cutoff error when it is too late', async () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValue(fail(422, 'booking.cancellation_cutoff_passed'));
@@ -1005,7 +1132,7 @@ describe('RescheduleForm (D-144)', () => {
     api.POST.mockResolvedValue(ok({}));
     const { container } = wrap(<RescheduleForm booking={BOOKING} />);
 
-    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('إعادة الجدولة');
+    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('تغيير الموعد');
     expect(await screen.findByTestId('nearest-slot')).toHaveTextContent('أقرب موعد متاح');
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
 
@@ -1054,7 +1181,7 @@ describe('RescheduleForm (D-144)', () => {
     await user.click(await screen.findByRole('button', { name: 'اختر هذا الموعد' }));
     await user.click(await screen.findByRole('button', { name: 'تأكيد الموعد الجديد' }));
     expect(await screen.findByText(/حُجز هذا الوقت للتو/)).toBeInTheDocument();
-    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('إعادة الجدولة');
+    expect(screen.getByTestId('reschedule-title')).toHaveTextContent('تغيير الموعد');
     expect(router.replace).not.toHaveBeenCalled();
   });
 });

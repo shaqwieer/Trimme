@@ -42,8 +42,13 @@ public sealed record MyLoyaltyRewardResponse(
     DateTimeOffset? ExpiresAt,
     Guid? BookingId);
 
-/// <summary>A line of the card's history: points earned at a visit (with the barber who closed it), a reward used, or points lost without visits.</summary>
-public sealed record LoyaltyHistoryEntryResponse(DateTimeOffset At, LoyaltyEntryKind Kind, int Points, Guid? BookingId, string? BarberName);
+/// <summary>
+/// A line of the card's history: points earned at a visit (with the barber who closed it), a reward used, or points lost
+/// without visits. A used reward carries its title (D-152, the client's 2-5: «استخدمت: حلاقة شعر مجانية — ١٩ نوفمبر»):
+/// a points reward's, or a D-132 coupon's (<c>Redeemed</c> with 0 points, dated when the visit was completed).
+/// </summary>
+public sealed record LoyaltyHistoryEntryResponse(
+    DateTimeOffset At, LoyaltyEntryKind Kind, int Points, Guid? BookingId, string? BarberName, string? RewardTitleAr = null, string? RewardTitleEn = null);
 
 /// <summary>
 /// The customer's card at one shop (D-149), keyed by their account's mobile: whether the shop runs loyalty now and its
@@ -79,5 +84,11 @@ internal static class LoyaltyMapping
     public static MyLoyaltyRewardResponse Reward(LoyaltyReward r) =>
         new(r.Id.Value, r.Code, r.Kind, r.DiscountPercent, r.TitleAr, r.TitleEn, r.Status, r.IssuedAt, r.ExpiresAt, r.BookingId);
 
-    public static LoyaltyHistoryEntryResponse Entry(LoyaltyEntry e) => new(e.At, e.Kind, e.Points, e.BookingId, e.ClosedByName);
+    /// <summary>A history line; a used points reward carries the title of the reward used (<paramref name="used"/>).</summary>
+    public static LoyaltyHistoryEntryResponse Entry(LoyaltyEntry e, LoyaltyRedemption? used = null) =>
+        new(e.At, e.Kind, e.Points, e.BookingId, e.ClosedByName, used?.TitleAr, used?.TitleEn);
+
+    /// <summary>A D-132 coupon used at a completed visit, as a history line (D-152).</summary>
+    public static LoyaltyHistoryEntryResponse CouponUsed(LoyaltyReward r) =>
+        new(r.RedeemedAt ?? r.IssuedAt, LoyaltyEntryKind.Redeemed, 0, r.BookingId, null, r.TitleAr, r.TitleEn);
 }

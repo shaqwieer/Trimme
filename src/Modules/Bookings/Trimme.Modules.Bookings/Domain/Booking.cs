@@ -402,8 +402,9 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     public Guid? QrVisitId { get; private set; }
 
     /// <summary>
-    /// The loyalty reward the customer chose for this online booking (D-132), with its title snapshotted: the shop applies
-    /// it at the visit (the price and amount due are unchanged). Set once, when the booking is made.
+    /// The D-132 coupon the customer chose for this online booking, with its title snapshotted. Set once, when the booking
+    /// is made. Since D-152 its value is in <see cref="LoyaltyDiscount"/> and off the amount due; a coupon held before then
+    /// has no discount and the shop applied it at the visit (the reports still count those the old way).
     /// </summary>
     public Guid? LoyaltyRewardId { get; private set; }
 
@@ -417,7 +418,11 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
     /// </summary>
     public Guid? LoyaltyRedemptionId { get; private set; }
 
-    /// <summary>What the points reward takes off the price (the amount, or the free service's price); 0 without one.</summary>
+    /// <summary>
+    /// What the reward takes off the price: a points reward's amount or free service's price (D-149), or a D-132 coupon's
+    /// value (D-152). 0 without one. A service added at the visit is paid in full: the discount stays the amount fixed at
+    /// booking (clamped to the price when a service is removed).
+    /// </summary>
     public decimal LoyaltyDiscount { get; private set; }
 
     public DateTimeOffset? UpdatedAt { get; private set; }
@@ -495,9 +500,13 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         return booking;
     }
 
-    public void UseLoyaltyReward(Guid rewardId, string titleAr, string? titleEn)
+    /// <summary>
+    /// A D-132 coupon the customer chose (online only, once). Its <paramref name="discount"/> comes off the amount due (D-152,
+    /// the client's 1-3: «الكوبون ما ينزّل السعر»); the price stays the booked one.
+    /// </summary>
+    public void UseLoyaltyReward(Guid rewardId, string titleAr, string? titleEn, decimal discount = 0m)
     {
-        if (LoyaltyRewardId is not null || Channel != BookingChannel.Online)
+        if (LoyaltyRewardId is not null || LoyaltyRedemptionId is not null || Channel != BookingChannel.Online)
         {
             throw new InvalidOperationException("A loyalty reward is chosen once, when an online booking is made.");
         }
@@ -505,6 +514,8 @@ public sealed class Booking : AggregateRoot<BookingId>, ICustomerOwned, IConcurr
         LoyaltyRewardId = rewardId;
         LoyaltyRewardTitleAr = titleAr;
         LoyaltyRewardTitleEn = titleEn;
+        LoyaltyDiscount = Math.Clamp(discount, 0m, Price);
+        AmountDue = Price - LoyaltyDiscount;
     }
 
     /// <summary>
@@ -1157,6 +1168,14 @@ public static class BookingErrors
         Error.Conflict("booking.not_reschedulable", $"A {status} booking cannot be rescheduled.").WithDetail("status", status.ToString());
 
     public static Error SlotUnavailable() => Error.Conflict("booking.slot_unavailable", "The time is no longer available.");
+
+    /// <summary>
+    /// The chosen start is now closer than the shop's minimum notice (D-152, the client's 1-2): the customer took a while to
+    /// confirm, so the time fell inside the lead time. Not «سبقك عميل آخر»: nobody else took it. <c>minutes</c> is the notice.
+    /// </summary>
+    public static Error SlotTooSoon(int minLeadTimeMinutes) =>
+        Error.Conflict("booking.slot_too_soon", "The time is now too close to book.")
+            .WithDetail("minutes", minLeadTimeMinutes);
 
     public static Error ShopNotAccepting(string? reason) =>
         Error.BusinessRule("booking.shop_not_accepting", "The shop is not taking online bookings right now.").WithDetail("reason", reason ?? "shop.not_active");

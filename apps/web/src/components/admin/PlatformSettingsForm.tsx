@@ -244,7 +244,7 @@ export function PlatformSettingsForm({ settings, canEdit }: { settings: Settings
       {saved && <InlineAlert tone="success" title={t('saved')} />}
       {canEdit && (
         <div
-          className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-e3"
+          className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-e3"
           data-testid="settings-save-bar"
         >
           <Button type="submit" size="md" loading={pending} disabled={!dirty}>

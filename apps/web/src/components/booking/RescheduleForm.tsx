@@ -147,8 +147,12 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
       router.refresh();
     } catch (failure) {
       setPending(false);
-      if (failure instanceof ApiError && failure.errorCode === 'booking.slot_unavailable') {
-        setError(t('taken'));
+      const refused =
+        failure instanceof ApiError &&
+        (failure.errorCode === 'booking.slot_unavailable' || failure.errorCode === 'booking.slot_too_soon');
+      if (refused) {
+        // D-152 (1-2): a time that fell inside the shop's lead time is not «another customer's».
+        setError(failure.errorCode === 'booking.slot_too_soon' ? t('tooSoon') : t('taken'));
         setStart(undefined);
         setStep('date');
         await queryClient.invalidateQueries({ queryKey: ['reschedule-slots', bookingId] });
@@ -345,7 +349,7 @@ export function RescheduleForm({ booking }: { booking: RescheduleBooking }) {
         {error && <InlineAlert tone="danger" title={error} />}
       </section>
 
-      <footer className="sticky bottom-[var(--layout-bottom-nav-height)] z-10 border-t border-border bg-surface/95 backdrop-blur-md lg:bottom-0">
+      <footer className="sticky bottom-[calc(var(--layout-bottom-nav-height)+env(safe-area-inset-bottom))] z-10 border-t border-border bg-surface/95 backdrop-blur-md lg:bottom-0">
         <div className="flex items-center gap-4 px-4 py-3 md:px-6">
           <div className="min-w-0 flex-1">
             <p className="truncate text-helper text-text-secondary" data-testid="reschedule-footer-note">

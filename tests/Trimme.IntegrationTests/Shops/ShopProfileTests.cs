@@ -227,6 +227,82 @@ public sealed class ShopProfileTests(PostgresFixture postgres)
         other.GetProperty("location").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
     }
 
+    /// <summary>
+    /// D-152 (the client's 3-8): the shop's short name («الأصالة» beside «أهلاً محمد، نورتنا») is always the owner's to set,
+    /// whatever the admin's policy; it is at most 40 characters, blank clears it, the admin can set it too, and the
+    /// dashboard's frame (<c>/shop/me</c>) reads it.
+    /// </summary>
+    [Fact]
+    public async Task ShortName_IsAlwaysTheOwners_UpToFortyCharacters_AndTheFrameReadsIt()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = await ShopTestData.CreateFactoryAsync(postgres, "shop_short_name", ct);
+        using var admin = await IdentityTestData.SignInNewStaffAsync(factory, SystemRoles.SuperAdmin, ct);
+        var shops = await ShopTestData.CreateTwoShopsAsync(factory, admin, ct);
+        using (var none = await admin.PutAsync($"/api/v1/admin/shops/{shops.A.ShopId}/editable-policy", new { editableFields = Array.Empty<string>() }, ct))
+        {
+            none.StatusCode.ShouldBe(HttpStatusCode.OK);
+        }
+
+        using var owner = await IdentityTestData.SignInStaffAsync(factory, shops.A.OwnerEmail, ct);
+        var own = await (await owner.GetAsync("/api/v1/shop/profile", ct)).JsonAsync(ct);
+        var nameAr = own.GetProperty("nameAr").GetString()!;
+        var nameEn = own.GetProperty("nameEn").GetString()!;
+        own.GetProperty("shortNameAr").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+        // Everything else exactly as it is, so only the short name changes.
+        var descriptionAr = own.GetProperty("descriptionAr").GetString();
+        var descriptionEn = own.GetProperty("descriptionEn").GetString();
+        var publicPhone = own.GetProperty("publicPhone").GetString();
+        var amenities = own.GetProperty("amenities").EnumerateArray().Select(a => a.GetString()).ToArray();
+        object Short(string? ar, string? en, uint version) => new
+        {
+            nameAr, nameEn, descriptionAr, descriptionEn, category = "Barbershop", publicPhone, amenities, version, shortNameAr = ar, shortNameEn = en,
+        };
+
+        // Nothing is open to the shop, yet the short name is accepted, trimmed.
+        uint version;
+        using (var saved = await owner.PutAsync("/api/v1/shop/profile", Short("  الأصالة  ", "Al Asala", own.GetProperty("version").GetUInt32()), ct))
+        {
+            saved.StatusCode.ShouldBe(HttpStatusCode.OK, await saved.Content.ReadAsStringAsync(ct));
+            var body = await saved.JsonAsync(ct);
+            body.GetProperty("shortNameAr").GetString().ShouldBe("الأصالة");
+            version = body.GetProperty("version").GetUInt32();
+        }
+
+        var me = await (await owner.GetAsync("/api/v1/shop/me", ct)).JsonAsync(ct);
+        me.GetProperty("shortNameAr").GetString().ShouldBe("الأصالة");
+        me.GetProperty("shortNameEn").GetString().ShouldBe("Al Asala");
+
+        // At most 40 characters.
+        using (var tooLong = await owner.PutAsync("/api/v1/shop/profile", Short(new string('ص', 41), null, version), ct))
+        {
+            tooLong.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+            (await tooLong.JsonAsync(ct)).GetProperty("errors").GetProperty("shortNameAr")[0].GetString().ShouldBe("validation.too_long");
+        }
+
+        // Blank clears it; the full name shows again.
+        using (var cleared = await owner.PutAsync("/api/v1/shop/profile", Short("   ", null, version), ct))
+        {
+            cleared.StatusCode.ShouldBe(HttpStatusCode.OK, await cleared.Content.ReadAsStringAsync(ct));
+            (await cleared.JsonAsync(ct)).GetProperty("shortNameAr").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+        }
+
+        // The admin sets it too, on the shop's profile.
+        var detail = await (await admin.GetAsync($"/api/v1/admin/shops/{shops.A.ShopId}", ct)).JsonAsync(ct);
+        using (var byAdmin = await admin.PutAsync(
+            $"/api/v1/admin/shops/{shops.A.ShopId}",
+            new
+            {
+                nameAr, nameEn, descriptionAr = (string?)null, descriptionEn = (string?)null, category = "Barbershop", publicPhone = (string?)null,
+                amenities = Array.Empty<string>(), isVerified = false, version = detail.GetProperty("version").GetUInt32(), shortNameAr = "الأصالة",
+            },
+            ct))
+        {
+            byAdmin.StatusCode.ShouldBe(HttpStatusCode.OK, await byAdmin.Content.ReadAsStringAsync(ct));
+            (await byAdmin.JsonAsync(ct)).GetProperty("shortNameAr").GetString().ShouldBe("الأصالة");
+        }
+    }
+
     [Fact]
     public async Task SuspendedShop_HasNoProfileAccess_EvenThoughTheClaimRemains()
     {

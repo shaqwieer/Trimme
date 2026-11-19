@@ -56,23 +56,36 @@ const REASONS = ['emergency', 'timeChanged', 'bookLater'] as const;
  * Cancelling is destructive (c-rate 1809–1841): a confirmation dialog that says the shop is told and the time is
  * released, optional reason chips, "yes, cancel" in the danger colour and "keep" as the safe default. The version read
  * with the page is sent, so a booking the shop changed meanwhile is not cancelled blindly.
+ *
+ * D-152 (the client's 2-2): «إلغاء الموعد» on a «مواعيدي» card opens the booking's page with `?cancel=1`, and the dialog
+ * opens at once (`openAtStart`); closing it drops the parameter, so a reload or going back does not reopen it.
  */
 export function CancelBookingButton({
   bookingId,
   version,
   when,
+  openAtStart = false,
 }: {
   bookingId: string;
   version: number;
   when: string;
+  /** Open the dialog when the page loads (the card's «إلغاء الموعد»). */
+  openAtStart?: boolean;
 }) {
   const t = useTranslations('bookings.cancel');
   const router = useRouter();
   const apiMessage = useApiErrorMessage();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openAtStart);
   const [reason, setReason] = useState<(typeof REASONS)[number]>();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
+
+  // Opened from the card: drop `?cancel=1` on closing, so a reload or going back does not open it again.
+  const close = () => {
+    setOpen(false);
+    setError(undefined);
+    if (openAtStart) window.history.replaceState(null, '', window.location.pathname);
+  };
 
   const cancel = async () => {
     setPending(true);
@@ -97,10 +110,7 @@ export function CancelBookingButton({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) setError(undefined);
-      }}
+      onOpenChange={(next) => (next ? setOpen(true) : close())}
       size="sm"
       title={t('title', { when })}
       description={t('body')}
@@ -114,7 +124,7 @@ export function CancelBookingButton({
           <Button variant="dangerSolid" className="flex-1" loading={pending} onClick={cancel}>
             {t('confirm')}
           </Button>
-          <Button variant="outline" className="flex-1" autoFocus onClick={() => setOpen(false)}>
+          <Button variant="outline" className="flex-1" autoFocus onClick={close}>
             {t('keep')}
           </Button>
         </>

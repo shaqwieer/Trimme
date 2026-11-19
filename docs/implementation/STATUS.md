@@ -1,6 +1,6 @@
 # TRIMME — Status
 
-- **Updated:** 2026-11-19 (Session 29: D-151 verified and committed — the barber's day screen, «حسابي», reasons, reports cards, services tiles. Before it, Session 28, third request, slices 4–5: loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150). Before it, slices 1–3: the owner's dashboard — the shop's own sections, a barber's own length per service, languages and adding by mobile, the shop's own booking settings with a cleaning time, fixed shop type, service status wording, a 14-day horizon and the unavailable page for an expired shop (D-149); Before it, Session 28, second request: the customer's pages — category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts (D-148). Before it, Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
+- **Updated:** 2026-11-19 (Session 29: the client's iPhone test — Safari's bar, sideways pages, the reward's price, «مواعيدي», the customer's cards, WhatsApp amounts, the completed visit's notice, rating tags, the barbers' welcome (D-152), rebased on D-151. Before it, D-151 verified and committed — the barber's day screen, «حسابي», reasons, reports cards, services tiles. Before it, Session 28, third request, slices 4–5: loyalty as a paid add-on with points per mobile number, «استخدم مكافأتي», «خلصت زيارتك», and the plans' monthly WhatsApp allowance (D-150). Before it, slices 1–3: the owner's dashboard — the shop's own sections, a barber's own length per service, languages and adding by mobile, the shop's own booking settings with a cleaning time, fixed shop type, service status wording, a 14-day horizon and the unavailable page for an expired shop (D-149); Before it, Session 28, second request: the customer's pages — category tabs and tiles, a package with other services, greyed times, Arabic-Indic digits and the Riyal sign, «جديد», «تجريبي», short references, cancelling until the start, full legal texts (D-148). Before it, Session 28: the owner watches, the barbers operate — «وصل» then «انتهت الخدمة», red bookings, walk-in and phone bookings with several services, a booking's services, postponement offers, the owner's reports and packages (D-147). Before it, Session 27: the owner adds and edits barbers, each with a login made at once; no walk-ins for the owner (D-146))
 - **Current phase:** 17, the last phase (D-116), is complete and verified at 98/100. It delivers:
   - **Security:** a nonce CSP on every page, plus COOP, CORP and HSTS; uploads re-encoded from their pixels; the Data Protection key ring wrapped with a certificate; a test for every rate limit; ZAP, dependency audits, gitleaks and a phone-leak sweep all clean (`docs/security.md`).
   - **Observability:** OpenTelemetry traces and metrics (OTLP only when configured), health checks for Hangfire and the outbox, and log conventions (`docs/observability.md`).
@@ -113,6 +113,32 @@
     - **Points per mobile number per shop** (keyed hash only): the owner's rules (first visit, later visits, points for a reward, a free service or 5–1,000 SAR off, wipe or decay without visits); points only at «انتهت الخدمة» with the barber's name; «+٢» beyond a full card; «استخدم مكافأتي» at booking (one per booking, never with a package; held, used at completion, returned on a cancellation or no-show); walk-in redemption through the barber's lookup; «خلصت زيارتك» in the app.
     - **The plans' monthly WhatsApp allowance:** empty is unlimited, 0 is none, 500 a month; enforced before the provider with an atomic slot; the owner told once a month; the month's use on both subscription pages.
     - Migration 28 `LoyaltyAddOnAndPlanMessages` (tables and columns only). The 489/639 plans, hiding half-year/yearly, the add-on price and which shops get it are admin data at deploy time.
+- **Session 29 (D-152), at the user's request: the client's iPhone test.** Built in its own worktree, on top of D-154, while D-151 is being built in another session. Committed locally; not pushed or deployed.
+  - **iPhone:**
+    - `viewport-fit=cover` with safe-area padding on every bottom bar and sticky footer, so Safari's toolbar no longer covers them.
+    - Text fields at 16 px on iOS only, so Safari no longer zooms in and pans pages sideways; sideways overflow is clipped as a backstop.
+    - Both wait on a real iPhone check.
+  - **Booking:**
+    - A time that fell inside the lead time is «الوقت صار قريب مرة» (`booking.slot_too_soon`), not «سبقك عميل آخر».
+    - The review stays put and offers the nearest times.
+    - A free service reads «مجانية», and the total and the footer are net of the reward.
+    - Old D-132 coupons lower the amount due too, and reports count each once.
+  - **The customer:**
+    - «إلغاء الموعد» on each «مواعيدي» card, and «تغيير الموعد».
+    - The booking's own status («مؤكد» until a barber closes it).
+    - No coupon code; the badge under the title.
+    - The card stays after a reward is used, with «استخدمت: …».
+    - The card's link ticks the reward.
+    - Rating tags on the shop page.
+    - The pager only with more than one page.
+  - **The shop:**
+    - No «رقم العميل غير متاح» box.
+    - «أهلاً محمد، نورتنا» with the shop's new short name (migration 29 `ShopShortName`).
+  - **Messages:**
+    - WhatsApp amounts are «٦٠ ريال» (the amount due).
+    - One in-app notice after «انتهت الخدمة» with «قيّم زيارتك» and the points; no WhatsApp.
+  - **Not here:** 2-7 and 3-7 are D-151's. 3-2 and 3-3 (new Meta templates) are deferred. The lead-time value is the user's.
+  - Gates and evidence are in `phases/after-17-d152-client-iphone-review.md`.
 - **Platform progress:** 1798 / 1800 points (Phases 00–17). Phase 18 was removed at the user's request (D-116).
 
 | Phase | Status | Points |

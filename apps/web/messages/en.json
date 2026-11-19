@@ -448,6 +448,7 @@
   },
   "shopHome": {
     "title": "Overview",
+    "welcome": "{name, select, none {Welcome back} other {Welcome back, {name}}}",
     "body": "Today's appointments and your shop's indicators will appear here when the shop dashboard launches.",
     "statusLabel": "Shop status",
     "draftTitle": "Your shop is being set up",
@@ -511,6 +512,7 @@
     "availability_offer_not_online_bookable": "This service cannot be booked online.",
     "availability_professional_not_eligible": "This professional does not provide this service.",
     "booking_slot_unavailable": "That time was just booked. Pick another one.",
+    "booking_slot_too_soon": "That time is now too close. Pick one of the nearest free times.",
     "booking_not_found": "The appointment was not found.",
     "booking_cancellation_cutoff_passed": "The online change window has closed. Contact the Groom Here team.",
     "booking_not_reschedulable": "This appointment can't be changed now.",
@@ -750,6 +752,9 @@
   "shopProfile": {
     "nameAr": "Shop name in Arabic",
     "nameEn": "Shop name in English",
+    "shortNameAr": "Short name in Arabic",
+    "shortNameEn": "Short name in English",
+    "shortNameHelper": "Shown in the barbers’ welcome, such as “Al Asala”. Left empty, the full name shows.",
     "descriptionAr": "Description in Arabic",
     "descriptionEn": "Description in English",
     "category": "Shop type",
@@ -2013,7 +2018,8 @@
       "body": "Reviews appear after the first completed visit."
     },
     "pages": "Review pages",
-    "note": "Reviews come from customers who completed their visit, shown by first name only."
+    "note": "Reviews come from customers who completed their visit, shown by first name only.",
+    "praised": "{count, plural, one {# praised: {tag}} other {# praised: {tag}}}"
   },
   "legal": {
     "terms": {
@@ -2227,7 +2233,20 @@
       "inPackage": "“{service}” is already in “{package}”, which you chose.",
       "dropped": "We took off {services}: it is part of “{package}”."
     },
-    "noCommonProfessionalFor": "No single specialist does “{service}” with your other services. Remove it or book it at another time."
+    "noCommonProfessionalFor": "No single specialist does “{service}” with your other services. Remove it or book it at another time.",
+    "conflicts": {
+      "label": "The nearest free times now",
+      "tooSoon": {
+        "title": "That time is now too close",
+        "body": "These are the nearest times now. Pick one."
+      },
+      "taken": {
+        "title": "That time was just taken",
+        "body": "Another customer booked it first. These are the nearest times now. Pick one."
+      },
+      "loading": "Refreshing the times…",
+      "otherDay": "Pick another day"
+    }
   },
   "bookings": {
     "title": "My appointments",
@@ -2246,7 +2265,7 @@
     "actions": {
       "details": "Details",
       "detailsLabel": "Details of the {service} appointment",
-      "reschedule": "Reschedule",
+      "reschedule": "Change time",
       "review": "Rate the visit",
       "rated": "Rated ★ {rating}",
       "rebook": "Book again"
@@ -2309,7 +2328,7 @@
       "keep": "Keep it"
     },
     "reschedule": {
-      "title": "Reschedule",
+      "title": "Change the time",
       "currentTitle": "Your current appointment stays until you confirm the new one",
       "current": "Current appointment: {when}. It stays booked until you confirm the new one.",
       "blocked": "The salon isn't taking online changes right now.",
@@ -2320,6 +2339,7 @@
       "confirm": "Confirm new time",
       "loading": "Loading times…",
       "taken": "That time was just booked — pick another from the refreshed times.",
+      "tooSoon": "That time is now too close. Pick another from the refreshed times.",
       "notAllowed": "This appointment can't be changed in Groom Here now.",
       "backToBooking": "Back to the appointment",
       "reviewTitle": "Review the new time",
@@ -2336,8 +2356,7 @@
       "decline": "Decline",
       "accepted": "Your booking moved to the new time.",
       "declined": "You declined the new time; your booking keeps its time."
-    },
-    "awaitingShop": "Awaiting the shop"
+    }
   },
   "review": {
     "title": "Rate the visit",
@@ -2479,10 +2498,6 @@
         "WalkIn": "Walk-in",
         "Qr": "QR code",
         "Phone": "By phone"
-      },
-      "noPhone": {
-        "title": "The customer's number isn't available",
-        "body": "The customer is messaged automatically through the platform's WhatsApp; their number is never shown to the shop."
       },
       "changeStatus": "Change status",
       "actions": {
@@ -3323,7 +3338,8 @@
         "booking_cancelled": "Your booking at {shop} on {date} at {time} was cancelled",
         "booking_professional_changed": "Your booking at {shop} was given to {professional} at the same time ({date} at {time}). You can change or cancel it until it starts",
         "booking_postponement_offered": "{shop} suggests a new time for your booking: {offeredDate} at {offeredTime} instead of {date} at {time}. Accept or decline it on the booking page",
-        "loyalty_visit_completed": "Your visit at {shop} is done{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}"
+        "loyalty_visit_completed": "Your visit at {shop} is done{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}",
+        "booking_completed": "Thanks for visiting {shop}{loyalty, select, on {{earned, plural, =0 {} one {, and we added # point to your card} other {, and we added # points to your card}}. {ready, plural, =0 {{toNext, plural, one {# point} other {# points}} to go for your reward.} other {Your reward is ready — use it on your next booking.}}} other {.}} Rate your visit to help others choose."
       },
       "barber": {
         "booking_created": "New booking for {customer}: {item} on {date} at {time}",
@@ -3682,7 +3698,6 @@
     "anyProfessional": "Points are added when the service ends, with any specialist at the salon.",
     "stampsLabel": "Points on the card: {filledText} of {requiredText}",
     "signIn": "Sign in to track your points",
-    "code": "Coupon code:",
     "expires": "Valid until {date}",
     "noExpiry": "No expiry date",
     "ready": "Ready to use",
@@ -3726,6 +3741,7 @@
       "Earned": "Visit with {barber}",
       "EarnedNoBarber": "Visit",
       "Redeemed": "Reward used",
+      "used": "Used: {reward}",
       "Wiped": "Points cleared for no visits",
       "Decayed": "Taken off for no visits"
     },
@@ -3738,9 +3754,9 @@
       "notWithPackage": "A reward can’t be used with a package.",
       "needsService": "Add “{service}” to your booking to use the reward.",
       "pointsHint": "The points are taken when the service ends, and come back if the appointment is cancelled.",
-      "couponHint": "The salon applies it at your visit; the amount shown is before it.",
+      "couponHint": "The coupon is used when the service ends, and comes back if the appointment is cancelled.",
       "discount": "Reward discount",
-      "due": "Amount due"
+      "free": "Free"
     },
     "due": "Due after the reward: {amount}",
     "rulesForm": {

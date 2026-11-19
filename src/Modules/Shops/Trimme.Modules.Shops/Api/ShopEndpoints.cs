@@ -35,9 +35,12 @@ public sealed record UpdateShopProfileRequest(
     string? PublicPhone,
     IReadOnlyList<ShopAmenity>? Amenities,
     bool IsVerified,
-    uint Version);
+    uint Version,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null);
 
 /// <summary>The shop's own edit. Send the whole form: fields locked by the admin policy must keep their current value.</summary>
+/// <summary>The shop's own profile form. <c>ShortNameAr/En</c> (D-152, at most 40 characters) is always the shop's to change.</summary>
 public sealed record UpdateOwnShopProfileRequest(
     string NameAr,
     string NameEn,
@@ -46,7 +49,9 @@ public sealed record UpdateOwnShopProfileRequest(
     ShopCategory Category,
     string? PublicPhone,
     IReadOnlyList<ShopAmenity>? Amenities,
-    uint Version);
+    uint Version,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null);
 
 public sealed record ShopLocationRequest(
     double Latitude,
@@ -305,7 +310,7 @@ internal static class ShopEndpoints
         SendAdmin(
             new UpdateShopProfileCommand(
                 shopId, request.NameAr ?? string.Empty, request.NameEn ?? string.Empty, request.DescriptionAr, request.DescriptionEn,
-                request.Category, request.PublicPhone, request.Amenities, request.IsVerified, request.Version),
+                request.Category, request.PublicPhone, request.Amenities, request.IsVerified, request.Version, request.ShortNameAr, request.ShortNameEn),
             dispatcher,
             cancellationToken);
 
@@ -352,7 +357,7 @@ internal static class ShopEndpoints
         SendOwn(
             new UpdateOwnShopProfileCommand(
                 request.NameAr ?? string.Empty, request.NameEn ?? string.Empty, request.DescriptionAr, request.DescriptionEn,
-                request.Category, request.PublicPhone, request.Amenities, request.Version),
+                request.Category, request.PublicPhone, request.Amenities, request.Version, request.ShortNameAr, request.ShortNameEn),
             dispatcher,
             cancellationToken);
 

@@ -79,7 +79,7 @@ export default async function BookingDetailPage({
   const timeZone = shop?.timeZone;
   const actions = new Set(booking.allowedActions);
   const active = isActive(booking);
-  // A points reward (D-149) is taken off what is due; a D-132 coupon is applied by the shop at the visit.
+  // A loyalty reward is taken off what is due: a points reward (D-149), and since D-152 a D-132 coupon too.
   const discount = booking.loyaltyReward?.discount ?? null;
   const service = localizedName(locale, booking.item.nameAr, booking.item.nameEn);
   const shopName = localizedName(locale, booking.shop.nameAr, booking.shop.nameEn);
@@ -182,9 +182,7 @@ export default async function BookingDetailPage({
           </Row>
         )}
         <div className="flex items-center justify-between py-3.5">
-          <dt className="text-label font-bold text-text-strong">
-            {discount != null ? tLoyalty('wizard.due') : t('total')}
-          </dt>
+          <dt className="text-label font-bold text-text-strong">{t('total')}</dt>
           <dd className="flex items-baseline gap-2 font-latin text-[1.125rem] font-extrabold text-navy-900">
             {discount != null && (
               <span className="text-label font-bold text-text-tertiary line-through">
@@ -227,7 +225,12 @@ export default async function BookingDetailPage({
         )}
         {actions.has('Cancel') && (
           <div className="flex-1">
-            <CancelBookingButton bookingId={booking.id} version={booking.version} when={when} />
+            <CancelBookingButton
+              bookingId={booking.id}
+              version={booking.version}
+              when={when}
+              openAtStart={firstParam(query.cancel) === '1'}
+            />
           </div>
         )}
         {actions.has('Review') && (

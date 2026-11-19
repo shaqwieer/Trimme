@@ -75,6 +75,7 @@ describe('notices', () => {
       ['shop', 'booking.professional_changed'],
       ['shop', 'whatsapp.allowance_reached'],
       ['customer', 'loyalty.visit_completed'],
+      ['customer', 'booking.completed'],
       ['customer', 'booking.confirmed'],
       ['customer', 'booking.rescheduled'],
       ['customer', 'booking.cancelled'],
@@ -134,6 +135,43 @@ describe('notices', () => {
     // A visit that used a reward adds no points.
     expect(say(visit('0', '6', '0'))).toBe('خلصت زيارتك في صالون الأصالة. باقي ٦ نقاط للمكافأة.');
     expect(noticeHref('customer', visit('2', '2', '0'))).toBe('/account/loyalty');
+  });
+
+  it('thanks the customer once per visit, asks for a rating and adds the points when the shop has loyalty (D-152, 3-4)', () => {
+    const t = createTranslator({
+      locale: 'ar',
+      messages: ar,
+      formats: MESSAGE_FORMATS,
+      namespace: 'notifications.kinds',
+    });
+    const done = (loyalty?: { earned: string; toNext: string; ready: string }): Notice => ({
+      id: 'n11',
+      kind: 'booking.completed',
+      parameters: {
+        shopNameAr: 'صالون الأصالة',
+        shopNameEn: 'Al Asala',
+        shopSlug: 'al-asala',
+        ...(loyalty && {
+          pointsEarned: loyalty.earned,
+          pointsToNext: loyalty.toNext,
+          rewardsReady: loyalty.ready,
+          pointsForReward: '6',
+        }),
+      },
+      bookingId: 'b7',
+      createdAt: '2026-11-19T09:00:00Z',
+      readAt: null,
+    });
+    const say = (notice: Notice) =>
+      t(noticeKey('customer', notice.kind) as 'generic', noticeValues(notice, 'ar'));
+    expect(say(done())).toBe('شكراً لزيارتك في صالون الأصالة. قيّم زيارتك ليستفيد غيرك من تجربتك.');
+    expect(say(done({ earned: '1', toNext: '1', ready: '0' }))).toBe(
+      'شكراً لزيارتك في صالون الأصالة، وأضفنا نقطة واحدة إلى بطاقتك. باقي نقطة واحدة للمكافأة. قيّم زيارتك ليستفيد غيرك من تجربتك.',
+    );
+    expect(say(done({ earned: '0', toNext: '2', ready: '0' }))).toBe(
+      'شكراً لزيارتك في صالون الأصالة. باقي نقطتان للمكافأة. قيّم زيارتك ليستفيد غيرك من تجربتك.',
+    );
+    expect(noticeHref('customer', done())).toBe('/account/bookings/b7/review');
   });
 
   it('tells the owner when the month’s WhatsApp messages are used up, or that the plan has none (D-149)', () => {

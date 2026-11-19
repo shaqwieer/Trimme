@@ -38,6 +38,16 @@ describe('ShopProfileEditor (R-SD-09, DV-S16)', () => {
     expect(screen.queryByRole('switch', { name: 'محل موثّق' })).not.toBeInTheDocument();
   });
 
+  it('always lets the shop edit its short name, even with the name locked (D-152, 3-8)', () => {
+    renderWithIntl(
+      <ShopProfileEditor mode={{ kind: 'shop' }} profile={{ ...profile, shortNameAr: 'الأصالة' }} canEdit />,
+    );
+    expect(screen.getByLabelText('اسم المحل بالعربية')).toBeDisabled();
+    expect(screen.getByLabelText(/الاسم المختصر بالعربية/)).toBeEnabled();
+    expect(screen.getByLabelText(/الاسم المختصر بالعربية/)).toHaveValue('الأصالة');
+    expect(screen.getByLabelText(/الاسم المختصر بالإنجليزية/)).toHaveValue('');
+  });
+
   it('gives the admin every field and the verification switch', () => {
     renderWithIntl(<ShopProfileEditor mode={{ kind: 'admin', shopId: 's1' }} profile={profile} canEdit />, {
       locale: 'en',

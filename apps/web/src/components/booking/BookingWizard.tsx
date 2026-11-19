@@ -22,6 +22,7 @@ import { withReturnTo } from '@/lib/auth/paths';
 import {
   ANY_PROFESSIONAL,
   blockingItem,
+  couponDiscount,
   currentStep,
   durationFor,
   eligibleProfessionals,
@@ -78,8 +79,17 @@ export type WizardPro = {
 /** Who is looking: a guest confirms after signing in (D-096); staff accounts cannot book. */
 export type WizardViewer = 'guest' | 'customer' | 'staff';
 
-/** A D-132 loyalty coupon the customer can still use at this shop, offered on the review step. */
-export type WizardReward = { id: string; titleAr: string; titleEn: string | null };
+/**
+ * A D-132 loyalty coupon the customer can still use at this shop, offered on the review step. Since D-152 it lowers the
+ * price like the points reward: a free-service coupon makes the booking free, a percent coupon takes its percent off.
+ */
+export type WizardReward = {
+  id: string;
+  titleAr: string;
+  titleEn: string | null;
+  kind: 'FreeService' | 'Discount';
+  discountPercent: number | null;
+};
 
 /** The review step's reward choice: none, the points reward (D-149), or a D-132 coupon's id. */
 const POINTS_REWARD = 'points';
@@ -183,18 +193,35 @@ export function BookingWizard({
 
   const notice = wizardNotice(query);
   const [note, setNote] = useState('');
-  const [rewardId, setRewardId] = useState('');
+  // A link from the loyalty card ticks its reward (D-152, 3-5): `reward=points` or a coupon's id.
+  const [rewardId, setRewardId] = useState(() =>
+    query.reward === POINTS_REWARD || rewards.some((r) => r.id === query.reward) ? (query.reward ?? '') : '',
+  );
   // The points reward fits only some choices (D-149): never with a package, a free service only once it is chosen. A
   // choice that stopped fitting (the services changed) falls back to none.
   const fit =
     viewer === 'customer' && pointsReward && offer ? rewardFit(items, offer.price, pointsReward) : null;
-  const discount = rewardId === POINTS_REWARD && fit?.usable ? fit.discount : undefined;
-  const usingPoints = discount !== undefined;
+  const usingPoints = rewardId === POINTS_REWARD && Boolean(fit?.usable);
+  const coupon = rewards.find((r) => r.id === rewardId);
+  // What the reward takes off (D-152, 1-3): the points reward's, or a D-132 coupon's.
+  const discount =
+    usingPoints && fit?.usable
+      ? fit.discount
+      : coupon && offer
+        ? couponDiscount(offer.price, coupon)
+        : undefined;
+  // The service the reward makes free, shown as «مجانية» on its line (the client's «حلاقة شعر ٦٠ ← مجانية»).
+  const freeItemId =
+    usingPoints && pointsReward?.rewardType === 'FreeService' ? pointsReward.rewardServiceId : null;
+  const due = offer ? Math.max(offer.price - (discount ?? 0), 0) : 0;
   const discountLabel =
     discount !== undefined && offer ? `−${formatPrice(discount, locale, offer.currency)}` : '';
   const choice = rewardId === POINTS_REWARD && !usingPoints ? '' : rewardId;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
+  // A time refused at confirmation (D-152, the client's 1-2): it fell inside the shop's lead time meanwhile, or another
+  // customer took it. The review stays where it is and offers the nearest times again.
+  const [conflict, setConflict] = useState<'tooSoon' | 'taken'>();
   const keyed = useRef<KeyedIntent | undefined>(undefined);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const latest = useRef<WizardSelection | null>(null);
@@ -277,7 +304,7 @@ export function BookingWizard({
   // The nearest free time, offered before the customer looks through days and hours (D-125): one extra request, for
   // the first day that has a free slot (the same cache entry the time step reads when that day is picked).
   const nearestDate = dates.data?.dates.find((d) => d.slotCount > 0 && d.date >= today)?.date;
-  const nearest = useQuery(slotsOf(nearestDate, step === 'date'));
+  const nearest = useQuery(slotsOf(nearestDate, step === 'date' || Boolean(conflict)));
   const nearestSlot = nearest.data?.bookable === false ? undefined : nearest.data?.slots[0];
 
   const startsAt = resolveStart(slots.data?.slots, time);
@@ -288,7 +315,8 @@ export function BookingWizard({
   // A date or time from the URL (a shared link, the sign-in round trip, a change of services) is checked against fresh
   // availability.
   useEffect(() => {
-    if (blocked) return;
+    // After a refused time the review offers the fresh ones itself (D-152).
+    if (blocked || conflict) return;
     if (stepIndex >= 3 && date && dates.data) {
       const day = dates.data.dates.find((d) => d.date === date);
       if (!day || day.slotCount === 0) {
@@ -301,7 +329,20 @@ export function BookingWizard({
     }
     // `go` and `selection` are derived from the URL on every render; the data answers are what trigger the checks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dates.data, slots.data, step, date, time, startsAt, blocked]);
+  }, [dates.data, slots.data, step, date, time, startsAt, blocked, conflict]);
+
+  // The nearest times after a refused one: the rest of that day, else the next day with a free time.
+  const alternatives: { date: string; startsAt: string; localTime: string }[] = !conflict
+    ? []
+    : slots.data && date && slots.data.slots.length > 0
+      ? slots.data.slots.slice(0, 4).map((s) => ({ date, startsAt: s.startsAt, localTime: s.localTime }))
+      : nearestDate && nearest.data
+        ? nearest.data.slots
+            .slice(0, 4)
+            .map((s) => ({ date: nearestDate, startsAt: s.startsAt, localTime: s.localTime }))
+        : [];
+  const alternativesLoading =
+    Boolean(conflict) && (slots.isFetching || dates.isFetching || nearest.isFetching);
 
   useEffect(() => {
     if (scrollToTimes.current && dateOk) {
@@ -380,6 +421,7 @@ export function BookingWizard({
       return;
     }
 
+    setConflict(undefined);
     const trimmed = note.trim();
     keyed.current = keyFor(
       keyed.current,
@@ -418,10 +460,14 @@ export function BookingWizard({
         router.push(withReturnTo('/auth/sign-in', returnTo));
       } else if (failure.errorCode === 'booking.profile_incomplete') {
         router.push(withReturnTo('/auth/complete-profile', returnTo));
-      } else if (failure.errorCode === 'booking.slot_unavailable') {
+      } else if (
+        failure.errorCode === 'booking.slot_unavailable' ||
+        failure.errorCode === 'booking.slot_too_soon'
+      ) {
+        // Stay on the review and offer the nearest times now (D-152, 1-2), instead of sending the customer back.
+        setConflict(failure.errorCode === 'booking.slot_too_soon' ? 'tooSoon' : 'taken');
         await queryClient.invalidateQueries({ queryKey: ['booking-slots'] });
         await queryClient.invalidateQueries({ queryKey: ['booking-dates'] });
-        go({ ...selection, time: undefined }, 'date', 'replace', 'conflict');
       } else if (failure.status === 403) {
         setError(t('customersOnly'));
       } else {
@@ -712,6 +758,46 @@ export function BookingWizard({
 
         {step === 'review' && offer && (
           <div className="flex flex-col gap-4" data-testid="booking-review">
+            {conflict && (
+              <div className="flex flex-col gap-3" data-testid="booking-conflict" data-kind={conflict}>
+                <InlineAlert tone="danger" title={t(`conflicts.${conflict}.title`)}>
+                  {t(`conflicts.${conflict}.body`)}
+                </InlineAlert>
+                {alternatives.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2" aria-label={t('conflicts.label')}>
+                    {alternatives.map((alt) => (
+                      <li key={alt.startsAt}>
+                        <Button
+                          variant="outline"
+                          size="md"
+                          onClick={() => {
+                            setConflict(undefined);
+                            go({ ...selection, date: alt.date, time: alt.localTime }, 'review', 'replace');
+                          }}
+                        >
+                          {alt.date === date ? '' : `${dayLabel(alt.date)} — `}
+                          {formatTime(alt.startsAt, locale, shop.timeZone)}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : alternativesLoading ? (
+                  <p className="text-helper text-text-secondary">{t('conflicts.loading')}</p>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    className="self-start"
+                    onClick={() => {
+                      setConflict(undefined);
+                      go({ ...selection, time: undefined }, 'date', 'replace');
+                    }}
+                  >
+                    {t('conflicts.otherDay')}
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-3 rounded-card border border-border bg-surface p-4">
               <Avatar name={shopName} src={shop.logoUrl} size="md" />
               <div className="min-w-0">
@@ -760,41 +846,62 @@ export function BookingWizard({
                 value={formatDurationMinutes(duration, locale)}
               />
             </dl>
+            {/* D-152 (1-3): each service's price when there are several or one is free («مجانية»), the reward's
+                discount, and the total the customer pays at the shop, net of the reward. */}
             <div
               className="flex flex-col gap-1.5 rounded-card bg-bg-subtle px-4 py-3"
               data-testid="booking-total"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-label font-bold text-text-strong">{t('summary.total')}</span>
-                <span
-                  className={
-                    usingPoints
-                      ? 'font-latin text-label font-bold text-text-secondary line-through'
-                      : 'font-latin text-[1.125rem] font-extrabold text-navy-900'
-                  }
+              {(items.length > 1 || freeItemId) && (
+                <ul
+                  className="flex flex-col gap-1 border-b border-border-row pb-2"
+                  data-testid="booking-lines"
                 >
-                  {formatPrice(offer.price, locale, offer.currency)}
+                  {items.map((item) => {
+                    const free = item.kind === 'service' && item.id === freeItemId;
+                    return (
+                      <li key={item.id} className="flex items-center justify-between gap-3 text-label">
+                        <span className="min-w-0 text-text-strong">
+                          {localizedName(locale, item.nameAr, item.nameEn)}
+                        </span>
+                        {free ? (
+                          <span className="flex shrink-0 items-center gap-2" data-testid="free-line">
+                            <s className="font-latin text-text-secondary">
+                              {formatPrice(item.price, locale, offer.currency)}
+                            </s>
+                            <span className="font-bold text-success-700">{tl('free')}</span>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 font-latin font-bold text-text-primary">
+                            {formatPrice(item.price, locale, offer.currency)}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {discount !== undefined && !freeItemId && (
+                <div className="flex items-center justify-between text-label text-success-700">
+                  <span>{tl('discount')}</span>
+                  <span className="font-latin font-bold" data-testid="loyalty-discount">
+                    {discountLabel}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-label font-bold text-text-strong">{t('summary.total')}</span>
+                <span className="flex items-baseline gap-2" data-testid="loyalty-due">
+                  {discount !== undefined && (
+                    <s className="font-latin text-label font-bold text-text-secondary">
+                      {formatPrice(offer.price, locale, offer.currency)}
+                    </s>
+                  )}
+                  <span className="font-latin text-[1.125rem] font-extrabold text-navy-900">
+                    {formatPrice(due, locale, offer.currency)}
+                  </span>
                 </span>
               </div>
-              {discount !== undefined && (
-                <>
-                  <div className="flex items-center justify-between text-label text-success-700">
-                    <span>{tl('discount')}</span>
-                    <span className="font-latin font-bold" data-testid="loyalty-discount">
-                      {discountLabel}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-label font-bold text-text-strong">{tl('due')}</span>
-                    <span
-                      className="font-latin text-[1.125rem] font-extrabold text-navy-900"
-                      data-testid="loyalty-due"
-                    >
-                      {formatPrice(offer.price - discount, locale, offer.currency)}
-                    </span>
-                  </div>
-                </>
-              )}
             </div>
             {viewer === 'customer' && (rewards.length > 0 || pointsReward) && (
               <fieldset className="flex flex-col gap-2" data-testid="loyalty-picker">
@@ -876,15 +983,18 @@ export function BookingWizard({
         )}
       </section>
 
-      <footer className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur-md">
+      <footer className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
         <div className="flex items-center gap-4 px-4 py-3 md:px-6">
           <div className="min-w-0 flex-1">
             <p className="truncate text-helper text-text-secondary" data-testid="wizard-footer-note">
               {footerNote}
             </p>
             {offer && (
-              <p className="font-latin text-[1.0625rem] font-extrabold text-navy-900">
-                {formatPrice(offer.price, locale, offer.currency)}
+              <p
+                className="font-latin text-[1.0625rem] font-extrabold text-navy-900"
+                data-testid="wizard-footer-price"
+              >
+                {formatPrice(step === 'review' ? due : offer.price, locale, offer.currency)}
               </p>
             )}
           </div>

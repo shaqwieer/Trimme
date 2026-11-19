@@ -1,10 +1,9 @@
 import { useLocale, useTranslations } from 'next-intl';
-import { Badge, StatusBadge } from '@/components/ui/Badge';
+import { StatusBadge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import type { components } from '@/lib/api/schema';
 import { cn } from '@/lib/cn';
-import { hasPassed } from '@/lib/booking/format';
 import { bookHref } from '@/lib/booking/links';
 import {
   type AppLocale,
@@ -24,26 +23,19 @@ export function isActive(booking: Pick<CustomerBooking, 'status'>): boolean {
 }
 
 /**
- * The customer's status badge (D-148, «٤-١٤»): an open booking whose time has passed is not «مؤكد» any more but «بانتظار
- * تأكيد المحل», until a barber closes it as completed, no-show or cancelled.
+ * The customer's status badge: the booking's own status, the same word the shop sees (D-152, the client's 2-3: «الحالة
+ * نفسها عند الاثنين»). An open booking whose time has passed stays «مؤكد» until a barber closes it as completed, no-show
+ * or cancelled; D-148's «بانتظار تأكيد المحل» for that window read as a booking still waiting for the shop to accept it.
  */
 export function CustomerStatusBadge({
   booking,
   size,
   className,
 }: {
-  booking: Pick<CustomerBooking, 'status' | 'endsAt'>;
+  booking: Pick<CustomerBooking, 'status'>;
   size?: 'sm' | 'md';
   className?: string;
 }) {
-  const t = useTranslations('bookings');
-  if (isActive(booking) && hasPassed(booking.endsAt)) {
-    return (
-      <Badge tone="warning" size={size} className={className}>
-        {t('awaitingShop')}
-      </Badge>
-    );
-  }
   return <StatusBadge kind="booking" status={booking.status} size={size} className={className} />;
 }
 
@@ -132,6 +124,14 @@ export function BookingListItem({ booking }: { booking: CustomerBooking }) {
               {t('actions.reschedule')}
             </Link>
           )}
+          {/* «إلغاء الموعد» beside «تغيير الموعد», in its style (D-152, the client's 2-2): it opens the booking with the
+              cancel dialog open. A link rather than the dialog itself, so the list ships no dialog code: loading it here
+              made the bundler regroup a chunk shared by every page (about 12 KB more on each). */}
+          {actions.has('Cancel') && (
+            <Link href={`${detail}?cancel=1`} className={actionClass}>
+              {t('cancel.open')}
+            </Link>
+          )}
           {actions.has('Review') && (
             <Link href={`${detail}/review`} className={actionClass}>
               <Icon name="star" className="size-4" />
@@ -163,14 +163,14 @@ export function RebookCard({ booking }: { booking: CustomerBooking }) {
       href={rebookHref(booking)}
       className="flex min-h-16 items-center gap-3 rounded-card border border-dashed border-border-strong px-4 py-3 hover:bg-bg-subtle"
     >
-      <span className="flex size-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
         <Icon name="plus" className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-label font-bold text-text-primary">{t('title')}</span>
         <span className="block text-helper text-text-secondary">{t('body')}</span>
       </span>
-      <Icon name="chevR" className="size-4 text-text-tertiary" />
+      <Icon name="chevR" className="size-4 shrink-0 text-text-tertiary" />
     </Link>
   );
 }

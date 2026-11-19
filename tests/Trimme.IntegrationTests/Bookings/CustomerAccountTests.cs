@@ -123,10 +123,18 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
         shopReviews.GetProperty("summary").GetProperty("average").GetDecimal().ShouldBe(4m);
         shopReviews.GetProperty("reviews").GetProperty("items")[0].GetProperty("authorName").GetString().ShouldBe("نورة س.");
         shopReviews.ToString().ShouldNotContain("+966");
-        (await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/reviews?professionalId={w.Faisal}", ct), ct))
-            .GetProperty("summary").GetProperty("count").GetInt32().ShouldBe(1);
-        (await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/reviews?professionalId={w.Omar}", ct), ct))
-            .GetProperty("summary").GetProperty("count").GetInt32().ShouldBe(0);
+
+        // «ما الذي أعجبك؟» shows under the review and is counted on top (D-152, the client's 3-6).
+        static IEnumerable<string> TagCounts(JsonElement summary) =>
+            summary.GetProperty("tags").EnumerateArray().Select(t => $"{t.GetProperty("tag").GetString()}:{t.GetProperty("count").GetInt32()}");
+        shopReviews.GetProperty("reviews").GetProperty("items")[0].GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ShouldBe(["Punctuality", "Quality"]);
+        TagCounts(shopReviews.GetProperty("summary")).ShouldBe(["Punctuality:1", "Quality:1"]);
+        var faisalReviews = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/reviews?professionalId={w.Faisal}", ct), ct);
+        faisalReviews.GetProperty("summary").GetProperty("count").GetInt32().ShouldBe(1);
+        TagCounts(faisalReviews.GetProperty("summary")).ShouldBe(["Punctuality:1", "Quality:1"]);
+        var omarReviews = await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/reviews?professionalId={w.Omar}", ct), ct);
+        omarReviews.GetProperty("summary").GetProperty("count").GetInt32().ShouldBe(0);
+        omarReviews.GetProperty("summary").GetProperty("tags").GetArrayLength().ShouldBe(0);
 
         var reviewed = await OkAsync(nouraAgain.GetAsync($"/api/v1/me/bookings/{visit}", ct), ct);
         reviewed.GetProperty("reviewRating").GetInt32().ShouldBe(4);
@@ -167,7 +175,8 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
 
         // Six visits reviewed at once: the atomic upsert loses no update (R-RVW-01).
         var stars = new[] { 1, 2, 3, 4, 5, 5 };
-        var parallel = await Task.WhenAll(visits.Skip(1).Select((id, i) => ReviewAsync(noura, id, stars[i], ct)));
+        string[][] picked = [["Quality"], ["Quality", "Cleanliness"], [], ["Quality"], ["Manners"], ["Cleanliness", "Quality"]];
+        var parallel = await Task.WhenAll(visits.Skip(1).Select((id, i) => ReviewAsync(noura, id, stars[i], ct, picked[i])));
         parallel.ShouldAllBe(r => r.StatusCode == HttpStatusCode.Created);
         foreach (var response in parallel)
         {
@@ -184,6 +193,12 @@ public sealed class CustomerAccountTests(PostgresFixture postgres)
             row.Sum.ShouldBe(5 + stars.Sum());
             row.Histogram.ShouldBe([1, 1, 1, 1, 3]);
         }
+
+        // The public summary counts each tag over the published reviews, most picked first, none at zero (D-152).
+        using var anonymous = ApiSession.Create(w.Factory);
+        var summary = (await OkAsync(anonymous.GetAsync($"/api/v1/public/shops/{w.SlugA}/reviews", ct), ct)).GetProperty("summary");
+        summary.GetProperty("tags").EnumerateArray().Select(t => $"{t.GetProperty("tag").GetString()}:{t.GetProperty("count").GetInt32()}")
+            .ShouldBe(["Quality:4", "Cleanliness:2", "Manners:1"]);
 
         using var system = scope.ServiceProvider.GetRequiredService<ISystemDataScope>().Begin();
         (await db.Set<Review>().CountAsync(ct)).ShouldBe(7);

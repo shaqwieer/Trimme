@@ -115,6 +115,42 @@ public sealed class OwnerSettingsTests(PostgresFixture postgres)
         (await OkAsync(w.OwnerA.GetAsync("/api/v1/shop/booking-settings", ct), ct)).GetProperty("slotStepMinutes").GetInt32().ShouldBe(30);
     }
 
+    /// <summary>
+    /// D-152 (the client's 1-2): a time that fell inside the shop's minimum notice while the customer was confirming is
+    /// <c>booking.slot_too_soon</c> («الوقت صار قريب مرة»), not «سبقك عميل آخر»; a time someone else took is still
+    /// <c>booking.slot_unavailable</c>. The same for the customer's own reschedule.
+    /// </summary>
+    [Fact]
+    public async Task ATimeInsideTheNotice_IsTooSoon_NotTaken_OnBookingAndRescheduling()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // It is 09:40 on the day, with a 30-minute notice.
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(At(Target, 9, 40).ToUniversalTime());
+        await using var w = await ArrangeAsync(postgres, "d152_too_soon", ct, clock);
+        await OkAsync(w.OwnerA.PutAsync("/api/v1/shop/booking-settings", Settings(false, 5, 30, 14, 0), ct), ct);
+        using var noura = await CustomerAsync(w.Factory, "نورة", ct);
+        using var khalid = await CustomerAsync(w.Factory, "خالد", ct);
+        var later = await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 12), ct), ct, HttpStatusCode.Created);
+        await OkAsync(BookAsync(khalid, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct), ct, HttpStatusCode.Created);
+
+        // 10:00 is now too close; 11:00 is Khalid's.
+        (await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct))
+            .ShouldContain("\"minutes\":30");
+        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 11), ct), HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+        await FailsAsync(BookAsync(noura, w.SlugA, w.Haircut, null, At(Target, 9, 45), ct), HttpStatusCode.Conflict, "booking.slot_too_soon", ct);
+        await OkAsync(BookAsync(noura, w.SlugA, w.Haircut, w.Faisal, At(Target, 10, 10), ct), ct, HttpStatusCode.Created);
+
+        // Moving her 12:00 to 10:05 is too soon now; to 11:00 it is taken.
+        var id = later.GetProperty("id").GetGuid();
+        var version = later.GetProperty("version").GetUInt32();
+        await FailsAsync(
+            noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{id}/reschedule", new { startsAt = At(Target, 10, 5), version }, ct, headers: Key()),
+            HttpStatusCode.Conflict, "booking.slot_too_soon", ct);
+        await FailsAsync(
+            noura.SendAsync(HttpMethod.Post, $"/api/v1/me/bookings/{id}/reschedule", new { startsAt = At(Target, 11), version }, ct, headers: Key()),
+            HttpStatusCode.Conflict, "booking.slot_unavailable", ct);
+    }
+
     [Fact]
     public async Task TheCleaningTime_HoldsTheBarber_AfterEachBooking_AndTheDatabaseKeepsItFree()
     {

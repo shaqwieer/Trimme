@@ -61,7 +61,7 @@ async function BookBar({ target, locale }: { target: Target; locale: AppLocale }
   ]);
   const accepts = status?.acceptsOnlineBookings ?? false;
   return (
-    <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 backdrop-blur-md">
+    <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
       <div className="mx-auto flex max-w-[720px] flex-col gap-2 px-4 py-3 md:px-6">
         {accepts ? (
           <>

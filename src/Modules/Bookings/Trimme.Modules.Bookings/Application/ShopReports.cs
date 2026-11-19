@@ -222,8 +222,9 @@ internal sealed class GetShopReportHandler(
     }
 
     /// <summary>
-    /// The amount due of a completed visit: a points reward (D-149) is already taken off it; a D-132 coupon takes off its
-    /// value (a free service: all of it).
+    /// The amount due of a completed visit: a points reward (D-149) and, since D-152, a D-132 coupon are already taken off
+    /// it. Only a coupon held before D-152 (no discount on the booking) still takes off its value here (a free service: all
+    /// of it), so nothing is discounted twice.
     /// </summary>
     private static decimal ExpectedIncome(Booking b, IReadOnlyDictionary<Guid, LoyaltyRewardTerms> terms)
     {
@@ -232,7 +233,7 @@ internal sealed class GetShopReportHandler(
             return 0m;
         }
 
-        if (b.LoyaltyRewardId is not { } rewardId || !terms.TryGetValue(rewardId, out var reward))
+        if (b.LoyaltyRewardId is not { } rewardId || b.LoyaltyDiscount > 0m || !terms.TryGetValue(rewardId, out var reward))
         {
             return b.AmountDue;
         }

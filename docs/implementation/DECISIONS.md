@@ -1978,3 +1978,93 @@ This refines D-126.
   - Web: `openapi:generate`, typecheck, lint and format pass; `pnpm test` 61 files, 571 tests; `pnpm build` and the bundle budget pass, 89 routes (the admin home 264.1 / 330 KB).
   - E2E (api and web built from the worktree): the admin route audit, light and dark, 4/4.
   - On the local data, the card lists «قص وتصفيف · باربر هاوس ١٠», «حلاقة أطفال · باربر هاوس ٢»… for 30 days.
+
+## D-152 — The client's iPhone test: Safari's bar, sideways pages, the reward's price, «مواعيدي», the customer's cards, WhatsApp amounts, the completed visit's notice, rating tags and the barbers' welcome — Accepted (Session 29, after Phase 17, at the user's request)
+- **The request:** the client's file after the update file («جربنا الموقع كزبون حقيقي من آيفون (Safari)»): 20 numbered items in three priorities, with the user's answers. Plan, statuses and evidence are in `phases/after-17-d152-client-iphone-review.md`.
+- **What the code showed first:**
+  - **The client tested before D-150 was deployed.** Their coupon screens («كوبون الولاء», «احجز واستخدم الكوبون», «أكمل زيارتين…») are D-132's, which D-150 replaced the same morning. D-150's points reward already zeroes the linked service, and its service is picked from a list.
+  - **«بانتظار تأكيد المحل» was not the coupon's state.** It was D-148's label for an open booking past its end.
+  - **No WhatsApp is sent after «انتهت الخدمة»** today, which is what 3-4 asks for.
+- **Not built here:**
+  - **2-7 and 3-7 are covered by D-151 (confirmed by the session finishing it): colleagues' bookings read-only with «جدولي / الكل / each colleague» on the barber's `/shop` and `/shop/appointments`; the barber's `/shop` is the day screen with the red «حجوزات تحتاج إقفال» block under the quick buttons; the late card's buttons under its text; `LoyaltyRulesForm` runs typed values through `toLatinDigits` and names the range («لازم تكون من … إلى …»).**
+    - 2-7: colleagues' bookings today, the red block on the barber's home, and the squeezed late card.
+    - 3-7: the loyalty form's range message. Arabic-Indic digits fail `/^\d+$/` in `LoyaltyRulesForm`.
+  - **3-2 and 3-3 are deferred** by the user, because they need new Meta templates.
+    - 3-2: a «عرض الحجز» button and the booking's source on the barber's WhatsApp.
+    - 3-3: the old and new times on the reschedule message.
+  - **1-2's lead-time value is the user's,** already set with the client. No default or data changes.
+- **1-1 Safari's bottom bar.**
+  - The viewport has `viewportFit: 'cover'`, so iOS now reports the safe-area insets. The bottom bars already padded by `env(safe-area-inset-bottom)`, but it was 0 without `cover`.
+  - The sticky footers pad by the inset too: the booking wizard; the shop, barber and QR pages; the filter sheet; the admin save bars; the reschedule footer above the tab bar; and the toasts.
+  - The body pads the sides in landscape.
+  - **Needs a real iPhone** with Safari's bar showing; Playwright draws no Safari toolbar.
+- **2-1 Sideways pages.**
+  - **Nothing is wider than the screen.** Measured in WebKit and Chromium at 320 and 390 px, no element on any customer page overflows.
+  - **The cause is iOS's zoom on focus.** Text fields are 14.5–15 px, and Safari zooms into any field under 16 px and stays zoomed. After «رقم الجوال», every page looked cut and could be panned.
+  - **The fix is iOS-only:** text fields are 16 px under `@supports (-webkit-touch-callout: none)`. Pinch zoom stays, since there is no `maximum-scale`, which axe flags.
+  - **A backstop:** `html` and `body` clip sideways overflow with `overflow-x: clip`, which keeps sticky headers working.
+  - «احجز موعدك القادم»'s icon no longer shrinks.
+  - **Needs the same iPhone check.**
+- **1-2 A time that became too close.**
+  - **A new error.** The API answers 409 `booking.slot_too_soon` (detail `minutes`, the shop's notice) when the start is now inside the shop's effective lead time, for an online booking and for the customer's reschedule.
+    - It is checked only after the availability recheck refuses the time, so a time both taken and too close reads as too close.
+    - A time someone else took stays `booking.slot_unavailable`.
+  - **The wizard no longer sends the customer back.**
+    - The review step says why: «الوقت صار قريب مرة» or «حُجز هذا الوقت للتو».
+    - It offers up to four nearest times: the rest of that day, else the next day with a free time.
+    - One tap takes one and stays on the review.
+  - The reschedule page names the reason too.
+- **1-3 The reward's price.**
+  - **The review step:**
+    - It lists each service's price when there are several, or when one is free. The free one shows its price struck through and «مجانية».
+    - An amount off keeps the «خصم المكافأة» line.
+    - The total, «الإجمالي (يُدفع في الصالون)», is net, with the full price struck beside it.
+    - The sticky footer shows the net total on the review; it used to show the full price.
+    - The coupon hint no longer says the shop applies it at the visit: «يُستخدم الكوبون عند انتهاء الخدمة، ويعود إليك إذا أُلغي الموعد.»
+  - **Old D-132 coupons lower the price too** (the user's answer).
+    - A free-service coupon makes the booking free: these coupons name no service, and the reports always counted them that way.
+    - A percent coupon takes its percent off, to the halala.
+    - The booking keeps the discount in `LoyaltyDiscount` and `amountDue`, fixed at booking: a service added at the visit is paid in full, and the discount is clamped when one is removed.
+    - Reports read `amountDue` once a discount is set. A coupon held before this change (no discount) is still counted the old way, so nothing is discounted twice and no data migration is needed.
+  - **What the shop and the customer see:** the barber's drawer shows what the customer pays («٠ ⃁ — يُدفع في المحل»), and the customer's booking page shows «الإجمالي ٠».
+  - **When the booking lacks the reward's service,** the points reward still shows, disabled, with the service it needs. This is D-150's choice, kept rather than hiding it.
+- **2-2 «مواعيدي».**
+  - Each card has «إلغاء الموعد» beside «تغيير الموعد», in that action's own style. Cancelling there stays on the list.
+  - «إعادة جدولة» is now «تغيير الموعد» on the card, the details and the reschedule page's title (ar and en; Turkish already said it).
+- **2-3 One status.**
+  - The customer sees the booking's own status, the shop's word: an open booking past its end stays «مؤكد» until a barber closes it, then «مكتمل», «ما حضر» or «ملغي».
+  - D-148's «بانتظار تأكيد المحل» is removed, reversing D-148 4-14 for that window at the user's choice.
+  - The reward has its own row.
+- **2-4 and 2-6 The coupon row.**
+  - The customer's screens show no code: the reward travels with the booking, and the barber never types it. The API still returns the code.
+  - The badge («محجوز لموعدك القادم» or «جاهز للاستخدام») and «عرض الموعد» sit under the title.
+  - Expiry is unchanged.
+- **2-5 The card stays.**
+  - `/me/loyalty` keeps a shop's card when the customer used a reward there, a D-132 coupon included, even with the add-on off.
+  - History entries carry the reward's title («استخدمت: حلاقة شعر مجانية»). The last one stays in sight above «سجل النقاط», with its date.
+  - A coupon's line has no points figure and no barber.
+- **2-8** «رقم العميل غير متاح» is gone from the barber's and the owner's drawer. Only «جوال العميل» shows, on a booking the shop recorded with a number, until «انتهت الخدمة» (D-147).
+- **3-1 WhatsApp amounts.**
+  - The amount is the amount due; it was the price.
+  - Arabic messages write it «٦٠ ريال» or «١٬٢٣٤٫٥ ريال»: Arabic-Indic digits and the word, because the new sign does not render on every phone. English stays "SAR 60".
+  - This is a parameter value only: no template changes and no Meta review.
+  - `NotifiableBooking.Price` is renamed `AmountDue`, and one example value changed in `docs/whatsapp/meta-templates.json`.
+- **3-4 After «انتهت الخدمة».**
+  - **One in-app notice, `booking.completed`,** for each completed online visit of a signed-in customer.
+  - **Who sends it:** the Loyalty booking consumer, after the points are settled, so there is one notice per visit and never two.
+  - **What it says:** «شكراً لزيارتك في … قيّم زيارتك ليستفيد غيرك من تجربتك.» While the shop's add-on is on, it adds the points («، وأضفنا نقطتين إلى بطاقتك. باقي …»).
+  - **Where it leads:** the booking's review.
+  - **It replaces D-150's `loyalty.visit_completed`.** The web still renders the old kind for notices already sent.
+  - There is still no WhatsApp. Walk-in and phone bookings have no account and get nothing.
+- **3-5** «احجز واستخدم مكافأتك» opens the wizard with the reward ticked on the review: `reward=points`, with the reward's service chosen when it is a free service, or `reward=<coupon id>` for a coupon.
+- **3-6 Rating tags.**
+  - Public reviews carry their tags.
+  - The summary counts each tag over the shop's (or the barber's) published reviews, most picked first.
+  - The shop and barber pages show the tags under each review, and the top three under the stars («٨ أشادوا بـجودة الحلاقة»).
+- **3-8 The welcome.**
+  - **A short name.** The shop has an optional «اسم مختصر» (`shortNameAr` and `shortNameEn`, at most 40 characters). Migration `ShopShortName` makes 29 in total.
+  - **The shop always edits it,** whatever the admin's field policy: `ShopProfileField.ShortName` is outside the policy list. A save that omits it clears it.
+  - **The shop's home** says «أهلاً محمد، نورتنا», using the first word of the signed-in user's name, then the shop icon and the short name, or the full name when there is none.
+- **3-9** The pager hides itself when everything fits on one page, on every list, unless the link points past the last page.
+- **Dependencies:** none added.
+- **Shared tree:** D-151 is in progress in another session's checkout, and a third session committed D-153 and D-154. This was built and verified in its own git worktree, on top of D-154.

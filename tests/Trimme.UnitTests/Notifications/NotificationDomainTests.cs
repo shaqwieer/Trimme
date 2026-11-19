@@ -37,7 +37,7 @@ public sealed class NotificationDomainTests
     }
 
     [Fact]
-    public void Formatting_MatchesTheWebRules_ArabicIndicClockDigits_LatinAmounts()
+    public void Formatting_MatchesTheWebRules_ArabicIndicDigits_AmountsInRiyalWords()
     {
         // The same strings the web app's format.ts produces (D-040), captured from Intl.
         var start = new DateTimeOffset(2026, 9, 18, 14, 30, 0, TimeSpan.Zero);
@@ -49,7 +49,10 @@ public sealed class NotificationDomainTests
         MessageFormat.Time(new DateTimeOffset(2026, 9, 18, 6, 0, 0, TimeSpan.Zero), "Asia/Riyadh", "ar").ShouldBe("٩:٠٠ ص");
         MessageFormat.Minutes(30, "ar").ShouldBe("٣٠ دقيقة");
         MessageFormat.Minutes(45, "en").ShouldBe("45 min");
-        MessageFormat.Amount(1234.5m, "SAR", "ar").ShouldBe("1,234.5 ر.س");
+        // D-152 (the client's 3-1): Arabic-Indic digits and the word «ريال», never «ر.س» or the new sign (not on every phone).
+        MessageFormat.Amount(1234.5m, "SAR", "ar").ShouldBe("١٬٢٣٤٫٥ ريال");
+        MessageFormat.Amount(60m, "SAR", "ar").ShouldBe("٦٠ ريال");
+        MessageFormat.Amount(0m, "SAR", "ar").ShouldBe("٠ ريال");
         MessageFormat.Amount(85m, "SAR", "en").ShouldBe("SAR 85");
     }
 
@@ -67,7 +70,7 @@ public sealed class NotificationDomainTests
 
         forCustomer.Body.ShouldContain("سارة العتيبي");
         forCustomer.Body.ShouldContain("٥:٣٠ م");
-        forCustomer.Body.ShouldContain("85 ر.س");
+        forCustomer.Body.ShouldContain("٨٥ ريال");
         forCustomer.Body.ShouldNotContain("{{");
         forCustomer.Buttons.Select(b => b.Url).ShouldContain(u => u.Contains("/ar/account/bookings/", StringComparison.Ordinal));
         forProfessional.Body.ShouldStartWith("لديك حجز جديد باسم سارة العتيبي");

@@ -119,7 +119,7 @@ internal static class BookingEndpoints
                     : Created(http, await d.Send(new CreateOnlineBookingCommand(r.ShopSlug ?? string.Empty, r.ServiceId, r.PackageId, r.ProfessionalId, r.StartsAt, r.Note, key!, QrScan(http), r.ServiceIds, r.LoyaltyRewardId, r.UseLoyaltyReward), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking).WithTags("Customer: bookings")
             .WithName("CreateBooking")
-            .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken.")
+            .WithSummary("Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop's minimum notice (D-152).")
             .Produces<CustomerBookingResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
@@ -157,7 +157,7 @@ internal static class BookingEndpoints
                     ? missing.ToProblem()
                     : Ok(http, await d.Send(new RescheduleMyBookingCommand(bookingId, r.StartsAt, r.ProfessionalId, r.Version, key!), ct)))
             .RequireUserType(UserTypes.Customer).RequireRateLimiting(RateLimitPolicies.Booking)
-            .WithName("RescheduleMyBooking").WithSummary("Moves the booking to another offered slot until the cutoff (Idempotency-Key required).")
+            .WithName("RescheduleMyBooking").WithSummary("Moves the booking to another offered slot until the cutoff (Idempotency-Key required). 409 booking.slot_unavailable when taken; 409 booking.slot_too_soon when the time is now closer than the shop's minimum notice (D-152).")
             .Produces<CustomerBookingResponse>().ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict).ProducesProblem(StatusCodes.Status422UnprocessableEntity);
         mine.MapGet("/{bookingId:guid}/reschedule/dates", async (Guid bookingId, DateOnly? from, DateOnly? to, IDispatcher d, CancellationToken ct) =>

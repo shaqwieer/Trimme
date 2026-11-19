@@ -49,8 +49,12 @@ const KNOWN: Record<NoticeAudience, readonly string[]> = {
     'booking.professional_changed',
     // The barber offers a new time (D-147): the customer accepts or declines it on the booking's page.
     'booking.postponement_offered',
-    // «خلصت زيارتك» (D-149): the points the visit added and what is left to the reward.
+    // «خلصت زيارتك» (D-149): the points the visit added and what is left to the reward. Kept for the notices already
+    // sent; D-152 replaces it with `booking.completed`.
     'loyalty.visit_completed',
+    // D-152 (the client's 3-4): one free notice per completed online visit, instead of a WhatsApp: thanks, «قيّم زيارتك»
+    // (it leads to the review), and while the shop's loyalty add-on is on, the points and what is left.
+    'booking.completed',
   ],
   barber: BOOKING_KINDS,
   admin: [
@@ -110,6 +114,8 @@ export function noticeValues(notice: Notice, locale: AppLocale): Record<string, 
     ready: Number(p.rewardsReady ?? 0),
     allowance: Number(p.allowance ?? 0),
     name: p.name ?? '',
+    // `booking.completed` carries the points only while the shop's loyalty add-on is on (D-152).
+    loyalty: p.pointsForReward ? 'on' : 'off',
   };
 }
 
@@ -127,6 +133,8 @@ export function noticeHref(audience: NoticeAudience, notice: Notice): string | u
       return notice.bookingId ? `/shop/appointments?booking=${notice.bookingId}` : undefined;
     case 'customer':
       if (notice.kind === 'loyalty.visit_completed') return '/account/loyalty';
+      if (notice.kind === 'booking.completed' && notice.bookingId)
+        return `/account/bookings/${notice.bookingId}/review`;
       return notice.bookingId ? `/account/bookings/${notice.bookingId}` : undefined;
     case 'admin':
       if (notice.kind === 'whatsapp.dispatch_failed') return '/admin/whatsapp/dispatches?status=Failed';

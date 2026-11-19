@@ -349,7 +349,16 @@ export function AppointmentDrawer({
                   [t('rows.source'), t(`channel.${bookingSource(booking)}`)],
                   [
                     t('rows.amount'),
-                    t('amount', { price: formatPrice(booking.item.price, locale, booking.item.currency) }),
+                    // D-152 (1-3): what the customer pays, net of a loyalty reward («مكافأة ولاء» makes it ٠).
+                    t('amount', {
+                      price: formatPrice(
+                        booking.loyaltyReward?.discount != null && booking.amountDue != null
+                          ? booking.amountDue
+                          : booking.item.price,
+                        locale,
+                        booking.item.currency,
+                      ),
+                    }),
                   ],
                   ...(booking.actualStartAt
                     ? [[t('rows.actualStart'), formatTime(booking.actualStartAt, locale, timeZone)]]
@@ -382,6 +391,8 @@ export function AppointmentDrawer({
                 </div>
               ))}
             </dl>
+            {/* D-152 (the client's 2-8): only a number the shop recorded shows, until «انتهت الخدمة»; nothing is said
+                about any other booking's number («رقم العميل غير متاح» raised more questions than it answered). */}
             {booking.customerPhone ? (
               <p
                 className="flex items-start gap-2 rounded-card bg-bg-subtle p-3 text-helper text-text-secondary"
@@ -400,18 +411,7 @@ export function AppointmentDrawer({
                   <span className="block">{t('phone.body')}</span>
                 </span>
               </p>
-            ) : (
-              <p
-                className="flex items-start gap-2 rounded-card bg-bg-muted p-3 text-helper text-text-secondary"
-                data-testid="no-phone-note"
-              >
-                <Icon name="eyeOff" className="mt-0.5 size-4 shrink-0" />
-                <span>
-                  <strong className="block text-text-strong">{t('noPhone.title')}</strong>
-                  {t('noPhone.body')}
-                </span>
-              </p>
-            )}
+            ) : null}
 
             {error && <InlineAlert tone="danger" title={error} />}
 

@@ -146,7 +146,7 @@ export function MapLibreView({
       role="region"
       aria-label={label}
       data-testid="location-map"
-      className="h-[60vh] max-h-[420px] min-h-[280px] w-full overflow-hidden rounded-card border border-border bg-bg-muted md:aspect-video md:h-auto"
+      className="h-[60dvh] max-h-[420px] min-h-[280px] w-full overflow-hidden rounded-card border border-border bg-bg-muted md:aspect-video md:h-auto"
     />
   );
 }

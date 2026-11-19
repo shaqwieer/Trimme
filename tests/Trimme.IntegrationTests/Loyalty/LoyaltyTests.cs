@@ -187,11 +187,14 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         (await ScalarAsync(w.Factory, "SELECT professional_id FROM loyalty.entries WHERE booking_id = @p", ct, first)).ShouldBe(w.Faisal);
         (await ScalarAsync(w.Factory, "SELECT closed_by_id IS NOT NULL FROM loyalty.entries WHERE booking_id = @p", ct, first)).ShouldBe(true);
 
-        // «خلصت زيارتك»: the customer is told in-app how many points and how many are left.
+        // «شكراً لزيارتك» (D-152, one notice per visit): the customer is told in-app how many points and how many are left,
+        // with the booking for «قيّم زيارتك». D-150's own notice is no longer sent.
         using (var me = await MeAsync(w.Factory, phone, ct))
         {
-            var notice = (await OkAsync(me.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray()
-                .Single(n => n.GetProperty("kind").GetString() == "loyalty.visit_completed");
+            var items = (await OkAsync(me.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray().ToList();
+            items.ShouldNotContain(n => n.GetProperty("kind").GetString() == "loyalty.visit_completed");
+            var notice = items.Single(n => n.GetProperty("kind").GetString() == "booking.completed");
+            notice.GetProperty("bookingId").GetGuid().ShouldBe(first);
             notice.GetProperty("parameters").GetProperty("pointsEarned").GetString().ShouldBe("3");
             notice.GetProperty("parameters").GetProperty("pointsToNext").GetString().ShouldBe("1");
         }
@@ -294,6 +297,7 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         var history = card.GetProperty("history").EnumerateArray().ToList();
         history[0].GetProperty("kind").GetString().ShouldBe("Redeemed");
         history[0].GetProperty("points").GetInt32().ShouldBe(-4);
+        history[0].GetProperty("rewardTitleAr").GetString().ShouldNotBeNullOrWhiteSpace("D-152: «استخدمت: …» names the reward used");
         history.Count(h => h.GetProperty("bookingId").ValueKind != JsonValueKind.Null && h.GetProperty("bookingId").GetGuid() == redeemed).ShouldBe(1);
         (await ScalarAsync(w.Factory, "SELECT status FROM loyalty.redemptions WHERE booking_id = @p", ct, redeemed)).ShouldBe("Consumed");
         (await ScalarAsync(w.Factory, "SELECT count(*) FROM loyalty.redemptions WHERE status = 'Returned'", ct)).ShouldBe(2L);
@@ -590,5 +594,88 @@ public sealed class LoyaltyTests(PostgresFixture postgres)
         card.GetProperty("coupons").GetArrayLength().ShouldBe(0);
         card.GetProperty("points").GetInt32().ShouldBe(0);
         (await ScalarAsync(w.Factory, "SELECT status FROM loyalty.rewards WHERE id = @p", ct, couponId)).ShouldBe("Redeemed");
+    }
+
+    /// <summary>A D-132 coupon issued to the customer under the old programme, written straight to the database.</summary>
+    private static async Task<Guid> IssueCouponAsync(
+        BookingWorld w, FakeTimeProvider clock, Guid customerId, LoyaltyRewardKind kind, int? percent, string titleAr, CancellationToken ct)
+    {
+        await using var scope = w.Factory.Services.CreateAsyncScope();
+        using var system = scope.ServiceProvider.GetRequiredService<ISystemDataScope>().Begin();
+        var db = scope.ServiceProvider.GetRequiredService<TrimmeDbContext>();
+        var program = LoyaltyProgram.Create(
+            EntityId.New<LoyaltyProgramId>(), new ShopId(w.Shops.A.ShopId), new LoyaltyTerms(true, 2, kind, percent, titleAr, null, null), clock.GetUtcNow()).Value;
+        var coupon = LoyaltyReward.Issue(EntityId.New<LoyaltyRewardId>(), program, customerId, LoyaltyCard.NewCode(), clock.GetUtcNow());
+        db.Add(coupon);
+        await db.SaveChangesAsync(ct);
+        return coupon.Id.Value;
+    }
+
+    /// <summary>
+    /// D-152 (the client's 1-3, 2-5, 3-4): an old D-132 coupon now lowers the price at booking — a free-service coupon to
+    /// zero, a percent coupon by its percent — and the barber, the reports and WhatsApp's amount follow without counting it
+    /// twice. Once used, the shop's card stays (no add-on) with «استخدمت: …», and the customer gets one «شكراً لزيارتك».
+    /// </summary>
+    [Fact]
+    public async Task AnOldCoupon_LowersTheAmountDue_TheReportCountsItOnce_AndItsCardStaysWithAUsedLine()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        await using var w = await ArrangeAsync(postgres, "loyalty_coupon_price", ct, clock, SignInAgain);
+        await EnsureBarbersAsync(w, ct);
+        var target = TargetFrom(clock);
+        var (noura, phone) = await NamedCustomerAsync(w.Factory, "نورة", ct);
+        var customerId = (await OkAsync(noura.GetAsync("/api/v1/me", ct), ct)).GetProperty("id").GetGuid();
+        var free = await IssueCouponAsync(w, clock, customerId, LoyaltyRewardKind.FreeService, null, "حلاقة شعر مجانية", ct);
+        var quarter = await IssueCouponAsync(w, clock, customerId, LoyaltyRewardKind.Discount, 25, "خصم ٢٥٪", ct);
+
+        // The free-service coupon: the haircut (60) is free, the amount due is 0, for the customer and the barber.
+        var freeBooking = await OkAsync(BookAsync(noura, w.SlugA, At(target, 10), ct, serviceId: w.Haircut, professionalId: w.Faisal, couponId: free), ct, HttpStatusCode.Created);
+        freeBooking.GetProperty("amountDue").GetDecimal().ShouldBe(0m);
+        freeBooking.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(60m);
+        var freeId = freeBooking.GetProperty("id").GetGuid();
+        using (var faisal = await w.BarberAsync(w.Faisal, ct))
+        {
+            var seen = (await OkAsync(faisal.GetAsync($"/api/v1/shop/bookings/{freeId}", ct), ct)).GetProperty("booking");
+            seen.GetProperty("amountDue").GetDecimal().ShouldBe(0m);
+            seen.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(60m);
+        }
+
+        // The percent coupon: 25% of 60 off, 45 due.
+        var quarterBooking = await OkAsync(BookAsync(noura, w.SlugA, At(target, 11), ct, serviceId: w.Haircut, professionalId: w.Faisal, couponId: quarter), ct, HttpStatusCode.Created);
+        quarterBooking.GetProperty("amountDue").GetDecimal().ShouldBe(45m);
+        quarterBooking.GetProperty("loyaltyReward").GetProperty("discount").GetDecimal().ShouldBe(15m);
+        var quarterId = quarterBooking.GetProperty("id").GetGuid();
+        noura.Dispose();
+
+        await CloseAsync(w, clock, freeId, At(target, 10), ct);
+        await CloseAsync(w, clock, quarterId, At(target, 11), ct);
+
+        // The owner's report counts each discount once: 0 and 45, not 0 and 33.75.
+        using (var owner = await IdentityTestData.SignInStaffAsync(w.Factory, w.Shops.A.OwnerEmail, ct))
+        {
+            var report = await OkAsync(owner.GetAsync($"/api/v1/shop/reports?from={Iso(target)}&to={Iso(target)}", ct), ct);
+            JsonElement Visit(Guid id) => report.GetProperty("visits").EnumerateArray().Single(v => v.GetProperty("id").GetGuid() == id);
+            Visit(freeId).GetProperty("expectedIncome").GetDecimal().ShouldBe(0m);
+            Visit(quarterId).GetProperty("expectedIncome").GetDecimal().ShouldBe(45m);
+            report.GetProperty("shop").GetProperty("expectedIncome").GetDecimal().ShouldBe(45m);
+        }
+
+        // The shop never had the add-on, yet its card stays, with a line for each coupon used, newest first.
+        using var me = await MeAsync(w.Factory, phone, ct);
+        var card = (await OkAsync(me.GetAsync("/api/v1/me/loyalty", ct), ct)).GetProperty("items").EnumerateArray()
+            .Single(c => c.GetProperty("shop").GetProperty("slug").GetString() == w.SlugA);
+        card.GetProperty("active").GetBoolean().ShouldBeFalse();
+        card.GetProperty("coupons").GetArrayLength().ShouldBe(0);
+        var used = card.GetProperty("history").EnumerateArray().ToList();
+        used.Select(h => h.GetProperty("rewardTitleAr").GetString()).ShouldBe(new[] { "خصم ٢٥٪", "حلاقة شعر مجانية" });
+        used.ShouldAllBe(h => h.GetProperty("kind").GetString() == "Redeemed" && h.GetProperty("points").GetInt32() == 0);
+
+        // «شكراً لزيارتك»: one notice per visit, with no points (no loyalty here), and the booking to rate.
+        var notices = (await OkAsync(me.GetAsync("/api/v1/me/notifications", ct), ct)).GetProperty("items").EnumerateArray()
+            .Where(n => n.GetProperty("kind").GetString() == "booking.completed").ToList();
+        notices.Select(n => n.GetProperty("bookingId").GetGuid()).Order().ShouldBe(new[] { freeId, quarterId }.Order());
+        notices.Count(n => n.GetProperty("parameters").EnumerateObject().Any(p => p.Name == "pointsEarned")).ShouldBe(0);
+        notices[0].GetProperty("parameters").GetProperty("shopSlug").GetString().ShouldBe(w.SlugA);
     }
 }

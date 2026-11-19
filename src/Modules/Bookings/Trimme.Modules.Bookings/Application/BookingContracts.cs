@@ -27,10 +27,9 @@ public sealed record BookingProfessionalResponse(Guid Id, string NameAr, string 
 
 public sealed record BookingShopResponse(Guid Id, string Slug, string NameAr, string NameEn);
 
-/// <summary>The loyalty reward chosen for the booking (D-132): the shop applies it at the visit.</summary>
 /// <summary>
-/// The loyalty reward used on the booking: a D-132 coupon (no <c>Discount</c>: the shop applies it at the visit) or a points
-/// reward (D-149), whose <c>Discount</c> is already taken off the amount due.
+/// The loyalty reward used on the booking: a D-132 coupon or a points reward (D-149). <c>Discount</c> is already taken off
+/// the amount due; a coupon held before D-152 has none (the shop applied it at the visit).
 /// </summary>
 public sealed record BookingLoyaltyRewardResponse(Guid Id, string TitleAr, string? TitleEn, decimal? Discount = null);
 
@@ -261,7 +260,7 @@ internal static class BookingMapping
 
     public static BookingLoyaltyRewardResponse? LoyaltyReward(Booking b) =>
         b.LoyaltyRewardId is { } id
-            ? new(id, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn)
+            ? new(id, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn, b.LoyaltyDiscount > 0m ? b.LoyaltyDiscount : null)
             : b.LoyaltyRedemptionId is { } redemption ? new(redemption, b.LoyaltyRewardTitleAr ?? string.Empty, b.LoyaltyRewardTitleEn, b.LoyaltyDiscount) : null;
 
     /// <summary>The booked services and the price each counts for, for a free-service reward (D-149).</summary>

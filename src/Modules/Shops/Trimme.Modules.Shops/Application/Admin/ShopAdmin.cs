@@ -52,7 +52,9 @@ public sealed record AdminShopDetailResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     uint Version,
-    bool IsDemo = false);
+    bool IsDemo = false,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null);
 
 internal sealed record CreateShopCommand(string Slug, string NameAr, string NameEn, string? TimeZone) : ICommand<Result<AdminShopResponse>>;
 
@@ -78,7 +80,9 @@ internal sealed record UpdateShopProfileCommand(
     string? PublicPhone,
     IReadOnlyList<ShopAmenity>? Amenities,
     bool IsVerified,
-    uint Version) : ICommand<Result<AdminShopDetailResponse>>, IShopProfileFields;
+    uint Version,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null) : ICommand<Result<AdminShopDetailResponse>>, IShopProfileFields;
 
 internal sealed record SetShopLocationCommand(
     Guid ShopId,
@@ -405,5 +409,7 @@ internal static class ShopMapping
         shop.CreatedAt,
         shop.UpdatedAt,
         shop.Version,
-        shop.IsDemo);
+        shop.IsDemo,
+        shop.ShortNameAr,
+        shop.ShortNameEn);
 }

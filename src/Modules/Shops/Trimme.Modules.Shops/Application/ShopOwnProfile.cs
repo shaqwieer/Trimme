@@ -14,7 +14,7 @@ namespace Trimme.Modules.Shops.Application;
 /// <summary>
 /// The signed-in shop's own profile, for its settings screen (s-settings). <see cref="EditableFields"/> is the admin
 /// policy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;
-/// <see cref="PublicPhone"/> is the shop's own business number.
+/// <see cref="PublicPhone"/> is the shop's own business number. <c>ShortNameAr/En</c> (D-152) is always the shop's to edit.
 /// </summary>
 public sealed record ShopOwnProfileResponse(
     Guid Id,
@@ -32,7 +32,9 @@ public sealed record ShopOwnProfileResponse(
     IReadOnlyList<ShopImageResponse> Gallery,
     ShopLocationResponse? Location,
     IReadOnlyList<ShopProfileField> EditableFields,
-    uint Version);
+    uint Version,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null);
 
 internal sealed record GetOwnShopProfileQuery : IQuery<ShopOwnProfileResponse?>;
 
@@ -44,7 +46,9 @@ internal sealed record UpdateOwnShopProfileCommand(
     ShopCategory Category,
     string? PublicPhone,
     IReadOnlyList<ShopAmenity>? Amenities,
-    uint Version) : ICommand<Result<ShopOwnProfileResponse>>, IShopProfileFields;
+    uint Version,
+    string? ShortNameAr = null,
+    string? ShortNameEn = null) : ICommand<Result<ShopOwnProfileResponse>>, IShopProfileFields;
 
 internal sealed record SetOwnShopLocationCommand(
     double Latitude,
@@ -233,5 +237,7 @@ internal static class OwnProfileMapping
         ShopInputMapping.Gallery(shop),
         ShopInputMapping.ToResponse(shop.Location),
         shop.EditableFields,
-        shop.Version);
+        shop.Version,
+        shop.ShortNameAr,
+        shop.ShortNameEn);
 }

@@ -8,7 +8,8 @@ namespace Trimme.BuildingBlocks.Application.Loyalty;
 /// Holds a loyalty reward for a new booking (implemented by the Loyalty module).
 /// <list type="bullet">
 /// <item><see cref="HoldAsync"/>: one of the signed-in customer's D-132 coupons, in the booking's transaction and the
-/// customer's own data scope; anything else is 422 <c>loyalty.reward_unavailable</c>.</item>
+/// customer's own data scope; anything else is 422 <c>loyalty.reward_unavailable</c>. Since D-152 it also says what the
+/// coupon takes off the booking's <c>price</c> (a free-service coupon: all of it; a percent coupon: its percent).</item>
 /// <item><see cref="HoldPointsRewardAsync"/>: «استخدم مكافأتي» (D-149), a ready reward of the member's points at the shop,
 /// online or for a walk-in's typed number. It reads the shop's loyalty rows through the caller's scope (the public scope
 /// of the shop for a customer, the tenant for a barber), serializes holds of one member at one shop with a transaction
@@ -17,13 +18,16 @@ namespace Trimme.BuildingBlocks.Application.Loyalty;
 /// </summary>
 public interface ILoyaltyRewardHolder
 {
-    Task<Result<HeldLoyaltyReward>> HoldAsync(Guid rewardId, ShopId shopId, Guid bookingId, DateTimeOffset now, CancellationToken cancellationToken);
+    Task<Result<HeldLoyaltyReward>> HoldAsync(Guid rewardId, ShopId shopId, Guid bookingId, decimal price, DateTimeOffset now, CancellationToken cancellationToken);
 
     Task<Result<HeldPointsReward>> HoldPointsRewardAsync(PointsRewardHold request, CancellationToken cancellationToken);
 }
 
-/// <summary>The held reward and its title, snapshotted on the booking so the shop sees what to apply at the visit.</summary>
-public sealed record HeldLoyaltyReward(Guid RewardId, string TitleAr, string? TitleEn);
+/// <summary>
+/// The held D-132 coupon and its title, snapshotted on the booking, and what it takes off the price (D-152, the client's
+/// 1-3: «الكوبون ما ينزّل السعر»), so the amount due, the barber's screen and the reports all show it.
+/// </summary>
+public sealed record HeldLoyaltyReward(Guid RewardId, string TitleAr, string? TitleEn, decimal Discount);
 
 /// <summary>
 /// A points reward to hold for a booking (D-149). Exactly one of <paramref name="CustomerId"/> (an online booking: the

@@ -135,9 +135,10 @@ public static class TemplateRenderer
 }
 
 /// <summary>
-/// Message formatting in the reader's language, identical to the web app's rules (D-040, <c>format.ts</c>): clock times
-/// and date text in Arabic-Indic digits on a 12-hour clock and the Gregorian calendar; amounts in Latin digits. The tables
-/// are explicit so the output does not depend on the server's ICU data.
+/// Message formatting in the reader's language, close to the web app's rules (D-040, <c>format.ts</c>): clock times, date
+/// text and, since D-152, amounts in Arabic-Indic digits on a 12-hour clock and the Gregorian calendar. Amounts in Arabic
+/// write the word «ريال», never the new Riyal sign (the client's 3-1: it does not show on every phone's WhatsApp). The
+/// tables are explicit so the output does not depend on the server's ICU data.
 /// </summary>
 public static class MessageFormat
 {
@@ -175,13 +176,20 @@ public static class MessageFormat
             ? $"{ArabicDigits(minutes.ToString(CultureInfo.InvariantCulture))} دقيقة"
             : $"{minutes.ToString(CultureInfo.InvariantCulture)} min";
 
-    /// <summary>"85 ر.س" · "SAR 85" (Latin digits, at most two decimals, grouped).</summary>
+    /// <summary>
+    /// "٦٠ ريال", "١٬٢٣٤٫٥ ريال" · "SAR 60" (at most two decimals, grouped). Arabic uses Arabic-Indic digits with the Arabic
+    /// thousands and decimal marks, and the word «ريال» (D-152, the client's 3-1, replacing «60 ر.س»).
+    /// </summary>
     public static string Amount(decimal amount, string currency, string locale)
     {
         var number = amount.ToString("#,0.##", CultureInfo.InvariantCulture);
-        return IsArabic(locale)
-            ? $"{number} {(currency == "SAR" ? "ر.س" : currency)}"
-            : $"{currency} {number}";
+        if (!IsArabic(locale))
+        {
+            return $"{currency} {number}";
+        }
+
+        var arabic = ArabicDigits(number.Replace(',', '٬').Replace('.', '٫'));
+        return $"{arabic} {(currency == "SAR" ? "ريال" : currency)}";
     }
 
     public static string ArabicDigits(string latin)

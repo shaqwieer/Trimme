@@ -88,7 +88,9 @@ describe('AppointmentDrawer (s-appointments drawer, DV-S08)', () => {
     await within(drawer).findByText('عبدالله الشمري');
     expect(drawer).toHaveTextContent('زبون عائد');
     expect(drawer).toHaveTextContent('٨٥ \u20C1 — يُدفع في المحل');
-    expect(within(drawer).getByTestId('no-phone-note')).toHaveTextContent('رقم العميل غير متاح');
+    // D-152 (2-8): nothing at all is said about an online customer's number.
+    expect(within(drawer).queryByTestId('no-phone-note')).not.toBeInTheDocument();
+    expect(drawer).not.toHaveTextContent('رقم العميل');
     expect(drawer.textContent).not.toMatch(/\+966|05\d{8}/);
     expect(
       within(drawer)

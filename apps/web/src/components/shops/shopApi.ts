@@ -21,7 +21,8 @@ export const SHOP_AMENITIES: ShopAmenity[] = [
   'WaitingArea',
   'PrayerArea',
 ];
-export const PROFILE_FIELDS: ShopProfileField[] = [
+/** The fields the admin's policy opens to the shop; the short name is always the shop's own (D-152), so it is not one. */
+export const PROFILE_FIELDS: Exclude<ShopProfileField, 'ShortName'>[] = [
   'Name',
   'Description',
   'Category',
@@ -38,6 +39,8 @@ export type ShopProfileData = Pick<
   Schemas['ShopOwnProfileResponse'],
   | 'nameAr'
   | 'nameEn'
+  | 'shortNameAr'
+  | 'shortNameEn'
   | 'descriptionAr'
   | 'descriptionEn'
   | 'category'

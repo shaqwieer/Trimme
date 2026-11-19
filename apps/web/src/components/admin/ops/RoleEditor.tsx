@@ -169,7 +169,7 @@ export function RoleEditor({
       </div>
 
       {editable && (
-        <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-e3">
+        <div className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-e3">
           <Button size="md" icon="check" loading={busy} onClick={() => void save()}>
             {t('save')}
           </Button>

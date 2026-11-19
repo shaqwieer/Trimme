@@ -138,11 +138,14 @@ type PaginationProps = {
 /**
  * Pagination (design 758–774): summary + previous / numbered / next; arrows mirror in RTL. Below `md` only previous,
  * the current page and next are shown: seven numbered cells and two arrows do not fit a 390 px phone (D-122).
+ * Nothing is shown when everything fits on one page (D-152, the client's 3-9: «عرض ١-١ من ١» with one appointment),
+ * unless the link points past it, so there is a way back.
  */
 export function Pagination({ page, pageSize, total, hrefForPage }: PaginationProps) {
   const t = useTranslations('ui.pagination');
   const locale = useLocale() as AppLocale;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  if (pageCount === 1 && page <= 1) return null;
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   const pages = pageWindow(page, pageCount);

@@ -17,6 +17,10 @@ internal sealed record GetMyShopLoyaltyQuery(string ShopSlug) : IQuery<MyShopLoy
 /// online, at the shop's desk with the number typed, or by an earlier account with the same number. The cards live with
 /// the shops that run or ran the add-on; they are read inside the public scope of those shops, filtered by the member key
 /// of the customer's own number. D-132 coupons are the customer's own rows.
+/// <para>
+/// D-152 (the client's 2-5): a card never disappears because its reward was used. A shop where the customer used a D-132
+/// coupon keeps its card (with the add-on off too), and every used reward is a history line with its title.
+/// </para>
 /// </summary>
 internal sealed class CustomerLoyaltyReader(
     TrimmeDbContext db, ICurrentCustomer customer, IPublicDataScope scope, IShopDirectory shops, ILoyaltyAddOnStatus addOn, ILoyaltyMemberKeys keys,
@@ -34,14 +38,15 @@ internal sealed class CustomerLoyaltyReader(
 
         var memberKey = await keys.ForCustomerAsync(customerId, cancellationToken);
         var coupons = await CouponsAsync(customerId, null, cancellationToken);
+        var used = await UsedCouponsAsync(customerId, null, cancellationToken);
         var candidates = (await addOn.ShopsWithAddOnAsync(IPublicDataScope.MaxShops, cancellationToken))
-            .Concat(coupons.Select(c => c.ShopId)).Distinct().Take(IPublicDataScope.MaxShops).ToList();
+            .Concat(coupons.Select(c => c.ShopId)).Concat(used.Select(c => c.ShopId)).Distinct().Take(IPublicDataScope.MaxShops).ToList();
         if (candidates.Count == 0)
         {
             return new MyLoyaltyResponse([]);
         }
 
-        var cards = await CardsAsync(candidates, memberKey, coupons, onlyWithData: true, cancellationToken);
+        var cards = await CardsAsync(candidates, memberKey, coupons, used, onlyWithData: true, cancellationToken);
         return new MyLoyaltyResponse([.. cards.OrderByDescending(c => c.RewardsReady).ThenByDescending(c => c.Points).ThenByDescending(c => c.Coupons.Count)]);
     }
 
@@ -60,11 +65,17 @@ internal sealed class CustomerLoyaltyReader(
 
         var memberKey = await keys.ForCustomerAsync(customerId, cancellationToken);
         var coupons = await CouponsAsync(customerId, shop.Id, cancellationToken);
-        return (await CardsAsync([shop.Id], memberKey, coupons, onlyWithData: false, cancellationToken)).SingleOrDefault();
+        var used = await UsedCouponsAsync(customerId, shop.Id, cancellationToken);
+        return (await CardsAsync([shop.Id], memberKey, coupons, used, onlyWithData: false, cancellationToken)).SingleOrDefault();
     }
 
     private async Task<List<MyShopLoyaltyResponse>> CardsAsync(
-        IReadOnlyList<ShopId> shopIds, string? memberKey, IReadOnlyList<LoyaltyReward> coupons, bool onlyWithData, CancellationToken cancellationToken)
+        IReadOnlyList<ShopId> shopIds,
+        string? memberKey,
+        IReadOnlyList<LoyaltyReward> coupons,
+        IReadOnlyList<LoyaltyReward> usedCoupons,
+        bool onlyWithData,
+        CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         var summaries = await shops.FindManyAsync(shopIds, cancellationToken);
@@ -73,6 +84,7 @@ internal sealed class CustomerLoyaltyReader(
         List<LoyaltyAccount> accounts = [];
         List<LoyaltyRedemption> held = [];
         List<LoyaltyEntry> entries = [];
+        List<LoyaltyRedemption> consumed = [];
         using (scope.BeginMany(shopIds))
         {
             settings = await db.Set<LoyaltySettings>().AsNoTracking().Where(s => shopIds.Contains(s.ShopId)).ToListAsync(cancellationToken);
@@ -89,6 +101,14 @@ internal sealed class CustomerLoyaltyReader(
                         .Where(e => withCards.Contains(e.ShopId) && e.MemberKey == memberKey)
                         .OrderByDescending(e => e.At).Take(HistoryLength * withCards.Count)
                         .ToListAsync(cancellationToken);
+
+                // The rewards those history lines used, for their titles (D-152).
+                var usedOn = entries.Where(e => e.Kind == LoyaltyEntryKind.Redeemed && e.BookingId is not null).Select(e => e.BookingId!.Value).ToList();
+                consumed = usedOn.Count == 0
+                    ? []
+                    : await db.Set<LoyaltyRedemption>().AsNoTracking()
+                        .Where(r => usedOn.Contains(r.BookingId) && r.MemberKey == memberKey)
+                        .ToListAsync(cancellationToken);
             }
         }
 
@@ -104,10 +124,16 @@ internal sealed class CustomerLoyaltyReader(
             var account = accounts.FirstOrDefault(a => a.ShopId == shopId);
             var heldHere = held.Where(r => r.ShopId == shopId).ToList();
             var couponsHere = coupons.Where(c => c.ShopId == shopId).ToList();
-            if (onlyWithData && account is null && heldHere.Count == 0 && couponsHere.Count == 0)
+            var usedHere = usedCoupons.Where(c => c.ShopId == shopId).ToList();
+            if (onlyWithData && account is null && heldHere.Count == 0 && couponsHere.Count == 0 && usedHere.Count == 0)
             {
                 continue;
             }
+
+            var history = entries.Where(e => e.ShopId == shopId)
+                .Select(e => LoyaltyMapping.Entry(e, e.Kind == LoyaltyEntryKind.Redeemed ? consumed.FirstOrDefault(r => r.BookingId == e.BookingId) : null))
+                .Concat(usedHere.Select(LoyaltyMapping.CouponUsed))
+                .OrderByDescending(h => h.At).Take(HistoryLength);
 
             var points = heldHere.Sum(r => r.Points);
             var card = LoyaltyBalance.Card(LoyaltyBalance.Available(account, rules, points, now), rules?.PointsForReward ?? 0);
@@ -121,7 +147,7 @@ internal sealed class CustomerLoyaltyReader(
                 card.CurrentCard,
                 card.PointsToNext,
                 heldHere.Count,
-                [.. entries.Where(e => e.ShopId == shopId).Take(HistoryLength).Select(LoyaltyMapping.Entry)],
+                [.. history],
                 [.. couponsHere.OrderBy(r => r.Status).ThenBy(r => r.ExpiresAt ?? DateTimeOffset.MaxValue).Select(LoyaltyMapping.Reward)]));
         }
 
@@ -141,6 +167,18 @@ internal sealed class CustomerLoyaltyReader(
         }
 
         return await rewards.ToListAsync(cancellationToken);
+    }
+
+    /// <summary>D-132 coupons the customer used at a completed visit (their own rows), newest first, for the history (D-152).</summary>
+    private async Task<List<LoyaltyReward>> UsedCouponsAsync(Guid customerId, ShopId? shopId, CancellationToken cancellationToken)
+    {
+        var rewards = db.Set<LoyaltyReward>().AsNoTracking().Where(r => r.CustomerId == customerId && r.Status == LoyaltyRewardStatus.Redeemed);
+        if (shopId is { } only)
+        {
+            rewards = rewards.Where(r => r.ShopId == only);
+        }
+
+        return await rewards.OrderByDescending(r => r.RedeemedAt).Take(HistoryLength * 10).ToListAsync(cancellationToken);
     }
 }
 

@@ -429,4 +429,25 @@ public sealed class BookingDomainTests
         var walkIn = Booking.CreateWalkIn(new BookingId(Guid.CreateVersion7()), Shop, "زائر", Faisal, Haircut(), Start, startsNow: false, null, ShopUser, Now);
         walkIn.BlockedUntil.ShouldBe(walkIn.EndsAt);
     }
+
+    [Fact]
+    public void AnOldCoupon_LowersTheAmountDue_OncePerBooking_AndNeverBelowZero()
+    {
+        // D-152 (the client's 1-3): the coupon's value comes off what is due; the price stays the booked one.
+        var booking = Online();
+        booking.UseLoyaltyReward(Guid.CreateVersion7(), "حلاقة شعر مجانية", null, 60m);
+        booking.Price.ShouldBe(60m);
+        booking.LoyaltyDiscount.ShouldBe(60m);
+        booking.AmountDue.ShouldBe(0m);
+        Should.Throw<InvalidOperationException>(() => booking.UseLoyaltyReward(Guid.CreateVersion7(), "أخرى", null, 10m));
+        Should.Throw<InvalidOperationException>(() => booking.UsePointsReward(Guid.CreateVersion7(), "أخرى", null, 10m));
+
+        var overstated = Online();
+        overstated.UseLoyaltyReward(Guid.CreateVersion7(), "خصم", null, 500m);
+        overstated.AmountDue.ShouldBe(0m);
+
+        var percent = Online();
+        percent.UseLoyaltyReward(Guid.CreateVersion7(), "خصم ٢٥٪", null, 15m);
+        percent.AmountDue.ShouldBe(45m);
+    }
 }

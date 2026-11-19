@@ -440,7 +440,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken. */
+        /** Books an offered slot (Idempotency-Key required; a replay returns the same booking). 409 booking.slot_unavailable when the time was taken; 409 booking.slot_too_soon when it is now closer than the shop's minimum notice (D-152). */
         post: operations["CreateBooking"];
         delete?: never;
         options?: never;
@@ -3118,7 +3118,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Moves the booking to another offered slot until the cutoff (Idempotency-Key required). */
+        /** Moves the booking to another offered slot until the cutoff (Idempotency-Key required). 409 booking.slot_unavailable when taken; 409 booking.slot_too_soon when the time is now closer than the shop's minimum notice (D-152). */
         post: operations["RescheduleMyBooking"];
         delete?: never;
         options?: never;
@@ -4780,6 +4780,8 @@ export interface components {
             version: number;
             /** @default false */
             isDemo: boolean;
+            shortNameAr?: null | string;
+            shortNameEn?: null | string;
         };
         /**
          * @description A shop's loyalty as the admin sees it (D-149): whether the paid add-on is in force (switched on or off on the shop's
@@ -5134,7 +5136,10 @@ export interface components {
             durationMinutes: number;
             packageItems: components["schemas"]["BookedPackageItemResponse"][];
         };
-        /** @description The loyalty reward chosen for the booking (D-132): the shop applies it at the visit. */
+        /**
+         * @description The loyalty reward used on the booking: a D-132 coupon or a points reward (D-149). `Discount` is already taken off
+         *     the amount due; a coupon held before D-152 has none (the shop applied it at the visit).
+         */
         BookingLoyaltyRewardResponse: {
             /** Format: uuid */
             id: string;
@@ -5904,7 +5909,11 @@ export interface components {
         };
         /** @enum {unknown} */
         LoyaltyEntryKind: "Earned" | "Redeemed" | "Wiped" | "Decayed";
-        /** @description A line of the card's history: points earned at a visit (with the barber who closed it), a reward used, or points lost without visits. */
+        /**
+         * @description A line of the card's history: points earned at a visit (with the barber who closed it), a reward used, or points lost
+         *     without visits. A used reward carries its title (D-152, the client's 2-5: «استخدمت: حلاقة شعر مجانية — ١٩ نوفمبر»):
+         *     a points reward's, or a D-132 coupon's (`Redeemed` with 0 points, dated when the visit was completed).
+         */
         LoyaltyHistoryEntryResponse: {
             /** Format: date-time */
             at: string;
@@ -5914,6 +5923,8 @@ export interface components {
             /** Format: uuid */
             bookingId: null | string;
             barberName: null | string;
+            rewardTitleAr?: null | string;
+            rewardTitleEn?: null | string;
         };
         /**
          * @description What happens to points without visits (D-149), counted from the last visit at the shop.
@@ -6773,7 +6784,7 @@ export interface components {
         /**
          * @description A published review as the public sees it (D-017): the author's first name and surname initial, never the full name
          *     or any contact data (DV-S15). `ItemNameAr/En` is the booked service or package (the design links reviews to a
-         *     service).
+         *     service). `Tags` is what the customer picked in «ما الذي أعجبك؟» (D-152, the client's 3-6).
          */
         PublicReviewResponse: {
             /** Format: uuid */
@@ -6788,6 +6799,7 @@ export interface components {
             professionalId: string;
             /** Format: date-time */
             createdAt: string;
+            tags: components["schemas"]["ReviewTag"][];
         };
         PublicReviewsResponse: {
             summary: components["schemas"]["RatingSummaryResponse"];
@@ -6987,13 +6999,18 @@ export interface components {
          * @enum {unknown}
          */
         QrTargetType: "Shop" | "Professional";
-        /** @description Average and count, and the number of reviews per star (index 0 = one star … 4 = five stars). */
+        /**
+         * @description Average and count, and the number of reviews per star (index 0 = one star … 4 = five stars). `Tags` (D-152, the
+         *     client's 3-6: «٨ أشادوا بجودة الحلاقة») counts each tag over the same published reviews (the shop's, or the barber's),
+         *     most picked first; tags nobody picked are left out.
+         */
         RatingSummaryResponse: {
             /** Format: double */
             average: number;
             /** Format: int32 */
             count: number;
             histogram: number[];
+            tags: components["schemas"]["ReviewTagCountResponse"][];
         };
         /** @description The landing page's language, so the scan log can say which language visitors read. */
         RecordQrVisitRequest: {
@@ -7268,6 +7285,12 @@ export interface components {
          * @enum {unknown}
          */
         ReviewTag: "Punctuality" | "Quality" | "Cleanliness" | "Manners" | "Price";
+        /** @description How many of the published reviews picked one «ما الذي أعجبك؟» tag (D-152). */
+        ReviewTagCountResponse: {
+            tag: components["schemas"]["ReviewTag"];
+            /** Format: int32 */
+            count: number;
+        };
         RevokedSessionsResponse: {
             /** Format: int32 */
             revoked: number;
@@ -7725,7 +7748,7 @@ export interface components {
         /**
          * @description The signed-in shop's own profile, for its settings screen (s-settings). IReadOnlyList&lt;ShopProfileField&gt; ShopOwnProfileResponse.EditableFields is the admin
          *     policy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;
-         *     string? ShopOwnProfileResponse.PublicPhone is the shop's own business number.
+         *     string? ShopOwnProfileResponse.PublicPhone is the shop's own business number. `ShortNameAr/En` (D-152) is always the shop's to edit.
          */
         ShopOwnProfileResponse: {
             /** Format: uuid */
@@ -7746,6 +7769,8 @@ export interface components {
             editableFields: components["schemas"]["ShopProfileField"][];
             /** Format: uint32 */
             version: number;
+            shortNameAr?: null | string;
+            shortNameEn?: null | string;
         };
         /** @description A shop's own package. `IsBookable` is false while any item service is off, archived or hidden. */
         ShopPackageResponse: {
@@ -7790,7 +7815,7 @@ export interface components {
          * @description Profile areas an admin can open to or lock from the shop (DV-S16). Verification and slug are never shop-editable.
          * @enum {unknown}
          */
-        ShopProfileField: "Name" | "Description" | "Category" | "PublicPhone" | "Amenities" | "Logo" | "Cover" | "Gallery" | "Location";
+        ShopProfileField: "Name" | "Description" | "Category" | "PublicPhone" | "Amenities" | "Logo" | "Cover" | "Gallery" | "Location" | "ShortName";
         /**
          * @description The signed-in shop user's own shop (`GET /api/v1/shop/me`). Shop-facing contract: it must never carry customer
          *     contact data (R-NEG-04). The status is reported even while suspended, so the dashboard can explain it.
@@ -7803,6 +7828,8 @@ export interface components {
             nameEn: string;
             status: string;
             timeZone: string;
+            shortNameAr?: null | string;
+            shortNameEn?: null | string;
         };
         /** @description The shop's codes with the period's figures (the last 30 days by default). */
         ShopQrCodesResponse: {
@@ -8320,6 +8347,8 @@ export interface components {
             amenities: null | components["schemas"]["ShopAmenity"][];
             /** Format: uint32 */
             version: number;
+            shortNameAr?: null | string;
+            shortNameEn?: null | string;
         };
         /** @description Edits a plan's details; prices change only through a new price version. */
         UpdatePlanRequest: {
@@ -8431,6 +8460,8 @@ export interface components {
             isVerified: boolean;
             /** Format: uint32 */
             version: number;
+            shortNameAr?: null | string;
+            shortNameEn?: null | string;
         };
         /**
          * @description Edit of the shop's own service; a stale `Version` answers 409. `ProfessionalIds` null keeps who does it;

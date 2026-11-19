@@ -158,7 +158,8 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(drawer).toContainText(customer);
     await expect(drawer.getByTestId('customer-phone')).toContainText(`+966${WALK_IN_PHONE}`);
     await watched.click();
-    await expect(watcher.getByTestId('appointment-drawer').getByTestId('no-phone-note')).toBeVisible();
+    await expect(watcher.getByTestId('appointment-drawer')).toContainText(customer);
+    await expect(watcher.getByTestId('appointment-drawer').getByTestId('customer-phone')).toHaveCount(0);
     await expect(
       watcher.getByTestId('appointment-drawer').getByRole('button', { name: 'إلغاء الموعد' }),
     ).toHaveCount(0);

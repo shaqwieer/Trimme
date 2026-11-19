@@ -22,6 +22,11 @@ export type WizardQuery = {
   step?: string;
   /** Why the wizard moved the customer back (a time taken meanwhile, a day no longer free). */
   notice?: string;
+  /**
+   * The reward to tick on the review step (D-152, the client's 3-5: «احجز واستخدم مكافأتك» from the loyalty card):
+   * `points` for the points reward, or a D-132 coupon's id. Read once when the wizard opens.
+   */
+  reward?: string;
 };
 
 export const WIZARD_NOTICES = ['timeGone', 'dateGone', 'conflict'] as const;
@@ -95,6 +100,7 @@ export function readWizardQuery(params: Params): WizardQuery {
     time: read(params, 'time'),
     step: read(params, 'step'),
     notice: read(params, 'notice'),
+    reward: read(params, 'reward'),
   };
 }
 
@@ -194,6 +200,19 @@ export function rewardFit(
   return free
     ? { usable: true, discount: Math.min(free.price, total) }
     : { usable: false, reason: 'service' };
+}
+
+/**
+ * What a D-132 coupon takes off (D-152, the user's answer): a free-service coupon makes the booking free, a percent
+ * coupon takes its percent off, rounded to the halala. The server applies the same rule when it holds the coupon.
+ */
+export function couponDiscount(
+  price: number,
+  coupon: { kind: 'FreeService' | 'Discount'; discountPercent: number | null },
+): number {
+  const total = Math.max(price, 0);
+  if (coupon.kind === 'FreeService') return total;
+  return Math.min(total, Math.round(total * (coupon.discountPercent ?? 0)) / 100);
 }
 
 /**

@@ -195,6 +195,21 @@ describe('data display', () => {
     );
   });
 
+  it('Pagination is hidden when everything fits on one page (D-152, 3-9)', () => {
+    const { container } = renderWithIntl(
+      <Pagination page={1} pageSize={10} total={1} hrefForPage={(p) => `/account/bookings?page=${p}`} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('Pagination still offers the way back from a page past the end', () => {
+    renderWithIntl(
+      <Pagination page={2} pageSize={10} total={3} hrefForPage={(p) => `/account/bookings?page=${p}`} />,
+    );
+    expect(screen.getByRole('link', { name: 'الصفحة السابقة' })).toBeInTheDocument();
+  });
+
   it('Breadcrumb marks the current page', () => {
     renderWithIntl(
       <Breadcrumb

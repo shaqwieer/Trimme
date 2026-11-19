@@ -1,6 +1,32 @@
 @import 'tailwindcss';
 @import '../styles/tokens.css';
 
+/*
+ * D-152 (the client's 2-1, «الصفحة منزاحة يمين»): iOS Safari zooms into any text field under 16px when it is tapped and
+ * stays zoomed, so after signing in («رقم الجوال») every page looked cut at the edge and could be swiped sideways. No
+ * element was wider than the screen (measured at 320 and 390 px in WebKit and Chromium). Text fields are 14.5–15px by
+ * design; on iOS only (`-webkit-touch-callout` is Safari-on-iOS-only) they are 16px. Unlayered, so it wins over the
+ * `text-input` / `text-body` utilities; no field is larger than 16px, so none shrinks. Pinch zoom stays available (no
+ * `maximum-scale`, which axe flags).
+ */
+@supports (-webkit-touch-callout: none) {
+  input:not(
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='file'],
+    [type='color'],
+    [type='submit'],
+    [type='button'],
+    [type='reset'],
+    [type='image']
+  ),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Logical-property friendly base (RTL is the default document direction). */
 @layer base {
   html {
@@ -9,6 +35,8 @@
     font-family: var(--font-sans);
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    /* With the body's, below: iOS Safari pans a page sideways unless both clip it (D-152, 2-1). */
+    overflow-x: clip;
   }
 
   /* Arabic needs taller lines for diacritics and dots (design rule: 1.7–1.9). */
@@ -26,6 +54,14 @@
   body {
     min-height: 100dvh;
     font-size: var(--text-body);
+    /*
+     * D-152 (the client's 2-1): nothing may make the page swipe sideways on a phone. `clip` (unlike `hidden`) makes no
+     * scroll container, so sticky headers and footers keep working. With `viewport-fit=cover` the sides pad by the
+     * safe area in landscape (the notch); the bottom bars pad by the bottom inset themselves.
+     */
+    overflow-x: clip;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   ::selection {
