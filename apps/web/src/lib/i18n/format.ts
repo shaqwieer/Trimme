@@ -120,9 +120,13 @@ export function formatMonthYear(firstDay: string, locale: AppLocale): string {
   }).format(new Date(`${firstDay.slice(0, 10)}T12:00:00Z`));
 }
 
-/** Day-of-month number for calendar cells — a quantity, so always Latin digits (design 3650–3668). */
+/**
+ * Day-of-month number for calendar cells and the booking day strip (design 3650–3668), in the D-148 digits.
+ * Always Gregorian (D-156): Safari reads plain `ar-SA` as the Umm al-Qura calendar, so on an iPhone the strip showed
+ * the Hijri day under a Gregorian month («سبت ١٨ نوفمبر» for Saturday 28 November). `TIME_LOCALE` forces `ca-gregory`.
+ */
 export function formatDayNumber(value: DateInput, locale: AppLocale, timeZone = OPERATING_TIME_ZONE): string {
-  return new Intl.DateTimeFormat(QUANTITY_LOCALE[locale], { day: 'numeric', timeZone }).format(toDate(value));
+  return new Intl.DateTimeFormat(TIME_LOCALE[locale], { day: 'numeric', timeZone }).format(toDate(value));
 }
 
 export function formatNumber(value: number, locale: AppLocale, maximumFractionDigits = 2): string {

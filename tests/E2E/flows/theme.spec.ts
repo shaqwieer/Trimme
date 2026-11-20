@@ -6,7 +6,8 @@ import { expect, test } from '../support/fixtures';
 /**
  * Dark mode (D-124): Light / Dark / System with System as the default, saved in a cookie the server renders from, so
  * the first paint is already in the right theme (no flash, even without JavaScript), and a change reaches the other
- * open tabs at once. Printing always uses the light palette.
+ * open tabs at once. Printing always uses the light palette. The header has a day/night switch (D-156): a sun or a
+ * moon, one press flips what is shown; System is chosen in the account settings.
  */
 const LIGHT_PAGE = 'rgb(247, 249, 252)'; // --color-bg-page
 const DARK_PAGE = 'rgb(12, 22, 32)'; // dark --color-bg-page
@@ -17,37 +18,41 @@ const pageBackground = (page: Page) =>
 const expectBackground = (page: Page, color: string) => expect.poll(() => pageBackground(page)).toBe(color);
 const themeAttribute = (page: Page) =>
   page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-const themeButton = (page: Page) => page.getByTestId('theme-menu');
+const themeButton = (page: Page) => page.getByTestId('theme-toggle');
+/** The header switch draws a sun by day and a moon by night (D-156); CSS shows one of the two. */
+const expectIcon = async (page: Page, icon: 'sun' | 'moon') => {
+  await expect(themeButton(page).locator(`[data-icon="${icon}"]`)).toBeVisible();
+  await expect(themeButton(page).locator(`[data-icon="${icon === 'sun' ? 'moon' : 'sun'}"]`)).toBeHidden();
+};
 
-async function choose(page: Page, option: 'System' | 'Light' | 'Dark') {
-  await themeButton(page).click();
-  await page.getByRole('radiogroup', { name: 'Theme' }).getByText(option, { exact: true }).click();
-}
-
-test.describe('dark mode (D-124)', () => {
-  test('defaults to System and follows the OS live, without a reload', async ({ page }) => {
+test.describe('dark mode (D-124) and the day/night switch (D-156)', () => {
+  test('defaults to System and follows the OS live, without a reload, the sun and moon included', async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/en');
-    await expect(themeButton(page)).toHaveAccessibleName('Theme: System');
+    await expect(themeButton(page)).toHaveAccessibleName('Switch between light and dark mode');
     expect(await themeAttribute(page)).toBeNull();
     await expectBackground(page, LIGHT_PAGE);
+    await expectIcon(page, 'sun');
 
     await page.emulateMedia({ colorScheme: 'dark' });
     await expectBackground(page, DARK_PAGE);
+    await expectIcon(page, 'moon');
     await page.emulateMedia({ colorScheme: 'light' });
     await expectBackground(page, LIGHT_PAGE);
   });
 
-  test('a choice applies at once, survives navigation and reload, and overrides the OS', async ({
+  test('a press flips what is shown at once, survives navigation and reload, and overrides the OS', async ({
     page,
     context,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/en');
-    await choose(page, 'Dark');
+    await themeButton(page).click();
     expect(await themeAttribute(page)).toBe('dark');
     await expectBackground(page, DARK_PAGE);
-    await expect(themeButton(page)).toHaveAccessibleName('Theme: Dark');
+    await expectIcon(page, 'moon');
 
     const cookie = (await context.cookies()).find((c) => c.name === 'trimme-theme');
     expect(cookie?.value).toBe('dark');
@@ -65,11 +70,22 @@ test.describe('dark mode (D-124)', () => {
 
     // Explicit Light beats a dark OS.
     await page.emulateMedia({ colorScheme: 'dark' });
-    await choose(page, 'Light');
+    await themeButton(page).click();
     await expectBackground(page, LIGHT_PAGE);
     await page.goto('/ar');
     await expectBackground(page, LIGHT_PAGE);
-    await expect(themeButton(page)).toHaveAccessibleName('المظهر: فاتح');
+    await expectIcon(page, 'sun');
+    await expect(themeButton(page)).toHaveAccessibleName('تبديل الوضع النهاري والليلي');
+  });
+
+  test('under System on a dark device, a press goes to Light', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/ar/shops');
+    await expectIcon(page, 'moon');
+    await themeButton(page).click();
+    expect(await themeAttribute(page)).toBe('light');
+    await expectBackground(page, LIGHT_PAGE);
+    await expectIcon(page, 'sun');
   });
 
   test('the first paint is already themed: the server renders the saved theme (JavaScript disabled)', async ({
@@ -90,6 +106,7 @@ test.describe('dark mode (D-124)', () => {
     const systemPage = await system.newPage();
     await systemPage.goto('/en/auth/sign-in');
     await expectBackground(systemPage, DARK_PAGE);
+    await expectIcon(systemPage, 'moon');
     await system.close();
   });
 
@@ -101,12 +118,12 @@ test.describe('dark mode (D-124)', () => {
     await first.goto('/en');
     await second.goto('/en/shops');
 
-    await choose(first, 'Dark');
+    await themeButton(first).click();
     await expect.poll(() => themeAttribute(second)).toBe('dark');
-    await expect(themeButton(second)).toHaveAccessibleName('Theme: Dark');
+    await expectIcon(second, 'moon');
 
-    await choose(second, 'System');
-    await expect.poll(() => themeAttribute(first)).toBeNull();
+    await themeButton(second).click();
+    await expect.poll(() => themeAttribute(first)).toBe('light');
     await expectBackground(first, LIGHT_PAGE);
   });
 
@@ -122,25 +139,18 @@ test.describe('dark mode (D-124)', () => {
       .toBe('light');
   });
 
-  test('works from the keyboard: Enter opens, arrows preview, Escape closes back on the button', async ({
-    page,
-  }) => {
+  test('works from the keyboard: a native button, Enter and Space flip it', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/en/auth/sign-in');
     await themeButton(page).focus();
     await page.keyboard.press('Enter');
-    const group = page.getByRole('radiogroup', { name: 'Theme' });
-    await expect(group).toBeVisible();
-    await expect(group.getByRole('radio', { name: 'System' })).toBeFocused();
-    expect((await new AxeBuilder({ page }).include('[role="radiogroup"]').analyze()).violations).toEqual([]);
-
-    await page.keyboard.press('ArrowDown'); // Light
-    await page.keyboard.press('ArrowDown'); // Dark
     expect(await themeAttribute(page)).toBe('dark');
-    await page.keyboard.press('Escape');
-    await expect(group).toBeHidden();
+    await page.keyboard.press('Space');
+    expect(await themeAttribute(page)).toBe('light');
     await expect(themeButton(page)).toBeFocused();
-    await expect(themeButton(page)).toHaveAccessibleName('Theme: Dark');
+    expect(
+      (await new AxeBuilder({ page }).include('[data-testid="theme-toggle"]').analyze()).violations,
+    ).toEqual([]);
   });
 
   test('the customer account has a labelled Appearance setting', async ({ page, context }) => {
@@ -152,7 +162,7 @@ test.describe('dark mode (D-124)', () => {
     await expect(group.getByRole('radio', { name: 'System' })).toBeChecked();
     await group.getByText('Dark', { exact: true }).click();
     await expectBackground(page, DARK_PAGE);
-    await expect(themeButton(page)).toHaveAccessibleName('Theme: Dark');
+    await expectIcon(page, 'moon');
     await page.reload();
     await expect(
       page.getByRole('group', { name: 'Theme' }).getByRole('radio', { name: 'Dark' }),

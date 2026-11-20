@@ -4,7 +4,7 @@ import { Logo } from '@/components/brand/Logo';
 import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
-import { ThemeMenu } from '@/components/theme/ThemeSelector';
+import { ThemeToggle } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
@@ -59,7 +59,7 @@ export function PublicShell({
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <ThemeMenu />
+            <ThemeToggle />
             {hasMarketingChrome && (
               <Link
                 href="/auth/sign-in"

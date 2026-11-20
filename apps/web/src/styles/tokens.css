@@ -186,6 +186,8 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --animate-shimmer: shimmer 1.4s linear infinite;
   --animate-spin: spin 0.7s linear infinite;
+  /* The corner «أعد الحجز» notice (D-156) drops in a moment after the page, as a notification does. */
+  --animate-notice-in: notice-in 0.32s var(--ease-drawer) 0.4s both;
 
   @keyframes shimmer {
     0% {
@@ -199,6 +201,13 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @keyframes notice-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.5rem);
     }
   }
 }

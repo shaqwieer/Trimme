@@ -8,7 +8,7 @@ import { Sheet } from '@/components/ui/overlays';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/lib/cn';
 import { AdminNotificationBell, NotificationBell } from '@/components/notifications/NotificationBell';
-import { ThemeMenu } from '@/components/theme/ThemeSelector';
+import { ThemeToggle } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { activeHref, adminNav, shopNav, shopTabKeys, visibleItems } from './navigation';
 
@@ -85,9 +85,11 @@ export function DashboardShell({
           <h1 className="truncate text-page-title font-bold text-navy-900">{title}</h1>
           {titleAddon}
           <div className="ms-auto flex items-center gap-2">
-            {/* Below 768px the header has no room left for the theme menu (title, live status, bell, language); the
+            {/* Below 768px the header has no room left for the theme switch (title, live status, bell, language); the
                 drawer has it. */}
-            <ThemeMenu className="hidden md:block" />
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
             {!notifications ? (
               <IconButton icon="bell" label={t('shell.notifications')} />
             ) : variant === 'shop' ? (
@@ -190,7 +192,7 @@ function SidebarContent({
       {onNavigate && (
         // Drawer only (it is the phone and tablet navigation): mirrors the drawer's close button in the other corner.
         <div className="absolute start-2 top-3 z-10 md:hidden">
-          <ThemeMenu tone="onChrome" align="start" />
+          <ThemeToggle tone="onChrome" />
         </div>
       )}
       <div className="flex flex-col items-center gap-2 pb-5">

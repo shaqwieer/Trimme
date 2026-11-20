@@ -20,7 +20,7 @@
     },
     "theme": {
       "label": "Theme",
-      "menuLabel": "Theme: {value}",
+      "toggle": "Switch between light and dark mode",
       "system": "System",
       "light": "Light",
       "dark": "Dark",
@@ -1835,9 +1835,10 @@
     "topRatedSalons": "Top-rated salons",
     "allSalons": "All salons",
     "lastVisit": {
-      "title": "Book like last time",
-      "where": "{shop} with {barber}",
-      "book": "Book the same"
+      "label": "Book again",
+      "title": "Enjoyed your visit to {shop}?",
+      "book": "Book again here",
+      "close": "Close"
     }
   },
   "search": {

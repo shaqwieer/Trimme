@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { installSafariArabicCalendar } from '@/test/safariIntl';
 import {
   formatDate,
   formatDayNumber,
@@ -36,6 +37,32 @@ describe('formatters_ar_en (R-WEB-06, D-040)', () => {
   it('writes calendar day numbers with Arabic-Indic digits in Arabic', () => {
     expect(formatDayNumber(appointment, 'ar')).toBe('١٨');
     expect(formatDayNumber(appointment, 'en')).toBe('18');
+  });
+
+  // D-156, the client's iPhone: Safari reads plain `ar-SA` as Umm al-Qura, so the strip said «سبت ١٨ نوفمبر» for the 28th.
+  describe('day numbers where `ar-SA` defaults to the Hijri calendar (Safari)', () => {
+    let restore: () => void;
+    beforeEach(() => {
+      restore = installSafariArabicCalendar();
+    });
+    afterEach(() => restore());
+
+    it('reproduces the iPhone: an Arabic locale without a calendar key reads the Hijri day', () => {
+      const saturday28November = Date.UTC(2026, 10, 28, 12);
+      expect(
+        new Intl.DateTimeFormat('ar-SA-u-nu-arab', { day: 'numeric', timeZone: 'UTC' }).format(
+          saturday28November,
+        ),
+      ).toBe('١٨');
+    });
+
+    it('still writes the Gregorian day number, in every locale', () => {
+      expect(formatDayNumber('2026-11-28T12:00:00Z', 'ar', 'UTC')).toBe('٢٨');
+      expect(formatDayNumber('2026-12-01T12:00:00Z', 'ar', 'UTC')).toBe('١');
+      expect(formatDayNumber('2026-11-28T12:00:00Z', 'en', 'UTC')).toBe('28');
+      expect(formatDayNumber('2026-11-28T12:00:00Z', 'tr', 'UTC')).toBe('28');
+      expect(formatDate('2026-11-28T09:00:00Z', 'ar')).toBe('السبت، ٢٨ نوفمبر');
+    });
   });
 
   it('formats prices with the Riyal sign in Arabic and SAR in English', () => {

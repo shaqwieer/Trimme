@@ -2162,3 +2162,35 @@ This refines D-126.
   - Web: 595 unit tests; build and bundle budget pass.
   - Fresh stack with 32 migrations; E2E with every project at one worker: 108 passed, then the 5 that failed passed after one missing label was added.
   - Details in the phase file.
+
+## D-156 — The client's iPhone screenshots: Gregorian day numbers in the booking strip, «أعد الحجز» as a small corner notice, and a sun-and-moon switch in the header — Accepted (Session 32, after Phase 17, at the user's request)
+- **The request:** four screenshots from the client's iPhone, 2026-11-20 (`phases/after-17-d156-client-iphone-dates-rebook-theme.md`):
+  1. «ليش يقدر العميل يحجز بالأيام الماضية»;
+  2. the strip «نط شهر من ٢٠ نوفمبر إلى ٢١ ديسمبر»;
+  3. D-155's «احجز مثل آخر مرة» as a small notice in the top corner with an ✕, not in the bell («ضروري جداً»);
+  4. the header's monitor icon is the theme, so make it a moon and a sun.
+- **1 and 2: one bug, Hijri day numbers** (R-WEB-26):
+  - `formatDayNumber` formatted with `ar-SA-u-nu-arab`, which names no calendar. Safari reads plain `ar-SA` as Umm al-Qura, while the weekday and month already forced `ca-gregory`.
+  - The cards were 28 November to 3 December, which are 18–23 Jumada II. No past day was shown or bookable (D-125 starts the strip at today, and the API refuses past times).
+  - It now uses `TIME_LOCALE`. That also fixes the month grid, the customer's booking cards and the admin overview, which share the function.
+  - A test helper makes `Intl` behave like Safari, because Node and Playwright's Windows WebKit both default `ar-SA` to Gregorian.
+- **3: the corner notice** (R-CUS-25, DV-A42; replaces D-155's card on `/discover`):
+  - Fixed under the header in the logo's corner, about 280 px wide, «أعجبك حجزك في {shop}؟ / أعد الحجز من هنا», with an ✕.
+  - Pressing it opens the same shop, barber and services at the time step.
+  - The ✕ keeps it closed for that visit (cookie `trimme_rebook_dismissed`: a booking id, 30 days, read by the server). Web storage stays banned (spec §9).
+  - Hidden while the customer has an upcoming booking: D-155 allows one, so «أعد الحجز» would only be refused.
+  - It never hides itself, takes no focus and is not announced.
+- **4: the day/night switch** (R-WEB-27, DV-T15 note; replaces D-124's header menu everywhere it was):
+  - A sun by day and a moon by night, drawn by CSS from the theme on <html>. «تلقائي» on a dark device shows the moon with no script.
+  - One press flips what is shown and saves Light or Dark. «تلقائي» is chosen in the account settings, which are unchanged.
+  - The name is fixed («تبديل الوضع النهاري والليلي»), and there is no pressed state: the server cannot know the device's theme under «تلقائي».
+- **Rejected:**
+  - A two-icon pill switch: wider than the 44 px button the phone header has room for.
+  - A session-only ✕: the notice would come back on every visit to the home page.
+  - Keeping the menu and only swapping the icon: the client asked for the moon and the sun, and one press is simpler than a menu.
+- **Deploy:** web image only, no migration.
+- **Evidence:**
+  - Web: 603 unit tests (the Safari-calendar tests fail on the old code with «١٨»); typecheck; lint; build; bundle budget (largest 334.9 KB).
+  - E2E: `theme.spec` 8/8 on a rebuilt web container.
+  - Manual: Chromium at iPhone width, signed in. The notice is hidden for customers with an upcoming booking, shown top right (ar) and top left (en) otherwise, and stays closed after its ✕ and a reload.
+  - Pending: a real iPhone after a deploy.

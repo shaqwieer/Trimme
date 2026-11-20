@@ -105,7 +105,7 @@ describe('DashboardShell', () => {
     await waitFor(() => expect(menuButton).toHaveFocus());
   });
 
-  it('keeps the theme switch out of the crowded phone header and in the drawer instead (D-124)', async () => {
+  it('keeps the theme switch out of the crowded phone header and in the drawer instead (D-124, D-156)', async () => {
     const user = userEvent.setup();
     renderWithIntl(
       <DashboardShell variant="shop" title="Overview">
@@ -113,24 +113,28 @@ describe('DashboardShell', () => {
       </DashboardShell>,
       { locale: 'en' },
     );
+    const name = 'Switch between light and dark mode';
 
     // The header copy is hidden below 768px (`hidden md:block`); the drawer copy only below 768px.
     const header = screen.getByRole('banner');
-    expect(within(header).getByRole('button', { name: 'Theme: System' }).parentElement).toHaveClass(
-      'hidden',
-      'md:block',
-    );
+    expect(within(header).getByRole('button', { name }).parentElement).toHaveClass('hidden', 'md:block');
 
     await user.click(screen.getByRole('button', { name: 'Open menu' }));
     const drawer = screen.getByRole('dialog', { name: 'Main navigation' });
-    const drawerSwitch = within(drawer).getByRole('button', { name: 'Theme: System' });
+    const drawerSwitch = within(drawer).getByRole('button', { name });
     expect(drawerSwitch.closest('.md\\:hidden')).not.toBeNull();
 
-    // Escape inside the open theme panel closes the panel, not the drawer.
-    await user.click(drawerSwitch);
-    await user.keyboard('{Escape}');
-    expect(screen.getByRole('dialog', { name: 'Main navigation' })).toBeInTheDocument();
-    expect(drawerSwitch).toHaveFocus();
+    // One press flips the theme and leaves the drawer open.
+    window.matchMedia = ((query: string) => ({ matches: false, media: query })) as never;
+    try {
+      await user.click(drawerSwitch);
+      expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
+      expect(screen.getByRole('dialog', { name: 'Main navigation' })).toBeInTheDocument();
+    } finally {
+      Reflect.deleteProperty(window, 'matchMedia');
+      document.documentElement.removeAttribute('data-theme');
+      document.cookie = 'trimme-theme=; Path=/; Max-Age=0';
+    }
   });
 
   it('keeps the language switch in the header at every width, last, in the top-left corner in Arabic (D-137)', async () => {

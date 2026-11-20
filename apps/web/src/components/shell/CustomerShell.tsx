@@ -4,7 +4,7 @@ import { Logo } from '@/components/brand/Logo';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
 import { CustomerNav } from './CustomerNav';
-import { ThemeMenu } from '@/components/theme/ThemeSelector';
+import { ThemeToggle } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
@@ -28,7 +28,7 @@ export function CustomerShell({ children, bell }: { children: ReactNode; bell?: 
           <CustomerNav placement="header" />
           <div className="ms-auto flex items-center gap-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
-            <ThemeMenu />
+            <ThemeToggle />
             {bell ?? (
               <Link
                 href="/account/notifications"

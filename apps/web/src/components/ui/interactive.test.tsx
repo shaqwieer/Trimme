@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { addDays, formatLocalDate, monthDays, shiftMonth, todayLocal, weekday } from '@/lib/i18n/localDate';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
+import { installSafariArabicCalendar } from '@/test/safariIntl';
 import { CalendarMonth, DateStrip, SlotGrid, Stepper } from './booking';
 import { Button } from './Button';
 import { ConfirmDialog, Dialog, DropdownMenu } from './overlays';
@@ -49,6 +50,34 @@ describe('booking controls', () => {
     expect(screen.getByRole('radio', { name: /السبت.*مغلق/ })).toBeDisabled();
     await userEvent.click(screen.getByRole('radio', { name: /الجمعة/ }));
     expect(onValueChange).toHaveBeenCalledWith('2026-09-18');
+  });
+
+  // D-156, the client's iPhone: the numbers were Hijri (١٨…٢٣) under Gregorian weekdays and months.
+  it('DateStrip shows Gregorian day numbers where Arabic defaults to the Hijri calendar (Safari)', () => {
+    const restore = installSafariArabicCalendar();
+    try {
+      const { container } = renderWithIntl(
+        <DateStrip
+          name="date"
+          today="2026-11-28"
+          onValueChange={() => {}}
+          days={['2026-11-28', '2026-11-29', '2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03'].map(
+            (date) => ({ date, available: true }),
+          )}
+        />,
+      );
+      const cards = [...container.querySelectorAll('label')].map((label) => label.textContent);
+      expect(cards).toEqual([
+        'اليوم٢٨نوفمبر',
+        'الأحد٢٩نوفمبر',
+        'الاثنين٣٠نوفمبر',
+        'الثلاثاء١ديسمبر',
+        'الأربعاء٢ديسمبر',
+        'الخميس٣ديسمبر',
+      ]);
+    } finally {
+      restore();
+    }
   });
 
   it('SlotGrid groups bookable slots into Riyadh periods and shows no disabled slots (D-009)', async () => {

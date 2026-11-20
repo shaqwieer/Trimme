@@ -5,7 +5,7 @@ import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
 import { THEME_CHANNEL, type ThemePreference } from '@/lib/theme/theme';
 import { ThemeProvider } from './ThemeProvider';
-import { ThemeMenu } from './ThemeSelector';
+import { ThemeToggle } from './ThemeSelector';
 import { ThemeSettings } from './ThemeSettings';
 
 const html = () => document.documentElement;
@@ -15,7 +15,7 @@ function renderSelectors(initial: ThemePreference = 'system', locale: 'ar' | 'en
   return renderWithIntl(
     <ThemeProvider initial={initial}>
       <main>
-        <ThemeMenu />
+        <ThemeToggle />
         <ThemeSettings />
       </main>
     </ThemeProvider>,
@@ -34,73 +34,73 @@ beforeEach(() => {
 
 afterEach(() => {
   meta()?.remove();
+  Reflect.deleteProperty(window, 'matchMedia');
 });
 
-describe('theme selector (D-124)', () => {
-  it('names the header button after the current choice, in both languages', () => {
+/** The device's theme under «تلقائي» (jsdom has no `matchMedia`). */
+function deviceTheme(dark: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: dark && query.includes('dark'),
+    media: query,
+  })) as never;
+}
+
+const toggle = (name = 'Switch between light and dark mode') => screen.getByRole('button', { name });
+const settingChecked = (option: 'System' | 'Light' | 'Dark') =>
+  within(screen.getByRole('group', { name: 'Theme' })).getByRole('radio', { name: option });
+
+describe('theme switch and setting (D-124, D-156)', () => {
+  it('the header switch has a fixed name in both languages and draws a sun and a moon for CSS to pick', () => {
     const { unmount } = renderSelectors('system', 'en');
-    expect(screen.getByRole('button', { name: 'Theme: System' })).toBeInTheDocument();
+    const button = toggle();
+    // The `dark:` variant shows one of them, so «تلقائي» on a dark device paints the moon with no script.
+    expect(button.querySelector('[data-icon="sun"]')).toHaveClass('dark:hidden');
+    expect(button.querySelector('[data-icon="moon"]')).toHaveClass('hidden', 'dark:block');
+    expect(button).not.toHaveAttribute('aria-expanded');
     unmount();
     renderSelectors('dark', 'ar');
-    expect(screen.getByRole('button', { name: 'المظهر: داكن' })).toBeInTheDocument();
+    expect(toggle('تبديل الوضع النهاري والليلي')).toBeInTheDocument();
   });
 
-  it('opens a labelled radio group from the keyboard with the current choice checked and focused', async () => {
+  it('one press flips an explicit choice at once and saves it in a long-lived cookie', async () => {
     const user = userEvent.setup();
     renderSelectors('light');
-    const trigger = screen.getByRole('button', { name: 'Theme: Light' });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    trigger.focus();
-    await user.keyboard('{Enter}');
-
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    const group = screen.getByRole('radiogroup', { name: 'Theme' });
-    expect(trigger).toHaveAttribute('aria-controls', group.parentElement?.id);
-    const radios = within(group).getAllByRole('radio');
-    expect(radios.map((radio) => radio.closest('label')?.textContent)).toEqual(['System', 'Light', 'Dark']);
-    expect(within(group).getByRole('radio', { name: 'Light' })).toBeChecked();
-    expect(within(group).getByRole('radio', { name: 'Light' })).toHaveFocus();
-    await expectNoAxeViolations();
-  });
-
-  it('arrow keys preview a choice, Escape closes and returns focus to the button', async () => {
-    const user = userEvent.setup();
-    renderSelectors('light');
-    await user.click(screen.getByRole('button', { name: 'Theme: Light' }));
-    await user.keyboard('{ArrowDown}');
-    expect(html()).toHaveAttribute('data-theme', 'dark');
-    expect(screen.getByRole('radiogroup', { name: 'Theme' })).toBeInTheDocument();
-
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Theme: Dark' })).toHaveFocus();
-  });
-
-  it('a click outside closes it without changing the theme', async () => {
-    const user = userEvent.setup();
-    renderSelectors('system');
-    await user.click(screen.getByRole('button', { name: 'Theme: System' }));
-    await user.click(document.body);
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
-    expect(html()).not.toHaveAttribute('data-theme');
-  });
-
-  it('applies Dark at once, saves it in a long-lived cookie and updates every control', async () => {
-    const user = userEvent.setup();
-    renderSelectors('system');
-    await user.click(screen.getByRole('button', { name: 'Theme: System' }));
-    // Click the visible option text, as a user does (the radio itself is visually hidden).
-    await user.click(within(screen.getByRole('radiogroup', { name: 'Theme' })).getByText('Dark'));
+    await user.click(toggle());
 
     expect(html()).toHaveAttribute('data-theme', 'dark');
     expect(meta()).toHaveAttribute('content', 'dark');
     expect(document.cookie).toContain('trimme-theme=dark');
-    // A pointer choice closes the panel and hands focus back to the button.
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Theme: Dark' })).toHaveFocus();
-    expect(
-      within(screen.getByRole('group', { name: 'Theme' })).getByRole('radio', { name: 'Dark' }),
-    ).toBeChecked();
+    expect(settingChecked('Dark')).toBeChecked();
+    expect(toggle()).toHaveFocus();
+
+    await user.click(toggle());
+    expect(html()).toHaveAttribute('data-theme', 'light');
+    expect(settingChecked('Light')).toBeChecked();
+    await expectNoAxeViolations();
+  });
+
+  it('under System it flips what the device shows: dark to Light, light to Dark', async () => {
+    const user = userEvent.setup();
+    deviceTheme(true);
+    const { unmount } = renderSelectors('system');
+    await user.click(toggle());
+    expect(html()).toHaveAttribute('data-theme', 'light');
+    unmount();
+
+    deviceTheme(false);
+    renderSelectors('system');
+    await user.click(toggle());
+    expect(html()).toHaveAttribute('data-theme', 'dark');
+  });
+
+  it('works from the keyboard (a native button: Enter and Space)', async () => {
+    const user = userEvent.setup();
+    renderSelectors('light');
+    toggle().focus();
+    await user.keyboard('{Enter}');
+    expect(html()).toHaveAttribute('data-theme', 'dark');
+    await user.keyboard(' ');
+    expect(html()).toHaveAttribute('data-theme', 'light');
   });
 
   it('System removes the attribute so the stylesheet follows the OS (no script, no matchMedia)', async () => {
@@ -133,7 +133,7 @@ describe('theme selector (D-124)', () => {
     const otherTab = new BroadcastChannel(THEME_CHANNEL);
     otherTab.postMessage('dark');
     await waitFor(() => expect(html()).toHaveAttribute('data-theme', 'dark'));
-    expect(screen.getByRole('button', { name: 'Theme: Dark' })).toBeInTheDocument();
+    expect(settingChecked('Dark')).toBeChecked();
     // Garbage from the channel falls back to the default rather than breaking the page.
     otherTab.postMessage({ unexpected: true });
     await waitFor(() => expect(html()).not.toHaveAttribute('data-theme'));
@@ -149,6 +149,6 @@ describe('theme selector (D-124)', () => {
       window.dispatchEvent(event);
     });
     expect(html()).toHaveAttribute('data-theme', 'dark');
-    expect(screen.getByRole('button', { name: 'Theme: Dark' })).toBeInTheDocument();
+    expect(settingChecked('Dark')).toBeChecked();
   });
 });

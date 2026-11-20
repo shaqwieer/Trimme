@@ -20,7 +20,7 @@
     },
     "theme": {
       "label": "المظهر",
-      "menuLabel": "المظهر: {value}",
+      "toggle": "تبديل الوضع النهاري والليلي",
       "system": "تلقائي",
       "light": "فاتح",
       "dark": "داكن",
@@ -1835,9 +1835,10 @@
     "topRatedSalons": "الصالونات الأعلى تقييماً",
     "allSalons": "كل الصالونات",
     "lastVisit": {
-      "title": "احجز مثل آخر مرة",
-      "where": "{shop} مع {barber}",
-      "book": "احجز نفسها"
+      "label": "أعد الحجز",
+      "title": "أعجبك حجزك في {shop}؟",
+      "book": "أعد الحجز من هنا",
+      "close": "إغلاق"
     }
   },
   "search": {

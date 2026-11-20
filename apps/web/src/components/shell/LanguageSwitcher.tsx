@@ -10,8 +10,8 @@ import { cn } from '@/lib/cn';
 /**
  * Header language switch: a compact button (icon and the current language's short name, "Language: العربية" to
  * assistive technology) that discloses one link per locale, each named in its own language, to the same page in that
- * language. Built like the theme menu (D-124): no menu library, and Escape, a click outside or tabbing away closes it,
- * with focus back on the button.
+ * language. No menu library: Escape, a click outside or tabbing away closes it, with focus back on the button (built
+ * like D-124's theme menu, which became D-156's day/night switch).
  */
 export function LanguageSwitcher({
   className,
@@ -40,7 +40,7 @@ export function LanguageSwitcher({
     const onPointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    // Escape closes only this panel; like the theme menu, it runs first, on the window in the capture phase.
+    // Escape closes only this panel; it runs first, on the window in the capture phase.
     const onEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();

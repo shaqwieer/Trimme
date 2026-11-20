@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
-import { LastVisitCard } from '@/components/booking/LastVisitCard';
+import { rebookHref } from '@/components/booking/BookingCards';
+import { RebookNotice } from '@/components/booking/RebookNotice';
 import { Logo } from '@/components/brand/Logo';
 import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { LocationSheetButton } from '@/components/discovery/LocationSheetButton';
@@ -14,8 +16,10 @@ import { getPublicApi } from '@/lib/api/public';
 import { optional } from '@/lib/api/safe';
 import { getServerApi } from '@/lib/api/server';
 import { getMe } from '@/lib/auth/server';
+import { parseRebookDismissed, REBOOK_DISMISSED_COOKIE } from '@/lib/booking/rebookNotice';
 import { readLocation } from '@/lib/discovery/location.server';
 import { DEFAULT_RADIUS_KM, WIDE_RADIUS_KM } from '@/lib/discovery/search';
+import { localizedName } from '@/lib/i18n/localized';
 import { NO_INDEX } from '@/lib/seo/site';
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/discover'>): Promise<Metadata> {
@@ -72,7 +76,13 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
             </div>
           )}
         </header>
-        {lastVisit && <LastVisitCard booking={lastVisit} locale={locale} />}
+        {lastVisit && (
+          <RebookNotice
+            bookingId={lastVisit.id}
+            shop={localizedName(locale, lastVisit.shop.nameAr, lastVisit.shop.nameEn)}
+            href={rebookHref(lastVisit)}
+          />
+        )}
 
         <section aria-labelledby="salons-heading" className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
@@ -117,16 +127,24 @@ export default async function DiscoverPage({ params }: PageProps<'/[locale]/disc
 }
 
 /**
- * A signed-in customer's last completed visit, for «احجز مثل آخر مرة» (D-155, the client's 5-4); null for a guest, a
- * staff account, no completed visit yet, or when the list cannot be read (the home page never fails on it).
+ * A signed-in customer's last completed visit, for the corner «أعد الحجز» notice (D-155, the client's 5-4; a notice
+ * since D-156). Null for a guest, a staff account, no completed visit yet, or when the list cannot be read (the home
+ * page never fails on it). Also null while the customer has an upcoming booking, since D-155 allows only one and the
+ * new booking would be refused, and once its ✕ closed the notice for this visit.
  */
 async function lastCompletedVisit() {
   const me = await getMe();
   if (me?.userType !== 'Customer') return null;
   const api = await getServerApi();
-  const past = await optional(
-    () => api.GET('/api/v1/me/bookings', { params: { query: { tab: 'Past', page: 1, pageSize: 10 } } }),
-    'last visit',
-  );
-  return past?.items.find((b) => b.status === 'Completed') ?? null;
+  const [past, active] = await Promise.all([
+    optional(
+      () => api.GET('/api/v1/me/bookings', { params: { query: { tab: 'Past', page: 1, pageSize: 10 } } }),
+      'last visit',
+    ),
+    optional(() => api.GET('/api/v1/me/bookings/active'), 'active booking'),
+  ]);
+  if (active) return null;
+  const visit = past?.items.find((b) => b.status === 'Completed');
+  const dismissed = parseRebookDismissed((await cookies()).get(REBOOK_DISMISSED_COOKIE)?.value);
+  return visit && visit.id !== dismissed ? visit : null;
 }
