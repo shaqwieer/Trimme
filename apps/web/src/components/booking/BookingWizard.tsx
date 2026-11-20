@@ -27,7 +27,6 @@ import {
   currentStep,
   durationFor,
   eligibleProfessionals,
-  firstIncompleteStep,
   keyFor,
   type KeyedIntent,
   newIdempotencyKey,
@@ -166,6 +165,7 @@ const lastChoices = new Map<string, string>();
 /**
  * The booking in progress also survives leaving the page or a reload (D-148, «٤-٧»), until it is made or emptied: a
  * first-party cookie for the last shop (Web Storage stays banned, spec §9). It holds ids, the date and the time only.
+ * Only a bare link picks it up (D-157): every «احجز» button names where it starts, so it begins a new booking.
  */
 const DRAFT_COOKIE = 'gh-booking-draft';
 const DRAFT_DAYS = 7;
@@ -292,19 +292,21 @@ export function BookingWizard({
     window.history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url);
   };
 
-  // Going back must never drop a choice (D-125). A bare link to the wizard picks up this tab's last choices at the shop;
-  // a history entry from before the later steps were chosen (the browser's or phone's back button) gets them back.
+  // Going back must never drop a choice (D-125): a history entry from before the later steps were chosen (the browser's
+  // or phone's back button) gets them back. A link with no query at all picks up the shop's draft. Every «احجز» button
+  // names where it starts (the shop page's «احجز الآن» sends `step=service`), so it is a new booking and replaces the
+  // draft: the client's «يرجعني نفس القديمه» (D-157).
   useEffect(() => {
     const previous = latest.current;
     if (!previous) {
       latest.current = selection;
       const stored = recall(shop.slug);
-      const bare = !query.package && query.services.length === 0 && !query.pro && !query.date;
-      if (bare && stored) {
+      if (searchParams.toString() === '' && stored) {
         const restored = selectionFrom(readWizardQuery(new URLSearchParams(stored)), offers, professionals);
-        // Back where the customer left off: the first step still missing a choice (D-148).
-        if (restored.items.length > 0) go(restored, firstIncompleteStep(restored), 'replace');
-      } else if (selection.items.length > 0) {
+        // On the service step, with the earlier choices ticked: the customer sees them before going on (D-157, the
+        // client's «يوديني على اختيار الوقت بدون ما اختار»), never straight to the time.
+        if (restored.items.length > 0) go(restored, 'service', 'replace');
+      } else {
         remember(shop.slug, selection);
       }
       return;
@@ -617,6 +619,7 @@ export function BookingWizard({
               </div>
             )}
             <ServiceStep
+              opened={query.section}
               offers={offersFor(offers, pro)}
               value={items}
               onToggle={toggle}
@@ -1045,6 +1048,9 @@ export function BookingWizard({
         )}
       </section>
 
+      {/* At the bottom of the screen on every step (D-157, the client's «خلها تحت بالصفحه»): the root fills the height
+          (`PublicShell fill`) and the step above it grows, so a short step no longer leaves the bar halfway up; on a long
+          one it stays stuck to the bottom. Clear of the phone's home bar (D-152). */}
       <footer className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
         <div className="flex items-center gap-4 px-4 py-3 md:px-6">
           <div className="min-w-0 flex-1">
@@ -1115,11 +1121,14 @@ function ServiceStep({
   value,
   onToggle,
   sections,
+  opened,
 }: {
   offers: WizardOffer[];
   value: WizardOffer[];
   onToggle: (offer: WizardOffer) => void;
   sections: CatalogSection[];
+  /** The tab to open while nothing is chosen: the one the shop page was showing (D-157). */
+  opened?: string;
 }) {
   const t = useTranslations('booking');
   if (offers.length === 0) {
@@ -1130,6 +1139,7 @@ function ServiceStep({
       items={offers}
       sections={sections}
       selected={value}
+      opened={opened}
       choice={({ item, name, description, badge, checked }) => (
         <ServiceTile
           name={item.kind === 'service' ? 'services' : 'package'}

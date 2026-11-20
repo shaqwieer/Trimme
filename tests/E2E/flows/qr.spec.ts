@@ -121,9 +121,10 @@ test.describe('QR codes and attribution (Phase 16)', () => {
     await expect(scan.getByRole('heading', { level: 1 })).toContainText('باربر هاوس');
     await expect(scan.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(scan.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/ar\/shops\/barber-house$/);
+    // A new booking on the service step (D-157): a draft from an earlier visit is not brought back.
     await expect(scan.getByRole('link', { name: 'احجز الآن' })).toHaveAttribute(
       'href',
-      '/ar/shops/barber-house/book',
+      '/ar/shops/barber-house/book?step=service',
     );
     const qrCookie = async () => (await visitor.cookies()).find((c) => c.name === 'trimme-qr');
     const cookie = await qrCookie();

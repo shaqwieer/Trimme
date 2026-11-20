@@ -19,7 +19,7 @@ import {
 import { ShopTabs } from '@/components/shops/public/ShopTabs';
 import { ImagePlaceholder } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
-import { ButtonLink } from '@/components/ui/Button';
+import { buttonClasses } from '@/components/ui/Button';
 import { Breadcrumb } from '@/components/ui/data';
 import { Icon } from '@/components/ui/icons';
 import { DemoMark } from '@/components/ui/cards';
@@ -30,6 +30,7 @@ import { getPublicApi } from '@/lib/api/public';
 import { mayBeSignedIn } from '@/lib/auth/session.server';
 import { optional } from '@/lib/api/safe';
 import { openingLabel } from '@/lib/discovery/opening';
+import { SHOP_BOOK_FORM_ID } from '@/lib/booking/links';
 import { bookHref, directionsUrl, getPublicShop, getPublicShopStatus } from '@/lib/discovery/shop-data';
 import { type AppLocale, formatDate, formatTime } from '@/lib/i18n/format';
 import { contentLanguage, localizedName } from '@/lib/i18n/localized';
@@ -130,7 +131,9 @@ async function LiveStatus({ slug, locale, timeZone }: { slug: string; locale: Ap
 
 /**
  * The sticky «احجز الآن» bar (c-shop 1358–1361), centred and without a "starts from" price (D-128): the prices are on
- * the services themselves. Disabled with the reason while online booking is off.
+ * the services themselves. Disabled with the reason while online booking is off. It always opens the service step with
+ * nothing chosen, on the catalog tab being shown (D-157, the client's «الأطفال»): a plain GET form whose fields are
+ * `step` and the catalog's radios (`section`), so the public page runs no script for it.
  */
 async function BookBar({ slug, locale }: { slug: string; locale: AppLocale }) {
   const [status, t] = await Promise.all([
@@ -142,9 +145,17 @@ async function BookBar({ slug, locale }: { slug: string; locale: AppLocale }) {
     <div className="sticky bottom-0 z-10 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
       <div className="mx-auto flex max-w-[960px] items-center justify-center px-4 py-3 md:px-6">
         {accepts ? (
-          <ButtonLink href={bookHref(slug)} variant="primary" size="lg" className="w-full max-w-[420px]">
-            {t('book')}
-          </ButtonLink>
+          <form
+            id={SHOP_BOOK_FORM_ID}
+            method="get"
+            action={`/${locale}${bookHref(slug)}`}
+            className="contents"
+          >
+            <input type="hidden" name="step" value="service" />
+            <button type="submit" className={`${buttonClasses({ size: 'lg' })} w-full max-w-[420px]`}>
+              {t('book')}
+            </button>
+          </form>
         ) : (
           <span className="text-helper font-bold text-text-secondary">{t('unavailable')}</span>
         )}

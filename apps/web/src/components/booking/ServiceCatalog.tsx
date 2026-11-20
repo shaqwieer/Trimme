@@ -30,11 +30,17 @@ export function ServiceCatalog({
   selected,
   choice,
   label,
+  opened,
 }: {
   items: CatalogItem[];
   sections: CatalogSection[];
   /** The chosen items. */
   selected: CatalogItem[];
+  /**
+   * The tab to open when nothing is chosen yet: the one the shop page was showing (D-157). A tab the booking does not
+   * have (only walk-in services) opens the first.
+   */
+  opened?: string;
   /** Draws a choosable tile. */
   choice: (tile: CatalogChoice) => ReactNode;
   /** The tab list's accessible name. */
@@ -48,7 +54,7 @@ export function ServiceCatalog({
   return (
     <CatalogTabs
       label={label}
-      initial={groups.find((g) => g.items.some(isChosen))?.key}
+      initial={groups.find((g) => g.items.some(isChosen))?.key ?? opened}
       tabs={groups.map((g) => {
         const count = g.items.filter(isChosen).length;
         return {

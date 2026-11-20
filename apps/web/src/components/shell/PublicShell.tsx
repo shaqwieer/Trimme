@@ -5,19 +5,23 @@ import { SaudiBadge } from '@/components/brand/SaudiBadge';
 import { ButtonLink } from '@/components/ui/Button';
 import { Link } from '@/i18n/navigation';
 import { ThemeToggle } from '@/components/theme/ThemeSelector';
+import { cn } from '@/lib/cn';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
  * Public pages. `marketing` (landing, listing, shop and legal pages) has the design's top navigation (c-landing
  * 826–835: logo, links, language switch, sign in) and a footer with the legal links (DV-A28). `minimal` (auth flows)
- * keeps only the logo and the language switch.
+ * keeps only the logo and the language switch. `fill` lets the page's own `flex-1` column take the screen's full height,
+ * so a short page's bottom bar sits at the bottom of the screen (the booking wizard, D-157).
  */
 export function PublicShell({
   children,
   variant = 'minimal',
+  fill = false,
 }: {
   children: ReactNode;
   variant?: 'landing' | 'marketing' | 'minimal';
+  fill?: boolean;
 }) {
   const t = useTranslations('common');
   const nav = useTranslations('publicNav');
@@ -76,7 +80,7 @@ export function PublicShell({
           </div>
         </div>
       </header>
-      <main id="main" tabIndex={-1} className="flex-1 outline-none">
+      <main id="main" tabIndex={-1} className={cn('flex-1 outline-none', fill && 'flex flex-col')}>
         {children}
       </main>
       {hasMarketingChrome && <SiteFooter />}

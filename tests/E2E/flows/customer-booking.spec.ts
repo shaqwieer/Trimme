@@ -374,10 +374,10 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     await page.goto('/ar/account/favorites');
     const favorites = page.getByTestId('favorites');
     await expect(favorites.getByRole('link', { name: 'باربر هاوس', exact: true })).toBeVisible();
-    // «احجز» beside each favourite shop (D-155, the client's 5-4).
+    // «احجز» beside each favourite shop (D-155, the client's 5-4): a new booking on the service step (D-157).
     await expect(favorites.getByRole('link', { name: 'احجز في باربر هاوس' })).toHaveAttribute(
       'href',
-      /\/ar\/shops\/barber-house\/book$/,
+      /\/ar\/shops\/barber-house\/book\?step=service$/,
     );
     await expect(favorites.getByRole('link', { name: 'احجز مع عمر السالم' })).toHaveAttribute(
       'href',

@@ -3,7 +3,7 @@ import { Fragment } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { catalogGroups, type CatalogSection, type CatalogItem, packageSaving } from '@/lib/booking/catalog';
-import { bookHref } from '@/lib/booking/links';
+import { bookHref, SHOP_BOOK_FORM_ID } from '@/lib/booking/links';
 import { type AppLocale, formatDurationMinutes, formatPrice } from '@/lib/i18n/format';
 import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized';
 
@@ -11,7 +11,8 @@ import { langIfOther, localizedName, localizedText } from '@/lib/i18n/localized'
  * The shop page's services (D-148, «٤-١»): the same section tabs (the shop's own, D-149) as the booking's service step, packages last, each
  * tile with its name, price, length and «احجز» link (or «حضوري فقط»), and a package's saving. The tabs are native radio
  * buttons inside the pills and CSS (`:has(:checked)`) shows the chosen section's tiles: no script on the public page, arrow keys work, and every service
- * stays in the page's HTML for search engines.
+ * stays in the page's HTML for search engines. The radios belong to the «احجز الآن» form (D-157), which sends the tab
+ * being shown, so the booking's service step opens on it.
  */
 export function ShopServiceCatalog({
   slug,
@@ -106,7 +107,9 @@ export function ShopServiceCatalog({
           <label className="relative inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full border border-border-input bg-surface px-4 text-label font-bold whitespace-nowrap text-text-strong transition-colors hover:border-brand-500 has-checked:border-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]">
             <input
               type="radio"
-              name="shop-service-category"
+              name="section"
+              value={g.key}
+              form={SHOP_BOOK_FORM_ID}
               defaultChecked={index === 0}
               className="sr-only"
             />

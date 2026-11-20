@@ -66,7 +66,8 @@ async function BookBar({ target, locale }: { target: Target; locale: AppLocale }
         {accepts ? (
           <>
             <ButtonLink
-              href={bookHref(target.shopSlug, { pro: target.professionalId ?? undefined })}
+              // The service step, as a new booking: a draft from an earlier visit is not brought back (D-157).
+              href={bookHref(target.shopSlug, { pro: target.professionalId ?? undefined, step: 'service' })}
               variant="primary"
               size="lg"
               fullWidth

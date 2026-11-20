@@ -32,6 +32,7 @@
 - **4-17** is a platform setting (`CancellationCutoffMinutes`): its default becomes 0 and a data migration sets the existing row to 0 (the client's decision); the admin can still change it. With 0 the texts say «حتى يبدأ الموعد».
 - **4-9** applies to shops as well as barbers (the same wrong picture).
 - **4-7** keeps the draft in a short-lived first-party cookie (Web Storage stays banned, spec §9); it holds ids and the chosen time only, and is cleared when the booking is made.
+  - **Narrowed by D-157 (2026-11-20, the client's next video):** only a link with no query at all picks the draft up, and then on the service step. Every «احجز» button (the shop page's «احجز الآن», a tile, the QR landing, favourites, a barber's link) starts a new booking and replaces it.
 - **4-2** applies to walk-in and phone bookings too (the same offer rule).
 - **4-4** Turkish keeps Latin digits and its own currency label.
 

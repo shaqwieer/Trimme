@@ -122,6 +122,15 @@ const slotsOf = (times: Array<[string, string]>) => ({
   })),
 });
 
+/** The booking draft cookie's value (D-148), decoded; empty when there is none. */
+const draft = () =>
+  decodeURIComponent(
+    document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('gh-booking-draft='))
+      ?.slice('gh-booking-draft='.length) ?? '',
+  );
+
 function renderWizard(ui: ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return renderWithIntl(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
@@ -726,16 +735,9 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
     expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
   });
 
-  it('keeps the choices in a first-party draft cookie (ids and step only) and restores them on a bare link (D-148)', async () => {
+  it('keeps the choices in a first-party draft cookie (ids and step only) and restores them on a bare link, on the service step (D-148, D-157)', async () => {
     const user = userEvent.setup();
     availability();
-    const draft = () =>
-      decodeURIComponent(
-        document.cookie
-          .split('; ')
-          .find((c) => c.startsWith('gh-booking-draft='))
-          ?.slice('gh-booking-draft='.length) ?? '',
-      );
     const first = renderWizard(
       <BookingWizard
         shop={{ ...SHOP, slug: 'draft-shop' }}
@@ -759,8 +761,92 @@ describe('BookingWizard (c-booking, D-028, D-096)', () => {
         viewer="customer"
       />,
     );
-    await waitFor(() => expect(window.location.search).toContain('service=svc-1'));
+    await waitFor(() => expect(window.location.search).toBe('?service=svc-1&step=service'));
+    // The earlier choice is shown ticked on the service step, never past it (the client's «بدون ما اختار», D-157).
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الخدمات');
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
     expect(draft()).not.toMatch(/note|phone|name/);
+  });
+
+  it('«احجز الآن» on the shop page starts a new booking: the service step on the tab it showed, nothing chosen, the old draft gone (D-157)', async () => {
+    const user = userEvent.setup();
+    availability();
+    const HAIR = { ...SERVICE, sectionId: 'hair' };
+    const KIDS = { ...BEARD, id: 'svc-kids', nameAr: 'حلاقة أطفال', price: 45, sectionId: 'kids' };
+    const PACKAGE: WizardOffer = {
+      ...SERVICE,
+      kind: 'package',
+      id: 'pkg-1',
+      nameAr: 'باقة شعر ولحية',
+      descriptionAr: null,
+      price: 85,
+      durationMinutes: 50,
+      itemIds: ['svc-1'],
+    };
+    const wizard = () => (
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'fresh-shop' }}
+        offers={[HAIR, KIDS, PACKAGE]}
+        sections={[
+          { id: 'hair', nameAr: 'قص الشعر', nameEn: 'Hair' },
+          { id: 'kids', nameAr: 'الأطفال', nameEn: 'Kids' },
+        ]}
+        professionals={PROS}
+        viewer="customer"
+      />
+    );
+
+    // The client's video: the package chosen a minute earlier, with a day and a time (tab memory and the cookie).
+    window.history.replaceState(
+      null,
+      '',
+      `/ar/shops/fresh-shop/book?package=pkg-1&date=${D1}&time=10:00&step=review`,
+    );
+    const earlier = renderWizard(wizard());
+    await waitFor(() => expect(draft()).toContain('fresh-shop|package=pkg-1'));
+    earlier.unmount();
+
+    // Back on the shop page, on «الأطفال», then the big «احجز الآن»: its form sends the tab and `step=service`.
+    window.history.replaceState(null, '', '/ar/shops/fresh-shop/book?section=kids&step=service');
+    const fresh = renderWizard(wizard());
+    expect(screen.getByTestId('wizard-title')).toHaveTextContent('اختر الخدمات');
+    expect(screen.getByRole('tab', { name: 'الأطفال' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('checkbox', { name: /حلاقة أطفال/ })).not.toBeChecked();
+    expect(screen.queryByTestId('wizard-footer-price')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'التالي' })).toBeDisabled();
+    expect(draft()).toBe('');
+    expect(window.location.search).toBe('?section=kids&step=service');
+
+    // The kids' haircut alone, at its own price.
+    await user.click(screen.getByRole('checkbox', { name: /حلاقة أطفال/ }));
+    expect(window.location.search).toBe('?service=svc-kids&step=service');
+    expect(screen.getByTestId('wizard-footer-price')).toHaveTextContent('٤٥');
+    expect(draft()).toBe('fresh-shop|service=svc-kids&step=service');
+    fresh.unmount();
+
+    // A tab the booking does not have (only walk-in services there) opens the first one.
+    window.history.replaceState(null, '', '/ar/shops/fresh-shop/book?section=walk-in-only&step=service');
+    renderWizard(wizard());
+    expect(screen.getByRole('tab', { name: 'قص الشعر' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).not.toBeChecked();
+  });
+
+  it("a service's «احجز» on the shop page books that service alone, whatever the draft held (D-157)", async () => {
+    availability();
+    document.cookie = `gh-booking-draft=${encodeURIComponent('tile-shop|service=svc-1&step=service')}; Path=/`;
+    window.history.replaceState(null, '', '/ar/shops/tile-shop/book?service=svc-2&step=service');
+    renderWizard(
+      <BookingWizard
+        shop={{ ...SHOP, slug: 'tile-shop' }}
+        offers={[SERVICE, BEARD]}
+        professionals={PROS}
+        viewer="customer"
+      />,
+    );
+    expect(screen.getByRole('checkbox', { name: /تهذيب لحية/ })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /قص وتصفيف/ })).not.toBeChecked();
+    expect(screen.getByTestId('wizard-footer-price')).toHaveTextContent('٤٠');
+    expect(draft()).toBe('tile-shop|service=svc-2&step=service');
   });
 
   it('says when no single specialist does every chosen service', async () => {

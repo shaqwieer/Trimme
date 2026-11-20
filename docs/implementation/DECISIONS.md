@@ -2194,3 +2194,46 @@ This refines D-126.
   - E2E: `theme.spec` 8/8 on a rebuilt web container.
   - Manual: Chromium at iPhone width, signed in. The notice is hidden for customers with an upcoming booking, shown top right (ar) and top left (en) otherwise, and stays closed after its ✕ and a reload.
   - Pending: a real iPhone after a deploy.
+
+## D-157 — Every «احجز» button starts a new booking on the service step, the shop page's tab carries over, and the wizard's bar sits at the bottom of the screen — Accepted (Session 32, after Phase 17, at the user's request)
+- **The request:** the client's WhatsApp messages and a screen recording on an iPhone, 2026-11-20 (`phases/after-17-d157-booking-start-bar.md`):
+  1. the wizard's bar sits halfway up a short step («خلها تحت بالصفحه نفس ارتفاع القائمه … ماتتغطا بصفحة سفاري»);
+  2. on «الأطفال» (حلاقة أطفال ٤٥), the shop page's big «احجز الآن» brought back «باقة شعر ولحية» at ٨٥, chosen a minute before;
+  3. it went straight to the time «بدون ما اختار اي خدمه».
+  - A tile's own «احجز» (that service chosen, add more) is right as it is.
+- **2 and 3: one cause** (R-CUS-26):
+  - The big «احجز الآن» was a bare link. On a bare link the wizard restored the shop's draft (the tab's memory, D-125, or the `gh-booking-draft` cookie, D-148 4-7) and opened its first incomplete step. For a package, that is the day and time.
+  - **Now every «احجز» button names where it starts and is a new booking that replaces the draft:**
+    - the shop page's «احجز الآن» sends `step=service`;
+    - the shop QR landing and the favourites send `step=service`;
+    - a tile names its service;
+    - a barber's link names the barber.
+  - Only a link with no query at all picks the draft up, and then on the service step with its choices ticked, never further.
+  - This narrows D-148's 4-7 and D-125's "back to the shop page and in again keeps the choices", as the client now asks. Going back inside the wizard (its own button or the browser's) still keeps every choice (D-125).
+- **The shop page's tab carries over** (`section`):
+  - The big «احجز الآن» is a plain GET form (`shop-book`). The catalog's CSS-only tab radios join it (`form`, `name="section"`, the tab's key as `value`), so the service step opens on «الأطفال».
+  - Nothing is chosen. Opening a tab is not choosing its service; the tile's «احجز» does that.
+  - A tab the wizard lacks (only walk-in services) opens the first.
+  - No script on the public page (219.2 of 220 KB). The CSP already has `form-action 'self'`.
+  - On the shop page's other tabs there are no radios, and the form sends `step` alone. The control is now a button, not a link.
+- **1: the bar** (R-WEB-28):
+  - `PublicShell`'s `<main>` was not a flex container, so the wizard's `flex-1` root never stretched and the sticky bar sat under a short step.
+  - `PublicShell fill` (the booking page only) makes `<main>` a flex column. A short step now pushes the bar to the screen's bottom, and a long one keeps it stuck there, with D-152's safe-area padding.
+- **The client's browser:** the toolbar in the video («Ask», home, the tab count, ✕ at the top) looks like the Google app's in-app browser, whose page ends above its own toolbar. D-152's `viewport-fit=cover` and safe-area padding cover Safari.
+- **Rejected:**
+  - `fixed` like the customer's menu: it needs padding for the bar's height plus the safe area, and the times block and the note could slide under it.
+  - A flex `<main>` on every public page: a `mx-auto max-w-*` child without `w-full` shrinks in a flex column.
+  - Choosing the only service of the opened tab: guessing.
+  - `next/form` for the button: client script on a page at its budget.
+  - Restoring the draft on the service step for every entry: the client's «يرجعني نفس القديمه» would remain (package + kids = ١٣٠).
+- **Not changed (raised with the user):**
+  - The shop page's own «احجز الآن» bar sits above the site footer at the page's end.
+  - The customer's «تغيير الموعد» page has the same sticky-bar pattern inside `CustomerShell`.
+- **Deploy:** web image only, no migration.
+- **Evidence:**
+  - Web: 603 unit tests (3 for D-157: the client's video with an old package, an unknown tab, a tile with another service in the draft); typecheck; lint; format. Build and bundle budget pass in the build made from the shared tree with these changes (shop page 219.2/220 KB, booking 237.7/260 KB).
+  - E2E on the rebuilt web container, all passed:
+    - new `booking-start.spec` (the client's video at 390×844; the bar's bottom at the screen's bottom on three steps);
+    - `qr.spec` 3/3; `customer-booking.spec` 5/5 (the favourites link updated); `public-discovery.spec` 8/8; `signed-in-gate.spec` 2/2; `whatsapp-notifications.spec` 1/1;
+    - the anonymous route audits (ar, en, light and dark) and the keyboard pass, 9/9.
+  - Pending: the client's phone after a deploy.

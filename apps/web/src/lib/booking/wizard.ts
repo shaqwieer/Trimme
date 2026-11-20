@@ -27,6 +27,11 @@ export type WizardQuery = {
    * `points` for the points reward, or a D-132 coupon's id. Read once when the wizard opens.
    */
   reward?: string;
+  /**
+   * The catalog tab the shop page was showing when «احجز الآن» was pressed (D-157, the client's «الأطفال»): the service
+   * step opens on it. It only opens the tab; nothing is chosen. Read once when the wizard opens.
+   */
+  section?: string;
 };
 
 export const WIZARD_NOTICES = ['timeGone', 'dateGone', 'conflict'] as const;
@@ -101,6 +106,7 @@ export function readWizardQuery(params: Params): WizardQuery {
     step: read(params, 'step'),
     notice: read(params, 'notice'),
     reward: read(params, 'reward'),
+    section: read(params, 'section'),
   };
 }
 

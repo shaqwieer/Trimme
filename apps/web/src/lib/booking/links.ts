@@ -15,6 +15,12 @@ export function bookHref(slug: string, query: Record<string, string | string[] |
 }
 
 /**
+ * The shop page's «احجز الآن» form (D-157): a plain GET to the wizard's service step that also sends the catalog tab
+ * being shown (`section`, its radios join the form by this id), so the wizard opens on it. No script on the public page.
+ */
+export const SHOP_BOOK_FORM_ID = 'shop-book';
+
+/**
  * Google Maps directions to the shop (D-144, replacing D-007's OpenStreetMap link for directions only): with no origin,
  * Google Maps starts from the visitor's own location and shows the route's time and distance; on a phone it opens the
  * Google Maps app. The maps on our pages stay OpenStreetMap.

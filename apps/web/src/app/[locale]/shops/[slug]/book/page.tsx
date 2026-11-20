@@ -124,7 +124,8 @@ export default async function BookPage({ params }: PageProps<'/[locale]/shops/[s
     .join(locale === 'ar' ? '، ' : ', ');
 
   return (
-    <PublicShell>
+    // `fill`: the wizard's bar stays at the bottom of the screen, like the customer's menu, however short the step (D-157).
+    <PublicShell fill>
       <QueryProvider>
         <Suspense fallback={<SkeletonList rows={4} label={t('loading')} />}>
           <BookingWizard
