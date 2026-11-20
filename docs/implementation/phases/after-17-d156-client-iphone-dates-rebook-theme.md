@@ -24,6 +24,8 @@
   - Fixed under the sticky header in the logo's corner (`start`, so right in Arabic and left in English), lined up with the header's edge, at most 17.5rem wide.
   - Reads «أعجبك حجزك في {الصالون}؟» and «أعد الحجز من هنا». Pressing it opens the booking at the time step with the same shop, barber and services (D-155's `rebookHref`).
   - The ✕ (44 px, «إغلاق») closes it and writes `trimme_rebook_dismissed=<booking id>` (30 days, first-party, not HttpOnly, a booking id only). The server reads that cookie, so the notice stays closed until a newer completed visit, or for 30 days, with no flash.
+  - The component reads the cookie too (`useSyncExternalStore`; the server snapshot is «not closed»). Going back to the home page replays the router's cached page, which still holds the notice. The follow-up commit fixes that: before it, the notice came back after ✕ and a back navigation.
+  - A labelled `<section>`, not an `<aside>` (axe best practice: a complementary landmark belongs at the top level).
   - It drops in after 0.4 s (`animate-notice-in`, `motion-safe` only). It never hides by itself, takes no focus and is not a live region.
   - Not shown while the customer has an upcoming booking (`GET /me/bookings/active` 200): D-155 allows one, so «أعد الحجز» would only be refused.
 - **Day/night switch** (`ThemeToggle`, replaces the D-124 `ThemeMenu` in the public, customer and dashboard headers and the dashboard drawer):
@@ -39,7 +41,7 @@
 - **Web unit:** 64 files, 603 tests ✔ (with trimme-44's in-progress tree).
   - New: `format.test.ts` (Safari-like `ar-SA`: the bare locale reads «١٨» for 28 November; `formatDayNumber` gives «٢٨», «١», 28, 28) and `interactive.test.tsx` (the strip on 28 November–3 December reads «اليوم ٢٨ نوفمبر … الخميس ٣ ديسمبر»).
   - Both tests **fail on the old code** with «١٨», the screenshot's number, and pass with the fix.
-  - `rebookNotice.test.tsx` (×3: the text and link, fixed and not focused or live, axe; the ✕ and its cookie; the cookie's format and parsing).
+  - `rebookNotice.test.tsx` (×4: the text and link, fixed and not focused or live, axe; the ✕ and its cookie; a remount after the ✕ stays closed while a newer visit shows; the cookie's format and parsing).
   - `theme.test.tsx` (the switch's fixed name in ar and en, both icons, flip and save, «تلقائي» on a dark and a light device, Enter and Space, axe; the account control, the other tab and the back/forward cache kept).
   - `DashboardShell.test.tsx` (the switch in the header from 768 px and in the drawer below, a press leaves the drawer open).
 - **Static checks:** typecheck ✔; ESLint 0 warnings ✔; Prettier on D-156's files ✔. `shops/[slug]/page.tsx` is trimme-44's and left to them.
@@ -48,6 +50,7 @@
   - Covered: System follows the OS live with the sun and moon; a press flips, survives navigation and reload, and beats the OS; «تلقائي» on a dark device goes to Light; the first paint with no JavaScript (the saved theme, and the moon on a dark OS); tab sync; print stays light; the keyboard; the account setting.
 - **Manual (Playwright, Chromium with the iPhone 13 viewport, signed in through the dev OTP inbox):**
   - Noura, Khalid and Sara each had an upcoming booking, and the notice was not shown for any of them (the D-155 rule).
+  - Follow-up, on a rebuilt web container: as Noura, ✕, then «كل الصالونات», then back. Before the fix the notice was shown again; after it, it stays closed. Same result through the bottom bar's «الرئيسية». After the follow-up: unit 604 tests ✔, `theme.spec` 8/8 ✔, build and bundle budget ✔ (largest 334.9 KB).
   - With Khalid's and Noura's upcoming bookings cancelled in the local data, the notice shows on the first paint (opacity 1 at 300 ms), top right in Arabic (280 px wide; 62 px tall with «باربر هاوس», three lines with «صالون الأصالة للحلاقة») and top left in English. Its link is `/ar/shops/barber-house/book?service=…&pro=…`. The ✕ hides it, a reload keeps it hidden, and the cookie holds the visit's id.
   - The entry animation reaches opacity 1 by 800 ms in Chromium and WebKit.
   - WebKit could not keep the `Secure` session cookies on plain `http://localhost`, so the signed-in checks ran in Chromium.

@@ -3,7 +3,7 @@
 Decision: D-124. Tokens: `apps/web/src/styles/tokens.css`. Contrast guard: `apps/web/src/styles/tokens.test.ts`.
 
 ## How it works
-- The user picks **Light**, **Dark** or **System** (the default) from the header theme button on every shell, or from Appearance on `/account`.
+- The user picks **Light**, **Dark** or **System** (the default) from Appearance on `/account`. Since D-156 the header of every shell has a day/night switch instead of the D-124 menu: a sun by day, a moon by night (drawn by CSS, so it is right on the first paint under System), and one press flips what is shown and saves Light or Dark.
 - The choice is saved in the `trimme-theme` cookie for a year. The root layout reads it and renders `data-theme="light|dark"` on `<html>` for an explicit choice. System renders no attribute, and the CSS follows `prefers-color-scheme`.
 - There is no inline script and nothing to hydrate: the first paint is right even with JavaScript off.
 - Open tabs follow a change through a `BroadcastChannel` (`components/theme/ThemeProvider.tsx`).

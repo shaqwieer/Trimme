@@ -1,26 +1,37 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Icon } from '@/components/ui/icons';
 import { Link } from '@/i18n/navigation';
-import { rebookDismissedCookie } from '@/lib/booking/rebookNotice';
+import { rebookDismissedCookie, rebookDismissedFromCookies } from '@/lib/booking/rebookNotice';
+
+/** The cookie fires no event: it is read on each render, and only the ✕ (local state) changes it. */
+const noSubscription = () => () => {};
 
 /**
  * «أعجبك حجزك في …؟ أعد الحجز من هنا» (D-156, the client's change to D-155's «احجز مثل آخر مرة» card): a small notice
  * pinned under the header in the logo's corner, so it takes no room from the page. Pressing it opens the booking at
  * the time step with the same shop, barber and services. Its ✕ closes it and remembers the visit (see
  * `lib/booking/rebookNotice.ts`). It never takes focus or hides by itself, and it is not in the notifications.
+ * The cookie is also read here, not only by the server: going back to the home page replays the router's cached
+ * page, which still holds the notice, and it must stay closed there too. The server snapshot is «not closed», the
+ * HTML the server sent, so hydration matches and the notice goes away right after.
  */
 export function RebookNotice({ bookingId, shop, href }: { bookingId: string; shop: string; href: string }) {
   const t = useTranslations('discover.lastVisit');
   const [open, setOpen] = useState(true);
-  if (!open) return null;
+  const closedBefore = useSyncExternalStore(
+    noSubscription,
+    () => rebookDismissedFromCookies(document.cookie) === bookingId,
+    () => false,
+  );
+  if (!open || closedBefore) return null;
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-18 z-30">
       <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-10">
-        <aside
+        <section
           aria-label={t('label')}
           data-testid="rebook-notice"
           className="pointer-events-auto flex w-full max-w-[17.5rem] items-start rounded-card border border-border bg-surface shadow-e3 motion-safe:animate-notice-in"
@@ -51,7 +62,7 @@ export function RebookNotice({ bookingId, shop, href }: { bookingId: string; sho
           >
             <Icon name="x" className="size-4" />
           </button>
-        </aside>
+        </section>
       </div>
     </div>
   );

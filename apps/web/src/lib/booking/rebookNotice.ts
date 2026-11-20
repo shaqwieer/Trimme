@@ -26,3 +26,12 @@ export function rebookDismissedCookie(bookingId: string, secure: boolean): strin
 export function parseRebookDismissed(value: string | undefined | null): string | null {
   return value && BOOKING_ID.test(value) ? value : null;
 }
+
+/** The closed visit's id from a `document.cookie` string. */
+export function rebookDismissedFromCookies(cookie: string): string | null {
+  const entry = cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${REBOOK_DISMISSED_COOKIE}=`));
+  return parseRebookDismissed(entry?.slice(REBOOK_DISMISSED_COOKIE.length + 1));
+}

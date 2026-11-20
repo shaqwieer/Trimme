@@ -5,6 +5,7 @@ import {
   parseRebookDismissed,
   REBOOK_DISMISSED_COOKIE,
   rebookDismissedCookie,
+  rebookDismissedFromCookies,
 } from '@/lib/booking/rebookNotice';
 import { expectNoAxeViolations } from '@/test/axe';
 import { renderWithIntl } from '@/test/render';
@@ -24,7 +25,7 @@ afterEach(() => {
 describe('the corner «أعد الحجز» notice (D-156)', () => {
   it('is one short line with the shop that opens the same booking, pinned under the header', async () => {
     notice();
-    const aside = screen.getByRole('complementary', { name: 'أعد الحجز' });
+    const aside = screen.getByRole('region', { name: 'أعد الحجز' });
     expect(aside).toHaveTextContent('أعجبك حجزك في صالون الأصالة للحلاقة؟');
     expect(screen.getByRole('link', { name: /أعد الحجز من هنا/ })).toHaveAttribute(
       'href',
@@ -45,6 +46,18 @@ describe('the corner «أعد الحجز» notice (D-156)', () => {
     expect(document.cookie).toContain(`${REBOOK_DISMISSED_COOKIE}=${VISIT}`);
   });
 
+  // Going back to the home page replays the router's cached page, which still has the notice (seen in the browser).
+  it('stays closed when it mounts again after its ✕, and a newer visit shows it again', () => {
+    document.cookie = rebookDismissedCookie(VISIT, false);
+    const { unmount } = notice();
+    expect(screen.queryByTestId('rebook-notice')).not.toBeInTheDocument();
+    unmount();
+
+    document.cookie = rebookDismissedCookie('7c9e6679-7425-40de-944b-e07fc1f90ae7', false);
+    notice();
+    expect(screen.getByTestId('rebook-notice')).toBeInTheDocument();
+  });
+
   it('the cookie holds a booking id only, for 30 days', () => {
     expect(rebookDismissedCookie(VISIT, true)).toBe(
       `${REBOOK_DISMISSED_COOKIE}=${VISIT}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`,
@@ -52,5 +65,7 @@ describe('the corner «أعد الحجز» notice (D-156)', () => {
     expect(parseRebookDismissed(VISIT)).toBe(VISIT);
     expect(parseRebookDismissed('not-an-id')).toBeNull();
     expect(parseRebookDismissed(undefined)).toBeNull();
+    expect(rebookDismissedFromCookies(`a=1; ${REBOOK_DISMISSED_COOKIE}=${VISIT}; b=2`)).toBe(VISIT);
+    expect(rebookDismissedFromCookies('a=1')).toBeNull();
   });
 });

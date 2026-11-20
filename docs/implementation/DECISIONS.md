@@ -2177,7 +2177,7 @@ This refines D-126.
 - **3: the corner notice** (R-CUS-25, DV-A42; replaces D-155's card on `/discover`):
   - Fixed under the header in the logo's corner, about 280 px wide, «أعجبك حجزك في {shop}؟ / أعد الحجز من هنا», with an ✕.
   - Pressing it opens the same shop, barber and services at the time step.
-  - The ✕ keeps it closed for that visit (cookie `trimme_rebook_dismissed`: a booking id, 30 days, read by the server). Web storage stays banned (spec §9).
+  - The ✕ keeps it closed for that visit (cookie `trimme_rebook_dismissed`: a booking id, 30 days). The server reads it, and so does the component, because a back navigation replays the router's cached page. Web storage stays banned (spec §9).
   - Hidden while the customer has an upcoming booking: D-155 allows one, so «أعد الحجز» would only be refused.
   - It never hides itself, takes no focus and is not announced.
 - **4: the day/night switch** (R-WEB-27, DV-T15 note; replaces D-124's header menu everywhere it was):
