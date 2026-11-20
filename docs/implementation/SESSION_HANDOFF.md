@@ -43,6 +43,12 @@
 - **Demo deployment:** https://groomhere.sa (VPS, demo mode; www redirects to the apex; trimme.net is no longer served). Redeploy from `main`: `git pull` in `/opt/trimme`, then build, migrate and `up -d` in `/opt/trimme-deploy`. A changed `Caddyfile` needs `docker compose up -d --force-recreate caddy`.
 - **Phases:** 17 is the last phase (D-116) and is complete at 98/100; 2 points wait on the NVDA pass. Dark mode (D-124) and this session's booking changes (D-125) were requested after the phases and are recorded as decisions, not phases.
 
+## Session 32, trimme-44: the owner's bottom bar (D-159)
+- **The request:** for the owner, «الخدمات» instead of «المواعيد», and «الدوام» instead of «الدوام والبريكات».
+- **Built:** one bottom-bar list per role (`ownerTabKeys`, `barberTabKeys`, `isShopOwner`, `shopNavLabelKey` in `navigation.ts`), `nav.shop.hours` in ar, en and tr. A barber's bar is unchanged; trimme-08 (D-158) changes its last tab to «التقويم» on its branch, rebased on this.
+- **Gates:** web 604 unit tests, typecheck, lint, format; the owner and barber route audits and the keyboard pass on the rebuilt local web container (9/9); screenshots of both bars at 390×844.
+- **Next:** push and deploy with D-156 and D-157 when the user asks (web image only).
+
 ## Session 32, trimme-44: «احجز الآن» and the wizard's bar (D-157)
 - **The request:** the client's messages and video. On «الأطفال» the shop page's big «احجز الآن» brought back the package chosen a minute before, at its price, and went straight to the time. The wizard's bar sat halfway up a short step; put it at the bottom like the menu.
 - **Cause:** the big button was a bare link, and a bare link restored the draft (D-125's tab memory, D-148's `gh-booking-draft` cookie) at its first incomplete step. `PublicShell`'s `<main>` was not a flex container, so the wizard's `flex-1` column never stretched.

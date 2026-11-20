@@ -2237,3 +2237,19 @@ This refines D-126.
     - `qr.spec` 3/3; `customer-booking.spec` 5/5 (the favourites link updated); `public-discovery.spec` 8/8; `signed-in-gate.spec` 2/2; `whatsapp-notifications.spec` 1/1;
     - the anonymous route audits (ar, en, light and dark) and the keyboard pass, 9/9.
   - Pending: the client's phone after a deploy.
+
+## D-159 — The owner's bottom bar: «الخدمات» instead of «المواعيد», and «الدوام» instead of «الدوام والبريكات» — Accepted (Session 32, after Phase 17, at the user's request)
+- **The request:** a screenshot of the owner's phone with «المواعيد» circled: «for shopowner need الخدمات instead of المواعيد and الدوام والبريكات need it الدوام».
+- **Built** (R-SHP-09):
+  - The bottom bar has one list per role in `navigation.ts`, replacing D-130's single list filtered by permission:
+    - the owner (`isShopOwner`: holds `Shop.Barbers.Manage`, D-146) gets «النظرة التشغيلية», «الدوام», «الحلاقون», «الخدمات»;
+    - a barber gets «النظرة التشغيلية», «الدوام والبريكات», «حجز حضوري», «المواعيد», unchanged.
+  - The owner's «المواعيد» stays in the menu.
+  - `shopNavLabelKey` names the owner's hours page «الدوام» (`nav.shop.hours`: ar, en «Hours», tr «Çalışma saatleri») in the bar and the menu. A barber's stays «الدوام والبريكات», because it holds their breaks.
+  - The page's own title («الدوام والاستراحات والإجازات») is unchanged.
+- **Coordination:** trimme-08 (D-158, its own worktree) changes the barbers' last tab to «التقويم» and rebases onto this commit. Here the barbers' list is left as it was.
+- **Deploy:** web image only, no migration.
+- **Evidence:**
+  - Web: 604 unit tests (`DashboardShell.test`: the owner's four tabs and «الخدمات»'s link, «المواعيد» once in the menu, no «الدوام والبريكات»; the barber's bar unchanged); typecheck; lint; format.
+  - The local web container rebuilt from the tree: the owner and barber route audits (ar, en) and the keyboard pass, 9/9.
+  - Chromium at 390×844, signed in as Barber House's owner: «النظرة التشغيلية، الدوام، الحلاقون، الخدمات». As Majed (barber): «النظرة التشغيلية، الدوام والبريكات، حجز حضوري، المواعيد».

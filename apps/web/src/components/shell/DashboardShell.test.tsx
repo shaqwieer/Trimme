@@ -42,16 +42,16 @@ describe('DashboardShell', () => {
     expect(within(bar).getByRole('link', { name: 'حجز حضوري' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('gives the owner «الحلاقون» where a barber has the walk-in, and no walk-in anywhere (D-146)', () => {
+  it('gives the owner «الدوام», «الحلاقون» and «الخدمات», with the appointments in the menu and no walk-in anywhere (D-146, D-159)', () => {
     setPathname('/ar/shop/barbers');
-    // The owner's grants: every shop permission but walk-ins.
+    // The owner's grants: every shop permission but the barbers' (walk-ins, breaks).
     renderWithIntl(
       <DashboardShell
         variant="shop"
         title="الحلاقون"
         permissions={[
           'Shop.Bookings.Read',
-          'Shop.Breaks.Manage',
+          'Shop.Schedule.Manage',
           'Shop.Barbers.Manage',
           'Shop.Services.Manage',
         ]}
@@ -64,9 +64,13 @@ describe('DashboardShell', () => {
       within(bar)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['النظرة التشغيلية', 'الدوام والبريكات', 'الحلاقون', 'المواعيد']);
+    ).toEqual(['النظرة التشغيلية', 'الدوام', 'الحلاقون', 'الخدمات']);
     expect(within(bar).getByRole('link', { name: 'الحلاقون' })).toHaveAttribute('aria-current', 'page');
+    expect(within(bar).getByRole('link', { name: 'الخدمات' })).toHaveAttribute('href', '/ar/shop/services');
     expect(screen.queryByRole('link', { name: 'حجز حضوري' })).not.toBeInTheDocument();
+    // The menu keeps the appointments and names the hours the same way.
+    expect(screen.getAllByRole('link', { name: 'المواعيد' })).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'الدوام والبريكات' })).not.toBeInTheDocument();
   });
 
   it('has no tab bar on the admin dashboard', () => {

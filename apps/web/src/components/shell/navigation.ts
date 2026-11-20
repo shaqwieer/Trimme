@@ -74,11 +74,34 @@ export const shopNav: NavItem<'shop'>[] = [
 ];
 
 /**
- * The shop's four everyday tabs, as a bottom bar on phones and tablets (D-130), in reading order: the operational
- * overview first (right in Arabic), then hours and breaks, walk-in for a barber or the barbers for the owner (D-146:
- * each role has one of the two), and the appointments (left in Arabic).
+ * The shop's four everyday tabs, as a bottom bar on phones and tablets (D-130), in reading order (right to left in
+ * Arabic). The owner and a barber each have their own (D-159, the user's request for the owner):
+ * - the owner: the overview, the hours («الدوام»), the barbers and the services; the appointments stay in the menu;
+ * - a barber: the overview, their breaks, the walk-in and the appointments.
  */
-export const shopTabKeys = ['overview', 'schedule', 'walkIn', 'barbers', 'appointments'] as const;
+export const ownerTabKeys = ['overview', 'schedule', 'barbers', 'services'] as const;
+export const barberTabKeys = ['overview', 'schedule', 'walkIn', 'appointments'] as const;
+
+/** Whether these grants are the owner's: only the owner manages the shop's barbers (D-146). */
+export function isShopOwner(permissions: readonly string[] | undefined): boolean {
+  return permissions?.includes('Shop.Barbers.Manage') ?? false;
+}
+
+/** The bottom bar's tabs for these grants (D-159). */
+export function shopTabKeysFor(permissions: readonly string[] | undefined) {
+  return isShopOwner(permissions) ? ownerTabKeys : barberTabKeys;
+}
+
+/**
+ * A shop page's label key: the owner's hours page reads «الدوام» (D-159); a barber's stays «الدوام والبريكات», since
+ * it holds their breaks.
+ */
+export function shopNavLabelKey(
+  key: NavMessageKey<'shop'>,
+  permissions: readonly string[] | undefined,
+): NavMessageKey<'shop'> {
+  return key === 'schedule' && isShopOwner(permissions) ? 'hours' : key;
+}
 
 export const adminNav: NavItem<'admin'>[] = [
   { key: 'overview', href: '/admin', icon: BarChart3, permission: 'Admin.Dashboard.View' },

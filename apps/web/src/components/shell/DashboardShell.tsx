@@ -10,7 +10,7 @@ import { cn } from '@/lib/cn';
 import { AdminNotificationBell, NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/theme/ThemeSelector';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { activeHref, adminNav, shopNav, shopTabKeys, visibleItems } from './navigation';
+import { activeHref, adminNav, shopNav, shopNavLabelKey, shopTabKeysFor, visibleItems } from './navigation';
 
 type DashboardShellProps = {
   variant: 'shop' | 'admin';
@@ -119,11 +119,14 @@ export function DashboardShell({
   );
 }
 
-/** The shop's bottom tab bar on phones and tablets (D-130): overview, hours and breaks, walk-in, appointments. */
+/**
+ * The shop's bottom tab bar on phones and tablets (D-130): the owner's overview, hours, barbers and services, or a
+ * barber's overview, breaks, walk-in and appointments (D-159).
+ */
 function ShopTabBar({ permissions }: { permissions?: readonly string[] }) {
   const t = useTranslations();
   const pathname = usePathname();
-  const items = shopTabKeys
+  const items = shopTabKeysFor(permissions)
     .map((key) => shopNav.find((item) => item.key === key)!)
     .filter((item) => visibleItems([item], permissions).length > 0);
   if (items.length === 0) return null;
@@ -154,7 +157,7 @@ function ShopTabBar({ permissions }: { permissions?: readonly string[] }) {
                 )}
               >
                 <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={active ? 2 : 1.75} />
-                <span className="line-clamp-1">{t(`nav.shop.${key}`)}</span>
+                <span className="line-clamp-1">{t(`nav.shop.${shopNavLabelKey(key, permissions)}`)}</span>
               </Link>
             </li>
           );
@@ -180,7 +183,10 @@ function SidebarContent({
 
   const items =
     variant === 'shop'
-      ? visibleItems(shopNav, permissions).map((i) => ({ ...i, label: t(`nav.shop.${i.key}`) }))
+      ? visibleItems(shopNav, permissions).map((i) => ({
+          ...i,
+          label: t(`nav.shop.${shopNavLabelKey(i.key, permissions)}`),
+        }))
       : visibleItems(adminNav, permissions).map((i) => ({ ...i, label: t(`nav.admin.${i.key}`) }));
   const current = activeHref(
     pathname,
