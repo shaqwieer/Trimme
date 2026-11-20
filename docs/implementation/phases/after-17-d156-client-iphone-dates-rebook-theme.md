@@ -59,3 +59,6 @@
 
 ## Deploy note (when asked)
 Web image only. No migration and no API change: `build web` + `up -d web`. Nothing to back up for this change alone.
+
+## Deployed
+2026-11-20 with D-156 to D-159 (`a49bedb`), api and web images, no migration (32). Backup `/root/backups/trimme-before-d156-d159-20261120-154159.sql.gz`; smoke in `SESSION_HANDOFF.md` (Session 32, trimme-b7). The real-phone check is still open.

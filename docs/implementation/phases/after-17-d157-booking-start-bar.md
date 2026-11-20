@@ -54,3 +54,6 @@
   - `public-discovery.spec` **8/8**, `signed-in-gate.spec` **2/2**, `whatsapp-notifications.spec` **1/1**.
 - **Audits:** `audit/routes.spec.ts` (anonymous, ar and en, `a11y` and `a11y-dark`) and `audit/keyboard.spec.ts`: **9/9**.
 - **Screens** (Chromium 390×844, dark): the service step after «احجز الآن» on «الأطفال», with the tab open and the bar at the bottom; after choosing, «حلاقة أطفال ٤٠» in the bar.
+
+## Deployed
+2026-11-20 with D-156 to D-159 (`a49bedb`), api and web images, no migration (32). Backup `/root/backups/trimme-before-d156-d159-20261120-154159.sql.gz`; smoke in `SESSION_HANDOFF.md` (Session 32, trimme-b7). The real-phone check is still open.

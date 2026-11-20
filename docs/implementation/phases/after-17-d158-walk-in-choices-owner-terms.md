@@ -1,6 +1,7 @@
 # After Phase 17 — D-158: «حجز حضوري» opens on its four choices, hour-then-minutes walk-in times, the barbers' calendar tab, red «ما حضر», the shop's owner and a temporary password, terms accepted once, no win-back switch
 
 **Status:** [x] except the client's phone check (Session 32, 2026-11-20) · requested by the user (one message, eight screenshots) · decision: D-158
+**Deployed:** 2026-11-20 with D-156, D-157 and D-159 (`a49bedb`, fast-forwarded into `main`), api and web, no migration; backup `/root/backups/trimme-before-d156-d159-20261120-154159.sql.gz`; smoke and evidence in `SESSION_HANDOFF.md` (Session 32, trimme-b7).
 **Where:** worktree `.claude/worktrees/d158`, branch `d158-shop-admin-terms`, rebased onto `main` at `c79725a` (D-156, D-157 and D-159 by trimme-0c and trimme-44, committed while this was built). E2E on its own compose project `trimme-d158` (web 3400, API 8180, DB 5435, Mailpit 8425).
 
 ## The request (the user's words, numbered)
