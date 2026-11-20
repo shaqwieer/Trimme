@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ProfileForm } from '@/components/account/ProfileForm';
-import { WinBackSetting } from '@/components/account/WinBackSetting';
 import { Breadcrumb } from '@/components/ui/data';
 import { PermissionDenied } from '@/components/ui/states';
 import { asLocale } from '@/i18n/routing';
@@ -17,8 +16,9 @@ export async function generateMetadata({
 }
 
 /**
- * Edit the customer's name, email, mobile number and language (c-profile, personal info, D-144), and whether shops may
- * send them «ندعوك للعودة» (D-155).
+ * Edit the customer's name, email, mobile number and language (c-profile, personal info, D-144). The «ندعوك للعودة»
+ * switch (D-155, `WinBackSetting`) is hidden at the client's request (D-158): the setting and its API stay, and a
+ * customer who turned the messages off before still gets none.
  */
 export default async function ProfilePage({ params }: PageProps<'/[locale]/account/profile'>) {
   const { locale: raw } = await params;
@@ -45,7 +45,6 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/accou
           preferredLocale: asLocale(profile.preferredLocale),
         }}
       />
-      <WinBackSetting enabled={profile.winBackMessages} />
     </div>
   );
 }

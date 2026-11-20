@@ -70,6 +70,31 @@ describe('PhoneStep with codes off (the default, D-143)', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it('does not ask for the terms again in a browser where they were accepted, and sends no new acceptance (D-158)', async () => {
+    const user = userEvent.setup();
+    document.cookie = 'trimme-terms=; Max-Age=0; Path=/';
+    api.POST.mockResolvedValueOnce({
+      data: { isNewUser: false, user: { userType: 'Customer', profileComplete: true, termsAccepted: true } },
+      response: new Response(null),
+    });
+    renderStep({ mode: 'signUp', otpRequired: false, termsRemembered: true });
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByTestId('terms-remembered')).toHaveTextContent(
+      'سبق أن وافقت على شروط الاستخدام وسياسة الخصوصية',
+    );
+    expect(screen.getByRole('link', { name: 'شروط الاستخدام' })).toHaveAttribute('href', '/terms');
+
+    await user.type(screen.getByLabelText(/رقم الجوال/), '512345678');
+    await user.click(screen.getByRole('button', { name: 'إنشاء الحساب' }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+    // The account keeps its own acceptance; a new number is asked on profile completion.
+    expect(api.POST).toHaveBeenCalledWith('/api/v1/auth/phone/sign-in', {
+      body: { phone: '+966512345678', termsAccepted: false, locale: 'ar' },
+    });
+    expect(document.cookie).toContain('trimme-terms=1');
+  });
+
   it('signs a returning customer straight in', async () => {
     const user = userEvent.setup();
     api.POST.mockResolvedValueOnce(signedIn(true, false));
@@ -79,6 +104,9 @@ describe('PhoneStep with codes off (the default, D-143)', () => {
     await user.click(screen.getByRole('button', { name: 'تسجيل الدخول' }));
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/discover'));
+    expect(api.POST).toHaveBeenCalledWith('/api/v1/auth/phone/sign-in', {
+      body: { phone: '+966512345678', termsAccepted: false, locale: 'ar' },
+    });
   });
 
   it('explains when the API has switched codes on since the page loaded', async () => {
@@ -115,8 +143,9 @@ describe('PhoneStep with codes on', () => {
     await user.click(screen.getByRole('button', { name: 'إرسال الرمز' }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/auth/verify'));
+    // Sign-in shows no terms, so it accepts none (D-158): a new number is asked on profile completion.
     expect(api.POST).toHaveBeenCalledWith('/api/v1/auth/otp/request', {
-      body: { phone: '+966512345678', termsAccepted: true, locale: 'ar' },
+      body: { phone: '+966512345678', termsAccepted: false, locale: 'ar' },
     });
     expect(router.replace).not.toHaveBeenCalled();
   });

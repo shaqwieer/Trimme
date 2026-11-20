@@ -19,6 +19,7 @@ export default async function CompleteProfilePage({
     <CompleteProfileForm
       returnTo={returnTo ?? homeFor(me.userType)}
       initialName={me.displayName ?? undefined}
+      termsAccepted={me.termsAccepted}
     />
   );
 }

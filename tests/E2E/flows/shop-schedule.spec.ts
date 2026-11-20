@@ -268,10 +268,15 @@ test.describe('shop schedule and availability (R-AVL-02/03, E2 schedule part)', 
     expect(overflow).toBeLessThanOrEqual(0);
 
     // «غير متوفر اليوم» (D-155, the client's 1-2), today, from the quick button: the customers' cards say so; undone the
-    // same day.
+    // same day. The quick buttons live on «حجز حضوري» only, which opens on them (D-158).
     await page.goto('/ar/shop');
+    await expect(page.getByTestId('quick-actions')).toHaveCount(0);
+    await page.goto('/ar/shop/walk-in');
+    await expect(page.getByTestId('barber-day')).toHaveCount(0);
     await page.getByTestId('quick-actions').getByRole('link', { name: 'غير متوفر اليوم' }).click();
-    await expect(page).toHaveURL(/\/ar\/shop\/schedule#unavailable$/);
+    await expect(page).toHaveURL(/\/ar\/shop\/walk-in\?mode=unavailable$/);
+    await expect(page.getByTestId('barber-day')).toHaveAttribute('data-section', 'unavailable');
+    await expect(page.getByTestId('barber-day-hours')).toHaveCount(0);
     await page.getByTestId('unavailable-today').click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'نعم، غير متوفر اليوم' }).click();
     await expect(page.getByText(/^سلطان الحربي غير متوفر اليوم من /)).toBeVisible(SAVE);

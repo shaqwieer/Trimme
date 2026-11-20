@@ -68,17 +68,23 @@ type Pending =
  * asked and nothing repeats. Booked time, the owner's breaks and time off cannot be changed here. Today, «غير متوفر اليوم»
  * (D-155, the client's 1-2) takes the barber off for the rest of the day — a barber for themselves, the owner for any
  * barber — and can be taken back the same day; their bookings stay, for their colleagues to handle.
+ * On «حجز حضوري» the barber picks «بريك» or «غير متوفر اليوم» first (D-158): the card then shows that part alone.
  */
 export function BarberDayCard({
   barbers,
   today,
   own = false,
+  section = 'all',
 }: {
   barbers: BreakBarber[];
   today: LocalDate;
   /** A barber's own login (D-145): the card is «بريكاتي» (D-151). */
   own?: boolean;
+  /** The breaks alone, «غير متوفر اليوم» alone (today only), or both (the hours page). */
+  section?: 'all' | 'breaks' | 'unavailable';
 }) {
+  const showBreaks = section !== 'unavailable';
+  const showUnavailable = section !== 'breaks';
   const t = useTranslations('shopSchedule.barberDay');
   const locale = useLocale() as AppLocale;
   const calendar = useDisplayCalendar();
@@ -239,14 +245,19 @@ export function BarberDayCard({
   return (
     <section
       className="flex scroll-mt-24 flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-e1"
-      id="breaks"
+      id={showBreaks ? 'breaks' : undefined}
       data-testid="barber-day"
+      data-section={section}
       aria-busy={saving || day.isFetching}
     >
       <div className="flex flex-col gap-1">
-        <h2 className="text-h3 font-bold text-text-primary">{own ? t('titleOwn') : t('title')}</h2>
+        <h2 className="text-h3 font-bold text-text-primary">
+          {!showBreaks ? t('unavailableToday') : own ? t('titleOwn') : t('title')}
+        </h2>
         {/* One barber (a barber's own login, D-145, or a one-barber shop): nothing to choose but the day. */}
-        <p className="text-caption text-text-secondary">{barbers.length > 1 ? t('body') : t('bodyOne')}</p>
+        <p className="text-caption text-text-secondary">
+          {!showBreaks ? t('unavailableIntro') : barbers.length > 1 ? t('body') : t('bodyOne')}
+        </p>
       </div>
 
       {barbers.length > 1 ? (
@@ -268,35 +279,37 @@ export function BarberDayCard({
         barber && <p className="text-label font-bold text-text-strong">{barberName}</p>
       )}
 
-      <div className="flex items-center justify-between gap-2" data-testid="barber-day-date">
-        <IconButton
-          icon="chevL"
-          label={t('previous')}
-          variant="outline"
-          disabled={date <= today}
-          onClick={() => {
-            setDate(addDays(date, -1));
-            reset();
-          }}
-        />
-        <div className="flex min-w-0 flex-col items-center text-center">
-          <span className="text-label font-bold text-text-primary">
-            {date === today ? t('today') : formatLocalDate(date, locale, { weekday: 'long' }, calendar)}
-          </span>
-          <span className="text-helper text-text-secondary">
-            {formatLocalDate(date, locale, { day: 'numeric', month: 'long' }, calendar)}
-          </span>
+      {showBreaks && (
+        <div className="flex items-center justify-between gap-2" data-testid="barber-day-date">
+          <IconButton
+            icon="chevL"
+            label={t('previous')}
+            variant="outline"
+            disabled={date <= today}
+            onClick={() => {
+              setDate(addDays(date, -1));
+              reset();
+            }}
+          />
+          <div className="flex min-w-0 flex-col items-center text-center">
+            <span className="text-label font-bold text-text-primary">
+              {date === today ? t('today') : formatLocalDate(date, locale, { weekday: 'long' }, calendar)}
+            </span>
+            <span className="text-helper text-text-secondary">
+              {formatLocalDate(date, locale, { day: 'numeric', month: 'long' }, calendar)}
+            </span>
+          </div>
+          <IconButton
+            icon="chevR"
+            label={t('next')}
+            variant="outline"
+            onClick={() => {
+              setDate(addDays(date, 1));
+              reset();
+            }}
+          />
         </div>
-        <IconButton
-          icon="chevR"
-          label={t('next')}
-          variant="outline"
-          onClick={() => {
-            setDate(addDays(date, 1));
-            reset();
-          }}
-        />
-      </div>
+      )}
 
       {!current ? (
         day.isError ? (
@@ -306,48 +319,50 @@ export function BarberDayCard({
         )
       ) : (
         <>
-          {current.working.length === 0 && (
+          {showBreaks && current.working.length === 0 && (
             <p className="rounded-card bg-bg-muted p-3 text-helper text-text-secondary">{t('dayOff')}</p>
           )}
-          <ul
-            className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-2"
-            data-testid="barber-day-hours"
-          >
-            {shown.map((cell) => (
-              <li key={cell.hour}>
-                <button
-                  type="button"
-                  data-hour={cell.hour}
-                  data-state={cell.state}
-                  aria-expanded={cell.opens ? openHour === cell.hour : undefined}
-                  aria-controls={cell.opens && openHour === cell.hour ? panelId : undefined}
-                  aria-label={t('cell', {
-                    from: hourLabel(cell.start),
-                    to: time(cell.end),
-                    state: stateLabel(cell.state, cell.breakMinutes),
-                  })}
-                  disabled={!cell.opens || saving}
-                  onClick={() => {
-                    setOpenHour(openHour === cell.hour ? null : cell.hour);
-                    setPicked([]);
-                    setDone(undefined);
-                    setError(undefined);
-                  }}
-                  className={cn(
-                    'flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-button border-[1.5px] px-1 py-1.5 text-center transition-colors focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default',
-                    CELL[cell.state],
-                    cell.past && 'opacity-50',
-                    openHour === cell.hour && 'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface',
-                  )}
-                >
-                  <span className="text-label font-bold">{hourLabel(cell.start)}</span>
-                  <span className="text-helper">{stateLabel(cell.state, cell.breakMinutes)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {showBreaks && (
+            <ul
+              className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-2"
+              data-testid="barber-day-hours"
+            >
+              {shown.map((cell) => (
+                <li key={cell.hour}>
+                  <button
+                    type="button"
+                    data-hour={cell.hour}
+                    data-state={cell.state}
+                    aria-expanded={cell.opens ? openHour === cell.hour : undefined}
+                    aria-controls={cell.opens && openHour === cell.hour ? panelId : undefined}
+                    aria-label={t('cell', {
+                      from: hourLabel(cell.start),
+                      to: time(cell.end),
+                      state: stateLabel(cell.state, cell.breakMinutes),
+                    })}
+                    disabled={!cell.opens || saving}
+                    onClick={() => {
+                      setOpenHour(openHour === cell.hour ? null : cell.hour);
+                      setPicked([]);
+                      setDone(undefined);
+                      setError(undefined);
+                    }}
+                    className={cn(
+                      'flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-button border-[1.5px] px-1 py-1.5 text-center transition-colors focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default',
+                      CELL[cell.state],
+                      cell.past && 'opacity-50',
+                      openHour === cell.hour && 'ring-2 ring-brand-500 ring-offset-2 ring-offset-surface',
+                    )}
+                  >
+                    <span className="text-label font-bold">{hourLabel(cell.start)}</span>
+                    <span className="text-helper">{stateLabel(cell.state, cell.breakMinutes)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          {hour && (
+          {showBreaks && hour && (
             <div
               ref={panelRef}
               id={panelId}
@@ -436,7 +451,8 @@ export function BarberDayCard({
             </InlineAlert>
           )}
           <div className="flex flex-wrap gap-2" id="unavailable">
-            {date === today &&
+            {showUnavailable &&
+              date === today &&
               (marked ? (
                 <Button
                   variant="outline"
@@ -459,14 +475,16 @@ export function BarberDayCard({
                   {t('unavailableToday')}
                 </Button>
               ))}
-            <Button
-              variant="ghost"
-              size="md"
-              disabled={saving || !hasBreaksAhead(current)}
-              onClick={() => setPending({ kind: 'clear' })}
-            >
-              {t('clear')}
-            </Button>
+            {showBreaks && (
+              <Button
+                variant="ghost"
+                size="md"
+                disabled={saving || !hasBreaksAhead(current)}
+                onClick={() => setPending({ kind: 'clear' })}
+              >
+                {t('clear')}
+              </Button>
+            )}
           </div>
         </>
       )}

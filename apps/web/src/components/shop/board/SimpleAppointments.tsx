@@ -7,7 +7,7 @@ import { type ReactNode, useState } from 'react';
 import { LoyaltyChip } from '@/components/loyalty/LoyaltyChip';
 import { useDisplayCalendar } from '@/components/providers/CalendarProvider';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
-import { Button, ButtonLink, IconButton } from '@/components/ui/Button';
+import { Button, IconButton } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { ConfirmDialog } from '@/components/ui/overlays';
 import { InlineAlert, SkeletonList } from '@/components/ui/states';
@@ -64,9 +64,9 @@ async function comingOn(day: LocalDate, scope: Scope): Promise<Booking[]> {
 }
 
 /**
- * The shop's day (D-151, the client's 1-1, «شاشة اليوم»), as in the Groom Here app but in the site's look:
- * - for a barber, quick buttons first: «زبون حضوري», «حجز بالتلفون», «بريك», «إيقاف الحجز»;
- * - then what any barber of the shop must close: «حجوزات تحتاج إقفال», red as soon as their booked end passed, each with
+ * The shop's day (D-151, the client's 1-1, «شاشة اليوم»), as in the Groom Here app but in the site's look (a barber's
+ * quick buttons, «زبون حضوري», «حجز بالتلفون», «بريك» and «غير متوفر اليوم», moved to «حجز حضوري» in D-158):
+ * - what any barber of the shop must close: «حجوزات تحتاج إقفال», red as soon as their booked end passed, each with
  *   its responsible barber; and the bookings waiting to be accepted;
  * - then one day at a time («اليوم · الخميس ١٩ نوفمبر») with «جدولي», «الكل» or any colleague: a colleague's bookings are
  *   read-only, and their customers' numbers stay hidden (the API decides);
@@ -83,7 +83,6 @@ export function SimpleAppointments({
   canMove = false,
   ownProfessionalId = null,
   barbers = [],
-  quickActions = false,
 }: {
   today: LocalDate;
   timeZone: string;
@@ -94,8 +93,6 @@ export function SimpleAppointments({
   ownProfessionalId?: string | null;
   /** The shop's active barbers, for the chips. */
   barbers?: DayBarber[];
-  /** A barber's quick buttons (walk-in, phone booking, break, pause); the owner has none (D-146, D-147). */
-  quickActions?: boolean;
 }) {
   const t = useTranslations('shopBoard.simple');
   const tBoard = useTranslations('shopBoard.appointments');
@@ -300,29 +297,6 @@ export function SimpleAppointments({
 
   return (
     <div className="flex max-w-[760px] flex-col gap-4" data-testid="simple-appointments">
-      {quickActions && (
-        <nav
-          aria-label={t('quick.label')}
-          className="grid grid-cols-2 gap-2 md:grid-cols-4"
-          data-testid="quick-actions"
-        >
-          <ButtonLink href="/shop/walk-in" variant="primary" size="md" icon="user">
-            {t('quick.walkIn')}
-          </ButtonLink>
-          <ButtonLink href="/shop/walk-in?kind=phone" variant="secondary" size="md" icon="phone">
-            {t('quick.phone')}
-          </ButtonLink>
-          <ButtonLink href="/shop/schedule#breaks" variant="outline" size="md" icon="coffee">
-            {t('quick.break')}
-          </ButtonLink>
-          {/* The barber's own «غير متوفر اليوم» (D-155, the client's 1-2), where the shop's pause used to be: the shop's
-              pause is the owner's and the admin's now. */}
-          <ButtonLink href="/shop/schedule#unavailable" variant="outline" size="md" icon="ban">
-            {t('quick.unavailable')}
-          </ButtonLink>
-        </nav>
-      )}
-
       {error && <InlineAlert tone="danger" title={error} />}
       <p
         role="status"

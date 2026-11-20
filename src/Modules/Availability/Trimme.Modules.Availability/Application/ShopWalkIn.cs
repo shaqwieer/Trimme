@@ -1,3 +1,4 @@
+using System.Globalization;
 using Trimme.BuildingBlocks.Application.Directories;
 using Trimme.BuildingBlocks.Application.Messaging;
 using Trimme.BuildingBlocks.Application.Security;
@@ -10,13 +11,26 @@ using Trimme.Modules.Availability.Domain.Engine;
 
 namespace Trimme.Modules.Availability.Application;
 
+/// <summary>A free start on the day's grid with its shop-local time (<c>HH:mm</c>), for the hour-then-minutes picker (D-158).</summary>
+public sealed record WalkInTimeResponse(DateTimeOffset StartsAt, string LocalTime);
+
 /// <summary>
 /// One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day's
 /// grid, and every free start that day. <c>DurationMinutes</c> is how long this barber takes for it (D-149: barbers have
-/// their own length per service).
+/// their own length per service). <c>Times</c> are the same starts with their local time, and <c>Open</c> is when this
+/// barber works that day (the shop's hours ∩ theirs; from now on for today), so the barber's form shows every hour
+/// with the taken ones greyed, as the customer's booking does (D-158).
 /// </summary>
 public sealed record WalkInProfessionalResponse(
-    Guid Id, string NameAr, string NameEn, bool FreeNow, DateTimeOffset? NextFreeAt, IReadOnlyList<DateTimeOffset> Starts, int DurationMinutes);
+    Guid Id,
+    string NameAr,
+    string NameEn,
+    bool FreeNow,
+    DateTimeOffset? NextFreeAt,
+    IReadOnlyList<DateTimeOffset> Starts,
+    int DurationMinutes,
+    IReadOnlyList<WalkInTimeResponse> Times,
+    IReadOnlyList<TimeWindow> Open);
 
 /// <summary>Walk-in and phone-booking choices for a service, several services or a package on one shop-local date (s-walkin, D-147).</summary>
 public sealed record WalkInOptionsResponse(
@@ -92,10 +106,18 @@ internal sealed class GetWalkInOptionsHandler(
         {
             var own = calendars.Single(c => c.Id == p.Id);
             var minutes = offer.DurationFor(p.Id);
-            var starts = AvailabilityEngine.FindSlots(calendar, [own], new AvailabilityQuery(date, date, minutes, now, policy))
-                .Select(s => s.StartsAt).ToList();
+            var slots = AvailabilityEngine.FindSlots(calendar, [own], new AvailabilityQuery(date, date, minutes, now, policy));
+            var starts = slots.Select(s => s.StartsAt).ToList();
             var freeNow = date == today && AvailabilityEngine.IsFree(calendar, own, now, minutes, rules.BufferMinutes);
-            return new WalkInProfessionalResponse(p.Id.Value, p.NameAr, p.NameEn, freeNow, starts.Count > 0 ? starts[0] : null, starts, minutes);
+            // When this barber works that day; today, only what is still ahead, so the hours already gone are not listed.
+            var open = AvailabilityEngine.DayOf(calendar, own, date).Working.Ranges
+                .Where(r => r.End > now)
+                .Select(r => new TimeWindow(r.Start > now ? r.Start : now, r.End))
+                .ToList();
+            return new WalkInProfessionalResponse(
+                p.Id.Value, p.NameAr, p.NameEn, freeNow, starts.Count > 0 ? starts[0] : null, starts, minutes,
+                [.. slots.Select(s => new WalkInTimeResponse(s.StartsAt, s.LocalTime.ToString("HH:mm", CultureInfo.InvariantCulture)))],
+                open);
         }).ToList();
 
         return new WalkInOptionsResponse(date, shop.TimeZone, now, offer.DurationMinutes, step, result);

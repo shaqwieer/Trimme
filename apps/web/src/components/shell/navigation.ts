@@ -77,10 +77,11 @@ export const shopNav: NavItem<'shop'>[] = [
  * The shop's four everyday tabs, as a bottom bar on phones and tablets (D-130), in reading order (right to left in
  * Arabic). The owner and a barber each have their own (D-159, the user's request for the owner):
  * - the owner: the overview, the hours («الدوام»), the barbers and the services; the appointments stay in the menu;
- * - a barber: the overview, their breaks, the walk-in and the appointments.
+ * - a barber: the overview, their breaks, the walk-in and the calendar (D-158, the client's request: the calendar took
+ *   the appointments' place; the appointments stay in the menu).
  */
 export const ownerTabKeys = ['overview', 'schedule', 'barbers', 'services'] as const;
-export const barberTabKeys = ['overview', 'schedule', 'walkIn', 'appointments'] as const;
+export const barberTabKeys = ['overview', 'schedule', 'walkIn', 'calendar'] as const;
 
 /** Whether these grants are the owner's: only the owner manages the shop's barbers (D-146). */
 export function isShopOwner(permissions: readonly string[] | undefined): boolean {

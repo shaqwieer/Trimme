@@ -41,7 +41,6 @@ export default async function ShopAppointmentsPage({ params }: PageProps<'/[loca
               barbers={(professionals ?? [])
                 .filter((p) => p.status === 'Active')
                 .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
-              quickActions={me.permissions.includes('Shop.Bookings.CreateWalkIn')}
             />
           </Suspense>
         );

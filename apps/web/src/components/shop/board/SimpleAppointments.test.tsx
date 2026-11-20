@@ -122,7 +122,7 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
     );
   });
 
-  it('gives the owner nothing to press and no quick buttons, and everyone’s day by default (D-147)', async () => {
+  it('gives the owner nothing to press, and everyone’s day by default (D-147)', async () => {
     renderList({ canUpdate: false, barbers: BARBERS });
     await screen.findByTestId('coming-today');
     expect(
@@ -136,9 +136,9 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
     });
   });
 
-  it("shows a barber their own day first, then everyone's or a colleague's, with the quick buttons (D-151, 1-1)", async () => {
+  it("shows a barber their own day first, then everyone's or a colleague's (D-151, 1-1)", async () => {
     const user = userEvent.setup();
-    const { container } = renderList({ ownProfessionalId: 'p1', barbers: BARBERS, quickActions: true });
+    const { container } = renderList({ ownProfessionalId: 'p1', barbers: BARBERS });
 
     const today = await screen.findByTestId('coming-today');
     await within(today).findByText('سعود الرشيد');
@@ -162,24 +162,8 @@ describe('SimpleAppointments (D-134, D-147, D-151)', () => {
     ).toEqual([expect.stringContaining('سعود الرشيد'), expect.stringContaining('ناصر العتيبي')]);
     expect(within(today).getAllByTestId('coming-appointment')[0]).toHaveTextContent('حلاقة شعر · ');
 
-    const quick = screen.getByTestId('quick-actions');
-    expect(within(quick).getByRole('link', { name: 'زبون حضوري' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/shop\/walk-in$/),
-    );
-    expect(within(quick).getByRole('link', { name: 'حجز بالتلفون' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/shop\/walk-in\?kind=phone$/),
-    );
-    expect(within(quick).getByRole('link', { name: 'بريك' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/shop\/schedule#breaks$/),
-    );
-    // The shop's pause is the owner's now (D-155); a barber marks themselves «غير متوفر اليوم».
-    expect(within(quick).getByRole('link', { name: 'غير متوفر اليوم' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/\/shop\/schedule#unavailable$/),
-    );
+    // The quick buttons live on «حجز حضوري» only (D-158).
+    expect(screen.queryByTestId('quick-actions')).not.toBeInTheDocument();
     await expectNoAxeViolations(container);
 
     await user.click(screen.getByRole('button', { name: 'الكل' }));

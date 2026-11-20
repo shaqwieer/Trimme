@@ -196,6 +196,17 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         own.GetProperty("freeNow").GetBoolean().ShouldBeFalse();
         own.GetProperty("nextFreeAt").GetDateTimeOffset().ShouldBe(At(Target, 10, 30));
         own.GetProperty("starts").EnumerateArray().Select(s => s.GetDateTimeOffset()).ShouldNotContain(At(Target, 10, 15));
+
+        // D-158: the same starts with their local time, and when the barber works from now on, so the walk-in shows the
+        // hour, then its minutes, with the taken ones greyed, as the customer's booking does.
+        var times = own.GetProperty("times").EnumerateArray().ToList();
+        times.Select(t => t.GetProperty("startsAt").GetDateTimeOffset())
+            .ShouldBe(own.GetProperty("starts").EnumerateArray().Select(s => s.GetDateTimeOffset()));
+        times[0].GetProperty("localTime").GetString().ShouldBe("10:30");
+        var open = own.GetProperty("open").EnumerateArray().ToList();
+        open.ShouldNotBeEmpty();
+        open[0].GetProperty("start").GetDateTimeOffset().ShouldBe(At(Target, 10, 2), "today, from now on");
+        open.ShouldAllBe(o => o.GetProperty("end").GetDateTimeOffset() > o.GetProperty("start").GetDateTimeOffset());
         options.GetProperty("professionals")[1].GetProperty("freeNow").GetBoolean().ShouldBeTrue("Omar is free now, so Faisal may book him");
         var omars = (await OkAsync(omar.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={w.Haircut}", ct), ct)).GetProperty("professionals");
         omars.EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar, w.Faisal]);
@@ -210,6 +221,10 @@ public sealed class ShopDashboardTests(PostgresFixture postgres)
         desk.GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar]);
         desk.GetProperty("professionals")[0].GetProperty("freeNow").GetBoolean().ShouldBeFalse("not today");
         desk.GetProperty("professionals")[0].GetProperty("starts").GetArrayLength().ShouldBeGreaterThan(0);
+        // Another day: the whole working day, opening before or at its first free start.
+        var deskOpen = desk.GetProperty("professionals")[0].GetProperty("open")[0].GetProperty("start").GetDateTimeOffset();
+        deskOpen.ShouldBeLessThanOrEqualTo(desk.GetProperty("professionals")[0].GetProperty("times")[0].GetProperty("startsAt").GetDateTimeOffset());
+        deskOpen.ShouldBeGreaterThan(At(Target, 23, 0));
         (await OkAsync(faisal.GetAsync($"/api/v1/shop/availability/walk-in?serviceId={deskOnly}&date={Iso(Target.AddDays(1))}", ct), ct))
             .GetProperty("professionals").EnumerateArray().Select(p => p.GetProperty("id").GetGuid()).ShouldBe([w.Omar], "Faisal does not do it, Omar does");
 

@@ -2253,3 +2253,46 @@ This refines D-126.
   - Web: 604 unit tests (`DashboardShell.test`: the owner's four tabs and «الخدمات»'s link, «المواعيد» once in the menu, no «الدوام والبريكات»; the barber's bar unchanged); typecheck; lint; format.
   - The local web container rebuilt from the tree: the owner and barber route audits (ar, en) and the keyboard pass, 9/9.
   - Chromium at 390×844, signed in as Barber House's owner: «النظرة التشغيلية، الدوام، الحلاقون، الخدمات». As Majed (barber): «النظرة التشغيلية، الدوام والبريكات، حجز حضوري، المواعيد».
+
+## D-158 — «حجز حضوري» opens on its four choices (the quick buttons live there only), hour-then-minutes walk-in times with the taken ones greyed, the barbers' calendar tab, red «ما حضر», the shop's owner and a temporary password on the admin shop page, terms accepted once, and no win-back switch — Accepted (Session 32, after Phase 17, at the user's request)
+- **The request:** the user's message with eight screenshots (groomhere.sa on an iPhone and the desktop). The items are numbered in `phases/after-17-d158-walk-in-choices-owner-terms.md`.
+- **Built:**
+  - **1. Admin: the shop's owner and a manual password** (R-AD-20):
+    - «المالك» sits in the admin shop page's header, on every tab. It shows each owner login's name, sign-in email and state («موقوف», «بانتظار كلمة مرور جديدة»).
+    - «كلمة مرور مؤقتة جديدة» asks for confirmation. The server then generates the password (D-146's 12 easy characters) and shows it once, with «نسخ» and how an owner signs in (by email).
+    - The owner's sessions end, and a lockout is lifted. Their next sign-in asks for a password of their own (D-139).
+    - The API has `GET /admin/shops/{shopId}/users` and `POST /admin/shops/{shopId}/users/{userId}/temporary-password`, both under `Admin.Shops.ManageAccount`.
+    - Only a `ShopOwner` login of that shop qualifies. An admin, a customer, a barber's login or another shop's owner answers 404, so the permission can never reset a platform account.
+    - A disabled owner answers 409 `shop_user.disabled`.
+    - The reset is audited as `shop_user.password_reset`, without the password or the email. No migration.
+  - **2. Terms accepted once** (R-AUTH-18):
+    - Profile completion no longer asks again when the account already holds an acceptance (`MeResponse.termsAccepted`, additive). It says «وافقت على شروط الاستخدام وسياسة الخصوصية عند التسجيل.».
+    - On a browser where the terms were accepted before, sign-up says «سبق أن وافقت على …» instead of showing the box. This uses the `trimme-terms` cookie: a flag only, kept 2 years, not HttpOnly, set when a signed-in customer's account holds an acceptance.
+    - Such a sign-up sends `termsAccepted: false`. So does the sign-in page, which shows no terms. Before, the sign-in page sent `true`, so a new number entered there got an acceptance it never saw.
+    - An account keeps its own acceptance. A new number is asked at profile completion, which the server already required.
+  - **3. Win-back switch hidden** (R-CUS-27): «رسائل «ندعوك للعودة»» is gone from «معلوماتي». The setting, its API and earlier opt-outs stay. Customers can no longer turn the messages off in the app.
+  - **4–5. «حجز حضوري» opens on four choices** (R-SD-31):
+    - The choices are «زبون حضوري», «حجز بالتلفون», «بريك» and «غير متوفر اليوم», as plain links (`?mode=`). Nothing else shows until one is picked. The chosen one is filled, and the others stay to switch to.
+    - The quick buttons are gone from the barber's home and «المواعيد».
+    - The walk-in and the phone booking no longer have a kind step, so their steps read ١–٤.
+    - «بريك» and «غير متوفر اليوم» show the barber's own `BarberDayCard` with that part alone (`section`).
+    - Older links still land on a screen: `?kind=phone`, and the calendar's prefilled time (a walk-in today, a phone booking for a later day).
+  - **6–7. Walk-in times: the hour first, then its minutes** (R-SD-32). This uses the customer's `HourMinutePicker`:
+    - every hour the barber works that day is listed, and the ones with no free start are greyed and struck through;
+    - picking an hour shows its twelve 5-minute starts, with the taken ones greyed;
+    - «ابدأ الآن» stays above it.
+    - A walk-in with nothing left today says «لا أوقات في هذا اليوم», without the picker's «جرّب يوماً آخر»: a walk-in cannot move to another day.
+    - «بريك» and «غير متوفر اليوم» are the page's title on their own screens.
+    - The walk-in API adds two fields to each professional, both additive: `times` (each free start with its local `HH:mm`) and `open` (the shop's hours ∩ the barber's; for today, from now on).
+  - **8. The barbers' bottom bar** (R-SHP-10): «التقويم» takes the place of «المواعيد», which stays in the menu. Built on D-159's per-role lists (trimme-44). The owner's bar is D-159's.
+  - **9. Red for «ما حضر»** (R-SD-33): the calendar's legend has «ما حضر», and a no-show's block uses the cancelled (red) tokens. Other status badges are unchanged.
+- **Defaults (decided, not asked):**
+  - Only the barbers' bar changed. The owner's was changed the same day by D-159, at the user's own request.
+  - Today's walk-in hours start from now: hours already gone are not listed, so the list is shorter, as asked. The customer's booking is unchanged.
+  - The step order stays (services, barber, time, customer). The barber is preselected, so the times show as soon as the walk-in opens.
+  - The phone booking keeps its date field.
+  - `WinBackSetting` stays in the code, so the switch can return with one line.
+- **Coordination:**
+  - Built in worktree `.claude/worktrees/d158` (branch `d158-shop-admin-terms`) while trimme-0c (D-156) and trimme-44 (D-157, D-159) committed on `main`, then rebased onto `c79725a`.
+  - E2E ran on its own compose project (`-p trimme-d158`: web 3400, API 8180, DB 5435, Mailpit 8425), not the shared 3300 stack.
+- **Deploy:** api and web images, no migration.

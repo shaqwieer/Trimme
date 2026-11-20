@@ -89,9 +89,10 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     const customer = `زائر ${Date.now().toString(36).slice(-5)}`;
     await staffSignIn(page, OMAR_LOGIN);
     await expect(page.getByTestId('shop-overview')).toBeVisible();
-    // A barber's home is their day, no figures (D-147, D-151): the quick buttons, «جدولي» pressed.
+    // A barber's home is their day, no figures (D-147, D-151), «جدولي» pressed; the quick buttons are on «حجز حضوري»
+    // only (D-158).
     await expect(page.getByTestId('shop-kpis')).toHaveCount(0);
-    await expect(page.getByTestId('quick-actions')).toBeVisible();
+    await expect(page.getByTestId('quick-actions')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'جدولي' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('live-indicator')).toHaveAttribute('data-state', 'live', {
       timeout: 15_000,
@@ -118,9 +119,12 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
 
     // Omar's phone booking two days ahead (D-147): the kind, the service, himself, the last free time that day, the
     // name and the mobile (D-134).
+    // «حجز حضوري» opens on the four choices, with nothing below until one is picked (D-158).
     await page.goto('/ar/shop/walk-in');
+    await expect(page.getByTestId('quick-actions')).toBeVisible();
+    await expect(page.getByTestId('walk-in')).toHaveCount(0);
+    await page.getByTestId('quick-actions').getByRole('link', { name: 'حجز بالتلفون' }).click();
     await expect(page.getByTestId('walk-in')).toBeVisible();
-    await page.locator('label').filter({ hasText: 'بالتلفون' }).click();
     // The first service is ticked by default, and services.spec may have reordered the section (D-151): untick
     // anything but «قص وتصفيف», which both barbers do. A label click toggles, so «قص وتصفيف» is ticked only if it isn't.
     for (const box of await page
@@ -135,11 +139,14 @@ test.describe('shop operations dashboard (E2, Phase 13)', () => {
     await expect(page.getByRole('checkbox', { name: /قص وتصفيف/ })).toBeChecked();
     await page.getByLabel('اليوم', { exact: true }).fill(date);
     await page.locator('label').filter({ hasText: 'عمر السالم' }).click();
-    // The day's last free time: the first ones can belong to the previous business day when its opening window runs
-    // past midnight (D-100), and the calendar below shows the business day.
-    const time = page.getByTestId('walk-in-times').getByRole('radio').last();
-    await expect(time).toBeAttached();
-    await page.locator('[data-testid="walk-in-times"] label').last().click();
+    // The day's last free time, the hour first and then its minutes, the taken ones greyed (D-158): the first ones can
+    // belong to the previous business day when its opening window runs past midnight (D-100), and the calendar below
+    // shows the business day.
+    const times = page.getByTestId('walk-in-times');
+    await times.getByRole('group', { name: 'اختر الساعة' }).locator('label').last().click();
+    const minute = times.getByRole('group', { name: 'اختر الدقيقة' }).locator('label').last();
+    await expect(minute).toBeVisible();
+    await minute.click();
     await page.getByLabel('اسم العميل').fill(customer);
     await page.getByLabel('جوال العميل').fill(`0${WALK_IN_PHONE}`);
     await expectNoSeriousAxe(page, 'walk-in');

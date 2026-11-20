@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/icons';
 import { Checkbox } from '@/components/ui/inputs';
 import { RadioCard } from '@/components/ui/selection';
 import { InlineAlert } from '@/components/ui/states';
@@ -13,6 +14,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { FormTextField, useValidationMessage, useZodForm } from '@/lib/forms/fields';
+import { rememberTermsAccepted } from '@/lib/auth/terms';
 import { applyProblemToForm } from '@/lib/forms/problem';
 import { requiredText } from '@/lib/forms/validation';
 import { AuthCard } from './AuthCard';
@@ -25,9 +27,19 @@ const schema = z.object({
 
 /**
  * New customers give a name, language and terms acceptance after their first verification (the design shows the
- * name in the profile and reviews but does not draw this step — DV-A01).
+ * name in the profile and reviews but does not draw this step — DV-A01). Terms accepted on sign-up are not asked again:
+ * the step says they were accepted (D-158, the client's request).
  */
-export function CompleteProfileForm({ returnTo, initialName }: { returnTo: string; initialName?: string }) {
+export function CompleteProfileForm({
+  returnTo,
+  initialName,
+  termsAccepted = false,
+}: {
+  returnTo: string;
+  initialName?: string;
+  /** The account already holds an acceptance (`me.termsAccepted`). */
+  termsAccepted?: boolean;
+}) {
   const t = useTranslations('auth.completeProfile');
   const locale = useLocale();
   const router = useRouter();
@@ -38,7 +50,7 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
     defaultValues: {
       displayName: initialName ?? '',
       preferredLocale: asLocale(locale),
-      termsAccepted: false,
+      termsAccepted,
     },
   });
 
@@ -46,6 +58,7 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
     setServerError(undefined);
     try {
       ensureOk(await browserApi.POST('/api/v1/auth/profile/complete', { body: values }));
+      rememberTermsAccepted();
       router.replace(returnTo, { locale: values.preferredLocale });
     } catch (error) {
       if (error instanceof ApiError && error.isValidation) {
@@ -77,18 +90,27 @@ export function CompleteProfileForm({ returnTo, initialName }: { returnTo: strin
             ))}
           </div>
         </fieldset>
-        <div className="flex flex-col gap-1">
-          <Checkbox
-            {...form.register('termsAccepted')}
-            label={t.rich('terms', { strong: (chunks) => <strong className="font-bold">{chunks}</strong> })}
-            aria-invalid={form.formState.errors.termsAccepted ? true : undefined}
-          />
-          {form.formState.errors.termsAccepted && (
-            <p role="alert" className="text-helper text-danger-700">
-              {validationMessage(form.formState.errors.termsAccepted)}
-            </p>
-          )}
-        </div>
+        {termsAccepted ? (
+          <p className="flex items-start gap-2 text-label text-text-secondary" data-testid="terms-accepted">
+            <Icon name="check" className="mt-0.5 size-4 shrink-0 text-success-700" strokeWidth={2.5} />
+            <span>
+              {t.rich('termsDone', { strong: (chunks) => <strong className="font-bold">{chunks}</strong> })}
+            </span>
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <Checkbox
+              {...form.register('termsAccepted')}
+              label={t.rich('terms', { strong: (chunks) => <strong className="font-bold">{chunks}</strong> })}
+              aria-invalid={form.formState.errors.termsAccepted ? true : undefined}
+            />
+            {form.formState.errors.termsAccepted && (
+              <p role="alert" className="text-helper text-danger-700">
+                {validationMessage(form.formState.errors.termsAccepted)}
+              </p>
+            )}
+          </div>
+        )}
         {serverError && <InlineAlert tone="danger" title={serverError} />}
         <Button type="submit" fullWidth loading={form.formState.isSubmitting}>
           {t('submit')}

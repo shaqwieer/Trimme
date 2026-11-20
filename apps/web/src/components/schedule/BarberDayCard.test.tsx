@@ -258,4 +258,34 @@ describe('BarberDayCard (D-134, D-137)', () => {
     expect(await screen.findByText('سلطان الحربي')).toBeInTheDocument();
     expect(screen.queryByLabelText('الحلاق')).not.toBeInTheDocument();
   });
+
+  it('shows «بريك» or «غير متوفر اليوم» alone when the barber picked it on «حجز حضوري» (D-158)', async () => {
+    const user = userEvent.setup();
+    api.POST.mockResolvedValue(ok(null));
+    const { unmount } = renderCard(
+      <BarberDayCard barbers={[barbers[0]!]} today="2026-10-21" own section="breaks" />,
+    );
+    // The breaks alone: the day's hours and «إلغاء كل الاستراحات», but not «غير متوفر اليوم».
+    await waitFor(() => expect(screen.getByTestId('barber-day-hours').children).toHaveLength(4));
+    expect(screen.getByRole('heading', { name: 'بريكاتي' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'إلغاء كل الاستراحات' })).toBeInTheDocument();
+    expect(screen.queryByTestId('unavailable-today')).not.toBeInTheDocument();
+    unmount();
+
+    renderCard(<BarberDayCard barbers={[barbers[0]!]} today="2026-10-21" own section="unavailable" />);
+    // «غير متوفر اليوم» alone: today only, no hours, no days to move through, no breaks to clear.
+    const mark = await screen.findByTestId('unavailable-today');
+    expect(screen.getByRole('heading', { name: 'غير متوفر اليوم' })).toBeInTheDocument();
+    expect(screen.queryByTestId('barber-day-hours')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('barber-day-date')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'إلغاء كل الاستراحات' })).not.toBeInTheDocument();
+    await user.click(mark);
+    await user.click(within(dialog()).getByRole('button', { name: 'نعم، غير متوفر اليوم' }));
+    // A barber's own login names no one: the API takes them from the session.
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith('/api/v1/shop/schedule/unavailable-today', {
+        body: { professionalId: null },
+      }),
+    );
+  });
 });

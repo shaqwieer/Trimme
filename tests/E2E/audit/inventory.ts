@@ -123,9 +123,13 @@ export function routes(role: Role, ids: RuntimeIds): AuditRoute[] {
         { path: '/shop/appointments' },
         { path: '/shop/calendar' },
         { path: '/shop/calendar?view=week' },
+        // «حجز حضوري» opens on its four choices, then each one's screen (D-158).
         { path: '/shop/walk-in' },
-        // The phone kind from the day's quick buttons, and «حسابي» with its rename and deletion (D-151).
-        { path: '/shop/walk-in?kind=phone' },
+        { path: '/shop/walk-in?mode=walkIn' },
+        { path: '/shop/walk-in?mode=phone' },
+        { path: '/shop/walk-in?mode=break' },
+        { path: '/shop/walk-in?mode=unavailable' },
+        // «حسابي» with its rename and deletion (D-151).
         { path: '/shop/account' },
         { path: '/shop/schedule' },
         { path: '/shop/notifications' },

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { type ReactNode, useRef, useState } from 'react';
 import { useLoyaltyRewardName } from '@/components/loyalty/LoyaltyParts';
+import { HourMinutePicker } from '@/components/ui/booking';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/icons';
 import { isValidSaudiMobile, toE164 } from '@/components/ui/digits';
@@ -43,23 +44,26 @@ const NOTE_MAX = 500;
 const MAX_SERVICES = 10;
 
 /**
- * A booking the barber records (s-walkin 2397–2459, D-035, D-088, D-147), numbered 1 to 5 whatever is chosen:
- * (1) «حضوري» — the customer is here, the time is taken at once (now, or the barber's next free start today) — or
- * «بالتلفون», an appointment on another day or time; (2) several services, added up, or one package; (3) the barber
- * themselves or a free colleague who does all of it; (4) the time; (5) the customer's name (required), mobile (optional)
- * and a note. The mobile is stored encrypted; the barbers see it on the booking until it is closed, the owner never
- * (D-147). On a phone the summary follows the form; it stays in view beside it from `lg` up.
+ * A booking the barber records (s-walkin 2397–2459, D-035, D-088, D-147). Its kind is chosen first, on «حجز حضوري»'s
+ * four buttons (D-158): «حضوري» — the customer is here, the time is taken at once (now, or a free start today) — or
+ * «بالتلفون», an appointment on another day or time. Then, numbered 1 to 4 whatever is chosen: (1) several services,
+ * added up, or one package; (2) the barber themselves or a free colleague who does all of it; (3) the time, the hour first
+ * and then its minutes, with the taken ones greyed as in the customer's booking (D-158); (4) the customer's name
+ * (required), mobile (optional) and a note. The mobile is stored encrypted; the barbers see it on the booking until it is
+ * closed, the owner never (D-147). On a phone the summary follows the form; it stays in view beside it from `lg` up.
  */
 export function WalkInFlow({
+  kind,
   offers,
   today,
   timeZone,
   initialProfessionalId,
   initialStart,
   initialDate,
-  initialKind,
   ownProfessionalId,
 }: {
+  /** «حضوري» or «بالتلفون», picked on the page's four buttons (D-158). */
+  kind: Kind;
   offers: WalkInOffer[];
   today: string;
   timeZone: string;
@@ -68,8 +72,6 @@ export function WalkInFlow({
   initialProfessionalId?: string;
   initialStart?: string;
   initialDate?: string;
-  /** «حجز بالتلفون» from the day screen's quick buttons (D-151) opens with the phone kind chosen. */
-  initialKind?: Kind;
 }) {
   const t = useTranslations('shopBoard.walkIn');
   const tCatalog = useTranslations('booking.catalog');
@@ -78,9 +80,6 @@ export function WalkInFlow({
   const apiMessage = useApiErrorMessage();
   const rewardName = useLoyaltyRewardName();
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<Kind>(
-    initialKind ?? (initialDate && initialDate !== today ? 'Phone' : 'WalkIn'),
-  );
   const [serviceIds, setServiceIds] = useState<string[]>(() => {
     const first = offers.find((o) => o.kind === 'service');
     return first ? [first.id] : [];
@@ -139,6 +138,12 @@ export function WalkInFlow({
   const professional = options.data?.professionals.find((p) => p.id === professionalId);
   const duration = professional?.durationMinutes ?? standard;
   const startsAt = start === NOW ? options.data?.now : start || undefined;
+  // The picker matches its times by their exact text; a prefilled start (the calendar's link) may be written otherwise.
+  const pickedStart =
+    start && start !== NOW
+      ? (professional?.times.find((time) => Date.parse(time.startsAt) === Date.parse(start))?.startsAt ??
+        start)
+      : undefined;
   const nameError =
     name.trim().length === 0 ? undefined : name.trim().length > NAME_MAX ? t('nameTooLong') : undefined;
   const phoneValid = phone === '' || isValidSaudiMobile(phone);
@@ -316,29 +321,6 @@ export function WalkInFlow({
         <p className="text-helper text-text-secondary">{t('intro')}</p>
 
         {fieldset(
-          t('steps.kind'),
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {(['WalkIn', 'Phone'] as const).map((k) => (
-              <RadioCard
-                key={k}
-                name="walk-in-kind"
-                value={k}
-                checked={kind === k}
-                onChange={() => {
-                  setKind(k);
-                  setStart('');
-                  if (k === 'WalkIn') setDate(today);
-                }}
-              >
-                <span className="block text-label font-bold text-text-primary">{t(`kinds.${k}.title`)}</span>
-                <span className="block text-helper text-text-secondary">{t(`kinds.${k}.body`)}</span>
-              </RadioCard>
-            ))}
-          </div>,
-          'walk-in-kind',
-        )}
-
-        {fieldset(
           t('steps.service'),
           <>
             {services.length > 0 && (
@@ -493,12 +475,13 @@ export function WalkInFlow({
           !professional ? (
             <p className="text-helper text-text-secondary">{t('pickProfessionalFirst')}</p>
           ) : (
-            <div className="flex flex-wrap gap-2" data-testid="walk-in-times">
+            <div className="flex flex-col gap-4" data-testid="walk-in-times">
+              {/* The customer is here (D-035): «ابدأ الآن» takes the time from this minute, off the 5-minute grid. */}
               {kind === 'WalkIn' && professional.freeNow && (
-                <label className="relative inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-button border-[1.5px] border-navy-900 bg-surface px-4 text-label font-bold text-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]">
+                <label className="relative inline-flex min-h-11 cursor-pointer items-center gap-1.5 self-start rounded-button border-[1.5px] border-navy-900 bg-surface px-4 text-label font-bold text-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]">
                   <input
                     type="radio"
-                    name="walk-in-time"
+                    name="walk-in-time-now"
                     value={NOW}
                     checked={start === NOW}
                     onChange={() => setStart(NOW)}
@@ -508,24 +491,26 @@ export function WalkInFlow({
                   {t('startNow', { time: formatTime(options.data!.now, locale, timeZone) })}
                 </label>
               )}
-              {professional.starts.map((s) => (
-                <label
-                  key={s}
-                  className="relative inline-flex min-h-11 cursor-pointer items-center rounded-button border-[1.5px] border-border-input bg-surface px-3 font-latin text-label font-bold text-text-strong hover:border-brand-500 has-checked:border-navy-900 has-checked:bg-navy-900 has-checked:text-on-navy has-focus-visible:shadow-[var(--focus-ring)]"
-                >
-                  <input
-                    type="radio"
-                    name="walk-in-time"
-                    value={s}
-                    checked={
-                      start !== NOW && start !== '' && new Date(start).getTime() === new Date(s).getTime()
-                    }
-                    onChange={() => setStart(s)}
-                    className="sr-only"
-                  />
-                  {formatTime(s, locale, timeZone)}
-                </label>
-              ))}
+              {/* Every hour the barber works that day, then that hour's minutes every 5, taken ones greyed (D-158).
+                  A walk-in cannot move to another day, so an empty today says so without the picker's «جرّب يوماً آخر». */}
+              {kind === 'WalkIn' && professional.times.length === 0 ? (
+                <p className="text-helper text-text-secondary" data-testid="walk-in-no-times">
+                  {t('noTimes')}
+                </p>
+              ) : (
+                <HourMinutePicker
+                  key={`${professional.id}|${day}`}
+                  name="walk-in-time"
+                  timeZone={timeZone}
+                  slots={professional.times.map((time) => ({
+                    start: time.startsAt,
+                    localTime: time.localTime,
+                  }))}
+                  open={professional.open}
+                  value={pickedStart}
+                  onValueChange={setStart}
+                />
+              )}
             </div>
           ),
         )}

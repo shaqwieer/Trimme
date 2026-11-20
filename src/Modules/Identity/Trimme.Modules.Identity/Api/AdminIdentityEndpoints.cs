@@ -49,7 +49,23 @@ internal static class AdminIdentityEndpoints
             .WithSummary("Creates a ShopOwner account with a temporary password, without email (audited).")
             .Produces<ShopUserResponse>(StatusCodes.Status201Created).ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status409Conflict);
+        admin.MapGet("/shops/{shopId:guid}/users", ListShopOwners).RequirePermission(Permissions.Admin.ShopsManageAccount)
+            .WithName("ListShopOwners")
+            .WithSummary("The shop's owner logins: name, email, whether disabled and whether a temporary password waits (D-158).")
+            .Produces<IReadOnlyList<ShopOwnerAccountResponse>>().ProducesProblem(StatusCodes.Status404NotFound);
+        admin.MapPost("/shops/{shopId:guid}/users/{userId:guid}/temporary-password", ResetShopOwnerPassword)
+            .RequirePermission(Permissions.Admin.ShopsManageAccount)
+            .WithName("ResetShopOwnerPassword")
+            .WithSummary("Gives one of the shop's owners a new temporary password, shown once; their sessions end and the next sign-in asks for a new password (D-158, audited).")
+            .Produces<ShopOwnerPasswordResponse>().ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
     }
+
+    private static async Task<IResult> ListShopOwners(Guid shopId, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new ListShopOwnersQuery(shopId), cancellationToken)).ToHttpResult();
+
+    private static async Task<IResult> ResetShopOwnerPassword(Guid shopId, Guid userId, IDispatcher dispatcher, CancellationToken cancellationToken) =>
+        (await dispatcher.Send(new ResetShopOwnerPasswordCommand(shopId, userId), cancellationToken)).ToHttpResult();
 
     private static async Task<Ok<IReadOnlyList<PermissionResponse>>> ListPermissions(IDispatcher dispatcher, CancellationToken cancellationToken) =>
         TypedResults.Ok(await dispatcher.Send(new ListPermissionsQuery(), cancellationToken));

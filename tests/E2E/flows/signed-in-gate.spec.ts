@@ -33,7 +33,8 @@ async function signUp(page: Page, name: string) {
   }
   await expect(page).toHaveURL(/\/ar\/auth\/complete-profile/);
   await page.getByLabel('الاسم الكامل').fill(name);
-  await page.getByLabel(/أوافق على/).check();
+  // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+  await expect(page.getByTestId('terms-accepted')).toBeVisible();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
   await expect(page).toHaveURL(/\/ar\/discover$/);
 }

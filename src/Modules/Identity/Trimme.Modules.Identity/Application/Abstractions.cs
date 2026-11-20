@@ -72,6 +72,10 @@ public enum StaffPasswordOutcome
 
 public sealed record StaffPasswordCheck(StaffPasswordOutcome Outcome, AccountSummary? Account = null, DateTimeOffset? LockedUntil = null);
 
+/// <summary>One of a shop's owner logins (D-158), for the admin's shop page.</summary>
+public sealed record ShopOwnerAccountRow(
+    Guid UserId, string? DisplayName, string? Email, bool IsDisabled, bool MustChangePassword, DateTimeOffset CreatedAt);
+
 /// <summary>Account persistence and credential checks (implemented over ASP.NET Core Identity in Infrastructure).</summary>
 internal interface IAccountStore
 {
@@ -136,6 +140,15 @@ internal interface IAccountStore
     Task<PasswordResetTicket?> CreatePasswordResetAsync(string email, CancellationToken cancellationToken);
 
     Task<Result> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>The shop's owner logins (D-158), oldest first: never a barber's login, never a deleted one.</summary>
+    Task<IReadOnlyList<ShopOwnerAccountRow>> ListShopOwnersAsync(Guid shopId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Replaces a staff user's password with a temporary one an admin hands over (D-158): the next sign-in asks for a new
+    /// password first (D-139). Lifts a lockout. Saved.
+    /// </summary>
+    Task<Result> SetTemporaryPasswordAsync(Guid userId, string password, CancellationToken cancellationToken);
 
     /// <summary>
     /// Replaces a staff password the caller has just proven (D-139) and clears <c>MustChangePassword</c>. The new

@@ -9,16 +9,23 @@ import { Dialog } from '@/components/ui/overlays';
  * The temporary password the server generated for a barber's login (D-146), shown once: the owner (or admin) copies it
  * or reads it out to the barber, who signs in with their WhatsApp number and this password, then chooses their own.
  * It lives only in the caller's state while the dialog is open; it is never put in a URL, stored or sent anywhere.
+ * A shop owner's (D-158) says how an owner signs in instead.
  */
 export function TemporaryPasswordDialog({
   name,
   password,
   onClose,
+  body,
+  once,
 }: {
   name: string;
   /** The password to show; the dialog is open while it is set. */
   password: string | undefined;
   onClose: () => void;
+  /** Who it is for and how they sign in; the barber's wording by default. */
+  body?: string;
+  /** What to do if it is lost; the barber's wording by default. */
+  once?: string;
 }) {
   const t = useTranslations('barberLogins.issued');
   const [copied, setCopied] = useState(false);
@@ -45,7 +52,7 @@ export function TemporaryPasswordDialog({
       }}
       size="sm"
       title={t('title', { name })}
-      description={t('body')}
+      description={body ?? t('body')}
       footer={
         <Button
           className="flex-1"
@@ -72,7 +79,7 @@ export function TemporaryPasswordDialog({
             {copied ? t('copied') : t('copy')}
           </Button>
         </div>
-        <p className="text-helper text-text-secondary">{t('once')}</p>
+        <p className="text-helper text-text-secondary">{once ?? t('once')}</p>
       </div>
     </Dialog>
   );

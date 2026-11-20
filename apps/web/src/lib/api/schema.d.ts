@@ -1212,10 +1212,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The shop's owner logins: name, email, whether disabled and whether a temporary password waits (D-158). */
+        get: operations["ListShopOwners"];
         put?: never;
         /** Creates a ShopOwner account with a temporary password, without email (audited). */
         post: operations["CreateShopUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/shops/{shopId}/users/{userId}/temporary-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gives one of the shop's owners a new temporary password, shown once; their sessions end and the next sign-in asks for a new password (D-158, audited). */
+        post: operations["ResetShopOwnerPassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6053,6 +6071,8 @@ export interface components {
          *     `PlatformAdmin`. A customer sees only their own number, masked. `ShopId` is set for shop users from
          *     Phase 05. `ProfileComplete` is false until a customer has given a name and accepted the terms. `ProfessionalId`
          *     is set for a barber's login (D-145): their pages show only that professional's bookings, breaks and figures.
+         *     `TermsAccepted` says a customer has already accepted the terms (D-158): profile completion then shows that
+         *     instead of asking again. Always true for shop and platform users.
          */
         MeResponse: {
             /** Format: uuid */
@@ -6069,6 +6089,8 @@ export interface components {
             profileComplete: boolean;
             /** Format: uuid */
             professionalId?: null | string;
+            /** @default true */
+            termsAccepted: boolean;
         };
         /**
          * @description Who a message is for (spec §16): customers and professionals have independent templates.
@@ -7787,6 +7809,22 @@ export interface components {
             customers: null | components["schemas"]["ShopCustomerMix"];
             unavailableToday?: null | components["schemas"]["UnavailableTodayResponse"][];
         };
+        /** @description A shop's owner login as the admin's shop page shows it (D-158). `MustChangePassword`: a temporary password is waiting. */
+        ShopOwnerAccountResponse: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            email: string;
+            isDisabled: boolean;
+            mustChangePassword: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description The new temporary password, returned once for the admin to hand to the owner (D-158); never stored in clear or logged. */
+        ShopOwnerPasswordResponse: {
+            account: components["schemas"]["ShopOwnerAccountResponse"];
+            temporaryPassword: string;
+        };
         /**
          * @description The signed-in shop's own profile, for its settings screen (s-settings). IReadOnlyList&lt;ShopProfileField&gt; ShopOwnProfileResponse.EditableFields is the admin
          *     policy: the server rejects a change to any other field (R-SHP-03). Shop-facing contract: no customer contact data;
@@ -8598,7 +8636,9 @@ export interface components {
         /**
          * @description One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day's
          *     grid, and every free start that day. `DurationMinutes` is how long this barber takes for it (D-149: barbers have
-         *     their own length per service).
+         *     their own length per service). `Times` are the same starts with their local time, and `Open` is when this
+         *     barber works that day (the shop's hours ∩ theirs; from now on for today), so the barber's form shows every hour
+         *     with the taken ones greyed, as the customer's booking does (D-158).
          */
         WalkInProfessionalResponse: {
             /** Format: uuid */
@@ -8611,6 +8651,8 @@ export interface components {
             starts: string[];
             /** Format: int32 */
             durationMinutes: number;
+            times: components["schemas"]["WalkInTimeResponse"][];
+            open: components["schemas"]["TimeWindow"][];
         };
         /**
          * @description A booking the shop records (D-035, D-147). `Channel``WalkIn` (the default): without `StartsAt` it
@@ -8635,6 +8677,12 @@ export interface components {
             channel?: components["schemas"]["BookingChannel"];
             /** @default false */
             useLoyaltyReward: boolean;
+        };
+        /** @description A free start on the day's grid with its shop-local time (`HH:mm`), for the hour-then-minutes picker (D-158). */
+        WalkInTimeResponse: {
+            /** Format: date-time */
+            startsAt: string;
+            localTime: string;
         };
         /**
          * @description Delivery state of the WhatsApp number, set by the notification worker (Phase 15).
@@ -11441,6 +11489,37 @@ export interface operations {
             };
         };
     };
+    ListShopOwners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnerAccountResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
     CreateShopUser: {
         parameters: {
             query?: never;
@@ -11472,6 +11551,47 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetShopOwnerPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shopId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopOwnerPasswordResponse"];
                 };
             };
             /** @description Not Found */

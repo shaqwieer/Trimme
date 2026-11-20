@@ -3683,6 +3683,110 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "The shop\u0027s owner logins: name, email, whether disabled and whether a temporary password waits (D-158).",
+        "operationId": "ListShopOwners",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopOwnerAccountResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/shops/{shopId}/users/{userId}/temporary-password": {
+      "post": {
+        "tags": [
+          "Admin: identity"
+        ],
+        "summary": "Gives one of the shop\u0027s owners a new temporary password, shown once; their sessions end and the next sign-in asks for a new password (D-158, audited).",
+        "operationId": "ResetShopOwnerPassword",
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopOwnerPasswordResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/customers": {
@@ -21703,9 +21807,13 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "termsAccepted": {
+            "type": "boolean",
+            "default": true
           }
         },
-        "description": "The signed-in user (\u0060GET /api/v1/me\u0060). \u0060UserType\u0060 is \u0060Customer\u0060, \u0060ShopUser\u0060 or\n\u0060PlatformAdmin\u0060. A customer sees only their own number, masked. \u0060ShopId\u0060 is set for shop users from\nPhase 05. \u0060ProfileComplete\u0060 is false until a customer has given a name and accepted the terms. \u0060ProfessionalId\u0060\nis set for a barber\u0027s login (D-145): their pages show only that professional\u0027s bookings, breaks and figures."
+        "description": "The signed-in user (\u0060GET /api/v1/me\u0060). \u0060UserType\u0060 is \u0060Customer\u0060, \u0060ShopUser\u0060 or\n\u0060PlatformAdmin\u0060. A customer sees only their own number, masked. \u0060ShopId\u0060 is set for shop users from\nPhase 05. \u0060ProfileComplete\u0060 is false until a customer has given a name and accepted the terms. \u0060ProfessionalId\u0060\nis set for a barber\u0027s login (D-145): their pages show only that professional\u0027s bookings, breaks and figures.\n\u0060TermsAccepted\u0060 says a customer has already accepted the terms (D-158): profile completion then shows that\ninstead of asking again. Always true for shop and platform users."
       },
       "MessageAudience": {
         "enum": [
@@ -26834,6 +26942,56 @@
         },
         "description": "The operational overview of one business day (s-overview): KPIs, what comes next, each professional\u0027s load and the\nlast seven days by starting hour (local time; cancellations left out). \u0060Customers\u0060, for the owner only, counts\nthe last 30 days\u0027 new customers and returning visits (D-135). A barber sees what comes next only: no figures, so\n\u0060Kpis\u0060 is null and the load and hours are empty (D-147: \u00AB\u0645\u0627 \u064A\u0634\u0648\u0641 \u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0644\u0627 \u062F\u062E\u0644\u00BB). \u0060UnavailableToday\u0060\n(D-155): the shop\u0027s barbers marked \u00AB\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0627\u0644\u064A\u0648\u0645\u00BB and since when, for the owner\u0027s dashboard line and the barbers\u0027."
       },
+      "ShopOwnerAccountResponse": {
+        "required": [
+          "userId",
+          "displayName",
+          "email",
+          "isDisabled",
+          "mustChangePassword",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "isDisabled": {
+            "type": "boolean"
+          },
+          "mustChangePassword": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A shop\u0027s owner login as the admin\u0027s shop page shows it (D-158). \u0060MustChangePassword\u0060: a temporary password is waiting."
+      },
+      "ShopOwnerPasswordResponse": {
+        "required": [
+          "account",
+          "temporaryPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/ShopOwnerAccountResponse"
+          },
+          "temporaryPassword": {
+            "type": "string"
+          }
+        },
+        "description": "The new temporary password, returned once for the admin to hand to the owner (D-158); never stored in clear or logged."
+      },
       "ShopOwnProfileResponse": {
         "required": [
           "id",
@@ -29611,7 +29769,9 @@
           "freeNow",
           "nextFreeAt",
           "starts",
-          "durationMinutes"
+          "durationMinutes",
+          "times",
+          "open"
         ],
         "type": "object",
         "properties": {
@@ -29645,9 +29805,21 @@
           "durationMinutes": {
             "type": "integer",
             "format": "int32"
+          },
+          "times": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalkInTimeResponse"
+            }
+          },
+          "open": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeWindow"
+            }
           }
         },
-        "description": "One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day\u0027s\ngrid, and every free start that day. \u0060DurationMinutes\u0060 is how long this barber takes for it (D-149: barbers have\ntheir own length per service)."
+        "description": "One professional who can do the walk-in: free right now (whole duration, D-035), the next free start on the day\u0027s\ngrid, and every free start that day. \u0060DurationMinutes\u0060 is how long this barber takes for it (D-149: barbers have\ntheir own length per service). \u0060Times\u0060 are the same starts with their local time, and \u0060Open\u0060 is when this\nbarber works that day (the shop\u0027s hours \u2229 theirs; from now on for today), so the barber\u0027s form shows every hour\nwith the taken ones greyed, as the customer\u0027s booking does (D-158)."
       },
       "WalkInRequest": {
         "required": [
@@ -29720,6 +29892,23 @@
           }
         },
         "description": "A booking the shop records (D-035, D-147). \u0060Channel\u0060\u0060WalkIn\u0060 (the default): without \u0060StartsAt\u0060 it\nstarts now and is marked Arrived; otherwise it is Confirmed. \u0060Phone\u0060: an appointment at \u0060StartsAt\u0060, Confirmed.\nA service, several services (\u0060ServiceIds\u0060, added up with one barber) or a package; for the barber or a free\ncolleague. The customer\u0027s name and, if given, mobile number (D-134): stored encrypted; barbers see it on the booking\nuntil it is closed, the owner never (D-147). An \u0060Idempotency-Key\u0060 header is honoured when sent."
+      },
+      "WalkInTimeResponse": {
+        "required": [
+          "startsAt",
+          "localTime"
+        ],
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "localTime": {
+            "type": "string"
+          }
+        },
+        "description": "A free start on the day\u0027s grid with its shop-local time (\u0060HH:mm\u0060), for the hour-then-minutes picker (D-158)."
       },
       "WhatsAppVerification": {
         "enum": [

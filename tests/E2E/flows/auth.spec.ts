@@ -71,7 +71,8 @@ async function signUpCustomer(page: Page, national: string, name: string) {
   await page.getByRole('button', { name: 'تحقق' }).click();
   await expect(page).toHaveURL(/\/ar\/auth\/complete-profile/);
   await page.getByLabel('الاسم الكامل').fill(name);
-  await page.getByLabel(/أوافق على/).check();
+  // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+  await expect(page.getByTestId('terms-accepted')).toBeVisible();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
   await expect(page).toHaveURL(/\/ar\/discover$/);
 }
@@ -103,7 +104,8 @@ test.describe('customer mobile sign-up and sessions (E1 auth, R-AUTH-01/05)', ()
     await page.getByRole('button', { name: 'تحقق' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/complete-profile/);
     await page.getByLabel('الاسم الكامل').fill('ريم العتيبي');
-    await page.getByLabel(/أوافق على/).check();
+    // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+    await expect(page.getByTestId('terms-accepted')).toBeVisible();
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
 
     // Signing in lands on the customer home (D-130); the account page shows the new profile.

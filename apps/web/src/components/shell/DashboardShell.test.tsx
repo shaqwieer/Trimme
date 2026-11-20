@@ -14,13 +14,16 @@ describe('DashboardShell', () => {
       </DashboardShell>,
     );
 
-    const current = screen.getAllByRole('link', { current: 'page' });
+    // The bottom bar marks the calendar too (a barber's last tab since D-158): count the sidebar's links.
+    const bar = screen.getByTestId('shop-tab-bar');
+    expect(within(bar).getByRole('link', { name: 'التقويم' })).toHaveAttribute('aria-current', 'page');
+    const current = screen.getAllByRole('link', { current: 'page' }).filter((link) => !bar.contains(link));
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveTextContent('التقويم');
     expect(screen.getByRole('heading', { level: 1, name: 'التقويم' })).toBeInTheDocument();
   });
 
-  it('gives the shop a bottom tab bar with its four everyday pages, in reading order (D-130)', () => {
+  it('gives a barber a bottom tab bar with their four everyday pages, in reading order, the calendar last (D-130, D-158)', () => {
     setPathname('/ar/shop/walk-in');
     renderWithIntl(
       <DashboardShell
@@ -37,9 +40,11 @@ describe('DashboardShell', () => {
       'النظرة التشغيلية',
       'الدوام والبريكات',
       'حجز حضوري',
-      'المواعيد',
+      'التقويم',
     ]);
     expect(within(bar).getByRole('link', { name: 'حجز حضوري' })).toHaveAttribute('aria-current', 'page');
+    // The appointments moved to the side menu (D-158).
+    expect(within(bar).queryByRole('link', { name: 'المواعيد' })).not.toBeInTheDocument();
   });
 
   it('gives the owner «الدوام», «الحلاقون» and «الخدمات», with the appointments in the menu and no walk-in anywhere (D-146, D-159)', () => {

@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import * as z from 'zod';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/icons';
 import { Checkbox } from '@/components/ui/inputs';
 import { InlineAlert } from '@/components/ui/states';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -11,6 +12,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { homeFor, withReturnTo } from '@/lib/auth/paths';
+import { rememberTermsAccepted } from '@/lib/auth/terms';
 import { FormPhoneField, useValidationMessage, useZodForm } from '@/lib/forms/fields';
 import { applyProblemToForm } from '@/lib/forms/problem';
 import { saudiMobile } from '@/lib/forms/validation';
@@ -20,17 +22,18 @@ import { useOtpFlow } from './OtpFlow';
 
 type Mode = 'signUp' | 'signIn';
 
-const schema = (mode: Mode) =>
+const schema = (mode: Mode, termsRemembered: boolean) =>
   z.object({
     phone: saudiMobile,
     termsAccepted: z
       .boolean()
-      .refine((accepted) => mode === 'signIn' || accepted, { error: 'termsRequired' }),
+      .refine((accepted) => mode === 'signIn' || termsRemembered || accepted, { error: 'termsRequired' }),
   });
 
 /**
  * Customer sign-up / sign-in, step 1 (design c-auth "SIGN UP — OTP REQUEST"): mobile number with the fixed +966
- * prefix; sign-up also asks for terms acceptance.
+ * prefix; sign-up also asks for terms acceptance, unless this browser's customer already accepted them (D-158): it then
+ * says so, sends no new acceptance and lets the server keep the account's (a new number is asked on profile completion).
  * - Codes off (`otpRequired` false, the default, D-143): the number alone signs the customer in, or creates the
  *   account; a new customer continues to profile completion, as after the verify step.
  * - Codes on: both send the same OTP (D-005); the verify step tells new and returning customers apart.
@@ -39,10 +42,13 @@ export function PhoneStep({
   mode,
   returnTo,
   otpRequired,
+  termsRemembered = false,
 }: {
   mode: Mode;
   returnTo?: string;
   otpRequired: boolean;
+  /** The terms were accepted in this browser before (the `trimme-terms` cookie, D-158). */
+  termsRemembered?: boolean;
 }) {
   const t = useTranslations('auth');
   const locale = useLocale();
@@ -51,9 +57,11 @@ export function PhoneStep({
   const validationMessage = useValidationMessage();
   const { setChallenge } = useOtpFlow();
   const [serverError, setServerError] = useState<string>();
-  const form = useZodForm(schema(mode), {
+  const form = useZodForm(schema(mode, termsRemembered), {
     mode: 'onSubmit',
-    defaultValues: { phone: '', termsAccepted: mode === 'signIn' },
+    // Only a ticked box accepts the terms: sign-in shows none, so it sends none, and an account keeps its own (D-158).
+    // A new number that signs in here is asked on profile completion.
+    defaultValues: { phone: '', termsAccepted: false },
   });
 
   const onSubmit = form.handleSubmit(async ({ phone, termsAccepted }) => {
@@ -66,6 +74,7 @@ export function PhoneStep({
             body: { phone: phoneE164, termsAccepted, locale },
           }),
         );
+        if (user.termsAccepted) rememberTermsAccepted();
         const destination = returnTo ?? homeFor(user.userType);
         router.replace(
           user.profileComplete ? destination : withReturnTo('/auth/complete-profile', destination),
@@ -116,7 +125,26 @@ export function PhoneStep({
     >
       <form method="post" noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
         <FormPhoneField control={form.control} name="phone" label={t('phoneLabel')} autoFocus required />
-        {mode === 'signUp' && (
+        {mode === 'signUp' && termsRemembered && (
+          <p className="flex items-start gap-2 text-label text-text-secondary" data-testid="terms-remembered">
+            <Icon name="check" className="mt-0.5 size-4 shrink-0 text-success-700" strokeWidth={2.5} />
+            <span>
+              {t.rich('signUp.termsRemembered', {
+                terms: (chunks) => (
+                  <Link href="/terms" target="_blank" className="font-bold text-text-link underline">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" target="_blank" className="font-bold text-text-link underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </span>
+          </p>
+        )}
+        {mode === 'signUp' && !termsRemembered && (
           <div className="flex flex-col gap-1">
             <Checkbox
               {...form.register('termsAccepted')}

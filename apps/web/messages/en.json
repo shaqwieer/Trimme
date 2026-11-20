@@ -299,6 +299,7 @@
       "title": "Welcome to Groom Here",
       "subtitle": "Enter your mobile number and we'll send you a verification code on WhatsApp",
       "terms": "I agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>",
+      "termsRemembered": "You already agreed to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>; no need to agree again.",
       "submit": "Send code",
       "subtitleNoCode": "Enter your mobile number to create your account",
       "submitNoCode": "Create account",
@@ -336,6 +337,7 @@
       "english": "English",
       "turkish": "Türkçe",
       "terms": "I agree to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong>",
+      "termsDone": "You agreed to the <strong>Terms of Use</strong> and the <strong>Privacy Policy</strong> when you signed up.",
       "submit": "Save and continue"
     },
     "staffSignIn": {
@@ -647,6 +649,20 @@
       "suspended": "Shop suspended",
       "notFoundTitle": "Shop not found",
       "notFoundBody": "The link may be wrong or the shop no longer exists.",
+      "owner": {
+        "title": "Owner",
+        "none": "This shop has no owner account yet.",
+        "add": "Add an account",
+        "disabled": "Disabled",
+        "temporary": "Waiting for a new password",
+        "reset": "New temporary password",
+        "confirmTitle": "A new temporary password for {name}?",
+        "confirmBody": "Their current password stops working and they are signed out on every device. The new password is shown to you once to hand over; at sign-in they choose their own.",
+        "cancel": "Back",
+        "saved": "A new temporary password was made for {name}.",
+        "issuedBody": "Give the owner this password. They sign in under «Team sign-in» with their email {email} and this password, then choose their own.",
+        "issuedOnce": "This password is shown only once. If it is lost, make a new temporary password on the shop's page."
+      },
       "invite": {
         "title": "Add a shop account",
         "body": "The invitee receives an email link to set a password. The link is valid for 7 days.",
@@ -1638,6 +1654,7 @@
       "titleOwn": "My breaks",
       "midnight": "Midnight",
       "unavailableToday": "Unavailable today",
+      "unavailableIntro": "The rest of your times today close to bookings, and your bookings stay for your colleagues. You can undo it the same day.",
       "availableAgain": "Undo: available today",
       "unavailableNow": "{barber} is unavailable today from {time}",
       "unavailableBody": "No more of their times today can be booked. Their bookings stay, for their colleagues to handle: give to a colleague, change the time, or cancel with a reason."
@@ -2701,14 +2718,7 @@
       "timeRange": "{from} – {to}",
       "whose": "Whose schedule",
       "mine": "My schedule",
-      "all": "Everyone",
-      "quick": {
-        "label": "Quick actions",
-        "walkIn": "Walk-in",
-        "phone": "Phone booking",
-        "break": "Break",
-        "unavailable": "Unavailable today"
-      }
+      "all": "Everyone"
     },
     "visit": {
       "New": "New customer",
@@ -2719,11 +2729,18 @@
       "noServices": "No active services. Add a service first.",
       "intro": "Takes the time at once and removes it from the times customers see in the app.",
       "steps": {
-        "service": "2. Services",
-        "professional": "3. Barber",
-        "time": "4. Time",
-        "customer": "5. Customer",
-        "kind": "1. Type"
+        "service": "1. Services",
+        "professional": "2. Barber",
+        "time": "3. Time",
+        "customer": "4. Customer"
+      },
+      "choose": {
+        "label": "What are you recording?",
+        "walkIn": "Walk-in",
+        "phone": "Phone booking",
+        "break": "Break",
+        "unavailable": "Unavailable today",
+        "prompt": "Pick one of the four above, and its screen opens here."
       },
       "date": "Day",
       "loading": "Loading times…",
@@ -2802,6 +2819,7 @@
         "Pending": "Pending",
         "Arrived": "Arrived",
         "Completed": "Completed",
+        "NoShow": "No-show",
         "break": "Break / closed"
       },
       "noProfessionals": "The shop has no active barbers.",
@@ -3334,6 +3352,7 @@
       "shop_booking_settings_changed": "Booking settings changed",
       "shop_demo_changed": "Demo shop switched",
       "shop_user_created": "Shop account created",
+      "shop_user_password_reset": "New temporary password for the owner",
       "whatsapp_shop_messages_saved": "Shop WhatsApp messages saved",
       "shop_call_button_set": "Shop «Call» button set",
       "schedule_unavailable_today": "Barber marked unavailable today",

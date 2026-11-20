@@ -5,6 +5,8 @@ namespace Trimme.Modules.Identity.Application;
 /// <c>PlatformAdmin</c>. A customer sees only their own number, masked. <c>ShopId</c> is set for shop users from
 /// Phase 05. <c>ProfileComplete</c> is false until a customer has given a name and accepted the terms. <c>ProfessionalId</c>
 /// is set for a barber's login (D-145): their pages show only that professional's bookings, breaks and figures.
+/// <c>TermsAccepted</c> says a customer has already accepted the terms (D-158): profile completion then shows that
+/// instead of asking again. Always true for shop and platform users.
 /// </summary>
 public sealed record MeResponse(
     Guid Id,
@@ -17,7 +19,8 @@ public sealed record MeResponse(
     IReadOnlyList<string> Permissions,
     Guid? ShopId,
     bool ProfileComplete,
-    Guid? ProfessionalId = null);
+    Guid? ProfessionalId = null,
+    bool TermsAccepted = true);
 
 /// <summary>
 /// How customers sign in (D-143). <c>OtpRequired</c> true: a code to the number (<c>otp/request</c>, <c>otp/verify</c>);

@@ -76,6 +76,8 @@ public sealed class PhoneSignInTests(PostgresFixture postgres)
         var user = created.GetProperty("user");
         user.GetProperty("userType").GetString().ShouldBe("Customer");
         user.GetProperty("profileComplete").GetBoolean().ShouldBeFalse();
+        // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+        user.GetProperty("termsAccepted").GetBoolean().ShouldBeTrue();
         user.GetProperty("phoneMasked").GetString().ShouldBe($"+966 5•• ••• •{phone[^2..]}");
         session.Cookie("trimme-access").ShouldNotBeNull();
 
@@ -86,14 +88,34 @@ public sealed class PhoneSignInTests(PostgresFixture postgres)
             (await complete.JsonAsync(ct)).GetProperty("profileComplete").GetBoolean().ShouldBeTrue();
         }
 
-        // Sign-in on another device: the same account, any number format libphonenumber reads.
+        // Sign-in on another device: the same account, any number format libphonenumber reads. A browser that remembers
+        // the acceptance sends none (D-158): the account keeps its own.
         using var other = ApiSession.Create(factory);
-        using var signIn = await other.PostAsync("/api/v1/auth/phone/sign-in", new { phone = "0" + phone[4..], termsAccepted = true, locale = "ar" }, ct);
+        using var signIn = await other.PostAsync("/api/v1/auth/phone/sign-in", new { phone = "0" + phone[4..], termsAccepted = false, locale = "ar" }, ct);
         signIn.StatusCode.ShouldBe(HttpStatusCode.OK);
         var again = await signIn.JsonAsync(ct);
         again.GetProperty("isNewUser").GetBoolean().ShouldBeFalse();
         again.GetProperty("user").GetProperty("id").GetGuid().ShouldBe(user.GetProperty("id").GetGuid());
         again.GetProperty("user").GetProperty("displayName").GetString().ShouldBe("نورة القحطاني");
+        again.GetProperty("user").GetProperty("termsAccepted").GetBoolean().ShouldBeTrue();
+        again.GetProperty("user").GetProperty("profileComplete").GetBoolean().ShouldBeTrue();
+
+        // A new number from such a browser has accepted nothing yet: profile completion asks.
+        using var fresh = ApiSession.Create(factory);
+        using (var newcomer = await fresh.PostAsync(
+            "/api/v1/auth/phone/sign-in", new { phone = IdentityTestData.NewPhone(), termsAccepted = false, locale = "ar" }, ct))
+        {
+            newcomer.StatusCode.ShouldBe(HttpStatusCode.OK);
+            var newUser = (await newcomer.JsonAsync(ct)).GetProperty("user");
+            newUser.GetProperty("termsAccepted").GetBoolean().ShouldBeFalse();
+            newUser.GetProperty("profileComplete").GetBoolean().ShouldBeFalse();
+        }
+
+        using (var refused = await fresh.PostAsync(
+            "/api/v1/auth/profile/complete", new { displayName = "زائر", preferredLocale = "ar", termsAccepted = false }, ct))
+        {
+            refused.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        }
 
         // The number is stored protected, and marked as never confirmed by a code.
         (await ScalarAsync(factory, "SELECT phone_number_confirmed FROM identity.users WHERE id = @p", ct, user.GetProperty("id").GetGuid()))

@@ -65,7 +65,8 @@ async function signUp(page: Page, name: string): Promise<string> {
   await page.getByRole('button', { name: 'تحقق' }).click();
   await expect(page).toHaveURL(/\/ar\/auth\/complete-profile/);
   await page.getByLabel('الاسم الكامل').fill(name);
-  await page.getByLabel(/أوافق على/).check();
+  // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+  await expect(page.getByTestId('terms-accepted')).toBeVisible();
   await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
   await expect(page).toHaveURL(/\/ar\/discover$/);
   return national;
@@ -347,7 +348,8 @@ test.describe('customer booking and account (Phase 12: E1, E6, E7, R-CUS-07…10
     await page.getByRole('button', { name: 'تحقق' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/complete-profile\?returnTo=/);
     await page.getByLabel('الاسم الكامل').fill('ليان القحطاني');
-    await page.getByLabel(/أوافق على/).check();
+    // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+    await expect(page.getByTestId('terms-accepted')).toBeVisible();
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
     await expect(page).toHaveURL(/\/ar\/shops\/barber-house$/);
     await expect(page.getByRole('button', { name: 'أضف باربر هاوس إلى المفضلة' })).toBeVisible();

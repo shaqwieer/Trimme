@@ -7,6 +7,7 @@ import { ShopCallButtonForm } from '@/components/admin/ShopCallButtonForm';
 import { PauseCard } from '@/components/schedule/PauseCard';
 import { ProfessionalStatusBadge } from '@/components/admin/ProfessionalStatusBadge';
 import { ShopAccountForms, ShopStatusActions } from '@/components/admin/ShopForms';
+import { ShopOwnerCard } from '@/components/admin/ShopOwnerCard';
 import { DemoShopSwitch } from '@/components/admin/DemoShopSwitch';
 import { ShopStatusBadge } from '@/components/admin/ShopStatusBadge';
 import { DemoMark } from '@/components/ui/cards';
@@ -64,7 +65,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
  * Admin shop detail (DV-A06): status, then tabs for the public profile and images with the shop-edit policy, the
  * exact location (pin picker), accounts, the shop's professionals, its services and sections (added and edited here,
  * D-127, D-149), its booking settings (D-149), its subscription, its loyalty programme (D-132) and which WhatsApp
- * messages its customers and barbers get (D-142). Tab state lives in the URL (`?tab=`).
+ * messages its customers and barbers get (D-142). Tab state lives in the URL (`?tab=`). The header names the shop's
+ * owner, with a new temporary password for them (D-158).
  */
 export default async function AdminShopPage({
   params,
@@ -100,6 +102,10 @@ export default async function AdminShopPage({
         const canEdit = me.permissions.includes('Admin.Shops.Edit');
         const mode = { kind: 'admin' as const, shopId: shop.id };
         const tabHref = (target: Tab) => `/admin/shops/${shop.id}?tab=${target}`;
+        // «المالك» on every tab (D-158): who owns the shop's account, and a new temporary password for them.
+        const { data: owners } = me.permissions.includes('Admin.Shops.ManageAccount')
+          ? await api.GET('/api/v1/admin/shops/{shopId}/users', { params: { path: { shopId: shop.id } } })
+          : { data: undefined };
 
         let content: ReactNode;
         if (tab === 'profile') {
@@ -399,6 +405,7 @@ export default async function AdminShopPage({
                   <dd className="font-semibold text-text-primary">{formatDate(shop.createdAt, lang)}</dd>
                 </div>
               </dl>
+              {owners && <ShopOwnerCard shopId={shop.id} owners={owners} addHref={tabHref('users')} />}
               {me.permissions.includes('Admin.Shops.Suspend') && (
                 <ShopStatusActions shopId={shop.id} status={shop.status} />
               )}

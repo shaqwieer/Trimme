@@ -74,8 +74,9 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
 
         const api = await getServerApi();
 
-        // A barber's home is their day (D-151, the client's 1-1 and «أول شي يفتحونه»): the quick buttons, the shop's
-        // red bookings on top, then the day with «جدولي», «الكل» or a colleague. The owner keeps the overview below.
+        // A barber's home is their day (D-151, the client's 1-1 and «أول شي يفتحونه»): the shop's red bookings on top,
+        // then the day with «جدولي», «الكل» or a colleague (the quick buttons are on «حجز حضوري» only since D-158). The
+        // owner keeps the overview below.
         if (me.professionalId) {
           const { data: professionals } = await api.GET('/api/v1/shop/professionals');
           const tAppointments = await getTranslations({ locale, namespace: 'shopBoard.appointments' });
@@ -93,7 +94,6 @@ export default async function ShopHomePage({ params }: PageProps<'/[locale]/shop
                   barbers={(professionals ?? [])
                     .filter((p) => p.status === 'Active')
                     .map((p) => ({ id: p.id, nameAr: p.nameAr, nameEn: p.nameEn }))}
-                  quickActions={me.permissions.includes('Shop.Bookings.CreateWalkIn')}
                 />
               </Suspense>
             </div>

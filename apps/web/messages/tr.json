@@ -299,6 +299,7 @@
       "title": "Groom Here’a hoş geldiniz",
       "subtitle": "Cep telefonu numaranızı girin, size WhatsApp’tan bir doğrulama kodu gönderelim",
       "terms": "<terms>Kullanım Koşulları</terms>’nı ve <privacy>Gizlilik Politikası</privacy>’nı kabul ediyorum",
+      "termsRemembered": "<terms>Kullanım Koşulları</terms>’nı ve <privacy>Gizlilik Politikası</privacy>’nı daha önce kabul ettiniz; tekrar onaylamanız gerekmez.",
       "submit": "Kodu gönder",
       "subtitleNoCode": "Hesabınızı oluşturmak için cep telefonu numaranızı girin",
       "submitNoCode": "Hesap oluştur",
@@ -336,6 +337,7 @@
       "english": "English",
       "turkish": "Türkçe",
       "terms": "<strong>Kullanım Koşulları</strong>’nı ve <strong>Gizlilik Politikası</strong>’nı kabul ediyorum",
+      "termsDone": "Kaydolurken <strong>Kullanım Koşulları</strong>’nı ve <strong>Gizlilik Politikası</strong>’nı kabul ettiniz.",
       "submit": "Kaydet ve devam et"
     },
     "staffSignIn": {
@@ -647,6 +649,20 @@
       "suspended": "Salon askıya alındı",
       "notFoundTitle": "Salon bulunamadı",
       "notFoundBody": "Bağlantı hatalı olabilir veya salon artık mevcut değil.",
+      "owner": {
+        "title": "Sahip",
+        "none": "Bu salonun henüz sahip hesabı yok.",
+        "add": "Hesap ekle",
+        "disabled": "Devre dışı",
+        "temporary": "Yeni şifre bekleniyor",
+        "reset": "Yeni geçici şifre",
+        "confirmTitle": "{name} için yeni geçici şifre?",
+        "confirmBody": "Mevcut şifresi çalışmaz olur ve tüm cihazlarda oturumu kapanır. Yeni şifre size bir kez gösterilir; girişte kendi şifresini seçer.",
+        "cancel": "Geri",
+        "saved": "{name} için yeni geçici şifre oluşturuldu.",
+        "issuedBody": "Bu şifreyi salon sahibine verin. «Ekip girişi»nden {email} e-postası ve bu şifreyle girer, sonra kendi şifresini seçer.",
+        "issuedOnce": "Bu şifre yalnızca bir kez gösterilir. Kaybolursa salon sayfasından yeni bir geçici şifre oluşturun."
+      },
       "invite": {
         "title": "Salona hesap ekle",
         "body": "Davet edilen kişiye şifre belirlemesi için e-postayla bir bağlantı gönderilir. Bağlantı 7 gün geçerlidir.",
@@ -1638,6 +1654,7 @@
       "titleOwn": "Molalarım",
       "midnight": "Gece yarısı",
       "unavailableToday": "Bugün müsait değil",
+      "unavailableIntro": "Bugün kalan saatleriniz randevuya kapanır, randevularınız meslektaşlarınıza kalır. Aynı gün geri alabilirsiniz.",
       "availableAgain": "Geri al: bugün müsait",
       "unavailableNow": "{barber} bugün {time} itibarıyla müsait değil",
       "unavailableBody": "Bugün kalan saatleri rezerve edilemez. Randevuları kalır; meslektaşları ilgilenir: bir meslektaşa verin, saati değiştirin ya da nedenini yazarak iptal edin."
@@ -2701,14 +2718,7 @@
       "timeRange": "{from} – {to}",
       "whose": "Kimin programı",
       "mine": "Programım",
-      "all": "Herkes",
-      "quick": {
-        "label": "Hızlı işlemler",
-        "walkIn": "Kapıdan müşteri",
-        "phone": "Telefonla randevu",
-        "break": "Mola",
-        "unavailable": "Bugün müsait değilim"
-      }
+      "all": "Herkes"
     },
     "visit": {
       "New": "Yeni müşteri",
@@ -2719,11 +2729,18 @@
       "noServices": "Aktif hizmet yok. Önce bir hizmet ekleyin.",
       "intro": "Saati hemen ayırır ve uygulamada müşterilere gösterilen saatlerden kaldırır.",
       "steps": {
-        "service": "2. Hizmetler",
-        "professional": "3. Berber",
-        "time": "4. Saat",
-        "customer": "5. Müşteri",
-        "kind": "1. Tür"
+        "service": "1. Hizmetler",
+        "professional": "2. Berber",
+        "time": "3. Saat",
+        "customer": "4. Müşteri"
+      },
+      "choose": {
+        "label": "Ne kaydediyorsunuz?",
+        "walkIn": "Kapıdan müşteri",
+        "phone": "Telefonla randevu",
+        "break": "Mola",
+        "unavailable": "Bugün müsait değilim",
+        "prompt": "Yukarıdaki dördünden birini seçin; ekranı burada açılır."
       },
       "date": "Gün",
       "loading": "Saatler yükleniyor…",
@@ -2802,6 +2819,7 @@
         "Pending": "Beklemede",
         "Arrived": "Geldi",
         "Completed": "Tamamlandı",
+        "NoShow": "Gelmedi",
         "break": "Mola / kapalı"
       },
       "noProfessionals": "Salonda aktif berber yok.",
@@ -3334,6 +3352,7 @@
       "shop_booking_settings_changed": "Rezervasyon ayarları değişti",
       "shop_demo_changed": "Deneme işletme ayarı değişti",
       "shop_user_created": "İşletme hesabı oluşturuldu",
+      "shop_user_password_reset": "Salon sahibine yeni geçici şifre",
       "whatsapp_shop_messages_saved": "İşletmenin WhatsApp mesajları kaydedildi",
       "shop_call_button_set": "İşletme «Ara» düğmesi ayarlandı",
       "schedule_unavailable_today": "Berber bugün müsait değil",

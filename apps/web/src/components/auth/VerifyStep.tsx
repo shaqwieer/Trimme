@@ -12,6 +12,7 @@ import { browserApi } from '@/lib/api/client';
 import { ensureOk, useApiErrorMessage } from '@/lib/api/errors';
 import { ApiError } from '@/lib/api/problem';
 import { homeFor, withReturnTo } from '@/lib/auth/paths';
+import { rememberTermsAccepted } from '@/lib/auth/terms';
 import { AuthCard } from './AuthCard';
 import { useOtpFlow } from './OtpFlow';
 
@@ -71,6 +72,7 @@ export function VerifyStep({ returnTo }: { returnTo?: string }) {
         }),
       );
       setChallenge(null);
+      if (user.termsAccepted) rememberTermsAccepted();
       const destination = returnTo ?? homeFor(user.userType);
       router.replace(
         user.profileComplete ? destination : withReturnTo('/auth/complete-profile', destination),

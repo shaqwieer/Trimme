@@ -44,7 +44,8 @@ const blockTone: Record<string, string> = {
   Confirmed: 'border-status-confirmed-dot bg-status-confirmed-bg text-status-confirmed-fg',
   Arrived: 'border-status-arrived-dot bg-status-arrived-bg text-status-arrived-fg',
   Completed: 'border-status-completed-dot bg-status-completed-bg text-status-completed-fg',
-  NoShow: 'border-status-noshow-dot bg-status-noshow-bg text-status-noshow-fg',
+  // Red for a customer who did not come, so the day shows it at a glance (D-158, the client's request).
+  NoShow: 'border-status-cancelled-dot bg-status-cancelled-bg text-status-cancelled-fg',
 };
 
 const heatTone = {
@@ -191,7 +192,7 @@ export function ShopCalendar({
           className="ms-auto flex flex-wrap items-center gap-3 text-helper text-text-secondary"
           aria-label={t('legend')}
         >
-          {(['Confirmed', 'Arrived', 'Completed'] as const).map((s) => (
+          {(['Confirmed', 'Arrived', 'Completed', 'NoShow'] as const).map((s) => (
             <li key={s} className="flex items-center gap-1.5">
               <span aria-hidden="true" className={cn('size-3 rounded-xs border-s-[3px]', blockTone[s])} />
               {t(`legendItems.${s}`)}

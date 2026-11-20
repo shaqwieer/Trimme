@@ -280,6 +280,11 @@ const options = {
       nextFreeAt: '2026-10-08T15:20:00Z',
       starts: ['2026-10-08T15:20:00Z', '2026-10-08T15:25:00Z'],
       durationMinutes: 30,
+      times: [
+        { startsAt: '2026-10-08T15:20:00Z', localTime: '18:20' },
+        { startsAt: '2026-10-08T15:25:00Z', localTime: '18:25' },
+      ],
+      open: [{ start: '2026-10-08T14:12:00Z', end: '2026-10-08T18:00:00Z' }],
     },
     {
       id: 'p2',
@@ -289,11 +294,13 @@ const options = {
       nextFreeAt: '2026-10-08T14:15:00Z',
       starts: ['2026-10-08T14:15:00Z'],
       durationMinutes: 30,
+      times: [{ startsAt: '2026-10-08T14:15:00Z', localTime: '17:15' }],
+      open: [{ start: '2026-10-08T14:12:00Z', end: '2026-10-08T18:00:00Z' }],
     },
   ],
 };
 
-describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
+describe('WalkInFlow (s-walkin, D-035, D-134, D-147, D-158)', () => {
   it('shows a barber’s own length on their card, and the chosen barber’s length in the total and the end (D-149)', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(
@@ -302,7 +309,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
         professionals: [{ ...options.professionals[0]!, durationMinutes: 45 }, options.professionals[1]!],
       }),
     );
-    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
 
     const faisal = await screen.findByRole('radio', { name: /فيصل القحطاني/ });
     const sultan = screen.getByRole('radio', { name: /سلطان الحربي/ });
@@ -318,7 +325,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     expect(screen.getByText('ينتهي').closest('div')).toHaveTextContent('٧:٠٥ م');
   });
 
-  it('numbers its five steps whatever is chosen, adds several services up, and books a phone appointment for a colleague', async () => {
+  it('numbers its four steps whatever is chosen, adds several services up, and books a phone appointment for a colleague', async () => {
     const user = userEvent.setup();
     const offers: WalkInOffer[] = [
       ...OFFERS,
@@ -335,14 +342,20 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     api.GET.mockResolvedValue(ok(options));
     api.POST.mockResolvedValue(ok({ id: 'w2', reference: 'TR-1002', version: 1 }, 201));
     renderWithQuery(
-      <WalkInFlow offers={offers} today="2026-10-08" timeZone="Asia/Riyadh" ownProfessionalId="p1" />,
+      <WalkInFlow
+        kind="Phone"
+        offers={offers}
+        today="2026-10-08"
+        timeZone="Asia/Riyadh"
+        ownProfessionalId="p1"
+      />,
     );
 
-    // The steps read ١ to ٥ before a barber is picked (the «١، ٢، ٤» bug).
+    // The steps read ١ to ٤ before a barber is picked (the «١، ٢، ٤» bug); the kind was chosen on the page (D-158).
     const legends = screen.getAllByRole('group').map((g) => g.querySelector('legend')?.textContent ?? '');
-    expect(legends.filter((l) => /^[١٢٣٤٥]\./.test(l)).map((l) => l[0])).toEqual(['١', '٢', '٣', '٤', '٥']);
+    expect(legends.filter((l) => /^[١٢٣٤٥]\./.test(l)).map((l) => l[0])).toEqual(['١', '٢', '٣', '٤']);
+    expect(screen.queryByRole('radio', { name: /بالتلفون/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: /بالتلفون/ }));
     await user.click(screen.getByRole('checkbox', { name: /تحديد لحية/ }));
     expect(screen.getByTestId('walk-in-total')).toHaveTextContent(/خدمتان.*٩٥/);
     expect(await screen.findByRole('radio', { name: /فيصل القحطاني.*\(أنت\)/ })).toBeInTheDocument();
@@ -377,7 +390,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     ];
     api.GET.mockResolvedValue(ok(options));
     api.POST.mockResolvedValue(ok({ id: 'w3', reference: 'GH-4K7QM', version: 1 }, 201));
-    renderWithQuery(<WalkInFlow offers={offers} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={offers} today="2026-10-08" timeZone="Asia/Riyadh" />);
 
     // The haircut is chosen first; the package holds it, so choosing the package takes it off and says so.
     expect(screen.getByRole('checkbox', { name: /حلاقة شعر/ })).toBeChecked();
@@ -408,7 +421,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     api.GET.mockResolvedValue(ok(options));
     posts(ok({ id: 'w1', reference: 'TR-1001', version: 1 }, 201));
     const { container } = renderWithQuery(
-      <WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />,
+      <WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />,
     );
 
     // The client removed the sentence under the mobile (D-137).
@@ -472,7 +485,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
       titleAr: 'خصم ٢٠ ⃁',
       titleEn: 'SAR 20 off',
     });
-    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
 
     await user.click(await screen.findByRole('radio', { name: /سلطان الحربي/ }));
     await user.type(screen.getByLabelText('اسم العميل'), 'سعود');
@@ -507,7 +520,7 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
       titleAr: null,
       titleEn: null,
     });
-    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
     await user.click(screen.getByRole('checkbox', { name: /باقة شعر ولحية/ }));
     await user.type(screen.getByLabelText(/جوال العميل/), '0551234567');
     const reward = await screen.findByTestId('walk-in-reward');
@@ -515,11 +528,50 @@ describe('WalkInFlow (s-walkin, D-035, D-134, D-147)', () => {
     expect(reward).toHaveTextContent('لا تُستخدم المكافأة مع الباقات.');
   });
 
+  it('shows every hour the barber works and then that hour’s minutes, the taken ones greyed (D-158)', async () => {
+    const user = userEvent.setup();
+    api.GET.mockResolvedValue(ok(options));
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+
+    await user.click(await screen.findByRole('radio', { name: /فيصل القحطاني/ }));
+    // He works 5 to 9 pm from now on; only 6 pm has a free start, so it is the one hour to open, and it opens itself.
+    const hours = within(screen.getByRole('group', { name: 'اختر الساعة' }));
+    expect(hours.getAllByRole('radio')).toHaveLength(1);
+    expect(hours.getAllByText('غير متاح:')).toHaveLength(3);
+    const minutes = within(screen.getByRole('group', { name: 'اختر الدقيقة' }));
+    expect(minutes.getAllByRole('radio').map((radio) => radio.closest('label')?.textContent)).toEqual([
+      '٦:٢٠ م',
+      '٦:٢٥ م',
+    ]);
+    // The hour's other ten 5-minute starts are listed greyed and cannot be picked.
+    expect(minutes.getAllByText('غير متاح:')).toHaveLength(10);
+  });
+
+  it('says a walk-in has no times left today, without offering another day (D-158)', async () => {
+    api.GET.mockResolvedValue(
+      ok({
+        ...options,
+        professionals: [{ ...options.professionals[0]!, nextFreeAt: null, starts: [], times: [], open: [] }],
+      }),
+    );
+    renderWithQuery(
+      <WalkInFlow
+        kind="WalkIn"
+        offers={OFFERS}
+        today="2026-10-08"
+        timeZone="Asia/Riyadh"
+        initialProfessionalId="p1"
+      />,
+    );
+    expect(await screen.findByTestId('walk-in-no-times')).toHaveTextContent('لا أوقات في هذا اليوم');
+    expect(screen.queryByText(/جرّب يوماً آخر/)).not.toBeInTheDocument();
+  });
+
   it('lists a busy professional by their next free time, and a taken time sends the desk back to fresh times', async () => {
     const user = userEvent.setup();
     api.GET.mockResolvedValue(ok(options));
     api.POST.mockResolvedValue(fail(409, 'booking.slot_unavailable'));
-    renderWithQuery(<WalkInFlow offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
+    renderWithQuery(<WalkInFlow kind="WalkIn" offers={OFFERS} today="2026-10-08" timeZone="Asia/Riyadh" />);
 
     const faisal = await screen.findByRole('radio', { name: /فيصل القحطاني/ });
     expect(faisal.closest('label')).toHaveTextContent('متاح ٦:٢٠ م');

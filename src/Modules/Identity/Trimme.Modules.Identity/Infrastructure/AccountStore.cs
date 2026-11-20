@@ -341,6 +341,40 @@ internal sealed class AccountStore(
         return new PasswordResetTicket(user.Id, user.Email, user.DisplayName, user.PreferredLocale, token);
     }
 
+    public async Task<IReadOnlyList<ShopOwnerAccountRow>> ListShopOwnersAsync(Guid shopId, CancellationToken cancellationToken)
+    {
+        var shop = new ShopId(shopId);
+        return await (from user in db.Set<ApplicationUser>().AsNoTracking()
+                      join userRole in db.Set<IdentityUserRole<Guid>>() on user.Id equals userRole.UserId
+                      join role in db.Set<ApplicationRole>() on userRole.RoleId equals role.Id
+                      where user.ShopId == shop
+                            && user.UserType == UserType.ShopUser
+                            && user.ProfessionalId == null
+                            && user.DeletedAt == null
+                            && role.Name == SystemRoles.ShopOwner
+                      orderby user.CreatedAt
+                      select new ShopOwnerAccountRow(
+                          user.Id, user.DisplayName, user.Email, user.DisabledAt != null, user.MustChangePassword, user.CreatedAt))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Result> SetTemporaryPasswordAsync(Guid userId, string password, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(userId.ToString()) ?? throw new InvalidOperationException("User not found.");
+        var token = await users.GeneratePasswordResetTokenAsync(user);
+        var reset = await users.ResetPasswordAsync(user, token, password);
+        if (!reset.Succeeded)
+        {
+            return PasswordErrors(reset);
+        }
+
+        user.MustChangePassword = true;
+        user.LockoutEnd = null;
+        user.AccessFailedCount = 0;
+        EnsureSucceeded(await users.UpdateAsync(user));
+        return Result.Success();
+    }
+
     public async Task<Result> ResetPasswordAsync(Guid userId, string token, string newPassword, CancellationToken cancellationToken)
     {
         var user = await users.FindByIdAsync(userId.ToString());

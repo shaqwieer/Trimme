@@ -32,7 +32,8 @@ test.describe('customer sign-up without a code (D-143)', () => {
     // No verify step: straight to the profile, then the customer home.
     await expect(page).toHaveURL(/\/ar\/auth\/complete-profile/);
     await page.getByLabel('الاسم الكامل').fill('سلمان الدوسري');
-    await page.getByLabel(/أوافق على/).check();
+    // Accepted on sign-up: profile completion says so instead of asking again (D-158).
+    await expect(page.getByTestId('terms-accepted')).toBeVisible();
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
     await expect(page).toHaveURL(/\/ar\/discover$/);
 
@@ -40,6 +41,12 @@ test.describe('customer sign-up without a code (D-143)', () => {
     await expect(page.getByText('سلمان الدوسري')).toBeVisible();
     await page.getByRole('button', { name: 'تسجيل الخروج' }).click();
     await expect(page).toHaveURL(/\/ar\/auth\/sign-in$/);
+
+    // This browser remembers the acceptance: sign-up says so, with no box to tick again (D-158).
+    await page.goto('/ar/auth/sign-up');
+    await expect(page.getByTestId('terms-remembered')).toContainText('سبق أن وافقت');
+    await expect(page.getByRole('checkbox')).toHaveCount(0);
+    await page.goto('/ar/auth/sign-in');
 
     // Back in, from the sign-in page, to the same account.
     await expect(page.getByText('أدخل رقم جوالك لتسجيل الدخول')).toBeVisible();
