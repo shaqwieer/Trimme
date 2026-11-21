@@ -2314,6 +2314,8 @@ This refines D-126.
   - **Below 1024 px it sits in the header over the logo** (`fixed`, 8 px from the top, inside the 64 px header, `z-30` over the header's `z-20`), at most `min(15rem, 100vw − 8.5rem)` wide, so it never reaches the theme switch and the bell.
   - **From 1024 px it stays under the header** in the same corner (`lg:top-18`), because there the customer's menu sits next to the logo and the notice would cover it.
   - The ✕ keeps a 44 px width (the design's touch minimum). Opening, closing, the cookie and hiding while an upcoming booking exists are D-156's, unchanged.
+  - **Accepted trade-off:** on phones the notice covers the whole logo link (at 390 px the logo is 275–374 and the notice 162–374), so a keyboard user tabbing onto the logo meets a focus ring under the notice. This is the client's request («خله يغطي الصغير فوق»). The ✕ removes the notice, and the notice shows only on the customer's home page. A later accessibility pass should not read it as a regression.
+  - `docs/security.md` lists the `trimme_calendar_rows` cookie (and D-156's `trimme_rebook_dismissed`) among the cookies without HttpOnly.
 - **Rejected:**
   - Half-hour labels on the same 64 px hour (32 px apart): denser and no easier to read or press. It is one constant if the client prefers it.
   - The half-hour choice in the URL like the view and the date: the bar's «التقويم» link drops the query, so it would be forgotten on every visit.
@@ -2322,4 +2324,5 @@ This refines D-126.
 - **Evidence:**
   - Web: 68 files, 618 unit tests (on the final tree, after the `z-15` fix); new `shopCalendar.test.tsx` ×3, `DashboardShell.test.tsx` and `rebookNotice.test.tsx` updated; typecheck; lint; format; build; bundle budget (largest 335.9 KB).
   - Manual: Chromium at 390×844 on the rebuilt local web container. As Majed (barber): three tabs; 12 hour labels and 768 px, then 24 half-hour labels and 1,536 px; kept after a reload, on the week (30 labels) and after a back navigation; the header stays on top after scrolling. As Khalid (customer): the notice over the logo at 390, 375 and 320 px (ar) and 390 px (en), 8–56 px from the top inside the 65 px header, never over the theme switch or the bell; under the header at 1280 px; light and dark.
+  - Route audit (`a11y` and `a11y-dark`, ar and en): customer and owner 8/8, barber 4/4 after the local API was rebuilt (it predated D-158's walk-in fields); keyboard pass 5/5.
   - Pending: the client's phone after a deploy.

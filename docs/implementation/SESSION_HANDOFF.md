@@ -56,8 +56,8 @@
   - `navigation.ts`: `barberTabKeys` = overview, walk-in, calendar. The breaks page stays in the menu.
   - `ShopCalendar`: the «كل نصف ساعة» switch (day and week), rows of 30 or 60 minutes at 64 px each, remembered in the `trimme_calendar_rows` cookie (`lib/shop/calendarRows.ts`, read by the page and the component). The sticky time column is now `z-15`, so it no longer covers the header when the day scrolls.
   - `RebookNotice`: the client's text, 48 px tall, over the header's logo below 1024 px and under the header from 1024 px; the shop only in its accessible name.
-- **Local stack:** `trimme-postgres-1` had exited (255); started again with `up -d --no-deps postgres` (same volume). The web image was rebuilt from this tree twice (`build web`, `up -d --no-deps web`).
-- **Gates:** see the phase file (unit, typecheck, lint, format, build, bundle budget; Chromium at 390×844 as Majed and as Khalid).
+- **Local stack:** `trimme-postgres-1` had exited (255); started again with `up -d --no-deps postgres` (same volume). The web image was rebuilt from this tree twice, and the API image once (`build api|web`, `up -d --no-deps …`): the API container dated from 2026-11-19 and lacked D-158's walk-in fields, which made the barber walk-in pages fail the route audit.
+- **Gates:** see the phase file (unit 618/618, typecheck, lint, format, build, bundle budget; route audits customer/owner/barber in ar/en, light/dark 12/12 after the API rebuild; keyboard 5/5; Chromium at 390×844 as Majed and as Khalid).
 - **Next:** push and deploy when the user asks (web image only, no migration). Then ask the client to check the three items on their phone.
 
 ## Session 32, trimme-08: «حجز حضوري»'s four choices, walk-in times, the owner's password, terms once (D-158)

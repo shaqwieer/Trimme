@@ -137,6 +137,8 @@ Exact results are in `docs/implementation/phases/phase-17-hardening.md` (Complet
 | COEP missing | Accepted: `require-corp` would block the map's cross-origin tiles |
 | `NEXT_LOCALE` cookie without HttpOnly | Accepted: a locale preference, not a secret |
 | `trimme-terms` cookie without HttpOnly (D-158, after the scan) | Accepted: a flag that the terms were accepted in this browser, read by the sign-up page. It names no one, grants nothing and records no acceptance: the page sends none on its behalf |
+| `trimme_rebook_dismissed` cookie without HttpOnly (D-156, after the scan) | Accepted: the id of the visit whose «أعد الحجز» notice was closed, written by the notice's ✕ and read by the home page. A booking id only, no token or phone number |
+| `trimme_calendar_rows` cookie without HttpOnly (D-160, after the scan) | Accepted: the calendar's row length (`30` or `60`), written by its «كل نصف ساعة» switch and read by the calendar page. A display preference only |
 | "Big redirect", missing content type on redirects, non-storable content, modern web app, user-controllable attribute (`sort`, `category` echoed into escaped attributes) | Informational. React escapes attribute values |
 
 Findings that exist only because the scanned stack runs in Development (no HSTS, plain HTTP, the API reference and dev routes enabled) are not listed. Production turns each of them off (§3).

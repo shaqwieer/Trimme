@@ -41,5 +41,8 @@
     - It never overlaps the theme switch or the bell.
     - At 1280 it is 72–120, under the header and clear of the logo.
     - Light and dark screenshots checked.
-- **Local stack note:** `trimme-postgres-1` had exited (255) before this session; started again with `up -d --no-deps postgres` on the same volume.
+- **Route audit and keyboard pass** (`E2E_BASE_URL=http://localhost:3300`, `audit/routes.spec.ts --project=a11y --project=a11y-dark --grep "(barber|owner|customer) pages"`, then `audit/keyboard.spec.ts --project=a11y`):
+  - customer and owner pages, ar and en, light and dark: **8/8**; keyboard pass **5/5**.
+  - The barber pages failed first (4/4), only on `/shop/walk-in?mode=walkIn|phone|break` with «Cannot read properties of undefined (reading 'length' / 'map')». The cause was the local API container, created 2026-11-19, before D-158 added the walk-in `times` and `open`. The API was rebuilt from this tree (`build api`, `up -d --no-deps api`; no migration), and the barber pages then passed: **4/4** (the calendar with the switch, and the three-tab bar, included).
+- **Local stack note:** `trimme-postgres-1` had exited (255) before this session; started again with `up -d --no-deps postgres` on the same volume. The API image was stale (see above) and is now built from this tree.
 - **Pending:** the client's phone after a deploy.
