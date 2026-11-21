@@ -1853,8 +1853,8 @@
     "topRatedSalons": "Top-rated salons",
     "allSalons": "All salons",
     "lastVisit": {
-      "label": "Book again",
-      "title": "Enjoyed your visit to {shop}?",
+      "label": "Book again at {shop}",
+      "title": "Liked your last haircut?",
       "book": "Book again here",
       "close": "Close"
     }
@@ -2807,6 +2807,7 @@
       "view": "View",
       "day": "Day",
       "week": "Week",
+      "halfHours": "Every half hour",
       "previous": "Previous",
       "next": "Next",
       "today": "Today",

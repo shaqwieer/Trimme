@@ -23,7 +23,7 @@ describe('DashboardShell', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'التقويم' })).toBeInTheDocument();
   });
 
-  it('gives a barber a bottom tab bar with their four everyday pages, in reading order, the calendar last (D-130, D-158)', () => {
+  it('gives a barber a bottom tab bar with three pages, in reading order, the calendar last (D-130, D-158, D-160)', () => {
     setPathname('/ar/shop/walk-in');
     renderWithIntl(
       <DashboardShell
@@ -36,15 +36,14 @@ describe('DashboardShell', () => {
     );
     const bar = screen.getByTestId('shop-tab-bar');
     const links = within(bar).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual([
-      'النظرة التشغيلية',
-      'الدوام والبريكات',
-      'حجز حضوري',
-      'التقويم',
-    ]);
+    expect(links.map((link) => link.textContent)).toEqual(['النظرة التشغيلية', 'حجز حضوري', 'التقويم']);
     expect(within(bar).getByRole('link', { name: 'حجز حضوري' })).toHaveAttribute('aria-current', 'page');
-    // The appointments moved to the side menu (D-158).
+    // The appointments (D-158) and the breaks page (D-160) live in the side menu.
     expect(within(bar).queryByRole('link', { name: 'المواعيد' })).not.toBeInTheDocument();
+    expect(within(bar).queryByRole('link', { name: 'الدوام والبريكات' })).not.toBeInTheDocument();
+    const menu = screen.getAllByRole('link', { name: 'الدوام والبريكات' });
+    expect(menu).toHaveLength(1);
+    expect(menu[0]).toHaveAttribute('href', '/ar/shop/schedule');
   });
 
   it('gives the owner «الدوام», «الحلاقون» and «الخدمات», with the appointments in the menu and no walk-in anywhere (D-146, D-159)', () => {

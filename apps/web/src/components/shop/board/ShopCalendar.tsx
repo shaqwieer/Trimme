@@ -3,9 +3,9 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Button, IconButton } from '@/components/ui/Button';
-import { SelectField } from '@/components/ui/inputs';
+import { SelectField, Switch } from '@/components/ui/inputs';
 import { SegmentedControl } from '@/components/ui/selection.client';
 import { InlineAlert, SkeletonList } from '@/components/ui/states';
 import { Link } from '@/i18n/navigation';
@@ -29,6 +29,11 @@ import {
   place,
   shortName,
 } from '@/lib/shop/board';
+import {
+  type CalendarRowMinutes,
+  calendarRowsCookie,
+  calendarRowsFromCookies,
+} from '@/lib/shop/calendarRows';
 import { useOperationsEvents } from '../live/OperationsLive';
 import { AppointmentDrawer, BOARD_KEY } from './AppointmentDrawer';
 
@@ -36,8 +41,13 @@ type Calendar = components['schemas']['ShopCalendarResponse'];
 type Day = components['schemas']['CalendarDayResponse'];
 type Block = components['schemas']['CalendarBookingResponse'];
 
-const HOUR_PX = 64;
+/** A row's height, whether it is an hour or half an hour (D-160). */
+const ROW_PX = 64;
 const FREE_STEP_MINUTES = 30;
+
+/** The axis's rows: its whole hours (`dayAxis`), split into rows of `rowMinutes`. */
+const rowCount = (axis: { from: number; to: number }, rowMinutes: CalendarRowMinutes) =>
+  (axis.to - axis.from) / rowMinutes;
 
 const blockTone: Record<string, string> = {
   Pending: 'border-status-pending-dot bg-status-pending-bg text-status-pending-fg',
@@ -57,6 +67,9 @@ const heatTone = {
   full: 'bg-navy-900 text-on-navy',
 } as const;
 
+/** The cookie fires no event: it is read on each render, and the switch's own state covers its change. */
+const noSubscription = () => () => {};
+
 const toInterval = (w: { start: string; end: string }): Interval => ({ start: w.start, end: w.end });
 const asInterval = (b: Block): Interval & Block => ({ ...b, start: b.startsAt, end: b.endsAt });
 
@@ -74,6 +87,7 @@ export function ShopCalendar({
   canReschedule = false,
   canMove = false,
   ownProfessionalId = null,
+  initialRowMinutes = 60,
 }: {
   today: string;
   timeZone: string;
@@ -83,6 +97,8 @@ export function ShopCalendar({
   canMove?: boolean;
   /** A barber's own professional (D-145, D-147); null for the owner, who only watches. */
   ownProfessionalId?: string | null;
+  /** The device's remembered rows (D-160), read from its cookie by the page. */
+  initialRowMinutes?: CalendarRowMinutes;
 }) {
   const t = useTranslations('shopBoard.calendar');
   const locale = useLocale() as AppLocale;
@@ -90,6 +106,15 @@ export function ShopCalendar({
   const queryClient = useQueryClient();
   // Free half-hours start from now; taken once per visit (live changes refetch the bookings).
   const [now] = useState(() => Date.now());
+  // The page sends the cookie's value; it is read here too, because a back navigation replays the router's cached page
+  // with the value it had then (as D-156's notice found).
+  const remembered = useSyncExternalStore(
+    noSubscription,
+    () => calendarRowsFromCookies(document.cookie),
+    () => initialRowMinutes,
+  );
+  const [chosen, setChosen] = useState<CalendarRowMinutes | null>(null);
+  const rowMinutes = chosen ?? remembered;
 
   const view = params.get('view') === 'week' ? 'week' : 'day';
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.get('date') ?? '') ? params.get('date')! : today;
@@ -188,6 +213,16 @@ export function ShopCalendar({
             ))}
           </SelectField>
         )}
+        {/* Half-hour rows instead of hours, on the day and the week (D-160); remembered on this device. */}
+        <Switch
+          checked={rowMinutes === 30}
+          label={t('halfHours')}
+          onCheckedChange={(on) => {
+            const minutes = on ? 30 : 60;
+            document.cookie = calendarRowsCookie(minutes, window.location.protocol === 'https:');
+            setChosen(minutes);
+          }}
+        />
         <ul
           className="ms-auto flex flex-wrap items-center gap-3 text-helper text-text-secondary"
           aria-label={t('legend')}
@@ -213,6 +248,7 @@ export function ShopCalendar({
         <DayView
           calendar={calendar.data}
           timeZone={timeZone}
+          rowMinutes={rowMinutes}
           now={now}
           canWalkIn={canWalkIn}
           onOpen={(id) => update({ booking: id })}
@@ -221,6 +257,7 @@ export function ShopCalendar({
         <WeekView
           calendar={calendar.data}
           timeZone={timeZone}
+          rowMinutes={rowMinutes}
           today={today}
           onOpen={(id) => update({ booking: id })}
           onDay={(d) => update({ view: null, date: d })}
@@ -240,30 +277,39 @@ export function ShopCalendar({
   );
 }
 
+/**
+ * The time axis: a label at each row's start, every hour or every half hour (D-160). Its column is sticky sideways at
+ * `z-15`: over the bookings (`z-10`) when the barbers scroll by, under the shell's sticky header (`z-20`) when the day
+ * scrolls up (at `z-20` it came later in the page and covered the header).
+ */
 function Hours({
   axis,
+  rowMinutes,
   locale,
   timeZone,
   date,
 }: {
   axis: { from: number; to: number };
+  rowMinutes: CalendarRowMinutes;
   locale: AppLocale;
   timeZone: string;
   date: string;
 }) {
   const range = dayRange(date, timeZone, axis);
-  const hours = Array.from({ length: (axis.to - axis.from) / 60 }, (_, i) => range.start + i * 3_600_000);
+  const rows = rowCount(axis, rowMinutes);
+  const starts = Array.from({ length: rows }, (_, i) => range.start + i * rowMinutes * 60_000);
   return (
     <div
       aria-hidden="true"
       className="relative w-16 shrink-0"
-      style={{ height: ((axis.to - axis.from) / 60) * HOUR_PX }}
+      style={{ height: rows * ROW_PX }}
+      data-testid="calendar-hours"
     >
-      {hours.map((h, i) => (
+      {starts.map((h, i) => (
         <span
           key={h}
           className="absolute start-0 -translate-y-1/2 text-[0.6875rem] font-medium text-text-tertiary"
-          style={{ top: i * HOUR_PX }}
+          style={{ top: i * ROW_PX }}
         >
           {formatTime(new Date(h).toISOString(), locale, timeZone)}
         </span>
@@ -344,12 +390,14 @@ function BlockButton({
 function DayView({
   calendar,
   timeZone,
+  rowMinutes,
   now,
   canWalkIn,
   onOpen,
 }: {
   calendar: Calendar;
   timeZone: string;
+  rowMinutes: CalendarRowMinutes;
   now: number;
   canWalkIn: boolean;
   onOpen: (id: string) => void;
@@ -362,7 +410,8 @@ function DayView({
     timeZone,
   );
   const range = dayRange(day.date, timeZone, axis);
-  const height = ((axis.to - axis.from) / 60) * HOUR_PX;
+  const rows = rowCount(axis, rowMinutes);
+  const height = rows * ROW_PX;
 
   if (calendar.professionals.length === 0) {
     return <InlineAlert tone="info" title={t('noProfessionals')} />;
@@ -372,8 +421,8 @@ function DayView({
     <div className="rounded-card border border-border bg-surface p-4 shadow-e1">
       {day.closed && <InlineAlert tone="warning" title={t('closed')} className="mb-3" />}
       <div className="flex [scroll-snap-type:x_mandatory] gap-2 overflow-x-auto" data-testid="calendar-day">
-        <div className="sticky start-0 z-20 shrink-0 bg-surface pt-12">
-          <Hours axis={axis} locale={locale} timeZone={timeZone} date={day.date} />
+        <div className="sticky start-0 z-15 shrink-0 bg-surface pt-12">
+          <Hours axis={axis} rowMinutes={rowMinutes} locale={locale} timeZone={timeZone} date={day.date} />
         </div>
         {calendar.professionals.map((p) => {
           const lane = day.lanes.find((l) => l.professionalId === p.id);
@@ -412,12 +461,12 @@ function DayView({
                 <p className="text-badge text-text-secondary">{t('count', { count: bookings.length })}</p>
               </header>
               <div className="relative border-s border-border-row" style={{ height }}>
-                {Array.from({ length: (axis.to - axis.from) / 60 }, (_, i) => (
+                {Array.from({ length: rows }, (_, i) => (
                   <span
                     key={i}
                     aria-hidden="true"
                     className="absolute inset-x-0 border-t border-dashed border-border-row"
-                    style={{ top: i * HOUR_PX }}
+                    style={{ top: i * ROW_PX }}
                   />
                 ))}
                 {gaps(working, range).map((g) => (
@@ -488,12 +537,14 @@ function DayView({
 function WeekView({
   calendar,
   timeZone,
+  rowMinutes,
   today,
   onOpen,
   onDay,
 }: {
   calendar: Calendar;
   timeZone: string;
+  rowMinutes: CalendarRowMinutes;
   today: string;
   onOpen: (id: string) => void;
   onDay: (date: string) => void;
@@ -507,7 +558,7 @@ function WeekView({
     })),
     timeZone,
   );
-  const height = ((axis.to - axis.from) / 60) * HOUR_PX;
+  const height = rowCount(axis, rowMinutes) * ROW_PX;
   const density = calendar.days.map((d) => {
     const counts = Object.fromEntries(DAY_PARTS.map((part) => [part, 0])) as Record<DayPart, number>;
     for (const b of d.bookings) counts[dayPartOf(hourInZone(b.startsAt, timeZone))] += 1;
@@ -575,8 +626,14 @@ function WeekView({
 
       <div className="rounded-card border border-border bg-surface p-4 shadow-e1">
         <div className="flex gap-2 overflow-x-auto" data-testid="calendar-week">
-          <div className="sticky start-0 z-20 shrink-0 bg-surface pt-12">
-            <Hours axis={axis} locale={locale} timeZone={timeZone} date={calendar.days[0]!.date} />
+          <div className="sticky start-0 z-15 shrink-0 bg-surface pt-12">
+            <Hours
+              axis={axis}
+              rowMinutes={rowMinutes}
+              locale={locale}
+              timeZone={timeZone}
+              date={calendar.days[0]!.date}
+            />
           </div>
           {calendar.days.map((d) => {
             const range = dayRange(d.date, timeZone, axis);

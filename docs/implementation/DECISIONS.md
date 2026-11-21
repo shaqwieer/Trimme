@@ -2296,3 +2296,30 @@ This refines D-126.
   - Built in worktree `.claude/worktrees/d158` (branch `d158-shop-admin-terms`) while trimme-0c (D-156) and trimme-44 (D-157, D-159) committed on `main`, then rebased onto `c79725a`.
   - E2E ran on its own compose project (`-p trimme-d158`: web 3400, API 8180, DB 5435, Mailpit 8425), not the shared 3300 stack.
 - **Deploy:** api and web images, no migration.
+
+## D-160 — A barber's bottom bar has three tabs, the calendar can show half-hour rows, and «أعد الحجز» is a smaller notice over the logo — Accepted (Session 33, after Phase 17, at the user's request)
+- **The request:** the user's message with three iPhone screenshots of groomhere.sa, 2026-11-20 (`phases/after-17-d160-barber-bar-half-hours-rebook.md`):
+  1. a barber's bar with «الدوام والبريكات» circled: «hide breaks and work from bottom bar … need three only for barber»;
+  2. the calendar's hour axis circled: «need toggle to can appear in half hours also instead of hours»;
+  3. the customer's home with the header's logo circled and the client's words: «ارفعها هنا و صغر النص: اعجبتك حلاقتك الاخيره؟ اعد الحجز هنا، عشان المربع يصير اصغر … الاشعار خله يجي بالزاويه و اصغر حجم … خله يغطي الصغير فوق احسن».
+- **1. Three tabs for a barber** (R-SHP-11; changes D-158's bar): «النظرة التشغيلية», «حجز حضوري», «التقويم». «الدوام والبريكات» (the barber's breaks and «غير متوفر اليوم») stays in the side menu, and «بريك» and «غير متوفر اليوم» are also among «حجز حضوري»'s four choices (D-158). The owner's four tabs (D-159) are unchanged.
+- **2. «كل نصف ساعة» on the calendar** (R-SD-34):
+  - A switch in the calendar's toolbar, on the day and the week. On, the time axis labels every half hour (٢:٠٠، ٢:٣٠، ٣:٠٠ …) and each half hour is a row with its dashed line.
+  - **A row keeps its 64 px**, so half-hour rows make the day twice as tall: a 30-minute booking is a full row, easier to read and press. Off, nothing changes (hour rows of 64 px). Bookings, breaks and the free walk-in half-hours are placed in percentages of the day, so they follow either way.
+  - **Remembered on the device** in a first-party cookie (`trimme_calendar_rows`: `30` or `60`, a year, not HttpOnly, no token). The page reads it so the first render has it, and the component reads it too, because a back navigation replays the router's cached page (as D-156's notice found). Web storage stays banned (spec §9).
+  - **Found on the way:** the calendar's sticky time column (`z-20`, later in the page than the shell's sticky header, also `z-20`) covered the header's title once the day scrolled under it. A twice-as-tall day makes that common, so the column is now `z-15`: still over the bookings (`z-10`) when the barbers scroll sideways, under the header.
+- **3. The notice over the logo** (R-CUS-25 updated, DV-A42 updated; changes D-156 3):
+  - The text is the client's: «أعجبتك حلاقتك الأخيرة؟» / «أعد الحجز هنا» (en «Liked your last haircut?» / «Book again here»; tr likewise). The shop's name is no longer printed; it stays in the notice's accessible name («أعد الحجز في {shop}»).
+  - Smaller: 12 px text (`text-badge`) instead of 12.5 px, a 24 px icon instead of 32 px, 48 px tall instead of about 60.
+  - **Below 1024 px it sits in the header over the logo** (`fixed`, 8 px from the top, inside the 64 px header, `z-30` over the header's `z-20`), at most `min(15rem, 100vw − 8.5rem)` wide, so it never reaches the theme switch and the bell.
+  - **From 1024 px it stays under the header** in the same corner (`lg:top-18`), because there the customer's menu sits next to the logo and the notice would cover it.
+  - The ✕ keeps a 44 px width (the design's touch minimum). Opening, closing, the cookie and hiding while an upcoming booking exists are D-156's, unchanged.
+- **Rejected:**
+  - Half-hour labels on the same 64 px hour (32 px apart): denser and no easier to read or press. It is one constant if the client prefers it.
+  - The half-hour choice in the URL like the view and the date: the bar's «التقويم» link drops the query, so it would be forgotten on every visit.
+  - The notice over the logo at every width: from 1024 px it would cover the first menu links.
+- **Deploy:** web image only, no migration.
+- **Evidence:**
+  - Web: 68 files, 618 unit tests (on the final tree, after the `z-15` fix); new `shopCalendar.test.tsx` ×3, `DashboardShell.test.tsx` and `rebookNotice.test.tsx` updated; typecheck; lint; format; build; bundle budget (largest 335.9 KB).
+  - Manual: Chromium at 390×844 on the rebuilt local web container. As Majed (barber): three tabs; 12 hour labels and 768 px, then 24 half-hour labels and 1,536 px; kept after a reload, on the week (30 labels) and after a back navigation; the header stays on top after scrolling. As Khalid (customer): the notice over the logo at 390, 375 and 320 px (ar) and 390 px (en), 8–56 px from the top inside the 65 px header, never over the theme switch or the bell; under the header at 1280 px; light and dark.
+  - Pending: the client's phone after a deploy.

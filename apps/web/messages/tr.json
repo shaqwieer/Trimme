@@ -1853,9 +1853,9 @@
     "topRatedSalons": "En yüksek puanlı salonlar",
     "allSalons": "Tüm salonlar",
     "lastVisit": {
-      "label": "Yeniden randevu",
-      "title": "{shop} ziyaretinizi beğendiniz mi?",
-      "book": "Buradan yeniden randevu alın",
+      "label": "{shop} için tekrar randevu",
+      "title": "Son tıraşınızı beğendiniz mi?",
+      "book": "Tekrar randevu alın",
       "close": "Kapat"
     }
   },
@@ -2807,6 +2807,7 @@
       "view": "Görünüm",
       "day": "Gün",
       "week": "Hafta",
+      "halfHours": "Yarım saatlik",
       "previous": "Önceki",
       "next": "Sonraki",
       "today": "Bugün",

@@ -120,8 +120,8 @@ export function DashboardShell({
 }
 
 /**
- * The shop's bottom tab bar on phones and tablets (D-130): the owner's overview, hours, barbers and services, or a
- * barber's overview, breaks, walk-in and appointments (D-159).
+ * The shop's bottom tab bar on phones and tablets (D-130): the owner's overview, hours, barbers and services (D-159),
+ * or a barber's overview, walk-in and calendar (D-158, D-160).
  */
 function ShopTabBar({ permissions }: { permissions?: readonly string[] }) {
   const t = useTranslations();

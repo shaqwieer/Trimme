@@ -22,17 +22,24 @@ afterEach(() => {
   document.cookie = `${REBOOK_DISMISSED_COOKIE}=; Path=/; Max-Age=0`;
 });
 
-describe('the corner «أعد الحجز» notice (D-156)', () => {
-  it('is one short line with the shop that opens the same booking, pinned under the header', async () => {
+describe('the corner «أعد الحجز» notice (D-156, D-160)', () => {
+  it('reads the client’s short text, opens the same booking, and sits over the logo in the header', async () => {
     notice();
-    const aside = screen.getByRole('region', { name: 'أعد الحجز' });
-    expect(aside).toHaveTextContent('أعجبك حجزك في صالون الأصالة للحلاقة؟');
-    expect(screen.getByRole('link', { name: /أعد الحجز من هنا/ })).toHaveAttribute(
+    // The shop is no longer printed (D-160); it stays in the notice's name.
+    const aside = screen.getByRole('region', { name: 'أعد الحجز في صالون الأصالة للحلاقة' });
+    expect(aside).toHaveTextContent('أعجبتك حلاقتك الأخيرة؟أعد الحجز هنا');
+    expect(aside).not.toHaveTextContent('صالون الأصالة');
+    expect(screen.getByRole('link', { name: /أعد الحجز هنا/ })).toHaveAttribute(
       'href',
       expect.stringContaining('/shops/al-asala/book?pro=p1'),
     );
-    // Fixed in the logo's corner: it takes no room from the page, and it is not announced or focused.
-    expect(aside.parentElement?.parentElement).toHaveClass('fixed', 'top-18');
+    // Fixed in the logo's corner inside the 64 px header on phones (48 px tall from 8 px), under the header from
+    // 1024 px where the menu sits next to the logo; narrower than the screen less the theme switch and the bell.
+    expect(aside.parentElement?.parentElement).toHaveClass('fixed', 'top-2', 'lg:top-18');
+    expect(aside).toHaveClass('h-12', 'max-w-[min(15rem,calc(100vw-8.5rem))]');
+    // The ✕ keeps the 44 px touch width.
+    expect(screen.getByRole('button', { name: 'إغلاق' })).toHaveClass('w-11');
+    // It takes no room from the page, and it is not announced or focused.
     expect(aside).not.toHaveAttribute('aria-live');
     expect(document.activeElement).toBe(document.body);
     await expectNoAxeViolations();
