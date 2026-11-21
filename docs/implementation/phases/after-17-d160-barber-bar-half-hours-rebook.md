@@ -22,7 +22,8 @@
 - [x] Found on the way: the sticky time column covered the shell's header when the day scrolled under it; now `z-15` (over the bookings, under the header)
 - [x] Gates: format, lint, typecheck, unit, build and bundle budget
 - [x] Manual: Chromium at 390×844 on the rebuilt local web container (a barber's bar and calendar; a customer's notice)
-- [ ] The client's phone after a deploy
+- [x] Pushed and deployed to groomhere.sa (2026-11-21, web only)
+- [ ] The client's phone
 
 ## Evidence (Session 33, main checkout on `06a0eba`)
 - **Web unit:** `pnpm test` on the final tree: 68 files, **618 passed**. D-160's tests:
@@ -45,4 +46,5 @@
   - customer and owner pages, ar and en, light and dark: **8/8**; keyboard pass **5/5**.
   - The barber pages failed first (4/4), only on `/shop/walk-in?mode=walkIn|phone|break` with «Cannot read properties of undefined (reading 'length' / 'map')». The cause was the local API container, created 2026-11-19, before D-158 added the walk-in `times` and `open`. The API was rebuilt from this tree (`build api`, `up -d --no-deps api`; no migration), and the barber pages then passed: **4/4** (the calendar with the switch, and the three-tab bar, included).
 - **Local stack note:** `trimme-postgres-1` had exited (255) before this session; started again with `up -d --no-deps postgres` on the same volume. The API image was stale (see above) and is now built from this tree.
-- **Pending:** the client's phone after a deploy.
+- **Deploy:** Pushed (`ded52b7`) and **deployed to groomhere.sa on 2026-11-21** (web image only, no migration, still 32; backup `/root/backups/trimme-before-d160-20261121-100937.sql.gz`). Smoke from the VPS: public pages 200, the calendar 307 to sign-in when signed out, the new strings in the web image, 0 API errors. Log `/root/deploy-d160.log`.
+- **Pending:** the client's phone.

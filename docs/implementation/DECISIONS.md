@@ -2325,4 +2325,5 @@ This refines D-126.
   - Web: 68 files, 618 unit tests (on the final tree, after the `z-15` fix); new `shopCalendar.test.tsx` ×3, `DashboardShell.test.tsx` and `rebookNotice.test.tsx` updated; typecheck; lint; format; build; bundle budget (largest 335.9 KB).
   - Manual: Chromium at 390×844 on the rebuilt local web container. As Majed (barber): three tabs; 12 hour labels and 768 px, then 24 half-hour labels and 1,536 px; kept after a reload, on the week (30 labels) and after a back navigation; the header stays on top after scrolling. As Khalid (customer): the notice over the logo at 390, 375 and 320 px (ar) and 390 px (en), 8–56 px from the top inside the 65 px header, never over the theme switch or the bell; under the header at 1280 px; light and dark.
   - Route audit (`a11y` and `a11y-dark`, ar and en): customer and owner 8/8, barber 4/4 after the local API was rebuilt (it predated D-158's walk-in fields); keyboard pass 5/5.
-  - Pending: the client's phone after a deploy.
+  - Deployed to groomhere.sa on 2026-11-21 (`ded52b7`, web image only, no migration; backup `/root/backups/trimme-before-d160-20261121-100937.sql.gz`); smoke 200, 0 API errors.
+  - Pending: the client's phone.
